@@ -77,8 +77,10 @@
     <dependency>
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-http4</artifactId>
-    <!--<version>x.x.x</version> -->
-    <!-- use the same version as your Camel core version -->
+    </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-jms</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.camel</groupId>
