@@ -32,14 +32,14 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     <!-- versions for use in mvn plugins as we cannot inherit them from a BOM -->
-    <fabric8.version>2.2.61</fabric8.version>
+    <fabric8.version>2.2.62</fabric8.version>
     <docker.maven.plugin.version>0.13.6</docker.maven.plugin.version>
     <spring-boot-plugin.version>1.2.7.RELEASE</spring-boot-plugin.version>
     <spring-boot.version>1.2.7.RELEASE</spring-boot.version>
 
     <!-- Docker & Fabric8 Configs -->
     <docker.from>fabric8/java-jboss-openjdk8-jdk:1.0.10</docker.from>
-    <fabric8.dockerUser>fabric8/</fabric8.dockerUser>
+    <fabric8.dockerUser>rutebanken/</fabric8.dockerUser>
     <docker.image>${fabric8.dockerUser}${project.artifactId}:${project.version}</docker.image>
 
     <!-- fabric8.env.AB_JOLOKIA_AUTH_OPENSHIFT>true</fabric8.env.AB_JOLOKIA_AUTH_OPENSHIFT -->
@@ -90,6 +90,15 @@
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-metrics</artifactId>
     </dependency>
+     <dependency>
+       <groupId>org.apache.camel</groupId>
+       <artifactId>camel-quartz2</artifactId>
+     </dependency>
+
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-camel</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -131,8 +140,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.3</version>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
       <plugin>
