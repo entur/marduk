@@ -14,7 +14,7 @@ public class MapDataRoute extends RouteBuilder {
     @Override
     public void configure() throws Exception {
 
-        from("quartz2://backend/mapdata?cron=0+0/10+*+?+*+MON-FRI")
+        from("quartz2://backend/mapdata?cron=0+0/10+*+*+*+?")
                 .log("Starting map data download.")
                 .to("http4://download.geofabrik.de/europe/norway-latest.osm.pbf.md5")
                 .to("file:target/files/input/mapdata?fileName=$simple{date:now:yyyyMMddHHmmss}.md5")
@@ -29,6 +29,8 @@ public class MapDataRoute extends RouteBuilder {
                     .log("Set md5 header from ${header.CamelFileNameOnly} file to: ${header.md5}")
                     .aggregate(header("md5"), new Md5AggregationStrategy())
                     .completionSize(2)
+                    .completionTimeout(5 * 60 * 1000)
+                    .discardOnCompletionTimeout()
                     .log("Moving map data file with name: ${header.CamelFileNameOnly} to output folder.")
                     .to("file:target/files/output/mapdata?exclude=.md5")
                     .log("Done validating map data file with name: ${header.CamelFileNameOnly}.");

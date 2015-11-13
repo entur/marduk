@@ -14,7 +14,7 @@ public class MapDataClientRoute extends RouteBuilder {
 
         from("activemq:topic:MapDataTopic")
                 .log("Received JMS message on test client.")
-                .to("file:target/files/testclient")
+                .to("file:target/files/test/mapdata")
                 .log("JMS message stored on test client.");
 
     }
