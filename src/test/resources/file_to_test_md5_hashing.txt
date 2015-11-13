@@ -1,1 +1,0 @@
-This fils is used to generate an md5 hash when unit testing.

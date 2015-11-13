@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.routes;
+package no.rutebanken.marduk.aggregation;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;

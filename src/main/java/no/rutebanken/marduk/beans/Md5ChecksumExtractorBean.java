@@ -6,9 +6,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
-public class Md5ExtractorBean {
+/**
+ * Bean to extract md5 checksum from files. If file ends with .md5 pick first token in file, otherwise compute sum from whole file.
+ */
+public class Md5ChecksumExtractorBean {
 
-    private static Logger logger = LoggerFactory.getLogger(Md5ExtractorBean.class);
+    private static Logger logger = LoggerFactory.getLogger(Md5ChecksumExtractorBean.class);
 
     private static final String CAMEL_FILE_NAME_ONLY = "CamelFileNameOnly";
 
@@ -22,10 +25,8 @@ public class Md5ExtractorBean {
 
         if (fileName.endsWith(".md5")) {
             return new String(data).split(" ")[0];
-        } else if (fileName.endsWith(".pbf")) {
-            return org.apache.commons.codec.digest.DigestUtils.md5Hex(data);
         } else {
-            throw new IllegalStateException("Invalid filename '" + fileName + "'. Was expecting a file name ending with [.md5|.pbf].");
+            return org.apache.commons.codec.digest.DigestUtils.md5Hex(data);
         }
     }
 
