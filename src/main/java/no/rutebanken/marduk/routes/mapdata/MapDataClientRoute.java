@@ -12,10 +12,10 @@ public class MapDataClientRoute extends RouteBuilder {
     @Override
     public void configure() throws Exception {
 
-        from("activemq:topic:MapDataTopic")
-                .log("Received JMS message on test client.")
-                .to("file:target/files/test/mapdata")
-                .log("JMS message stored on test client.");
+//        from("activemq:topic:MapDataTopic")
+//                .log("Received JMS message on test client.")
+//                .to("file:target/files/test/mapdata")
+//                .log("JMS message stored on test client.");
 
     }
 

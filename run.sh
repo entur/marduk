@@ -1,0 +1,1 @@
+docker rm -f marduk ; mvn -Pf8-build ; docker run -it --name marduk -e JAVA_OPTIONS=-Xmx1280m --link activemq --link lamassu -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro rutebanken/marduk:0.0.1-SNAPSHOT

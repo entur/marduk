@@ -13,14 +13,12 @@ public class Md5ChecksumExtractorBean {
 
     private static Logger logger = LoggerFactory.getLogger(Md5ChecksumExtractorBean.class);
 
-    private static final String CAMEL_FILE_NAME_ONLY = "CamelFileNameOnly";
-
     public String extractMd5(byte[] data, Exchange exchange) {
         logger.debug("Entered extractMd5 method.");
 
-        Optional<String> optionalFileName = Optional.ofNullable(exchange.getIn().getHeader(CAMEL_FILE_NAME_ONLY, String.class));
+        Optional<String> optionalFileName = Optional.ofNullable(exchange.getIn().getHeader(Exchange.FILE_NAME_ONLY, String.class));
 
-        String fileName = optionalFileName.orElseThrow(() -> new IllegalStateException("Missing " + CAMEL_FILE_NAME_ONLY + " header."));
+        String fileName = optionalFileName.orElseThrow(() -> new IllegalStateException("Missing " + Exchange.FILE_NAME_ONLY + " header."));
         logger.debug("File name is: " + fileName);
 
         if (fileName.endsWith(".md5")) {

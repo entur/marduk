@@ -13,19 +13,19 @@ public class AvinorRoute extends RouteBuilder {
     @Override
     public void configure() throws Exception {
 
-        from("quartz2://backend/avinor?cron=0+0/3+*+*+*+?")
-                .log("Starting avinor data import.")
-                .to("http4://flydata.avinor.no/XmlFeed.asp?TimeFrom=0&airport=OSL")
-                    .streamCaching()
-                    .to("log:no.rutebanken.marduk.routes.avinor.AvinorRoute?showAll=true&multiline=true&showStreams=true&showBody=true&showOut=true&maxChars=1000000000")
-                .doTry()
-                    .to("validator:no/rutebanken/marduk/routes/avinor/XmlFeed.xsd")
-                    .log("Successfully validated avinor flight data")
-                    .to("activemq:queue:AvinorQueue")
-                .doCatch(org.apache.camel.ValidationException.class)
-                    .log("Could not validate avinor flight data")
-                    .to("log:no.rutebanken.marduk.routes.avinor.AvinorRoute?showAll=true&multiline=true&showStreams=true&showBody=true&showOut=true&maxChars=1000000000")
-                .end();
+//        from("quartz2://backend/avinor?cron=0+0/3+*+*+*+?")
+//                .log("Starting avinor data import.")
+//                .to("http4://flydata.avinor.no/XmlFeed.asp?TimeFrom=0&airport=OSL")
+//                    .streamCaching()
+//                    .to("log:no.rutebanken.marduk.routes.avinor.AvinorRoute?showAll=true&multiline=true&showStreams=true&showBody=true&showOut=true&maxChars=1000000000")
+//                .doTry()
+//                    .to("validator:no/rutebanken/marduk/routes/avinor/XmlFeed.xsd")
+//                    .log("Successfully validated avinor flight data")
+//                    .to("activemq:queue:AvinorQueue")
+//                .doCatch(org.apache.camel.ValidationException.class)
+//                    .log("Could not validate avinor flight data")
+//                    .to("log:no.rutebanken.marduk.routes.avinor.AvinorRoute?showAll=true&multiline=true&showStreams=true&showBody=true&showOut=true&maxChars=1000000000")
+//                .end();
 
     }
 
