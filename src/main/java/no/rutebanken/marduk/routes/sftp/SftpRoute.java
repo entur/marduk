@@ -1,38 +1,34 @@
 package no.rutebanken.marduk.routes.sftp;
 
-import no.rutebanken.marduk.beans.FileTypeClassifierBean;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.ValidationException;
+import no.rutebanken.marduk.routes.BaseRoute;
 import org.springframework.stereotype.Component;
 
 /**
  * Downloads file from lamassu
  */
 @Component
-public class SftpRoute extends BaseRouteBuilder {
+public class SftpRoute extends BaseRoute {
+
+//    public static final String FILE_HANDLE = "file_handle";  //TODO use this
+//    public static final String FILETYPE = "file_type";
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
-        onException(ValidationException.class)
-                .handled(true)
-                .to("activemq:queue:DeadLetterQueue");
+        String user = "nvdb";
 
-        from("sftp://nvdb@lamassu:22?privateKeyFile=/opt/jboss/.ssh/lamassu.pem&delay=30s&delete=true&localWorkDirectory=target/files/tmp")
-                .log("Received file on route. Storing file...")
-                .to("file:target/files/input/nvdb?fileName=${date:now:yyyyMMddHHmmss}-${file:name}")
-                .log("Stored file. Posting file handle to queue...")
-                .validate().method(FileTypeClassifierBean.class, "validateFile")
-                .choice()
-                    .when(header("filetype").isEqualTo("GTFS"))
-                        .to("activemq:queue:ProcessGtfsQueue")
-                        .log("Posted file on queue.")
-                    .when(header("filename").isEqualTo("UNKNOWN"))
-                        .log(LoggingLevel.INFO, "File ${header.CamelFileNameOnly} is of an unknown type. Could not process")
-                    .otherwise()
-                        .log(LoggingLevel.WARN, "Could not process file ${header.CamelFileNameOnly}");
+        //Receiving file, putting it in blob store, posting handle (only?) on queue //TODO implement solution for checking multiple folders (substitute nvdb)
+        from("sftp://" + user + "@lamassu:22?privateKeyFile=/opt/jboss/.ssh/lamassu.pem&delay=30s&delete=true&localWorkDirectory=files/tmp")
+            .log("Received file on route. Storing file ...")
+            .setHeader("file_handle", simple("${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
+            .log("File handle is: ${header.file_handle}")
+                .to("log:" + getClass().getSimpleName() + "?showAll=true&multiline=true")
+                .toD("jclouds:blobstore:filesystem?operation=CamelJcloudsPut&container=test-container&blobName=${header.file_handle}")
+                .setBody(simple("${header.file_handle}"))
+                .to("log:" + getClass().getSimpleName() + "?showAll=true&multiline=true")
+                .log("Storing file in blob store. Putting handle ${header.file_handle} on queue...")
+                .to("activemq:queue:ProcessFileQueue");
 
     }
 

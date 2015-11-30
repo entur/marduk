@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.beans;
+package no.rutebanken.marduk.routes.mapdata.beans;
 
 import org.apache.camel.Exchange;
 import org.slf4j.Logger;
