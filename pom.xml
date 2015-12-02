@@ -134,6 +134,14 @@
       <artifactId>filesystem</artifactId>
       <version>${jclouds.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds.provider</groupId>
+      <artifactId>aws-s3</artifactId>
+      <version>${jclouds.version}</version>
+    </dependency>
+
+
+
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -143,7 +151,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>18.0</version>
+      <version>17.0</version>
     </dependency>
 
     <dependency>

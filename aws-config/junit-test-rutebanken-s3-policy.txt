@@ -1,0 +1,13 @@
+{
+	"Version": "2012-10-17",
+	"Id": "Policy1449565734112",
+	"Statement": [
+		{
+			"Sid": "Stmt1449565698122",
+			"Effect": "Allow",
+			"Principal": "*",
+			"Action": "s3:GetObject",
+			"Resource": "arn:aws:s3:::junit-test-rutebanken/*"
+		}
+	]
+}

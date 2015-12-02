@@ -1,0 +1,1 @@
+docker rm -f marduk ; mvn -Pf8-build ; docker run -it --name marduk -e JAVA_OPTIONS='-Xmx1280m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Dspring.profiles.active=dev' --link activemq --link lamassu -p 5005:5005 -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro rutebanken/marduk:0.0.1-SNAPSHOT

@@ -1,9 +1,9 @@
 package no.rutebanken.marduk.config;
 
 import org.jclouds.ContextBuilder;
-import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.BlobStoreContext;
 import org.jclouds.filesystem.reference.FilesystemConstants;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -12,33 +12,24 @@ import java.util.Properties;
 
 @Configuration
 @Profile("dev")
-public class FileSystemBlobStoreConfig {
+public class FileSystemBlobStoreConfig extends CommonBlobStoreConfig {
 
-    private static final String PROVIDER = "filesystem";
-    private static final String CONTAINER_NAME = "test-container";  //This becomes a sub-folder
+    @Value("${blobstore.filesystem.baseDirectory}")
+    private String baseDirectory;
 
     @Bean
-    public Properties fileSystemConfig() {
+    public Properties configProperties() {
         Properties properties = new Properties();
-        properties.setProperty(FilesystemConstants.PROPERTY_BASEDIR, "./files/filesystemstorage");
-//        properties.setProperty(FilesystemConstants.PROPERTY_AUTO_DETECT_CONTENT_TYPE, "false");
+        properties.setProperty(FilesystemConstants.PROPERTY_BASEDIR, baseDirectory);
         return properties;
     }
 
     @Bean
-    public BlobStoreContext blobStoreContext(Properties fileSystemConfig) {
-        BlobStoreContext context = ContextBuilder.newBuilder(PROVIDER)
-                .overrides(fileSystemConfig)
+    public BlobStoreContext blobStoreContext(Properties configProperties) {
+        BlobStoreContext context = ContextBuilder.newBuilder(provider)
+                .overrides(configProperties)
                 .buildView(BlobStoreContext.class);
         return context;
     }
-
-    @Bean
-    public BlobStore blobStore(BlobStoreContext blobStoreContext) {
-        BlobStore blobStore = blobStoreContext.getBlobStore();
-        blobStore.createContainerInLocation(null, CONTAINER_NAME);
-        return blobStore;
-    }
-
 
 }
