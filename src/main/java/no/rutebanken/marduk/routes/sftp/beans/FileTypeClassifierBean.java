@@ -8,9 +8,6 @@ import org.apache.camel.Exchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,51 +25,39 @@ public class FileTypeClassifierBean {
     private final Set<String> possibleFiles = Sets.union(requiredFiles, optionalFiles);
     private final ZipFileReader zipFileReader = new ZipFileReader();
 
-    public boolean validateFile(Exchange exchange) {
-        String relativePath = exchange.getIn().getHeader(Exchange.FILE_NAME_PRODUCED, String.class);
+    public boolean validateFile(byte[] data, Exchange exchange) {
+        String relativePath = exchange.getIn().getHeader("file_handle", String.class);
+        logger.debug("Validating file with path '" + relativePath + "'.");
+        if (relativePath == null || relativePath.trim().equals("")){
+            throw new IllegalArgumentException("Could not get file path from file_handle header.");
+        }
         try {
-            Path path = Paths.get(relativePath);
-            validatePath(path);
-            if (path.toFile().getName().endsWith(".zip")) {
+            if (relativePath.endsWith(".zip")) {
                 logger.debug("FIle ends with .zip");
-                if (isGtfsZip(zipFileReader.listFilesInZip(path.toFile()))){
+                if (isGtfsZip(zipFileReader.listFilesInZip(data))){
                     exchange.getOut().setHeader(HEADER_FILETYPE, FileType.GTFS.name());
                     return true;
                 }
+                throw new FileValidationException("Could not classify file '" + relativePath + "'.");
             }
-            throw new FileValidationException("Could not classify file '" + path + "'.");
-        } catch (RuntimeException e){
+            throw new FileValidationException("Could not classify file '" + relativePath + "'.");
+        } catch (RuntimeException e) {
             logger.warn("Failed while trying to classify file '" + relativePath + "'.", e);
-            exchange.getOut().setHeader(HEADER_FILETYPE, FileType.INVALID.name());
             return false;
-        }
-    }
-
-    private void validatePath(Path path) {
-        logger.debug("Validating '" + path);
-        if (!Files.exists(path)) {
-            throw new FileValidationException("File '" + path + "' does not exist.");
         }
     }
 
     private boolean isGtfsZip(final Set<String> filesInZip) {
         logger.debug("Checking gtfs zip.");
-        final Set<String> filesInZipTrimmed = trimLeadingPath(filesInZip);
-        Set<String> requiredFilesMissing = Sets.difference(requiredFiles, filesInZipTrimmed);
+        Set<String> requiredFilesMissing = Sets.difference(requiredFiles, filesInZip);
         if (requiredFilesMissing.size() > 0) {
             throw new FileValidationException("Zip file is not a valid GTFS file, required files missing: " + requiredFilesMissing);
         }
-        Set<String> invalidFiles = Sets.difference(filesInZipTrimmed, possibleFiles);
+        Set<String> invalidFiles = Sets.difference(filesInZip, possibleFiles);
         if (invalidFiles.size() > 0) {
             throw new FileValidationException("There are invalid files in GTFS zip: " + invalidFiles);   //TODO is this critical enough to fail validation?
         }
         return true;
-    }
-
-    private Set<String> trimLeadingPath(Set<String> filesInZip) {
-        return filesInZip.stream()
-                .map(s -> Paths.get(s).getFileName().toString())
-                .collect(Collectors.toSet());
     }
 
 }
