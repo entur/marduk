@@ -51,7 +51,8 @@ public class FileTypeClassifierBean {
         logger.debug("Checking gtfs zip.");
         Set<String> requiredFilesMissing = Sets.difference(requiredFiles, filesInZip);
         if (requiredFilesMissing.size() > 0) {
-            throw new FileValidationException("Zip file is not a valid GTFS file, required files missing: " + requiredFilesMissing);
+            logger.warn("Zip file is not a valid GTFS file, required files missing: " + requiredFilesMissing);
+//            throw new FileValidationException("Zip file is not a valid GTFS file, required files missing: " + requiredFilesMissing);  //TODO Add this back in when done with development?
         }
         Set<String> invalidFiles = Sets.difference(filesInZip, possibleFiles);
         if (invalidFiles.size() > 0) {

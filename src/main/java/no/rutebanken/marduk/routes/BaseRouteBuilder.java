@@ -8,7 +8,7 @@ import java.net.ConnectException;
 /**
  * Defines common route behavior.
  */
-public abstract class BaseRoute extends RouteBuilder {
+public abstract class BaseRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {

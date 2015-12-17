@@ -94,6 +94,10 @@
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-http4</artifactId>
     </dependency>
+    <!--<dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-http</artifactId>
+    </dependency>  -->
     <dependency>
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-jms</artifactId>
@@ -118,6 +122,14 @@
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-jclouds</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-jackson</artifactId>
+    </dependency>
+   <!-- <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-jsonpath</artifactId>
+    </dependency>  -->
 
     <dependency>
       <groupId>org.apache.activemq</groupId>
@@ -140,7 +152,16 @@
       <version>${jclouds.version}</version>
     </dependency>
 
-
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpmime</artifactId>
+      <version>4.5.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.5.1</version>
+    </dependency>
 
 
     <dependency>
@@ -184,6 +205,12 @@
     <dependency>
       <groupId>io.fabric8</groupId>
       <artifactId>fabric8-arquillian</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.javacrumbs.json-unit</groupId>
+      <artifactId>json-unit</artifactId>
+      <version>1.8.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
