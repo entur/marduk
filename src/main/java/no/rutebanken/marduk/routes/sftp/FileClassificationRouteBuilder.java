@@ -27,7 +27,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("activemq:queue:DeadLetterQueue");
 
         from("activemq:queue:ProcessFileQueue")
-                .to("log:" + getClass().getSimpleName() + "?showAll=true&multiline=true")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .pipeline("direct:getBlob", "direct:validateAndProcess");  //TODO use JMS to call getBlob?
 
         from("direct:validateAndProcess")

@@ -20,7 +20,7 @@ public class GtfsRouteBuilder extends BaseRouteBuilder {
                 .log("Validation 1 will be done at this point.");
 
             from("direct:sendToChouette")
-                .to("log:" + getClass().getSimpleName() + "?showAll=true&multiline=true")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("activemq:queue:ChouetteImportQueue");
 
     }

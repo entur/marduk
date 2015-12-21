@@ -4,72 +4,70 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
-import no.rutebanken.marduk.routes.chouette.json.ImportParameters;
+import no.rutebanken.marduk.routes.chouette.json.ExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.component.http4.HttpMethods;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.Optional;
 
 import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.*;
 
 /**
- * Submits files to Chouette
+ * Exports files from Chouette
  */
 @Component
-public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
+public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
     private int maxRetries = 100;    //TODO config
     private long retryDelay = 30 * 1000;     //TODO config
+    private int days = 14;
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
-        from("activemq:queue:ChouetteImportQueue").streamCaching()
-                //Assuming we have split files according to provider/agency at this point
-                //get chouette referential for provider/agency or sftp user?   TODO this is input for storage part. Each flow should have a reference to admin data.
-                .to("direct:getBlob")
-                .setHeader("prefix", constant("tds1"))
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .to("direct:addJson");
+        from("activemq:queue:ChouetteGtfsExportTriggerQueue")
+                .log(LoggingLevel.INFO, getClass().getName(), "Running new Chouette GTFS export.")
+                .setHeader("prefix", constant("tds1"))  //TODO Get this from somewhere
+                .to("direct:exportAddJson");
 
-        from("direct:addJson")
-                .setHeader("jsonPart", simple(getJsonFileContent())) //Using header to add json data     //TODO get this from somewhere
-                .to("direct:sendJobRequest");
+        from("direct:exportAddJson")
+                .setHeader("jsonPart", simple(getJsonFileContent())) //Using header to add json data
+                .to("direct:exportSendJobRequest");
 
-        from("direct:sendJobRequest")
+        from("direct:exportSendJobRequest")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Creating multipart request")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> toMultipart(e))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .toD("http4://chouette:8080/chouette_iev/referentials/${header.prefix}/importer/gtfs")
+                .toD("http4://chouette:8080/chouette_iev/referentials/${header.prefix}/exporter/gtfs")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> {
                     e.setProperty("url", e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
                 })
-                .to("direct:pollJobStatus");
+                .to("direct:exportPollJobStatus");
 
 
-        from("direct:pollJobStatus")
+        from("direct:exportPollJobStatus")
                 .setProperty("loop_counter", constant(0))
-                .setHeader("loop", constant("direct:sendJobStatusRequest"))
+                .setHeader("loop", constant("direct:exportSendJobStatusRequest"))
                 .dynamicRouter().header("loop")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Done looping ${property.loop_counter} times")
-                .to("direct:jobStatusDone");
+                .to("direct:exportJobStatusDone");
 
-
-        from("direct:sendJobStatusRequest").streamCaching()
+        from("direct:exportSendJobStatusRequest").streamCaching()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Loop #${property.loop_counter}")
                 .removeHeaders("*")
                 .setBody(simple(""))
@@ -87,7 +85,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                             || e.getProperty("loop_counter", Integer.class) >= maxRetries - 1) {
                         e.getIn().setHeader("loop", null);
                     } else {
-                        e.getIn().setHeader("loop", "direct:sendDelayedJobStatusRequest");
+                        e.getIn().setHeader("loop", "direct:exportSendDelayedJobStatusRequest");
                     }
                     e.getIn().setHeader("current_status", response.status.name());
                     e.setProperty("loop_counter", e.getProperty("loop_counter", Integer.class) + 1);
@@ -95,69 +93,69 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true");
 
 
-        from("direct:sendDelayedJobStatusRequest").log(LoggingLevel.DEBUG, getClass().getName(), "Sleeping " + retryDelay + " ms...").delayer(retryDelay).to("direct:sendJobStatusRequest");
+        from("direct:exportSendDelayedJobStatusRequest").log("Sleeping " + retryDelay + " ms...").delayer(retryDelay).to("direct:exportSendJobStatusRequest");
 
-        from("direct:jobStatusDone").streamCaching()
+        from("direct:exportJobStatusDone").streamCaching()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Exited retry loop with status ${header.current_status}")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .choice()
                 .when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "'"))
                     .log(LoggingLevel.WARN, getClass().getName(), "Timed out with state ${header.current_status}")
                 .when(simple("${header.current_status} == '" + ABORTED + "' || ${header.current_status} == '" + CANCELED + "'"))
-                    .log(LoggingLevel.WARN, getClass().getName(), "Import ended in state ${header.current_status}") //TODO Does this occur?
-                .end()
+                    .log(LoggingLevel.WARN, getClass().getName(), "import ended in state ${header.current_status}") //TODO Does this occur?
+                    .end()
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> {
-                    JobResponse response = e.getIn().getBody(JobResponse.class);
-                    Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "action_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
+                    JobResponse jobResponse = e.getIn().getBody(JobResponse.class);
+                    e.setProperty("jobResponse", jobResponse);
+                    Optional<String> actionReportUrlOptional = jobResponse.links.stream().filter(li -> "action_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
                     e.setProperty("url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
                 })
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Calling url ${property.url}")
                 .removeHeaders("*")
                 .setBody(simple(""))
-                .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${property.url}")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .unmarshal().json(JsonLibrary.Jackson, ActionReportWrapper.class)
                 .process(e -> {
                     e.setProperty("action_report_result", e.getIn().getBody(ActionReportWrapper.class).actionReport.result);
                 })
-                .to("direct:processActionReportResult");
+                .to("direct:exportProcessActionReportResult");
 
-        from("direct:processActionReportResult")
+        from("direct:exportProcessActionReportResult")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .choice()
                 .when(simple("${property.action_report_result} == 'OK'"))
                 .log(LoggingLevel.INFO, getClass().getName(), "OK")
-                    //TODO trigger export of data for prefix ++, example: "tds1", "testDS1", "Rutebanken1", "tg@scienta.no"
+                .process(e -> {
+                    JobResponse response = e.getProperty("jobResponse", JobResponse.class);
+                    Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "data".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
+                    e.setProperty("url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
+                })
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Calling url ${property.url}")
+                .removeHeaders("*")
+                .setBody(simple(""))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                .toD("${property.url}")
+                .setHeader("file_handle", simple("gtfs_export_tds1_${date:now:yyyyMMddHHmmss}.zip"))    //TODO create based on prefix
+                .to("direct:uploadBlob")
                 .when(simple("${property.action_report_result} == 'NOK'"))
-                .log(LoggingLevel.WARN, getClass().getName(), "NOK")
+                    .log(LoggingLevel.WARN, getClass().getName(), "NOK")
                 .otherwise()
-                .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
+                    .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
                 .end()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Done");
 
     }
 
     void toMultipart(Exchange exchange) {
-        String fileName = exchange.getIn().getHeader("file_handle", String.class);
-        if (Strings.isNullOrEmpty(fileName)) {
-            throw new IllegalArgumentException("No file name");
-        }
-
         String jsonPart = exchange.getIn().getHeader("jsonPart", String.class);
         if (Strings.isNullOrEmpty(jsonPart)) {
             throw new IllegalArgumentException("No json data");
         }
 
-        InputStream inputStream = exchange.getIn().getBody(InputStream.class);
-        if (inputStream == null) {
-            throw new IllegalArgumentException("No data");
-        }
-
         MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
         entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader("jsonPart", String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
-        entityBuilder.addBinaryBody("feed", inputStream, ContentType.DEFAULT_BINARY, fileName);
 
         exchange.getOut().setBody(entityBuilder.build());
         exchange.getOut().setHeaders(exchange.getIn().getHeaders());
@@ -166,9 +164,9 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
     String getJsonFileContent() {
         try {
-            ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport("test", "tds1", "testDS1", "Rutebanken1", "tg@scienta.no");  //TODO configure or get from somewhere
-            ImportParameters.Parameters parameters = new ImportParameters.Parameters(gtfsImport);
-            ImportParameters importParameters = new ImportParameters(parameters);
+            ExportParameters.GtfsExport gtfsExport = new ExportParameters.GtfsExport("test", "tds1", "testDS1", "Rutebanken1", "tg@scienta.no", Date.from(Instant.now().minus(365, ChronoUnit.DAYS)), Date.from(Instant.now().plus(days, ChronoUnit.DAYS)));  //TODO configure or get from somewhere
+            ExportParameters.Parameters parameters = new ExportParameters.Parameters(gtfsExport);
+            ExportParameters importParameters = new ExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
             StringWriter writer = new StringWriter();
             mapper.writeValue(writer, importParameters);

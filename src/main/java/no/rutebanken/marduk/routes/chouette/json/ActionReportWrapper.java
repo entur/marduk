@@ -7,7 +7,7 @@ public class ActionReportWrapper {
 
     /*
 
-    {"action_report": {
+ {"action_report": {
   "progression": {
     "current_step": 1,
     "steps_count": 3,
@@ -31,34 +31,10 @@ public class ActionReportWrapper {
   },
   "result": "NOK",
   "zip_file": {
-    "name": "20151217143403-000038-gtfs.zip",
+    "name": "20160104080334-000111-gtfs.zip",
     "status": "OK"
   },
   "files": [
-    {
-      "name": "stop_times.txt",
-      "status": "IGNORED"
-    },
-    {
-      "name": "agency.txt",
-      "status": "ERROR",
-      "errors": [{
-        "code": "READ_ERROR",
-        "description": "Il y a des erreurs dans ce fichier."
-      }]
-    },
-    {
-      "name": "routes.txt",
-      "status": "ERROR",
-      "errors": [{
-        "code": "READ_ERROR",
-        "description": "Il y a des erreurs dans ce fichier."
-      }]
-    },
-    {
-      "name": "stops.txt",
-      "status": "IGNORED"
-    },
     {
       "name": "calendar_dates.txt",
       "status": "IGNORED"
@@ -70,6 +46,30 @@ public class ActionReportWrapper {
     {
       "name": "calendar.txt",
       "status": "IGNORED"
+    },
+    {
+      "name": "agency.txt",
+      "status": "ERROR",
+      "errors": [{
+        "code": "READ_ERROR",
+        "description": "Il y a des erreurs dans ce fichier."
+      }]
+    },
+    {
+      "name": "stop_times.txt",
+      "status": "IGNORED"
+    },
+    {
+      "name": "stops.txt",
+      "status": "IGNORED"
+    },
+    {
+      "name": "routes.txt",
+      "status": "ERROR",
+      "errors": [{
+        "code": "READ_ERROR",
+        "description": "Il y a des erreurs dans ce fichier."
+      }]
     }
   ],
   "stats": {
@@ -84,7 +84,7 @@ public class ActionReportWrapper {
   },
   "failure": {
     "code": "INVALID_DATA",
-    "description": "INVALID_FORMAT \/opt\/jboss\/referentials\/tds\/data\/6\/input\/routes.txt"
+    "description": "INVALID_FORMAT \/opt\/jboss\/referentials\/tds1\/data\/62\/input\/routes.txt"
   }
 }}
 

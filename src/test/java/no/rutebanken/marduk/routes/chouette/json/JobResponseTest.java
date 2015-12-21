@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import java.io.StringReader;
-import java.io.StringWriter;
+import java.util.stream.Collectors;
 
-import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
+import static org.junit.Assert.assertEquals;
 
-public class ImportResponseTest {
+public class JobResponseTest {
 
     String inputJson = "{\"id\":130,\"referential\":\"tds\",\"action\":\"importer\",\"type\":\"gtfs\"," +
             "\"created\":1450177618732,\"updated\":1450177618732,\"status\":\"SCHEDULED\"," +
@@ -28,10 +28,10 @@ public class ImportResponseTest {
     public void createInputJson() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         StringReader reader = new StringReader(inputJson);
-        ImportResponse importResponse = mapper.readValue(reader, ImportResponse.class);
-        StringWriter writer = new StringWriter();
-        mapper.writeValue(writer, importResponse);
-        assertJsonEquals(inputJson, writer.toString());
+        JobResponse jobResponse = mapper.readValue(reader, JobResponse.class);
+        assertEquals(JobResponse.Status.SCHEDULED, jobResponse.status);
+        assertEquals("http://chouette:8080/chouette_iev/referentials/tds/data/130/parameters.json",
+                jobResponse.links.stream().filter(li -> li.rel.equals("parameters")).collect(Collectors.toList()).get(0).href);
     }
 
 }

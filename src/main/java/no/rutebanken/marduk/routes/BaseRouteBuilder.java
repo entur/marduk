@@ -12,9 +12,9 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
-        errorHandler(deadLetterChannel("activemq:queue:DeadLetterQueue")
-            .maximumRedeliveries(3)
-            .redeliveryDelay(3000));
+//        errorHandler(deadLetterChannel("activemq:queue:DeadLetterQueue")
+//            .maximumRedeliveries(3)
+//            .redeliveryDelay(3000));
 
         onException(ConnectException.class)
             .maximumRedeliveries(10)

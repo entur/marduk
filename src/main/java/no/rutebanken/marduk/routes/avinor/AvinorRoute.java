@@ -17,14 +17,14 @@ public class AvinorRoute extends RouteBuilder {
                 .log("Starting avinor data import.")
                 .to("http4://flydata.avinor.no/XmlFeed.asp?TimeFrom=0&airport=OSL")
                     .streamCaching()
-                    .to("log:no.rutebanken.marduk.routes.avinor.AvinorRoute?showAll=true&multiline=true&showStreams=true&showBody=true&showOut=true&maxChars=1000000000")
+                    .to("log:no.rutebanken.marduk.routes.avinor.AvinorRoute?level=DEBUG&showAll=true&multiline=true&showStreams=true&showBody=true&showOut=true&maxChars=1000000000")
                 .doTry()
                     .to("validator:no/rutebanken/marduk/routes/avinor/XmlFeed.xsd")
                     .log("Successfully validated avinor flight data")
                     .to("activemq:queue:AvinorQueue")
                 .doCatch(org.apache.camel.ValidationException.class)
                     .log("Could not validate avinor flight data")
-                    .to("log:no.rutebanken.marduk.routes.avinor.AvinorRoute?showAll=true&multiline=true&showStreams=true&showBody=true&showOut=true&maxChars=1000000000")
+                    .to("log:no.rutebanken.marduk.routes.avinor.AvinorRoute?level=DEBUG&showAll=true&multiline=true&showStreams=true&showBody=true&showOut=true&maxChars=1000000000")
                 .end();
 
     }

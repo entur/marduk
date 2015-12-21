@@ -20,16 +20,19 @@ public class SftpRouteBuilder extends BaseRouteBuilder {
                                 // Maybe use this: http://stackoverflow.com/questions/10451444/add-camel-route-at-runtime-in-java
                                 // Or poll parent folder
 
+                                //TODO map to internal user, which can be sent to other routes
+
         from("sftp://" + user + "@lamassu:22?privateKeyFile=/opt/jboss/.ssh/lamassu.pem&delay=30s&delete=true&localWorkDirectory=files/tmp")
             .log("Received file on route. Storing file ...")
             .setHeader("file_handle", simple("${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
             .log("File handle is: ${header.file_handle}")
-                .to("log:" + getClass().getSimpleName() + "?showAll=true&multiline=true")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> {
                     e.getOut().setBody(new ByteArrayInputStream(e.getIn().getBody(byte[].class)), InputStream.class);
                     e.getOut().setHeaders(e.getIn().getHeaders());
                 })
-                .to("direct:uploadBlob");
+                .to("direct:uploadBlob")
+                .to("activemq:queue:ProcessFileQueue");
 
     }
 
