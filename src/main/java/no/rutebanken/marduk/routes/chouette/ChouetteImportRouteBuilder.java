@@ -18,6 +18,8 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.Optional;
 
+import static no.rutebanken.marduk.routes.chouette.json.ImportResponse.Status.*;
+
 /**
  * Submits files to Chouette
  */
@@ -64,7 +66,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .setHeader("loop", constant("direct:sendRequest2"))
                 .dynamicRouter().header("loop")
                 .log("Done looping ${property.loop_counter} times")
-                .to("direct:processImportResult");
+                .to("direct:processLoopingResult");
 
 
         from("direct:sendRequest2").streamCaching()
@@ -80,14 +82,14 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .log("Unmarshalled: ${body}")
                 .process(e -> {
                     ImportResponse response = e.getIn().getBody(ImportResponse.class);
-                    if (!(response.status.equals(ImportResponse.Status.SCHEDULED)
-                            || response.status.equals(ImportResponse.Status.STARTED))
+                    if (!(response.status.equals(SCHEDULED)
+                            || response.status.equals(STARTED))
                             || e.getProperty("loop_counter", Integer.class) >= maxRetries - 1) {
                         e.getIn().setHeader("loop", null);
-                        e.getIn().setHeader("final_status", response.status.name());
                     } else {
                         e.getIn().setHeader("loop", "direct:sendDelayedRequest2");
                     }
+                    e.getIn().setHeader("final_status", response.status.name());
                     e.setProperty("loop_counter", e.getProperty("loop_counter", Integer.class) + 1);
                 })
                 .to("log:" + getClass().getSimpleName() + "?showAll=true&multiline=true");
@@ -95,10 +97,12 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:sendDelayedRequest2").log("Sleeping " + delay + " ms...").delayer(delay).to("direct:sendRequest2");
 
-        from("direct:processImportResult").streamCaching()
+        from("direct:processLoopingResult").streamCaching()
                 .log(LoggingLevel.DEBUG, "******************** Exited retry loop with status ${header.final_status} **********************")
                 .choice()
-                .when(simple("${header.final_status} == 'ABORTED' || ${header.final_status} == 'CANCELED')"))
+                .when(simple("${header.final_status} == '" + SCHEDULED + "' || ${header.final_status} == '" + STARTED + "')"))
+                    .log(LoggingLevel.WARN, "Timed out with state ${header.final_status}")
+                .when(simple("${header.final_status} == '" + ABORTED + "' || ${header.final_status} == '" + ABORTED + "')"))
                     .log(LoggingLevel.WARN, "import ended in state ${header.final_status}") //TODO Does this occur?
                     .end()
                 .to("log:" + getClass().getSimpleName() + "?showAll=true&multiline=true")
