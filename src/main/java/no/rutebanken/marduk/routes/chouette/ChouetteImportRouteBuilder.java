@@ -7,6 +7,7 @@ import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.ImportParameters;
 import no.rutebanken.marduk.routes.chouette.json.ImportResponse;
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -23,8 +24,8 @@ import java.util.Optional;
 @Component
 public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
-    private int maxRetries = 10;    //TODO config
-    private long delay = 10000;     //TODO config
+    private int maxRetries = 100;    //TODO config
+    private long delay = 10 * 1000;     //TODO config
 
     @Override
     public void configure() throws Exception {
@@ -67,7 +68,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
 
         from("direct:sendRequest2").streamCaching()
-                .to("log:" + getClass().getSimpleName() + "?showAll=true&multiline=true")
+                .log(LoggingLevel.INFO, "Loop #${property.loop_counter}")
                 .removeHeaders("*")
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
@@ -81,7 +82,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                     ImportResponse response = e.getIn().getBody(ImportResponse.class);
                     if (!(response.status.equals(ImportResponse.Status.SCHEDULED)
                             || response.status.equals(ImportResponse.Status.STARTED))
-                            || e.getProperty("loop_counter", Integer.class) >= maxRetries) {
+                            || e.getProperty("loop_counter", Integer.class) >= maxRetries - 1) {
                         e.getIn().setHeader("loop", null);
                         e.getIn().setHeader("final_status", response.status.name());
                     } else {
@@ -95,12 +96,14 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
         from("direct:sendDelayedRequest2").log("Sleeping " + delay + " ms...").delayer(delay).to("direct:sendRequest2");
 
         from("direct:processImportResult").streamCaching()
-                .log("******************** Exited retry loop with status ${header.final_status} **********************")
-                  //TODO check ABORTED, CANCELED
+                .log(LoggingLevel.DEBUG, "******************** Exited retry loop with status ${header.final_status} **********************")
+                .choice()
+                .when(simple("${header.final_status} == 'ABORTED' || ${header.final_status} == 'CANCELED')"))
+                    .log(LoggingLevel.WARN, "import ended in state ${header.final_status}") //TODO Does this occur?
+                    .end()
                 .to("log:" + getClass().getSimpleName() + "?showAll=true&multiline=true")
                 .process(e -> {
                     ImportResponse response = e.getIn().getBody(ImportResponse.class);
-                    System.out.println("response " + response);
                     Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "action_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
                     e.setProperty("url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
                 })
