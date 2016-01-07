@@ -35,6 +35,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("activemq:queue:ChouetteImportQueue").streamCaching()
+                .log(LoggingLevel.DEBUG, getClass().getName(), "${header.provider}")
                 //Assuming we have split files according to provider/agency at this point
                 //get chouette referential for provider/agency or sftp user?   TODO this is input for storage part. Each flow should have a reference to admin data.
                 .to("direct:getBlob")
