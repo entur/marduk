@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.Optional;
 
 import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.*;
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Exports files from Chouette
@@ -137,7 +138,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${property.url}")
-                .setHeader("file_handle", simple("gtfs_export_tds1_${date:now:yyyyMMddHHmmss}.zip"))    //TODO create based on prefix
+                .setHeader(FILE_HANDLE, simple("gtfs_export_tds1_${date:now:yyyyMMddHHmmss}.zip"))    //TODO create based on prefix
                 .to("direct:uploadBlob")
                 .when(simple("${property.action_report_result} == 'NOK'"))
                     .log(LoggingLevel.WARN, getClass().getName(), "NOK")

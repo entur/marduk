@@ -4,5 +4,7 @@ import java.util.List;
 
 public interface ProviderRepository {
 
-    List<Provider> getProvidersWithSftpDirs();
+    List<Provider> getProvidersWithSftpAccounts();
+
+    Provider getProviderById(Long id);
 }

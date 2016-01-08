@@ -2,6 +2,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import no.rutebanken.marduk.management.ChouetteInfo;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.ImportParameters;
@@ -19,6 +20,7 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.Optional;
 
+import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.*;
 
 /**
@@ -27,6 +29,7 @@ import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.*;
 @Component
 public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
+    private final String JSON_PART = "jsonPart";
     private int maxRetries = 100;    //TODO config
     private long retryDelay = 30 * 1000;     //TODO config
 
@@ -35,16 +38,14 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("activemq:queue:ChouetteImportQueue").streamCaching()
-                .log(LoggingLevel.DEBUG, getClass().getName(), "${header.provider}")
-                //Assuming we have split files according to provider/agency at this point
-                //get chouette referential for provider/agency or sftp user?   TODO this is input for storage part. Each flow should have a reference to admin data.
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Provider: ${header." + PROVIDER_ID + "}")
                 .to("direct:getBlob")
-                .setHeader("prefix", constant("tds1"))
+                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, providerRepository.getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getPrefix()))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:addJson");
 
         from("direct:addJson")
-                .setHeader("jsonPart", simple(getJsonFileContent())) //Using header to add json data     //TODO get this from somewhere
+                .process(e -> e.getIn().setHeader(JSON_PART, getJsonFileContent(e.getIn().getHeader(PROVIDER_ID, Long.class)))) //Using header to add json data
                 .to("direct:sendJobRequest");
 
         from("direct:sendJobRequest")
@@ -54,7 +55,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .toD("http4://chouette:8080/chouette_iev/referentials/${header.prefix}/importer/gtfs")
+                .toD("http4://chouette:8080/chouette_iev/referentials/${header." + CHOUETTE_PREFIX + "}/importer/gtfs")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> {
                     e.setProperty("url", e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
@@ -72,7 +73,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:sendJobStatusRequest").streamCaching()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Loop #${property.loop_counter}")
-                .removeHeaders("*")
+                .removeHeaders("Camel*")
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${property.url}")
@@ -130,7 +131,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .choice()
                 .when(simple("${property.action_report_result} == 'OK'"))
                 .log(LoggingLevel.INFO, getClass().getName(), "OK")
-                    //TODO trigger export of data for prefix ++, example: "tds1", "testDS1", "Rutebanken1", "tg@scienta.no"
+                    //TODO trigger export of data for provider id
                 .when(simple("${property.action_report_result} == 'NOK'"))
                 .log(LoggingLevel.WARN, getClass().getName(), "NOK")
                 .otherwise()
@@ -141,7 +142,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
     }
 
     void toMultipart(Exchange exchange) {
-        String fileName = exchange.getIn().getHeader("file_handle", String.class);
+        String fileName = exchange.getIn().getHeader(FILE_HANDLE, String.class);
         if (Strings.isNullOrEmpty(fileName)) {
             throw new IllegalArgumentException("No file name");
         }
@@ -165,9 +166,10 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
     }
 
 
-    String getJsonFileContent() {
+    String getJsonFileContent(Long providerId) {
         try {
-            ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport("test", "tds1", "testDS1", "Rutebanken1", "tg@scienta.no");  //TODO configure or get from somewhere
+            ChouetteInfo chouetteInfo = providerRepository.getProviderById(providerId).getChouetteInfo();
+            ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport("import", chouetteInfo.getPrefix(), chouetteInfo.getDataSpace(), chouetteInfo.getOrganisation(), chouetteInfo.getUser());
             ImportParameters.Parameters parameters = new ImportParameters.Parameters(gtfsImport);
             ImportParameters importParameters = new ImportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
