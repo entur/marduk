@@ -2,6 +2,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import no.rutebanken.marduk.management.ChouetteInfo;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.ExportParameters;
@@ -20,8 +21,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
 
-import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.*;
 import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.*;
 
 /**
  * Exports files from Chouette
@@ -31,19 +32,20 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
     private int maxRetries = 100;    //TODO config
     private long retryDelay = 30 * 1000;     //TODO config
-    private int days = 14;
+    private int daysForward = 14;
+    private int daysBack = 365;
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
-        from("activemq:queue:ChouetteGtfsExportTriggerQueue")
-                .log(LoggingLevel.INFO, getClass().getName(), "Running new Chouette GTFS export.")
-                .setHeader("prefix", constant("tds1"))  //TODO Get this from somewhere
+        from("activemq:queue:ChouetteGtfsExportQueue")
+                .log(LoggingLevel.INFO, getClass().getName(), "Running new Chouette GTFS export for provider with id ${header." + PROVIDER_ID + "}")
+                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, providerRepository.getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getPrefix()))
                 .to("direct:exportAddJson");
 
         from("direct:exportAddJson")
-                .setHeader("jsonPart", simple(getJsonFileContent())) //Using header to add json data
+                .process(e -> e.getIn().setHeader(JSON_PART, getJsonFileContent(e.getIn().getHeader(PROVIDER_ID, Long.class)))) //Using header to add json data
                 .to("direct:exportSendJobRequest");
 
         from("direct:exportSendJobRequest")
@@ -53,7 +55,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .toD("http4://chouette:8080/chouette_iev/referentials/${header.prefix}/exporter/gtfs")
+                .toD("http4://chouette:8080/chouette_iev/referentials/${header." + CHOUETTE_PREFIX + "}/exporter/gtfs")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> {
                     e.setProperty("url", e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
@@ -70,7 +72,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:exportSendJobStatusRequest").streamCaching()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Loop #${property.loop_counter}")
-                .removeHeaders("*")
+                .removeHeaders("Camel*")
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${property.url}")
@@ -112,7 +114,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
                     e.setProperty("url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
                 })
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Calling url ${property.url}")
-                .removeHeaders("*")
+                .removeHeaders("Camel*")
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${property.url}")
@@ -134,38 +136,41 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
                     e.setProperty("url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
                 })
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Calling url ${property.url}")
-                .removeHeaders("*")
+                .removeHeaders("Camel*")
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${property.url}")
-                .setHeader(FILE_HANDLE, simple("gtfs_export_tds1_${date:now:yyyyMMddHHmmss}.zip"))    //TODO create based on prefix
+                .setHeader(FILE_HANDLE, simple("chouette-gtfs-out/" + PROVIDER_ID + "-${header." + CHOUETTE_PREFIX + "}-gtfs-export.zip"))
                 .to("direct:uploadBlob")
+                .to("activemq:queue:OtpGraphQueue")
                 .when(simple("${property.action_report_result} == 'NOK'"))
                     .log(LoggingLevel.WARN, getClass().getName(), "NOK")
                 .otherwise()
                     .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
                 .end()
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Done");
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Export done");
 
     }
 
     void toMultipart(Exchange exchange) {
-        String jsonPart = exchange.getIn().getHeader("jsonPart", String.class);
+        String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);
         if (Strings.isNullOrEmpty(jsonPart)) {
             throw new IllegalArgumentException("No json data");
         }
 
         MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
-        entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader("jsonPart", String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
+        entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
 
         exchange.getOut().setBody(entityBuilder.build());
         exchange.getOut().setHeaders(exchange.getIn().getHeaders());
     }
 
-
-    String getJsonFileContent() {
+    String getJsonFileContent(Long providerId) {
         try {
-            ExportParameters.GtfsExport gtfsExport = new ExportParameters.GtfsExport("test", "tds1", "testDS1", "Rutebanken1", "tg@scienta.no", Date.from(Instant.now().minus(365, ChronoUnit.DAYS)), Date.from(Instant.now().plus(days, ChronoUnit.DAYS)));  //TODO configure or get from somewhere
+            ChouetteInfo chouetteInfo = providerRepository.getProviderById(providerId).getChouetteInfo();
+            ExportParameters.GtfsExport gtfsExport = new ExportParameters.GtfsExport("export",
+                    chouetteInfo.getPrefix(), chouetteInfo.getDataSpace(), chouetteInfo.getOrganisation(), chouetteInfo.getUser(),
+                    Date.from(Instant.now().minus(daysBack, ChronoUnit.DAYS)), Date.from(Instant.now().plus(daysForward, ChronoUnit.DAYS)));  //TODO configure
             ExportParameters.Parameters parameters = new ExportParameters.Parameters(gtfsExport);
             ExportParameters importParameters = new ExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();

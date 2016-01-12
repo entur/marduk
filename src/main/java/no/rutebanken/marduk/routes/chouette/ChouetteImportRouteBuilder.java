@@ -29,7 +29,6 @@ import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.*;
 @Component
 public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
-    private final String JSON_PART = "jsonPart";
     private int maxRetries = 100;    //TODO config
     private long retryDelay = 30 * 1000;     //TODO config
 
@@ -115,7 +114,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 })
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Calling url ${property.url}")
-                .removeHeaders("*")
+                .removeHeaders("Camel*")
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .toD("${property.url}")
@@ -130,14 +129,14 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .choice()
                 .when(simple("${property.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, getClass().getName(), "OK")
-                    //TODO trigger export of data for provider id
+                .log(LoggingLevel.INFO, getClass().getName(), "OK, triggering export.")
+                    .to("activemq:queue:ChouetteGtfsExportQueue")
                 .when(simple("${property.action_report_result} == 'NOK'"))
                 .log(LoggingLevel.WARN, getClass().getName(), "NOK")
                 .otherwise()
                 .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
                 .end()
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Done");
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Import done");
 
     }
 
@@ -147,7 +146,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
             throw new IllegalArgumentException("No file name");
         }
 
-        String jsonPart = exchange.getIn().getHeader("jsonPart", String.class);
+        String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);
         if (Strings.isNullOrEmpty(jsonPart)) {
             throw new IllegalArgumentException("No json data");
         }
@@ -158,7 +157,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
         }
 
         MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
-        entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader("jsonPart", String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
+        entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
         entityBuilder.addBinaryBody("feed", inputStream, ContentType.DEFAULT_BINARY, fileName);
 
         exchange.getOut().setBody(entityBuilder.build());

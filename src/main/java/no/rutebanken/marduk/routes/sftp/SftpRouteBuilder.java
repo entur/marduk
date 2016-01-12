@@ -49,15 +49,12 @@ public class SftpRouteBuilder extends BaseRouteBuilder {
         public void configure() throws Exception {
             from("sftp://" + provider.getSftpAccount() + "@lamassu:22?privateKeyFile=/opt/jboss/.ssh/lamassu.pem&delay=30s&delete=true&localWorkDirectory=files/tmp")
                     .log(LoggingLevel.INFO, getClass().getName(), "Received file on sftp route for '" + provider.getSftpAccount() + "'. Storing file ...")
-                    .setHeader(FILE_HANDLE, simple(provider.getId() + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
+                    .setHeader(FILE_HANDLE, simple("stfp_in/" + provider.getId() + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
                     .log(LoggingLevel.INFO, getClass().getName(), "File handle is: ${header." + FILE_HANDLE + "}")
                     .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                    .process(e -> {
-                        e.getOut().setBody(new ByteArrayInputStream(e.getIn().getBody(byte[].class)), InputStream.class);
-                        e.getOut().setHeaders(e.getIn().getHeaders());
-                    })
                     .to("direct:uploadBlob")
                     .setHeader(PROVIDER_ID, simple("" + provider.getId()))
+                    .log(LoggingLevel.INFO, getClass().getName(), "Putting handle ${header." + FILE_HANDLE + "} and provider ${header." + PROVIDER_ID + "} on queue...")
                     .to("activemq:queue:ProcessFileQueue");
         }
     }
