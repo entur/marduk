@@ -21,7 +21,7 @@ public class AwsS3BlobStoreConfig extends CommonBlobStoreConfig {
     public BlobStoreContext blobStoreContext() {
          BlobStoreContext context = ContextBuilder.newBuilder(provider)
                 .credentials(identity, credential)
-                .endpoint("https://s3-eu-west-1.amazonaws.com") //TODO find out whether this optimizes access or not
+                .endpoint("https://s3-eu-west-1.amazonaws.com")
                 .buildView(BlobStoreContext.class);
         return context;
     }

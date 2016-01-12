@@ -1,20 +1,55 @@
 # Marduk
 
-For details, see the 
+For details, see the
 initial project setup location:
   https://github.com/fabric8io/ipaas-quickstarts/
 
-* Build: `mvn clean install`
-* Local run: `java -Xmx1280m -jar target/marduk-0.0.1-SNAPSHOT.jar`
-* Docker image: `mvn -Pf8-build`
-* Run the docker image in docker on dev machine (you'll need to modify ports from 22 to 2224 and also to have the lamassu.pem file present in ~/.ssh):
-     * `docker run -it --name marduk -e JAVA_OPTIONS="-Xmx1280m -Dspring.profiles.active=dev" --link activemq --link lamassu --link chouette --add-host=lamassu:127.0.0.1 -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro rutebanken/marduk:0.0.1-SNAPSHOT` 
-* Run the docker image in docker inside vagrant:
-     * `docker run -it --name marduk -e JAVA_OPTIONS="-Xmx1280m -Dspring.profiles.active=dev" --link activemq --link lamassu --link chouette -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro rutebanken/marduk:0.0.1-SNAPSHOT`
-* For more docker plugin goals, see: http://ro14nd.de/docker-maven-plugin/goals.html
+* Marduk currently has two spring profiles, dev and test. Use `-Dspring.profiles.active=dev` and `-Dspring.profiles.active=test` to switch between these.
+* The application is unable to run without configuration. This must be defined externally to the application in a file called application.properties. Copy application.properties into either the current directory, i.e. where the application will be run from, or a /config subdirectory of this folder
+* Typical application.properties for dev environment, with file system blobstore:
 
-* TODO
-    * Place config external
-    * Create log framework
-    * Generalize and clean up
-    * 
+```
+spring.activemq.broker-url=tcp://activemq:61616?jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
+spring.activemq.pooled=true
+spring.activemq.user=admin
+spring.activemq.password=admin
+
+blobstore.provider=filesystem
+blobstore.containerName=test-container
+blobstore.filesystem.baseDirectory=./files/filesystemstorage
+
+logging.level.no.rutebanken=DEBUG
+logging.level.org.apache=INFO
+
+```
+* Typical application properties for test environment, with S3 blobstore:
+
+```
+spring.activemq.broker-url=tcp://activemq:61616?jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
+spring.activemq.pooled=true
+spring.activemq.user=admin
+spring.activemq.password=<PASSWORD>
+
+blobstore.provider=aws-s3
+blobstore.containerName=junit-test-rutebanken
+blobstore.aws-s3.identity=<S3_IDENTITY>
+blobstore.aws-s3.credential=<S3_CREDENTIAL>
+
+logging.level.no.rutebanken=DEBUG
+logging.level.org.apache=INFO
+logging.level.org.jclouds=INFO
+```
+
+* Run with maven `mvn spring-boot:run -Dspring.profiles.active=dev`
+
+* Build: `mvn clean install`
+* Local run: `java -Xmx1280m -Dspring.profiles.active=dev -jar target/marduk-0.0.1-SNAPSHOT.jar`
+* Docker image: `mvn -Dspring.profiles.active=dev -Pf8-build`
+* Run the docker image in docker inside vagrant:
+
+     ```bash
+     docker rm -f marduk ; mvn -Pf8-build && docker run -it --name marduk -e JAVA_OPTIONS="-Xmx1280m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Dspring.profiles.active=dev" --link activemq --link lamassu --link chouette -p 5005:5005 -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro -v /git/marduk_config/dev/application.properties:/app/config/application.properties:ro rutebanken/marduk:0.0.1-SNAPSHOT```
+
+  Here, we mount the lamssu key and an application.properties file from vagrant.
+
+* For more docker plugin goals, see: http://ro14nd.de/docker-maven-plugin/goals.html

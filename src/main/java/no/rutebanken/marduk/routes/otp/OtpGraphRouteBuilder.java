@@ -19,17 +19,17 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("activemq:queue:OtpGraphQueue")
-                .log(LoggingLevel.INFO, getClass().getName(), "Triggering OTP graph building on 'https://jenkins.rutebanken.org/job/otpgraph/buildWithParameters?CORRELATION_ID=${header." + PROVIDER_ID + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), "Triggering OTP graph building on 'https://jenkins.rutebanken.org/job/otpgraph/buildWithParameters?CORRELATION_ID=${header." + PROVIDER_ID + "}'")
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .toD("https4://jenkins.rutebanken.org/job/otpgraph/buildWithParameters?CORRELATION_ID=${header." + PROVIDER_ID + "}") //TODO figure out a proper id to use
-                .to("log:" + getClass().getName() + "?level=DEBUG")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, getClass().getName(), "OTP graph building triggered.");
 
 
-        //Posting to queue from command line:        curl -XPOST -d "body=testing, 123" http://admin:admin@localhost:8161/api/message?destination=queue://queue:OtpGraphStatusQueue
+        //Posting to queue from command line:        curl -XPOST -d "ID:2,RESULT:OK" http://admin:admin@localhost:8161/api/message?destination=queue://queue:OtpGraphStatusQueue
         from("activemq:queue:OtpGraphStatusQueue")
                 .log(LoggingLevel.INFO, getClass().getName(), "Got OTP graph building status.")
-                .to("log:" + getClass().getName() + "?level=DEBUG");
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true");
 
     }
 }
