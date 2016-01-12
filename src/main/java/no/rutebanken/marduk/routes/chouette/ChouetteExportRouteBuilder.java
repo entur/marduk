@@ -140,7 +140,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${property.url}")
-                .setHeader(FILE_HANDLE, simple("chouette-gtfs-out/" + PROVIDER_ID + "-${header." + CHOUETTE_PREFIX + "}-gtfs-export.zip"))
+                .setHeader(FILE_HANDLE, simple("chouette-gtfs-out/${header." + PROVIDER_ID + "}-${header." + CHOUETTE_PREFIX + "}-gtfs-export.zip"))
                 .to("direct:uploadBlob")
                 .to("activemq:queue:OtpGraphQueue")
                 .when(simple("${property.action_report_result} == 'NOK'"))
