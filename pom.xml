@@ -41,7 +41,6 @@
     <!-- Docker & Fabric8 Configs -->
     <docker.from>fabric8/java-jboss-openjdk8-jdk:1.0.10</docker.from>
     <fabric8.dockerUser>rutebanken/</fabric8.dockerUser>
-    <docker.registry></docker.registry>
     <docker.image>${docker.registry}${fabric8.dockerUser}${project.artifactId}:${project.version}</docker.image>
 
     <!-- fabric8.env.AB_JOLOKIA_AUTH_OPENSHIFT>true</fabric8.env.AB_JOLOKIA_AUTH_OPENSHIFT -->
