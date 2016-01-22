@@ -39,7 +39,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
         from("activemq:queue:ChouetteImportQueue").streamCaching()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Provider: ${header." + PROVIDER_ID + "}")
                 .to("direct:getBlob")
-                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, providerRepository.getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getPrefix()))
+                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getPrefix()))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:addJson");
 
@@ -167,7 +167,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
     String getJsonFileContent(Long providerId) {
         try {
-            ChouetteInfo chouetteInfo = providerRepository.getProviderById(providerId).getChouetteInfo();
+            ChouetteInfo chouetteInfo = getProviderRepository().getProviderById(providerId).getChouetteInfo();
             ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport("import", chouetteInfo.getPrefix(), chouetteInfo.getDataSpace(), chouetteInfo.getOrganisation(), chouetteInfo.getUser());
             ImportParameters.Parameters parameters = new ImportParameters.Parameters(gtfsImport);
             ImportParameters importParameters = new ImportParameters(parameters);

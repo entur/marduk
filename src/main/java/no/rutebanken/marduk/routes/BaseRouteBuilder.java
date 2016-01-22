@@ -28,4 +28,8 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
     }
 
+    protected ProviderRepository getProviderRepository(){
+        return providerRepository;
+    }
+
 }

@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
@@ -32,7 +34,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
     private int maxRetries = 100;    //TODO config
     private long retryDelay = 30 * 1000;     //TODO config
-    private int daysForward = 14;
+    private int daysForward = 365;
     private int daysBack = 365;
 
     @Override
@@ -41,7 +43,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
         from("activemq:queue:ChouetteGtfsExportQueue")
                 .log(LoggingLevel.INFO, getClass().getName(), "Running new Chouette GTFS export for provider with id ${header." + PROVIDER_ID + "}")
-                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, providerRepository.getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getPrefix()))
+                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getPrefix()))
                 .to("direct:exportAddJson");
 
         from("direct:exportAddJson")
@@ -167,10 +169,10 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
     String getJsonFileContent(Long providerId) {
         try {
-            ChouetteInfo chouetteInfo = providerRepository.getProviderById(providerId).getChouetteInfo();
+            ChouetteInfo chouetteInfo = getProviderRepository().getProviderById(providerId).getChouetteInfo();
             ExportParameters.GtfsExport gtfsExport = new ExportParameters.GtfsExport("export",
                     chouetteInfo.getPrefix(), chouetteInfo.getDataSpace(), chouetteInfo.getOrganisation(), chouetteInfo.getUser(),
-                    Date.from(Instant.now().minus(daysBack, ChronoUnit.DAYS)), Date.from(Instant.now().plus(daysForward, ChronoUnit.DAYS)));  //TODO configure
+                    toDate(LocalDate.now().minus(daysBack, ChronoUnit.DAYS)), toDate(LocalDate.now().plus(daysForward, ChronoUnit.DAYS)));  //TODO configure
             ExportParameters.Parameters parameters = new ExportParameters.Parameters(gtfsExport);
             ExportParameters importParameters = new ExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
@@ -180,6 +182,10 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    Date toDate(LocalDate localDate) {
+        return Date.from(localDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant().truncatedTo(ChronoUnit.DAYS));
     }
 
 }
