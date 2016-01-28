@@ -1,13 +1,21 @@
 package no.rutebanken.marduk.routes.jms;
 
+import com.google.common.base.Strings;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.status.Status;
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.jboss.poc.camelblob.BlobMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.util.Date;
+
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+
+import static no.rutebanken.marduk.status.Status.*;
 
 /**
  * Receives file from "external" queue, using ActiveMQ blob message. Then putting it in jcouds blob store and posting handle on queue.
@@ -36,8 +44,25 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
             .setHeader(PROVIDER_ID, simple("${property.providerId}"))
             .log(LoggingLevel.INFO, getClass().getName(), "Putting handle ${header." + FILE_HANDLE + "} and provider ${header." + PROVIDER_ID + "} on queue...")
             .to("activemq:queue:ProcessFileQueue")
-            .setBody(simple("Received file ${header.CamelFileName} on jms receiver route for ${header.RutebankenProviderId}."))
+            .process(e -> status(e, Action.FILE_RECEIVED, State.OK))
+//            .setBody(simple("Received file ${header.CamelFileName} on jms receiver route for ${header.RutebankenProviderId}."))
             .to("activemq:queue:ExternalProviderStatus");    //TODO switch to topic?
     }
+
+    private void status(Exchange exchange, Action action, State state) {
+        String fileName = exchange.getProperty("fileName", String.class);
+        if (Strings.isNullOrEmpty(fileName)) {
+            throw new IllegalArgumentException("No file name");
+        }
+
+        String providerId = exchange.getProperty("providerId", String.class);
+        if (Strings.isNullOrEmpty(providerId)) {
+            throw new IllegalArgumentException("No provider id");
+        }
+
+        exchange.getOut().setBody(new Status(fileName, providerId, action, state).toString());
+        exchange.getOut().setHeaders(exchange.getIn().getHeaders());
+    }
+
 
 }
