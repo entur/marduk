@@ -1,14 +1,14 @@
-package no.rutebanken.marduk.routes.sftp;
+package no.rutebanken.marduk.routes.file;
 
 
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.sftp.beans.FileTypeClassifierBean;
+import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_TYPE;
 
 /**
  * Receives file handle, pulls file from blob store, xlassifies files and performs initial validation.

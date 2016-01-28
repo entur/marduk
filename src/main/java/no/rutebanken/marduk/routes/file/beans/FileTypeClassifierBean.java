@@ -1,10 +1,10 @@
-package no.rutebanken.marduk.routes.sftp.beans;
+package no.rutebanken.marduk.routes.file.beans;
 
 import com.google.common.collect.Sets;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.FileValidationException;
-import no.rutebanken.marduk.routes.sftp.FileType;
-import no.rutebanken.marduk.routes.sftp.ZipFileReader;
+import no.rutebanken.marduk.routes.file.FileType;
+import no.rutebanken.marduk.routes.file.ZipFileReader;
 import org.apache.camel.Exchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

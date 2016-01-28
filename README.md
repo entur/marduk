@@ -9,33 +9,52 @@ initial project setup location:
 * Typical application.properties for dev environment, with file system blobstore:
 
 ```
-spring.activemq.broker-url=tcp://activemq:61616?jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
+# activemq settings
+spring.activemq.broker-url=tcp://activemq:61616?jms.blobTransferPolicy.uploadUrl=http://activemq:8161/fileserver/&jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
 spring.activemq.pooled=true
 spring.activemq.user=admin
-spring.activemq.password=admin
+spring.activemq.password=your_password
 
+# File system blobstore settings
 blobstore.provider=filesystem
 blobstore.containerName=test-container
 blobstore.filesystem.baseDirectory=./files/filesystemstorage
 
+# chouette import/export settings
+chouette.url=http4://chouette:8080
+
+# otp graph building settings
+jenkins.url=https4://jenkins.rutebanken.org/job/otpgraph
+
+# logging settings
 logging.level.no.rutebanken=DEBUG
 logging.level.org.apache=INFO
+
 
 ```
 * Typical application properties for test environment, with S3 blobstore:
 
 ```
-spring.activemq.broker-url=tcp://activemq:61616?jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
+# activemq settings
+spring.activemq.broker-url=tcp://activemq:61616?http://activemq:8161/fileserver/&jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
 spring.activemq.pooled=true
 spring.activemq.user=admin
-spring.activemq.password=<PASSWORD>
+spring.activemq.password=admin
 
+# Amazon S3 blobstore settings
 blobstore.provider=aws-s3
 blobstore.containerName=junit-test-rutebanken
-blobstore.aws-s3.identity=<S3_IDENTITY>
-blobstore.aws-s3.credential=<S3_CREDENTIAL>
+blobstore.aws-s3.identity=AKIAIBRVMDRJKQBK6YEQ
+blobstore.aws-s3.credential=2fRLhBLqhGcqT8mSr/450QVecdw84LQetF3T44uQ
 
-logging.level.no.rutebanken=DEBUG
+# chouette settings
+chouette.url=http4://chouette:8080
+
+# otp graph building settings
+jenkins.url=https4://jenkins.rutebanken.org/job/otpgraph
+
+# logging settings
+logging.level.no.rutebanken=INFO
 logging.level.org.apache=INFO
 logging.level.org.jclouds=INFO
 ```

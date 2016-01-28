@@ -1,6 +1,5 @@
 package no.rutebanken.marduk.routes.sftp;
 
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.management.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.CamelContext;
@@ -8,8 +7,6 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.stereotype.Component;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.List;
 
 import static no.rutebanken.marduk.Constants.*;
@@ -18,7 +15,7 @@ import static no.rutebanken.marduk.Constants.*;
  * Downloads file from lamassu, putting it in blob store, posting handle on queue.
  */
 @Component
-public class SftpRouteBuilder extends BaseRouteBuilder {
+public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
 
     @Override
     public void configure() throws Exception {
@@ -49,7 +46,7 @@ public class SftpRouteBuilder extends BaseRouteBuilder {
         public void configure() throws Exception {
             from("sftp://" + provider.getSftpAccount() + "@lamassu:22?privateKeyFile=/opt/jboss/.ssh/lamassu.pem&delay=30s&delete=true&localWorkDirectory=files/tmp")
                     .log(LoggingLevel.INFO, getClass().getName(), "Received file on sftp route for '" + provider.getSftpAccount() + "'. Storing file ...")
-                    .setHeader(FILE_HANDLE, simple("stfp_in/" + provider.getId() + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
+                    .setHeader(FILE_HANDLE, simple("inbound/" + provider.getId() + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
                     .log(LoggingLevel.INFO, getClass().getName(), "File handle is: ${header." + FILE_HANDLE + "}")
                     .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                     .to("direct:uploadBlob")

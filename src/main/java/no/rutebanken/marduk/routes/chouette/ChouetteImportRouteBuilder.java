@@ -13,6 +13,7 @@ import org.apache.camel.component.http4.HttpMethods;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -31,6 +32,9 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
     private int maxRetries = 100;    //TODO config
     private long retryDelay = 30 * 1000;     //TODO config
+
+    @Value("${chouette.url}")
+    private String chouetteUrl;
 
     @Override
     public void configure() throws Exception {
@@ -54,7 +58,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .toD("http4://chouette:8080/chouette_iev/referentials/${header." + CHOUETTE_PREFIX + "}/importer/gtfs")
+                .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_PREFIX + "}/importer/gtfs")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> {
                     e.setProperty("url", e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));

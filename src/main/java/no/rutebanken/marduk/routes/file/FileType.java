@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.routes.sftp;
+package no.rutebanken.marduk.routes.file;
 
 public enum FileType {
     GTFS,

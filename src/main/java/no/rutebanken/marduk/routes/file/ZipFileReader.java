@@ -1,9 +1,7 @@
-package no.rutebanken.marduk.routes.sftp;
+package no.rutebanken.marduk.routes.file;
 
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;

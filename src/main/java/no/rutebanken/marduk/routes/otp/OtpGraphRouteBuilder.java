@@ -4,6 +4,7 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
@@ -14,14 +15,17 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 @Component
 public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
+    @Value("${jenkins.url}")
+    private String jenkinsUrl;
+
     @Override
     public void configure() throws Exception {
         super.configure();
 
         from("activemq:queue:OtpGraphQueue")
-                .log(LoggingLevel.INFO, getClass().getName(), "Triggering OTP graph building on 'https://jenkins.rutebanken.org/job/otpgraph/buildWithParameters?CORRELATION_ID=${header." + PROVIDER_ID + "}'")
+                .log(LoggingLevel.INFO, getClass().getName(), "Triggering OTP graph building on '" + jenkinsUrl + "/buildWithParameters?CORRELATION_ID=${header." + PROVIDER_ID + "}'")
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
-                .toD("https4://jenkins.rutebanken.org/job/otpgraph/buildWithParameters?CORRELATION_ID=${header." + PROVIDER_ID + "}") //TODO figure out a proper id to use
+                .toD(jenkinsUrl + "/buildWithParameters?CORRELATION_ID=${header." + PROVIDER_ID + "}") //TODO figure out a proper id to use
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, getClass().getName(), "OTP graph building triggered.");
 

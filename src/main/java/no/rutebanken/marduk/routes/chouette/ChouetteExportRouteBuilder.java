@@ -12,6 +12,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -37,6 +38,9 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
     private int daysForward = 365;
     private int daysBack = 365;
 
+    @Value("${chouette.url}")
+    private String chouetteUrl;
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -57,7 +61,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .toD("http4://chouette:8080/chouette_iev/referentials/${header." + CHOUETTE_PREFIX + "}/exporter/gtfs")
+                .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_PREFIX + "}/exporter/gtfs")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> {
                     e.setProperty("url", e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
