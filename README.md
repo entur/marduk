@@ -23,6 +23,9 @@ blobstore.filesystem.baseDirectory=./files/filesystemstorage
 # chouette import/export settings
 chouette.url=http4://chouette:8080
 
+# sftp settings  
+sftp.host=lamassu:22
+
 # otp graph building settings
 jenkins.url=https4://jenkins.rutebanken.org/job/otpgraph
 
@@ -49,6 +52,9 @@ blobstore.aws-s3.credential=2fRLhBLqhGcqT8mSr/450QVecdw84LQetF3T44uQ
 
 # chouette settings
 chouette.url=http4://chouette:8080
+
+# sftp settings  
+sftp.host=lamassu:22
 
 # otp graph building settings
 jenkins.url=https4://jenkins.rutebanken.org/job/otpgraph

@@ -34,9 +34,9 @@ import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.*;
 public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
     private int maxRetries = 100;    //TODO config
-    private long retryDelay = 30 * 1000;     //TODO config
-    private int daysForward = 365;
-    private int daysBack = 365;
+    private long retryDelay = 10 * 1000;     //TODO config
+    private int daysForward = 365;   //TODO config
+    private int daysBack = 365;  //TODO config
 
     @Value("${chouette.url}")
     private String chouetteUrl;
@@ -47,7 +47,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
         from("activemq:queue:ChouetteGtfsExportQueue")
                 .log(LoggingLevel.INFO, getClass().getName(), "Running new Chouette GTFS export for provider with id ${header." + PROVIDER_ID + "}")
-                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getPrefix()))
+                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, providerRepository.getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getPrefix()))
                 .to("direct:exportAddJson");
 
         from("direct:exportAddJson")
@@ -173,7 +173,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
     String getJsonFileContent(Long providerId) {
         try {
-            ChouetteInfo chouetteInfo = getProviderRepository().getProviderById(providerId).getChouetteInfo();
+            ChouetteInfo chouetteInfo = providerRepository.getProviderById(providerId).getChouetteInfo();
             ExportParameters.GtfsExport gtfsExport = new ExportParameters.GtfsExport("export",
                     chouetteInfo.getPrefix(), chouetteInfo.getDataSpace(), chouetteInfo.getOrganisation(), chouetteInfo.getUser(),
                     toDate(LocalDate.now().minus(daysBack, ChronoUnit.DAYS)), toDate(LocalDate.now().plus(daysForward, ChronoUnit.DAYS)));  //TODO configure

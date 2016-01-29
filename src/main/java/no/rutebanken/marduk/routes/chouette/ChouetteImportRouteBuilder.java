@@ -23,6 +23,8 @@ import java.util.Optional;
 
 import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.*;
+import static no.rutebanken.marduk.routes.status.Status.Action;
+import static no.rutebanken.marduk.routes.status.Status.State;
 
 /**
  * Submits files to Chouette
@@ -31,7 +33,7 @@ import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.*;
 public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
     private int maxRetries = 100;    //TODO config
-    private long retryDelay = 30 * 1000;     //TODO config
+    private long retryDelay = 10 * 1000;     //TODO config
 
     @Value("${chouette.url}")
     private String chouetteUrl;
@@ -42,6 +44,8 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
         from("activemq:queue:ChouetteImportQueue").streamCaching()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Provider: ${header." + PROVIDER_ID + "}")
+                .process(e -> addStatus(e, Action.IMPORT, State.STARTED))
+                .to("activemq:queue:ExternalProviderStatus")
                 .to("direct:getBlob")
                 .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getPrefix()))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
@@ -131,16 +135,21 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:processActionReportResult")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
                 .choice()
                 .when(simple("${property.action_report_result} == 'OK'"))
                 .log(LoggingLevel.INFO, getClass().getName(), "OK, triggering export.")
                     .to("activemq:queue:ChouetteGtfsExportQueue")
+                    .process(e -> addStatus(e, Action.IMPORT, State.OK))
                 .when(simple("${property.action_report_result} == 'NOK'"))
-                .log(LoggingLevel.WARN, getClass().getName(), "NOK")
+                    .log(LoggingLevel.WARN, getClass().getName(), "NOK")
+                    .process(e -> addStatus(e, Action.IMPORT, State.FAILED))
                 .otherwise()
-                .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
+                    .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
+                    .process(e -> addStatus(e, Action.IMPORT, State.FAILED))
                 .end()
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Import done");
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Import done")
+                .to("activemq:queue:ExternalProviderStatus");
 
     }
 
