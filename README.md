@@ -10,7 +10,7 @@ initial project setup location:
 
 ```
 # activemq settings
-spring.activemq.broker-url=tcp://activemq:61616?jms.blobTransferPolicy.uploadUrl=http://activemq:8161/fileserver/&jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
+spring.activemq.broker-url=tcp://activemq:61616?jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
 spring.activemq.pooled=true
 spring.activemq.user=admin
 spring.activemq.password=your_password
@@ -40,7 +40,7 @@ logging.level.org.apache=INFO
 
 ```
 # activemq settings
-spring.activemq.broker-url=tcp://activemq:61616?jms.blobTransferPolicy.uploadUrl=http://activemq:8161/fileserver/&jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
+spring.activemq.broker-url=tcp://activemq:61616?jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
 spring.activemq.pooled=true
 spring.activemq.user=admin
 spring.activemq.password=admin
