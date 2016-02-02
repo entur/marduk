@@ -20,7 +20,7 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 public abstract class BaseRouteBuilder extends RouteBuilder {
 
     @Autowired
-    protected ProviderRepository providerRepository;
+    private ProviderRepository providerRepository;
 
     @Override
     public void configure() throws Exception {
@@ -54,6 +54,10 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
         exchange.getOut().setBody(new Status(fileName, providerId, action, state, correlationId).toString());
         exchange.getOut().setHeaders(exchange.getIn().getHeaders());
+    }
+
+    protected ProviderRepository getProviderRepository(){
+        return providerRepository;
     }
 
 }

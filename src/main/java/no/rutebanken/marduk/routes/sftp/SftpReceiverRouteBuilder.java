@@ -24,16 +24,19 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
     @Value("${sftp.host}")
     private String sftpHost;
 
+    @Value("${sftp.keyfile}")
+    private String sftpKeyFile;
+
     @Override
     public void configure() throws Exception {
         super.configure();
 
         CamelContext context = getContext();
 
-        List<Provider> providersWithSftpAccounts = providerRepository.getProvidersWithSftpAccounts();
+        List<Provider> providersWithSftpAccounts = getProviderRepository().getProvidersWithSftpAccounts();
         providersWithSftpAccounts.forEach(p -> {
             try {
-                context.addRoutes(new DynamcSftpPollerRouteBuilder(context, p, sftpHost));
+                context.addRoutes(new DynamcSftpPollerRouteBuilder(context, p, sftpHost, sftpKeyFile));
             } catch (Exception e){
                 throw new RuntimeException(e);
             }
@@ -44,16 +47,18 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
     private static final class DynamcSftpPollerRouteBuilder extends RouteBuilder {
         private final Provider provider;
         private final String sftpHost;
+        private final String sftpKeyFile;
 
-        private DynamcSftpPollerRouteBuilder(CamelContext context, Provider provider, String sftpHost) {
+        private DynamcSftpPollerRouteBuilder(CamelContext context, Provider provider, String sftpHost, String sftpKeyFile) {
             super(context);
             this.provider = provider;
             this.sftpHost = sftpHost;
+            this.sftpKeyFile = sftpKeyFile;
         }
 
         @Override
         public void configure() throws Exception {
-            from("sftp://" + provider.getSftpAccount() + "@" + sftpHost + "?privateKeyFile=/opt/jboss/.ssh/lamassu.pem&delay=30s&delete=true&localWorkDirectory=files/tmp")
+            from("sftp://" + provider.getSftpAccount() + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&delay=30s&delete=true&localWorkDirectory=files/tmp")
                     .log(LoggingLevel.INFO, getClass().getName(), "Received file on sftp route for '" + provider.getSftpAccount() + "'. Storing file ...")
                     .setHeader(FILE_HANDLE, simple("inbound/" + provider.getId() + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
                     .log(LoggingLevel.INFO, getClass().getName(), "File handle is: ${header." + FILE_HANDLE + "}")
