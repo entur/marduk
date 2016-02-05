@@ -22,22 +22,23 @@ public class ProviderRepositoryImpl implements ProviderRepository {
     @PostConstruct  //TODO setup dedicated database
     public void init() {
         jdbcTemplate.execute("DROP TABLE providers IF EXISTS");
-        jdbcTemplate.execute("CREATE TABLE providers(id SERIAL, name VARCHAR(255), sftp_account VARCHAR(255), chouette_prefix VARCHAR(255), chouette_data_space VARCHAR(255), chouette_organisation VARCHAR(255), chouette_user VARCHAR(255) )");
+        jdbcTemplate.execute("CREATE TABLE providers(id BIGINT, name VARCHAR(255), sftp_account VARCHAR(255), chouette_prefix VARCHAR(255), chouette_data_space VARCHAR(255), chouette_organisation VARCHAR(255), chouette_user VARCHAR(255) )");
 
         populate();
     }
 
     public void populate() {
         List<Provider> providers = new ArrayList<>();
-        providers.add(new Provider(null, "Rutebanken", "nvdb", new ChouetteInfo("tds1", "testDS1", "Rutebanken1", "tg@scienta.no")));
-        providers.add(new Provider(null, "Rutebanken", "kartverk", new ChouetteInfo("tds1", "tds1", "Rutebanken", "admin@rutebanken.org")));
+        providers.add(new Provider(1L, "Rutebanken", "nvdb", new ChouetteInfo("tds1", "testDS1", "Rutebanken1", "tg@scienta.no")));
+        providers.add(new Provider(2L, "Rutebanken", "kartverk", new ChouetteInfo("tds1", "tds1", "Rutebanken", "admin@rutebanken.org")));
+        providers.add(new Provider(42L, "Flybussekspressen", null, new ChouetteInfo("flybussekspressen", "flybussekspressen-datasett", "Flybussekspressen", "admin@rutebanken.org")));
 
         List<Object[]> splitUpProviders = providers.stream()
-                .map(provider -> new Object[]{provider.getName(), provider.getSftpAccount(),
+                .map(provider -> new Object[]{provider.getId(), provider.getName(), provider.getSftpAccount(),
                         provider.getChouetteInfo().getPrefix(), provider.getChouetteInfo().getDataSpace(), provider.getChouetteInfo().getOrganisation(), provider.getChouetteInfo().getUser()} )
                 .collect(Collectors.toList());
 
-        jdbcTemplate.batchUpdate("INSERT INTO providers(name, sftp_account, chouette_prefix, chouette_data_space, chouette_organisation, chouette_user) VALUES (?,?,?,?,?,?)", splitUpProviders);
+        jdbcTemplate.batchUpdate("INSERT INTO providers(id, name, sftp_account, chouette_prefix, chouette_data_space, chouette_organisation, chouette_user) VALUES (?,?,?,?,?,?,?)", splitUpProviders);
     }
 
     @Override
@@ -48,8 +49,12 @@ public class ProviderRepositoryImpl implements ProviderRepository {
 
     @Override
     public Provider getProviderById(Long id) {
-        log.info("Querying for provider records with id '" + id);
-        return query("SELECT * FROM providers WHERE id = " + id).get(0);
+        log.info("Querying for provider records with id '" + id + "'");
+        List<Provider> providers = query("SELECT * FROM providers WHERE id = " + id);
+        if (providers.size() == 0) {
+            throw new IllegalArgumentException("Provider with id '" + id + "' does not exist.");
+        }
+        return providers.get(0);
     }
 
     public List<Provider> query(String queryString) {
