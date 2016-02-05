@@ -21,7 +21,8 @@ blobstore.containerName=test-container
 blobstore.filesystem.baseDirectory=./files/filesystemstorage
 
 # chouette import/export settings
-chouette.url=http4://chouette:8084
+# NOTE! http4 is correct config!
+chouette.url=http4://chouette:8080
 
 # sftp settings
 sftp.host=lamassu:2224
@@ -29,6 +30,7 @@ sftp.host=lamassu:2224
 sftp.keyfile=/opt/jboss/.ssh/lamassu.pem
 
 # otp graph building settings
+# NOTE! http4 is correct config!
 jenkins.url=https4://jenkins.rutebanken.org/job/otpgraph
 
 # logging settings
@@ -52,6 +54,7 @@ blobstore.aws-s3.identity=AKIAIBRVMDRJKQBK6YEQ
 blobstore.aws-s3.credential=2fRLhBLqhGcqT8mSr/450QVecdw84LQetF3T44uQ
 
 # chouette settings
+# NOTE! http4 is correct config!
 chouette.url=http4://chouette:8080
 
 # sftp settings
@@ -60,6 +63,7 @@ sftp.host=lamassu:2224
 sftp.keyfile=/opt/jboss/.ssh/lamassu.pem
 
 # otp graph building settings
+# NOTE! http4 is correct config!
 jenkins.url=https4://jenkins.rutebanken.org/job/otpgraph
 
 # logging settings
