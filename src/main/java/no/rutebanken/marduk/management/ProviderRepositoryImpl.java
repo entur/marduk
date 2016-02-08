@@ -31,7 +31,7 @@ public class ProviderRepositoryImpl implements ProviderRepository {
         List<Provider> providers = new ArrayList<>();
         providers.add(new Provider(1L, "Rutebanken", "nvdb", new ChouetteInfo("tds1", "testDS1", "Rutebanken1", "tg@scienta.no")));
         providers.add(new Provider(2L, "Rutebanken", "kartverk", new ChouetteInfo("tds1", "tds1", "Rutebanken", "admin@rutebanken.org")));
-        providers.add(new Provider(42L, "Flybussekspressen", null, new ChouetteInfo("flybussekspressen", "flybussekspressen-datasett", "Flybussekspressen", "admin@rutebanken.org")));
+        providers.add(new Provider(42L, "Flybussekspressen", null, new ChouetteInfo("flybussekspressen", "flybussekspressen-datasett", "Rutebanken", "admin@rutebanken.org")));
 
         List<Object[]> splitUpProviders = providers.stream()
                 .map(provider -> new Object[]{provider.getId(), provider.getName(), provider.getSftpAccount(),
