@@ -7,6 +7,7 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.ImportParameters;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
+import no.rutebanken.marduk.routes.status.Status;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
@@ -44,8 +45,8 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
         from("activemq:queue:ChouetteImportQueue").streamCaching()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Provider: ${header." + PROVIDER_ID + "}")
-                .process(e -> addStatus(e, Action.IMPORT, State.STARTED))
-                .to("activemq:queue:ExternalProviderStatus")
+                .process(e -> Status.addStatus(e, Action.IMPORT, State.STARTED))
+                .to("direct:updateStatus")
                 .to("direct:getBlob")
                 .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getPrefix()))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
@@ -140,16 +141,16 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .when(simple("${property.action_report_result} == 'OK'"))
                 .log(LoggingLevel.INFO, getClass().getName(), "OK, triggering export.")
                     .to("activemq:queue:ChouetteGtfsExportQueue")
-                    .process(e -> addStatus(e, Action.IMPORT, State.OK))
+                    .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
                 .when(simple("${property.action_report_result} == 'NOK'"))
                     .log(LoggingLevel.WARN, getClass().getName(), "NOK")
-                    .process(e -> addStatus(e, Action.IMPORT, State.FAILED))
+                    .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
                 .otherwise()
                     .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
-                    .process(e -> addStatus(e, Action.IMPORT, State.FAILED))
+                    .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
                 .end()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Import done")
-                .to("activemq:queue:ExternalProviderStatus");
+                .to("direct:updateStatus");
 
     }
 

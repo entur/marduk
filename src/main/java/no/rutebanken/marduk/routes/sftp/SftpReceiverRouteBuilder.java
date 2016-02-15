@@ -65,31 +65,8 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
                     .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                     .to("direct:uploadBlob")
                     .setHeader(CORRELATION_ID, constant(System.currentTimeMillis()))
-                    .process(e -> addStatus(e, Status.Action.FILE_TRANSFER, Status.State.OK))
-                    .to("activemq:queue:ExternalProviderStatus")
                     .log(LoggingLevel.INFO, getClass().getName(), "Putting handle ${header." + FILE_HANDLE + "} and provider ${header." + PROVIDER_ID + "} on queue...")
                     .to("activemq:queue:ProcessFileQueue");
-        }
-
-        protected void addStatus(Exchange exchange, Status.Action action, Status.State state) {
-            String fileName = exchange.getIn().getHeader(Exchange.FILE_NAME, String.class);
-            if (Strings.isNullOrEmpty(fileName)) {
-                throw new IllegalArgumentException("No file name");
-            }
-
-            String providerIdString = exchange.getIn().getHeader(PROVIDER_ID, String.class);
-            if (Strings.isNullOrEmpty(providerIdString)) {
-                throw new IllegalArgumentException("No provider id");
-            }
-            Long providerId = Long.valueOf(providerIdString);
-
-            String correlationId = exchange.getIn().getHeader(CORRELATION_ID, String.class);
-            if (Strings.isNullOrEmpty(correlationId)) {
-                throw new IllegalArgumentException("No correlation id");
-            }
-
-            exchange.getOut().setBody(new Status(fileName, providerId, action, state, correlationId).toString());
-            exchange.getOut().setHeaders(exchange.getIn().getHeaders());
         }
     }
 

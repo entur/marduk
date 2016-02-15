@@ -3,11 +3,16 @@ package no.rutebanken.marduk.routes.status;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
+import org.apache.camel.Exchange;
 
 import java.io.IOException;
 import java.io.StringWriter;
 import java.time.Instant;
 import java.util.Date;
+
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 public class Status {
 
@@ -73,6 +78,27 @@ public class Status {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static void addStatus(Exchange exchange, Status.Action action, Status.State state) {
+        String fileName = exchange.getIn().getHeader(Exchange.FILE_NAME, String.class);
+        if (Strings.isNullOrEmpty(fileName)) {
+            throw new IllegalArgumentException("No file name");
+        }
+
+        String providerIdString = exchange.getIn().getHeader(PROVIDER_ID, String.class);
+        if (Strings.isNullOrEmpty(providerIdString)) {
+            throw new IllegalArgumentException("No provider id");
+        }
+        Long providerId = Long.valueOf(providerIdString);
+
+        String correlationId = exchange.getIn().getHeader(CORRELATION_ID, String.class);
+        if (Strings.isNullOrEmpty(correlationId)) {
+            throw new IllegalArgumentException("No correlation id");
+        }
+
+        exchange.getOut().setBody(new Status(fileName, providerId, action, state, correlationId).toString());
+        exchange.getOut().setHeaders(exchange.getIn().getHeaders());
     }
 
 }

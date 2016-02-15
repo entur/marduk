@@ -3,6 +3,7 @@ package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
+import no.rutebanken.marduk.routes.status.Status;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,8 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
         from("activemq:queue:ProcessFileQueue")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .process(e -> Status.addStatus(e, Status.Action.FILE_TRANSFER, Status.State.OK))
+                .to("direct:updateStatus")
                 .to("direct:getBlob")
                 .validate().method(FileTypeClassifierBean.class, "validateFile")
                 .choice()

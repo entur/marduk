@@ -35,27 +35,6 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
     }
 
-    protected void addStatus(Exchange exchange, Status.Action action, Status.State state) {
-        String fileName = exchange.getIn().getHeader(Exchange.FILE_NAME, String.class);
-        if (Strings.isNullOrEmpty(fileName)) {
-            throw new IllegalArgumentException("No file name");
-        }
-
-        String providerIdString = exchange.getIn().getHeader(PROVIDER_ID, String.class);
-        if (Strings.isNullOrEmpty(providerIdString)) {
-            throw new IllegalArgumentException("No provider id");
-        }
-        Long providerId = Long.valueOf(providerIdString);
-
-        String correlationId = exchange.getIn().getHeader(CORRELATION_ID, String.class);
-        if (Strings.isNullOrEmpty(correlationId)) {
-            throw new IllegalArgumentException("No correlation id");
-        }
-
-        exchange.getOut().setBody(new Status(fileName, providerId, action, state, correlationId).toString());
-        exchange.getOut().setHeaders(exchange.getIn().getHeaders());
-    }
-
     protected ProviderRepository getProviderRepository(){
         return providerRepository;
     }

@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.routes.jms;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.status.Status;
 import org.apache.camel.LoggingLevel;
 import org.jboss.poc.camelblob.BlobMessageConverter;
 import org.springframework.context.annotation.Bean;
@@ -33,10 +34,10 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
             .log(LoggingLevel.INFO, getClass().getName(), "File handle is: ${header." + FILE_HANDLE + "}")
             .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
             .to("direct:uploadBlob")
-            .process(e -> addStatus(e, Action.FILE_TRANSFER, State.OK))
-            .to("activemq:queue:ExternalProviderStatus")
+            .process(e -> Status.addStatus(e, Action.FILE_TRANSFER, State.OK))
+            .to("direct:updateStatus")
             .log(LoggingLevel.INFO, getClass().getName(), "Putting handle ${header." + FILE_HANDLE + "} and provider ${header." + PROVIDER_ID + "} on queue...")
-            .to("activemq:queue:ProcessFileQueue");    //TODO switch to topic?
+            .to("activemq:queue:ProcessFileQueue");
     }
 
 }
