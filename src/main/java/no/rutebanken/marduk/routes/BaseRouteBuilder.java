@@ -1,17 +1,10 @@
 package no.rutebanken.marduk.routes;
 
-import com.google.common.base.Strings;
-import no.rutebanken.marduk.management.ProviderRepository;
-import no.rutebanken.marduk.routes.status.Status;
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
+import no.rutebanken.marduk.repository.ProviderRepository;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.net.ConnectException;
-
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 
 /**

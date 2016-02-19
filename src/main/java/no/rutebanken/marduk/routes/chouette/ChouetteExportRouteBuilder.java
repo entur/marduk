@@ -2,7 +2,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import no.rutebanken.marduk.management.ChouetteInfo;
+import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.ExportParameters;
@@ -46,7 +46,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
         from("activemq:queue:ChouetteGtfsExportQueue")
                 .log(LoggingLevel.INFO, getClass().getName(), "Running new Chouette GTFS export for provider with id ${header." + PROVIDER_ID + "}")
-                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getPrefix()))
+                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.prefix))
                 .to("direct:exportAddJson");
 
         from("direct:exportAddJson")
@@ -172,10 +172,10 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
     String getJsonFileContent(Long providerId) {
         try {
-            ChouetteInfo chouetteInfo = getProviderRepository().getProviderById(providerId).getChouetteInfo();
+            ChouetteInfo chouetteInfo = getProviderRepository().getProviderById(providerId).chouetteInfo;
             ExportParameters.GtfsExport gtfsExport = new ExportParameters.GtfsExport("export",
-                    chouetteInfo.getPrefix(), chouetteInfo.getDataSpace(), chouetteInfo.getOrganisation(), chouetteInfo.getUser(),
-                    toDate(LocalDate.now().minus(daysBack, ChronoUnit.DAYS)), toDate(LocalDate.now().plus(daysForward, ChronoUnit.DAYS)));  //TODO configure
+                    chouetteInfo.prefix, chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user,
+                    toDate(LocalDate.now().minus(daysBack, ChronoUnit.DAYS)), toDate(LocalDate.now().plus(daysForward, ChronoUnit.DAYS)));
             ExportParameters.Parameters parameters = new ExportParameters.Parameters(gtfsExport);
             ExportParameters importParameters = new ExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();

@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Profile;
 import java.util.Properties;
 
 @Configuration
-@Profile("dev")
+@Profile({"default", "dev"})
 public class FileSystemBlobStoreConfig extends CommonBlobStoreConfig {
 
     @Value("${blobstore.filesystem.baseDirectory}")

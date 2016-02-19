@@ -1,17 +1,14 @@
 package no.rutebanken.marduk.routes.sftp;
 
-import com.google.common.base.Strings;
-import no.rutebanken.marduk.management.Provider;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.Status;
 import org.apache.camel.CamelContext;
-import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import java.util.Collection;
 
 import static no.rutebanken.marduk.Constants.*;
 
@@ -33,7 +30,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
 
         CamelContext context = getContext();
 
-        List<Provider> providersWithSftpAccounts = getProviderRepository().getProvidersWithSftpAccounts();
+        Collection<Provider> providersWithSftpAccounts = getProviderRepository().getProvidersWithSftpAccounts();
         providersWithSftpAccounts.forEach(p -> {
             try {
                 context.addRoutes(new DynamcSftpPollerRouteBuilder(context, p, sftpHost, sftpKeyFile));
@@ -58,9 +55,9 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
 
         @Override
         public void configure() throws Exception {
-            from("sftp://" + provider.getSftpAccount() + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&delay=30s&delete=true&localWorkDirectory=files/tmp")
-                    .log(LoggingLevel.INFO, getClass().getName(), "Received file on sftp route for '" + provider.getSftpAccount() + "'. Storing file ...")
-                    .setHeader(FILE_HANDLE, simple("inbound/" + provider.getId() + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
+            from("sftp://" + provider.sftpAccount + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&delay=30s&delete=true&localWorkDirectory=files/tmp")
+                    .log(LoggingLevel.INFO, getClass().getName(), "Received file on sftp route for '" + provider.sftpAccount + "'. Storing file ...")
+                    .setHeader(FILE_HANDLE, simple("inbound/" + provider.id + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
                     .log(LoggingLevel.INFO, getClass().getName(), "File handle is: ${header." + FILE_HANDLE + "}")
                     .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                     .to("direct:uploadBlob")

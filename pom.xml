@@ -36,7 +36,11 @@
     <docker.maven.plugin.version>0.13.8</docker.maven.plugin.version>
     <spring-boot-plugin.version>1.3.1.RELEASE</spring-boot-plugin.version>
     <spring-boot.version>1.3.1.RELEASE</spring-boot.version>
-    <jclouds.version>1.9.1</jclouds.version>
+    <jclouds.version>1.9.2</jclouds.version>
+    <postgresql.version>9.4-1201-jdbc41</postgresql.version>
+    <httpcomponents.version>4.5.1</httpcomponents.version>
+    <otp.version>0.20.0-SNAPSHOT</otp.version>
+    <assertj-core.version>3.3.0</assertj-core.version>
 
     <!-- Docker & Fabric8 Configs -->
     <docker.from>fabric8/java-jboss-openjdk8-jdk:1.0.10</docker.from>
@@ -50,7 +54,7 @@
     <fabric8.iconRef>camel</fabric8.iconRef>
   </properties>
 
-  <repositories>
+  <!--<repositories>
     <repository>
       <id>jclouds-snapshots</id>
       <url>https://repository.apache.org/content/repositories/snapshots</url>
@@ -58,7 +62,7 @@
         <enabled>true</enabled>
       </snapshots>
     </repository>
-  </repositories>
+  </repositories> -->
 
   <dependencyManagement>
     <dependencies>
@@ -148,12 +152,12 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpmime</artifactId>
-      <version>4.5.1</version>
+      <version>${httpcomponents.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.5.1</version>
+      <version>${httpcomponents.version}</version>
     </dependency>
 
 
@@ -161,11 +165,21 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${postgresql.version}</version>
+      <scope>runtime</scope>
+    </dependency>
 
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>17.0</version>
+      <version>19.0</version>
     </dependency>
 
     <dependency>
@@ -175,33 +189,38 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-jdbc</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
+      <groupId>org.opentripplanner</groupId>
+      <artifactId>otp</artifactId>
+      <version>${otp.version}</version>
     </dependency>
 
     <!-- testing -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-validator</artifactId>
+      <version>5.2.3.Final</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>el-api</artifactId>
+      <version>6.0.45</version>
+      <scope>test</scope>
+    </dependency>
+ <!--   <dependency>
       <groupId>org.jboss.arquillian.junit</groupId>
       <artifactId>arquillian-junit-container</artifactId>
+      <scope>test</scope>
+    </dependency> -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -213,6 +232,12 @@
       <groupId>net.javacrumbs.json-unit</groupId>
       <artifactId>json-unit</artifactId>
       <version>1.8.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj-core.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

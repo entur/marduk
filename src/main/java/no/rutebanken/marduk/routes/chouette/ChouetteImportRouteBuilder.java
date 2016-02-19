@@ -2,7 +2,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import no.rutebanken.marduk.management.ChouetteInfo;
+import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.ImportParameters;
@@ -48,7 +48,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.STARTED))
                 .to("direct:updateStatus")
                 .to("direct:getBlob")
-                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getPrefix()))
+                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.prefix))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:addJson");
 
@@ -181,8 +181,8 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
     String getJsonFileContent(Long providerId) {
         try {
-            ChouetteInfo chouetteInfo = getProviderRepository().getProviderById(providerId).getChouetteInfo();
-            ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport("import", chouetteInfo.getPrefix(), chouetteInfo.getDataSpace(), chouetteInfo.getOrganisation(), chouetteInfo.getUser());
+            ChouetteInfo chouetteInfo = getProviderRepository().getProviderById(providerId).chouetteInfo;
+            ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport("import", chouetteInfo.prefix, chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user);
             ImportParameters.Parameters parameters = new ImportParameters.Parameters(gtfsImport);
             ImportParameters importParameters = new ImportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
