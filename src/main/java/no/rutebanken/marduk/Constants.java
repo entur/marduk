@@ -7,4 +7,10 @@ public class Constants {
     public static final String CORRELATION_ID = "RutebankenCorrelationId";
     public static final String CHOUETTE_PREFIX = "RutebankenChouettePrefix";
     public static final String JSON_PART = "RutebankenJsonPart";
+    public static final String OTP_GRAPH_DIR = "RutebankenOtpGraphDirectory";
+
+    public static final String CURRENT_AGGREGATED_GTFS_FILENAME = "aggregated-gtfs.zip";
+
+    public static final java.lang.String METADATA_DESCRIPTION = "MetadataDescription";
+    public static final java.lang.String METADATA_FILE = "MetadataFile";
 }

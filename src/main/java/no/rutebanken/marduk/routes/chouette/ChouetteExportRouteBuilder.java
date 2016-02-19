@@ -2,6 +2,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
@@ -32,20 +33,27 @@ import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.*;
 @Component
 public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
-    private int maxRetries = 100;    //TODO config
-    private long retryDelay = 10 * 1000;     //TODO config
-    private int daysForward = 365;   //TODO config
-    private int daysBack = 365;  //TODO config
+    @Value("${chouette.max.retries:500}")
+    private int maxRetries;
+
+    @Value("${chouette.retry.delay:30000}")
+    private long retryDelay;
 
     @Value("${chouette.url}")
     private String chouetteUrl;
+
+    @Value("${chouette.export.days.forward:365}")
+    private int daysForward;
+
+    @Value("${chouette.export.days.back:365}")
+    private int daysBack;
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
         from("activemq:queue:ChouetteGtfsExportQueue")
-                .log(LoggingLevel.INFO, getClass().getName(), "Running new Chouette GTFS export for provider with id ${header." + PROVIDER_ID + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette export for provider with id ${header." + PROVIDER_ID + "}")
                 .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.prefix))
                 .to("direct:exportAddJson");
 
@@ -107,10 +115,12 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Exited retry loop with status ${header.current_status}")
                 .choice()
                 .when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "'"))
-                    .log(LoggingLevel.WARN, getClass().getName(), "Timed out with state ${header.current_status}")
+                    .log(LoggingLevel.WARN, getClass().getName(), "Timed out with state ${header.current_status}. Config should probably be tweaked. Stopping route.")
+                    .stop()
                 .when(simple("${header.current_status} == '" + ABORTED + "' || ${header.current_status} == '" + CANCELED + "'"))
-                    .log(LoggingLevel.WARN, getClass().getName(), "import ended in state ${header.current_status}") //TODO Does this occur?
-                    .end()
+                    .log(LoggingLevel.WARN, getClass().getName(), "import ended in state ${header.current_status}. Stopping route.")
+                    .stop()
+                .end()
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> {
                     JobResponse jobResponse = e.getIn().getBody(JobResponse.class);
@@ -134,7 +144,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .choice()
                 .when(simple("${property.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, getClass().getName(), "OK")
+                .log(LoggingLevel.INFO, getClass().getName(), "Export ok.")
                 .process(e -> {
                     JobResponse response = e.getProperty("jobResponse", JobResponse.class);
                     Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "data".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
@@ -145,16 +155,14 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${property.url}")
-                .setHeader(FILE_HANDLE, simple("chouette-gtfs-out/${header." + PROVIDER_ID + "}-${header." + CHOUETTE_PREFIX + "}-gtfs-export.zip"))
+                .setHeader(FILE_HANDLE, constant(Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
                 .to("direct:uploadBlob")
                 .to("activemq:queue:OtpGraphQueue")
                 .when(simple("${property.action_report_result} == 'NOK'"))
-                    .log(LoggingLevel.WARN, getClass().getName(), "NOK")
+                    .log(LoggingLevel.WARN, getClass().getName(), "Export not ok.")
                 .otherwise()
                     .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
-                .end()
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Export done");
-
+                .end();
     }
 
     void toMultipart(Exchange exchange) {

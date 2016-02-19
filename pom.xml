@@ -34,8 +34,8 @@
     <!-- versions for use in mvn plugins as we cannot inherit them from a BOM -->
     <fabric8.version>2.2.84</fabric8.version>
     <docker.maven.plugin.version>0.13.8</docker.maven.plugin.version>
-    <spring-boot-plugin.version>1.3.1.RELEASE</spring-boot-plugin.version>
-    <spring-boot.version>1.3.1.RELEASE</spring-boot.version>
+    <spring-boot-plugin.version>1.3.2.RELEASE</spring-boot-plugin.version>
+    <spring-boot.version>1.3.2.RELEASE</spring-boot.version>
     <jclouds.version>1.9.2</jclouds.version>
     <postgresql.version>9.4-1201-jdbc41</postgresql.version>
     <httpcomponents.version>4.5.1</httpcomponents.version>
@@ -53,16 +53,6 @@
     <fabric8.label.group>quickstarts</fabric8.label.group>
     <fabric8.iconRef>camel</fabric8.iconRef>
   </properties>
-
-  <!--<repositories>
-    <repository>
-      <id>jclouds-snapshots</id>
-      <url>https://repository.apache.org/content/repositories/snapshots</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories> -->
 
   <dependencyManagement>
     <dependencies>
@@ -98,7 +88,6 @@
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-http4</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-jms</artifactId>
@@ -111,10 +100,10 @@
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-metrics</artifactId>
     </dependency>
-     <dependency>
-       <groupId>org.apache.camel</groupId>
-       <artifactId>camel-quartz2</artifactId>
-     </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-quartz2</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.apache.camel</groupId>
       <artifactId>camel-ftp</artifactId>
@@ -179,7 +168,13 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>19.0</version>
+      <version>17.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-validator</artifactId>
+      <version>5.2.3.Final</version>
     </dependency>
 
     <dependency>
@@ -194,6 +189,13 @@
       <version>${otp.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>el-api</artifactId>
+      <version>6.0.45</version>
+    </dependency>
+
+
     <!-- testing -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -201,23 +203,11 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.hibernate</groupId>
-      <artifactId>hibernate-validator</artifactId>
-      <version>5.2.3.Final</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.tomcat</groupId>
-      <artifactId>el-api</artifactId>
-      <version>6.0.45</version>
-      <scope>test</scope>
-    </dependency>
- <!--   <dependency>
-      <groupId>org.jboss.arquillian.junit</groupId>
-      <artifactId>arquillian-junit-container</artifactId>
-      <scope>test</scope>
-    </dependency> -->
+    <!--   <dependency>
+         <groupId>org.jboss.arquillian.junit</groupId>
+         <artifactId>arquillian-junit-container</artifactId>
+         <scope>test</scope>
+       </dependency> -->
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
@@ -325,26 +315,26 @@
     </plugins>
   </build>
 
-    <!--
-  Default sample commands:
+  <!--
+Default sample commands:
 
-  mvn -Pf8-build         ... build Docker images and create OpenShift deployment configs
-  mvn -Pf8-deploy        ... f8-build + push to Docker registry + applying deployment config to OpenShift
-  mvn -Pf8-local-deploy ... deployment for a single node setup without pushing to a registry
+mvn -Pf8-build         ... build Docker images and create OpenShift deployment configs
+mvn -Pf8-deploy        ... f8-build + push to Docker registry + applying deployment config to OpenShift
+mvn -Pf8-local-deploy ... deployment for a single node setup without pushing to a registry
 
-  For individual goal usage please consult the fabric8 documentation
-  -->
+For individual goal usage please consult the fabric8 documentation
+-->
   <profiles>
     <profile>
-        <id>rutebanken</id>
-        <properties>
-            <fabric8.imagePullPolicySnapshot>Always</fabric8.imagePullPolicySnapshot>
-            <fabric8.recreate>true</fabric8.recreate>
-        </properties>
-        <build>
-            <!-- Missing fabric8:apply, as this crashed (probably due to missing fabric8) -->
-            <defaultGoal>clean install docker:build docker:push fabric8:json</defaultGoal>
-        </build>
+      <id>rutebanken</id>
+      <properties>
+        <fabric8.imagePullPolicySnapshot>Always</fabric8.imagePullPolicySnapshot>
+        <fabric8.recreate>true</fabric8.recreate>
+      </properties>
+      <build>
+        <!-- Missing fabric8:apply, as this crashed (probably due to missing fabric8) -->
+        <defaultGoal>clean install docker:build docker:push fabric8:json</defaultGoal>
+      </build>
     </profile>
     <profile>
       <id>f8-build</id>

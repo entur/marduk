@@ -33,8 +33,11 @@ import static no.rutebanken.marduk.routes.status.Status.State;
 @Component
 public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
-    private int maxRetries = 100;    //TODO config
-    private long retryDelay = 10 * 1000;     //TODO config
+    @Value("${chouette.max.retries:500}")
+    private int maxRetries;
+
+    @Value("${chouette.retry.delay:30000}")
+    private long retryDelay;
 
     @Value("${chouette.url}")
     private String chouetteUrl;
@@ -44,7 +47,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("activemq:queue:ChouetteImportQueue").streamCaching()
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Provider: ${header." + PROVIDER_ID + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette import for provider: ${header." + PROVIDER_ID + "}")
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.STARTED))
                 .to("direct:updateStatus")
                 .to("direct:getBlob")
@@ -75,7 +78,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .setProperty("loop_counter", constant(0))
                 .setHeader("loop", constant("direct:sendJobStatusRequest"))
                 .dynamicRouter().header("loop")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Done looping ${property.loop_counter} times")
+                .log(LoggingLevel.INFO, getClass().getName(), "Done looping ${property.loop_counter} times for status")
                 .to("direct:jobStatusDone");
 
 
@@ -112,9 +115,11 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .choice()
                 .when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "'"))
-                    .log(LoggingLevel.WARN, getClass().getName(), "Timed out with state ${header.current_status}")
+                    .log(LoggingLevel.WARN, getClass().getName(), "Timed out with state ${header.current_status}. Config should probably be tweaked. Stopping route.")
+                    .stop()
                 .when(simple("${header.current_status} == '" + ABORTED + "' || ${header.current_status} == '" + CANCELED + "'"))
-                    .log(LoggingLevel.WARN, getClass().getName(), "Import ended in state ${header.current_status}") //TODO Does this occur?
+                    .log(LoggingLevel.WARN, getClass().getName(), "Import ended in state ${header.current_status}. Stopping route.")
+                    .stop()
                 .end()
                 .process(e -> {
                     JobResponse response = e.getIn().getBody(JobResponse.class);
@@ -137,19 +142,19 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
         from("direct:processActionReportResult")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
+                .setBody(constant(""))
                 .choice()
                 .when(simple("${property.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, getClass().getName(), "OK, triggering export.")
+                .log(LoggingLevel.INFO, getClass().getName(), "Import ok, triggering export.")
                     .to("activemq:queue:ChouetteGtfsExportQueue")
                     .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
                 .when(simple("${property.action_report_result} == 'NOK'"))
-                    .log(LoggingLevel.WARN, getClass().getName(), "NOK")
+                    .log(LoggingLevel.WARN, getClass().getName(), "Import not ok.")
                     .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
                 .otherwise()
                     .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
                     .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
                 .end()
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Import done")
                 .to("direct:updateStatus");
 
     }

@@ -1,7 +1,9 @@
 package no.rutebanken.marduk.routes;
 
 import no.rutebanken.marduk.repository.ProviderRepository;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.model.ProcessDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.net.ConnectException;

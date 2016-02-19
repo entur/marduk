@@ -9,6 +9,11 @@ initial project setup location:
 * Typical application.properties for dev environment, with file system blobstore:
 
 ```
+spring.main.sources=no.rutebanken.marduk
+
+# the options from org.apache.camel.spring.boot.CamelConfigurationProperties can be configured here
+camel.springboot.name=Marduk
+
 # activemq settings
 spring.activemq.broker-url=tcp://activemq:61616?jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
 spring.activemq.pooled=true
@@ -23,6 +28,14 @@ blobstore.filesystem.baseDirectory=./files/filesystemstorage
 # chouette import/export settings
 # NOTE! http4 is correct config!
 chouette.url=http4://chouette:8080
+# optional
+chouette.max.retries=500
+# optional
+chouette.retry.delay=30000
+# optional
+chouette.export.days.forward=365
+# optional
+chouette.export.days.back=365
 
 # sftp settings
 sftp.host=lamassu:2224
@@ -30,17 +43,27 @@ sftp.host=lamassu:2224
 sftp.keyfile=/opt/jboss/.ssh/lamassu.pem
 
 # otp graph building settings
+otp.graph.directory=files/otpgraph
 # NOTE! http4 is correct config!
-jenkins.url=https4://jenkins.rutebanken.org/job/otpgraph
+otp.graph.deployment.url=http4://<url>
+otp.graph.map.base.url=http4://jump.rutebanken.org
 
 # logging settings
+logging.config=classpath:logback.xml
 logging.level.no.rutebanken=DEBUG
 logging.level.org.apache=INFO
+
+spring.profiles.active=dev
 
 ```
 * Typical application properties for test environment, with S3 blobstore:
 
 ```
+spring.main.sources=no.rutebanken.marduk
+
+# the options from org.apache.camel.spring.boot.CamelConfigurationProperties can be configured here
+camel.springboot.name=Marduk
+
 # activemq settings
 spring.activemq.broker-url=tcp://activemq:61616?jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
 spring.activemq.pooled=true
@@ -53,9 +76,21 @@ blobstore.containerName=junit-test-rutebanken
 blobstore.aws-s3.identity=AKIAIBRVMDRJKQBK6YEQ
 blobstore.aws-s3.credential=2fRLhBLqhGcqT8mSr/450QVecdw84LQetF3T44uQ
 
-# chouette settings
+# JPA settings
+spring.jpa.show-sql=true
+spring.jpa.hibernate.ddl-auto=none
+
+# chouette import/export settings
 # NOTE! http4 is correct config!
 chouette.url=http4://chouette:8080
+# optional
+chouette.max.retries=500
+# optional
+chouette.retry.delay=30000
+# optional
+chouette.export.days.forward=365
+# optional
+chouette.export.days.back=365
 
 # sftp settings
 sftp.host=lamassu:2224
@@ -63,13 +98,18 @@ sftp.host=lamassu:2224
 sftp.keyfile=/opt/jboss/.ssh/lamassu.pem
 
 # otp graph building settings
+otp.graph.directory=files/otpgraph
 # NOTE! http4 is correct config!
-jenkins.url=https4://jenkins.rutebanken.org/job/otpgraph
+otp.graph.deployment.url=http4://<url>
+otp.graph.map.base.url=http4://jump.rutebanken.org
 
 # logging settings
+logging.config=classpath:logback.xml
 logging.level.no.rutebanken=INFO
 logging.level.org.apache=INFO
 logging.level.org.jclouds=INFO
+
+spring.profiles.active=test
 
 ```
 
