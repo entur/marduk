@@ -44,7 +44,7 @@ sftp.keyfile=/opt/jboss/.ssh/lamassu.pem
 
 # otp graph building settings
 otp.graph.directory=files/otpgraph
-# NOTE! http4 is correct config!
+# optional (NOTE! http4 is correct config!)
 otp.graph.deployment.url=http4://<url>
 otp.graph.map.base.url=http4://jump.rutebanken.org
 
@@ -99,7 +99,7 @@ sftp.keyfile=/opt/jboss/.ssh/lamassu.pem
 
 # otp graph building settings
 otp.graph.directory=files/otpgraph
-# NOTE! http4 is correct config!
+# optional (NOTE! http4 is correct config!)
 otp.graph.deployment.url=http4://<url>
 otp.graph.map.base.url=http4://jump.rutebanken.org
 
