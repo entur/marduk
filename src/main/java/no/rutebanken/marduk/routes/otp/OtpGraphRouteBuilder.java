@@ -53,7 +53,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(""))
                 .removeHeaders("*")
                 .to("file:"+ otpGraphDirectory + "?fileName=" + GRAPH_OBJ + "&delete=true")
-                .setHeader(FILE_HANDLE, simple("otpgraph/${date:now:yyyyMMddHHmmss}-" + GRAPH_OBJ ))
+                .setHeader(FILE_HANDLE, simple("outbound/otpgraph/${date:now:yyyyMMddHHmmss}-" + GRAPH_OBJ ))
                 .to("direct:uploadBlob")
                 .process(e -> deleteDirectory(new File(otpGraphDirectory)))
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Done uploading new OTP graph.");

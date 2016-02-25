@@ -30,7 +30,7 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
 
         from("activemq:queue:ExternalFileUploadQueue?disableReplyTo=true&messageConverter=#blobMessageConverter")
             .log(LoggingLevel.INFO, getClass().getName(), "Received file ${header.CamelFileName} on jms receiver route for provider ${header.RutebankenProviderId} and correlation id ${header.RutebankenCorrelationId}. Storing file ...")
-            .setHeader(FILE_HANDLE, simple("inbound/${header." + PROVIDER_ID + "}-${date:now:yyyyMMddHHmmss}-${header.CamelFileName}"))
+            .setHeader(FILE_HANDLE, simple("inbound/received/${header." + PROVIDER_ID + "}-${date:now:yyyyMMddHHmmss}-${header.CamelFileName}"))
             .log(LoggingLevel.INFO, getClass().getName(), "File handle is: ${header." + FILE_HANDLE + "}")
             .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
             .to("direct:uploadBlob")
