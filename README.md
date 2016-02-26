@@ -25,6 +25,10 @@ blobstore.provider=filesystem
 blobstore.containerName=test-container
 blobstore.filesystem.baseDirectory=./files/filesystemstorage
 
+# JPA settings
+spring.jpa.show-sql=true
+spring.jpa.hibernate.ddl-auto=none
+
 # chouette import/export settings
 # NOTE! http4 is correct config!
 chouette.url=http4://chouette:8080
@@ -79,6 +83,14 @@ blobstore.aws-s3.credential=2fRLhBLqhGcqT8mSr/450QVecdw84LQetF3T44uQ
 # JPA settings
 spring.jpa.show-sql=true
 spring.jpa.hibernate.ddl-auto=none
+
+# JPA settings (postgres)
+# spring.jpa.database=POSTGRESQL
+# spring.datasource.platform=postgres
+# spring.jpa.show-sql=true
+# spring.jpa.hibernate.ddl-auto=none
+# spring.database.driverClassName=org.postgresql.Driver
+# spring.datasource.url=jdbc:postgresql://localhost:5532/postgres
 
 # chouette import/export settings
 # NOTE! http4 is correct config!
