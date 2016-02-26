@@ -9,7 +9,7 @@ import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
 
 public class ImportParametersTest {
 
-    String referenceJson =  "{ \"parameters\": { \"gtfs-import\": { \"no_save\": \"0\", " +
+    String referenceJson =  "{ \"parameters\": { \"gtfs-import\": {\"clean_repository\": \"true\", \"no_save\": \"0\", " +
             "\"user_name\": \"Chouette\", \"name\": \"test\", \"organisation_name\": \"Rutebanken\", \"referential_name\": " +
             "\"testDS\", \"object_id_prefix\": \"tds\", \"max_distance_for_commercial\": \"0\", " +
             "\"ignore_last_word\": \"0\", \"ignore_end_chars\": \"0\"," +
@@ -17,7 +17,7 @@ public class ImportParametersTest {
 
     @Test
     public void createInputJson() throws Exception {
-        ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport("test", "tds", "testDS", "Rutebanken", "Chouette");
+        ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport("test", "tds", "testDS", "Rutebanken", "Chouette", true);
         ImportParameters.Parameters parameters = new ImportParameters.Parameters(gtfsImport);
         ImportParameters importParameters = new ImportParameters(parameters);
         ObjectMapper mapper = new ObjectMapper();

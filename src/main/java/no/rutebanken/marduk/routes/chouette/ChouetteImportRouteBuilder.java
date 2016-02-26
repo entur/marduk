@@ -191,7 +191,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
     String getJsonFileContent(Long providerId) {
         try {
             ChouetteInfo chouetteInfo = getProviderRepository().getProviderById(providerId).chouetteInfo;
-            ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport("import", chouetteInfo.prefix, chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user);
+            ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport("import", chouetteInfo.prefix, chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user, true);
             ImportParameters.Parameters parameters = new ImportParameters.Parameters(gtfsImport);
             ImportParameters importParameters = new ImportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();

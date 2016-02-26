@@ -29,6 +29,9 @@ public class ImportParameters {
         @JsonProperty("no_save")
         public String noSave = "0";
 
+        @JsonProperty("clean_repository")
+        public String cleanRepository;
+
         @JsonProperty("user_name")
         public String userName;
 
@@ -58,12 +61,13 @@ public class ImportParameters {
         @JsonInclude(JsonInclude.Include.ALWAYS)
         public String referencesType = "";
 
-        public GtfsImport(String name, String objectIdPrefix, String referentialName, String organisationName, String userName) {
+        public GtfsImport(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository) {
             this.name = name;
             this.objectIdPrefix = objectIdPrefix;
             this.referentialName = referentialName;
             this.organisationName = organisationName;
             this.userName = userName;
+            this.cleanRepository = Boolean.toString(cleanRepository);
         }
 
     }
