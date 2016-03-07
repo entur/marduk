@@ -39,7 +39,7 @@ public class GraphBuiltNotificationRoute extends BaseRouteBuilder {
                         .toD("${property.notificationUrl}")
                         .log(LoggingLevel.DEBUG, getClass().getName(), "Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
                     .otherwise()
-                        .log(LoggingLevel.DEBUG, getClass().getName(), "No notification url configured. Doing nothing.");
+                        .log(LoggingLevel.INFO, getClass().getName(), "No notification url configured for opt graph building. Doing nothing.");
 
     }
 }

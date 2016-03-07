@@ -18,7 +18,6 @@ import static no.rutebanken.marduk.routes.status.Status.State;
 @Component
 public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
 
-
     @Bean
     public BlobMessageConverter blobMessageConverter() {
         return new BlobMessageConverter();

@@ -27,7 +27,7 @@ blobstore.filesystem.baseDirectory=./files/filesystemstorage
 
 # JPA settings
 spring.jpa.show-sql=true
-spring.jpa.hibernate.ddl-auto=none
+spring.jpa.hibernate.ddl-auto=create
 
 # chouette import/export settings
 # NOTE! http4 is correct config!
@@ -82,7 +82,7 @@ blobstore.aws-s3.credential=2fRLhBLqhGcqT8mSr/450QVecdw84LQetF3T44uQ
 
 # JPA settings
 spring.jpa.show-sql=true
-spring.jpa.hibernate.ddl-auto=none
+spring.jpa.hibernate.ddl-auto=create
 
 # JPA settings (postgres)
 # spring.jpa.database=POSTGRESQL
