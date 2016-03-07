@@ -47,10 +47,11 @@ sftp.host=lamassu:2224
 sftp.keyfile=/opt/jboss/.ssh/lamassu.pem
 
 # otp graph building settings
-otp.graph.directory=files/otpgraph
+otp.graph.build.directory=files/otpgraph
 # optional (NOTE! http4 is correct config!)
-otp.graph.deployment.url=http4://<url>
+otp.graph.deployment.notification.url=http4://<url>
 otp.graph.map.base.url=http4://jump.rutebanken.org
+otp.graph.blobstore.subdirectory=output/otpgraphs
 
 # logging settings
 logging.config=classpath:logback.xml
@@ -110,10 +111,11 @@ sftp.host=lamassu:2224
 sftp.keyfile=/opt/jboss/.ssh/lamassu.pem
 
 # otp graph building settings
-otp.graph.directory=files/otpgraph
+otp.graph.build.directory=files/otpgraph
 # optional (NOTE! http4 is correct config!)
-otp.graph.deployment.url=http4://<url>
+otp.graph.deployment.notification.url=http4://<url>
 otp.graph.map.base.url=http4://jump.rutebanken.org
+otp.graph.blobstore.subdirectory=output/otpgraphs
 
 # logging settings
 logging.config=classpath:logback.xml

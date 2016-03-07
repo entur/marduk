@@ -14,8 +14,8 @@ import static no.rutebanken.marduk.Constants.*;
 @Component
 public class GraphBuiltNotificationRoute extends BaseRouteBuilder {
 
-    @Value("${otp.graph.deployment.url:none}")
-    private String otpGraphDeploymentUrl;
+    @Value("${otp.graph.deployment.notification.url:none}")
+    private String otpGraphDeploymentNotificationUrl;
 
     @Override
     public void configure() throws Exception {
@@ -23,13 +23,13 @@ public class GraphBuiltNotificationRoute extends BaseRouteBuilder {
 
         onException(IOException.class)
                 .handled(true)
-                .log(LoggingLevel.ERROR, getClass().getName(), "Failed while notifying '" + otpGraphDeploymentUrl + "' about new graph object.");
+                .log(LoggingLevel.ERROR, getClass().getName(), "Failed while notifying '" + otpGraphDeploymentNotificationUrl + "' about new graph object.");
 
         from("direct:notify")
-                .setProperty("notificationUrl", constant(otpGraphDeploymentUrl))
+                .setProperty("notificationUrl", constant(otpGraphDeploymentNotificationUrl))
                 .choice()
                     .when(exchangeProperty("notificationUrl").isNotEqualTo("none"))
-                        .log(LoggingLevel.DEBUG, getClass().getName(), "Notifying " + otpGraphDeploymentUrl + " about new otp graph")
+                        .log(LoggingLevel.DEBUG, getClass().getName(), "Notifying " + otpGraphDeploymentNotificationUrl + " about new otp graph")
                         .setHeader(METADATA_DESCRIPTION, constant("Uploaded new Graph object file."))
                         .setHeader(METADATA_FILE, simple("${header." + FILE_HANDLE + "}"))
                         .process(e -> e.getIn().setBody(new Metadata("Uploaded new Graph object file.", e.getIn().getHeader(FILE_HANDLE, String.class), new Date(), Metadata.Status.OK, Metadata.Action.OTP_GRAPH_UPLOAD).getJson()))
