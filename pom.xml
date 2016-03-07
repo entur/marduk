@@ -58,7 +58,7 @@
     <repository>
       <id>conveyal-maven-repo</id>
       <name>Conveyal Maven Repository</name>
-      <url>s3://maven.conveyal.com/</url>
+      <url>http://maven.conveyal.com/</url>
     </repository>
   </repositories>
 
