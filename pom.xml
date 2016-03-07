@@ -54,14 +54,6 @@
     <fabric8.iconRef>camel</fabric8.iconRef>
   </properties>
 
-  <repositories>
-    <repository>
-      <id>conveyal-maven-repo</id>
-      <name>Conveyal Maven Repository</name>
-      <url>http://maven.conveyal.com/</url>
-    </repository>
-  </repositories>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
