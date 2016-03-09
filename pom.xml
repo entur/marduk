@@ -17,6 +17,11 @@
   <name>marduk</name>
   <description>Backend integration</description>
 
+  <scm>
+    <connection>scm:git:ssh://git@bitbucket.org/rutebanken/marduk.git</connection>
+    <developerConnection>scm:git:ssh://git@bitbucket.org/rutebanken/marduk.git</developerConnection>
+  </scm>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
