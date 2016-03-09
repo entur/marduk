@@ -28,7 +28,7 @@
     <jclouds.version>1.9.2</jclouds.version>
     <postgresql.version>9.4-1201-jdbc41</postgresql.version>
     <httpcomponents.version>4.5.1</httpcomponents.version>
-    <otp.version>0.20.0-SNAPSHOT</otp.version>
+    <otp.version>0.20.0</otp.version>
     <assertj-core.version>3.3.0</assertj-core.version>
 
     <!-- Docker & Fabric8 Configs -->
