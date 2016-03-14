@@ -108,7 +108,6 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
                 })
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true");
 
-
         from("direct:exportSendDelayedJobStatusRequest").log("Sleeping " + retryDelay + " ms...").delayer(retryDelay).to("direct:exportSendJobStatusRequest");
 
         from("direct:exportJobStatusDone").streamCaching()

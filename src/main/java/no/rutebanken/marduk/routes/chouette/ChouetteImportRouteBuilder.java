@@ -11,6 +11,7 @@ import no.rutebanken.marduk.routes.status.Status;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
+import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.NoRouteToHostException;
 import java.util.Optional;
 
 import static no.rutebanken.marduk.Constants.*;
@@ -46,9 +48,16 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
+        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
+                .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
+                .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
+                .to("direct:updateStatus")
+                .log(LoggingLevel.ERROR, getClass().getName(), "Failed while importing to chouette.")
+                .handled(true);
+
         from("activemq:queue:ChouetteImportQueue").streamCaching()
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette import for provider: ${header." + PROVIDER_ID + "}")
-                .process(e -> Status.addStatus(e, Action.IMPORT, State.STARTED))
+                .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
                 .to("direct:updateStatus")
                 .to("direct:getBlob")
                 .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.prefix))
@@ -105,6 +114,12 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader("current_status", response.status.name());
                     e.setProperty("loop_counter", e.getProperty("loop_counter", Integer.class) + 1);
                 })
+                .choice()
+                .when(simple("${header.current_status} == '" + STARTED + "'"))
+                    .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
+                    .process(e -> Status.addStatus(e, Action.IMPORT, State.STARTED))
+                    .to("direct:updateStatus")
+                .end()
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true");
 
 
@@ -112,6 +127,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:jobStatusDone").streamCaching()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Exited retry loop with status ${header.current_status}")
+                .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .choice()
                 .when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "'"))
