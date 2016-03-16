@@ -4,6 +4,7 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.axis.transport.http.HTTPConstants;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.component.http4.HttpMethods;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -35,7 +36,7 @@ public class GraphBuiltNotificationRoute extends BaseRouteBuilder {
                         .setHeader(METADATA_FILE, simple("${header." + FILE_HANDLE + "}"))
                         .process(e -> e.getIn().setBody(new Metadata("Uploaded new Graph object file.", e.getIn().getHeader(FILE_HANDLE, String.class), new Date(), Metadata.Status.OK, Metadata.Action.OTP_GRAPH_UPLOAD).getJson()))
                         .removeHeaders("*")
-                        .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                        .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                         .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                         .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                         .toD("${property.notificationUrl}")
