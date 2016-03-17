@@ -3,7 +3,6 @@ package no.rutebanken.marduk.routes.otp;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -72,6 +71,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Directory for graph building is ${property." + OTP_GRAPH_DIR + "}")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Building OTP graph...")
                 .process(new GraphBuilderProcessor())
+                .setBody(constant(""))
                 .to("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + ".done")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Done building new OTP graph.");
@@ -79,12 +79,6 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
         from("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + "&doneFileName=" + GRAPH_OBJ + ".done&delete=true")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .convertBodyTo(InputStream.class)
-                .process(e -> {
-                    InputStream is = e.getIn().getBody(InputStream.class);
-                    byte[] data = IOUtils.toByteArray(is);
-                    e.getIn().setBody(data);
-                    }
-                )
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory + "/${date:now:yyyyMMddHHmmss}-" + GRAPH_OBJ))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:uploadBlob")

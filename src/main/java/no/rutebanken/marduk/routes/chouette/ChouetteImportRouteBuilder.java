@@ -66,7 +66,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:addJson")
                 .process(e -> {
-                    String fileName = e.getIn().getHeader(Exchange.FILE_NAME, String.class).split(".")[0];
+                    String fileName = e.getIn().getHeader(Exchange.FILE_NAME, String.class);
                     e.getIn().setHeader(JSON_PART, getJsonFileContent(fileName, e.getIn().getHeader(PROVIDER_ID, Long.class)));
                 }) //Using header to add json data
                 .to("direct:sendJobRequest");
@@ -84,7 +84,6 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                     e.setProperty("url", e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
                 })
                 .to("direct:pollJobStatus");
-
 
         from("direct:pollJobStatus")
                 .setProperty("loop_counter", constant(0))

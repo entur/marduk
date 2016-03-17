@@ -3,6 +3,7 @@ package no.rutebanken.marduk.routes.blobstore;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +32,10 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setProperty(CORRELATION_ID, header(CORRELATION_ID))
                 .setProperty(Exchange.FILE_NAME, header(Exchange.FILE_NAME))
                 .process(e -> {
+                    if (e.getIn().getBody() instanceof InputStream) {
+                        InputStream is = e.getIn().getBody(InputStream.class);
+                        e.getIn().setBody(IOUtils.toByteArray(is));
+                    }
                     e.getOut().setBody(new ByteArrayInputStream(e.getIn().getBody(byte[].class)), InputStream.class);
                     e.getOut().setHeaders(e.getIn().getHeaders());
                 })
