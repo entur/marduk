@@ -65,7 +65,10 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .to("direct:addJson");
 
         from("direct:addJson")
-                .process(e -> e.getIn().setHeader(JSON_PART, getJsonFileContent(e.getIn().getHeader(PROVIDER_ID, Long.class)))) //Using header to add json data
+                .process(e -> {
+                    String fileName = e.getIn().getHeader(Exchange.FILE_NAME, String.class).split(".")[0];
+                    e.getIn().setHeader(JSON_PART, getJsonFileContent(fileName, e.getIn().getHeader(PROVIDER_ID, Long.class)));
+                }) //Using header to add json data
                 .to("direct:sendJobRequest");
 
         from("direct:sendJobRequest")
@@ -204,10 +207,10 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
     }
 
 
-    String getJsonFileContent(Long providerId) {
+    String getJsonFileContent(String importName, Long providerId) {
         try {
             ChouetteInfo chouetteInfo = getProviderRepository().getProviderById(providerId).chouetteInfo;
-            ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport("import", chouetteInfo.prefix, chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user, true);
+            ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport(importName, chouetteInfo.prefix, chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user, true);
             ImportParameters.Parameters parameters = new ImportParameters.Parameters(gtfsImport);
             ImportParameters importParameters = new ImportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
