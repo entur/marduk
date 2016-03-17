@@ -3,13 +3,15 @@ package no.rutebanken.marduk.routes.otp;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.InputStream;
 
-import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static no.rutebanken.marduk.Constants.*;
+import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 /**
  * Trigger OTP graph building
@@ -40,10 +42,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:fetchLatestGtfs")
                 .to("direct:fetchConfig")
                 .to("direct:fetchMap")
-                .to("direct:buildGraph")
-                .to("direct:uploadGraph")
-                .to("direct:notify")
-                .log(LoggingLevel.INFO, getClass().getName(), "Done with graph building.");
+                .to("direct:buildGraph");
 
         from("direct:fetchLatestGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs ...")
@@ -73,17 +72,32 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Directory for graph building is ${property." + OTP_GRAPH_DIR + "}")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Building OTP graph...")
                 .process(new GraphBuilderProcessor())
+                .to("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + ".done")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Done building new OTP graph.");
 
-        from("direct:uploadGraph")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Uploading new OTP graph ...")
-                .setBody(constant(""))
-                .removeHeaders("*")
-                .to("file:"+ otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + "&delete=true")
+        from("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + "&doneFileName=" + GRAPH_OBJ + ".done&delete=true")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .convertBodyTo(InputStream.class)
+                .process(e -> {
+                    InputStream is = e.getIn().getBody(InputStream.class);
+                    byte[] data = IOUtils.toByteArray(is);
+                    e.getIn().setBody(data);
+                    }
+                )
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory + "/${date:now:yyyyMMddHHmmss}-" + GRAPH_OBJ))
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:uploadBlob")
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Done uploading new OTP graph.")
+                .to("direct:notify")
+                .to("direct:cleanUp");
+
+
+        from("direct:cleanUp")
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Deleting build folder ...")
                 .process(e -> deleteDirectory(new File(otpGraphBuildDirectory)))
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Done uploading new OTP graph.");
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Build folder deletion done.")
+                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP graph building route.");
 
     }
 

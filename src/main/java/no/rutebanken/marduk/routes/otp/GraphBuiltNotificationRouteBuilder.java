@@ -1,7 +1,6 @@
 package no.rutebanken.marduk.routes.otp;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import org.apache.axis.transport.http.HTTPConstants;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
@@ -14,7 +13,7 @@ import java.util.Date;
 import static no.rutebanken.marduk.Constants.*;
 
 @Component
-public class GraphBuiltNotificationRoute extends BaseRouteBuilder {
+public class GraphBuiltNotificationRouteBuilder extends BaseRouteBuilder {
 
     @Value("${otp.graph.deployment.notification.url:none}")
     private String otpGraphDeploymentNotificationUrl;
