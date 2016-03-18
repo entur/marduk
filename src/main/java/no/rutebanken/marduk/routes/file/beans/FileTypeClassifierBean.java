@@ -18,7 +18,7 @@ public class FileTypeClassifierBean {
     private static final Logger logger = LoggerFactory.getLogger(FileTypeClassifierBean.class);
 
     private final String[] requiredGtfsFiles = {"agency.txt", "stops.txt", "routes.txt", "trips.txt", "stop_times.txt", "calendar.txt"};
-    private final String[] optionalGtfsFiles = {"calendar_dates.txt", "fare_attributes.txt", "fare_rules.txt", "shapes.txt", "frequencies.txt", "transfers.txt", "feed_info.txt"};
+    private final String[] optionalGtfsFiles = {"calendar_dates.txt", "fare_attributes.txt", "fare_rules.txt", "shapes.txt", "frequencies.txt", "transfers.txt", "feed_info.txt"};  //TODO pathways.txt ?
     private final Set<String> requiredFiles = Arrays.stream(requiredGtfsFiles).collect(Collectors.toSet());
     private final Set<String> optionalFiles = Arrays.stream(optionalGtfsFiles).collect(Collectors.toSet());
     private final Set<String> possibleFiles = Sets.union(requiredFiles, optionalFiles);
@@ -55,7 +55,8 @@ public class FileTypeClassifierBean {
         }
         Set<String> invalidFiles = Sets.difference(filesInZip, possibleFiles);
         if (invalidFiles.size() > 0) {
-            throw new FileValidationException("There are invalid files in GTFS zip: " + invalidFiles);   //TODO is this critical enough to fail validation?
+            logger.warn("Zip file is not a valid GTFS file, there are invalid files in GTFS zip:: " + invalidFiles);
+//            throw new FileValidationException("There are invalid files in GTFS zip: " + invalidFiles);   //TODO is this critical enough to fail validation?
         }
         return true;
     }
