@@ -134,7 +134,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .choice()
                 .when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "'"))
                     .log(LoggingLevel.WARN, getClass().getName(), "Timed out with state ${header.current_status}. Config should probably be tweaked. Stopping route.")
-                    .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
+                    .process(e -> Status.addStatus(e, Action.IMPORT, State.TIMEOUT))
                     .to("direct:updateStatus")
                     .stop()
                 .when(simple("${header.current_status} == '" + ABORTED + "' || ${header.current_status} == '" + CANCELED + "'"))

@@ -34,7 +34,7 @@ public class Status {
 
     public enum Action {FILE_TRANSFER, IMPORT, EXPORT, VALIDATION}
 
-    public enum State {PENDING, STARTED, FAILED, OK}
+    public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK}
 
 //    public enum Channel {SFTP, WEB}
 
