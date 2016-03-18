@@ -54,7 +54,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
         from("activemq:queue:ChouetteGtfsExportQueue")
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette export for provider with id ${header." + PROVIDER_ID + "}")
-                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.prefix))
+                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.prefix))
                 .to("direct:exportAddJson");
 
         from("direct:exportAddJson")
@@ -179,7 +179,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
     String getJsonFileContent(Long providerId) {
         try {
-            ChouetteInfo chouetteInfo = getProviderRepository().getProviderById(providerId).chouetteInfo;
+            ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
             ExportParameters.GtfsExport gtfsExport = new ExportParameters.GtfsExport("export",
                     chouetteInfo.prefix, chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user,
                     toDate(LocalDate.now().minus(daysBack, ChronoUnit.DAYS)), toDate(LocalDate.now().plus(daysForward, ChronoUnit.DAYS)));

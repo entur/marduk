@@ -6,7 +6,7 @@ import java.util.Collection;
 
 public interface ProviderRepository {
 
-    Collection<Provider> getProvidersWithSftpAccounts();
+    Collection<Provider> getProviders();
 
-    Provider getProviderById(Long id);
+    Provider getProvider(Long id);
 }

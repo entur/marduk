@@ -1,17 +1,14 @@
 package no.rutebanken.marduk.domain;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.OneToOne;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-@Entity
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Provider {
 
-    @Id
     public Long id;
     public String name;
     public String sftpAccount;
-    @OneToOne
+
     public ChouetteInfo chouetteInfo;
 
     public Provider(){}

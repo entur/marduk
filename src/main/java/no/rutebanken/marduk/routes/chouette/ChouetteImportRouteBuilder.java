@@ -60,7 +60,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
                 .to("direct:updateStatus")
                 .to("direct:getBlob")
-                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProviderById(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.prefix))
+                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.prefix))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:addJson");
 
@@ -208,7 +208,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
     String getJsonFileContent(String importName, Long providerId) {
         try {
-            ChouetteInfo chouetteInfo = getProviderRepository().getProviderById(providerId).chouetteInfo;
+            ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
             ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport(importName, chouetteInfo.prefix, chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user, true);
             ImportParameters.Parameters parameters = new ImportParameters.Parameters(gtfsImport);
             ImportParameters importParameters = new ImportParameters(parameters);

@@ -30,8 +30,8 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
 
         CamelContext context = getContext();
 
-        Collection<Provider> providersWithSftpAccounts = getProviderRepository().getProvidersWithSftpAccounts();
-        providersWithSftpAccounts.forEach(p -> {
+        Collection<Provider> providers = getProviderRepository().getProviders();
+        providers.stream().filter(p -> p.sftpAccount != null).forEach(p -> {
             try {
                 context.addRoutes(new DynamcSftpPollerRouteBuilder(context, p, sftpHost, sftpKeyFile));
             } catch (Exception e){
