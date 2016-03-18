@@ -9,7 +9,7 @@ public class StatusRouteBuilder extends RouteBuilder {
     @Override
     public void configure() throws Exception {
         from("direct:updateStatus")
-        .to("activemq:topic:ExternalProviderStatus");
+        .to("activemq:queue:ExternalProviderStatus");
     }
 
 }
