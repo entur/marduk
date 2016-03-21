@@ -24,8 +24,8 @@ public class ApplicationStatusResource {
     @GET
     @Path("/ready")
     public Response isReady() {
-        logger.info("Checking readiness...");
-        //TODO Check
+        logger.debug("Checking readiness...");
+        //TODO
         //SFTP?
         //BlobStore?
         //ActiveMQ?
