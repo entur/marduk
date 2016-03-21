@@ -4,6 +4,12 @@ For details, see the
 initial project setup location:
   https://github.com/fabric8io/ipaas-quickstarts/
 
+## Liveness and readyiness
+In production, nabu can be probed with:
+- http://<host>:<port>/jersey/appstatus/up
+- http://<host>:<port>/jersey/appstatus/ready
+to check liveness and readiness, accordingly
+
 * Marduk currently has two spring profiles, dev and test. Use `-Dspring.profiles.active=dev` and `-Dspring.profiles.active=test` to switch between these.
 * The application is unable to run without configuration. This must be defined externally to the application in a file called application.properties. Copy application.properties into either the current directory, i.e. where the application will be run from, or a /config subdirectory of this folder
 * Typical application.properties for dev environment, with file system blobstore:
