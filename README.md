@@ -14,8 +14,8 @@ spring.main.sources=no.rutebanken.marduk
 # the options from org.apache.camel.spring.boot.CamelConfigurationProperties can be configured here
 camel.springboot.name=Marduk
 
-# Provider service
-rest.provider.service.url=http://nabu:8080/jersey/providers
+# Nabu rest service
+nabu.rest.service.url=http://nabu:8080/jersey/
 
 # activemq settings
 spring.activemq.broker-url=tcp://activemq:61616?jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
@@ -72,8 +72,8 @@ spring.main.sources=no.rutebanken.marduk
 # the options from org.apache.camel.spring.boot.CamelConfigurationProperties can be configured here
 camel.springboot.name=Marduk
 
-# Provider service
-rest.provider.service.url=http://nabu:8080/jersey/providers
+# Nabu rest service
+nabu.rest.service.url=http://nabu:8080/jersey/
 
 # activemq settings
 spring.activemq.broker-url=tcp://activemq:61616?jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000

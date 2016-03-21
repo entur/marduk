@@ -9,4 +9,6 @@ public interface ProviderRepository {
     Collection<Provider> getProviders();
 
     Provider getProvider(Long id);
+
+    boolean isConnected();
 }
