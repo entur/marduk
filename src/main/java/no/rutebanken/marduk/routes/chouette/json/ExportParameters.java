@@ -96,6 +96,10 @@ public class ExportParameters {
         @JsonProperty("end_date")
         public Date endDate;
 
+        @JsonProperty("route_type_id_scheme")
+        @JsonInclude(JsonInclude.Include.ALWAYS)
+        public String routeTypeIdScheme = "extended";
+
 
         public GtfsExport(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, Date startDate, Date endDate) {
             this.name = name;
