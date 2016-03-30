@@ -46,10 +46,10 @@ public class RestProviderRepository implements ProviderRepository {
         logger.debug("Got response: " + response);
         logger.debug("Response status:" + response.getStatusCode().toString() );
         if ("200".equals(response.getStatusCode().toString())){
-            logger.info("Response ok");
+            logger.debug("Response ok");
             return true;
         }
-        logger.info("Response not ok");
+        logger.debug("Response not ok");
         return false;
     }
 
