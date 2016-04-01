@@ -8,6 +8,7 @@ import org.apache.camel.Exchange;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 
@@ -66,7 +67,7 @@ public class Status {
         this.action = action;
         this.state = state;
         this.correlationId = correlationId;
-        this.date = Date.from(Instant.now());            //LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
+        this.date = Date.from( Instant.now(Clock.systemDefaultZone()));            //LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
     }
 
     public String toString() {
