@@ -1,12 +1,14 @@
 package no.rutebanken.marduk.routes.chouette;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
-import no.rutebanken.marduk.routes.chouette.json.ImportParameters;
+import no.rutebanken.marduk.routes.chouette.json.GtfsImportParameters;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
+import no.rutebanken.marduk.routes.chouette.json.RegtoppImportParameters;
+import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.status.Status;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -18,9 +20,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.net.NoRouteToHostException;
 import java.util.Optional;
 
@@ -69,18 +69,22 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
         from("direct:addJson")
                 .process(e -> {
                     String fileName = e.getIn().getHeader(Exchange.FILE_NAME, String.class);
-                    e.getIn().setHeader(JSON_PART, getJsonFileContent(fileName, e.getIn().getHeader(PROVIDER_ID, Long.class)));
+                    String fileType = e.getIn().getHeader(Constants.FILE_TYPE, String.class);
+                    Long providerId = e.getIn().getHeader(PROVIDER_ID, Long.class);
+                    e.getIn().setHeader(JSON_PART, getImportParameters(fileName, fileType, providerId));
                 }) //Using header to add json data
+                .log(LoggingLevel.DEBUG, getClass().getName(), "import parameters: " + header(JSON_PART))
                 .to("direct:sendJobRequest");
 
         from("direct:sendJobRequest")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Creating multipart request")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> toMultipart(e))
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_PREFIX + "}/importer/gtfs")
+                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_PREFIX + "}/importer/${header." + FILE_TYPE + ".toLowerCase()}"))
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Calling Chouette with URL: ${property.chouette_url}")
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
+                .toD("${property.chouette_url}")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> {
                     e.setProperty("url", e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
@@ -169,7 +173,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(""))
                 .choice()
                 .when(simple("${property.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, getClass().getName(), "Import ok, triggering export.")
+                .log(LoggingLevel.INFO, getClass().getName(), "Import ok, triggering GTFS export.")
                     .to("activemq:queue:ChouetteGtfsExportQueue")
                     .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
                 .when(simple("${property.action_report_result} == 'NOK'"))
@@ -207,21 +211,30 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
         exchange.getOut().setHeaders(exchange.getIn().getHeaders());
     }
 
-
-    String getJsonFileContent(String importName, Long providerId) {
-        try {
-            ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
-            ImportParameters.GtfsImport gtfsImport = new ImportParameters.GtfsImport(importName, chouetteInfo.prefix, chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user, true);
-            ImportParameters.Parameters parameters = new ImportParameters.Parameters(gtfsImport);
-            ImportParameters importParameters = new ImportParameters(parameters);
-            ObjectMapper mapper = new ObjectMapper();
-            StringWriter writer = new StringWriter();
-            mapper.writeValue(writer, importParameters);
-            return writer.toString();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    private Object getImportParameters(String fileName, String fileType, Long providerId) {
+        if (fileType.equals(FileType.REGTOPP.name())){
+            return getRegtoppImportParametersAsString(fileName, providerId);
+        } else if (fileType.equals(FileType.GTFS.name())) {
+            return getGtfsImportParametersAsString(fileName, providerId);
+        } else {
+            throw new IllegalArgumentException("Cannot create import parameters from file type '" + fileType + "'");
         }
     }
+
+    String getRegtoppImportParametersAsString(String importName, Long providerId) {
+        ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
+        RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.prefix,
+                chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user, true, chouetteInfo.regtoppVersion, chouetteInfo.regtoppCoordinateProjection);
+        return regtoppImportParameters.toJsonString();
+    }
+
+    String getGtfsImportParametersAsString(String importName, Long providerId) {
+        ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
+        GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.prefix, chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user, true);
+        return gtfsImportParameters.toJsonString();
+    }
+
+
 
 }
 

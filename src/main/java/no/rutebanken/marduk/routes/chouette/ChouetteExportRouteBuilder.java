@@ -6,7 +6,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
-import no.rutebanken.marduk.routes.chouette.json.ExportParameters;
+import no.rutebanken.marduk.routes.chouette.json.GtfsExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -180,11 +180,11 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
     String getJsonFileContent(Long providerId) {
         try {
             ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
-            ExportParameters.GtfsExport gtfsExport = new ExportParameters.GtfsExport("export",
+            GtfsExportParameters.GtfsExport gtfsExport = new GtfsExportParameters.GtfsExport("export",
                     chouetteInfo.prefix, chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user,
                     toDate(LocalDate.now().minus(daysBack, ChronoUnit.DAYS)), toDate(LocalDate.now().plus(daysForward, ChronoUnit.DAYS)));
-            ExportParameters.Parameters parameters = new ExportParameters.Parameters(gtfsExport);
-            ExportParameters importParameters = new ExportParameters(parameters);
+            GtfsExportParameters.Parameters parameters = new GtfsExportParameters.Parameters(gtfsExport);
+            GtfsExportParameters importParameters = new GtfsExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
             StringWriter writer = new StringWriter();
             mapper.writeValue(writer, importParameters);

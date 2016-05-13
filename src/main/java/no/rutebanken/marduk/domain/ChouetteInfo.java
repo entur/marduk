@@ -10,29 +10,34 @@ public class ChouetteInfo {
     public String dataSpace;
     public String organisation;
     public String user;
+    public String regtoppVersion;
+    public String regtoppCoordinateProjection;
 
-    public ChouetteInfo(){}
 
-    public ChouetteInfo(String prefix, String dataSpace, String organisation, String user) {
-        this.prefix = prefix;
-        this.dataSpace = dataSpace;
-        this.organisation = organisation;
-        this.user = user;
-    }
+//    public ChouetteInfo(){}
 
-    public ChouetteInfo(Long id, String prefix, String dataSpace, String organisation, String user) {
-        this(prefix, dataSpace, organisation, user);
-        this.id = id;
-    }
+//     ChouetteInfo(String prefix, String dataSpace, String organisation, String user) {
+//        this.prefix = prefix;
+//        this.dataSpace = dataSpace;
+//        this.organisation = organisation;
+//        this.user = user;
+//    }
+//
+//    public ChouetteInfo(Long id, String prefix, String dataSpace, String organisation, String user) {
+//        this(prefix, dataSpace, organisation, user);
+//        this.id = id;
+//    }
 
     @Override
     public String toString() {
         return "ChouetteInfo{" +
-                "id='" + id + '\'' +
+                "id=" + id +
                 ", prefix='" + prefix + '\'' +
                 ", dataSpace='" + dataSpace + '\'' +
                 ", organisation='" + organisation + '\'' +
                 ", user='" + user + '\'' +
+                ", regtoppVersion='" + regtoppVersion + '\'' +
+                ", regtoppCoordinateProjection='" + regtoppCoordinateProjection + '\'' +
                 '}';
     }
 

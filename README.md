@@ -10,7 +10,7 @@ In production, nabu can be probed with:
 - http://<host>:<port>/jersey/appstatus/ready
 to check liveness and readiness, accordingly
 
-* Marduk currently has two spring profiles, dev and test. Use `-Dspring.profiles.active=dev` and `-Dspring.profiles.active=test` to switch between these.
+* Marduk currently has two spring profiles, dev and test. Use the application.properties file to switch between these.
 * The application is unable to run without configuration. This must be defined externally to the application in a file called application.properties. Copy application.properties into either the current directory, i.e. where the application will be run from, or a /config subdirectory of this folder
 * Typical application.properties for dev environment, with file system blobstore:
 
@@ -146,8 +146,7 @@ spring.profiles.active=test
 * Docker image: `mvn -Dspring.profiles.active=dev -Pf8-build`
 * Run the docker image in docker inside vagrant:
 
-     ```bash
-     docker rm -f marduk ; mvn -Pf8-build && docker run -it --name marduk -e JAVA_OPTIONS="-Xmx1280m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Dspring.profiles.active=dev" --link activemq --link lamassu --link chouette -p 5005:5005 -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro -v /git/marduk_config/dev/application.properties:/app/config/application.properties:ro dr.rutebanken.org/rutebanken/marduk:0.0.1-SNAPSHOT```
+     ```docker rm -f marduk ; mvn -Pf8-build && docker run -it --name marduk -e JAVA_OPTIONS="-Xmx1280m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005" --link activemq --link lamassu --link chouette -p 5005:5005 -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro -v /git/config/marduk/dev/application.properties:/app/config/application.properties:ro dr.rutebanken.org/rutebanken/marduk:0.0.1-SNAPSHOT```
 
   Here, we mount the lamssu key and an application.properties file from vagrant.
 

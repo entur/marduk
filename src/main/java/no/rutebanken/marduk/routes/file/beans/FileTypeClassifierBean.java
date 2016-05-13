@@ -17,11 +17,9 @@ public class FileTypeClassifierBean {
 
     private static final Logger logger = LoggerFactory.getLogger(FileTypeClassifierBean.class);
 
-    private final String[] requiredGtfsFiles = {"agency.txt", "stops.txt", "routes.txt", "trips.txt", "stop_times.txt", "calendar.txt"};
-    private final String[] optionalGtfsFiles = {"calendar_dates.txt", "fare_attributes.txt", "fare_rules.txt", "shapes.txt", "frequencies.txt", "transfers.txt", "feed_info.txt"};  //TODO pathways.txt ?
-    private final Set<String> requiredFiles = Arrays.stream(requiredGtfsFiles).collect(Collectors.toSet());
-    private final Set<String> optionalFiles = Arrays.stream(optionalGtfsFiles).collect(Collectors.toSet());
-    private final Set<String> possibleFiles = Sets.union(requiredFiles, optionalFiles);
+    private final String requiredRegtoppFilesExtensionsRegex = "(?i).+\\.tix";
+    private final String requiredGtfsFilesRegex = "agency.txt|stops.txt|routes.txt|trips.txt|stop_times.txt";
+
     private final ZipFileReader zipFileReader = new ZipFileReader();
 
     public boolean validateFile(byte[] data, Exchange exchange) {
@@ -32,9 +30,15 @@ public class FileTypeClassifierBean {
         }
         try {
             if (relativePath.endsWith(".zip")) {
-                logger.debug("FIle ends with .zip");
+                logger.debug("File ends with .zip");
+                if (isRegtoppZip(zipFileReader.listFilesInZip(data))){
+                    exchange.getIn().setHeader(Constants.FILE_TYPE, FileType.REGTOPP.name());
+                    logger.debug("This is a regtopp zip.");
+                    return true;
+                }
                 if (isGtfsZip(zipFileReader.listFilesInZip(data))){
-                    exchange.getOut().setHeader(Constants.FILE_TYPE, FileType.GTFS.name());
+                    exchange.getIn().setHeader(Constants.FILE_TYPE, FileType.GTFS.name());
+                    logger.debug("This is a gtfs zip.");
                     return true;
                 }
                 throw new FileValidationException("Could not classify file '" + relativePath + "'.");
@@ -46,19 +50,12 @@ public class FileTypeClassifierBean {
         }
     }
 
-    private boolean isGtfsZip(final Set<String> filesInZip) {
-        logger.debug("Checking gtfs zip.");
-        Set<String> requiredFilesMissing = Sets.difference(requiredFiles, filesInZip);
-        if (requiredFilesMissing.size() > 0) {
-            logger.warn("Zip file is not a valid GTFS file, required files missing: " + requiredFilesMissing);
-//            throw new FileValidationException("Zip file is not a valid GTFS file, required files missing: " + requiredFilesMissing);  //TODO Add this back in when done with development?
-        }
-        Set<String> invalidFiles = Sets.difference(filesInZip, possibleFiles);
-        if (invalidFiles.size() > 0) {
-            logger.warn("Zip file is not a valid GTFS file, there are invalid files in GTFS zip:: " + invalidFiles);
-//            throw new FileValidationException("There are invalid files in GTFS zip: " + invalidFiles);   //TODO is this critical enough to fail validation?
-        }
-        return true;
+    boolean isRegtoppZip(Set<String> filesInZip) {
+        return filesInZip.stream().anyMatch(p -> p.matches(requiredRegtoppFilesExtensionsRegex));
+    }
+
+    boolean isGtfsZip(final Set<String> filesInZip) {
+        return filesInZip.stream().anyMatch(p -> p.matches(requiredGtfsFilesRegex));
     }
 
 }

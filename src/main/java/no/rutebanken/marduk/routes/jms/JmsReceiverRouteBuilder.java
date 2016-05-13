@@ -35,7 +35,6 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
             .to("direct:uploadBlob")
             .process(e -> Status.addStatus(e, Action.FILE_TRANSFER, State.OK))
             .to("direct:updateStatus")
-            .log(LoggingLevel.INFO, getClass().getName(), "Putting handle ${header." + FILE_HANDLE + "} and provider ${header." + PROVIDER_ID + "} on queue...")
             .to("activemq:queue:ProcessFileQueue");
     }
 

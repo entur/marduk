@@ -11,14 +11,14 @@ public class Provider {
 
     public ChouetteInfo chouetteInfo;
 
-    public Provider(){}
+//    public Provider(){}
 
-    public Provider(Long id, String name, String sftpAccount, ChouetteInfo chouetteInfo) {
-        this.id = id;
-        this.name = name;
-        this.sftpAccount = sftpAccount;
-        this.chouetteInfo = chouetteInfo;
-    }
+//    public Provider(Long id, String name, String sftpAccount, ChouetteInfo chouetteInfo) {
+//        this.id = id;
+//        this.name = name;
+//        this.sftpAccount = sftpAccount;
+//        this.chouetteInfo = chouetteInfo;
+//    }
 
     @Override
     public String toString() {

@@ -2,27 +2,23 @@ package no.rutebanken.marduk.routes.chouette.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class ImportParameters {
+import java.io.IOException;
+import java.io.StringWriter;
+
+public class GtfsImportParameters {
 
     public Parameters parameters;
 
-    public ImportParameters(Parameters parameters) {
-        this.parameters = parameters;
-    }
-
-    public static class Parameters {
+    static class Parameters {
 
         @JsonProperty("gtfs-import")
         public GtfsImport gtfsImport;
 
-        public Parameters(GtfsImport gtfsImport) {
-            this.gtfsImport = gtfsImport;
-        }
-
     }
 
-    public static class GtfsImport {
+    static class GtfsImport {
 
         public String name;
 
@@ -65,15 +61,33 @@ public class ImportParameters {
         @JsonInclude(JsonInclude.Include.ALWAYS)
         public String routeTypeIdScheme = "any";
 
-        public GtfsImport(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository) {
-            this.name = name;
-            this.objectIdPrefix = objectIdPrefix;
-            this.referentialName = referentialName;
-            this.organisationName = organisationName;
-            this.userName = userName;
-            this.cleanRepository = Boolean.toString(cleanRepository);
-        }
+    }
 
+    public static GtfsImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository) {
+        GtfsImport gtfsImport = new GtfsImport();
+        gtfsImport.name = name;
+        gtfsImport.objectIdPrefix = objectIdPrefix;
+        gtfsImport.referentialName = referentialName;
+        gtfsImport.organisationName = organisationName;
+        gtfsImport.userName = userName;
+        gtfsImport.cleanRepository = Boolean.toString(cleanRepository);
+        Parameters parameters = new Parameters();
+        parameters.gtfsImport = gtfsImport;
+        GtfsImportParameters gtfsImportParameters = new GtfsImportParameters();
+        gtfsImportParameters.parameters = parameters;
+        return gtfsImportParameters;
+    }
+
+
+    public String toJsonString() {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            StringWriter writer = new StringWriter();
+            mapper.writeValue(writer, this);
+            return writer.toString();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Date;
 
-public class ExportParameters {
+public class GtfsExportParameters {
 
     /*
 
@@ -31,7 +31,7 @@ public class ExportParameters {
 
     public Parameters parameters;
 
-    public ExportParameters(Parameters parameters) {
+    public GtfsExportParameters(Parameters parameters) {
         this.parameters = parameters;
     }
 
