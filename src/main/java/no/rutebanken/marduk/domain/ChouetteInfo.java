@@ -66,4 +66,9 @@ public class ChouetteInfo {
         return result;
     }
 
+
+    public boolean usesRegtopp(){
+        return regtoppVersion == null;
+    }
+
 }

@@ -223,6 +223,9 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
     String getRegtoppImportParametersAsString(String importName, Long providerId) {
         ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
+        if (!chouetteInfo.usesRegtopp()){
+            throw new IllegalArgumentException("Could not get regtopp information about provider '" + providerId + "'.");
+        }
         RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.prefix,
                 chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user, true, chouetteInfo.regtoppVersion, chouetteInfo.regtoppCoordinateProjection);
         return regtoppImportParameters.toJsonString();
