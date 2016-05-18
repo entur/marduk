@@ -58,6 +58,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
             from("sftp://" + provider.sftpAccount + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&delay=30s&delete=true&localWorkDirectory=files/tmp")
                     .log(LoggingLevel.INFO, getClass().getName(), "Received file on sftp route for '" + provider.sftpAccount + "'. Storing file ...")
                     .setHeader(FILE_HANDLE, simple("inbound/received/" + provider.id + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
+                    .setHeader(PROVIDER_ID, constant(provider.id))
                     .log(LoggingLevel.INFO, getClass().getName(), "File handle is: ${header." + FILE_HANDLE + "}")
                     .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                     .to("direct:uploadBlob")

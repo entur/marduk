@@ -11,15 +11,6 @@ public class Provider {
 
     public ChouetteInfo chouetteInfo;
 
-//    public Provider(){}
-
-//    public Provider(Long id, String name, String sftpAccount, ChouetteInfo chouetteInfo) {
-//        this.id = id;
-//        this.name = name;
-//        this.sftpAccount = sftpAccount;
-//        this.chouetteInfo = chouetteInfo;
-//    }
-
     @Override
     public String toString() {
         return "Provider{" +
@@ -30,27 +21,4 @@ public class Provider {
                 '}';
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Provider provider = (Provider) o;
-
-        if (id != null ? !id.equals(provider.id) : provider.id != null) return false;
-        if (name != null ? !name.equals(provider.name) : provider.name != null) return false;
-        if (sftpAccount != null ? !sftpAccount.equals(provider.sftpAccount) : provider.sftpAccount != null)
-            return false;
-        return chouetteInfo != null ? chouetteInfo.equals(provider.chouetteInfo) : provider.chouetteInfo == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = id != null ? id.hashCode() : 0;
-        result = 31 * result + (name != null ? name.hashCode() : 0);
-        result = 31 * result + (sftpAccount != null ? sftpAccount.hashCode() : 0);
-        result = 31 * result + (chouetteInfo != null ? chouetteInfo.hashCode() : 0);
-        return result;
-    }
 }
