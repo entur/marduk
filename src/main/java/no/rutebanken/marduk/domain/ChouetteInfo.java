@@ -7,7 +7,7 @@ public class ChouetteInfo {
 
     public Long id;
     public String prefix;
-    public String dataSpace;
+    public String referential;
     public String organisation;
     public String user;
     public String regtoppVersion;
@@ -18,7 +18,7 @@ public class ChouetteInfo {
         return "ChouetteInfo{" +
                 "id=" + id +
                 ", prefix='" + prefix + '\'' +
-                ", dataSpace='" + dataSpace + '\'' +
+                ", referential='" + referential + '\'' +
                 ", organisation='" + organisation + '\'' +
                 ", user='" + user + '\'' +
                 ", regtoppVersion='" + regtoppVersion + '\'' +

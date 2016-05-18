@@ -62,7 +62,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
                 .to("direct:updateStatus")
                 .to("direct:getBlob")
-                .process(e -> e.getIn().setHeader(CHOUETTE_PREFIX, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.prefix))
+                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:addJson");
 
@@ -81,7 +81,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .process(e -> toMultipart(e))
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_PREFIX + "}/importer/${header." + FILE_TYPE + ".toLowerCase()}"))
+                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/importer/${header." + FILE_TYPE + ".toLowerCase()}"))
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Calling Chouette with URL: ${property.chouette_url}")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
                 .toD("${property.chouette_url}")
@@ -227,13 +227,13 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
             throw new IllegalArgumentException("Could not get regtopp information about provider '" + providerId + "'.");
         }
         RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.prefix,
-                chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user, true, chouetteInfo.regtoppVersion, chouetteInfo.regtoppCoordinateProjection);
+                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, true, chouetteInfo.regtoppVersion, chouetteInfo.regtoppCoordinateProjection);
         return regtoppImportParameters.toJsonString();
     }
 
     String getGtfsImportParametersAsString(String importName, Long providerId) {
         ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
-        GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.prefix, chouetteInfo.dataSpace, chouetteInfo.organisation, chouetteInfo.user, true);
+        GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, true);
         return gtfsImportParameters.toJsonString();
     }
 
