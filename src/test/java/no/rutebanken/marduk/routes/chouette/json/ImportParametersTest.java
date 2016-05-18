@@ -20,13 +20,13 @@ public class ImportParametersTest {
 
     @Test
     public void createGtfsImportParameters() throws Exception {
-        GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", true);
+        GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette");
         assertJsonEquals(gtfsReferenceJson, importParameters.toJsonString());
     }
 
     @Test
     public void createRegtoppImportParameters() throws Exception {
-        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", true, "R12", "EPSG:32632");
+        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", "R12", "EPSG:32632");
         System.out.println(importParameters.toJsonString());
         assertJsonEquals(regtoppReferenceJson, importParameters.toJsonString());
     }
