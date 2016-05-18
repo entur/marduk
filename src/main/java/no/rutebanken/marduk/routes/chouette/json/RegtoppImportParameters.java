@@ -25,9 +25,6 @@ public class RegtoppImportParameters {
         @JsonProperty("no_save")
         public String noSave = "0";
 
-        @JsonProperty("clean_repository")
-        public String cleanRepository;
-
         @JsonProperty("user_name")
         public String userName;
 
@@ -67,14 +64,13 @@ public class RegtoppImportParameters {
 
     }
 
-    public static RegtoppImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository, String version, String coordinateProjection) {
+    public static RegtoppImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, String version, String coordinateProjection) {
         RegtoppImport regtoppImport = new RegtoppImport();
         regtoppImport.name = name;
         regtoppImport.objectIdPrefix = objectIdPrefix;
         regtoppImport.referentialName = referentialName;
         regtoppImport.organisationName = organisationName;
         regtoppImport.userName = userName;
-        regtoppImport.cleanRepository = Boolean.toString(cleanRepository);
         regtoppImport.version = version; //R11D, R12, R12N, R13A
         regtoppImport.coordinateProjection = coordinateProjection; //EPSG:32632 (UTM32_N)
         Parameters parameters = new Parameters();

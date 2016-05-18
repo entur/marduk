@@ -25,9 +25,6 @@ public class GtfsImportParameters {
         @JsonProperty("no_save")
         public String noSave = "0";
 
-        @JsonProperty("clean_repository")
-        public String cleanRepository;
-
         @JsonProperty("user_name")
         public String userName;
 
@@ -63,14 +60,13 @@ public class GtfsImportParameters {
 
     }
 
-    public static GtfsImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository) {
+    public static GtfsImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName) {
         GtfsImport gtfsImport = new GtfsImport();
         gtfsImport.name = name;
         gtfsImport.objectIdPrefix = objectIdPrefix;
         gtfsImport.referentialName = referentialName;
         gtfsImport.organisationName = organisationName;
         gtfsImport.userName = userName;
-        gtfsImport.cleanRepository = Boolean.toString(cleanRepository);
         Parameters parameters = new Parameters();
         parameters.gtfsImport = gtfsImport;
         GtfsImportParameters gtfsImportParameters = new GtfsImportParameters();
