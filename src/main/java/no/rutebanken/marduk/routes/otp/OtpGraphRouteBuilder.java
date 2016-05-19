@@ -42,7 +42,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:cleanUp")
                 .to("direct:fetchLatestGtfs")
                 .to("direct:fetchConfig")
-//                .to("direct:fetchMap")
+                .to("direct:fetchMap")
                 .to("direct:buildGraph")
                 .to("direct:publishGraph");
 
