@@ -67,7 +67,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setHeader(PROVIDER_ID, exchangeProperty(PROVIDER_ID))
                 .setHeader(CORRELATION_ID, exchangeProperty(CORRELATION_ID))
                 .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
-                .log(LoggingLevel.INFO, getClass().getName(), "Got file ${header." + FILE_HANDLE + "} from blob store.");
+                .log(LoggingLevel.INFO, getClass().getName(), "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.");
 
         from("direct:removeBlob")
             .log(LoggingLevel.INFO, getClass().getName(), "Removing blob: ${header." + FILE_HANDLE + "}")
