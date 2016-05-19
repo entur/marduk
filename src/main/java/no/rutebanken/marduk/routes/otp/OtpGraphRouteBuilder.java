@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
@@ -36,7 +37,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         //TODO Report status?
-        from("activemq:queue:OtpGraphQueue")
+        from("activemq:queue:OtpGraphQueue?maxConcurrentConsumers=1")
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting graph building.")
                 .to("direct:fetchLatestGtfs")
                 .to("direct:fetchConfig")
@@ -44,11 +45,21 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:buildGraph");
 
         from("direct:fetchLatestGtfs")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs ...")
-                .setHeader(FILE_HANDLE, constant("outbound/gtfs/" + CURRENT_AGGREGATED_GTFS_FILENAME))
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs files for all providers.")
+                .setBody(simple(getAggregatedGtfsFiles()))
+                .split(body())
+                .to("direct:getGtfsFile");
+
+        from("direct:getGtfsFile")
+            .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching outbound/gtfs/${body}")
+                .setProperty("fileName", body())
+                .setHeader(FILE_HANDLE, simple("outbound/gtfs/${property.fileName}"))
                 .to("direct:getBlob")
-                .to("file://" + otpGraphBuildDirectory + "?fileName=" + CURRENT_AGGREGATED_GTFS_FILENAME)
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Gtfs fetched.");
+                .choice()
+                .when(body().isNotEqualTo(null))
+                .toD("file://" + otpGraphBuildDirectory + "?fileName=${property.fileName}")
+                .otherwise()
+                .log(LoggingLevel.INFO, getClass().getName(), "${property.fileName} was empty when trying to fetch it from blobstore.");
 
         from("direct:fetchConfig")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching config ...")
@@ -93,6 +104,11 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Build folder deletion done.")
                 .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP graph building route.");
 
+    }
+
+    String getAggregatedGtfsFiles(){
+        return getProviderRepository().getProviders().stream()
+                .map(p -> p.id + "-" + CURRENT_AGGREGATED_GTFS_FILENAME).collect(Collectors.joining(","));
     }
 
 }

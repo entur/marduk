@@ -23,6 +23,7 @@ public class GraphBuilderProcessor implements Processor{
             new GraphBuilderClient().buildGraph(new File(otpGraphDirectory));
         } catch (RuntimeException e){
             logger.warn("Got exception while trying to build new OTP graph.", e);
+            throw e;
         }
     }
 }

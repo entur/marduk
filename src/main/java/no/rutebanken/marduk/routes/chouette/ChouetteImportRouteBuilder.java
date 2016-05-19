@@ -57,7 +57,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.ERROR, getClass().getName(), "Failed while importing to chouette.")
                 .handled(true);
 
-        from("activemq:queue:ChouetteImportQueue?concurrentConsumers=" + consumers).streamCaching()
+        from("activemq:queue:ChouetteImportQueue?maxConcurrentConsumers=" + consumers).streamCaching()
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette import for provider: ${header." + PROVIDER_ID + "}")
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
                 .to("direct:updateStatus")
