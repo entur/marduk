@@ -11,7 +11,7 @@ import java.io.InputStream;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
-import static org.apache.commons.io.FileUtils.deleteDirectory;
+import static org.apache.commons.io.FileUtils.cleanDirectory;
 
 /**
  * Trigger OTP graph building
@@ -39,18 +39,25 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
         //TODO Report status?
         from("activemq:queue:OtpGraphQueue?maxConcurrentConsumers=1")
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting graph building.")
+                .to("direct:cleanUp")
                 .to("direct:fetchLatestGtfs")
                 .to("direct:fetchConfig")
-                .to("direct:fetchMap")
-                .to("direct:buildGraph");
+//                .to("direct:fetchMap")
+                .to("direct:buildGraph")
+                .to("direct:publishGraph");
+
+        from("direct:cleanUp")
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Cleaning build folder ...")
+                .process(e -> cleanDirectory(new File(otpGraphBuildDirectory)))
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Build folder cleanup done.");
 
         from("direct:fetchLatestGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs files for all providers.")
                 .setBody(simple(getAggregatedGtfsFiles()))
                 .split(body())
-                .to("direct:getGtfsFile");
+                .to("direct:getGtfsFiles");
 
-        from("direct:getGtfsFile")
+        from("direct:getGtfsFiles")
             .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching outbound/gtfs/${body}")
                 .setProperty("fileName", body())
                 .setHeader(FILE_HANDLE, simple("outbound/gtfs/${property.fileName}"))
@@ -87,7 +94,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Done building new OTP graph.");
 
-        from("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + "&doneFileName=" + GRAPH_OBJ + ".done&delete=true")
+        from("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + "&doneFileName=" + GRAPH_OBJ + ".done")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .convertBodyTo(InputStream.class)
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory + "/${date:now:yyyyMMddHHmmss}-" + GRAPH_OBJ))
@@ -95,13 +102,6 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Done uploading new OTP graph.")
                 .to("direct:notify")
-                .to("direct:cleanUp");
-
-
-        from("direct:cleanUp")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Deleting build folder ...")
-                .process(e -> deleteDirectory(new File(otpGraphBuildDirectory)))
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Build folder deletion done.")
                 .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP graph building route.");
 
     }

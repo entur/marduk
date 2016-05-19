@@ -17,7 +17,7 @@ public class GraphBuilderProcessor implements Processor{
         try {
             String otpGraphDirectory = exchange.getProperty(Constants.OTP_GRAPH_DIR, String.class);
             if (otpGraphDirectory == null || otpGraphDirectory.equals("")){
-                logger.warn("Missing otp graph directory.");
+                logger.warn("Empty otp graph directory string.");
                 return;
             }
             new GraphBuilderClient().buildGraph(new File(otpGraphDirectory));
