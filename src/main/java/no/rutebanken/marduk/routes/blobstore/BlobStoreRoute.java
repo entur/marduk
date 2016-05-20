@@ -32,6 +32,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setProperty(PROVIDER_ID, header(PROVIDER_ID))
                 .setProperty(CORRELATION_ID, header(CORRELATION_ID))
                 .setProperty(Exchange.FILE_NAME, header(Exchange.FILE_NAME))
+                .setProperty(Exchange.FILE_PARENT, header(Exchange.FILE_PARENT))
                 .process(e -> {
                     if (e.getIn().getBody() instanceof InputStream) {
                         InputStream is = e.getIn().getBody(InputStream.class);
@@ -49,6 +50,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setHeader(PROVIDER_ID, exchangeProperty(PROVIDER_ID))
                 .setHeader(CORRELATION_ID, exchangeProperty(CORRELATION_ID))
                 .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
+                .setHeader(Exchange.FILE_PARENT, exchangeProperty(Exchange.FILE_PARENT))
                 .log(LoggingLevel.INFO, getClass().getName(), "Stored file ${header." + FILE_HANDLE + "} in blob store.");
 
         from("direct:getBlob")
@@ -59,6 +61,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setProperty(PROVIDER_ID, header(PROVIDER_ID))
                 .setProperty(CORRELATION_ID, header(CORRELATION_ID))
                 .setProperty(Exchange.FILE_NAME, header(Exchange.FILE_NAME))
+                .setProperty(Exchange.FILE_PARENT, header(Exchange.FILE_PARENT))
                 .toD("jclouds:blobstore:" + provider + "?operation=CamelJcloudsGet&container=" + containerName + "&blobName=${header." + FILE_HANDLE + "}")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 //restore headers from properties
@@ -67,6 +70,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setHeader(PROVIDER_ID, exchangeProperty(PROVIDER_ID))
                 .setHeader(CORRELATION_ID, exchangeProperty(CORRELATION_ID))
                 .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
+                .setHeader(Exchange.FILE_PARENT, exchangeProperty(Exchange.FILE_PARENT))
                 .log(LoggingLevel.INFO, getClass().getName(), "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.");
 
         from("direct:removeBlob")
