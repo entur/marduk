@@ -29,12 +29,37 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.blobstore.subdirectory}")
     private String blobStoreSubdirectory;
 
+    @Value("${activemq.broker.name:amqp-srv1}")
+    private String brokerName;
+
+    @Value("${activemq.broker.host:activemq}")
+    private String brokerMgmtHost;
+
+    @Value("${activemq.broker.mgmt.port:8161}")
+    private String brokerMgmtPort;
+
+    @Value("${spring.activemq.user}")
+    private String brokerUser;
+
+    @Value("${spring.activemq.password}")
+    private String brokerPassword;
+
+    @Value("${otp.graph.purge.queue:true}")
+    private boolean purgeQueue;
+
+
     @Override
     public void configure() throws Exception {
         super.configure();
 
         //TODO Report status?
         from("activemq:queue:OtpGraphQueue?maxConcurrentConsumers=1")
+                .choice()
+                .when(constant(purgeQueue))
+                    .log(LoggingLevel.INFO, getClass().getName(), "Purging OtpGraphQueue.")
+                    .to("http4://" + brokerMgmtHost + ":" + brokerMgmtPort + "/api/jolokia/exec/org.apache.activemq:type=Broker,brokerName=" +
+                        brokerName + ",destinationType=Queue,destinationName=OtpGraphQueue/purge()?authUsername=" + brokerUser + "&authPassword=" + brokerPassword)
+                .end()
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
                 .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")

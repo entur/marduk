@@ -87,6 +87,10 @@ spring.activemq.pooled=true
 spring.activemq.user=admin
 spring.activemq.password=admin
 
+activemq.broker.name=amqp-srv1
+activemq.broker.host=activemq
+activemq.broker.mgmt.port=8161
+
 # Amazon S3 blobstore settings
 blobstore.provider=aws-s3
 blobstore.containerName=junit-test-rutebanken
@@ -124,6 +128,7 @@ sftp.keyfile=/opt/jboss/.ssh/lamassu.pem
 
 # otp graph building settings
 otp.graph.build.directory=files/otpgraph
+otp.graph.purge.queue=true
 # optional (NOTE! http4 is correct config!)
 otp.graph.deployment.notification.url=http4://<url>
 otp.graph.map.base.url=http4://jump.rutebanken.org
