@@ -57,7 +57,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
         public void configure() throws Exception {
             from("sftp://" + provider.sftpAccount + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&delay=30s&delete=true&localWorkDirectory=files/tmp")
                     .log(LoggingLevel.INFO, getClass().getName(), "Received file on sftp route for '" + provider.sftpAccount + "'. Storing file ...")
-                    .setHeader(FILE_HANDLE, simple("inbound/received/" + provider.id + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
+                    .setHeader(FILE_HANDLE, simple("inbound/received/" + provider.id + "/" + provider.id + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
                     .setHeader(PROVIDER_ID, constant(provider.id))
                     .log(LoggingLevel.INFO, getClass().getName(), "File handle is: ${header." + FILE_HANDLE + "}")
                     .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")

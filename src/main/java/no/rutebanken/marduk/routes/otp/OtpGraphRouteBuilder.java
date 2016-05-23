@@ -6,12 +6,9 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.io.InputStream;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
-import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 /**
  * Trigger OTP graph building
@@ -21,7 +18,6 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
     private static final String BUILD_CONFIG_JSON = "build-config.json";
     private static final String NORWAY_LATEST_OSM_PBF = "norway-latest.osm.pbf";
-    private static final String GRAPH_OBJ = "Graph.obj";
     private static final String TIMESTAMP = "RutebankenTimeStamp";
 
     @Value("${otp.graph.build.directory}")
@@ -89,26 +85,6 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Done building new OTP graph.");
 
-        from("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + "&doneFileName=" + GRAPH_OBJ + ".done&recursive=true&noop=true")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Starting graph publishing.")
-                .process(
-                    e -> e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"))
-                )
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .convertBodyTo(InputStream.class)
-                .process(
-                    e -> e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"))
-                )
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .to("direct:uploadBlob")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Done uploading new OTP graph.")
-                .to("direct:notify")
-                .to("direct:cleanUp");
-
-        from("direct:cleanUp")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Deleting build folder ${property." + Exchange.FILE_PARENT + "} ...")
-                .process(e -> deleteDirectory(new File(e.getIn().getExchange().getProperty(Exchange.FILE_PARENT, String.class))))
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Build folder ${property." + Exchange.FILE_PARENT + "} cleanup done.");
 
     }
 
