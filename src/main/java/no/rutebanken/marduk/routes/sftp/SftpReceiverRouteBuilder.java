@@ -30,6 +30,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
 
         CamelContext context = getContext();
 
+        //TODO Catch changes in sftp account, restart route with new config?
         Collection<Provider> providers = getProviderRepository().getProviders();
         providers.stream().filter(p -> p.sftpAccount != null).forEach(p -> {
             try {

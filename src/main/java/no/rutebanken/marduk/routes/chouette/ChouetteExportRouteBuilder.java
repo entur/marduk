@@ -181,8 +181,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
         try {
             ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
             GtfsExportParameters.GtfsExport gtfsExport = new GtfsExportParameters.GtfsExport("export",
-                    chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user,
-                    toDate(LocalDate.now().minus(daysBack, ChronoUnit.DAYS)), toDate(LocalDate.now().plus(daysForward, ChronoUnit.DAYS)));
+                    chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user);
             GtfsExportParameters.Parameters parameters = new GtfsExportParameters.Parameters(gtfsExport);
             GtfsExportParameters importParameters = new GtfsExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
