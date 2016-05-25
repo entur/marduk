@@ -174,7 +174,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .choice()
                 .when(simple("${property.action_report_result} == 'OK'"))
                 .log(LoggingLevel.INFO, getClass().getName(), "Import ok, triggering GTFS export.")
-                    .to("activemq:queue:ChouetteGtfsExportQueue")
+                    .to("activemq:queue:ChouetteExportQueue")
                     .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
                 .when(simple("${property.action_report_result} == 'NOK'"))
                     .log(LoggingLevel.WARN, getClass().getName(), "Import not ok.")

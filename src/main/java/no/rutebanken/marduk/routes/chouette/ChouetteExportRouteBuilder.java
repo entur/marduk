@@ -52,7 +52,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        from("activemq:queue:ChouetteGtfsExportQueue")
+        from("activemq:queue:ChouetteExportQueue")
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette export for provider with id ${header." + PROVIDER_ID + "}")
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .to("direct:exportAddJson");
