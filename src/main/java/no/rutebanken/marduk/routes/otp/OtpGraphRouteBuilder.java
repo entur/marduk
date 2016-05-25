@@ -115,7 +115,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
     String getAggregatedGtfsFiles(){
         return getProviderRepository().getProviders().stream()
-                .map(p -> p.id + "-" + CURRENT_AGGREGATED_GTFS_FILENAME).collect(Collectors.joining(","));
+                .map(p -> p.chouetteInfo.referential + "-" + CURRENT_AGGREGATED_GTFS_FILENAME).collect(Collectors.joining(","));
     }
 
 }
