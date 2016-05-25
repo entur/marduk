@@ -45,7 +45,10 @@ public class GtfsExportParameters {
         public String referencesType = "";
 
         @JsonProperty("add_metadata")
-        public boolean addMetadata;// = true;
+        public boolean addMetadata;
+
+        @JsonProperty("time_zone")
+        public String timeZone = "Europe/Oslo";
 
         @JsonProperty("route_type_id_scheme")
         @JsonInclude(JsonInclude.Include.ALWAYS)
