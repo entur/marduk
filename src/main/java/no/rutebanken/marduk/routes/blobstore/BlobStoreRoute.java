@@ -31,6 +31,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setProperty(FILE_TYPE, header(FILE_TYPE))
                 .setProperty(PROVIDER_ID, header(PROVIDER_ID))
                 .setProperty(CORRELATION_ID, header(CORRELATION_ID))
+                .setProperty(CHOUETTE_REFERENTIAL, header(CHOUETTE_REFERENTIAL))
                 .setProperty(Exchange.FILE_NAME, header(Exchange.FILE_NAME))
                 .setProperty(Exchange.FILE_PARENT, header(Exchange.FILE_PARENT))
                 .process(e -> {
@@ -49,6 +50,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setHeader(FILE_TYPE, exchangeProperty(FILE_TYPE))
                 .setHeader(PROVIDER_ID, exchangeProperty(PROVIDER_ID))
                 .setHeader(CORRELATION_ID, exchangeProperty(CORRELATION_ID))
+                .setHeader(CHOUETTE_REFERENTIAL, exchangeProperty(CHOUETTE_REFERENTIAL))
                 .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(Exchange.FILE_PARENT))
                 .log(LoggingLevel.INFO, getClass().getName(), "Stored file ${header." + FILE_HANDLE + "} in blob store.");
@@ -60,6 +62,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setProperty(FILE_TYPE, header(FILE_TYPE))
                 .setProperty(PROVIDER_ID, header(PROVIDER_ID))
                 .setProperty(CORRELATION_ID, header(CORRELATION_ID))
+                .setProperty(CHOUETTE_REFERENTIAL, header(CHOUETTE_REFERENTIAL))
                 .setProperty(Exchange.FILE_NAME, header(Exchange.FILE_NAME))
                 .setProperty(Exchange.FILE_PARENT, header(Exchange.FILE_PARENT))
                 .toD("jclouds:blobstore:" + provider + "?operation=CamelJcloudsGet&container=" + containerName + "&blobName=${header." + FILE_HANDLE + "}")
@@ -69,6 +72,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setHeader(FILE_TYPE, exchangeProperty(FILE_TYPE))
                 .setHeader(PROVIDER_ID, exchangeProperty(PROVIDER_ID))
                 .setHeader(CORRELATION_ID, exchangeProperty(CORRELATION_ID))
+                .setHeader(CHOUETTE_REFERENTIAL, exchangeProperty(CHOUETTE_REFERENTIAL))
                 .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(Exchange.FILE_PARENT))
                 .log(LoggingLevel.INFO, getClass().getName(), "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.");
