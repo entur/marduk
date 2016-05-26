@@ -7,6 +7,7 @@ import org.jboss.poc.camelblob.BlobMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.routes.status.Status.Action;
@@ -29,7 +30,10 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
 
         from("activemq:queue:ExternalFileUploadQueue?disableReplyTo=true&messageConverter=#blobMessageConverter")
             .log(LoggingLevel.INFO, getClass().getName(), "Received file ${header.CamelFileName} on jms receiver route for provider ${header.RutebankenProviderId} and correlation id ${header.RutebankenCorrelationId}. Storing file ...")
-            .setHeader(FILE_HANDLE, simple("inbound/received/${header." + PROVIDER_ID + "}-${date:now:yyyyMMddHHmmss}-${header.CamelFileName}"))
+            .process(
+                e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential)
+            )
+            .setHeader(FILE_HANDLE, simple("inbound/received/${header." + CHOUETTE_REFERENTIAL + "}/${header." + CHOUETTE_REFERENTIAL + "}-${date:now:yyyyMMddHHmmss}-${header.CamelFileName}"))
             .log(LoggingLevel.INFO, getClass().getName(), "File handle is: ${header." + FILE_HANDLE + "}")
             .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
             .to("direct:uploadBlob")

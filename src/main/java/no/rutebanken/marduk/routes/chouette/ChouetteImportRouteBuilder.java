@@ -44,7 +44,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
     @Value("${chouette.url}")
     private String chouetteUrl;
 
-    private int consumers = 3;
+    private int consumers = 5;
 
     @Override
     public void configure() throws Exception {
@@ -57,7 +57,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.ERROR, getClass().getName(), "Failed while importing to chouette.")
                 .handled(true);
 
-        from("activemq:queue:ChouetteImportQueue?concurrentConsumers=" + consumers).streamCaching()
+        from("activemq:queue:ChouetteImportQueue?maxConcurrentConsumers=" + consumers).streamCaching()
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette import for provider: ${header." + PROVIDER_ID + "}")
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
                 .to("direct:updateStatus")
@@ -174,7 +174,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .choice()
                 .when(simple("${property.action_report_result} == 'OK'"))
                 .log(LoggingLevel.INFO, getClass().getName(), "Import ok, triggering GTFS export.")
-                    .to("activemq:queue:ChouetteGtfsExportQueue")
+                    .to("activemq:queue:ChouetteExportQueue")
                     .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
                 .when(simple("${property.action_report_result} == 'NOK'"))
                     .log(LoggingLevel.WARN, getClass().getName(), "Import not ok.")

@@ -17,7 +17,7 @@ public class FileTypeClassifierBean {
 
     private static final Logger logger = LoggerFactory.getLogger(FileTypeClassifierBean.class);
 
-    private final String requiredRegtoppFilesExtensionsRegex = "(?i).+\\.tix";
+    private final String requiredRegtoppFilesExtensionsRegex = "(?i).+\\.tix|(?i).+\\.hpl|(?i).+\\.dko";
     private final String requiredGtfsFilesRegex = "agency.txt|stops.txt|routes.txt|trips.txt|stop_times.txt";
 
     private final ZipFileReader zipFileReader = new ZipFileReader();

@@ -6,11 +6,9 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.io.InputStream;
+import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
-import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 /**
  * Trigger OTP graph building
@@ -20,7 +18,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
     private static final String BUILD_CONFIG_JSON = "build-config.json";
     private static final String NORWAY_LATEST_OSM_PBF = "norway-latest.osm.pbf";
-    private static final String GRAPH_OBJ = "Graph.obj";
+    private static final String TIMESTAMP = "RutebankenTimeStamp";
 
     @Value("${otp.graph.build.directory}")
     private String otpGraphBuildDirectory;
@@ -31,29 +29,67 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.blobstore.subdirectory}")
     private String blobStoreSubdirectory;
 
+    @Value("${activemq.broker.name:amqp-srv1}")
+    private String brokerName;
+
+    @Value("${activemq.broker.host:activemq}")
+    private String brokerMgmtHost;
+
+    @Value("${activemq.broker.mgmt.port:8161}")
+    private String brokerMgmtPort;
+
+    @Value("${spring.activemq.user}")
+    private String brokerUser;
+
+    @Value("${spring.activemq.password}")
+    private String brokerPassword;
+
+    @Value("${otp.graph.purge.queue:true}")
+    private boolean purgeQueue;
+
+
     @Override
     public void configure() throws Exception {
         super.configure();
 
         //TODO Report status?
-        from("activemq:queue:OtpGraphQueue")
-                .log(LoggingLevel.INFO, getClass().getName(), "Starting graph building.")
+        from("activemq:queue:OtpGraphQueue?maxConcurrentConsumers=1")
+                .choice()
+                .when(constant(purgeQueue))
+                    .log(LoggingLevel.INFO, getClass().getName(), "Purging OtpGraphQueue.")
+                    .to("http4://" + brokerMgmtHost + ":" + brokerMgmtPort + "/api/jolokia/exec/org.apache.activemq:type=Broker,brokerName=" +
+                        brokerName + ",destinationType=Queue,destinationName=OtpGraphQueue/purge()?authUsername=" + brokerUser + "&authPassword=" + brokerPassword)
+                .end()
+                .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
+                .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
+                .log(LoggingLevel.INFO, getClass().getName(), "Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:fetchLatestGtfs")
                 .to("direct:fetchConfig")
                 .to("direct:fetchMap")
-                .to("direct:buildGraph");
+                .to("direct:buildGraph")
+                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP graph building route.");
 
         from("direct:fetchLatestGtfs")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs ...")
-                .setHeader(FILE_HANDLE, constant("outbound/gtfs/" + CURRENT_AGGREGATED_GTFS_FILENAME))
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs files for all providers.")
+                .setBody(simple(getAggregatedGtfsFiles()))
+                .split(body())
+                .to("direct:getGtfsFiles");
+
+        from("direct:getGtfsFiles")
+            .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching outbound/gtfs/${body}")
+                .setProperty("fileName", body())
+                .setHeader(FILE_HANDLE, simple("outbound/gtfs/${property.fileName}"))
                 .to("direct:getBlob")
-                .to("file://" + otpGraphBuildDirectory + "?fileName=" + CURRENT_AGGREGATED_GTFS_FILENAME)
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Gtfs fetched.");
+                .choice()
+                .when(body().isNotEqualTo(null))
+                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/${property.fileName}")
+                .otherwise()
+                .log(LoggingLevel.INFO, getClass().getName(), "${property.fileName} was empty when trying to fetch it from blobstore.");
 
         from("direct:fetchConfig")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching config ...")
                 .to("language:constant:resource:classpath:no/rutebanken/marduk/routes/otp/" + BUILD_CONFIG_JSON)
-                .to("file://" + otpGraphBuildDirectory + "?fileName=" + BUILD_CONFIG_JSON)
+                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/" + BUILD_CONFIG_JSON)
                 .log(LoggingLevel.DEBUG, getClass().getName(), BUILD_CONFIG_JSON + " fetched.");
 
         from("direct:fetchMap")
@@ -62,37 +98,24 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .to(mapBaseUrl + "/" + NORWAY_LATEST_OSM_PBF)
-                .to("file://" + otpGraphBuildDirectory + "?fileName=" + NORWAY_LATEST_OSM_PBF)
+                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/" + NORWAY_LATEST_OSM_PBF)
                 .log(LoggingLevel.DEBUG, getClass().getName(), NORWAY_LATEST_OSM_PBF + " fetched.");
 
         from("direct:buildGraph")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Building graph ...")
-                .setProperty(OTP_GRAPH_DIR, constant(otpGraphBuildDirectory))
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Directory for graph building is ${property." + OTP_GRAPH_DIR + "}")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Building OTP graph...")
                 .process(new GraphBuilderProcessor())
                 .setBody(constant(""))
-                .to("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + ".done")
+                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/" + GRAPH_OBJ + ".done")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Done building new OTP graph.");
 
-        from("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + "&doneFileName=" + GRAPH_OBJ + ".done&delete=true")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .convertBodyTo(InputStream.class)
-                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory + "/${date:now:yyyyMMddHHmmss}-" + GRAPH_OBJ))
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .to("direct:uploadBlob")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Done uploading new OTP graph.")
-                .to("direct:notify")
-                .to("direct:cleanUp");
 
+    }
 
-        from("direct:cleanUp")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Deleting build folder ...")
-                .process(e -> deleteDirectory(new File(otpGraphBuildDirectory)))
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Build folder deletion done.")
-                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP graph building route.");
-
+    String getAggregatedGtfsFiles(){
+        return getProviderRepository().getProviders().stream()
+                .map(p -> p.chouetteInfo.referential + "-" + CURRENT_AGGREGATED_GTFS_FILENAME).collect(Collectors.joining(","));
     }
 
 }

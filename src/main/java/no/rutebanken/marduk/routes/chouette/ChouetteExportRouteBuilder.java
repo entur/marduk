@@ -52,7 +52,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        from("activemq:queue:ChouetteGtfsExportQueue")
+        from("activemq:queue:ChouetteExportQueue")
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette export for provider with id ${header." + PROVIDER_ID + "}")
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .to("direct:exportAddJson");
@@ -154,7 +154,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${property.url}")
-                .setHeader(FILE_HANDLE, constant("outbound/gtfs/" + Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
+                .setHeader(FILE_HANDLE, simple("outbound/gtfs/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
                 .to("direct:uploadBlob")
                 .to("activemq:queue:OtpGraphQueue")
                 .when(simple("${property.action_report_result} == 'NOK'"))
@@ -181,8 +181,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
         try {
             ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
             GtfsExportParameters.GtfsExport gtfsExport = new GtfsExportParameters.GtfsExport("export",
-                    chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user,
-                    toDate(LocalDate.now().minus(daysBack, ChronoUnit.DAYS)), toDate(LocalDate.now().plus(daysForward, ChronoUnit.DAYS)));
+                    chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user);
             GtfsExportParameters.Parameters parameters = new GtfsExportParameters.Parameters(gtfsExport);
             GtfsExportParameters importParameters = new GtfsExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
