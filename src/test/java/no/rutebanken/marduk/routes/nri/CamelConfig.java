@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Configuration;
 public class CamelConfig extends CamelConfiguration {
 	public CamelConfig() {
 		super();
-		// TODO Auto-generated constructor stub
 	}
 
 	// @Value("${logging.trace.enabled}")
@@ -36,7 +35,7 @@ public class CamelConfig extends CamelConfiguration {
 		Tracer tracer = new Tracer();
 		tracer.setTraceExceptions(false);
 		tracer.setTraceInterceptors(true);
-		tracer.setLogName("com.raibledesigns.camel.trace");
+		tracer.setLogName("root");
 		return tracer;
 	}
 }
