@@ -21,6 +21,7 @@ public class NRIFtpReceiverRouteBuilder extends RouteBuilder {
 		from("ftp://{{nri.ftp.host}}/{{nri.ftp.folder}}?username={{nri.ftp.username}}&password={{nri.ftp.password}}&delay={{nri.ftp.delay}}&recursive=true&delete=false&localWorkDirectory=files/nritmp&filter=#regtoppFileFilter&ftpClient.controlEncoding=UTF-8&passiveMode=true")
 				.log(LoggingLevel.INFO, getClass().getName(), "Received file on NRI ftp route. Forwarding to sftp")
 				.setProperty("sftp.host", simple("{{sftp.host}}"))
+				.setProperty("sftp.keyfile", simple("{{sftp.keyfile}}"))
 				.dynamicRouter(method(NRIFtpReceiverRouteBuilder.class, "slip"))
 				.routeId("nri-ftp-sftp");
 	}
@@ -55,7 +56,7 @@ public class NRIFtpReceiverRouteBuilder extends RouteBuilder {
 				String newFileName = relativeFilePath.replace(' ', '_').replace('/', '_');
 				properties.put("CamelFileName",newFileName);
 				
-				return "sftp://" + username + "@" + properties.get("sftp.host");
+				return "sftp://" + username + "@" + properties.get("sftp.host")+"?privateKeyFile=" + properties.get("sftp.keyfile") ;
 			} 
 		}
 		return null;

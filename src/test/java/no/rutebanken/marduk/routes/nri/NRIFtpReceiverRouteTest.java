@@ -63,7 +63,7 @@ public class NRIFtpReceiverRouteTest {
 		context.getRouteDefinitions().get(0).adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint("sftp://sor-trondelag@{{sftp.host}}").skipSendToOriginalEndpoint()
+				interceptSendToEndpoint("sftp://sor-trondelag@{{sftp.host}}*").skipSendToOriginalEndpoint()
 				.to("mock:sor-trondelag");
 			
 			}
