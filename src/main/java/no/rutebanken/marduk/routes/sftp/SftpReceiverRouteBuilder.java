@@ -65,7 +65,8 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
                     .to("direct:uploadBlob")
                     .setHeader(CORRELATION_ID, constant(System.currentTimeMillis()))
                     .log(LoggingLevel.INFO, getClass().getName(), "Putting handle ${header." + FILE_HANDLE + "} and provider ${header." + PROVIDER_ID + "} on queue...")
-                    .to("activemq:queue:ProcessFileQueue");
+                    .to("activemq:queue:ProcessFileQueue")
+                    .routeId("sftp-s3-"+provider.chouetteInfo.referential);
         }
     }
 
