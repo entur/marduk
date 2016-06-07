@@ -79,7 +79,7 @@ public class NRIFtpReceiverRouteTest {
 		sorTrondelag.assertIsSatisfied();
 		
 		List<Exchange> exchanges = sorTrondelag.getExchanges();
-		String sftpFileName = (String) exchanges.get(0).getProperty("CamelFileName");
+		String sftpFileName = (String) exchanges.get(0).getIn().getHeader("CamelFileName");
 		assertEquals("AtB_(Sør-Trøndelag_fylke)_985_AtB_Hovedsett_2016.zip", sftpFileName);
 	}
 

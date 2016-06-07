@@ -2,6 +2,7 @@ package no.rutebanken.marduk.routes.nri;
 
 import java.util.Map;
 
+import org.apache.camel.Headers;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Properties;
 import org.apache.camel.builder.RouteBuilder;
@@ -36,7 +37,7 @@ public class NRIFtpReceiverRouteBuilder extends RouteBuilder {
 	 *            invocations
 	 * @return endpoints to go, or <tt>null</tt> to indicate the end
 	 */
-	public static String slip(Object body, @Properties Map<String, Object> properties) {
+	public static String slip(Object body, @Properties Map<String, Object> properties, @Headers Map<String,Object> outHeaders) {
 
 		// Dynamic router must return null when done
 
@@ -54,7 +55,7 @@ public class NRIFtpReceiverRouteBuilder extends RouteBuilder {
 			if (username != null) {
 				
 				String newFileName = relativeFilePath.replace(' ', '_').replace('/', '_');
-				properties.put("CamelFileName",newFileName);
+				outHeaders.put("CamelFileName",newFileName);
 				
 				return "sftp://" + username + "@" + properties.get("sftp.host")+"?privateKeyFile=" + properties.get("sftp.keyfile") ;
 			} 
