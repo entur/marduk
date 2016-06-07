@@ -35,10 +35,10 @@ import static no.rutebanken.marduk.routes.status.Status.State;
 @Component
 public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
-    @Value("${chouette.max.retries:500}")
+    @Value("${chouette.max.retries:3000}")
     private int maxRetries;
 
-    @Value("${chouette.retry.delay:30000}")
+    @Value("${chouette.retry.delay:5000}")
     private long retryDelay;
 
     @Value("${chouette.url}")
