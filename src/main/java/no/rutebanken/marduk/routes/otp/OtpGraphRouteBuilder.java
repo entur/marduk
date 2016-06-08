@@ -104,11 +104,15 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:buildGraph")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Building graph ...")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Building OTP graph...")
-                .process(new GraphBuilderProcessor())
-                .setBody(constant(""))
-                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/" + GRAPH_OBJ + ".done")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Done building new OTP graph.");
+                .doTry()
+	                .process(new GraphBuilderProcessor())
+	                .setBody(constant(""))
+	                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/" + GRAPH_OBJ + ".done")
+	                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+	                .log(LoggingLevel.DEBUG, getClass().getName(), "Done building new OTP graph.")
+        		.doCatch(Exception.class)
+        			.log(LoggingLevel.ERROR, getClass().getName(), "Graph building failed: "+exceptionMessage())
+        		.end();
 
 
     }
