@@ -37,7 +37,7 @@
 		<camel-version>2.16.2</camel-version>
 
 		<!-- Docker & Fabric8 Configs -->
-		<docker.from>fabric8/java-jboss-openjdk8-jdk:1.0.10</docker.from>
+		<docker.from>dr.rutebanken.org/rutebanken/java-base-image</docker.from>
 		<fabric8.dockerUser>rutebanken/</fabric8.dockerUser>
 		<docker.image>dr.rutebanken.org/${fabric8.dockerUser}${project.artifactId}:${project.version}</docker.image>
 
@@ -223,7 +223,7 @@
 
 
 
-		<!-- <dependency> <groupId>org.jboss.arquillian.junit</groupId> <artifactId>arquillian-junit-container</artifactId> <scope>test</scope> 
+		<!-- <dependency> <groupId>org.jboss.arquillian.junit</groupId> <artifactId>arquillian-junit-container</artifactId> <scope>test</scope>
 			</dependency> -->
 
 		<dependency>
@@ -352,8 +352,8 @@
 		</pluginManagement>
 	</build>
 
-	<!-- Default sample commands: mvn -Pf8-build ... build Docker images and create OpenShift deployment configs mvn -Pf8-deploy 
-		... f8-build + push to Docker registry + applying deployment config to OpenShift mvn -Pf8-local-deploy ... deployment for 
+	<!-- Default sample commands: mvn -Pf8-build ... build Docker images and create OpenShift deployment configs mvn -Pf8-deploy
+		... f8-build + push to Docker registry + applying deployment config to OpenShift mvn -Pf8-local-deploy ... deployment for
 		a single node setup without pushing to a registry For individual goal usage please consult the fabric8 documentation -->
 	<profiles>
 		<profile>
