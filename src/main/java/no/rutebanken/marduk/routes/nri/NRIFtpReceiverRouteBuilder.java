@@ -95,13 +95,13 @@ public class NRIFtpReceiverRouteBuilder extends RouteBuilder {
 		case "Telemark Bilruter AS":
 			return "vestfold-telemark";
 		case "Telemark Kollektivtrafikk (Telemark fylke)":
-			return "vestfold-telemark";
+			return "telemark";
 		case "Troms fylkestrafikk (Troms fylke)":
 			return "troms";
 		case "Trønderbilene AS":
 			return "sor-trondelag";
 		case "Vestfold kollektivtrafikk (Vestfold fylke)":
-			return "vestfold-telemark";
+			return "vestfold";
 		case "Østfold kollektivtrafikk (Østfold fylke)":
 			return "ostfold";
 
