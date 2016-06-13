@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 /**
  * Downloads zip files from NRI ftp, sends to internal SFTP server
  */
-@Component
-@Configuration
+//@Component
+//@Configuration
 public class NRIFtpReceiverRouteBuilder extends RouteBuilder {
 
 	@Override
