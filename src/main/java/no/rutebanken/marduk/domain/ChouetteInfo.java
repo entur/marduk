@@ -12,6 +12,7 @@ public class ChouetteInfo {
     public String user;
     public String regtoppVersion;
     public String regtoppCoordinateProjection;
+    public String dataFormat;
 
     @Override
     public String toString() {
@@ -23,11 +24,12 @@ public class ChouetteInfo {
                 ", user='" + user + '\'' +
                 ", regtoppVersion='" + regtoppVersion + '\'' +
                 ", regtoppCoordinateProjection='" + regtoppCoordinateProjection + '\'' +
+                ", dataFormat='" + dataFormat + '\'' +
                 '}';
     }
 
     public boolean usesRegtopp(){
-        return regtoppVersion != null;
+        return "regtopp".equals(dataFormat);
     }
 
 }

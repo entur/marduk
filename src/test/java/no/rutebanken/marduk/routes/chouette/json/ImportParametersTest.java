@@ -15,7 +15,7 @@ public class ImportParametersTest {
 
     final String regtoppReferenceJson =  "{\"parameters\":{\"regtopp-import\":{\"name\":\"test\",\"no_save\":\"0\"," +
             "\"user_name\":\"Chouette\",\"organisation_name\":\"Rutebanken\",\"referential_name\":\"testDS\",\"object_id_prefix\":\"tds\"," +
-            "\"max_distance_for_commercial\":\"0\",\"ignore_last_word\":\"0\",\"ignore_end_chars\":\"0\",\"max_distance_for_connection_link\":\"0\"," +
+           
             "\"references_type\":\"\",\"version\":\"R12\",\"coordinate_projection\":\"EPSG:32632\"}}}";
 
     @Test

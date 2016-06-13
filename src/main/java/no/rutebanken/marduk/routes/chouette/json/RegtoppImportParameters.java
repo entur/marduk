@@ -37,25 +37,11 @@ public class RegtoppImportParameters {
         @JsonProperty("object_id_prefix")
         public String objectIdPrefix;
 
-        @JsonProperty("max_distance_for_commercial")
-        public String maxDistanceForCommercial = "0";
-
-        @JsonProperty("ignore_last_word")
-        public String ignoreLastWord = "0";
-
-        @JsonProperty("ignore_end_chars")
-        public String ignoreEndChars = "0";
-
-        @JsonProperty("max_distance_for_connection_link")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
-        public String maxDistanceForConnectionLink = "0";
-
         @JsonProperty("references_type")
         @JsonInclude(JsonInclude.Include.ALWAYS)
         public String referencesType = "";
 
         @JsonProperty("version")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
         public String version;
 
         @JsonProperty("coordinate_projection")
