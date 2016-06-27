@@ -227,7 +227,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
             throw new IllegalArgumentException("Could not get regtopp information about provider '" + providerId + "'.");
         }
         RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.prefix,
-                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion, chouetteInfo.regtoppCoordinateProjection);
+                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion, chouetteInfo.regtoppCoordinateProjection,chouetteInfo.regtoppCalendarStrategy);
         return regtoppImportParameters.toJsonString();
     }
 

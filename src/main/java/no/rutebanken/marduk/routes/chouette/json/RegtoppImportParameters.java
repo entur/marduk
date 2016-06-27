@@ -48,9 +48,12 @@ public class RegtoppImportParameters {
         @JsonInclude(JsonInclude.Include.ALWAYS)
         public String coordinateProjection;
 
+        @JsonProperty("calendar_strategy")
+        public String calendarStrategy;
+
     }
 
-    public static RegtoppImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, String version, String coordinateProjection) {
+    public static RegtoppImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, String version, String coordinateProjection, String calendarStrategy) {
         RegtoppImport regtoppImport = new RegtoppImport();
         regtoppImport.name = name;
         regtoppImport.objectIdPrefix = objectIdPrefix;
@@ -59,6 +62,7 @@ public class RegtoppImportParameters {
         regtoppImport.userName = userName;
         regtoppImport.version = version; //R11D, R12, R12N, R13A
         regtoppImport.coordinateProjection = coordinateProjection; //EPSG:32632 (UTM32_N)
+        regtoppImport.calendarStrategy = calendarStrategy;
         Parameters parameters = new Parameters();
         parameters.regtoppImport = regtoppImport;
         RegtoppImportParameters regtoppImportParameters = new RegtoppImportParameters();

@@ -104,6 +104,10 @@ public class NRIFtpReceiverRouteBuilder extends RouteBuilder {
 			return "vestfold";
 		case "Østfold kollektivtrafikk (Østfold fylke)":
 			return "ostfold";
+		case "Kolumbus (Rogaland fylke)":
+			return "rogaland";
+		case "Opplandstrafikk (Oppland fylke)":
+			return "oppland";
 
 		}
 

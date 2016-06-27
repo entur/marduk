@@ -12,6 +12,7 @@ public class ChouetteInfo {
     public String user;
     public String regtoppVersion;
     public String regtoppCoordinateProjection;
+    public String regtoppCalendarStrategy;
     public String dataFormat;
 
     @Override
@@ -24,6 +25,7 @@ public class ChouetteInfo {
                 ", user='" + user + '\'' +
                 ", regtoppVersion='" + regtoppVersion + '\'' +
                 ", regtoppCoordinateProjection='" + regtoppCoordinateProjection + '\'' +
+                ", regtoppCalendarStrategy='" + regtoppCalendarStrategy + '\'' +
                 ", dataFormat='" + dataFormat + '\'' +
                 '}';
     }

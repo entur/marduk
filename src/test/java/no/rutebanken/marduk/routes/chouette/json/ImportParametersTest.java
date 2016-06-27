@@ -16,7 +16,7 @@ public class ImportParametersTest {
     final String regtoppReferenceJson =  "{\"parameters\":{\"regtopp-import\":{\"name\":\"test\",\"no_save\":\"0\"," +
             "\"user_name\":\"Chouette\",\"organisation_name\":\"Rutebanken\",\"referential_name\":\"testDS\",\"object_id_prefix\":\"tds\"," +
            
-            "\"references_type\":\"\",\"version\":\"R12\",\"coordinate_projection\":\"EPSG:32632\"}}}";
+            "\"references_type\":\"\",\"version\":\"R12\",\"coordinate_projection\":\"EPSG:32632\",\"calendar_strategy\":\"ADD\"}}}";
 
     @Test
     public void createGtfsImportParameters() throws Exception {
@@ -26,7 +26,7 @@ public class ImportParametersTest {
 
     @Test
     public void createRegtoppImportParameters() throws Exception {
-        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", "R12", "EPSG:32632");
+        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", "R12", "EPSG:32632","ADD");
         System.out.println(importParameters.toJsonString());
         assertJsonEquals(regtoppReferenceJson, importParameters.toJsonString());
     }
