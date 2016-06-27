@@ -23,8 +23,8 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
         onException(ValidationException.class)
                 .handled(true)
-                .log(LoggingLevel.WARN, getClass().getName(), "Could not process file ${header." + FILE_HANDLE + "}") //TODO Should we keep files in blob store on failure?
-                .to("direct:removeBlob")
+                .log(LoggingLevel.WARN, getClass().getName(), "Could not process file ${header." + FILE_HANDLE + "}") 
+                //.to("direct:removeBlob") Keep file for now
                 .process(e -> Status.addStatus(e, Status.Action.FILE_TRANSFER, Status.State.FAILED))
                 .to("direct:updateStatus")
                 .setBody(simple(""))      //remove file data from body
