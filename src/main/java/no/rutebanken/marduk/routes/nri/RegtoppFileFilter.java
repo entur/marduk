@@ -7,9 +7,12 @@ import org.springframework.stereotype.Component;
 @Component(value = "regtoppFileFilter")
 public class RegtoppFileFilter<T> implements GenericFileFilter<T> {
 
-    public boolean accept(GenericFile<T> file) {
-        
-    	// we only want zip files or directories 
-    	return file.isDirectory() || (!file.isDirectory() && file.getFileName().endsWith(".zip"));
-    }
+	public boolean accept(GenericFile<T> file) {
+
+		String filenameUppercase = file.getFileName().toUpperCase();
+
+		// we only want zip or rar files or directories
+		return file.isDirectory()
+				|| (!file.isDirectory() && (filenameUppercase.endsWith(".ZIP") || filenameUppercase.endsWith(".RAR")));
+	}
 }

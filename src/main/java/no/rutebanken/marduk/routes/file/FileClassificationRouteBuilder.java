@@ -38,10 +38,21 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .choice()
                 .when(header(FILE_TYPE).isEqualTo(FileType.INVALID.name()))
                     .log(LoggingLevel.WARN, getClass().getName(), "Unexpected file type or invalid file ${header." + FILE_HANDLE + "}")
+                .when(header(FILE_TYPE).isEqualTo(FileType.RAR.name()))
+                	.log(LoggingLevel.DEBUG, getClass().getName(), "Splitting and repackaging file ${header." + FILE_HANDLE + "}")
+                	.to("direct:splitRarFile")
                 .otherwise()
                     .log(LoggingLevel.DEBUG, getClass().getName(), "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                     .setBody(simple(""))   //remove file data from body since this is in jclouds blobstore
                     .to("activemq:queue:ChouetteImportQueue")
                 .end();
+    
+    
+        from("direct:splitRarFile")
+        	.split(method(RARToZipFilesSplitter.class,"splitRarFile"))
+            .setHeader(FILE_HANDLE, simple("${header."+FILE_HANDLE+"}-part_${header.CamelSplitIndex}_of_${header.CamelSplitSize}"))
+        	.to("direct:uploadBlob")
+        	.to("activemq:queue:ProcessFileQueue");
+
     }
 }
