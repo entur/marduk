@@ -21,7 +21,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         restConfiguration().component("netty4-http")
         .dataFormatProperty("prettyPrint", "true")
         .componentProperty("urlDecodeHeaders", "true")
-        .host("localhost")
+        .host("0.0.0.0")
         .port(8080)
         .apiContextPath("/api-doc")
         .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
