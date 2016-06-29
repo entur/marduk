@@ -4,6 +4,7 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 import org.apache.camel.model.rest.RestParamType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -14,6 +15,12 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 @Component
 public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
+	@Value("${server.port}")
+	public int port;
+	
+	@Value("${server.host}")
+	public String host;
+	
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -21,8 +28,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         restConfiguration().component("netty4-http")
         .dataFormatProperty("prettyPrint", "true")
         .componentProperty("urlDecodeHeaders", "true")
-        .host("0.0.0.0")
-        .port(8080)
+        .host(host)
+        .port(port)
         .apiContextPath("/api-doc")
         .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
         // and enable CORS
@@ -35,7 +42,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    		.route()
 			    .setHeader(PROVIDER_ID,header("providerId"))
 			    .setHeader(FILE_HANDLE,header("fileHandle"))
-			    .to("activemq:queue:ChouetteImportQueue")
+			    .inOnly("activemq:queue:ChouetteImportQueue")
 			    .routeId("admin-chouette-import")
 			    .endRest()
         	.get("/{providerId}/files")
@@ -48,7 +55,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         	.get("/{providerId}/export")
 		    	.route()
 			    .setHeader(PROVIDER_ID,header("providerId"))
-		    	.to("activemq:queue:ChouetteExportQueue")
+		    	.inOnly("activemq:queue:ChouetteExportQueue")
 			    .routeId("admin-chouette-export")
 		    	.endRest();
     	
@@ -56,7 +63,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    	.get("/build")
 	    		.route()
 	    		.setBody(simple(""))
-			    .to("activemq:queue:OtpGraphQueue")
+			    .inOnly("activemq:queue:OtpGraphQueue")
 			    .routeId("admin-build-graph")
 			    .endRest();
     	

@@ -18,7 +18,7 @@ public class App extends FatJarRouter {
     private static Logger logger = LoggerFactory.getLogger(App.class);
 
     // must have a main method spring-boot can run
-    public static void main(String[] args) {
+    public static void main(String... args) {
         logger.info("Starting Marduk...");
         FatJarRouter.main(args);
     }
