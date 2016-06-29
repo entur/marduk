@@ -4,7 +4,6 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 import org.apache.camel.model.rest.RestParamType;
-import org.glassfish.grizzly.http.util.URLDecoder;
 import org.springframework.stereotype.Component;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -30,28 +29,37 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         .apiProperty("cors", "true")
         .contextPath("/admin");
         
-        rest("/services/{providerId}")
-        	.get("/chouette/import")
-        		.param().required(Boolean.TRUE).name("fileHandle").type(RestParamType.query).description("S3 file path of file to reimport").endParam()
-        		.route()
+        rest("/services/chouette")
+	    	.get("/{providerId}/import")
+	    		.param().required(Boolean.TRUE).name("fileHandle").type(RestParamType.query).description("S3 file path of file to reimport").endParam()
+	    		.route()
 			    .setHeader(PROVIDER_ID,header("providerId"))
 			    .setHeader(FILE_HANDLE,header("fileHandle"))
 			    .to("activemq:queue:ChouetteImportQueue")
 			    .routeId("admin-chouette-import")
 			    .endRest()
-        	.get("/chouette/import/files")
-        		.route()
-			    .setHeader(PROVIDER_ID,header("providerId"))
+        	.get("/{providerId}/files")
+	    		.route()
+			  //  .process(getProviderRepository().getProvider(id)) "inbound/received/" + provider.chouetteInfo.referential
+	    		.setHeader(PROVIDER_ID,header("providerId"))
 			    .to("direct:listBlobs")
 			    .routeId("admin-chouette-import-list")
 			    .endRest()
-        	.get("/chouette/export")
+        	.get("/{providerId}/export")
 		    	.route()
 			    .setHeader(PROVIDER_ID,header("providerId"))
 		    	.to("activemq:queue:ChouetteExportQueue")
 			    .routeId("admin-chouette-export")
 		    	.endRest();
-        	
+    	
+        rest("/services/graph")
+	    	.get("/build")
+	    		.route()
+	    		.setBody(simple(""))
+			    .to("activemq:queue:OtpGraphQueue")
+			    .routeId("admin-build-graph")
+			    .endRest();
+    	
     }
 }
 

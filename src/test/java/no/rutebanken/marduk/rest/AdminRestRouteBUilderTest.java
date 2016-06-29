@@ -43,10 +43,10 @@ public class AdminRestRouteBUilderTest {
 	@EndpointInject(uri = "mock:chouetteExportQueue")
 	protected MockEndpoint exportQueue;
 
-	@Produce(uri = "http4:localhost:8081/admin/services/2/chouette/import?fileHandle=file/path/down/the/road")
+	@Produce(uri = "http4:localhost:8081/admin/services/chouette/2/import?fileHandle=file/path/down/the/road")
 	protected ProducerTemplate importTemplate;
 
-	@Produce(uri = "http4:localhost:8081/admin/services/2/chouette/export")
+	@Produce(uri = "http4:localhost:8081/admin/services/chouette/2/export")
 	protected ProducerTemplate exportTemplate;
 
 	@Test
