@@ -136,6 +136,12 @@
 			<groupId>org.apache.camel</groupId>
 			<artifactId>camel-swagger-java</artifactId>
 			<version>${camel-version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>jsr311-api</artifactId>
+					<groupId>javax.ws.rs</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.activemq</groupId>
