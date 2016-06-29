@@ -15,10 +15,10 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 @Component
 public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
-	@Value("${server.port}")
+	@Value("${server.admin.port}")
 	public int port;
 	
-	@Value("${server.host}")
+	@Value("${server.admin.host}")
 	public String host;
 	
     @Override
