@@ -127,6 +127,17 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-netty4-http</artifactId>
+			<version>${camel-version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-swagger-java</artifactId>
+			<version>${camel-version}</version>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.activemq</groupId>
 			<artifactId>activemq-camel</artifactId>
 		</dependency>
@@ -207,11 +218,11 @@
 			<version>6.0.45</version>
 		</dependency>
 
-<dependency>
-    <groupId>com.github.junrar</groupId>
-    <artifactId>junrar</artifactId>
-    <version>0.7</version>
-</dependency>
+		<dependency>
+			<groupId>com.github.junrar</groupId>
+			<artifactId>junrar</artifactId>
+			<version>0.7</version>
+		</dependency>
 
 		<!-- testing -->
 		<dependency>
@@ -228,7 +239,7 @@
 
 
 
-		<!-- <dependency> <groupId>org.jboss.arquillian.junit</groupId> <artifactId>arquillian-junit-container</artifactId> <scope>test</scope>
+		<!-- <dependency> <groupId>org.jboss.arquillian.junit</groupId> <artifactId>arquillian-junit-container</artifactId> <scope>test</scope> 
 			</dependency> -->
 
 		<dependency>
@@ -357,8 +368,8 @@
 		</pluginManagement>
 	</build>
 
-	<!-- Default sample commands: mvn -Pf8-build ... build Docker images and create OpenShift deployment configs mvn -Pf8-deploy
-		... f8-build + push to Docker registry + applying deployment config to OpenShift mvn -Pf8-local-deploy ... deployment for
+	<!-- Default sample commands: mvn -Pf8-build ... build Docker images and create OpenShift deployment configs mvn -Pf8-deploy 
+		... f8-build + push to Docker registry + applying deployment config to OpenShift mvn -Pf8-local-deploy ... deployment for 
 		a single node setup without pushing to a registry For individual goal usage please consult the fabric8 documentation -->
 	<profiles>
 		<profile>

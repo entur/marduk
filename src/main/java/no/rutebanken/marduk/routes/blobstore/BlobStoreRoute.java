@@ -80,5 +80,12 @@ public class BlobStoreRoute extends BaseRouteBuilder {
         from("direct:removeBlob")
             .log(LoggingLevel.INFO, getClass().getName(), "Removing blob: ${header." + FILE_HANDLE + "}")
                 .toD("jclouds:blobstore:" + provider + "?operation=CamelJcloudsRemoveBlob&container=" + containerName + "&blobName=${header." + FILE_HANDLE + "}");
-    }
+
+        
+        from("direct:listBlobs")
+	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+	        .toD("jclouds:blobstore:" + provider + "?operation=CamelJCloudsListNodes&container=" + containerName + "&blobName=inbound/received/akt")
+	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+	        .log(LoggingLevel.INFO, getClass().getName(), "Returning from fetching file list ${header." + FILE_HANDLE + "} from blob store.");
+}
 }
