@@ -21,8 +21,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         restConfiguration().component("netty4-http")
         .dataFormatProperty("prettyPrint", "true")
         .componentProperty("urlDecodeHeaders", "true")
-        .port(8081)
         .host("localhost")
+        .port(8080)
         .apiContextPath("/api-doc")
         .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
         // and enable CORS
