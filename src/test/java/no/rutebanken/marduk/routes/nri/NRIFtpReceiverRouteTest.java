@@ -51,9 +51,14 @@ public class NRIFtpReceiverRouteTest {
 		FileSystem fileSystem = new UnixFakeFileSystem();
 		fileSystem.add(new DirectoryEntry("/rutedata"));
 		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)"));
+		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/1585"));
+		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/1585/AtB Hovedsett 2016_unzipped"));
 		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985"));
+		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/984"));
 		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985/AtB Hovedsett 2016_unzipped"));
-		fileSystem.add(new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985/AtB Hovedsett 2016.zip"));
+		fileSystem.add(new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/1585/AtB Hovedsett 2017.zip"));
+		fileSystem.add(new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/984/AtB Hovedsett 2016.zip"));
+		fileSystem.add(new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985/AtB Hovedsett 2016_v2.zip"));
 
 		fakeFtpServer.setFileSystem(fileSystem);
 		fakeFtpServer.setServerControlPort(32220);
@@ -73,14 +78,15 @@ public class NRIFtpReceiverRouteTest {
 		context.start();
 
 		// setup expectations on the mocks
-		sorTrondelag.expectedMessageCount(1);
+		sorTrondelag.expectedMessageCount(3);
 
 		// assert that the test was okay
 		sorTrondelag.assertIsSatisfied();
 		
 		List<Exchange> exchanges = sorTrondelag.getExchanges();
-		String sftpFileName = (String) exchanges.get(0).getIn().getHeader("CamelFileName");
-		assertEquals("AtB_(Sør-Trøndelag_fylke)_985_AtB_Hovedsett_2016.zip", sftpFileName);
+		assertEquals("AtB_(Sør-Trøndelag_fylke)_984_AtB_Hovedsett_2016.zip", (String) exchanges.get(0).getIn().getHeader("CamelFileName"));
+		assertEquals("AtB_(Sør-Trøndelag_fylke)_985_AtB_Hovedsett_2016_v2.zip", (String) exchanges.get(1).getIn().getHeader("CamelFileName"));
+		assertEquals("AtB_(Sør-Trøndelag_fylke)_1585_AtB_Hovedsett_2017.zip", (String) exchanges.get(2).getIn().getHeader("CamelFileName"));
 	}
 
 }
