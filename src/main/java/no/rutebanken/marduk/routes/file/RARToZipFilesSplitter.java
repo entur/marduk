@@ -53,7 +53,6 @@ public class RARToZipFilesSplitter {
 			// Unpack to new folder
 			Archive a = new Archive(new FileVolumeManager(rarFile));
 			if (a != null) {
-				a.getMainHeader().print();
 				FileHeader fh = a.nextFileHeader();
 
 				while (fh != null) {
