@@ -60,6 +60,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 			    .setHeader(PROVIDER_ID,header("providerId"))
 		    	.inOnly("activemq:queue:ChouetteExportQueue")
 			    .routeId("admin-chouette-export")
+		    	.endRest()
+	    	.get("/{providerId}/clean")
+		    	.route()
+	    		.removeHeaders("CamelHttp*")
+			    .setHeader(PROVIDER_ID,header("providerId"))
+		    	.inOnly("activemq:queue:ChouetteCleanQueue")
+			    .routeId("admin-chouette-clean")
 		    	.endRest();
     	
         rest("/services/graph")
