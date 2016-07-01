@@ -76,8 +76,6 @@ public class NRIFtpReceiverRouteBuilder extends RouteBuilder {
 			return "more-romsdal";
 		case "Hedmark-Trafikk (Hedmark)":
 			return "hedmark";
-		case "Jernbane":
-			return "tog";
 		case "Jotunheimen og Valdresruten Bilselskap":
 			return "oppland";
 		case "NTFK (Nord-Trøndelag fylke)":
@@ -86,8 +84,6 @@ public class NRIFtpReceiverRouteBuilder extends RouteBuilder {
 			return "nordland";
 		case "Ruter (Akershus- og Oslo fylke)":
 			return "oslo-akershus";
-		case "Skyss (Hordaland fylke)":
-			return "hordaland";
 		case "Snelandia (Finnmark fylke)":
 			return "finnmark";
 		case "Sogn og Fjordane fylkeskommune (Sogn og Fjordane fylke)":
@@ -108,6 +104,10 @@ public class NRIFtpReceiverRouteBuilder extends RouteBuilder {
 			return "rogaland";
 		case "Opplandstrafikk (Oppland fylke)":
 			return "oppland";
+		case "Jernbane":
+//			return "tog";
+		case "Skyss (Hordaland fylke)":
+//			return "hordaland";
 
 		}
 
