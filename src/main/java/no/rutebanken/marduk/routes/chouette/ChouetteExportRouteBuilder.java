@@ -47,12 +47,14 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
     @Value("${chouette.export.days.back:365}")
     private int daysBack;
+    
+    private int consumers = 5;
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
-        from("activemq:queue:ChouetteExportQueue")
+        from("activemq:queue:ChouetteImportQueue?maxConcurrentConsumers=" + consumers)
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette export for provider with id ${header." + PROVIDER_ID + "}")
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .to("direct:exportAddJson");

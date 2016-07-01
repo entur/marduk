@@ -15,6 +15,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
 import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.model.dataformat.JsonLibrary;
+import org.apache.camel.processor.RedeliveryPolicy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,11 +45,22 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
     @Value("${chouette.url}")
     private String chouetteUrl;
 
-    private int consumers = 5;
+    private int consumers = 8; // TODO?
 
     @Override
     public void configure() throws Exception {
         super.configure();
+
+        
+        RedeliveryPolicy chouettePolicy = new RedeliveryPolicy();
+        chouettePolicy.setMaximumRedeliveries(3);
+        chouettePolicy.setRedeliveryDelay(30000);
+        chouettePolicy.setRetriesExhaustedLogLevel(LoggingLevel.ERROR);
+        chouettePolicy.setRetryAttemptedLogLevel(LoggingLevel.WARN);
+        chouettePolicy.setLogExhausted(true);
+  
+  
+    
 
         onException(HttpOperationFailedException.class, NoRouteToHostException.class)
                 .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
@@ -57,6 +69,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.ERROR, getClass().getName(), "Failed while importing to chouette.")
                 .handled(true);
 
+      
         from("activemq:queue:ChouetteImportQueue?maxConcurrentConsumers=" + consumers).streamCaching()
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette import for provider: ${header." + PROVIDER_ID + "}")
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
@@ -84,7 +97,13 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/importer/${header." + FILE_TYPE + ".toLowerCase()}"))
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Calling Chouette with URL: ${property.chouette_url}")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
-                .toD("${property.chouette_url}")
+                // Attempt to retrigger delivery in case of errors
+                .toD("${property.chouette_url}").      onException(HttpOperationFailedException.class)
+                .useOriginalMessage()
+                .onWhen(simple("${exception.message} contains '503'"))
+                .redeliveryPolicy(chouettePolicy)
+                // Redelivery definition complete
+                
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> {
                     e.setProperty("url", e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
