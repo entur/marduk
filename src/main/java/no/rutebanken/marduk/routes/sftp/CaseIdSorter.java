@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.routes.nri;
+package no.rutebanken.marduk.routes.sftp;
 
 import java.util.Comparator;
 import java.util.regex.Matcher;
@@ -7,13 +7,13 @@ import java.util.regex.Pattern;
 import org.apache.camel.component.file.GenericFile;
 import org.springframework.stereotype.Component;
 
-@Component(value = "caseIdNriFtpSorter")
+@Component(value = "caseIdSftpSorter")
 public class CaseIdSorter<T> implements Comparator<GenericFile<T>> {
 	
 	@Override
 	public int compare(GenericFile<T> o1, GenericFile<T> o2) {
 		
-		Pattern p = Pattern.compile(".*/([0-9]{3,4})/.*");
+		Pattern p = Pattern.compile(".*_([0-9]{3,4})_.*");
 		Matcher m1 = p.matcher(o1.getRelativeFilePath());
 		Matcher m2 = p.matcher(o2.getRelativeFilePath());
 		
