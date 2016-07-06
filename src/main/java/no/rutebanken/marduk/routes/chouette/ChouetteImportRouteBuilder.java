@@ -45,7 +45,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
     @Value("${chouette.url}")
     private String chouetteUrl;
 
-    private int consumers = 8; // TODO?
+    private int consumers = 10; // TODO?
 
     @Override
     public void configure() throws Exception {
