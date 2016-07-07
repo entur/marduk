@@ -34,6 +34,9 @@
 		<httpcomponents.version>4.5.1</httpcomponents.version>
 		<otp.version>0.20.1</otp.version>
 		<assertj-core.version>3.3.0</assertj-core.version>
+		<!-- Newest version is 2.17.2, but upgrade breaks
+		     http://camel.apache.org/camel-2170-release.html
+		 -->
 		<camel-version>2.16.2</camel-version>
 
 		<!-- Docker & Fabric8 Configs -->
