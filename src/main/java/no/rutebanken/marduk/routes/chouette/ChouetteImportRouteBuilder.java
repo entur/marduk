@@ -45,7 +45,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
     @Value("${chouette.url}")
     private String chouetteUrl;
 
-    private int consumers = 10; // TODO?
+    private int consumers = 7; // TODO?
 
     @Override
     public void configure() throws Exception {
@@ -100,7 +100,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 // Attempt to retrigger delivery in case of errors
                 .toD("${property.chouette_url}").      onException(HttpOperationFailedException.class)
                 .useOriginalMessage()
-                .onWhen(simple("${exception.message} contains '503'"))
+                .onWhen(simple("${exception.message} contains '503' or ${exception.message} contains '500'"))
                 .redeliveryPolicy(chouettePolicy)
                 // Redelivery definition complete
                 

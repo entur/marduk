@@ -48,7 +48,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
     @Value("${chouette.export.days.back:365}")
     private int daysBack;
     
-    private int consumers = 10;
+    private int consumers = 3;
 
     @Override
     public void configure() throws Exception {
