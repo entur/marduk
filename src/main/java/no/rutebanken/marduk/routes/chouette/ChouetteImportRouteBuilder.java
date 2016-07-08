@@ -1,6 +1,31 @@
 package no.rutebanken.marduk.routes.chouette;
 
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_TYPE;
+import static no.rutebanken.marduk.Constants.JSON_PART;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.ABORTED;
+import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.CANCELED;
+import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.SCHEDULED;
+import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.STARTED;
+
+import java.io.InputStream;
+import java.net.NoRouteToHostException;
+import java.util.Optional;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
+import org.apache.camel.component.http4.HttpMethods;
+import org.apache.camel.http.common.HttpOperationFailedException;
+import org.apache.camel.model.dataformat.JsonLibrary;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import com.google.common.base.Strings;
+
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -10,25 +35,8 @@ import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.RegtoppImportParameters;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.status.Status;
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.component.http4.HttpMethods;
-import org.apache.camel.http.common.HttpOperationFailedException;
-import org.apache.camel.model.dataformat.JsonLibrary;
-import org.apache.camel.processor.RedeliveryPolicy;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import java.io.InputStream;
-import java.net.NoRouteToHostException;
-import java.util.Optional;
-
-import static no.rutebanken.marduk.Constants.*;
-import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.*;
-import static no.rutebanken.marduk.routes.status.Status.Action;
-import static no.rutebanken.marduk.routes.status.Status.State;
+import no.rutebanken.marduk.routes.status.Status.Action;
+import no.rutebanken.marduk.routes.status.Status.State;
 
 /**
  * Submits files to Chouette
@@ -52,12 +60,12 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         
-        RedeliveryPolicy chouettePolicy = new RedeliveryPolicy();
-        chouettePolicy.setMaximumRedeliveries(3);
-        chouettePolicy.setRedeliveryDelay(30000);
-        chouettePolicy.setRetriesExhaustedLogLevel(LoggingLevel.ERROR);
-        chouettePolicy.setRetryAttemptedLogLevel(LoggingLevel.WARN);
-        chouettePolicy.setLogExhausted(true);
+//        RedeliveryPolicy chouettePolicy = new RedeliveryPolicy();
+//        chouettePolicy.setMaximumRedeliveries(3);
+//        chouettePolicy.setRedeliveryDelay(30000);
+//        chouettePolicy.setRetriesExhaustedLogLevel(LoggingLevel.ERROR);
+//        chouettePolicy.setRetryAttemptedLogLevel(LoggingLevel.WARN);
+//        chouettePolicy.setLogExhausted(true);
   
   
     
@@ -98,13 +106,15 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Calling Chouette with URL: ${property.chouette_url}")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
                 // Attempt to retrigger delivery in case of errors
-                .toD("${property.chouette_url}").      onException(HttpOperationFailedException.class)
-                .useOriginalMessage()
-                .onWhen(simple("${exception.message} contains '503' or ${exception.message} contains '500'"))
-                .redeliveryPolicy(chouettePolicy)
+                .toD("${property.chouette_url}")
+//                .onException(HttpOperationFailedException.class)
+//                .useOriginalMessage()
+//                .onWhen(simple("${exception.message} contains '503' or ${exception.message} contains '500'"))
+//                .redeliveryPolicy(chouettePolicy)
                 // Redelivery definition complete
                 
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Submitted new job")
                 .process(e -> {
                     e.setProperty("url", e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
                 })
