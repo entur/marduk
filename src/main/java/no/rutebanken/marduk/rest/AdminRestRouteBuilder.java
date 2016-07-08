@@ -77,7 +77,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 			    .inOnly("activemq:queue:OtpGraphQueue")
 			    .routeId("admin-build-graph")
 			    .endRest();
-    	
+
+		rest("/services/fetch")
+				.get("/osm")
+				.route()
+				.removeHeaders("CamelHttp*")
+				.to("direct:fetchOsmMapOverNorway")
+				.routeId("admin-fetch-osm")
+				.endRest();
     }
 }
 
