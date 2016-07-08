@@ -37,7 +37,7 @@
 		<!-- Newest version is 2.17.2, but upgrade breaks
 		     http://camel.apache.org/camel-2170-release.html
 		 -->
-		<camel-version>2.16.2</camel-version>
+		<camel-version>2.17.2</camel-version>
 
 		<!-- Docker & Fabric8 Configs -->
 		<docker.from>dr.rutebanken.org/rutebanken/java-base-image</docker.from>
@@ -68,12 +68,45 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+
 			<dependency>
 				<groupId>com.google.inject</groupId>
 				<artifactId>guice</artifactId>
 				<version>3.0</version>
 			</dependency>
-		</dependencies>
+
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-netty4-http</artifactId>
+                <version>${camel-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-netty4</artifactId>
+                <version>${camel-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-http-common</artifactId>
+                <version>${camel-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-spring</artifactId>
+                <version>${camel-version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-test</artifactId>
+                <version>${camel-version}</version>
+                <scope>test</scope>
+            </dependency>
+
+        </dependencies>
 	</dependencyManagement>
 
 	<dependencies>
@@ -195,6 +228,7 @@
 		<dependency>
 			<groupId>org.apache.camel</groupId>
 			<artifactId>camel-spring-javaconfig</artifactId>
+            <version>${camel-version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -249,6 +283,7 @@
 		<dependency>
 			<groupId>org.apache.camel</groupId>
 			<artifactId>camel-test-spring</artifactId>
+            <version>${camel-version}</version>
 			<scope>test</scope>
 		</dependency>
 
