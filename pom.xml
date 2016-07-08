@@ -18,8 +18,8 @@
 	<description>Backend integration</description>
 
 	<scm>
-		<connection>scm:git:ssh://git@bitbucket.org/rutebanken/marduk.git</connection>
-		<developerConnection>scm:git:ssh://git@bitbucket.org/rutebanken/marduk.git</developerConnection>
+		<connection>scm:git:ssh://git@github.com:rutebanken/marduk.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com:rutebanken/marduk.git</developerConnection>
 	</scm>
 
 	<properties>
