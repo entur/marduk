@@ -24,7 +24,10 @@ camel.springboot.name=Marduk
 nabu.rest.service.url=http://nabu:8080/jersey/
 
 # activemq settings
+# TODO is spring.activemq.broker-url in use??
 spring.activemq.broker-url=tcp://activemq:61616?jms.useAsyncSend=true&wireFormat.maxFrameSize=524288000&wireFormat.maxInactivityDuration=120000
+activemq.broker.host=activemq
+activemq.broker.mgmt.port=8161
 spring.activemq.pooled=true
 spring.activemq.user=admin
 spring.activemq.password=your_password
