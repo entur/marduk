@@ -3,8 +3,12 @@ package no.rutebanken.marduk.routes.fetchosm;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 
@@ -40,8 +44,10 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching OSM map over Norway.")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .to( osmMapUrl )
+                .convertBodyTo(InputStream.class)
                 .setHeader(FILE_HANDLE, simple("osm/norway-latest.osm.pbf"))
-                //.to("direct:uploadBlob")
+                .to("direct:uploadBlob")
+                .setBody(simple("File fetched, and blob store has been correctly updated"))
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Processing of OSM map finished");
 
 
