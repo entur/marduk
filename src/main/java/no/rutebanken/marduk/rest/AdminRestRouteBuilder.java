@@ -82,7 +82,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.get("/osm")
 				.route()
 				.removeHeaders("CamelHttp*")
-				.to("direct:fetchOsmMapOverNorway")
+				.to("direct:considerToFetchOsmMapOverNorway")
 				.routeId("admin-fetch-osm")
 				.endRest();
     }
