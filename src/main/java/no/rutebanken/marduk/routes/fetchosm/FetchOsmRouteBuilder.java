@@ -40,6 +40,12 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
     @Value("${fetch.osm.map.url:http4://jump.rutebanken.org/testfile.txt}")
     private String osmMapUrl;
 
+    /**
+     * Into which subdirectory should the map be stored. The default is osm.
+     */
+    @Value("${osm.pbf.blobstore.subdirectory:osm}")
+    private String blobStoreSubdirectory;
+
 
     @Override
     public void configure() throws Exception {
@@ -61,7 +67,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     }
                 })
                 .convertBodyTo(InputStream.class)
-                .setHeader(FILE_HANDLE, simple("osm/norway-latest.osm.pbf"))
+                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory +"/"+"osm/norway-latest.osm.pbf"))
                 .to("direct:uploadBlob")
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Processing of OSM map finished");
