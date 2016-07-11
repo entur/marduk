@@ -51,7 +51,8 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        from("direct:fetchOsmMapOverNorway")
+        // from("direct:fetchOsmMapOverNorway")
+        from("activemq:queue:FetchOsmMapOverNorway?maxConcurrentConsumers=1")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching OSM map over Norway.")
                 .to("direct:fetchOsmMapOverNorwayMd5")
                 // Storing the MD5
@@ -110,7 +111,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     .setBody(simple("No need to updated the map file, as the MD5 sum has not changed"))
                 .otherwise()
                     .log(LoggingLevel.INFO, getClass().getName(), "Need to update the map file. Calling the update map route")
-                    .to( "direct:fetchOsmMapOverNorway")
+                    .to( "activemq:queue:FetchOsmMapOverNorway")
                 .end();
 
         from("quartz2://marduk/fetchOsmMap?cron="+cronSchedule+"&trigger.timeZone=Europe/Oslo")
