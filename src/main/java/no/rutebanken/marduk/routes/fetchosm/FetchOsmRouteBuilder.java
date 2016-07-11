@@ -32,6 +32,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
 
     private static final String NEED_TO_REFETCH = "needToRefetchMapFile";
 
+    /** One time per 24H on MON-FRI */
     @Value("${fetch.osm.cron.schedule:0+*+*/23+?+*+MON-FRI}")
     private String cronSchedule;
 
@@ -112,7 +113,6 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     .to( "direct:fetchOsmMapOverNorway")
                 .end();
 
-        // One time per 24H on MON-FRI
         from("quartz2://marduk/fetchOsmMap?cron="+cronSchedule+"&trigger.timeZone=Europe/Oslo")
                 .log(LoggingLevel.INFO, getClass().getName(), "Quartz triggers fetch of OSM map over Norway.")
                 .to("direct:considerToFetchOsmMapOverNorway")
