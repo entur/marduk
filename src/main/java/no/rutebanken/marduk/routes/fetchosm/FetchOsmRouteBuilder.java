@@ -36,8 +36,8 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
     @Value("${fetch.osm.cron.schedule:0+*+*/23+?+*+MON-FRI}")
     private String cronSchedule;
 
-    //@Value("${fetch.osm.map.url:http4://download.geofabrik.de/europe/norway-latest.osm.pbf}")
-    @Value("${fetch.osm.map.url:http4://jump.rutebanken.org/testfile.txt}")
+    //@Value("${fetch.osm.map.url:http4://jump.rutebanken.org/testfile.txt}")
+    @Value("${fetch.osm.map.url:http4://download.geofabrik.de/europe/norway-latest.osm.pbf}")
     private String osmMapUrl;
 
     /**
