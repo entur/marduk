@@ -4,6 +4,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.Md5ChecksumValidationException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,8 +52,8 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        // from("direct:fetchOsmMapOverNorway")
-        from("activemq:queue:FetchOsmMapOverNorway?maxConcurrentConsumers=1")
+        from("direct:fetchOsmMapOverNorway")
+        //from("activemq:queue:FetchOsmMapOverNorway?maxConcurrentConsumers=1")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching OSM map over Norway.")
                 .to("direct:fetchOsmMapOverNorwayMd5")
                 // Storing the MD5
@@ -72,7 +73,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                         throw new Md5ChecksumValidationException("MD5 of body ("+md5+") does not match MD5 which was read from source ("+md5FromFile+")");
                     }
                 })
-                .convertBodyTo(InputStream.class)
+                // Probably not needed: .convertBodyTo(InputStream.class)
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory +"/"+"norway-latest.osm.pbf"))
                 .to("direct:uploadBlob")
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
@@ -111,7 +112,9 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     .setBody(simple("No need to updated the map file, as the MD5 sum has not changed"))
                 .otherwise()
                     .log(LoggingLevel.INFO, getClass().getName(), "Need to update the map file. Calling the update map route")
-                    .to( "activemq:queue:FetchOsmMapOverNorway")
+                    .inOnly("direct:fetchOsmMapOverNorway")
+                    .setBody(simple("Need to fetch map file. Called update map route"))
+                    //.to( "activemq:queue:FetchOsmMapOverNorway")
                 .end();
 
         from("quartz2://marduk/fetchOsmMap?cron="+cronSchedule+"&trigger.timeZone=Europe/Oslo")
