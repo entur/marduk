@@ -20,11 +20,12 @@ public class NRIFtpReceiverRouteBuilder extends RouteBuilder {
 	@Override
 	public void configure() throws Exception {
 		from("ftp://{{nri.ftp.host}}/{{nri.ftp.folder}}?username={{nri.ftp.username}}&password={{nri.ftp.password}}&delay={{nri.ftp.delay}}&recursive=true&delete=false&filter=#regtoppFileFilter&sorter=#caseIdNriFtpSorter&ftpClient.controlEncoding=UTF-8&passiveMode=true&binary=true")
-				.log(LoggingLevel.INFO, getClass().getName(), "Received file ${header.CamelFileName} on NRI ftp route. Forwarding to sftp")
-				.setProperty("sftp.host", simple("{{sftp.host}}"))
-				.setProperty("sftp.keyfile", simple("{{sftp.keyfile}}"))
-				.dynamicRouter(method(NRIFtpReceiverRouteBuilder.class, "slip"))
-				.routeId("nri-ftp-sftp");
+			.autoStartup("{{nri.ftp.autoStartup:true}}")
+			.log(LoggingLevel.INFO, getClass().getName(), "Received file ${header.CamelFileName} on NRI ftp route. Forwarding to sftp")
+			.setProperty("sftp.host", simple("{{sftp.host}}"))
+			.setProperty("sftp.keyfile", simple("{{sftp.keyfile}}"))
+			.dynamicRouter(method(NRIFtpReceiverRouteBuilder.class, "slip"))
+			.routeId("nri-ftp-sftp");
 	}
 
 	/**
