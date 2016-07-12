@@ -62,15 +62,16 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 // Fetch the actual file
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                .streamCaching()
                 .to( osmMapUrl )
-                .convertBodyTo(String.class)
+                .convertBodyTo(InputStream.class)
                 .process(p -> {
                     // Throw exception if the expected MD5 does not match MD5 from body
-                    String body = (String) p.getIn().getBody();
+                    InputStream body = (InputStream) p.getIn().getBody();
                     String md5 = DigestUtils.md5Hex( body );
                     String md5FromFile = (String) p.getIn().getHeader(Constants.FILE_TARGET_MD5);
                     if (! md5.equals( md5FromFile)) {
-                        throw new Md5ChecksumValidationException("MD5 of body ("+md5+") does not match MD5 which was read from source ("+md5FromFile+")");
+                        throw new Md5ChecksumValidationException("MD5 of body ("+md5+") does not match MD5 which was read from source ("+md5FromFile+").");
                     }
                 })
                 // Probably not needed: .convertBodyTo(InputStream.class)
