@@ -114,7 +114,8 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                     String fileName = e.getIn().getHeader(Exchange.FILE_NAME, String.class);
                     String fileType = e.getIn().getHeader(Constants.FILE_TYPE, String.class);
                     Long providerId = e.getIn().getHeader(PROVIDER_ID, Long.class);
-                    e.getIn().setHeader(JSON_PART, getImportParameters(fileName, fileType, providerId));
+                    boolean cleanRepository = (boolean) e.getProperty(Constants.CLEAN_REPOSITORY);
+                    e.getIn().setHeader(JSON_PART, getImportParameters(fileName, fileType, providerId,cleanRepository));
                 }) //Using header to add json data
                 .log(LoggingLevel.DEBUG, getClass().getName(), "import parameters: " + header(JSON_PART))
                 .to("direct:sendJobRequest");
@@ -277,29 +278,29 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
         exchange.getOut().setHeaders(exchange.getIn().getHeaders());
     }
 
-    private Object getImportParameters(String fileName, String fileType, Long providerId) {
+    private Object getImportParameters(String fileName, String fileType, Long providerId,boolean cleanRepository) {
         if (fileType.equals(FileType.REGTOPP.name())){
-            return getRegtoppImportParametersAsString(fileName, providerId);
+            return getRegtoppImportParametersAsString(fileName, providerId, cleanRepository);
         } else if (fileType.equals(FileType.GTFS.name())) {
-            return getGtfsImportParametersAsString(fileName, providerId);
+            return getGtfsImportParametersAsString(fileName, providerId, cleanRepository);
         } else {
             throw new IllegalArgumentException("Cannot create import parameters from file type '" + fileType + "'");
         }
     }
 
-    String getRegtoppImportParametersAsString(String importName, Long providerId) {
+    String getRegtoppImportParametersAsString(String importName, Long providerId, boolean cleanRepository) {
         ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
         if (!chouetteInfo.usesRegtopp()){
             throw new IllegalArgumentException("Could not get regtopp information about provider '" + providerId + "'.");
         }
         RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.prefix,
-                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion, chouetteInfo.regtoppCoordinateProjection,chouetteInfo.regtoppCalendarStrategy);
+                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion, chouetteInfo.regtoppCoordinateProjection,chouetteInfo.regtoppCalendarStrategy,cleanRepository);
         return regtoppImportParameters.toJsonString();
     }
 
-    String getGtfsImportParametersAsString(String importName, Long providerId) {
+    String getGtfsImportParametersAsString(String importName, Long providerId, boolean cleanRepository) {
         ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
-        GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user);
+        GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user,cleanRepository);
         return gtfsImportParameters.toJsonString();
     }
 
