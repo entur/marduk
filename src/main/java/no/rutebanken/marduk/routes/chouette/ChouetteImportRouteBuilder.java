@@ -13,6 +13,7 @@ import static no.rutebanken.marduk.routes.chouette.json.JobResponse.Status.START
 import java.io.InputStream;
 import java.net.NoRouteToHostException;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
 
+import no.rutebanken.marduk.App;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -77,9 +79,29 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.ERROR, getClass().getName(), "Failed while importing to chouette.")
                 .handled(true);
 
-      
+
+        from("activemq:queue:ChouetteCleanQueue?maxConcurrentConsumers=" + consumers).streamCaching()
+	        .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette dataspace clean for provider: ${header." + PROVIDER_ID + "}")
+	        .setHeader(Exchange.FILE_NAME,constant("clean_repository.zip"))
+            .setProperty(Exchange.FILE_NAME, header(Exchange.FILE_NAME))
+	        .setHeader(Constants.FILE_HANDLE,constant("clean_repository.zip"))
+	        .setHeader(Constants.CORRELATION_ID,constant(UUID.randomUUID().toString()))
+	        .setHeader(Constants.FILE_TYPE,constant(FileType.REGTOPP.name()))
+	        .setProperty(Constants.CLEAN_REPOSITORY, constant(true))
+	        .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
+	        .to("direct:updateStatus")
+            .process(e -> {
+                e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip"));
+            })
+	        .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential)).id("providerRepository")
+	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+	        .to("direct:addJson")
+	        .routeId("chouette-clean-dataspace");
+
+
         from("activemq:queue:ChouetteImportQueue?maxConcurrentConsumers=" + consumers).streamCaching()
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette import for provider: ${header." + PROVIDER_ID + "}")
+    	        .setProperty(Constants.CLEAN_REPOSITORY, constant(false))
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
                 .to("direct:updateStatus")
                 .to("direct:getBlob")
@@ -118,14 +140,16 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .process(e -> {
                     e.setProperty("url", e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
                 })
-                .to("direct:pollJobStatus");
+                .to("direct:pollJobStatus")
+                .routeId("chouette-send-import-job");
 
         from("direct:pollJobStatus")
                 .setProperty("loop_counter", constant(0))
                 .setHeader("loop", constant("direct:sendJobStatusRequest"))
                 .dynamicRouter().header("loop")
                 .log(LoggingLevel.INFO, getClass().getName(), "Done looping ${property.loop_counter} times for status")
-                .to("direct:jobStatusDone");
+                .to("direct:jobStatusDone")
+                .routeId("chouette-poll-job-status");
 
 
         from("direct:sendJobStatusRequest").streamCaching()
@@ -157,10 +181,15 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                     .process(e -> Status.addStatus(e, Action.IMPORT, State.STARTED))
                     .to("direct:updateStatus")
                 .end()
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true");
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")               
+                .routeId("chouette-get-job-status");
 
 
-        from("direct:sendDelayedJobStatusRequest").log(LoggingLevel.DEBUG, getClass().getName(), "Sleeping " + retryDelay + " ms...").delayer(retryDelay).to("direct:sendJobStatusRequest");
+
+        from("direct:sendDelayedJobStatusRequest")
+        	.log(LoggingLevel.DEBUG, getClass().getName(), "Sleeping " + retryDelay + " ms...")
+        	.delayer(retryDelay)
+        	.to("direct:sendJobStatusRequest");
 
         from("direct:jobStatusDone").streamCaching()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Exited retry loop with status ${header.current_status}")
@@ -194,7 +223,8 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .process(e -> {
                     e.setProperty("action_report_result", e.getIn().getBody(ActionReportWrapper.class).actionReport.result);
                 })
-                .to("direct:processActionReportResult");
+                .to("direct:processActionReportResult")
+                .routeId("chouette-process-action-report");
 
         from("direct:processActionReportResult")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
@@ -202,17 +232,24 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(""))
                 .choice()
                 .when(simple("${property.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, getClass().getName(), "Import ok, triggering GTFS export.")
+                	.log(LoggingLevel.INFO, getClass().getName(), "Import ok, triggering GTFS export.")
                     .to("activemq:queue:ChouetteExportQueue")
                     .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
                 .when(simple("${property.action_report_result} == 'NOK'"))
-                    .log(LoggingLevel.WARN, getClass().getName(), "Import not ok.")
-                    .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
+                	.choice()
+            		.when(simple("${property.action_report_result} == 'NOK' && ${property."+Constants.CLEAN_REPOSITORY+"} == true"))
+	            		.log(LoggingLevel.WARN, getClass().getName(), "Clean ok.")
+	            		.process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
+            		.when(simple("${property.action_report_result} == 'NOK'"))
+	            		.log(LoggingLevel.WARN, getClass().getName(), "Import not ok.")
+	            		.process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
+	            	.endChoice()
                 .otherwise()
                     .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
                     .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
                 .end()
-                .to("direct:updateStatus");
+                .to("direct:updateStatus")
+                .routeId("chouette-process-job-status");
 
     }
 

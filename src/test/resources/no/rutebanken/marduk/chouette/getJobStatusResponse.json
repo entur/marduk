@@ -1,0 +1,60 @@
+{
+    "id": 1,
+    "referential": "rut",
+    "action": "importer",
+    "type": "regtopp",
+    "created": 1468402198995,
+    "started": 1468402199139,
+    "updated": 1468402199139,
+    "status": "TERMINATED",
+    "links": [
+        {
+            "rel": "parameters",
+            "href": "http://chouette:8080/chouette_iev/referentials/rut/data/1/parameters.json",
+            "type": "application/json",
+            "method": "get"
+        },
+        {
+            "rel": "data",
+            "href": "http://chouette:8080/chouette_iev/referentials/rut/data/1/clean_repository.zip",
+            "type": "application/octet-stream",
+            "method": "get"
+        },
+        {
+            "rel": "input",
+            "href": "http://chouette:8080/chouette_iev/referentials/rut/data/1/clean_repository.zip",
+            "type": "application/octet-stream",
+            "method": "get"
+        },
+        {
+            "rel": "action_params",
+            "href": "http://chouette:8080/chouette_iev/referentials/rut/data/1/action_parameters.json",
+            "type": "application/json",
+            "method": "get"
+        },
+        {
+            "rel": "cancel",
+            "href": "http://chouette:8080/chouette_iev/referentials/rut/scheduled_jobs/1",
+            "type": "application/json",
+            "method": "delete"
+        },
+        {
+            "rel": "action_report",
+            "href": "http://chouette:8080/chouette_iev/referentials/rut/data/1/action_report.json",
+            "type": "application/json",
+            "method": "get"
+        }
+    ],
+    "action_parameters": {
+        "object_id_prefix": "RUT",
+        "references_type": "",
+        "coordinate_projection": "EPSG:32632",
+        "name": "clean_repository.zip",
+        "user_name": "admin@rutebanken.org",
+        "organisation_name": "Rutebanken",
+        "referential_name": "rut",
+        "test": false,
+        "no_save": false,
+        "clean_repository": false
+    }
+}

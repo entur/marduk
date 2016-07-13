@@ -33,3 +33,6 @@ gradlew
 gradlew.bat
     
 /config/
+/dummy/
+/files/
+

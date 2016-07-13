@@ -5,7 +5,9 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static org.junit.Assert.assertEquals;
 
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
@@ -65,7 +67,10 @@ public class AdminRestRouteBUilderTest {
 		String fileHandle = URLEncoder.encode("file/path/down/the/road", "UTF-8");
 
 		// Do rest call
-		importTemplate.sendBody(null);
+	
+		Map<String,Object> headers = new HashMap<String,Object>();
+		headers.put(Exchange.HTTP_METHOD, "POST");
+		importTemplate.sendBodyAndHeaders(null,headers);
 
 		// setup expectations on the mocks
 		importQueue.expectedMessageCount(1);
@@ -97,7 +102,9 @@ public class AdminRestRouteBUilderTest {
 		context.start();
 
 		// Do rest call
-		exportTemplate.sendBody(null);
+		Map<String,Object> headers = new HashMap<String,Object>();
+		headers.put(Exchange.HTTP_METHOD, "POST");
+		importTemplate.sendBodyAndHeaders(null,headers);
 
 		// setup expectations on the mocks
 		exportQueue.expectedMessageCount(1);

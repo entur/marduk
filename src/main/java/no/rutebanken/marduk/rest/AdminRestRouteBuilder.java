@@ -3,6 +3,7 @@ package no.rutebanken.marduk.rest;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
+import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         restConfiguration().component("netty4-http")
+        .bindingMode(RestBindingMode.json)
         .dataFormatProperty("prettyPrint", "true")
         .componentProperty("urlDecodeHeaders", "true")
         .host(host)
@@ -37,9 +39,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         .contextPath("/admin");
         
         rest("/services/chouette")
-	    	.get("/{providerId}/import")
+	    	.post("/{providerId}/import")
 	    		.param().required(Boolean.TRUE).name("fileHandle").type(RestParamType.query).description("S3 file path of file to reimport").endParam()
 	    		.route()
+	    		.log("Chouette start import providerId=${header.providerId} fileHandle=${header.fileHandle}")
 	    		.removeHeaders("CamelHttp*")
 	    		.setHeader(PROVIDER_ID,header("providerId"))
 			    .setHeader(FILE_HANDLE,header("fileHandle"))
@@ -49,20 +52,23 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         	.get("/{providerId}/files")
 	    		.route()
 			  //  .process(getProviderRepository().getProvider(id)) "inbound/received/" + provider.chouetteInfo.referential
+	    		.log("S3 get files for providerId=${header.providerId}")
 	    		.removeHeaders("CamelHttp*")
 	    		.setHeader(PROVIDER_ID,header("providerId"))
 			    .to("direct:listBlobs")
 			    .routeId("admin-chouette-import-list")
 			    .endRest()
-        	.get("/{providerId}/export")
+        	.post("/{providerId}/export")
 		    	.route()
+	    		.log("Chouette start export providerId=${header.providerId}")
 	    		.removeHeaders("CamelHttp*")
 			    .setHeader(PROVIDER_ID,header("providerId"))
 		    	.inOnly("activemq:queue:ChouetteExportQueue")
 			    .routeId("admin-chouette-export")
 		    	.endRest()
-	    	.get("/{providerId}/clean")
+	    	.post("/{providerId}/clean")
 		    	.route()
+	    		.log("Chouette clean dataspace providerId=${header.providerId}")
 	    		.removeHeaders("CamelHttp*")
 			    .setHeader(PROVIDER_ID,header("providerId"))
 		    	.inOnly("activemq:queue:ChouetteCleanQueue")
@@ -70,8 +76,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 		    	.endRest();
     	
         rest("/services/graph")
-	    	.get("/build")
+	    	.post("/build")
 	    		.route()
+	    		.log("OTP build graph")
 	    		.removeHeaders("CamelHttp*")
 	    		.setBody(simple(""))
 			    .inOnly("activemq:queue:OtpGraphQueue")
@@ -79,8 +86,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 			    .endRest();
 
 		rest("/services/fetch")
-				.get("/osm")
+			.post("/osm")
 				.route()
+	    		.log("OSM update map data")
 				.removeHeaders("CamelHttp*")
 				.to("direct:considerToFetchOsmMapOverNorway")
 				.routeId("admin-fetch-osm")
