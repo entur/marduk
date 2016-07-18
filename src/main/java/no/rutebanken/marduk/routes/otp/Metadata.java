@@ -9,7 +9,7 @@ import java.util.Date;
 
 public class Metadata {
 
-    public enum Action {OTP_GRAPH_UPLOAD}
+    public enum Action {OTP_GRAPH_UPLOAD,OSM_NORWAY_UPDATED}
 
     public enum Status {OK, NOK}
 
@@ -34,7 +34,7 @@ public class Metadata {
         this.action = action;
     }
 
-    String getJson() throws IOException {
+    public String getJson() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(this);
     }

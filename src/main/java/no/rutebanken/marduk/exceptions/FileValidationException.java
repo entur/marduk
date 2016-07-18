@@ -1,6 +1,6 @@
 package no.rutebanken.marduk.exceptions;
 
-public class FileValidationException extends RuntimeException {
+public class FileValidationException extends MardukException {
 
     public FileValidationException(String message) {
         super(message);

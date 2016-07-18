@@ -1,15 +1,19 @@
 package no.rutebanken.marduk.routes.fetchosm;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.exceptions.Md5ChecksumValidationException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.otp.Metadata;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.component.http4.HttpMethods;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
+import java.util.Date;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 
@@ -32,6 +36,8 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
 
     private static final String NEED_TO_REFETCH = "needToRefetchMapFile";
 
+    private static final String FINISHED = "FINISHED";
+
     /** One time per 24H on MON-FRI */
     @Value("${fetch.osm.cron.schedule:0+*+*/23+?+*+MON-FRI}")
     private String cronSchedule;
@@ -46,13 +52,19 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
     @Value("${osm.pbf.blobstore.subdirectory:osm}")
     private String blobStoreSubdirectory;
 
+    @Value("${otp.graph.deployment.notification.url:none}")
+    private String otpGraphDeploymentNotificationUrl;
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
+        onException(MardukException.class)
+                .to("direct:notifyOsmStatus")
+                .log(LoggingLevel.ERROR, getClass().getName(), "Failed while fetching OSM file.")
+                .handled(true);
+
         from("direct:fetchOsmMapOverNorway")
-        //from("activemq:queue:FetchOsmMapOverNorway?maxConcurrentConsumers=1")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching OSM map over Norway.")
                 .to("direct:fetchOsmMapOverNorwayMd5")
                 // Storing the MD5
@@ -77,6 +89,8 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory +"/"+"norway-latest.osm.pbf"))
                 .to("direct:uploadBlob")
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
+                .setHeader(FINISHED, constant("true"))
+                .to("direct:notifyOsmStatus")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Processing of OSM map finished");
 
         from("direct:fetchOsmMapOverNorwayMd5")
@@ -115,12 +129,43 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     .log(LoggingLevel.INFO, getClass().getName(), "Need to update the map file. Calling the update map route")
                     .inOnly("direct:fetchOsmMapOverNorway")
                     .setBody(simple("Need to fetch map file. Called update map route"))
-                    //.to( "activemq:queue:FetchOsmMapOverNorway")
                 .end();
 
         from("quartz2://marduk/fetchOsmMap?cron="+cronSchedule+"&trigger.timeZone=Europe/Oslo")
                 .log(LoggingLevel.INFO, getClass().getName(), "Quartz triggers fetch of OSM map over Norway.")
                 .to("direct:considerToFetchOsmMapOverNorway")
                 .log(LoggingLevel.INFO, getClass().getName(), "Quartz processing done.");
+
+        from("direct:notifyOsmStatus")
+                .setProperty("notificationUrl", constant(otpGraphDeploymentNotificationUrl))
+                .choice()
+                .when(exchangeProperty("notificationUrl").isNotEqualTo("none"))
+                    .log(LoggingLevel.INFO, getClass().getName(), "Notifying " + otpGraphDeploymentNotificationUrl + " about OSM update status.")
+                    //.setHeader(METADATA_DESCRIPTION, constant("OSM fetch status."))
+                    //.setHeader(METADATA_FILE, simple("${header." + FILE_HANDLE + "}"))
+                    .process(e -> {
+                        String filename = e.getIn().getHeader(FILE_HANDLE, String.class);
+                        if ( filename == null ) {
+                            filename = "unknown_file_name_flag";
+                        }
+                        String finished = e.getIn().getHeader(FINISHED, String.class);
+                        Metadata.Status status = "true".equals(finished)
+                                ? Metadata.Status.OK
+                                : Metadata.Status.NOK;
+                        e.getIn().setBody(
+                                new Metadata("OSM file update status.",
+                                        filename,
+                                        new Date(),
+                                        status,
+                                        Metadata.Action.OSM_NORWAY_UPDATED).getJson());
+                    })
+                    .removeHeaders("*")
+                    .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
+                    .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
+                    .toD("${property.notificationUrl}")
+                    .log(LoggingLevel.DEBUG, getClass().getName(), "Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
+                .otherwise()
+                    .log(LoggingLevel.INFO, getClass().getName(), "No notification url configured. Doing nothing.");
+
     }
 }
