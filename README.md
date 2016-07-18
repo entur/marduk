@@ -168,5 +168,5 @@ the pod ID, and then you can call the rest service as follows. The OSM map
 fetch is used as an example:
 
 ```
-kc exec -it marduk-HASHcurl -- http://0.0.0.0:8080/admin/services/fetch/osm
+kc exec -it marduk-dnt0p curl -- -v -XPOST http://0.0.0.0:8080/admin/services/fetch/osm
 ```
