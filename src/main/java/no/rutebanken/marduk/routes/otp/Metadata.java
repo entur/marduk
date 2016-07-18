@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.routes.otp;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -13,10 +14,10 @@ public class Metadata {
 
     public enum Status {OK, NOK}
 
-    public String description;
+    private String description;
 
     @JsonProperty("file_name")
-    public String fileName;
+    private String fileName;
 
     @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd'T'HH:mm:ss", timezone="CET")
     @JsonProperty("date")
@@ -34,6 +35,7 @@ public class Metadata {
         this.action = action;
     }
 
+    @JsonIgnore
     public String getJson() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(this);
