@@ -28,6 +28,9 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.blobstore.subdirectory}")
     private String blobStoreSubdirectory;
 
+    @Value("${osm.pbf.blobstore.subdirectory:osm}")
+    private String blobStoreSubdirectoryForOsm;
+
     @Value("${activemq.broker.name:amqp-srv1}")
     private String brokerName;
 
@@ -94,7 +97,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:fetchMap")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching map ...")
                 .removeHeaders("*")
-                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory +"/"+"norway-latest.osm.pbf"))
+                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm +"/"+"norway-latest.osm.pbf"))
                 .to("direct:getBlob")
                 .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/" + NORWAY_LATEST_OSM_PBF)
                 .log(LoggingLevel.DEBUG, getClass().getName(), NORWAY_LATEST_OSM_PBF + " fetched.");

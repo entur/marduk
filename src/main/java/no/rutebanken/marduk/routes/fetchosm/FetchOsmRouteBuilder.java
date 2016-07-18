@@ -50,7 +50,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
      * Into which subdirectory should the map be stored. The default is osm.
      */
     @Value("${osm.pbf.blobstore.subdirectory:osm}")
-    private String blobStoreSubdirectory;
+    private String blobStoreSubdirectoryForOsm;
 
     @Value("${otp.graph.deployment.notification.url:none}")
     private String otpGraphDeploymentNotificationUrl;
@@ -69,7 +69,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .to("direct:fetchOsmMapOverNorwayMd5")
                 // Storing the MD5
                 .convertBodyTo(InputStream.class)
-                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory +"/"+"norway-latest.osm.pbf.md5"))
+                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm +"/"+"norway-latest.osm.pbf.md5"))
                 .to("direct:uploadBlob")
                 // Fetch the actual file
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
@@ -86,7 +86,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     }
                 })
                 // Probably not needed: .convertBodyTo(InputStream.class)
-                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory +"/"+"norway-latest.osm.pbf"))
+                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm +"/"+"norway-latest.osm.pbf"))
                 .to("direct:uploadBlob")
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
                 .setHeader(FINISHED, constant("true"))
@@ -109,7 +109,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
         from("direct:considerToFetchOsmMapOverNorway")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Route which figures out whether to fetch OSM map or not")
                 .to("direct:fetchOsmMapOverNorwayMd5")
-                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory +"/"+"norway-latest.osm.pbf.md5"))
+                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm +"/"+"norway-latest.osm.pbf.md5"))
                 .to("direct:getBlob")
                 .convertBodyTo(String.class)
                 .process(p -> {
