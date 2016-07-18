@@ -159,3 +159,14 @@ spring.profiles.active=test
   Here, we mount the lamssu key and an application.properties file from vagrant.
 
 * For more docker plugin goals, see: http://ro14nd.de/docker-maven-plugin/goals.html
+
+## Using the admin services
+
+You find REST services in the `.../marduk/rest/` package. These can be invoked by calling
+them. The call is easiest performed within the pod. First you need to find
+the pod ID, and then you can call the rest service as follows. The OSM map
+fetch is used as an example:
+
+```
+kc exec -it marduk-HASHcurl -- http://0.0.0.0:8080/admin/services/fetch/osm
+```
