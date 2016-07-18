@@ -4,7 +4,6 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.Md5ChecksumValidationException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
-import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -89,7 +88,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     String body = (String) p.getIn().getBody();
                     String md5 = body.split(" ")[0];
                     p.getOut().setHeader(Constants.FILE_TARGET_MD5, md5);
-                    p.getOut().setBody( md5 );
+                    p.getOut().setBody( body );
                 })
                 .log(LoggingLevel.DEBUG, getClass().getName(), "MD5 sum fetched and set in header");
 
@@ -102,8 +101,9 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .process(p -> {
                     String md5 = (String) p.getIn().getBody();
                     if ( md5 == null || md5.length() == 0) {
-                        md5 ="just to flag that we need to fetch the data, as the file did not exist";
+                        md5 ="flag that we need to fetch the data, as the file did not exist";
                     }
+                    md5 = md5.split(" ")[0];
                     String md5FromHead = (String) p.getIn().getHeader(Constants.FILE_TARGET_MD5);
                     p.getIn().setHeader(NEED_TO_REFETCH, ""+( ! md5.equals( md5FromHead  )) );
                 })
