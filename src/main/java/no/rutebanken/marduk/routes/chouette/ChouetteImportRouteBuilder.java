@@ -294,13 +294,13 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
             throw new IllegalArgumentException("Could not get regtopp information about provider '" + providerId + "'.");
         }
         RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.prefix,
-                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion, chouetteInfo.regtoppCoordinateProjection,chouetteInfo.regtoppCalendarStrategy,cleanRepository);
+                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion, chouetteInfo.regtoppCoordinateProjection,chouetteInfo.regtoppCalendarStrategy,cleanRepository,chouetteInfo.enableValidation);
         return regtoppImportParameters.toJsonString();
     }
 
     String getGtfsImportParametersAsString(String importName, Long providerId, boolean cleanRepository) {
         ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
-        GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user,cleanRepository);
+        GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user,cleanRepository,chouetteInfo.enableValidation);
         return gtfsImportParameters.toJsonString();
     }
 

@@ -20,15 +20,22 @@ public class ImportParametersTest {
 
     @Test
     public void createGtfsImportParameters() throws Exception {
-        GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette",false);
+        GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette",false,false);
         assertJsonEquals(gtfsReferenceJson, importParameters.toJsonString());
     }
 
     @Test
     public void createRegtoppImportParameters() throws Exception {
-        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", "R12", "EPSG:32632","ADD",false);
+        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", "R12", "EPSG:32632","ADD",false,false);
         System.out.println(importParameters.toJsonString());
         assertJsonEquals(regtoppReferenceJson, importParameters.toJsonString());
+    }
+
+    @Test
+    public void createRegtoppImportParametersWithValidation() throws Exception {
+        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", "R12", "EPSG:32632","ADD",false,true);
+        System.out.println(importParameters.toJsonString());
+      
     }
 
 }

@@ -2,16 +2,12 @@ package no.rutebanken.marduk.routes.chouette.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
-import java.io.StringWriter;
-
-public class GtfsImportParameters {
+public class GtfsImportParameters extends ChouetteImportParameters{
 
     public Parameters parameters;
 
-    static class Parameters {
+	static class Parameters {
 
         @JsonProperty("gtfs-import")
         public GtfsImport gtfsImport;
@@ -63,7 +59,7 @@ public class GtfsImportParameters {
 
     }
 
-    public static GtfsImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository) {
+    public static GtfsImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository,boolean enableValidation) {
         GtfsImport gtfsImport = new GtfsImport();
         gtfsImport.name = name;
         gtfsImport.objectIdPrefix = objectIdPrefix;
@@ -75,19 +71,8 @@ public class GtfsImportParameters {
         parameters.gtfsImport = gtfsImport;
         GtfsImportParameters gtfsImportParameters = new GtfsImportParameters();
         gtfsImportParameters.parameters = parameters;
+        gtfsImportParameters.enableValidation = enableValidation;
         return gtfsImportParameters;
-    }
-
-
-    public String toJsonString() {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            StringWriter writer = new StringWriter();
-            mapper.writeValue(writer, this);
-            return writer.toString();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
 }

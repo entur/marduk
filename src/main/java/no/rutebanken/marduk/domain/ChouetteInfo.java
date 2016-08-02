@@ -14,6 +14,7 @@ public class ChouetteInfo {
     public String regtoppCoordinateProjection;
     public String regtoppCalendarStrategy;
     public String dataFormat;
+    public boolean enableValidation = false;
 
     @Override
     public String toString() {
@@ -27,6 +28,7 @@ public class ChouetteInfo {
                 ", regtoppCoordinateProjection='" + regtoppCoordinateProjection + '\'' +
                 ", regtoppCalendarStrategy='" + regtoppCalendarStrategy + '\'' +
                 ", dataFormat='" + dataFormat + '\'' +
+                ", enableValidation='" + enableValidation + '\'' +
                 '}';
     }
 
