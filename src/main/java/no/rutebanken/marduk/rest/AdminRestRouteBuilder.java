@@ -12,7 +12,9 @@ import org.springframework.stereotype.Component;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * REST interface for backdoor triggering of messages
@@ -47,7 +49,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
         // and enable CORS
         .contextPath("/admin");
-        
+
+
+		List<String> s3FilesDummy = Arrays.asList(new String[] {"file1", "file2", "file3"});
         rest("/services/chouette")
 	    	.post("/{providerId}/import")
 	    		.param().required(Boolean.TRUE).name("fileHandle").type(RestParamType.query).description("S3 file path of file to reimport").endParam()
@@ -61,11 +65,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 			    .endRest()
         	.get("/{providerId}/files")
 	    		.route()
+             //  .log("Referantial: " + getProviderRepository().getProvider((Long.parseLong(header("providerId").toString()))).chouetteInfo.referential)
 			  //  .process(getProviderRepository().getProvider(id)) "inbound/received/" + provider.chouetteInfo.referential
 	    		.log("S3 get files for providerId=${header.providerId}")
 	    		.removeHeaders("CamelHttp*")
 	    		.setHeader(PROVIDER_ID,header("providerId"))
-			    .to("direct:listBlobs")
+			    //.to("direct:listBlobs")
+				.setBody(constant(s3FilesDummy))
 			    .routeId("admin-chouette-import-list")
 			    .endRest()
         	.post("/{providerId}/export")
