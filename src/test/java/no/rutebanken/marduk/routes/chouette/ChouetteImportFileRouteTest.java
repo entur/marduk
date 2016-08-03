@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.camel.CamelExecutionException;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
@@ -60,8 +61,14 @@ public class ChouetteImportFileRouteTest {
 	@EndpointInject(uri = "mock:chouetteGetValidationReport")
 	protected MockEndpoint chouetteGetValidationReport;
 	
+	@EndpointInject(uri = "mock:processActionReportResult")
+	protected MockEndpoint processActionReportResult;
+	
 	@Produce(uri = "activemq:queue:ProcessFileQueue")
 	protected ProducerTemplate importTemplate;
+	
+	@Produce(uri = "direct:checkValidationReport")
+	protected ProducerTemplate validationReportTemplate;
 	
     @Value("${chouette.url}")
     private String chouetteUrl;
@@ -74,9 +81,6 @@ public class ChouetteImportFileRouteTest {
     
     @Value("${blobstore.containerName}")
     private String containerName;
-    
-    @Test
-    public void dummu() {}
     
     // TODO when next version of camel is available, fix tests so that they use application.properties from src/test/resources
 	//@Test
@@ -229,5 +233,39 @@ public class ChouetteImportFileRouteTest {
 		chouetteGetValidationReport.assertIsSatisfied();
 		chouetteCreateExport.assertIsSatisfied();
 	}
+	
+	
+	@Test
+	public void testValidationReportResultOK() throws Exception {
+		testValidationReportResult("/no/rutebanken/marduk/chouette/getValidationReportResponseOK.json","OK");
+	}	
+	
+	@Test
+	public void testValidationReportResultNOK() throws Exception {
+		testValidationReportResult("/no/rutebanken/marduk/chouette/getValidationReportResponseNOK.json","NOK");
+	}	
+	
+	public void testValidationReportResult(String validationReportClasspathReference, String expectedResult) throws Exception {
+
+		context.getRouteDefinition("chouette-process-validation-report").adviceWith(context, new AdviceWithRouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				interceptSendToEndpoint("direct:processActionReportResult")
+					.skipSendToOriginalEndpoint()
+					.to("mock:processActionReportResult");
+			}
+		});
+
+		context.start();
+
+		validationReportTemplate.sendBody(getClass().getResourceAsStream(validationReportClasspathReference));
+
+		processActionReportResult.expectedMessageCount(1);
+		processActionReportResult.expectedPropertyReceived("validation_report_result", expectedResult);
+		
+		processActionReportResult.assertIsSatisfied();
+
+}
+	
 
 }
