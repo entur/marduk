@@ -211,47 +211,68 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .process(e -> {
                     JobResponse response = e.getIn().getBody(JobResponse.class);
                     Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "action_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
-                    e.setProperty("url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
+                    e.setProperty("action_report_url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
+                    Optional<String> validationReportUrlOptional = response.links.stream().filter(li -> "validation_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
+                    e.setProperty("validation_report_url", validationReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for validation report.")));
                 })
+                // Fetch and parse action report
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Calling url ${property.url}")
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Calling action report url ${property.action_report_url}")
                 .removeHeaders("Camel*")
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
-                .toD("${property.url}")
+                .toD("${property.action_report_url}")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .unmarshal().json(JsonLibrary.Jackson, ActionReportWrapper.class)
                 .process(e -> {
                     e.setProperty("action_report_result", e.getIn().getBody(ActionReportWrapper.class).actionReport.result);
                 })
+                // Fetch and parse validation report
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Calling validation report url ${property.validation_report_url}")
+                .removeHeaders("Camel*")
+                .setBody(simple(""))
+                .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
+                .toD("${property.validation_report_url}")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .choice()
+                	.when().jsonpath("$.validation_report.tests[?(@.severity == \"ERROR\" && @.result == \"NOK\")]")
+                		.setProperty("validation_report_result", constant("NOK"))
+                	.otherwise()
+                		.setProperty("validation_report_result",constant("OK"))
+                .end()
+                
                 .to("direct:processActionReportResult")
                 .routeId("chouette-process-action-report");
 
-        from("direct:processActionReportResult")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
-                .setBody(constant(""))
-                .choice()
-                .when(simple("${property.action_report_result} == 'OK'"))
-                	.log(LoggingLevel.INFO, getClass().getName(), "Import ok, triggering GTFS export.")
-                    .to("activemq:queue:ChouetteExportQueue")
-                    .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
-                .when(simple("${property.action_report_result} == 'NOK'"))
-                	.choice()
-            		.when(simple("${property.action_report_result} == 'NOK' && ${property."+Constants.CLEAN_REPOSITORY+"} == true"))
-	            		.log(LoggingLevel.WARN, getClass().getName(), "Clean ok.")
-	            		.process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
-            		.when(simple("${property.action_report_result} == 'NOK'"))
-	            		.log(LoggingLevel.WARN, getClass().getName(), "Import not ok.")
-	            		.process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
-	            	.endChoice()
-                .otherwise()
-                    .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
-                    .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
-                .end()
-                .to("direct:updateStatus")
-                .routeId("chouette-process-job-status");
-
+		 from("direct:processActionReportResult")
+		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+		        .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
+		        .setBody(constant(""))
+		        .choice()
+		        .when(simple("${property.action_report_result} == 'OK' and ${property.validation_report_result} == 'OK'"))
+		        	.log(LoggingLevel.INFO, getClass().getName(), "Import and validation ok, triggering GTFS export.")
+		            .to("activemq:queue:ChouetteExportQueue")
+		            .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
+		        .when(simple("${property.action_report_result} == 'OK' and ${property.validation_report_result} == 'NOK'"))
+		        	.log(LoggingLevel.INFO, getClass().getName(), "Import ok but validation failed")
+		            .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
+		        .when(simple("${property.action_report_result} == 'NOK'"))
+		        	.choice()
+		    		.when(simple("${property.action_report_result} == 'NOK' && ${property."+Constants.CLEAN_REPOSITORY+"} == true"))
+		        		.log(LoggingLevel.WARN, getClass().getName(), "Clean ok.")
+		        		.process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
+		    		.when(simple("${property.action_report_result} == 'NOK'"))
+		        		.log(LoggingLevel.WARN, getClass().getName(), "Import not ok.")
+		        		.process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
+		        	.endChoice()
+		        .otherwise()
+		            .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
+		            .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
+		        .end()
+		        .to("direct:updateStatus")
+		        .routeId("chouette-process-job-status");
+	
+		
     }
 
     void toMultipart(Exchange exchange) {
@@ -279,9 +300,9 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
     }
 
     private Object getImportParameters(String fileName, String fileType, Long providerId,boolean cleanRepository) {
-        if (fileType.equals(FileType.REGTOPP.name())){
+        if (FileType.REGTOPP.name().equals(fileType)){
             return getRegtoppImportParametersAsString(fileName, providerId, cleanRepository);
-        } else if (fileType.equals(FileType.GTFS.name())) {
+        } else if (FileType.GTFS.name().equals(fileType)) {
             return getGtfsImportParametersAsString(fileName, providerId, cleanRepository);
         } else {
             throw new IllegalArgumentException("Cannot create import parameters from file type '" + fileType + "'");

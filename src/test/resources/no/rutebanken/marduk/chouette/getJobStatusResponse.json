@@ -43,6 +43,12 @@
             "href": "http://chouette:8080/chouette_iev/referentials/rut/data/1/action_report.json",
             "type": "application/json",
             "method": "get"
+        },
+        {
+            "rel": "validation_report",
+            "href": "http://chouette:8080/chouette_iev/referentials/rut/data/1/validation_report.json",
+            "type": "application/json",
+            "method": "get"
         }
     ],
     "action_parameters": {

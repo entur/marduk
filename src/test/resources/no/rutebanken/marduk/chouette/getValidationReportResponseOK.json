@@ -1,0 +1,41 @@
+{"validation_report": {
+    "result": "VALIDATION_PROCEDEED",
+    "tests": [
+        {
+            "test_id": "3-Line-2",
+            "level": "3",
+            "object_type": "Line",
+            "rank": "2",
+            "severity": "ERROR",
+            "result": "OK",
+            "error_count": 0
+        },
+        {
+            "test_id": "3-Route-1",
+            "level": "3",
+            "object_type": "Route",
+            "rank": "1",
+            "severity": "WARNING",
+            "result": "OK",
+            "error_count": 0
+        },
+        {
+            "test_id": "3-Route-2",
+            "level": "3",
+            "object_type": "Route",
+            "rank": "2",
+            "severity": "WARNING",
+            "result": "UNCHECK",
+            "error_count": 0
+        },
+        {
+            "test_id": "3-Route-2",
+            "level": "3",
+            "object_type": "Route",
+            "rank": "2",
+            "severity": "ERROR",
+            "result": "OK",
+            "error_count": 0
+        }
+    ]
+}}

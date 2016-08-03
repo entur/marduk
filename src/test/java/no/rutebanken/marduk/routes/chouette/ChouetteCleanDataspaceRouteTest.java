@@ -37,7 +37,7 @@ import no.rutebanken.marduk.Constants;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles({ "default", "dev" })
 @UseAdviceWith(true)
-public class ChouetteImportExportRouteTest {
+public class ChouetteCleanDataspaceRouteTest {
 
 	@Autowired
 	private ModelCamelContext context;
@@ -53,6 +53,9 @@ public class ChouetteImportExportRouteTest {
 	
 	@EndpointInject(uri = "mock:chouetteGetActionReport")
 	protected MockEndpoint chouetteGetActionReport;
+	
+	@EndpointInject(uri = "mock:chouetteGetValidationReport")
+	protected MockEndpoint chouetteGetValidationReport;
 	
 	@Produce(uri = "activemq:queue:ChouetteCleanQueue")
 	protected ProducerTemplate importTemplate;
@@ -95,6 +98,10 @@ public class ChouetteImportExportRouteTest {
 				interceptSendToEndpoint(chouetteUrl+"/chouette_iev/referentials/rut/data/1/action_report.json")
 				.skipSendToOriginalEndpoint()
 				.to("mock:chouetteGetActionReport");
+				
+				interceptSendToEndpoint(chouetteUrl+"/chouette_iev/referentials/rut/data/1/validation_report.json")
+				.skipSendToOriginalEndpoint()
+				.to("mock:chouetteGetValidationReport");
 				
 		
 			}
@@ -157,7 +164,24 @@ public class ChouetteImportExportRouteTest {
 			@Override
 			public <T> T evaluate(Exchange ex, Class<T> arg1) {
 				try {
-					return (T) IOUtils.toString(getClass().getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponse.json"));
+					return (T) IOUtils.toString(getClass().getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseNOK.json"));
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return null;
+				}
+			}
+		});
+	
+		// 1 aciton report call
+		chouetteGetValidationReport.expectedMessageCount(1);
+		chouetteGetValidationReport.returnReplyBody(new Expression() {
+			
+			@SuppressWarnings("unchecked")
+			@Override
+			public <T> T evaluate(Exchange ex, Class<T> arg1) {
+				try {
+					return (T) IOUtils.toString(getClass().getResourceAsStream("/no/rutebanken/marduk/chouette/getValidationReportResponseOK.json"));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -177,6 +201,7 @@ public class ChouetteImportExportRouteTest {
 		chouetteCreateImport.assertIsSatisfied();
 		chouetteGetJobStatus.assertIsSatisfied();
 		chouetteGetActionReport.assertIsSatisfied();
+		chouetteGetValidationReport.assertIsSatisfied();
 		chouetteCreateExport.assertIsSatisfied();
 	}
 

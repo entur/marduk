@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 @Configuration
-@ComponentScan({"no.rutebanken.marduk.routes.chouette","no.rutebanken.marduk.routes.blobstore","no.rutebanken.marduk.repository","no.rutebanken.marduk.routes.status"})
+@ComponentScan({"no.rutebanken.marduk.routes.chouette","no.rutebanken.marduk.routes.blobstore","no.rutebanken.marduk.repository","no.rutebanken.marduk.routes.status","no.rutebanken.marduk.config"})
 public class CamelConfig extends CamelConfiguration {
 	@Bean
 	public PropertyPlaceholderConfigurer propertyPlaceholderConfigurer() throws IOException {

@@ -1,0 +1,42 @@
+{"action_report": {
+    "progression": {
+        "current_step": 1,
+        "steps_count": 3,
+        "steps": [
+            {
+                "step": "INITIALISATION",
+                "total": 6,
+                "realized": 4
+            },
+            {
+                "step": "PROCESSING",
+                "total": 1,
+                "realized": 0
+            },
+            {
+                "step": "FINALISATION",
+                "total": 1,
+                "realized": 0
+            }
+        ]
+    },
+    "result": "OK",
+    "zip_file": {
+        "name": "clean_repository.zip",
+        "status": "OK"
+    },
+    "stats": {
+        "line_count": 0,
+        "route_count": 0,
+        "connection_link_count": 0,
+        "time_table_count": 0,
+        "stop_area_count": 0,
+        "access_point_count": 0,
+        "vehicle_journey_count": 0,
+        "journey_pattern_count": 0
+    },
+    "failure": {
+        "code": "NO_DATA_FOUND",
+        "description": "no data to import"
+    }
+}}
