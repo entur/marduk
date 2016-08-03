@@ -1,16 +1,19 @@
 package no.rutebanken.marduk.routes.nri;
 
+import java.io.FileReader;
 import java.util.List;
 
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.test.spring.CamelSpringDelegatingTestContextLoader;
 import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
 import org.apache.camel.test.spring.CamelTestContextBootstrapper;
 import org.apache.camel.test.spring.UseAdviceWith;
+import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockftpserver.fake.FakeFtpServer;
@@ -20,6 +23,7 @@ import org.mockftpserver.fake.filesystem.FileEntry;
 import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.UnixFakeFileSystem;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.BootstrapWith;
@@ -39,6 +43,10 @@ public class NRIFtpReceiverRouteTest {
 
 	@EndpointInject(uri = "mock:sor-trondelag")
 	protected MockEndpoint sorTrondelag;
+	
+    @Value("${nabu.rest.service.url}")
+    private String nabuUrl;
+
 
 	@Test
 	public void testSendError() throws Exception {
@@ -68,12 +76,24 @@ public class NRIFtpReceiverRouteTest {
 		context.getRouteDefinitions().get(0).adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint("sftp://sor-trondelag@{{sftp.host}}*").skipSendToOriginalEndpoint()
+				interceptSendToEndpoint("activemq:queue:ProcessFileQueue").skipSendToOriginalEndpoint()
 				.to("mock:sor-trondelag");
 			
 			}
 		});
 
+		// Mock Nabu / providerRepository (done differently since RestTemplate is being used which skips Camel)
+		context.addRoutes(new RouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				from("netty4-http:"+nabuUrl+"/providers/12")
+					.setBody()
+					.constant(IOUtils.toString(new FileReader("src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))
+					.setHeader(Exchange.CONTENT_TYPE,constant("application/json"));
+					
+			}
+			
+		});	
 		// we must manually start when we are done with all the advice with
 		context.start();
 
