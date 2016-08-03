@@ -60,7 +60,7 @@ public class ChouetteImportFileRouteTest {
 	@EndpointInject(uri = "mock:chouetteGetValidationReport")
 	protected MockEndpoint chouetteGetValidationReport;
 	
-	@Produce(uri = "activemq:queue:ChouetteImportQueue")
+	@Produce(uri = "activemq:queue:ProcessFileQueue")
 	protected ProducerTemplate importTemplate;
 	
     @Value("${chouette.url}")
@@ -78,6 +78,7 @@ public class ChouetteImportFileRouteTest {
     @Test
     public void dummu() {}
     
+    // TODO when next version of camel is available, fix tests so that they use application.properties from src/test/resources
 	//@Test
 	public void testImportFileToDataspace() throws Exception {
 
@@ -218,7 +219,6 @@ public class ChouetteImportFileRouteTest {
 		headers.put(Constants.PROVIDER_ID, "2");
 		headers.put(Exchange.FILE_NAME, filename);
 		headers.put(Constants.CORRELATION_ID, "corr_id");
-		headers.put(Constants.FILE_TYPE, FileType.REGTOPP.name());
 		headers.put(Constants.FILE_HANDLE,"rut/"+filename);
 		importTemplate.sendBodyAndHeaders(null,headers);
 		

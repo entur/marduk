@@ -1,12 +1,12 @@
 package no.rutebanken.marduk.rest;
 
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
@@ -46,9 +46,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         .port(port)
         .apiContextPath("/api-doc")
         .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
-        // and enable CORS
         .contextPath("/admin");
-
 
         rest("/services/chouette")
 	    	.post("/{providerId}/import")
@@ -56,9 +54,16 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    		.route()
 	    		.log("Chouette start import providerId=${header.providerId} fileHandle=${header.fileHandle}")
 	    		.removeHeaders("CamelHttp*")
-	    		.setHeader(PROVIDER_ID,header("providerId"))
-			    .setHeader(FILE_HANDLE,header("fileHandle"))
-			    .inOnly("activemq:queue:ChouetteImportQueue")
+            	.setHeader(PROVIDER_ID,header("providerId"))
+            	.setHeader(FILE_HANDLE,header("fileHandle"))
+			    .setHeader(CORRELATION_ID, constant(System.currentTimeMillis()))
+
+                .process(e -> {
+                	e.getIn().setHeader(Exchange.FILE_NAME, e.getIn().getHeader("fileHandle").toString()
+                    		.replaceFirst("inbound/received/", "reimported"+simple("-${date:now:yyyyMMddHHmmss}").evaluate(e, String.class)+"-"));
+                })
+			   
+                .inOnly("activemq:queue:ProcessFileQueue")
 			    .routeId("admin-chouette-import")
 			    .endRest()
         	.get("/{providerId}/files")
