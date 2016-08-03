@@ -4,11 +4,15 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 import org.apache.camel.model.rest.RestBindingMode;
+import org.apache.camel.model.rest.RestConfigurationDefinition;
 import org.apache.camel.model.rest.RestParamType;
+import org.apache.camel.model.rest.RestPropertyDefinition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+
+import java.util.Collections;
 
 /**
  * REST interface for backdoor triggering of messages
@@ -26,8 +30,15 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
+        RestPropertyDefinition corsAllowedHeaders = new RestPropertyDefinition();
+        corsAllowedHeaders.setKey("Access-Control-Allow-Headers");
+        corsAllowedHeaders.setValue("Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
+
+        restConfiguration().setCorsHeaders(Collections.singletonList(corsAllowedHeaders));
+
         restConfiguration().component("netty4-http")
         .bindingMode(RestBindingMode.json)
+        .enableCORS(true)
         .dataFormatProperty("prettyPrint", "true")
         .componentProperty("urlDecodeHeaders", "true")
         .host(host)
@@ -35,7 +46,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         .apiContextPath("/api-doc")
         .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
         // and enable CORS
-        .apiProperty("cors", "true")
         .contextPath("/admin");
         
         rest("/services/chouette")

@@ -1,14 +1,16 @@
 package no.rutebanken.marduk.routes.otp;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.CURRENT_AGGREGATED_GTFS_FILENAME;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 
 /**
  * Trigger OTP graph building
@@ -23,11 +25,11 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.build.directory}")
     private String otpGraphBuildDirectory;
 
-    @Value("${otp.graph.map.base.url}")
-    private String mapBaseUrl;
-
     @Value("${otp.graph.blobstore.subdirectory}")
     private String blobStoreSubdirectory;
+
+    @Value("${osm.pbf.blobstore.subdirectory:osm}")
+    private String blobStoreSubdirectoryForOsm;
 
     @Value("${activemq.broker.name:amqp-srv1}")
     private String brokerName;
@@ -95,9 +97,8 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:fetchMap")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching map ...")
                 .removeHeaders("*")
-                .setBody(constant(""))
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
-                .to(mapBaseUrl + "/" + NORWAY_LATEST_OSM_PBF)
+                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm +"/"+"norway-latest.osm.pbf"))
+                .to("direct:getBlob")
                 .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/" + NORWAY_LATEST_OSM_PBF)
                 .log(LoggingLevel.DEBUG, getClass().getName(), NORWAY_LATEST_OSM_PBF + " fetched.");
 
