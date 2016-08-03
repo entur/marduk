@@ -1,16 +1,16 @@
 {
-  "id": 2,
-  "name": "Oslo og Akershus / Ruter",
-  "sftpAccount": "oslo-akershus",
-  "chouetteInfo": {
     "id": 2,
-    "prefix": "RUT",
-    "referential": "rut",
-    "organisation": "Rutebanken",
-    "user": "admin@rutebanken.org",
-    "regtoppVersion": null,
-    "regtoppCoordinateProjection": "EPSG:32632",
-    "regtoppCalendarStrategy": null,
-    "dataFormat": "regtopp"
-  }
+    "name": "Oslo og Akershus / Ruter",
+    "sftpAccount": "oslo-akershus",
+    "chouetteInfo": {
+        "id": 2,
+        "prefix": "RUT",
+        "referential": "rut",
+        "organisation": "Rutebanken",
+        "user": "admin@rutebanken.org",
+        "regtoppVersion": null,
+        "regtoppCoordinateProjection": "EPSG:32632",
+        "regtoppCalendarStrategy": null,
+        "dataFormat": "regtopp"
+    }
 }

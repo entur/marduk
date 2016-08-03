@@ -3,16 +3,15 @@ package no.rutebanken.marduk.rest;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
+import java.util.Collections;
+
 import org.apache.camel.model.rest.RestBindingMode;
-import org.apache.camel.model.rest.RestConfigurationDefinition;
 import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-
-import java.util.Collections;
 
 /**
  * REST interface for backdoor triggering of messages

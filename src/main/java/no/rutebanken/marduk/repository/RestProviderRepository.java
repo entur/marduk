@@ -42,7 +42,7 @@ public class RestProviderRepository implements ProviderRepository {
     public boolean isConnected(){
         RestTemplate restTemplate = new RestTemplate();
         logger.debug("Checking status");
-        ResponseEntity response = restTemplate.getForEntity(restServiceUrl + "/appstatus/up", Object.class, new Object[0]);
+        ResponseEntity<?> response = restTemplate.getForEntity(restServiceUrl + "/appstatus/up", Object.class, new Object[0]);
         logger.debug("Got response: " + response);
         logger.debug("Response status:" + response.getStatusCode().toString() );
         if ("200".equals(response.getStatusCode().toString())){

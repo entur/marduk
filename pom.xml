@@ -75,38 +75,38 @@
 				<version>3.0</version>
 			</dependency>
 
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-netty4-http</artifactId>
-                <version>${camel-version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.apache.camel</groupId>
+				<artifactId>camel-netty4-http</artifactId>
+				<version>${camel-version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-netty4</artifactId>
-                <version>${camel-version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.apache.camel</groupId>
+				<artifactId>camel-netty4</artifactId>
+				<version>${camel-version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-http-common</artifactId>
-                <version>${camel-version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.apache.camel</groupId>
+				<artifactId>camel-http-common</artifactId>
+				<version>${camel-version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-spring</artifactId>
-                <version>${camel-version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.apache.camel</groupId>
+				<artifactId>camel-spring</artifactId>
+				<version>${camel-version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.apache.camel</groupId>
-                <artifactId>camel-test</artifactId>
-                <version>${camel-version}</version>
-                <scope>test</scope>
-            </dependency>
+			<dependency>
+				<groupId>org.apache.camel</groupId>
+				<artifactId>camel-test</artifactId>
+				<version>${camel-version}</version>
+				<scope>test</scope>
+			</dependency>
 
-        </dependencies>
+		</dependencies>
 	</dependencyManagement>
 
 	<dependencies>
@@ -169,8 +169,8 @@
 		</dependency>
 
 		<dependency>
-		  <groupId>org.apache.camel</groupId>
-		  <artifactId>camel-jsonpath</artifactId>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-jsonpath</artifactId>
 			<version>${camel-version}</version>
 		</dependency>
 		<dependency>
@@ -233,7 +233,7 @@
 		<dependency>
 			<groupId>org.apache.camel</groupId>
 			<artifactId>camel-spring-javaconfig</artifactId>
-            <version>${camel-version}</version>
+			<version>${camel-version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -289,7 +289,7 @@
 		<dependency>
 			<groupId>org.apache.camel</groupId>
 			<artifactId>camel-test-spring</artifactId>
-            <version>${camel-version}</version>
+			<version>${camel-version}</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -402,18 +402,14 @@
 								<pluginExecution>
 									<pluginExecutionFilter>
 										<groupId>io.fabric8</groupId>
-										<artifactId>
-											fabric8-maven-plugin
-										</artifactId>
-										<versionRange>
-											[2.2.84,)
-										</versionRange>
+										<artifactId> fabric8-maven-plugin </artifactId>
+										<versionRange> [2.2.84,) </versionRange>
 										<goals>
 											<goal>json</goal>
 										</goals>
 									</pluginExecutionFilter>
 									<action>
-										<ignore></ignore>
+										<ignore/>
 									</action>
 								</pluginExecution>
 							</pluginExecutions>

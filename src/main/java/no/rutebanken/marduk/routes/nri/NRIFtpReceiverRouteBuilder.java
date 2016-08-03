@@ -46,7 +46,7 @@ public class NRIFtpReceiverRouteBuilder extends RouteBuilder {
 
 			properties.put("completed", Boolean.TRUE);
 
-			RemoteFile p = (RemoteFile) properties.get("CamelFileExchangeFile");
+			RemoteFile<?> p = (RemoteFile<?>) properties.get("CamelFileExchangeFile");
 			String relativeFilePath = p.getRelativeFilePath();
 
 			String topFolder = relativeFilePath.substring(0, relativeFilePath.indexOf("/"));

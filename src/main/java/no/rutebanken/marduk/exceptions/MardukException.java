@@ -5,7 +5,12 @@ package no.rutebanken.marduk.exceptions;
  */
 public class MardukException extends RuntimeException {
 
-    public MardukException(String message) {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public MardukException(String message) {
         super( message );
     }
 

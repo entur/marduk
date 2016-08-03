@@ -27,7 +27,6 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.base.Strings;
 
-import no.rutebanken.marduk.App;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -57,7 +56,8 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
     private int consumers = 10; // TODO?
 
-    @Override
+    @SuppressWarnings("unchecked")
+	@Override
     public void configure() throws Exception {
         super.configure();
 

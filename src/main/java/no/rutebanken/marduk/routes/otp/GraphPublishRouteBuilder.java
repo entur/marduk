@@ -1,19 +1,22 @@
 package no.rutebanken.marduk.routes.otp;
 
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.Processor;
-import org.apache.camel.component.http4.HttpMethods;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.METADATA_DESCRIPTION;
+import static no.rutebanken.marduk.Constants.METADATA_FILE;
+import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 import java.io.File;
 import java.io.InputStream;
 import java.util.Date;
 
-import static no.rutebanken.marduk.Constants.*;
-import static org.apache.commons.io.FileUtils.deleteDirectory;
+import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
+import org.apache.camel.component.http4.HttpMethods;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import no.rutebanken.marduk.routes.BaseRouteBuilder;
 
 @Component
 public class GraphPublishRouteBuilder extends BaseRouteBuilder {

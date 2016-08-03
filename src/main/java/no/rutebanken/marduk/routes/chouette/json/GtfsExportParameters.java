@@ -3,8 +3,6 @@ package no.rutebanken.marduk.routes.chouette.json;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Date;
-
 public class GtfsExportParameters {
 
     public Parameters parameters;

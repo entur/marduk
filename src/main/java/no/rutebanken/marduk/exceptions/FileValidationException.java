@@ -2,7 +2,12 @@ package no.rutebanken.marduk.exceptions;
 
 public class FileValidationException extends MardukException {
 
-    public FileValidationException(String message) {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public FileValidationException(String message) {
         super(message);
     }
 

@@ -5,7 +5,12 @@ package no.rutebanken.marduk.exceptions;
  */
 public class Md5ChecksumValidationException extends MardukException{
 
-    public Md5ChecksumValidationException(String message) {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public Md5ChecksumValidationException(String message) {
         super(message);
     }
 }
