@@ -12,9 +12,12 @@ public class Constants {
     public static final String CURRENT_AGGREGATED_GTFS_FILENAME = "aggregated-gtfs.zip";
     public static final String GRAPH_OBJ = "Graph.obj";
 
-    public static final java.lang.String METADATA_DESCRIPTION = "MetadataDescription";
-    public static final java.lang.String METADATA_FILE = "MetadataFile";
+    public static final String METADATA_DESCRIPTION = "MetadataDescription";
+    public static final String METADATA_FILE = "MetadataFile";
 
     public static final String FILE_TARGET_MD5 = "RutebankenMd5SumRecordedForTargetFile";
 	public static final String CLEAN_REPOSITORY = "RutebankenCleanRepository";
+
+	public static final String BLOBSTORE_PATH_INBOUND_RECEIVED = "inbound/received/";
+
 }

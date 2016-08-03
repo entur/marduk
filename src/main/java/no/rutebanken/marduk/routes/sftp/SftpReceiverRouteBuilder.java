@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.routes.sftp;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.CamelContext;
@@ -58,7 +59,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
             from("sftp://" + provider.sftpAccount + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&sorter=#caseIdSftpSorter&delay=30s&delete=true&localWorkDirectory=files/tmp&connectTimeout=1000")
 			.autoStartup("{{sftp.autoStartup:true}}")
                     .log(LoggingLevel.INFO, getClass().getName(), "Received file on sftp route for '" + provider.sftpAccount + "'. Storing file ...")
-                    .setHeader(FILE_HANDLE, simple("inbound/received/" + provider.chouetteInfo.referential + "/" + provider.chouetteInfo.referential + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
+                    .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_INBOUND_RECEIVED + provider.chouetteInfo.referential + "/" + provider.chouetteInfo.referential + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
                     .setHeader(PROVIDER_ID, constant(provider.id))
                     .log(LoggingLevel.INFO, getClass().getName(), "File handle is: ${header." + FILE_HANDLE + "}")
                     .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")

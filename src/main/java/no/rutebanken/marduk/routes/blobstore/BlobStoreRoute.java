@@ -11,7 +11,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
 import static no.rutebanken.marduk.Constants.*;
-import static no.rutebanken.marduk.Constants.FILE_TARGET_MD5;
 
 @Component
 public class BlobStoreRoute extends BaseRouteBuilder {
@@ -90,7 +89,8 @@ public class BlobStoreRoute extends BaseRouteBuilder {
         from("direct:listBlobs")
         	// TODO make this route work
 	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-	        .toD("jclouds:blobstore:" + provider + "?operation=CamelJCloudsListNodes&container=" + containerName + "&blobName=inbound/received/akt/")
+            .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+	        .bean("blobStoreService","getFiles")
 	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 	        .log(LoggingLevel.INFO, getClass().getName(), "Returning from fetching file list ${header." + FILE_HANDLE + "} from blob store.");
 }

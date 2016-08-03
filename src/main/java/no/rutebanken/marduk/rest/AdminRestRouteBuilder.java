@@ -3,7 +3,9 @@ package no.rutebanken.marduk.rest;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
@@ -46,7 +48,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
         // and enable CORS
         .contextPath("/admin");
-        
+
+
         rest("/services/chouette")
 	    	.post("/{providerId}/import")
 	    		.param().required(Boolean.TRUE).name("fileHandle").type(RestParamType.query).description("S3 file path of file to reimport").endParam()
@@ -60,11 +63,11 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 			    .endRest()
         	.get("/{providerId}/files")
 	    		.route()
-			  //  .process(getProviderRepository().getProvider(id)) "inbound/received/" + provider.chouetteInfo.referential
 	    		.log("S3 get files for providerId=${header.providerId}")
 	    		.removeHeaders("CamelHttp*")
 	    		.setHeader(PROVIDER_ID,header("providerId"))
 			    .to("direct:listBlobs")
+				//.setBody(constant(s3FilesDummy))
 			    .routeId("admin-chouette-import-list")
 			    .endRest()
         	.post("/{providerId}/export")
