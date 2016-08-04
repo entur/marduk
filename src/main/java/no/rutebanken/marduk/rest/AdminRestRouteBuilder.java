@@ -62,7 +62,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .process(e -> {
                 	e.getIn().setHeader(Exchange.FILE_NAME, body().toString()
-                    		.replaceFirst("inbound/received/", "reimported"+simple("-${date:now:yyyyMMddHHmmss}").evaluate(e, String.class)+"-"));
+                    		.replaceFirst("inbound/received/.*/", "reimported"+simple("-${date:now:yyyyMMddHHmmss}").evaluate(e, String.class)+"-"));
                 })
             	.setBody(constant(null))
 			   

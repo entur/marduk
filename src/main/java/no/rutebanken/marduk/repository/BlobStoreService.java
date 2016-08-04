@@ -1,5 +1,8 @@
 package no.rutebanken.marduk.repository;
 
+import java.util.Collections;
+import java.util.Comparator;
+
 import org.apache.camel.Header;
 import org.jclouds.blobstore.BlobStore;
 import org.jclouds.blobstore.domain.PageSet;
@@ -34,6 +37,13 @@ public class BlobStoreService {
 
 			rsp.add(f);
 		}
+
+		Collections.sort(rsp.getFiles(), new Comparator<ListFilesResponse.File>() {
+			@Override
+			public int compare(File o1, File o2) {
+				return o1.getUpdated().compareTo(o2.getUpdated());
+			}
+		});
 
 		return rsp;
 	}
