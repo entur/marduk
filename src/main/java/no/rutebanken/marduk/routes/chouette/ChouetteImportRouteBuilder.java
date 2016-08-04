@@ -54,7 +54,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
     @Value("${chouette.url}")
     private String chouetteUrl;
 
-    private int consumers = 10; // TODO?
+    private int consumers = 40; // TODO?
 
     @SuppressWarnings("unchecked")
 	@Override
@@ -255,8 +255,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 		        .setBody(constant(""))
 		        .choice()
 		        .when(simple("${exchangeProperty.action_report_result} == 'OK' and ${exchangeProperty.validation_report_result} == 'OK'"))
-		        	.log(LoggingLevel.INFO, getClass().getName(), "Import and validation ok, triggering GTFS export.")
-		            .to("activemq:queue:ChouetteExportQueue")
+		            .to("direct:checkScheduledJobsBeforeTriggeringExport")
 		            .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
 		        .when(simple("${exchangeProperty.action_report_result} == 'OK' and ${exchangeProperty.validation_report_result} == 'NOK'"))
 		        	.log(LoggingLevel.INFO, getClass().getName(), "Import ok but validation failed")
@@ -277,6 +276,19 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 		        .to("direct:updateStatus")
 		        .routeId("chouette-process-job-status");
 	
+		 // Check that no other import jobs in status SCHEDULED exists for this referential. If so, do not trigger export
+		from("direct:checkScheduledJobsBeforeTriggeringExport")
+			.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?action=importer"))
+			.toD("${exchangeProperty.job_status_url}")
+			.choice()
+			.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
+				.log(LoggingLevel.INFO, getClass().getName(), "Import and validation ok, skipping export as there are more import jobs active")
+            .otherwise()
+				.log(LoggingLevel.INFO, getClass().getName(), "Import and validation ok, triggering GTFS export.")
+		        .setBody(constant(""))
+				.to("activemq:queue:ChouetteExportQueue")
+            .end()
+            .routeId("chouette-process-job-list");
 		
     }
 

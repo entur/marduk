@@ -48,63 +48,70 @@ public class ChouetteImportFileRouteTest {
 
 	@EndpointInject(uri = "mock:chouetteCreateImport")
 	protected MockEndpoint chouetteCreateImport;
-	
+
 	@EndpointInject(uri = "mock:chouetteCreateExport")
 	protected MockEndpoint chouetteCreateExport;
-	
+
 	@EndpointInject(uri = "mock:chouetteGetJobStatus")
 	protected MockEndpoint chouetteGetJobStatus;
-	
+
 	@EndpointInject(uri = "mock:chouetteGetActionReport")
 	protected MockEndpoint chouetteGetActionReport;
-	
+
 	@EndpointInject(uri = "mock:chouetteGetValidationReport")
 	protected MockEndpoint chouetteGetValidationReport;
-	
+
+	@EndpointInject(uri = "mock:chouetteGetJobs")
+	protected MockEndpoint chouetteGetJobs;
+
 	@EndpointInject(uri = "mock:processActionReportResult")
 	protected MockEndpoint processActionReportResult;
-	
+
 	@Produce(uri = "activemq:queue:ProcessFileQueue")
 	protected ProducerTemplate importTemplate;
-	
+
 	@Produce(uri = "direct:checkValidationReport")
 	protected ProducerTemplate validationReportTemplate;
-	
-    @Value("${chouette.url}")
-    private String chouetteUrl;
 
-    @Value("${nabu.rest.service.url}")
-    private String nabuUrl;
-    
-    @Value("${blobstore.filesystem.baseDirectory}")
-    private String blobStoreBaseDirectory;
-    
-    @Value("${blobstore.containerName}")
-    private String containerName;
-    
-    // TODO when next version of camel is available, fix tests so that they use application.properties from src/test/resources
-	//@Test
+	@Produce(uri = "direct:checkScheduledJobsBeforeTriggeringExport")
+	protected ProducerTemplate triggerJobListTemplate;
+
+	@Value("${chouette.url}")
+	private String chouetteUrl;
+
+	@Value("${nabu.rest.service.url}")
+	private String nabuUrl;
+
+	@Value("${blobstore.filesystem.baseDirectory}")
+	private String blobStoreBaseDirectory;
+
+	@Value("${blobstore.containerName}")
+	private String containerName;
+
+	// TODO when next version of camel is available, fix tests so that they use
+	// application.properties from src/test/resources
+	// @Test
 	public void testImportFileToDataspace() throws Exception {
 
 		String filename = "ruter_fake_data.zip";
-		
+
 		File blobBase = new File(blobStoreBaseDirectory);
-		File containerBase = new File(blobBase,containerName);
-		File refBase = new File(containerBase,"rut");
+		File containerBase = new File(blobBase, containerName);
+		File refBase = new File(containerBase, "rut");
 		refBase.mkdirs();
-		
-		File importFile  = new File(refBase,filename);
-		if(!importFile.exists()) {
-			FileUtil.copyFile(new File("src/main/resources/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip"), importFile);
+
+		File importFile = new File(refBase, filename);
+		if (!importFile.exists()) {
+			FileUtil.copyFile(new File("src/main/resources/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip"),
+					importFile);
 		}
-		
+
 		// Mock initial call to Chouette to import job
 		context.getRouteDefinition("chouette-send-import-job").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint(chouetteUrl+"/chouette_iev/referentials/rut/importer/regtopp")
-					.skipSendToOriginalEndpoint()
-					.to("mock:chouetteCreateImport");
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/regtopp")
+						.skipSendToOriginalEndpoint().to("mock:chouetteCreateImport");
 			}
 		});
 
@@ -112,68 +119,71 @@ public class ChouetteImportFileRouteTest {
 		context.getRouteDefinition("chouette-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint(chouetteUrl+"/chouette_iev/referentials/rut/scheduled_jobs/1")
-				.skipSendToOriginalEndpoint()
-				.to("mock:chouetteGetJobStatus");
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/scheduled_jobs/1")
+						.skipSendToOriginalEndpoint().to("mock:chouetteGetJobStatus");
+			}
+		});
+
+		context.getRouteDefinition("chouette-process-job-list").adviceWith(context, new AdviceWithRouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?action=importer")
+						.skipSendToOriginalEndpoint().to("mock:chouetteGetJobs");
 			}
 		});
 
 		context.getRouteDefinition("chouette-process-action-report").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint(chouetteUrl+"/chouette_iev/referentials/rut/data/1/action_report.json")
-				.skipSendToOriginalEndpoint()
-				.to("mock:chouetteGetActionReport");
-				
-				interceptSendToEndpoint(chouetteUrl+"/chouette_iev/referentials/rut/data/1/validation_report.json")
-				.skipSendToOriginalEndpoint()
-				.to("mock:chouetteGetValidationReport");
-				
-		
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/action_report.json")
+						.skipSendToOriginalEndpoint().to("mock:chouetteGetActionReport");
+
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/validation_report.json")
+						.skipSendToOriginalEndpoint().to("mock:chouetteGetValidationReport");
+
 			}
 		});
 
-		context.getRouteDefinition("chouette-process-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
+		context.getRouteDefinition("chouette-process-job-list").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint("activemq:queue:ChouetteExportQueue")
-					.skipSendToOriginalEndpoint()
-					.to("mock:chouetteCreateExport");
+				interceptSendToEndpoint("activemq:queue:ChouetteExportQueue").skipSendToOriginalEndpoint()
+						.to("mock:chouetteCreateExport");
 			}
 		});
 
-		// Mock Nabu / providerRepository (done differently since RestTemplate is being used which skips Camel)
+		// Mock Nabu / providerRepository (done differently since RestTemplate
+		// is being used which skips Camel)
 		context.addRoutes(new RouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				from("netty4-http:"+nabuUrl+"/providers/2")
-					.setBody()
-					.constant(IOUtils.toString(new FileReader("src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))
-					.setHeader(Exchange.CONTENT_TYPE,constant("application/json"));
-					
+				from("netty4-http:" + nabuUrl + "/providers/2").setBody()
+						.constant(IOUtils.toString(new FileReader(
+								"src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))
+						.setHeader(Exchange.CONTENT_TYPE, constant("application/json"));
+
 			}
-			
-		});	
-		
-		
+
+		});
 
 		// we must manually start when we are done with all the advice with
 		context.start();
 
 		// 1 initial import call
 		chouetteCreateImport.expectedMessageCount(1);
-		chouetteCreateImport.returnReplyHeader("Location", new SimpleExpression(chouetteUrl.replace("http4://","http://")+"/chouette_iev/referentials/rut/scheduled_jobs/1"));
-		
-		
+		chouetteCreateImport.returnReplyHeader("Location", new SimpleExpression(
+				chouetteUrl.replace("http4://", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
+
 		// 1 status call
 		chouetteGetJobStatus.expectedMessageCount(1);
 		chouetteGetJobStatus.returnReplyBody(new Expression() {
-			
+
 			@SuppressWarnings("unchecked")
 			@Override
 			public <T> T evaluate(Exchange ex, Class<T> arg1) {
 				try {
-					return (T) IOUtils.toString(getClass().getResourceAsStream("/no/rutebanken/marduk/chouette/getJobStatusResponse.json"));
+					return (T) IOUtils.toString(
+							getClass().getResourceAsStream("/no/rutebanken/marduk/chouette/getJobStatusResponse.json"));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -181,16 +191,17 @@ public class ChouetteImportFileRouteTest {
 				}
 			}
 		});
-	
+
 		// 1 aciton report call
 		chouetteGetActionReport.expectedMessageCount(1);
 		chouetteGetActionReport.returnReplyBody(new Expression() {
-			
+
 			@SuppressWarnings("unchecked")
 			@Override
 			public <T> T evaluate(Exchange ex, Class<T> arg1) {
 				try {
-					return (T) IOUtils.toString(getClass().getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"));
+					return (T) IOUtils.toString(getClass()
+							.getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -198,16 +209,17 @@ public class ChouetteImportFileRouteTest {
 				}
 			}
 		});
-	
+
 		// 1 aciton report call
 		chouetteGetValidationReport.expectedMessageCount(1);
 		chouetteGetValidationReport.returnReplyBody(new Expression() {
-			
+
 			@SuppressWarnings("unchecked")
 			@Override
 			public <T> T evaluate(Exchange ex, Class<T> arg1) {
 				try {
-					return (T) IOUtils.toString(getClass().getResourceAsStream("/no/rutebanken/marduk/chouette/getValidationReportResponseOK.json"));
+					return (T) IOUtils.toString(getClass()
+							.getResourceAsStream("/no/rutebanken/marduk/chouette/getValidationReportResponseOK.json"));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -215,46 +227,64 @@ public class ChouetteImportFileRouteTest {
 				}
 			}
 		});
-	
+
+		// 1 call to list other import jobs in referential
+		chouetteGetJobs.expectedMessageCount(1);
+		chouetteGetJobs.returnReplyBody(new Expression() {
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public <T> T evaluate(Exchange ex, Class<T> arg1) {
+				try {
+					return (T) IOUtils.toString(getClass().getResourceAsStream(
+							"/no/rutebanken/marduk/chouette/getJobListResponseAllTerminated.json"));
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return null;
+				}
+			}
+		});
+
 		// Should trigger export
 		chouetteCreateExport.expectedMessageCount(1);
 
-		Map<String,Object> headers = new HashMap<String,Object>();
+		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put(Constants.PROVIDER_ID, "2");
 		headers.put(Exchange.FILE_NAME, filename);
 		headers.put(Constants.CORRELATION_ID, "corr_id");
-		headers.put(Constants.FILE_HANDLE,"rut/"+filename);
-		importTemplate.sendBodyAndHeaders(null,headers);
-		
+		headers.put(Constants.FILE_HANDLE, "rut/" + filename);
+		importTemplate.sendBodyAndHeaders(null, headers);
 
 		chouetteCreateImport.assertIsSatisfied();
 		chouetteGetJobStatus.assertIsSatisfied();
 		chouetteGetActionReport.assertIsSatisfied();
 		chouetteGetValidationReport.assertIsSatisfied();
+		chouetteGetJobs.assertIsSatisfied();
 		chouetteCreateExport.assertIsSatisfied();
 	}
-	
-	
+
 	@Test
 	public void testValidationReportResultOK() throws Exception {
-		testValidationReportResult("/no/rutebanken/marduk/chouette/getValidationReportResponseOK.json","OK");
-	}	
-	
+		testValidationReportResult("/no/rutebanken/marduk/chouette/getValidationReportResponseOK.json", "OK");
+	}
+
 	@Test
 	public void testValidationReportResultNOK() throws Exception {
-		testValidationReportResult("/no/rutebanken/marduk/chouette/getValidationReportResponseNOK.json","NOK");
-	}	
-	
-	public void testValidationReportResult(String validationReportClasspathReference, String expectedResult) throws Exception {
+		testValidationReportResult("/no/rutebanken/marduk/chouette/getValidationReportResponseNOK.json", "NOK");
+	}
 
-		context.getRouteDefinition("chouette-process-validation-report").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() throws Exception {
-				interceptSendToEndpoint("direct:processActionReportResult")
-					.skipSendToOriginalEndpoint()
-					.to("mock:processActionReportResult");
-			}
-		});
+	public void testValidationReportResult(String validationReportClasspathReference, String expectedResult)
+			throws Exception {
+
+		context.getRouteDefinition("chouette-process-validation-report").adviceWith(context,
+				new AdviceWithRouteBuilder() {
+					@Override
+					public void configure() throws Exception {
+						interceptSendToEndpoint("direct:processActionReportResult").skipSendToOriginalEndpoint()
+								.to("mock:processActionReportResult");
+					}
+				});
 
 		context.start();
 
@@ -262,10 +292,60 @@ public class ChouetteImportFileRouteTest {
 
 		processActionReportResult.expectedMessageCount(1);
 		processActionReportResult.expectedPropertyReceived("validation_report_result", expectedResult);
-		
+
 		processActionReportResult.assertIsSatisfied();
 
-}
-	
+	}
+
+	@Test
+	public void testJobListResponseTerminated() throws Exception {
+		testJobListResponse("/no/rutebanken/marduk/chouette/getJobListResponseAllTerminated.json", true);
+	}
+
+	@Test
+	public void testJobListResponseScheduled() throws Exception {
+		testJobListResponse("/no/rutebanken/marduk/chouette/getJobListResponseScheduled.json", false);
+	}
+
+	public void testJobListResponse(String jobListResponseClasspathReference, boolean expectExport) throws Exception {
+
+		context.getRouteDefinition("chouette-process-job-list").adviceWith(context, new AdviceWithRouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?action=importer")
+						.skipSendToOriginalEndpoint().to("mock:chouetteGetJobs");
+				interceptSendToEndpoint("activemq:queue:ChouetteExportQueue").skipSendToOriginalEndpoint()
+				.to("mock:chouetteCreateExport");
+			}
+		});
+
+		context.start();
+
+		// 1 call to list other import jobs in referential
+		chouetteGetJobs.expectedMessageCount(1);
+		chouetteGetJobs.returnReplyBody(new Expression() {
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public <T> T evaluate(Exchange ex, Class<T> arg1) {
+				try {
+					return (T) IOUtils.toString(getClass().getResourceAsStream(jobListResponseClasspathReference));
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return null;
+				}
+			}
+		});
+
+		triggerJobListTemplate.sendBodyAndHeader(null, Constants.CHOUETTE_REFERENTIAL, "rut");
+		chouetteGetJobs.assertIsSatisfied();
+
+		if (expectExport) {
+			chouetteCreateExport.expectedMessageCount(1);
+		}
+		chouetteCreateExport.assertIsSatisfied();
+
+	}
 
 }
