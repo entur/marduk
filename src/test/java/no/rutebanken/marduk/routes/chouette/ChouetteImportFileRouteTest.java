@@ -90,7 +90,7 @@ public class ChouetteImportFileRouteTest {
 
 	// TODO when next version of camel is available, fix tests so that they use
 	// application.properties from src/test/resources
-	// @Test
+	 @Test
 	public void testImportFileToDataspace() throws Exception {
 
 		String filename = "ruter_fake_data.zip";

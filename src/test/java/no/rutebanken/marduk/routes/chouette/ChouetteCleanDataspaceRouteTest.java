@@ -69,7 +69,7 @@ public class ChouetteCleanDataspaceRouteTest {
     @Test
     public void dummu() {}
     
-	//@Test
+	@Test
 	public void testCleanDataspace() throws Exception {
 
 		// Mock initial call to Chouette to import job

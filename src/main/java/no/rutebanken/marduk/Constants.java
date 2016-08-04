@@ -19,5 +19,8 @@ public class Constants {
 	public static final String CLEAN_REPOSITORY = "RutebankenCleanRepository";
 
 	public static final String BLOBSTORE_PATH_INBOUND_RECEIVED = "inbound/received/";
+	
+    public static final String CHOUETTE_JOB_STATUS_URL = "chouette_job_status_url";
+
 
 }

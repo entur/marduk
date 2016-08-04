@@ -45,7 +45,8 @@ import no.rutebanken.marduk.routes.status.Status.State;
 @Component
 public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
-    @Value("${chouette.max.retries:3000}")
+
+	@Value("${chouette.max.retries:3000}")
     private int maxRetries;
 
     @Value("${chouette.retry.delay:5000}")
@@ -77,17 +78,17 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
                 .to("direct:updateStatus")
                 .log(LoggingLevel.ERROR, getClass().getName(), "Failed while importing to chouette.")
-                .handled(true);
+                .handled(false);
 
 
-        from("activemq:queue:ChouetteCleanQueue?maxConcurrentConsumers=" + consumers).streamCaching()
+        from("activemq:queue:ChouetteCleanQueue").streamCaching()
 	        .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette dataspace clean for provider: ${header." + PROVIDER_ID + "}")
 	        .setHeader(Exchange.FILE_NAME,constant("clean_repository.zip"))
             .setProperty(Exchange.FILE_NAME, header(Exchange.FILE_NAME))
 	        .setHeader(Constants.FILE_HANDLE,constant("clean_repository.zip"))
 	        .setHeader(Constants.CORRELATION_ID,constant(UUID.randomUUID().toString()))
 	        .setHeader(Constants.FILE_TYPE,constant(FileType.REGTOPP.name()))
-	        .setProperty(Constants.CLEAN_REPOSITORY, constant(true))
+	        .setHeader(Constants.CLEAN_REPOSITORY, constant(true))
 	        .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
 	        .to("direct:updateStatus")
             .process(e -> {
@@ -99,7 +100,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 	        .routeId("chouette-clean-dataspace");
 
 
-        from("activemq:queue:ChouetteImportQueue?maxConcurrentConsumers=" + consumers).streamCaching()
+        from("activemq:queue:ChouetteImportQueue").streamCaching()
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette import for provider: ${header." + PROVIDER_ID + "}")
     	        .setProperty(Constants.CLEAN_REPOSITORY, constant(false))
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
@@ -114,7 +115,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                     String fileName = e.getIn().getHeader(Exchange.FILE_NAME, String.class);
                     String fileType = e.getIn().getHeader(Constants.FILE_TYPE, String.class);
                     Long providerId = e.getIn().getHeader(PROVIDER_ID, Long.class);
-                    boolean cleanRepository = (boolean) e.getProperty(Constants.CLEAN_REPOSITORY);
+                    boolean cleanRepository = (boolean) e.getIn().getHeader(Constants.CLEAN_REPOSITORY);
                     e.getIn().setHeader(JSON_PART, getImportParameters(fileName, fileType, providerId,cleanRepository));
                 }) //Using header to add json data
                 .log(LoggingLevel.DEBUG, getClass().getName(), "import parameters: " + header(JSON_PART))
@@ -139,12 +140,22 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Submitted new job")
                 .process(e -> {
-                    e.setProperty("url", e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
+                    e.getOut().setHeader(Constants.CHOUETTE_JOB_STATUS_URL,e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
+                    e.getOut().setHeader(Constants.PROVIDER_ID, e.getIn().getHeader(Constants.PROVIDER_ID));
+                    e.getOut().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID));
+                    e.getOut().setHeader(Exchange.FILE_NAME, e.getIn().getHeader(Exchange.FILE_NAME));
+                    e.getOut().setHeader(Constants.CHOUETTE_REFERENTIAL, e.getIn().getHeader(Constants.CHOUETTE_REFERENTIAL));
+                    e.getOut().setHeader(Constants.CLEAN_REPOSITORY, e.getIn().getHeader(Constants.CLEAN_REPOSITORY));
+                    System.out.println(e.getOut().getHeaders());
                 })
-                .to("direct:pollJobStatus")
+                .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-import-job");
 
-        from("direct:pollJobStatus")
+        from("activemq:queue:ChouettePollStatusQueue?maxConcurrentConsumers=" + consumers)
+				.setProperty(Constants.CLEAN_REPOSITORY,header(Constants.CLEAN_REPOSITORY))
+				.setProperty(Exchange.FILE_NAME,header(Exchange.FILE_NAME))
+        		.setProperty(Constants.CHOUETTE_REFERENTIAL,header(Constants.CHOUETTE_REFERENTIAL))
+        		.setProperty("url",header(Constants.CHOUETTE_JOB_STATUS_URL))
                 .setProperty("loop_counter", constant(0))
                 .setHeader("loop", constant("direct:sendJobStatusRequest"))
                 .dynamicRouter().header("loop")
