@@ -24,6 +24,7 @@ import org.apache.camel.test.spring.CamelSpringDelegatingTestContextLoader;
 import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
 import org.apache.camel.test.spring.CamelTestContextBootstrapper;
 import org.apache.camel.test.spring.UseAdviceWith;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -147,12 +148,11 @@ public class AdminRestRouteBUilderTest {
 		File blobBase = new File(blobStoreBaseDirectory);
 		File containerBase = new File(blobBase, containerName);
 		File refBase = new File(containerBase, filestorePath);
+		FileUtils.deleteQuietly(refBase);
 		refBase.mkdirs();
 
 		File importFile = new File(refBase, filename);
-		if (!importFile.exists()) {
-			importFile.createNewFile();
-		}
+		importFile.createNewFile();
 
 		// we must manually start when we are done with all the advice with
 		// Mock Nabu / providerRepository (done differently since RestTemplate
