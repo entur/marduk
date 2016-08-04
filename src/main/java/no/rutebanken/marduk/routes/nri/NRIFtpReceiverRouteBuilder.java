@@ -41,6 +41,7 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
 	        	Provider provider = getProviderRepository().getProvider(providerId);
 	    		String newFileName = relativeFilePath.replace(' ', '_').replace('/', '_');
 	    		e.getIn().setHeader(Exchange.FILE_NAME,newFileName);
+	    		e.getOut().setHeader(Exchange.FILE_NAME,newFileName);
 
 	    		e.getOut().setHeader(FILE_HANDLE, 
 	            		simple(Constants.BLOBSTORE_PATH_INBOUND_RECEIVED + provider.chouetteInfo.referential + "/" + provider.chouetteInfo.referential + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileName}").evaluate(e, String.class));
