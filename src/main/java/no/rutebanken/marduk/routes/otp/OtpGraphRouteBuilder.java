@@ -56,6 +56,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
         //TODO Report status?
         from("activemq:queue:OtpGraphQueue?maxConcurrentConsumers=1")
+        	.autoStartup("{{otp.graph.build.autoStartup:true}}")
                 .choice()
                 .when(constant(purgeQueue))
                     .log(LoggingLevel.INFO, getClass().getName(), "Purging OtpGraphQueue.")
