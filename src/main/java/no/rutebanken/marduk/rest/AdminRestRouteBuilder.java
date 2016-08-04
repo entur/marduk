@@ -54,14 +54,17 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    		.route()
 	    		.log("Chouette start import providerId=${header.providerId} fileHandle=${header.fileHandle}")
 	    		.removeHeaders("CamelHttp*")
-            	.setHeader(PROVIDER_ID,header("providerId"))
-            	.setHeader(FILE_HANDLE,header("fileHandle"))
+	    		.setHeader(PROVIDER_ID,header("providerId"))
+            	.setBody(header("fileHandle"))
+            	.split().tokenize(",")
+            	.setHeader(FILE_HANDLE,body())
 			    .setHeader(CORRELATION_ID, constant(System.currentTimeMillis()))
 
                 .process(e -> {
-                	e.getIn().setHeader(Exchange.FILE_NAME, e.getIn().getHeader("fileHandle").toString()
+                	e.getIn().setHeader(Exchange.FILE_NAME, body().toString()
                     		.replaceFirst("inbound/received/", "reimported"+simple("-${date:now:yyyyMMddHHmmss}").evaluate(e, String.class)+"-"));
                 })
+            	.setBody(constant(null))
 			   
                 .inOnly("activemq:queue:ProcessFileQueue")
 			    .routeId("admin-chouette-import")
@@ -72,7 +75,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    		.removeHeaders("CamelHttp*")
 	    		.setHeader(PROVIDER_ID,header("providerId"))
 			    .to("direct:listBlobs")
-				//.setBody(constant(s3FilesDummy))
 			    .routeId("admin-chouette-import-list")
 			    .endRest()
         	.post("/{providerId}/export")
