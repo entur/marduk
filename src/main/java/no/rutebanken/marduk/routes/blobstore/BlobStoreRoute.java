@@ -55,7 +55,8 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setHeader(FILE_TARGET_MD5, exchangeProperty(FILE_TARGET_MD5))
                 .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(Exchange.FILE_PARENT))
-                .log(LoggingLevel.INFO, getClass().getName(), "Stored file ${header." + FILE_HANDLE + "} in blob store.");
+                .log(LoggingLevel.INFO, getClass().getName(), "Stored file ${header." + FILE_HANDLE + "} in blob store.")
+                .routeId("blobstore-upload");
 
         from("direct:getBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
@@ -79,11 +80,15 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setHeader(FILE_TARGET_MD5, exchangeProperty(FILE_TARGET_MD5))
                 .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(Exchange.FILE_PARENT))
-                .log(LoggingLevel.INFO, getClass().getName(), "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.");
+                .log(LoggingLevel.INFO, getClass().getName(), "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.")
+                .routeId("blobstore-download");
+  
 
         from("direct:removeBlob")
             .log(LoggingLevel.INFO, getClass().getName(), "Removing blob: ${header." + FILE_HANDLE + "}")
-                .toD("jclouds:blobstore:" + provider + "?operation=CamelJcloudsRemoveBlob&container=" + containerName + "&blobName=${header." + FILE_HANDLE + "}");
+                .toD("jclouds:blobstore:" + provider + "?operation=CamelJcloudsRemoveBlob&container=" + containerName + "&blobName=${header." + FILE_HANDLE + "}")
+                .routeId("blobstore-remove");
+
 
         
         from("direct:listBlobs")
@@ -92,6 +97,8 @@ public class BlobStoreRoute extends BaseRouteBuilder {
             .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
 	        .bean("blobStoreService","getFiles")
 	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-	        .log(LoggingLevel.INFO, getClass().getName(), "Returning from fetching file list ${header." + FILE_HANDLE + "} from blob store.");
+	        .log(LoggingLevel.INFO, getClass().getName(), "Returning from fetching file list from blob store.")
+            .routeId("blobstore-list");
+
 }
 }
