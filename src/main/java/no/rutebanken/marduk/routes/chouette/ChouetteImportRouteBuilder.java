@@ -78,34 +78,34 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
                 .to("direct:updateStatus")
                 .log(LoggingLevel.ERROR, getClass().getName(), "Failed while importing to chouette.")
-                .handled(false);
+                .handled(true);
 
 
-        from("activemq:queue:ChouetteCleanQueue").streamCaching()
-	        .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette dataspace clean for provider: ${header." + PROVIDER_ID + "}")
-	        .setHeader(Exchange.FILE_NAME,constant("clean_repository.zip"))
-            .setProperty(Exchange.FILE_NAME, header(Exchange.FILE_NAME))
-	        .setHeader(Constants.FILE_HANDLE,constant("clean_repository.zip"))
-	        .setHeader(Constants.CORRELATION_ID,constant(UUID.randomUUID().toString()))
-	        .setHeader(Constants.FILE_TYPE,constant(FileType.REGTOPP.name()))
-	        .setHeader(Constants.CLEAN_REPOSITORY, constant(true))
-	        .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
-	        .to("direct:updateStatus")
-            .process(e -> {
-                e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip"));
-            })
-	        .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential)).id("providerRepository")
-	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-	        .to("direct:addJson")
-	        .routeId("chouette-clean-dataspace");
+        from("activemq:queue:ChouetteCleanQueue?transacted=true").streamCaching()
+		        .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette dataspace clean for provider: ${header." + PROVIDER_ID + "}")
+		        .setHeader(Exchange.FILE_NAME,constant("clean_repository.zip"))
+	            .setProperty(Exchange.FILE_NAME, header(Exchange.FILE_NAME))
+		        .setHeader(Constants.FILE_HANDLE,constant("clean_repository.zip"))
+		        .setHeader(Constants.CORRELATION_ID,constant(UUID.randomUUID().toString()))
+		        .setHeader(Constants.FILE_TYPE,constant(FileType.REGTOPP.name()))
+		        .setHeader(Constants.CLEAN_REPOSITORY, constant(true))
+		        .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
+		        .to("direct:updateStatus")
+	            .process(e -> {
+	                e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip"));
+	            })
+		        .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential)).id("providerRepository")
+		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+		        .to("direct:addJson")
+		        .routeId("chouette-clean-dataspace");
 
 
-        from("activemq:queue:ChouetteImportQueue").streamCaching()
+        from("activemq:queue:ChouetteImportQueue?transacted=true").streamCaching()
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette import for provider: ${header." + PROVIDER_ID + "}")
-    	        .setProperty(Constants.CLEAN_REPOSITORY, constant(false))
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
                 .to("direct:updateStatus")
                 .to("direct:getBlob")
+    	        .setHeader(Constants.CLEAN_REPOSITORY, constant(false))
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:addJson");
@@ -151,7 +151,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-import-job");
 
-        from("activemq:queue:ChouettePollStatusQueue?maxConcurrentConsumers=" + consumers)
+        from("activemq:queue:ChouettePollStatusQueue?transacted=true&maxConcurrentConsumers=" + consumers)
 				.setProperty(Constants.CLEAN_REPOSITORY,header(Constants.CLEAN_REPOSITORY))
 				.setProperty(Exchange.FILE_NAME,header(Exchange.FILE_NAME))
         		.setProperty(Constants.CHOUETTE_REFERENTIAL,header(Constants.CHOUETTE_REFERENTIAL))
