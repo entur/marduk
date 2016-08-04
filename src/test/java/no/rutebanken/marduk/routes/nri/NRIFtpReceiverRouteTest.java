@@ -21,6 +21,7 @@ import org.mockftpserver.fake.UserAccount;
 import org.mockftpserver.fake.filesystem.DirectoryEntry;
 import org.mockftpserver.fake.filesystem.FileEntry;
 import org.mockftpserver.fake.filesystem.FileSystem;
+import org.mockftpserver.fake.filesystem.FileSystemEntry;
 import org.mockftpserver.fake.filesystem.UnixFakeFileSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +29,9 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.BootstrapWith;
 import org.springframework.test.context.ContextConfiguration;
+
+import no.rutebanken.marduk.Constants;
+
 import static org.junit.Assert.*;
 
 @RunWith(CamelSpringJUnit4ClassRunner.class)
@@ -49,7 +53,7 @@ public class NRIFtpReceiverRouteTest {
 
 
 	@Test
-	public void testSendError() throws Exception {
+	public void testFetchFilesFromFTP() throws Exception {
 
 		FakeFtpServer fakeFtpServer = new FakeFtpServer();
 		fakeFtpServer.setSystemName("UNIX");
@@ -64,10 +68,17 @@ public class NRIFtpReceiverRouteTest {
 		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985"));
 		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/984"));
 		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985/AtB Hovedsett 2016_unzipped"));
-		fileSystem.add(new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/1585/AtB Hovedsett 2017.zip"));
-		fileSystem.add(new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/984/AtB Hovedsett 2016.zip"));
-		fileSystem.add(new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985/AtB Hovedsett 2016_v2.zip"));
+		FileEntry file1585 = new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/1585/AtB Hovedsett 2017.zip");
+		file1585.setContents(IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip")));
+		fileSystem.add(file1585);
+		FileEntry file984 = new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/984/AtB Hovedsett 2016.zip");
+		file984.setContents(IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip")));
+		fileSystem.add(file984 );
+		FileEntry file985 = new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985/AtB Hovedsett 2016_v2.zip");
+		file985.setContents(IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip")));
+		fileSystem.add(file985);
 
+		
 		fakeFtpServer.setFileSystem(fileSystem);
 		fakeFtpServer.setServerControlPort(32220);
 
@@ -78,7 +89,6 @@ public class NRIFtpReceiverRouteTest {
 			public void configure() throws Exception {
 				interceptSendToEndpoint("activemq:queue:ProcessFileQueue").skipSendToOriginalEndpoint()
 				.to("mock:sor-trondelag");
-			
 			}
 		});
 
@@ -104,9 +114,11 @@ public class NRIFtpReceiverRouteTest {
 		sorTrondelag.assertIsSatisfied();
 		
 		List<Exchange> exchanges = sorTrondelag.getExchanges();
-		assertEquals("AtB_(Sør-Trøndelag_fylke)_984_AtB_Hovedsett_2016.zip", (String) exchanges.get(0).getIn().getHeader("CamelFileName"));
-		assertEquals("AtB_(Sør-Trøndelag_fylke)_985_AtB_Hovedsett_2016_v2.zip", (String) exchanges.get(1).getIn().getHeader("CamelFileName"));
-		assertEquals("AtB_(Sør-Trøndelag_fylke)_1585_AtB_Hovedsett_2017.zip", (String) exchanges.get(2).getIn().getHeader("CamelFileName"));
+		assertEquals(2L, exchanges.get(0).getIn().getHeader(Constants.PROVIDER_ID));
+		assertNotNull(exchanges.get(0).getIn().getHeader(Constants.CORRELATION_ID));
+		assertEquals("AtB_(Sør-Trøndelag_fylke)_984_AtB_Hovedsett_2016.zip", (String) exchanges.get(0).getIn().getHeader(Exchange.FILE_NAME));
+		assertEquals("AtB_(Sør-Trøndelag_fylke)_985_AtB_Hovedsett_2016_v2.zip", (String) exchanges.get(1).getIn().getHeader(Exchange.FILE_NAME));
+		assertEquals("AtB_(Sør-Trøndelag_fylke)_1585_AtB_Hovedsett_2017.zip", (String) exchanges.get(2).getIn().getHeader(Exchange.FILE_NAME));
 	}
 
 }
