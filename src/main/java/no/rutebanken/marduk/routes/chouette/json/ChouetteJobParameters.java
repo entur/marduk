@@ -11,7 +11,7 @@ import org.json.simple.parser.ParseException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public abstract class ChouetteImportParameters {
+public abstract class ChouetteJobParameters {
 
 	@JsonIgnore
 	public boolean enableValidation = false;

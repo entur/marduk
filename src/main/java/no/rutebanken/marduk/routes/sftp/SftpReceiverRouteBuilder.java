@@ -4,6 +4,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.CamelContext;
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -66,6 +67,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
                     .to("direct:uploadBlob")
                     .setHeader(CORRELATION_ID, constant(System.currentTimeMillis()))
                     .log(LoggingLevel.INFO, getClass().getName(), "Putting handle ${header." + FILE_HANDLE + "} and provider ${header." + PROVIDER_ID + "} on queue...")
+                    .setHeader(Constants.FILE_NAME,exchangeProperty(Exchange.FILE_NAME))
                     .to("activemq:queue:ProcessFileQueue")
                     .routeId("sftp-s3-"+provider.chouetteInfo.referential);
         }

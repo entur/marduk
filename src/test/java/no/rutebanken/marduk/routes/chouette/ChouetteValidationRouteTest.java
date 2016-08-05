@@ -42,13 +42,13 @@ import no.rutebanken.marduk.routes.status.Status.Action;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles({ "default", "dev" })
 @UseAdviceWith(true)
-public class ChouetteImportFileRouteTest {
+public class ChouetteValidationRouteTest {
 
 	@Autowired
 	private ModelCamelContext context;
 
-	@EndpointInject(uri = "mock:chouetteCreateImport")
-	protected MockEndpoint chouetteCreateImport;
+	@EndpointInject(uri = "mock:chouetteCreateValidation")
+	protected MockEndpoint chouetteCreateValidation;
 
 	@EndpointInject(uri = "mock:pollJobStatus")
 	protected MockEndpoint pollJobStatus;
@@ -56,25 +56,25 @@ public class ChouetteImportFileRouteTest {
 	@EndpointInject(uri = "mock:chouetteGetJobs")
 	protected MockEndpoint chouetteGetJobs;
 
-	@EndpointInject(uri = "mock:processImportResult")
-	protected MockEndpoint processActionReportResult;
+	@EndpointInject(uri = "mock:processValidationResult")
+	protected MockEndpoint processValidationResult;
 
-	@EndpointInject(uri = "mock:chouetteValidationQueue")
-	protected MockEndpoint chouetteValidationQueue;
+	@EndpointInject(uri = "mock:chouetteExportQueue")
+	protected MockEndpoint chouetteExportQueue;
 
-	@EndpointInject(uri = "mock:checkScheduledJobsBeforeTriggeringValidation")
+	@EndpointInject(uri = "mock:checkScheduledJobsBeforeTriggeringExport")
 	protected MockEndpoint chouetteCheckScheduledJobs;
 
 	@EndpointInject(uri = "mock:updateStatus")
 	protected MockEndpoint updateStatus;
 
-	@Produce(uri = "activemq:queue:ProcessFileQueue")
-	protected ProducerTemplate importTemplate;
+	@Produce(uri = "activemq:queue:ChouetteValidationQueue")
+	protected ProducerTemplate validationTemplate;
 
-	@Produce(uri = "direct:processImportResult")
-	protected ProducerTemplate processImportResultTemplate;
+	@Produce(uri = "direct:processValidationResult")
+	protected ProducerTemplate processValidationResultTemplate;
 
-	@Produce(uri = "direct:checkScheduledJobsBeforeTriggeringValidation")
+	@Produce(uri = "direct:checkScheduledJobsBeforeTriggeringExport")
 	protected ProducerTemplate triggerJobListTemplate;
 
 	@Value("${chouette.url}")
@@ -83,40 +83,21 @@ public class ChouetteImportFileRouteTest {
 	@Value("${nabu.rest.service.url}")
 	private String nabuUrl;
 
-	@Value("${blobstore.filesystem.baseDirectory}")
-	private String blobStoreBaseDirectory;
-
-	@Value("${blobstore.containerName}")
-	private String containerName;
-
 	// TODO when next version of camel is available, fix tests so that they use
 	// application.properties from src/test/resources
 	 @Test
 	public void testImportFileToDataspace() throws Exception {
 
-		String filename = "ruter_fake_data.zip";
-
-		File blobBase = new File(blobStoreBaseDirectory);
-		File containerBase = new File(blobBase, containerName);
-		File refBase = new File(containerBase, "rut");
-		refBase.mkdirs();
-
-		File importFile = new File(refBase, filename);
-		if (!importFile.exists()) {
-			FileUtil.copyFile(new File("src/main/resources/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip"),
-					importFile);
-		}
-
-		// Mock initial call to Chouette to import job
-		context.getRouteDefinition("chouette-send-import-job").adviceWith(context, new AdviceWithRouteBuilder() {
+		// Mock initial call to Chouette to validation job
+		context.getRouteDefinition("chouette-send-validation-job").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/regtopp")
-						.skipSendToOriginalEndpoint().to("mock:chouetteCreateImport");
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/validator")
+						.skipSendToOriginalEndpoint().to("mock:chouetteCreateValidation");
 			}
 		});
 
-		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
+		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well)
 		context.getRouteDefinition("chouette-validate-job-status-parameters").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
@@ -126,13 +107,13 @@ public class ChouetteImportFileRouteTest {
 		});
 
 		// Mock update status calls
-		context.getRouteDefinition("chouette-process-import-status").adviceWith(context, new AdviceWithRouteBuilder() {
+		context.getRouteDefinition("chouette-process-validation-status").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 				.to("mock:updateStatus");
-				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringValidation").skipSendToOriginalEndpoint()
-				.to("mock:checkScheduledJobsBeforeTriggeringValidation");
+				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringExport").skipSendToOriginalEndpoint()
+				.to("mock:checkScheduledJobsBeforeTriggeringExport");
 			}
 		});
 
@@ -153,32 +134,29 @@ public class ChouetteImportFileRouteTest {
 		context.start();
 
 		// 1 initial import call
-		chouetteCreateImport.expectedMessageCount(1);
-		chouetteCreateImport.returnReplyHeader("Location", new SimpleExpression(
+		chouetteCreateValidation.expectedMessageCount(1);
+		chouetteCreateValidation.returnReplyHeader("Location", new SimpleExpression(
 				chouetteUrl.replace("http4://", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
 
 	
 		pollJobStatus.expectedMessageCount(1);
 		
 		
-		updateStatus.expectedMessageCount(3);
+		updateStatus.expectedMessageCount(2);
 		chouetteCheckScheduledJobs.expectedMessageCount(1);
 		
 		
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put(Constants.PROVIDER_ID, "2");
-		headers.put(Constants.FILE_NAME, filename);
-		headers.put(Constants.CORRELATION_ID, "corr_id");
-		headers.put(Constants.FILE_HANDLE, "rut/" + filename);
-		importTemplate.sendBodyAndHeaders(null, headers);
+		validationTemplate.sendBodyAndHeaders(null, headers);
 
-		chouetteCreateImport.assertIsSatisfied();
+		chouetteCreateValidation.assertIsSatisfied();
 		pollJobStatus.assertIsSatisfied();
 		
 		Exchange exchange = pollJobStatus.getReceivedExchanges().get(0);
 		exchange.getIn().setHeader("action_report_result", "OK");
 		exchange.getIn().setHeader("validation_report_result", "OK");
-		processImportResultTemplate.send(exchange );
+		processValidationResultTemplate.send(exchange );
 		
 		chouetteCheckScheduledJobs.assertIsSatisfied();
 		updateStatus.assertIsSatisfied();
@@ -199,15 +177,15 @@ public class ChouetteImportFileRouteTest {
 
 	public void testJobListResponse(String jobListResponseClasspathReference, boolean expectExport) throws Exception {
 
-		context.getRouteDefinition("chouette-process-job-list-after-import").adviceWith(context, new AdviceWithRouteBuilder() {
+		context.getRouteDefinition("chouette-process-job-list-after-validation").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
 				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?action=importer")
 						.skipSendToOriginalEndpoint()
 						.to("mock:chouetteGetJobs");
-				interceptSendToEndpoint("activemq:queue:ChouetteValidationQueue")
+				interceptSendToEndpoint("activemq:queue:ChouetteExportQueue")
 					.skipSendToOriginalEndpoint()
-					.to("mock:chouetteValidationQueue");
+					.to("mock:chouetteExportQueue");
 			}
 		});
 
@@ -235,9 +213,9 @@ public class ChouetteImportFileRouteTest {
 		chouetteGetJobs.assertIsSatisfied();
 
 		if (expectExport) {
-			chouetteValidationQueue.expectedMessageCount(1);
+			chouetteExportQueue.expectedMessageCount(1);
 		}
-		chouetteValidationQueue.assertIsSatisfied();
+		chouetteExportQueue.assertIsSatisfied();
 
 	}
 

@@ -28,6 +28,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 //Using properties to hold headers, as jclouds component wipes them
                 .setProperty(FILE_HANDLE, header(FILE_HANDLE))
+                .setProperty(FILE_NAME, header(FILE_NAME))
                 .setProperty(FILE_TYPE, header(FILE_TYPE))
                 .setProperty(PROVIDER_ID, header(PROVIDER_ID))
                 .setProperty(CORRELATION_ID, header(CORRELATION_ID))
@@ -48,6 +49,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 //restore headers from properties
                 .setHeader(FILE_HANDLE, exchangeProperty(FILE_HANDLE))
+                .setHeader(FILE_NAME, exchangeProperty(FILE_NAME))
                 .setHeader(FILE_TYPE, exchangeProperty(FILE_TYPE))
                 .setHeader(PROVIDER_ID, exchangeProperty(PROVIDER_ID))
                 .setHeader(CORRELATION_ID, exchangeProperty(CORRELATION_ID))
@@ -62,6 +64,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 //Using properties to hold headers, as jclouds component wipes them
                 .setProperty(FILE_HANDLE, header(FILE_HANDLE))
+                .setProperty(FILE_NAME, header(FILE_NAME))
                 .setProperty(FILE_TYPE, header(FILE_TYPE))
                 .setProperty(PROVIDER_ID, header(PROVIDER_ID))
                 .setProperty(CORRELATION_ID, header(CORRELATION_ID))
@@ -73,6 +76,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 //restore headers from properties
                 .setHeader(FILE_HANDLE, exchangeProperty(FILE_HANDLE))
+                .setHeader(FILE_NAME, exchangeProperty(FILE_NAME))
                 .setHeader(FILE_TYPE, exchangeProperty(FILE_TYPE))
                 .setHeader(PROVIDER_ID, exchangeProperty(PROVIDER_ID))
                 .setHeader(CORRELATION_ID, exchangeProperty(CORRELATION_ID))

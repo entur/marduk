@@ -1,5 +1,8 @@
 package no.rutebanken.marduk.routes.nri;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.io.FileReader;
 import java.util.List;
 
@@ -21,7 +24,6 @@ import org.mockftpserver.fake.UserAccount;
 import org.mockftpserver.fake.filesystem.DirectoryEntry;
 import org.mockftpserver.fake.filesystem.FileEntry;
 import org.mockftpserver.fake.filesystem.FileSystem;
-import org.mockftpserver.fake.filesystem.FileSystemEntry;
 import org.mockftpserver.fake.filesystem.UnixFakeFileSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,8 +33,6 @@ import org.springframework.test.context.BootstrapWith;
 import org.springframework.test.context.ContextConfiguration;
 
 import no.rutebanken.marduk.Constants;
-
-import static org.junit.Assert.*;
 
 @RunWith(CamelSpringJUnit4ClassRunner.class)
 @BootstrapWith(CamelTestContextBootstrapper.class)
@@ -116,9 +116,9 @@ public class NRIFtpReceiverRouteTest {
 		List<Exchange> exchanges = sorTrondelag.getExchanges();
 		assertEquals(2L, exchanges.get(0).getIn().getHeader(Constants.PROVIDER_ID));
 		assertNotNull(exchanges.get(0).getIn().getHeader(Constants.CORRELATION_ID));
-		assertEquals("AtB_(Sør-Trøndelag_fylke)_984_AtB_Hovedsett_2016.zip", (String) exchanges.get(0).getIn().getHeader(Exchange.FILE_NAME));
-		assertEquals("AtB_(Sør-Trøndelag_fylke)_985_AtB_Hovedsett_2016_v2.zip", (String) exchanges.get(1).getIn().getHeader(Exchange.FILE_NAME));
-		assertEquals("AtB_(Sør-Trøndelag_fylke)_1585_AtB_Hovedsett_2017.zip", (String) exchanges.get(2).getIn().getHeader(Exchange.FILE_NAME));
+		assertEquals("AtB_(Sør-Trøndelag_fylke)_984_AtB_Hovedsett_2016.zip", (String) exchanges.get(0).getIn().getHeader(Constants.FILE_NAME));
+		assertEquals("AtB_(Sør-Trøndelag_fylke)_985_AtB_Hovedsett_2016_v2.zip", (String) exchanges.get(1).getIn().getHeader(Constants.FILE_NAME));
+		assertEquals("AtB_(Sør-Trøndelag_fylke)_1585_AtB_Hovedsett_2017.zip", (String) exchanges.get(2).getIn().getHeader(Constants.FILE_NAME));
 	}
 
 }

@@ -6,13 +6,13 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 import java.util.Collections;
 
-import org.apache.camel.Exchange;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 
 /**
@@ -61,8 +61,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 			    .setHeader(CORRELATION_ID, constant(System.currentTimeMillis()))
 
                 .process(e -> {
-                	e.getIn().setHeader(Exchange.FILE_NAME, body().toString()
-                    		.replaceFirst("inbound/received/.*/", "reimported"+simple("-${date:now:yyyyMMddHHmmss}").evaluate(e, String.class)+"-"));
+                	String fileNameForStatusLogging = e.getIn().getBody(String.class);
+                	fileNameForStatusLogging = fileNameForStatusLogging.replaceFirst("inbound/received/.*/", "");
+                	fileNameForStatusLogging = "reimport-"+fileNameForStatusLogging;
+                	e.getIn().setHeader(Constants.FILE_NAME, fileNameForStatusLogging);
                 })
             	.setBody(constant(null))
 			   
@@ -84,6 +86,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 			    .setHeader(PROVIDER_ID,header("providerId"))
 		    	.inOnly("activemq:queue:ChouetteExportQueue")
 			    .routeId("admin-chouette-export")
+		    	.endRest()
+        	.post("/{providerId}/validate")
+		    	.route()
+	    		.log("Chouette start validation providerId=${header.providerId}")
+	    		.removeHeaders("CamelHttp*")
+			    .setHeader(PROVIDER_ID,header("providerId"))
+		    	.inOnly("activemq:queue:ChouetteValidationQueue")
+			    .routeId("admin-chouette-validate")
 		    	.endRest()
 	    	.post("/{providerId}/clean")
 		    	.route()

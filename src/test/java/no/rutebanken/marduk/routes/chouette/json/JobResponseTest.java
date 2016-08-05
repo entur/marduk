@@ -29,7 +29,7 @@ public class JobResponseTest {
         ObjectMapper mapper = new ObjectMapper();
         StringReader reader = new StringReader(inputJson);
         JobResponse jobResponse = mapper.readValue(reader, JobResponse.class);
-        assertEquals(JobResponse.Status.SCHEDULED, jobResponse.status);
+        assertEquals(Status.SCHEDULED, jobResponse.status);
         assertEquals("http://chouette:8080/chouette_iev/referentials/tds/data/130/parameters.json",
                 jobResponse.links.stream().filter(li -> li.rel.equals("parameters")).collect(Collectors.toList()).get(0).href);
     }

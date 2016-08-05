@@ -3,7 +3,7 @@ package no.rutebanken.marduk.routes.chouette.json;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class RegtoppImportParameters extends ChouetteImportParameters {
+public class RegtoppImportParameters extends ChouetteJobParameters {
 
     public Parameters parameters;
 

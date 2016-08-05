@@ -1,10 +1,7 @@
 package no.rutebanken.marduk.routes.status;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
-import org.apache.camel.Exchange;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -12,8 +9,14 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import org.apache.camel.Exchange;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
+
+import no.rutebanken.marduk.Constants;
 
 public class Status {
 
@@ -33,7 +36,7 @@ public class Status {
 
      */
 
-    public enum Action {FILE_TRANSFER, IMPORT, EXPORT, VALIDATION}
+    public enum Action {FILE_TRANSFER, IMPORT, EXPORT, VALIDATION, CLEAN}
 
     public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK}
 
@@ -82,7 +85,7 @@ public class Status {
     }
 
     public static void addStatus(Exchange exchange, Status.Action action, Status.State state) {
-        String fileName = exchange.getIn().getHeader(Exchange.FILE_NAME, String.class);
+        String fileName =exchange.getIn().getHeader(Constants.FILE_NAME,String.class);
         if (Strings.isNullOrEmpty(fileName)) {
             throw new IllegalArgumentException("No file name");
         }

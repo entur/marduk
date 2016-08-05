@@ -8,9 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class JobResponse {
 
-    public enum Status {SCHEDULED, STARTED, TERMINATED, CANCELED, ABORTED}
-
-//    public Integer id;
+    //    public Integer id;
 //    public String referential;
 //    public String action;
 //    public String type;
@@ -19,7 +17,11 @@ public class JobResponse {
 //    public Long started;
 //    public Long updated;
     public Status status;
-    public List<LinkInfo> links;
+    public Status getStatus() {
+		return status;
+	}
+
+	public List<LinkInfo> links;
 //    @JsonProperty("action_parameters")
 //    public ActionParameters actionParameters;
 
