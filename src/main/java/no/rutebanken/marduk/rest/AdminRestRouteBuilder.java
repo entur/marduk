@@ -62,7 +62,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
             	.split().tokenize(",")
             	.setHeader(FILE_HANDLE,body())
 			    .setHeader(CORRELATION_ID, constant(System.currentTimeMillis()))
-	    		.log(LoggingLevel.INFO,correlation()+"Chouette start import fileHandle=${header.fileHandle}")
+	    		.log(LoggingLevel.INFO,correlation()+"Chouette start import fileHandle=${body}")
 
                 .process(e -> {
                 	String fileNameForStatusLogging = e.getIn().getBody(String.class);
@@ -88,7 +88,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    		.setHeader(PROVIDER_ID,header("providerId"))
 	    		.log(LoggingLevel.INFO,correlation()+"Chouette start export")
 	    		.removeHeaders("CamelHttp*")
-	    		.setHeader(PROVIDER_ID,header("providerId"))
 		    	.inOnly("activemq:queue:ChouetteExportQueue")
 			    .routeId("admin-chouette-export")
 		    	.endRest()
