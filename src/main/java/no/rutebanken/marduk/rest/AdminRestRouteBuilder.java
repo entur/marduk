@@ -55,7 +55,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    		.route()
 	    		.removeHeaders("CamelHttp*")
 	    		.setHeader(PROVIDER_ID,header("providerId"))
-            	.setBody(header("fileHandle"))
+	    		// Decoding of queray parmeters does not seem to work correctly
+            	.setBody(header("fileHandle").regexReplaceAll("%2C", constant(",")))
             	.split().tokenize(",")
             	.setHeader(FILE_HANDLE,body())
 			    .setHeader(CORRELATION_ID, constant(System.currentTimeMillis()))

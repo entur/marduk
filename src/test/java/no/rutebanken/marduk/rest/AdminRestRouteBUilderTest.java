@@ -56,7 +56,7 @@ public class AdminRestRouteBUilderTest {
 	@EndpointInject(uri = "mock:chouetteExportQueue")
 	protected MockEndpoint exportQueue;
 
-	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/import?fileHandle=file/path/down/the/road")
+	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/import?fileHandle=file/path/down/the/road,file2")
 	protected ProducerTemplate importTemplate;
 
 	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/export")
@@ -97,7 +97,7 @@ public class AdminRestRouteBUilderTest {
 		importTemplate.sendBodyAndHeaders(null, headers);
 
 		// setup expectations on the mocks
-		importQueue.expectedMessageCount(1);
+		importQueue.expectedMessageCount(2);
 
 		// assert that the test was okay
 		importQueue.assertIsSatisfied();
