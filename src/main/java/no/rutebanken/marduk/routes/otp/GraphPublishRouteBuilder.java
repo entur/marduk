@@ -35,7 +35,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + "&doneFileName=" + GRAPH_OBJ + ".done&recursive=true&noop=true")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Starting graph publishing.")
+                .log(LoggingLevel.INFO, correlation()+"Starting graph publishing.")
                 .process(
                         e -> e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"))
                 )
@@ -46,15 +46,16 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 )
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:uploadBlob")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Done uploading new OTP graph.")
+                .log(LoggingLevel.INFO, correlation()+"Done uploading new OTP graph.")
                 .to("direct:notify")
-                .to("direct:cleanUp");
+                .to("direct:cleanUp")
+                .routeId("otp-graph-upload");
 
         from("direct:notify")
                 .setProperty("notificationUrl", constant(otpGraphDeploymentNotificationUrl))
                 .choice()
                     .when(exchangeProperty("notificationUrl").isNotEqualTo("none"))
-                        .log(LoggingLevel.INFO, getClass().getName(), "Notifying " + otpGraphDeploymentNotificationUrl + " about new otp graph.")
+                        .log(LoggingLevel.INFO, correlation()+"Notifying " + otpGraphDeploymentNotificationUrl + " about new otp graph.")
                         .setHeader(METADATA_DESCRIPTION, constant("Uploaded new Graph object file."))
                         .setHeader(METADATA_FILE, simple("${header." + FILE_HANDLE + "}"))
                         .process(e -> e.getIn().setBody(new Metadata("Uploaded new Graph object file.", e.getIn().getHeader(FILE_HANDLE, String.class), new Date(), Metadata.Status.OK, Metadata.Action.OTP_GRAPH_UPLOAD).getJson()))
@@ -63,13 +64,15 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                         .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                         .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                         .toD("${property.notificationUrl}")
-                        .log(LoggingLevel.DEBUG, getClass().getName(), "Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
+                        .log(LoggingLevel.DEBUG, correlation()+"Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
                     .otherwise()
-                        .log(LoggingLevel.INFO, getClass().getName(), "No notification url configured for opt graph building. Doing nothing.");
+                        .log(LoggingLevel.WARN, correlation()+"No notification url configured for otp graph building. Doing nothing.")
+                        .routeId("otp-graph-notify");
 
         from("direct:cleanUp")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Deleting build folder ${property." + Exchange.FILE_PARENT + "} ...")
+                .log(LoggingLevel.DEBUG, correlation()+"Deleting build folder ${property." + Exchange.FILE_PARENT + "} ...")
                 .process(e -> deleteDirectory(new File(e.getIn().getExchange().getProperty(Exchange.FILE_PARENT, String.class))))
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Build folder ${property." + Exchange.FILE_PARENT + "} cleanup done.");
+                .log(LoggingLevel.DEBUG, correlation()+"Build folder ${property." + Exchange.FILE_PARENT + "} cleanup done.")
+                .routeId("otp-graph-cleanup");
     }
 }

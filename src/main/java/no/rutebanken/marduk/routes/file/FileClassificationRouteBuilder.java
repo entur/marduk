@@ -23,7 +23,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
         onException(ValidationException.class)
                 .handled(true)
-                .log(LoggingLevel.WARN, getClass().getName(), "Could not process file ${header." + FILE_HANDLE + "}") 
+                .log(LoggingLevel.INFO, correlation()+"Could not process file ${header." + FILE_HANDLE + "}") 
                 //.to("direct:removeBlob") Keep file for now
                 .process(e -> Status.addStatus(e, Status.Action.FILE_TRANSFER, Status.State.FAILED))
                 .to("direct:updateStatus")
@@ -37,22 +37,25 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .validate().method(FileTypeClassifierBean.class, "validateFile")
                 .choice()
                 .when(header(FILE_TYPE).isEqualTo(FileType.INVALID.name()))
-                    .log(LoggingLevel.WARN, getClass().getName(), "Unexpected file type or invalid file ${header." + FILE_HANDLE + "}")
+                    .log(LoggingLevel.WARN, correlation()+"Unexpected file type or invalid file ${header." + FILE_HANDLE + "}")
                 .when(header(FILE_TYPE).isEqualTo(FileType.RAR.name()))
-                	.log(LoggingLevel.DEBUG, getClass().getName(), "Splitting and repackaging file ${header." + FILE_HANDLE + "}")
+                	.log(LoggingLevel.INFO, correlation()+"Splitting and repackaging file ${header." + FILE_HANDLE + "}")
                 	.to("direct:splitRarFile")
                 .otherwise()
-                    .log(LoggingLevel.DEBUG, getClass().getName(), "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
+                    .log(LoggingLevel.INFO, correlation()+"Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                     .setBody(simple(""))   //remove file data from body since this is in jclouds blobstore
                     .to("activemq:queue:ChouetteImportQueue")
-                .end();
+                .end()
+                .routeId("file-classify");
     
     
         from("direct:splitRarFile")
         	.split(method(RARToZipFilesSplitter.class,"splitRarFile"))
             .setHeader(FILE_HANDLE, simple("${header."+FILE_HANDLE+"}-part_${header.CamelSplitIndex}_of_${header.CamelSplitSize}"))
-        	.to("direct:uploadBlob")
-        	.to("activemq:queue:ProcessFileQueue");
+        	.log(LoggingLevel.INFO, correlation()+"New fragment from RAR file ${header." + FILE_HANDLE + "}")
+            .to("direct:uploadBlob")
+        	.to("activemq:queue:ProcessFileQueue")
+        	.routeId("file-split-rar");
 
     }
 }

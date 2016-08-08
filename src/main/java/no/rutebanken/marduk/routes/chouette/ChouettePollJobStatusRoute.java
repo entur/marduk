@@ -59,7 +59,7 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
                 .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
                 .process(e -> Status.addStatus(e, Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.FAILED))
                 .to("direct:updateStatus")
-                .log(LoggingLevel.ERROR, getClass().getName(), "Failed while polling chouette.")
+                .log(LoggingLevel.ERROR,correlation()+"Failed while polling chouette.")
                 .handled(true);
         
         
@@ -77,12 +77,7 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
 		from("direct:checkJobStatus")
 		.validate(header(Constants.FILE_NAME).isNotNull())
         		.process(e -> {
-        			if(e.getIn().getHeader("justStarted") == null) {
-        				e.getIn().setHeader("justStarted", true);
-        			}
-        			if(e.getIn().getHeader("loopCounter") == null) {
-        				e.getIn().setHeader("loopCounter", 1);
-        			}
+              		e.getIn().setHeader("loopCounter", (Integer)e.getIn().getHeader("loopCounter",0) + 1);
         		})
 				.setProperty(Constants.CLEAN_REPOSITORY,header(Constants.CLEAN_REPOSITORY))
         		.setProperty(Constants.CHOUETTE_REFERENTIAL,header(Constants.CHOUETTE_REFERENTIAL))
@@ -100,17 +95,15 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
                 .otherwise()
                 	// Update status
                 	.choice()
-                    .when(simple("${exchangeProperty.current_status} == '" + STARTED + "' && ${header.justStarted} == true"))
+                    .when(simple("${exchangeProperty.current_status} == '" + STARTED + "' && ${header.loopCounter} == 1"))
 	                    .process(e -> Status.addStatus(e,Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.STARTED))
 	                    .to("direct:updateStatus")
-	                    .setHeader("justStarted",constant(false))
 	                .end()
                   	.setHeader(ScheduledMessage.AMQ_SCHEDULED_DELAY,constant(retryDelay))
                   	// Remove or ActiveMQ will think message is overdue and resend immediately
                     .removeHeader("scheduledJobId")
                   	.setBody(constant(""))
-                  	.setHeader("loopCounter",simple("${header.loopCounter} + 1"))
-                    .log(LoggingLevel.INFO,"Scheduling next polling message in ${header."+ActiveMQMessage.AMQ_SCHEDULED_DELAY+"}ms")
+                    //.log(LoggingLevel.INFO,"Scheduling next polling message in ${header."+ActiveMQMessage.AMQ_SCHEDULED_DELAY+"}ms")
                 	.to("activemq:queue:ChouettePollStatusQueue")
                 .end()
                 .routeId("chouette-get-job-status");
@@ -118,16 +111,16 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
 
         from("direct:jobStatusDone")
 		.validate(header(Constants.FILE_NAME).isNotNull())
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Exited retry loop with status ${header.current_status}")
+                .log(LoggingLevel.DEBUG,correlation()+"Exited retry loop with status ${header.current_status}")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .choice()
                 .when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "'"))
-                    .log(LoggingLevel.WARN, getClass().getName(), "Job timed out with state ${header.current_status}. Config should probably be tweaked. Stopping route.")
+                    .log(LoggingLevel.WARN,correlation()+"Job timed out with state ${header.current_status}. Config should probably be tweaked. Stopping route.")
                     .process(e -> Status.addStatus(e, Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.TIMEOUT))
                     .to("direct:updateStatus")
                     .stop()
                 .when(simple("${header.current_status} == '" + ABORTED + "' || ${header.current_status} == '" + CANCELED + "'"))
-                    .log(LoggingLevel.WARN, getClass().getName(), "Job ended in state ${header.current_status}. Stopping route.")
+                    .log(LoggingLevel.WARN,correlation()+"Job ended in state ${header.current_status}. Stopping route.")
                     .process(e -> Status.addStatus(e, Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.FAILED))
                     .to("direct:updateStatus")
                     .stop()
@@ -158,7 +151,7 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
                 .choice()
                 .when(simple("${header.validation_report_url} != null"))
-	                .log(LoggingLevel.DEBUG, getClass().getName(), "Calling validation report url ${header.validation_report_url}")
+	                .log(LoggingLevel.DEBUG,correlation()+"Calling validation report url ${header.validation_report_url}")
 	                .removeHeaders("Camel*")
 	                .setBody(simple(""))
 	                .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
@@ -177,7 +170,7 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
 		    	.otherwise()
 		    		.setHeader("validation_report_result",constant("OK"))
 		    	.end()
-	        	.log(LoggingLevel.DEBUG, getClass().getName(), "action_report_result=${header.action_report_result} validation_report_result=${header.validation_report_result}")
+	        	.log(LoggingLevel.DEBUG,correlation()+"action_report_result=${header.action_report_result} validation_report_result=${header.validation_report_result}")
 	        	.toD("${header."+Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION+"}")
                 .routeId("chouette-process-validation-report");
     

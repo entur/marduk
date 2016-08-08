@@ -61,11 +61,11 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
 
         onException(MardukException.class)
                 .to("direct:notifyOsmStatus")
-                .log(LoggingLevel.ERROR, getClass().getName(), "Failed while fetching OSM file.")
+                .log(LoggingLevel.ERROR, "Failed while fetching OSM file.")
                 .handled(true);
 
         from("direct:fetchOsmMapOverNorway")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching OSM map over Norway.")
+                .log(LoggingLevel.DEBUG, "Fetching OSM map over Norway.")
                 .to("direct:fetchOsmMapOverNorwayMd5")
                 // Storing the MD5
                 .convertBodyTo(InputStream.class)
@@ -91,10 +91,11 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
                 .setHeader(FINISHED, constant("true"))
                 .to("direct:notifyOsmStatus")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Processing of OSM map finished");
+                .log(LoggingLevel.DEBUG, "Processing of OSM map finished")
+                .routeId("osm-fetch-map");
 
         from("direct:fetchOsmMapOverNorwayMd5")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching MD5 sum for map over Norway")
+                .log(LoggingLevel.DEBUG, "Fetching MD5 sum for map over Norway")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .to( osmMapUrl+".md5" )
                 .convertBodyTo(String.class)
@@ -104,10 +105,11 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     p.getOut().setHeader(Constants.FILE_TARGET_MD5, md5);
                     p.getOut().setBody( body );
                 })
-                .log(LoggingLevel.DEBUG, getClass().getName(), "MD5 sum fetched and set in header");
+                .log(LoggingLevel.DEBUG, getClass().getName(), "MD5 sum fetched and set in header")
+                .routeId("osm-fetch-md5sum");
 
         from("direct:considerToFetchOsmMapOverNorway")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Route which figures out whether to fetch OSM map or not")
+                .log(LoggingLevel.DEBUG,  "Route which figures out whether to fetch OSM map or not")
                 .to("direct:fetchOsmMapOverNorwayMd5")
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm +"/"+"norway-latest.osm.pbf.md5"))
                 .to("direct:getBlob")
@@ -123,24 +125,26 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 })
                 .choice()
                 .when(header(NEED_TO_REFETCH).isEqualTo("false"))
-                    .log(LoggingLevel.INFO, getClass().getName(), "There is no update of the map file. No need to fetch external file")
+                    .log(LoggingLevel.INFO, "There is no update of the map file. No need to fetch external file")
                     .setBody(simple("No need to updated the map file, as the MD5 sum has not changed"))
                 .otherwise()
-                    .log(LoggingLevel.INFO, getClass().getName(), "Need to update the map file. Calling the update map route")
+                    .log(LoggingLevel.INFO, "Need to update the map file. Calling the update map route")
                     .inOnly("direct:fetchOsmMapOverNorway")
                     .setBody(simple("Need to fetch map file. Called update map route"))
-                .end();
+                .end()
+                .routeId("osm-check-for-newer-map");
 
         from("quartz2://marduk/fetchOsmMap?cron="+cronSchedule+"&trigger.timeZone=Europe/Oslo")
-                .log(LoggingLevel.INFO, getClass().getName(), "Quartz triggers fetch of OSM map over Norway.")
+                .log(LoggingLevel.INFO, "Quartz triggers fetch of OSM map over Norway.")
                 .to("direct:considerToFetchOsmMapOverNorway")
-                .log(LoggingLevel.INFO, getClass().getName(), "Quartz processing done.");
+                .log(LoggingLevel.INFO,  "Quartz processing done.")
+                .routeId("osm-trigger-fetching");
 
         from("direct:notifyOsmStatus")
                 .setProperty("notificationUrl", constant(otpGraphDeploymentNotificationUrl))
                 .choice()
                 .when(exchangeProperty("notificationUrl").isNotEqualTo("none"))
-                    .log(LoggingLevel.INFO, getClass().getName(), "Notifying " + otpGraphDeploymentNotificationUrl + " about OSM update status.")
+                    .log(LoggingLevel.INFO,  "Notifying " + otpGraphDeploymentNotificationUrl + " about OSM update status.")
                     //.setHeader(METADATA_DESCRIPTION, constant("OSM fetch status."))
                     //.setHeader(METADATA_FILE, simple("${header." + FILE_HANDLE + "}"))
                     .process(e -> {
@@ -163,9 +167,10 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                     .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                     .toD("${property.notificationUrl}")
-                    .log(LoggingLevel.DEBUG, getClass().getName(), "Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
+                    .log(LoggingLevel.DEBUG, "Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
                 .otherwise()
-                    .log(LoggingLevel.INFO, getClass().getName(), "No notification url configured. Doing nothing.");
+                    .log(LoggingLevel.INFO, "No notification url configured. Doing nothing.")
+                    .routeId("osm-notify-updated-map");
 
     }
 }

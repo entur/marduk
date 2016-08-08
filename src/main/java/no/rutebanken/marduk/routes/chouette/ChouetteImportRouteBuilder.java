@@ -60,12 +60,12 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
                 .to("direct:updateStatus")
-                .log(LoggingLevel.ERROR, getClass().getName(), "Failed while importing to chouette.")
+                .log(LoggingLevel.ERROR,correlation()+ "Failed while importing to chouette.")
                 .handled(true);
 
 
         from("activemq:queue:ChouetteCleanQueue?transacted=true").streamCaching()
-		        .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette dataspace clean for provider: ${header." + PROVIDER_ID + "}")
+		        .log(LoggingLevel.INFO,correlation()+"Starting Chouette dataspace clean")
 		        .setHeader(Constants.FILE_NAME,constant("clean_repository.zip"))
 	            .setProperty(Constants.FILE_NAME, header(Constants.FILE_NAME))
 		        .setHeader(Constants.FILE_HANDLE,constant("clean_repository.zip"))
@@ -87,7 +87,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
 
         from("activemq:queue:ChouetteImportQueue?transacted=true").streamCaching()
-                .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette import for provider: ${header." + PROVIDER_ID + "}")
+                .log(LoggingLevel.INFO,correlation()+ "Starting Chouette import")
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
                 .to("direct:updateStatus")
                 .to("direct:getBlob")
@@ -104,21 +104,20 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                     boolean cleanRepository = (boolean) e.getIn().getHeader(Constants.CLEAN_REPOSITORY);
                     e.getIn().setHeader(JSON_PART, getImportParameters(fileName, fileType, providerId,cleanRepository));
                 }) //Using header to add json data
-                .log(LoggingLevel.DEBUG, getClass().getName(), "import parameters: " + header(JSON_PART))
+                .log(LoggingLevel.DEBUG,correlation()+"import parameters: " + header(JSON_PART))
                 .to("direct:sendImportJobRequest");
 
         from("direct:sendImportJobRequest")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Creating multipart request")
+                .log(LoggingLevel.DEBUG,correlation()+"Creating multipart request")
                 .process(e -> toMultipart(e))
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/importer/${header." + FILE_TYPE + ".toLowerCase()}"))
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Calling Chouette with URL: ${exchangeProperty.chouette_url}")
+                .log(LoggingLevel.DEBUG,correlation()+ "Calling Chouette with URL: ${exchangeProperty.chouette_url}")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
                 // Attempt to retrigger delivery in case of errors
                 .toD("${exchangeProperty.chouette_url}")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Submitted new job")
                 .process(e -> {
                     e.getOut().setHeader(Constants.CHOUETTE_JOB_STATUS_URL,e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
                     e.getOut().setHeader(Constants.PROVIDER_ID, e.getIn().getHeader(Constants.PROVIDER_ID));
@@ -144,19 +143,19 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 		            .to("direct:checkScheduledJobsBeforeTriggeringValidation")
 		            .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'NOK'"))
-		        	.log(LoggingLevel.INFO, getClass().getName(), "Import ok but validation failed")
+		        	.log(LoggingLevel.INFO,correlation()+"Import ok but validation failed")
 		            .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
 		        .when(simple("${header.action_report_result} == 'NOK'"))
 		        	.choice()
 		    		.when(simple("${header.action_report_result} == 'NOK' && ${header."+Constants.CLEAN_REPOSITORY+"} == true"))
-		        		.log(LoggingLevel.WARN, getClass().getName(), "Clean ok.")
+		        		.log(LoggingLevel.INFO,correlation()+"Clean ok")
 		        		.process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
 		    		.when(simple("${header.action_report_result} == 'NOK'"))
-		        		.log(LoggingLevel.WARN, getClass().getName(), "Import not ok.")
+		        		.log(LoggingLevel.WARN,correlation()+"Import not ok")
 		        		.process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
 		        	.endChoice()
 		        .otherwise()
-		            .log(LoggingLevel.WARN, getClass().getName(), "Something went wrong")
+		            .log(LoggingLevel.ERROR,correlation()+"Something went wrong on import")
 		            .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
 		        .end()
 		        .to("direct:updateStatus")
@@ -168,9 +167,9 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 			.toD("${exchangeProperty.job_status_url}")
 			.choice()
 			.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
-				.log(LoggingLevel.INFO, getClass().getName(), "Import and validation ok, skipping overall validation as there are more import jobs active")
+				.log(LoggingLevel.INFO,correlation()+"Import and validation ok, skipping overall validation as there are more import jobs active")
             .otherwise()
-				.log(LoggingLevel.INFO, getClass().getName(), "Import and validation ok, triggering overall validation.")
+				.log(LoggingLevel.INFO,correlation()+"Import and validation ok, triggering overall validation.")
 		        .setBody(constant(""))
 				.to("activemq:queue:ChouetteValidationQueue")
             .end()

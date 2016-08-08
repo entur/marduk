@@ -1,12 +1,12 @@
 package no.rutebanken.marduk.routes;
 
-import no.rutebanken.marduk.repository.ProviderRepository;
-import org.apache.camel.Processor;
+import java.net.ConnectException;
+
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.model.ProcessDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.net.ConnectException;
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.repository.ProviderRepository;
 
 
 /**
@@ -33,5 +33,10 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     protected ProviderRepository getProviderRepository(){
         return providerRepository;
     }
+    
+    protected String correlation() {
+    	return "[providerId=${header."+Constants.PROVIDER_ID+"} referential=${header."+Constants.CHOUETTE_REFERENTIAL+"} correlationId=${header."+Constants.CORRELATION_ID+"}] ";
+    }
+
 
 }

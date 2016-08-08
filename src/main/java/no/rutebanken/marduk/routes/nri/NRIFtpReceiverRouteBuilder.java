@@ -6,7 +6,6 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 import java.util.UUID;
 
-import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.file.FileComponent;
 import org.apache.camel.component.file.remote.RemoteFile;
@@ -28,7 +27,10 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
 	public void configure() throws Exception {
 		from("ftp://{{nri.ftp.host}}/{{nri.ftp.folder}}?username={{nri.ftp.username}}&password={{nri.ftp.password}}&delay={{nri.ftp.delay}}&recursive=true&delete=false&filter=#regtoppFileFilter&sorter=#caseIdNriFtpSorter&ftpClient.controlEncoding=UTF-8&passiveMode=true&binary=true")
 		.autoStartup("{{nri.ftp.autoStartup:true}}")
-		.log(LoggingLevel.INFO, getClass().getName(), "Received file ${header.CamelFileName} on NRI ftp route")
+		.process(e -> {
+            e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString());
+		})
+		.log(LoggingLevel.INFO, correlation()+"Received file ${header.CamelFileName} on NRI ftp route")
         .process(e -> {
     		RemoteFile<?> p = (RemoteFile<?>) e.getProperty(FileComponent.FILE_EXCHANGE_FILE);
     		String relativeFilePath = p.getRelativeFilePath();
@@ -44,14 +46,13 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
 	    		e.getIn().setHeader(FILE_HANDLE, 
 	            		simple(Constants.BLOBSTORE_PATH_INBOUND_RECEIVED + provider.chouetteInfo.referential + "/" + provider.chouetteInfo.referential + "-${date:now:yyyyMMddHHmmss}-"+newFileName).evaluate(e, String.class));
 	            e.getIn().setHeader(PROVIDER_ID, provider.id);
-	            e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString());
         	}
         })
         .filter(header(PROVIDER_ID).isNotNull())
-        .log(LoggingLevel.INFO, getClass().getName(), "File handle is: ${header." + FILE_HANDLE + "}")
+        .log(LoggingLevel.INFO, correlation()+"File handle is: ${header." + FILE_HANDLE + "}")
         .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
         .to("direct:uploadBlob")
-        .log(LoggingLevel.INFO, getClass().getName(), "Putting handle ${header." + FILE_HANDLE + "} and provider ${header." + PROVIDER_ID + "} on queue...")
+        .log(LoggingLevel.INFO, correlation()+"Putting handle ${header." + FILE_HANDLE + "}")
         .to("activemq:queue:ProcessFileQueue")
         .routeId("nri-ftp-activemq");
 	}

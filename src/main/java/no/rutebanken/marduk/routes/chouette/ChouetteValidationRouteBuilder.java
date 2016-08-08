@@ -37,7 +37,7 @@ public class ChouetteValidationRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("activemq:queue:ChouetteValidationQueue?transacted=true").streamCaching()
-                .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette validation for provider with id ${header." + PROVIDER_ID + "}")
+                .log(LoggingLevel.INFO,correlation()+"Starting Chouette validation")
                 .setHeader(Constants.FILE_NAME,constant("None"))
                 .process(e -> { 
                 	// Add correlation id only if missing
@@ -49,7 +49,7 @@ public class ChouetteValidationRouteBuilder extends BaseRouteBuilder {
 
 	            .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(e -> e.getIn().setHeader(JSON_PART, getJsonFileContent(e.getIn().getHeader(PROVIDER_ID, Long.class)))) //Using header to add json data
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Creating multipart request")
+                .log(LoggingLevel.DEBUG,correlation()+"Creating multipart request")
                 .process(e -> toMultipart(e))
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/validator") // TODO set to validation
@@ -70,10 +70,10 @@ public class ChouetteValidationRouteBuilder extends BaseRouteBuilder {
 		            .to("direct:checkScheduledJobsBeforeTriggeringExport")
 		            .process(e -> Status.addStatus(e, Action.VALIDATION, State.OK))
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'NOK'"))
-		        	.log(LoggingLevel.INFO, getClass().getName(), "Validation failed (processed ok, but timetable data is faulty)")
+		        	.log(LoggingLevel.INFO,correlation()+"Validation failed (processed ok, but timetable data is faulty)")
 		            .process(e -> Status.addStatus(e, Action.VALIDATION, State.FAILED))
 		        .otherwise()
-		            .log(LoggingLevel.ERROR, getClass().getName(), "Validation went wrong")
+		            .log(LoggingLevel.ERROR,correlation()+"Validation went wrong")
 		            .process(e -> Status.addStatus(e, Action.VALIDATION, State.FAILED))
 		        .end()
 		        .to("direct:updateStatus")
@@ -85,15 +85,16 @@ public class ChouetteValidationRouteBuilder extends BaseRouteBuilder {
 				.toD("${exchangeProperty.job_status_url}")
 				.choice()
 				.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
-					.log(LoggingLevel.INFO, getClass().getName(), "Validation ok, skipping export as there are more import jobs active")
+					.log(LoggingLevel.INFO,correlation()+"Validation ok, skipping export as there are more import jobs active")
 				.otherwise()
-					.log(LoggingLevel.INFO, getClass().getName(), "Validation ok, triggering GTFS export.")
+					.log(LoggingLevel.INFO,correlation()+"Validation ok, triggering GTFS export.")
 			        .setBody(constant(""))
 					.to("activemq:queue:ChouetteExportQueue")
 				.end()
 				.routeId("chouette-process-job-list-after-validation");
 
     }
+    
 
     void toMultipart(Exchange exchange) {
         String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);
