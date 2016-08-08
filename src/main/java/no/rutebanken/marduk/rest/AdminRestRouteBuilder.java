@@ -4,6 +4,7 @@ import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
+import java.net.URLDecoder;
 import java.util.Collections;
 
 import org.apache.camel.LoggingLevel;
@@ -56,7 +57,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    		.removeHeaders("CamelHttp*")
 	    		.setHeader(PROVIDER_ID,header("providerId"))
 	    		// Decoding of queray parmeters does not seem to work correctly
-            	.setBody(header("fileHandle").regexReplaceAll("%2C", constant(",")))
+            	.setBody(header("fileHandle"))
+            	.process(e -> e.getIn().setBody(URLDecoder.decode(e.getIn().getBody(String.class),"UTF-8")))
             	.split().tokenize(",")
             	.setHeader(FILE_HANDLE,body())
 			    .setHeader(CORRELATION_ID, constant(System.currentTimeMillis()))
@@ -68,7 +70,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 	fileNameForStatusLogging = "reimport-"+fileNameForStatusLogging;
                 	e.getIn().setHeader(Constants.FILE_NAME, fileNameForStatusLogging);
                 })
-            	.setBody(constant(null))
+            	.setBody(constant(""))
 			   
                 .inOnly("activemq:queue:ProcessFileQueue")
 			    .routeId("admin-chouette-import")
