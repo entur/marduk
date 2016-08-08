@@ -80,7 +80,7 @@ public class AdminRestRouteBUilderTest {
 		context.getRouteDefinition("admin-chouette-import").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint("activemq:queue:*").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue");
+				interceptSendToEndpoint("activemq:queue:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue");
 
 			}
 		});
@@ -88,7 +88,7 @@ public class AdminRestRouteBUilderTest {
 		// we must manually start when we are done with all the advice with
 		context.start();
 
-		String fileHandle = URLEncoder.encode("file/path/down/the/road", "UTF-8");
+		String fileHandle = "file/path/down/the/road";
 
 		// Do rest call
 
@@ -115,7 +115,7 @@ public class AdminRestRouteBUilderTest {
 		context.getRouteDefinition("admin-chouette-export").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint("activemq:queue:*").skipSendToOriginalEndpoint().to("mock:chouetteExportQueue");
+				interceptSendToEndpoint("activemq:queue:ChouetteExportQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportQueue");
 
 			}
 		});
@@ -126,7 +126,7 @@ public class AdminRestRouteBUilderTest {
 		// Do rest call
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put(Exchange.HTTP_METHOD, "POST");
-		importTemplate.sendBodyAndHeaders(null, headers);
+		exportTemplate.sendBodyAndHeaders(null, headers);
 
 		// setup expectations on the mocks
 		exportQueue.expectedMessageCount(1);
