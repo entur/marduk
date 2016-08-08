@@ -106,7 +106,7 @@ public class ChouetteImportFileRouteTest {
 
 		File importFile = new File(refBase, filename);
 		if (!importFile.exists()) {
-			FileUtil.copyFile(new File("src/main/resources/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip"),
+			FileUtil.copyFile(new File("src/main/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip"),
 					importFile);
 		}
 

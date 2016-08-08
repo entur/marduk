@@ -22,6 +22,7 @@ import com.google.common.base.Strings;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.GtfsImportParameters;
 import no.rutebanken.marduk.routes.chouette.json.RegtoppImportParameters;
@@ -69,19 +70,26 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 		        .setHeader(Constants.FILE_NAME,constant("clean_repository.zip"))
 	            .setProperty(Constants.FILE_NAME, header(Constants.FILE_NAME))
 		        .setHeader(Constants.FILE_HANDLE,constant("clean_repository.zip"))
-                .process(e -> { 
+                .process(e ->  {
                 	// Add correlation id only if missing
                 	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
+                	Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
+                	e.getIn().setHeader(FILE_TYPE, provider.chouetteInfo.dataFormat.toUpperCase());
+                    e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);                	
                 })
-		        .setHeader(Constants.FILE_TYPE,constant(FileType.REGTOPP.name()))
+                
 		        .setHeader(Constants.CLEAN_REPOSITORY, constant(true))
 		        .process(e -> Status.addStatus(e, Action.IMPORT, State.PENDING))
 		        .to("direct:updateStatus")
 	            .process(e -> {
-	                e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip"));
+	                if(FileType.REGTOPP.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))) {
+		            	e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip"));
+	                } else  if(FileType.GTFS.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))){
+		            	e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_gtfs.zip"));
+	                } else {
+	                	throw new RuntimeException("Only know how to clean regtopp and gtfs spaces so far, must add support for netex");
+	                }
 	            })
-		        .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential)).id("providerRepository")
-		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 		        .to("direct:addImportParameters")
 		        .routeId("chouette-clean-dataspace");
 
@@ -94,7 +102,8 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
     	        .setHeader(Constants.CLEAN_REPOSITORY, constant(false))
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .to("direct:addImportParameters");
+                .to("direct:addImportParameters")
+                .routeId("chouette-import-dataspace");
 
         from("direct:addImportParameters")
                 .process(e -> {
@@ -105,7 +114,8 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(JSON_PART, getImportParameters(fileName, fileType, providerId,cleanRepository));
                 }) //Using header to add json data
                 .log(LoggingLevel.DEBUG,correlation()+"import parameters: " + header(JSON_PART))
-                .to("direct:sendImportJobRequest");
+                .to("direct:sendImportJobRequest")
+                .routeId("chouette-import-add-parameters");
 
         from("direct:sendImportJobRequest")
                 .log(LoggingLevel.DEBUG,correlation()+"Creating multipart request")

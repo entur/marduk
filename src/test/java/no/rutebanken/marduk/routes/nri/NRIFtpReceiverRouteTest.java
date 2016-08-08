@@ -69,13 +69,13 @@ public class NRIFtpReceiverRouteTest {
 		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/984"));
 		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985/AtB Hovedsett 2016_unzipped"));
 		FileEntry file1585 = new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/1585/AtB Hovedsett 2017.zip");
-		file1585.setContents(IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip")));
+		file1585.setContents(IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")));
 		fileSystem.add(file1585);
 		FileEntry file984 = new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/984/AtB Hovedsett 2016.zip");
-		file984.setContents(IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip")));
+		file984.setContents(IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")));
 		fileSystem.add(file984 );
 		FileEntry file985 = new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985/AtB Hovedsett 2016_v2.zip");
-		file985.setContents(IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/EMPTY_REGTOPP.zip")));
+		file985.setContents(IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")));
 		fileSystem.add(file985);
 
 		
