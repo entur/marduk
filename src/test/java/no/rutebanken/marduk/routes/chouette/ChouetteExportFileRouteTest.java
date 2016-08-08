@@ -75,9 +75,9 @@ public class ChouetteExportFileRouteTest {
 	private String nabuUrl;
 
     @Test
-    public void dummu() {}
+    public void dummy() {}
     
-	@Test
+	//@Test
 	public void testExportDataspace() throws Exception {
 
 		// Mock initial call to Chouette to import job

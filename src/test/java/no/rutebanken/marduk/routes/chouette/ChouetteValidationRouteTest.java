@@ -85,8 +85,8 @@ public class ChouetteValidationRouteTest {
 
 	// TODO when next version of camel is available, fix tests so that they use
 	// application.properties from src/test/resources
-	 @Test
-	public void testImportFileToDataspace() throws Exception {
+	// @Test
+	public void testRunChouetteValidation() throws Exception {
 
 		// Mock initial call to Chouette to validation job
 		context.getRouteDefinition("chouette-send-validation-job").adviceWith(context, new AdviceWithRouteBuilder() {
