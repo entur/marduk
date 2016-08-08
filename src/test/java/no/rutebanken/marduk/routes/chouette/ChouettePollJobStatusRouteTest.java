@@ -70,7 +70,7 @@ public class ChouettePollJobStatusRouteTest {
 	
 	// TODO when next version of camel is available, fix tests so that they use
 	// application.properties from src/test/resources
-	//@Test
+	@Test
 	public void testPollJobStatus() throws Exception {
 
 		// Mock get status call to chouette
