@@ -61,11 +61,12 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
                 .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
                 .to("direct:updateStatus")
-                .log(LoggingLevel.ERROR,correlation()+ "Failed while importing to chouette.")
+                .log(LoggingLevel.ERROR,correlation()+ "Failed while importing to Chouette")
+                .to("log:" + getClass().getName() + "?level=ERROR&showAll=true&multiline=true")
                 .handled(true);
 
 
-        from("activemq:queue:ChouetteCleanQueue?transacted=true").streamCaching()
+        from("activemq:queue:ChouetteCleanQueue?transacted=true")
 		        .log(LoggingLevel.INFO,correlation()+"Starting Chouette dataspace clean")
 		        .setHeader(Constants.FILE_NAME,constant("clean_repository.zip"))
 	            .setProperty(Constants.FILE_NAME, header(Constants.FILE_NAME))
