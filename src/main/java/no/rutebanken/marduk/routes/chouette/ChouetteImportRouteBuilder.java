@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -38,7 +39,7 @@ import no.rutebanken.marduk.routes.status.Status.State;
 public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
 
-    @Value("${chouette.url}")
+	@Value("${chouette.url}")
     private String chouetteUrl;
 
     @SuppressWarnings("unchecked")
@@ -57,16 +58,16 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
   
     
 
-        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
-                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
-                .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
-                .to("direct:updateStatus")
-                .log(LoggingLevel.ERROR,correlation()+ "Failed while importing to Chouette")
-                .to("log:" + getClass().getName() + "?level=ERROR&showAll=true&multiline=true")
-                .handled(true);
+//        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
+//                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
+//                .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
+//                .to("direct:updateStatus")
+//                .log(LoggingLevel.ERROR,correlation()+ "Failed while importing to Chouette")
+//                .to("log:" + getClass().getName() + "?level=ERROR&showAll=true&multiline=true")
+//                .handled(true);
 
 
-        from("activemq:queue:ChouetteCleanQueue?transacted=true")
+        from("activemq:queue:ChouetteCleanQueue?transacted=true&maxConcurrentConsumers=3")
 		        .log(LoggingLevel.INFO,correlation()+"Starting Chouette dataspace clean")
 		        .setHeader(Constants.FILE_NAME,constant("clean_repository.zip"))
 	            .setProperty(Constants.FILE_NAME, header(Constants.FILE_NAME))
@@ -101,7 +102,12 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .to("direct:updateStatus")
                 .to("direct:getBlob")
     	        .setHeader(Constants.CLEAN_REPOSITORY, constant(false))
-                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+                .process(e -> {
+                	Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
+					e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
+					e.getIn().setHeader(Constants.ENABLE_VALIDATION, provider.chouetteInfo.enableValidation);
+					
+                })
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:addImportParameters")
                 .routeId("chouette-import-dataspace");
@@ -150,8 +156,11 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 		        .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
 		        .setBody(constant(""))
 		        .choice()
+				.when(PredicateBuilder.and(constant(false).isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
+		            .to("direct:checkScheduledJobsBeforeTriggeringNextAction")
+		            .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'OK'"))
-		            .to("direct:checkScheduledJobsBeforeTriggeringValidation")
+		            .to("direct:checkScheduledJobsBeforeTriggeringNextAction")
 		            .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'NOK'"))
 		        	.log(LoggingLevel.INFO,correlation()+"Import ok but validation failed")
@@ -173,7 +182,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 		        .routeId("chouette-process-import-status");
 	
 		 // Check that no other import jobs in status SCHEDULED exists for this referential. If so, do not trigger export
-		from("direct:checkScheduledJobsBeforeTriggeringValidation")
+		from("direct:checkScheduledJobsBeforeTriggeringNextAction")
 			.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?action=importer"))
 			.toD("${exchangeProperty.job_status_url}")
 			.choice()
@@ -182,7 +191,14 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
             .otherwise()
 				.log(LoggingLevel.INFO,correlation()+"Import and validation ok, triggering overall validation.")
 		        .setBody(constant(""))
-				.to("activemq:queue:ChouetteValidationQueue")
+		        .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
+				.choice()
+					.when(constant(true).isEqualTo(header(Constants.ENABLE_VALIDATION)))
+						.to("activemq:queue:ChouetteValidationQueue")
+					.otherwise()
+						.to("activemq:queue:ChouetteExportQueue")
+				.end()
+		        
             .end()
             .routeId("chouette-process-job-list-after-import");
 		

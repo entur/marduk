@@ -170,7 +170,19 @@
 			<groupId>org.apache.camel</groupId>
 			<artifactId>camel-jsonpath</artifactId>
 			<version>${camel-version}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>json-path</artifactId>
+					<groupId>com.jayway.jsonpath</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
+		<dependency>
+			<artifactId>json-path</artifactId>
+			<groupId>com.jayway.jsonpath</groupId>
+			<version>2.2.0</version>
+		</dependency>
+			
 		<dependency>
 			<groupId>org.apache.camel</groupId>
 			<artifactId>camel-swagger-java</artifactId>

@@ -32,7 +32,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple(""))      //remove file data from body
                 .to("activemq:queue:DeadLetterQueue");
 
-        from("activemq:queue:ProcessFileQueue")
+        from("activemq:queue:ProcessFileQueue?transacted=true")
                 .process(e -> Status.addStatus(e, Status.Action.FILE_TRANSFER, Status.State.OK))
                 .to("direct:updateStatus")
                 .to("direct:getBlob")

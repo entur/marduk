@@ -11,6 +11,7 @@
         "regtoppVersion": null,
         "regtoppCoordinateProjection": "EPSG:32632",
         "regtoppCalendarStrategy": null,
-        "dataFormat": "regtopp"
+        "dataFormat": "regtopp",
+        "enableValidation": true
     }
 }

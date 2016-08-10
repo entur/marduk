@@ -36,7 +36,7 @@ public class ChouetteValidationRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        from("activemq:queue:ChouetteValidationQueue?transacted=true").streamCaching()
+        from("activemq:queue:ChouetteValidationQueue?transacted=true&maxConcurrentConsumers=3").streamCaching()
                 .log(LoggingLevel.INFO,correlation()+"Starting Chouette validation")
                 .setHeader(Constants.FILE_NAME,constant("None"))
                 .process(e -> { 

@@ -18,6 +18,8 @@ public class Constants {
 
     public static final String FILE_TARGET_MD5 = "RutebankenMd5SumRecordedForTargetFile";
 	public static final String CLEAN_REPOSITORY = "RutebankenCleanRepository";
+    public static final String ENABLE_VALIDATION = "RutebankenEnableValidation";
+
 
 	public static final String BLOBSTORE_PATH_INBOUND_RECEIVED = "inbound/received/";
 	

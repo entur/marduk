@@ -74,7 +74,7 @@ public class ChouetteImportFileRouteTest {
 	@Produce(uri = "direct:processImportResult")
 	protected ProducerTemplate processImportResultTemplate;
 
-	@Produce(uri = "direct:checkScheduledJobsBeforeTriggeringValidation")
+	@Produce(uri = "direct:checkScheduledJobsBeforeTriggeringNextAction")
 	protected ProducerTemplate triggerJobListTemplate;
 
 	@Value("${chouette.url}")
@@ -94,7 +94,7 @@ public class ChouetteImportFileRouteTest {
 	public void testDummy() {}
 	// TODO when next version of camel is available, fix tests so that they use
 	// application.properties from src/test/resources
-	// @Test
+	 //@Test
 	public void testImportFileToDataspace() throws Exception {
 
 		String filename = "ruter_fake_data.zip";
@@ -134,7 +134,7 @@ public class ChouetteImportFileRouteTest {
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 				.to("mock:updateStatus");
-				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringValidation").skipSendToOriginalEndpoint()
+				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringNextAction").skipSendToOriginalEndpoint()
 				.to("mock:checkScheduledJobsBeforeTriggeringValidation");
 			}
 		});
@@ -233,7 +233,12 @@ public class ChouetteImportFileRouteTest {
 			}
 		});
 
-		triggerJobListTemplate.sendBodyAndHeader(null, Constants.CHOUETTE_REFERENTIAL, "rut");
+		Map<String, Object> headers = new HashMap<String, Object>();
+		headers.put(Constants.PROVIDER_ID, "2");
+		headers.put(Constants.CHOUETTE_REFERENTIAL, "rut");
+		headers.put(Constants.ENABLE_VALIDATION, true);
+		
+		triggerJobListTemplate.sendBodyAndHeaders(null, headers);
 		
 		chouetteGetJobs.assertIsSatisfied();
 

@@ -55,12 +55,12 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
-                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
-                .process(e -> Status.addStatus(e, Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.FAILED))
-                .to("direct:updateStatus")
-                .log(LoggingLevel.ERROR,correlation()+"Failed while polling chouette.")
-                .handled(true);
+//        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
+//                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
+//                .process(e -> Status.addStatus(e, Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.FAILED))
+//                .to("direct:updateStatus")
+//                .log(LoggingLevel.ERROR,correlation()+"Failed while polling chouette.")
+//                .handled(true);
         
         
         
