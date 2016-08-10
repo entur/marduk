@@ -38,10 +38,14 @@ public class RARToZipFilesSplitter {
 
 		// Create tmp file on disk with content
 		File tmpFolder = new File(System.getProperty("java.io.tmpdir"));
-		File rarFile = new File(tmpFolder, UUID.randomUUID().toString());
 		File rarExtractFolder = new File(tmpFolder, UUID.randomUUID().toString());
-		rarExtractFolder.mkdir();
-
+		boolean mkdirsResult = rarExtractFolder.mkdirs();
+		if(!mkdirsResult) {
+			logger.error("Failed to create temporary extract folder "+rarExtractFolder.getAbsolutePath());
+		}
+		
+		
+		File rarFile = new File(tmpFolder, UUID.randomUUID().toString());
 		
 
 		try {
@@ -72,7 +76,8 @@ public class RARToZipFilesSplitter {
 
 			// Iterate content in folder
 			zipFileObjects.addAll(processFolder(rarExtractFolder, exchange));
-
+		} catch (Exception e) {
+			logger.error("Error extracting RAR file",e);
 		} finally {
 			FileUtil.deleteFile(rarFile);
 			FileUtil.removeDir(rarExtractFolder);
@@ -87,6 +92,8 @@ public class RARToZipFilesSplitter {
 
 		boolean regtoppZip = FileTypeClassifierBean.isRegtoppZip(new HashSet<String>(Arrays.asList(folder.list())));
 		if (regtoppZip) {
+			logger.info("Directory " + folder.getAbsolutePath()+ " is a Regtopp folder");
+			
 			// Zip files together
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			ZipOutputStream zos = new ZipOutputStream(os);
