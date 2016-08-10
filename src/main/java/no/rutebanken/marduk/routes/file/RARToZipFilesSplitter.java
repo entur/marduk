@@ -43,8 +43,9 @@ public class RARToZipFilesSplitter {
 		boolean mkdirsResult = rarExtractFolder.mkdirs();
 		if(!mkdirsResult) {
 			logger.error("Failed to create temporary extract folder "+rarExtractFolder.getAbsolutePath());
+		} else if(!rarExtractFolder.exists()) {
+			logger.error("Folder does still not exists even after creating "+rarExtractFolder.getAbsolutePath());
 		}
-		
 		
 		File rarFile = new File(tmpFolder, UUID.randomUUID().toString());
 		
