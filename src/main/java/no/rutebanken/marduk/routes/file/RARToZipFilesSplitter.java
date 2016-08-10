@@ -16,6 +16,7 @@ import java.util.zip.ZipOutputStream;
 import org.apache.camel.Exchange;
 import org.apache.camel.util.FileUtil;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,6 +84,9 @@ public class RARToZipFilesSplitter {
 			FileUtil.removeDir(rarExtractFolder);
 		}
 
+		logger.info("Done splitting RAR file, results are "+ToStringBuilder.reflectionToString(zipFileObjects));
+
+		
 		return zipFileObjects;
 	}
 
@@ -109,8 +113,11 @@ public class RARToZipFilesSplitter {
 			zipFileObjects.add(os.toByteArray());
 			logger.info("Zipped files in directory " + folder.getAbsolutePath());
 		} else {
+			logger.info("Not a Regtopp directory " + folder.getAbsolutePath()+ ", scanning content");
 
 			for (File f : folder.listFiles()) {
+				logger.info("Checking file " + f.getAbsolutePath());
+				
 				if (f.isFile() && f.getName().toUpperCase().endsWith(".ZIP")) {
 					// Already zipped here
 					FileInputStream fis = new FileInputStream(f);
@@ -130,6 +137,7 @@ public class RARToZipFilesSplitter {
 					
 				} else if (f.isDirectory()) {
 					// Recurse
+					logger.info("Recursing into directory " + f.getAbsolutePath());
 					zipFileObjects.addAll(processFolder(f, exchange));
 				}
 			}
