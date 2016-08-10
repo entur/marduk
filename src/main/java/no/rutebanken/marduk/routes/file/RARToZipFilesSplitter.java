@@ -33,7 +33,7 @@ public class RARToZipFilesSplitter {
 
 	public static List<Object> splitRarFile(byte[] data, Exchange exchange) throws IOException, RarException {
 
-		logger.info("Splitting rar file");
+		logger.info("Splitting rar file of lenfth " + data.length);
 
 		List<Object> zipFileObjects = new ArrayList<Object>();
 
@@ -41,14 +41,13 @@ public class RARToZipFilesSplitter {
 		File tmpFolder = new File(System.getProperty("java.io.tmpdir"));
 		File rarExtractFolder = new File(tmpFolder, UUID.randomUUID().toString());
 		boolean mkdirsResult = rarExtractFolder.mkdirs();
-		if(!mkdirsResult) {
-			logger.error("Failed to create temporary extract folder "+rarExtractFolder.getAbsolutePath());
-		} else if(!rarExtractFolder.exists()) {
-			logger.error("Folder does still not exists even after creating "+rarExtractFolder.getAbsolutePath());
+		if (!mkdirsResult) {
+			logger.error("Failed to create temporary extract folder " + rarExtractFolder.getAbsolutePath());
+		} else if (!rarExtractFolder.exists()) {
+			logger.error("Folder does still not exists even after creating " + rarExtractFolder.getAbsolutePath());
 		}
-		
+
 		File rarFile = new File(tmpFolder, UUID.randomUUID().toString());
-		
 
 		try {
 			rarFile.createNewFile();
@@ -58,36 +57,34 @@ public class RARToZipFilesSplitter {
 
 			// Unpack to new folder
 			Archive a = new Archive(new FileVolumeManager(rarFile));
-			if (a != null) {
-				FileHeader fh = a.nextFileHeader();
+			FileHeader fh = a.nextFileHeader();
+			while (fh != null) {
+				logger.info("Processing RAR compressed file header " + fh.getFileNameString());
+				File out = new File(rarExtractFolder, fh.getFileNameString().trim().replace('\\', '/'));
+				File parentFolder = out.getParentFile();
+				parentFolder.mkdirs();
 
-				while (fh != null) {
-					File out = new File(rarExtractFolder, fh.getFileNameString().trim().replace('\\', '/'));
-					File parentFolder = out.getParentFile();
-					parentFolder.mkdirs();
-
-					if (!out.isDirectory()) {
-						FileOutputStream os = new FileOutputStream(out);
-						a.extractFile(fh, os);
-						os.close();
-					}
-					fh = a.nextFileHeader();
+				if (!out.isDirectory()) {
+					logger.info("Processing RAR compressed file " + fh.getFileNameString());
+					FileOutputStream os = new FileOutputStream(out);
+					a.extractFile(fh, os);
+					os.close();
 				}
-				a.close();
+				fh = a.nextFileHeader();
 			}
+			a.close();
 
 			// Iterate content in folder
 			zipFileObjects.addAll(processFolder(rarExtractFolder, exchange));
 		} catch (Exception e) {
-			logger.error("Error extracting RAR file",e);
+			logger.error("Error extracting RAR file", e);
 		} finally {
-			FileUtil.deleteFile(rarFile);
-			FileUtil.removeDir(rarExtractFolder);
+//			FileUtil.deleteFile(rarFile);
+//			FileUtil.removeDir(rarExtractFolder);
 		}
 
-		logger.info("Done splitting RAR file, results are "+ToStringBuilder.reflectionToString(zipFileObjects));
+		logger.info("Done splitting RAR file, results are " + ToStringBuilder.reflectionToString(zipFileObjects));
 
-		
 		return zipFileObjects;
 	}
 
@@ -97,8 +94,8 @@ public class RARToZipFilesSplitter {
 
 		boolean regtoppZip = FileTypeClassifierBean.isRegtoppZip(new HashSet<String>(Arrays.asList(folder.list())));
 		if (regtoppZip) {
-			logger.info("Directory " + folder.getAbsolutePath()+ " is a Regtopp folder");
-			
+			logger.info("Directory " + folder.getAbsolutePath() + " is a Regtopp folder");
+
 			// Zip files together
 			ByteArrayOutputStream os = new ByteArrayOutputStream();
 			ZipOutputStream zos = new ZipOutputStream(os);
@@ -114,11 +111,11 @@ public class RARToZipFilesSplitter {
 			zipFileObjects.add(os.toByteArray());
 			logger.info("Zipped files in directory " + folder.getAbsolutePath());
 		} else {
-			logger.info("Not a Regtopp directory " + folder.getAbsolutePath()+ ", scanning content");
+			logger.info("Not a Regtopp directory " + folder.getAbsolutePath() + ", scanning content");
 
 			for (File f : folder.listFiles()) {
 				logger.info("Checking file " + f.getAbsolutePath());
-				
+
 				if (f.isFile() && f.getName().toUpperCase().endsWith(".ZIP")) {
 					// Already zipped here
 					FileInputStream fis = new FileInputStream(f);
@@ -132,10 +129,10 @@ public class RARToZipFilesSplitter {
 					FileInputStream fis = new FileInputStream(f);
 					byte[] byteArray = IOUtils.toByteArray(fis);
 					fis.close();
-					
+
 					zipFileObjects.add(splitRarFile(byteArray, exchange));
 					logger.info("Added result of expanding embeddced rar file " + f.getAbsolutePath());
-					
+
 				} else if (f.isDirectory()) {
 					// Recurse
 					logger.info("Recursing into directory " + f.getAbsolutePath());
