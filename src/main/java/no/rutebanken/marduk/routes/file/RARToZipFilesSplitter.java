@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -13,8 +14,8 @@ import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.camel.Body;
 import org.apache.camel.Exchange;
-import org.apache.camel.util.FileUtil;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
@@ -31,41 +32,45 @@ public class RARToZipFilesSplitter {
 
 	private static Logger logger = LoggerFactory.getLogger(RARToZipFilesSplitter.class);
 
-	public static List<Object> splitRarFile(byte[] data, Exchange exchange) throws IOException, RarException {
+	public static List<Object> splitRarFile(@Body Object b, Exchange exchange) throws IOException, RarException {
 
-		logger.info("Splitting rar file of lenfth " + data.length);
+		logger.info("Splitting rar file");
 
 		List<Object> zipFileObjects = new ArrayList<Object>();
 
 		// Create tmp file on disk with content
 		File tmpFolder = new File(System.getProperty("java.io.tmpdir"));
 		File rarExtractFolder = new File(tmpFolder, UUID.randomUUID().toString());
-		boolean mkdirsResult = rarExtractFolder.mkdirs();
-		if (!mkdirsResult) {
-			logger.error("Failed to create temporary extract folder " + rarExtractFolder.getAbsolutePath());
-		} else if (!rarExtractFolder.exists()) {
-			logger.error("Folder does still not exists even after creating " + rarExtractFolder.getAbsolutePath());
-		}
+		rarExtractFolder.mkdirs();
 
 		File rarFile = new File(tmpFolder, UUID.randomUUID().toString());
 
 		try {
 			rarFile.createNewFile();
 			FileOutputStream fos = new FileOutputStream(rarFile);
-			fos.write(data);
-			fos.close();
+
+			if (b instanceof byte[]) {
+				fos.write((byte[]) b);
+				fos.close();
+			} else if (b instanceof InputStream) {
+				IOUtils.copyLarge((InputStream) b, fos);
+				fos.close();
+			} else {
+				fos.close();
+				throw new RuntimeException("Cannot handle body of type " + b);
+			}
+
+			logger.info("Processing RAR file with length " + rarFile.length());
 
 			// Unpack to new folder
 			Archive a = new Archive(new FileVolumeManager(rarFile));
 			FileHeader fh = a.nextFileHeader();
 			while (fh != null) {
-				logger.info("Processing RAR compressed file header " + fh.getFileNameString());
 				File out = new File(rarExtractFolder, fh.getFileNameString().trim().replace('\\', '/'));
 				File parentFolder = out.getParentFile();
 				parentFolder.mkdirs();
 
 				if (!out.isDirectory()) {
-					logger.info("Processing RAR compressed file " + fh.getFileNameString());
 					FileOutputStream os = new FileOutputStream(out);
 					a.extractFile(fh, os);
 					os.close();
@@ -79,8 +84,8 @@ public class RARToZipFilesSplitter {
 		} catch (Exception e) {
 			logger.error("Error extracting RAR file", e);
 		} finally {
-//			FileUtil.deleteFile(rarFile);
-//			FileUtil.removeDir(rarExtractFolder);
+			// FileUtil.deleteFile(rarFile);
+			// FileUtil.removeDir(rarExtractFolder);
 		}
 
 		logger.info("Done splitting RAR file, results are " + ToStringBuilder.reflectionToString(zipFileObjects));
