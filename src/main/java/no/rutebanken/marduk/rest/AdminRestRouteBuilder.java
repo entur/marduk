@@ -6,6 +6,7 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 import java.net.URLDecoder;
 import java.util.Collections;
+import java.util.UUID;
 
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.rest.RestBindingMode;
@@ -61,7 +62,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
             	.process(e -> e.getIn().setBody(URLDecoder.decode(e.getIn().getBody(String.class),"UTF-8")))
             	.split().tokenize(",")
             	.setHeader(FILE_HANDLE,body())
-			    .setHeader(CORRELATION_ID, constant(System.currentTimeMillis()))
+			    .setHeader(CORRELATION_ID, constant(UUID.randomUUID().toString()))
 	    		.log(LoggingLevel.INFO,correlation()+"Chouette start import fileHandle=${body}")
 
                 .process(e -> {
