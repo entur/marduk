@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ListFilesResponse {
+public class S3Files {
 
 	@JsonProperty("files")
 	private List<File> files = new ArrayList<File>();
@@ -54,15 +54,19 @@ public class ListFilesResponse {
 			this.fileSize = fileSize;
 		}
 
+		@JsonProperty(required = true)
 		private String name;
 
+		@JsonProperty(required = false)
 		private Date updated;
+
+		@JsonProperty(required = false)
+		private Long fileSize;
 
 		@Override
 		public String toString() {
 			return "File [name=" + name + ", updated=" + updated + ", fileSize=" + fileSize + "]";
 		}
 
-		private Long fileSize;
-	}
+}
 }

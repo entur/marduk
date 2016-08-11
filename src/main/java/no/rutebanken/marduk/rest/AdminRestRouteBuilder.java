@@ -4,18 +4,20 @@ import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
-import java.net.URLDecoder;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+import org.apache.camel.Body;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.rest.RestBindingMode;
-import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.rest.S3Files.File;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 
 /**
@@ -53,14 +55,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         rest("/services/chouette")
 	    	.post("/{providerId}/import")
-	    		.param().required(Boolean.TRUE).name("fileHandle").type(RestParamType.query).description("S3 file path of file to reimport").endParam()
+	    		.type(S3Files.class)
+	    		//.param().required(Boolean.TRUE).name("fileHandle").type(RestParamType.query).description("S3 file path of file to reimport").endParam()
 	    		.route()
 	    		.removeHeaders("CamelHttp*")
 	    		.setHeader(PROVIDER_ID,header("providerId"))
-	    		// Decoding of queray parmeters does not seem to work correctly
-            	.setBody(header("fileHandle"))
-            	.process(e -> e.getIn().setBody(URLDecoder.decode(e.getIn().getBody(String.class),"UTF-8")))
-            	.split().tokenize(",")
+	        	.split(method(ImportFilesSplitter.class,"splitFiles"))
             	.setHeader(FILE_HANDLE,body())
 			    .setHeader(CORRELATION_ID, constant(UUID.randomUUID().toString()))
 	    		.log(LoggingLevel.INFO,correlation()+"Chouette start import fileHandle=${body}")
@@ -128,6 +128,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.to("direct:considerToFetchOsmMapOverNorway")
 				.routeId("admin-fetch-osm")
 				.endRest();
+    }
+    
+    public static class ImportFilesSplitter {
+    	public List<String> splitFiles(@Body S3Files files) {
+    		return files.getFiles().stream().map(File::getName).collect(Collectors.toList());
+    	}
     }
 }
 

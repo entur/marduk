@@ -7,7 +7,8 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.io.FileReader;
 import java.io.InputStream;
-import java.net.URLEncoder;
+import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +57,7 @@ public class AdminRestRouteBUilderTest {
 	@EndpointInject(uri = "mock:chouetteExportQueue")
 	protected MockEndpoint exportQueue;
 
-	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/import?fileHandle=file/path/down/the/road,file2")
+	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/import")
 	protected ProducerTemplate importTemplate;
 
 	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/export")
@@ -88,13 +89,20 @@ public class AdminRestRouteBUilderTest {
 		// we must manually start when we are done with all the advice with
 		context.start();
 
-		String fileHandle = "file/path/down/the/road";
+		S3Files d = new S3Files();
+		d.add(new S3Files.File("file1", null, null));
+		d.add(new S3Files.File("file2", null, null));
+	
+		ObjectMapper mapper = new ObjectMapper();
+		StringWriter writer = new StringWriter();
+		mapper.writeValue(writer, d);
+		String importJson = writer.toString();
 
 		// Do rest call
 
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put(Exchange.HTTP_METHOD, "POST");
-		importTemplate.sendBodyAndHeaders(null, headers);
+		importTemplate.sendBodyAndHeaders(importJson, headers);
 
 		// setup expectations on the mocks
 		importQueue.expectedMessageCount(2);
@@ -106,7 +114,7 @@ public class AdminRestRouteBUilderTest {
 		String providerId = (String) exchanges.get(0).getIn().getHeader(PROVIDER_ID);
 		assertEquals("2", providerId);
 		String s3FileHandle = (String) exchanges.get(0).getIn().getHeader(FILE_HANDLE);
-		assertEquals(fileHandle, s3FileHandle);
+		assertEquals("file1", s3FileHandle);
 	}
 
 	@Test
@@ -178,7 +186,7 @@ public class AdminRestRouteBUilderTest {
 		// Parse response
 
 		ObjectMapper mapper = new ObjectMapper();
-		ListFilesResponse rsp = mapper.readValue(response, ListFilesResponse.class);
+		S3Files rsp = mapper.readValue(response, S3Files.class);
 		Assert.assertEquals(1, rsp.getFiles().size());
 		Assert.assertEquals(filestorePath+"/"+filename, rsp.getFiles().get(0).getName());
 
