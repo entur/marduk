@@ -153,7 +153,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
        
 
 		 from("direct:processImportResult")
-		        .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
+		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 		        .setBody(constant(""))
 		        .choice()
 				.when(PredicateBuilder.and(constant(false).isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
@@ -191,7 +191,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
             .otherwise()
 				.log(LoggingLevel.INFO,correlation()+"Import and validation ok, triggering overall validation.")
 		        .setBody(constant(""))
-		        .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
+		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 				.choice()
 					.when(constant(true).isEqualTo(header(Constants.ENABLE_VALIDATION)))
 						.to("activemq:queue:ChouetteValidationQueue")

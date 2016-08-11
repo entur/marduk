@@ -82,7 +82,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
 
 
         from("direct:processExportResult")
-                .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .choice()
                 .when(simple("${header.action_report_result} == 'OK'"))
 	                .log(LoggingLevel.INFO,correlation()+"Export ok")

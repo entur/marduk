@@ -148,7 +148,7 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
                 })
 
 	        	// Fetch and parse validation report
-                .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .choice()
                 .when(simple("${header.validation_report_url} != null"))
 	                .log(LoggingLevel.DEBUG,correlation()+"Calling validation report url ${header.validation_report_url}")
