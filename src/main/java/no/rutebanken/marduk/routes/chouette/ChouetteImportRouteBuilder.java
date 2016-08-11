@@ -136,12 +136,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
                 .toD("${exchangeProperty.chouette_url}")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> {
-                    e.getOut().setHeader(Constants.CHOUETTE_JOB_STATUS_URL,e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
-                    e.getOut().setHeader(Constants.PROVIDER_ID, e.getIn().getHeader(Constants.PROVIDER_ID));
-                    e.getOut().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID));
-                    e.getOut().setHeader(Constants.FILE_NAME, e.getIn().getHeader(Constants.FILE_NAME));
-                    e.getOut().setHeader(Constants.CHOUETTE_REFERENTIAL, e.getIn().getHeader(Constants.CHOUETTE_REFERENTIAL));
-                    e.getOut().setHeader(Constants.CLEAN_REPOSITORY, e.getIn().getHeader(Constants.CLEAN_REPOSITORY));
+                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL,e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,constant("direct:processImportResult"))
         		.setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(Action.IMPORT.name()))
@@ -187,13 +182,13 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 			.toD("${exchangeProperty.job_status_url}")
 			.choice()
 			.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
-				.log(LoggingLevel.INFO,correlation()+"Import and validation ok, skipping overall validation as there are more import jobs active")
+				.log(LoggingLevel.INFO,correlation()+"Import and validation ok, skipping next step as there are more import jobs active")
             .otherwise()
-				.log(LoggingLevel.INFO,correlation()+"Import and validation ok, triggering overall validation.")
+				.log(LoggingLevel.INFO,correlation()+"Import and validation ok, triggering next step.")
 		        .setBody(constant(""))
 		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 				.choice()
-					.when(constant(true).isEqualTo(header(Constants.ENABLE_VALIDATION)))
+					.when(constant("true").isEqualTo(header(Constants.ENABLE_VALIDATION)))
 						.to("activemq:queue:ChouetteValidationQueue")
 					.otherwise()
 						.to("activemq:queue:ChouetteExportQueue")
