@@ -61,6 +61,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         rest("/services/chouette")
 	    	.post("/{providerId}/import")
 	    		.type(S3Files.class)
+	    		.consumes("application/json")
 	    		//.param().required(Boolean.TRUE).name("fileHandle").type(RestParamType.query).description("S3 file path of file to reimport").endParam()
 	    		.route()
 	    		.removeHeaders("CamelHttp*")
