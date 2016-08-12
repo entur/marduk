@@ -151,7 +151,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 		        .setBody(constant(""))
 		        .choice()
-				.when(PredicateBuilder.and(constant(false).isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
+				.when(PredicateBuilder.and(constant("false").isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
 		            .to("direct:checkScheduledJobsBeforeTriggeringNextAction")
 		            .process(e -> Status.addStatus(e, Action.IMPORT, State.OK))
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'OK'"))
