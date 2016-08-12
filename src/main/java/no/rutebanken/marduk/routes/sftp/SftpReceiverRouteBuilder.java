@@ -61,7 +61,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
         public void configure() throws Exception {
             from("sftp://" + provider.sftpAccount + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&sorter=#caseIdSftpSorter&delay=30s&delete=true&localWorkDirectory=files/tmp&connectTimeout=1000")
 					.autoStartup("{{sftp.autoStartup:true}}")
-                    .setHeader(CORRELATION_ID, constant(UUID.randomUUID().toString()))
+				    .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
                     .log(LoggingLevel.INFO, correlation()+"Received file on sftp route for '" + provider.sftpAccount + "'. Storing file ...")
                     .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_INBOUND_RECEIVED + provider.chouetteInfo.referential + "/" + provider.chouetteInfo.referential + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
                     .setHeader(PROVIDER_ID, constant(provider.id))

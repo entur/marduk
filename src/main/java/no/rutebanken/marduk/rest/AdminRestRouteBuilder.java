@@ -68,7 +68,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    		.setHeader(PROVIDER_ID,header("providerId"))
 	        	.split(method(ImportFilesSplitter.class,"splitFiles"))
             	.setHeader(FILE_HANDLE,body())
-			    .setHeader(CORRELATION_ID, constant(UUID.randomUUID().toString()))
+			    .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
 	    		.log(LoggingLevel.INFO,correlation()+"Chouette start import fileHandle=${body}")
 
                 .process(e -> {
