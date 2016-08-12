@@ -16,7 +16,6 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.component.http4.HttpMethods;
 import org.apache.camel.model.dataformat.JsonLibrary;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -119,7 +118,7 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${exchangeProperty.url}")
-                .unmarshal().json(JsonLibrary.Jackson, JobResponse.class)
+                .unmarshal().json(JsonLibrary.Jackson, JobResponseWithLinks.class)
                 .setProperty("current_status",simple("${body.status}"))
                 .choice()
                 .when(PredicateBuilder.or(simple("${body.status} != ${type:no.rutebanken.marduk.routes.chouette.json.Status.SCHEDULED} && ${body.status} != ${type:no.rutebanken.marduk.routes.chouette.json.Status.STARTED}"),
