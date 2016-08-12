@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.routes.chouette;
 
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +12,7 @@ import org.apache.camel.Expression;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.test.spring.CamelSpringDelegatingTestContextLoader;
@@ -18,6 +20,7 @@ import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
 import org.apache.camel.test.spring.CamelTestContextBootstrapper;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +31,7 @@ import org.springframework.test.context.BootstrapWith;
 import org.springframework.test.context.ContextConfiguration;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.status.Status;
 
 @RunWith(CamelSpringJUnit4ClassRunner.class)
@@ -62,8 +66,18 @@ public class ChouettePollJobStatusRouteTest {
 	@Produce(uri = "direct:checkValidationReport")
 	protected ProducerTemplate validationReportTemplate;
 
+	@EndpointInject(uri = "mock:chouetteGetJobs")
+	protected MockEndpoint getJobs;
+
+	@Produce(uri = "direct:chouetteGetJobs")
+	protected ProducerTemplate getJobsTemplate;
+
 	@Value("${chouette.url}")
 	private String chouetteUrl;
+
+	@Value("${nabu.rest.service.url}")
+	private String nabuUrl;
+
 
 	@Test
 	public void testDummy() {}
@@ -211,5 +225,62 @@ public class ChouettePollJobStatusRouteTest {
 		destination.assertIsSatisfied();
 
 	}
+	
+	//@Test
+	public void getJobs() throws Exception {
+
+		context.getRouteDefinition("chouette-list-jobs").adviceWith(context, new AdviceWithRouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs")
+				.skipSendToOriginalEndpoint()
+				.to("mock:chouetteGetJobs");
+			}
+		});
+		// Mock Nabu / providerRepository (done differently since RestTemplate
+		// is being used which skips Camel)
+		context.addRoutes(new RouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				from("netty4-http:" + nabuUrl + "/providers/2").setBody()
+						.constant(IOUtils.toString(new FileReader(
+								"src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))
+						.setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
+						.routeId("nabu-mock");
+			}
+
+		});
+
+		context.start();
+
+		getJobs.returnReplyBody(new Expression() {
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public <T> T evaluate(Exchange ex, Class<T> arg1) {
+				try {
+					return (T) IOUtils.toString(getClass()
+							.getResourceAsStream("/no/rutebanken/marduk/chouette/getJobListResponseScheduled.json"));
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return null;
+				}
+			}
+		});
+
+		
+		// Do rest call
+		Map<String, Object> headers = new HashMap<String, Object>();
+		headers.put(Exchange.HTTP_METHOD, "GET");
+		headers.put(Constants.PROVIDER_ID, "2");
+		JobResponse[] rsp =  (JobResponse[]) getJobsTemplate.requestBodyAndHeaders(null, headers);
+		// Parse response
+
+		Assert.assertFalse(rsp.length == 0);
+	
+
+	}
+
 
 }

@@ -1,21 +1,23 @@
 package no.rutebanken.marduk.routes.chouette;
 
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.routes.chouette.json.Status.ABORTED;
 import static no.rutebanken.marduk.routes.chouette.json.Status.CANCELED;
 import static no.rutebanken.marduk.routes.chouette.json.Status.SCHEDULED;
 import static no.rutebanken.marduk.routes.chouette.json.Status.STARTED;
 
-import java.net.NoRouteToHostException;
+import java.util.List;
 import java.util.Optional;
 
 import org.apache.activemq.ScheduledMessage;
-import org.apache.activemq.command.ActiveMQMessage;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.component.http4.HttpMethods;
-import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.model.dataformat.JsonLibrary;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +25,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
+import no.rutebanken.marduk.routes.chouette.json.JobResponseWithLinks;
 import no.rutebanken.marduk.routes.status.Status;
 import no.rutebanken.marduk.routes.status.Status.Action;
 import no.rutebanken.marduk.routes.status.Status.State;
@@ -62,6 +65,36 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
 //                .log(LoggingLevel.ERROR,correlation()+"Failed while polling chouette.")
 //                .handled(true);
         
+        from("direct:chouetteGetJobs")
+        		.process( e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+                .removeHeaders("Camel*")
+                .setBody(constant(""))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs"))
+                .process(e -> {
+                	String url = (String) e.getProperty("chouette_url");
+                	
+                	URIBuilder b = new URIBuilder(url);
+                	if(e.getIn().getHeader("action") != null) {
+                		b.addParameter("action", (String) e.getIn().getHeader("action"));
+                	}
+                	if(e.getIn().getHeader("status") != null) {
+                		
+                		Object status = e.getIn().getHeader("status");
+                		if(status instanceof List) {
+                    		for(String s : (List<String>)status) {
+                        		b.addParameter("status", s);
+                    		}
+                		} else            		{
+                			b.addParameter("status", (String) status);
+                		}
+                	}
+                	
+                	e.setProperty("chouette_url", b.toString());
+                })
+                .toD("${exchangeProperty.chouette_url}")
+                .unmarshal().json(JsonLibrary.Jackson, JobResponse[].class)
+                .routeId("chouette-list-jobs");
         
         
         from("activemq:queue:ChouettePollStatusQueue?transacted=true&maxConcurrentConsumers=" + maxConsumers)
@@ -126,7 +159,7 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
                     .stop()
                 .end()
                 .process(e -> {
-                    JobResponse response = e.getIn().getBody(JobResponse.class);
+                    JobResponseWithLinks response = e.getIn().getBody(JobResponseWithLinks.class);
                     Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "action_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
                     e.getIn().setHeader("action_report_url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
                     Optional<String> validationReportUrlOptional = response.links.stream().filter(li -> "validation_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));

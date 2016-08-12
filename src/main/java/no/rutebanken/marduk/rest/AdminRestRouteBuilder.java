@@ -4,6 +4,7 @@ import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import java.util.stream.Collectors;
 import org.apache.camel.Body;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.rest.RestBindingMode;
+import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Component;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.rest.S3Files.File;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.chouette.json.Status;
 
 /**
  * REST interface for backdoor triggering of messages
@@ -35,6 +38,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     @Override
     public void configure() throws Exception {
         super.configure();
+        
+        List<String> allowedStatuses = Arrays.asList(Status.values()).stream().map(Status::name).collect(Collectors.toList());
 
         RestPropertyDefinition corsAllowedHeaders = new RestPropertyDefinition();
         corsAllowedHeaders.setKey("Access-Control-Allow-Headers");
@@ -83,6 +88,28 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    		.removeHeaders("CamelHttp*")
 			    .to("direct:listBlobs")
 			    .routeId("admin-chouette-import-list")
+			    .endRest()
+        	.get("/{providerId}/jobs")
+	    		.param()
+	    			.required(Boolean.FALSE)
+	    			.name("status")
+	    			.type(RestParamType.query)
+	    			.description("Chouette job statuses")
+	    			.allowableValues(Arrays.asList(Status.values()).stream().map(Status::name).collect(Collectors.toList()))
+	    			.endParam()
+	    		.param()
+	    			.required(Boolean.FALSE)
+	    			.name("action")
+	    			.type(RestParamType.query)
+	    			.description("Chouette job types")
+	    			.allowableValues("importer","exporter","validator")
+	    			.endParam()
+	    		.route()
+	    		.setHeader(PROVIDER_ID,header("providerId"))
+	    		.log(LoggingLevel.INFO,correlation()+"Get chouette jobs status=${header.status} action=${header.action}")
+	    		.removeHeaders("CamelHttp*")
+			    .to("direct:chouetteGetJobs")
+			    .routeId("admin-chouette-list-jobs")
 			    .endRest()
         	.post("/{providerId}/export")
 		    	.route()

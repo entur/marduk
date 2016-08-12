@@ -81,7 +81,7 @@ public class ChouetteValidationRouteBuilder extends BaseRouteBuilder {
 
 	 // Check that no other import jobs in status SCHEDULED exists for this referential. If so, do not trigger export
 		from("direct:checkScheduledJobsBeforeTriggeringExport")
-				.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?action=importer"))
+				.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?action=importer&status=SCHEDULED&status=STARTED"))
 				.toD("${exchangeProperty.job_status_url}")
 				.choice()
 				.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
