@@ -6,6 +6,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class Provider {
 
     public Long id;
+    
+    public Long getId() {
+    	return id;
+    }
     public String name;
     public String sftpAccount;
 

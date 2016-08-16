@@ -7,21 +7,28 @@ import static no.rutebanken.marduk.routes.chouette.json.Status.CANCELED;
 import static no.rutebanken.marduk.routes.chouette.json.Status.SCHEDULED;
 import static no.rutebanken.marduk.routes.chouette.json.Status.STARTED;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.apache.activemq.ScheduledMessage;
+import org.apache.camel.Body;
 import org.apache.camel.Exchange;
+import org.apache.camel.Header;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.component.http4.HttpMethods;
+import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.model.dataformat.JsonLibrary;
+import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.rest.ProviderAndJobs;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
@@ -107,16 +114,50 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
 		        .routeId("chouette-cancel-job");
 		
         from("direct:chouetteCancelAllJobs")
-        		.process(e -> e.getIn().setHeader("status", Arrays.asList("STARTED","SCHEDULED")))
-        		.to("direct:chouetteGetJobs")
-        		.sort(body(), new JobResponseDescendingSorter())
-        		.removeHeaders("Camel*")
-        		.split().body()
+				.process(e -> e.getIn().setHeader("status", Arrays.asList("STARTED","SCHEDULED")))
+				.to("direct:chouetteGetJobs")
+				.sort(body(), new JobResponseDescendingSorter())
+				.removeHeaders("Camel*")
+				.split().body()
 		        .setHeader(Constants.CHOUETTE_JOB_ID,simple("${body.id}"))
 		        .setBody(constant(""))
 		        .to("direct:chouetteCancelJob")
 		        .routeId("chouette-cancel-all-jobs");
 		
+        from("direct:chouetteGetJobsAll")
+				.process(e -> e.getIn().setHeader("status", Arrays.asList("STARTED","SCHEDULED")))
+        		.process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
+        		.split().body().aggregationStrategy(new AggregationStrategy() {
+					public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
+					    if (oldExchange == null) {
+				          
+					    	List<ProviderAndJobs> list = new ArrayList<ProviderAndJobs>();
+					    	list.add(newExchange.getIn().getBody(ProviderAndJobs.class));
+					    	newExchange.getIn().setBody(list);
+					    	
+				            return newExchange;
+				        }
+
+				        List<ProviderAndJobs> existingResults = oldExchange.getIn().getBody(List.class);
+				        ProviderAndJobs newResult = newExchange.getIn().getBody(ProviderAndJobs.class);
+				        if(newResult != null) {
+				        	existingResults.add(newResult);
+				        }
+				        return oldExchange;
+					}
+				}).parallelProcessing().timeout(5000l)
+				.setHeader(Constants.PROVIDER_ID,simple("${body.id}"))
+        		.setBody(constant(null))
+				.to("direct:chouetteGetJobs")
+				.process(e ->  {
+					Long providerId = e.getIn().getHeader(Constants.PROVIDER_ID,Long.class);
+					JobResponse[] jobs = e.getIn().getBody(JobResponse[].class);
+					
+					e.getIn().setBody(new ProviderAndJobs(providerId, jobs));
+				})
+				.end()
+			    .routeId("chouette-get-jobs-all");
+			
         
         from("activemq:queue:ChouettePollStatusQueue?transacted=true&maxConcurrentConsumers=" + maxConsumers)
 				.validate(header(Constants.CORRELATION_ID).isNotNull())
