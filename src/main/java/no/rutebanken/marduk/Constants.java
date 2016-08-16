@@ -24,7 +24,7 @@ public class Constants {
 	public static final String BLOBSTORE_PATH_INBOUND_RECEIVED = "inbound/received/";
 	
     public static final String CHOUETTE_JOB_STATUS_URL = "chouette_job_status_url";
-
+    public static final String CHOUETTE_JOB_ID = "chouette_job_id";
 	public static final String CHOUETTE_JOB_STATUS_ROUTING_DESTINATION = "chouette_job_status_routing_destination";
 	public static final String CHOUETTE_JOB_STATUS_JOB_TYPE = "chouette_job_status_type";
 

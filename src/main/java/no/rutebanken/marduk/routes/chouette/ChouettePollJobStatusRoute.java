@@ -7,6 +7,7 @@ import static no.rutebanken.marduk.routes.chouette.json.Status.CANCELED;
 import static no.rutebanken.marduk.routes.chouette.json.Status.SCHEDULED;
 import static no.rutebanken.marduk.routes.chouette.json.Status.STARTED;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -95,6 +96,27 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
                 .unmarshal().json(JsonLibrary.Jackson, JobResponse[].class)
                 .routeId("chouette-list-jobs");
         
+        from("direct:chouetteCancelJob")
+				.process( e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+		        .removeHeaders("Camel*")
+		        .setBody(constant(""))
+		        .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.DELETE))
+		        .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/scheduled_jobs/${header." + Constants.CHOUETTE_JOB_ID + "}"))
+		        .toD("${exchangeProperty.chouette_url}")
+		        .setBody(constant(null))
+		        .routeId("chouette-cancel-job");
+		
+        from("direct:chouetteCancelAllJobs")
+        		.process(e -> e.getIn().setHeader("status", Arrays.asList("STARTED","SCHEDULED")))
+        		.to("direct:chouetteGetJobs")
+        		.sort(body(), new JobResponseDescendingSorter())
+        		.removeHeaders("Camel*")
+        		.split().body()
+		        .setHeader(Constants.CHOUETTE_JOB_ID,simple("${body.id}"))
+		        .setBody(constant(""))
+		        .to("direct:chouetteCancelJob")
+		        .routeId("chouette-cancel-all-jobs");
+		
         
         from("activemq:queue:ChouettePollStatusQueue?transacted=true&maxConcurrentConsumers=" + maxConsumers)
 				.validate(header(Constants.CORRELATION_ID).isNotNull())
