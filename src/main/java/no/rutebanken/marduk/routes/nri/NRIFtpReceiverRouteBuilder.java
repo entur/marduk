@@ -89,7 +89,7 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
 		case "Troms fylkestrafikk (Troms fylke)":
 			return 15l;
 		case "Trønderbilene AS":
-			return 12l;
+			return 13l;
 		case "Vestfold kollektivtrafikk (Vestfold fylke)":
 			return 6l;
 		case "Østfold kollektivtrafikk (Østfold fylke)":
