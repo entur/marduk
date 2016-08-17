@@ -39,8 +39,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
         
-        List<String> allowedStatuses = Arrays.asList(Status.values()).stream().map(Status::name).collect(Collectors.toList());
-
         RestPropertyDefinition corsAllowedHeaders = new RestPropertyDefinition();
         corsAllowedHeaders.setKey("Access-Control-Allow-Headers");
         corsAllowedHeaders.setValue("Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
