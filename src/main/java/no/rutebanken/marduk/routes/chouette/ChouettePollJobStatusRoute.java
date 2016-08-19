@@ -125,7 +125,6 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
 		        .routeId("chouette-cancel-all-jobs");
 		
         from("direct:chouetteGetJobsAll")
-				.process(e -> e.getIn().setHeader("status", Arrays.asList("STARTED","SCHEDULED")))
         		.process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
         		.split().body().aggregationStrategy(new AggregationStrategy() {
 					public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
