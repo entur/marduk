@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.routes.file.FileType;
-import no.rutebanken.marduk.routes.file.ZipFileReader;
+import no.rutebanken.marduk.routes.file.ZipFileUtils;
 
 public class FileTypeClassifierBean {
 
@@ -18,7 +18,7 @@ public class FileTypeClassifierBean {
     private static final String requiredRegtoppFilesExtensionsRegex = "(?i).+\\.tix|(?i).+\\.hpl|(?i).+\\.dko";
     private static final String requiredGtfsFilesRegex = "agency.txt|stops.txt|routes.txt|trips.txt|stop_times.txt";
 
-    private final ZipFileReader zipFileReader = new ZipFileReader();
+    private final ZipFileUtils zipFileUtils = new ZipFileUtils();
 
     public boolean validateFile(byte[] data, Exchange exchange) {
         String relativePath = exchange.getIn().getHeader(Constants.FILE_HANDLE, String.class);
@@ -29,11 +29,11 @@ public class FileTypeClassifierBean {
         try {
             if (relativePath.toUpperCase().endsWith(".ZIP")) {
                 logger.debug("File ends with .zip");
-                if (isRegtoppZip(zipFileReader.listFilesInZip(data))){
+                if (isRegtoppZip(zipFileUtils.listFilesInZip(data))){
                     exchange.getIn().setHeader(Constants.FILE_TYPE, FileType.REGTOPP.name());
                     return true;
                 }
-                if (isGtfsZip(zipFileReader.listFilesInZip(data))){
+                if (isGtfsZip(zipFileUtils.listFilesInZip(data))){
                     exchange.getIn().setHeader(Constants.FILE_TYPE, FileType.GTFS.name());
                     logger.debug("This is a gtfs zip.");
                     return true;
