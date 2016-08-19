@@ -11,16 +11,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.activemq.ScheduledMessage;
-import org.apache.camel.Body;
 import org.apache.camel.Exchange;
-import org.apache.camel.Header;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
+import org.apache.camel.builder.ThreadPoolBuilder;
 import org.apache.camel.component.http4.HttpMethods;
-import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.http.client.utils.URIBuilder;
@@ -65,6 +63,9 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
+        ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder(getContext());
+        ExecutorService allProvidersExecutorService = poolBuilder.poolSize(5).maxPoolSize(5).maxQueueSize(100).build("allProvidersExecutorService");
+        
 //        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
 //                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
 //                .process(e -> Status.addStatus(e, Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.FAILED))
@@ -118,7 +119,7 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
 				.to("direct:chouetteGetJobs")
 				.sort(body(), new JobResponseDescendingSorter())
 				.removeHeaders("Camel*")
-				.split().body()
+				.split().body().parallelProcessing().executorService(allProvidersExecutorService)
 		        .setHeader(Constants.CHOUETTE_JOB_ID,simple("${body.id}"))
 		        .setBody(constant(""))
 		        .to("direct:chouetteCancelJob")
@@ -144,7 +145,7 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
 				        }
 				        return oldExchange;
 					}
-				}).parallelProcessing().timeout(5000l)
+				}).parallelProcessing().executorService(allProvidersExecutorService).timeout(5000l)
 				.setHeader(Constants.PROVIDER_ID,simple("${body.id}"))
         		.setBody(constant(null))
 				.to("direct:chouetteGetJobs")
