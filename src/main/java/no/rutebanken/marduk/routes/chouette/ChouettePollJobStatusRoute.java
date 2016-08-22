@@ -64,7 +64,12 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
         super.configure();
 
         ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder(getContext());
-        ExecutorService allProvidersExecutorService = poolBuilder.poolSize(5).maxPoolSize(5).maxQueueSize(100).build("allProvidersExecutorService");
+        ExecutorService allProvidersExecutorService = 
+        		poolBuilder
+        		.poolSize(20)
+        		.maxPoolSize(20)
+        		.maxQueueSize(1000)
+        		.build("allProvidersExecutorService");
         
 //        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
 //                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
@@ -145,7 +150,7 @@ public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
 				        }
 				        return oldExchange;
 					}
-				}).parallelProcessing().executorService(allProvidersExecutorService).timeout(5000l)
+				}).parallelProcessing().executorService(allProvidersExecutorService).timeout(10000l)
 				.setHeader(Constants.PROVIDER_ID,simple("${body.id}"))
         		.setBody(constant(null))
 				.to("direct:chouetteGetJobs")
