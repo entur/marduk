@@ -32,7 +32,7 @@
 		<spring-boot.version>1.3.6.RELEASE</spring-boot.version>
 		<jclouds.version>1.9.2</jclouds.version>
 		<httpcomponents.version>4.5.1</httpcomponents.version>
-		<otp.version>0.20.5</otp.version>
+		<otp.version>0.20.6</otp.version>
 		<assertj-core.version>3.3.0</assertj-core.version>
 		<!-- Newest version is 2.17.2, but upgrade breaks http://camel.apache.org/camel-2170-release.html -->
 		<camel-version>2.17.2</camel-version>
