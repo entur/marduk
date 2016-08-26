@@ -62,7 +62,6 @@ sftp.keyfile=/opt/jboss/.ssh/lamassu.pem
 otp.graph.build.directory=files/otpgraph
 # optional (NOTE! http4 is correct config!)
 otp.graph.deployment.notification.url=http4://<url>
-otp.graph.map.base.url=http4://jump.rutebanken.org
 otp.graph.blobstore.subdirectory=output/otpgraphs
 
 # logging settings
