@@ -1,22 +1,17 @@
 package no.rutebanken.marduk.routes.nri;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.io.FileReader;
-import java.util.List;
-
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.domain.Provider;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
-import org.apache.camel.test.spring.CamelSpringDelegatingTestContextLoader;
 import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
-import org.apache.camel.test.spring.CamelTestContextBootstrapper;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockftpserver.fake.FakeFtpServer;
@@ -27,20 +22,24 @@ import org.mockftpserver.fake.filesystem.FileSystem;
 import org.mockftpserver.fake.filesystem.UnixFakeFileSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.BootstrapWith;
-import org.springframework.test.context.ContextConfiguration;
 
-import no.rutebanken.marduk.Constants;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.when;
 
 @RunWith(CamelSpringJUnit4ClassRunner.class)
-@BootstrapWith(CamelTestContextBootstrapper.class)
-@ContextConfiguration(loader = CamelSpringDelegatingTestContextLoader.class, classes = CamelConfig.class)
+@SpringBootTest(classes = NRIFtpReceiverRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles({ "default", "dev" })
-@UseAdviceWith(true)
-public class NRIFtpReceiverRouteTest {
+@UseAdviceWith
+public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
@@ -51,6 +50,11 @@ public class NRIFtpReceiverRouteTest {
     @Value("${nabu.rest.service.url}")
     private String nabuUrl;
 
+	@Before
+	public void setUpProvider() throws IOException {
+		when(providerRepository.getProvider(12L)).thenReturn(Provider.create(IOUtils.toString(new FileReader(
+				"src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json"))));
+	}
 
 	@Test
 	public void testFetchFilesFromFTP() throws Exception {
@@ -92,18 +96,6 @@ public class NRIFtpReceiverRouteTest {
 			}
 		});
 
-		// Mock Nabu / providerRepository (done differently since RestTemplate is being used which skips Camel)
-		context.addRoutes(new RouteBuilder() {
-			@Override
-			public void configure() throws Exception {
-				from("netty4-http:"+nabuUrl+"/providers/12")
-					.setBody()
-					.constant(IOUtils.toString(new FileReader("src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))
-					.setHeader(Exchange.CONTENT_TYPE,constant("application/json"));
-					
-			}
-			
-		});	
 		// we must manually start when we are done with all the advice with
 		context.start();
 

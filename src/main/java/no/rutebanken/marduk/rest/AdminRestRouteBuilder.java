@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.apache.camel.Body;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
@@ -35,7 +36,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	private static final String PLAIN = "text/plain";
 	
 	@Value("${server.admin.port}")
-	public int port;
+	public String port;
 	
 	@Value("${server.admin.host}")
 	public String host;

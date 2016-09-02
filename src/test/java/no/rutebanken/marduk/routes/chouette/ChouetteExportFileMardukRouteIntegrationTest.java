@@ -1,43 +1,33 @@
 package no.rutebanken.marduk.routes.chouette;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.camel.EndpointInject;
-import org.apache.camel.Exchange;
-import org.apache.camel.Expression;
-import org.apache.camel.Produce;
-import org.apache.camel.ProducerTemplate;
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
-import org.apache.camel.test.spring.CamelSpringDelegatingTestContextLoader;
 import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
-import org.apache.camel.test.spring.CamelTestContextBootstrapper;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.BootstrapWith;
-import org.springframework.test.context.ContextConfiguration;
 
-import no.rutebanken.marduk.Constants;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @RunWith(CamelSpringJUnit4ClassRunner.class)
-@BootstrapWith(CamelTestContextBootstrapper.class)
-@ContextConfiguration(loader = CamelSpringDelegatingTestContextLoader.class, classes = CamelConfig.class)
+@SpringBootTest(classes = ChouetteExportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles({ "default", "dev" })
-@UseAdviceWith(true)
-public class ChouetteExportFileRouteTest {
+@UseAdviceWith
+public class ChouetteExportFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
@@ -74,10 +64,8 @@ public class ChouetteExportFileRouteTest {
 	@Value("${nabu.rest.service.url}")
 	private String nabuUrl;
 
-    @Test
-    public void dummy() {}
-    
-	//@Test
+
+	@Test
 	public void testExportDataspace() throws Exception {
 
 		// Mock initial call to Chouette to import job
@@ -104,6 +92,8 @@ public class ChouetteExportFileRouteTest {
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 				.to("mock:updateStatus");
+				interceptSendToEndpoint("activemq:queue:OtpGraphQueue").skipSendToOriginalEndpoint().to("mock:OtpGraphQueue");
+
 			}
 		});
 		
@@ -136,20 +126,6 @@ public class ChouetteExportFileRouteTest {
 			}
 		});
 
-
-		// Mock Nabu / providerRepository (done differently since RestTemplate
-		// is being used which skips Camel)
-		context.addRoutes(new RouteBuilder() {
-			@Override
-			public void configure() throws Exception {
-				from("netty4-http:" + nabuUrl + "/providers/2").setBody()
-						.constant(IOUtils.toString(new FileReader(
-								"src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))
-						.setHeader(Exchange.CONTENT_TYPE, constant("application/json"));
-			}
-
-		});
-
 		// we must manually start when we are done with all the advice with
 		context.start();
 
@@ -162,7 +138,7 @@ public class ChouetteExportFileRouteTest {
 		pollJobStatus.expectedMessageCount(1);
 		
 		
-		updateStatus.expectedMessageCount(2);
+		updateStatus.expectedMessageCount(1);
 		
 		otpGraphQueue.expectedMessageCount(1);
 		

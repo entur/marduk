@@ -1,43 +1,34 @@
 package no.rutebanken.marduk.routes.chouette;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
-import org.apache.camel.Expression;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
-import org.apache.camel.test.spring.CamelSpringDelegatingTestContextLoader;
 import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
-import org.apache.camel.test.spring.CamelTestContextBootstrapper;
 import org.apache.camel.test.spring.UseAdviceWith;
-import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.BootstrapWith;
-import org.springframework.test.context.ContextConfiguration;
 
-import no.rutebanken.marduk.Constants;
+import java.util.HashMap;
+import java.util.Map;
 
 @RunWith(CamelSpringJUnit4ClassRunner.class)
-@BootstrapWith(CamelTestContextBootstrapper.class)
-@ContextConfiguration(loader = CamelSpringDelegatingTestContextLoader.class, classes = CamelConfig.class)
+@SpringBootTest(classes = ChouetteImportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles({ "default", "dev" })
-@UseAdviceWith(true)
-public class ChouetteCleanDataspaceRouteTest {
+@UseAdviceWith
+public class ChouetteCleanDataspaceMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
@@ -60,6 +51,9 @@ public class ChouetteCleanDataspaceRouteTest {
 	@EndpointInject(uri = "mock:updateStatus")
 	protected MockEndpoint updateStatus;
 
+	@EndpointInject(uri = "mock:checkScheduledJobsBeforeTriggeringNextAction")
+	protected MockEndpoint checkScheduledJobsBeforeTriggeringNextAction;
+
 	@Produce(uri = "activemq:queue:ChouetteCleanQueue")
 	protected ProducerTemplate importTemplate;
 
@@ -72,10 +66,7 @@ public class ChouetteCleanDataspaceRouteTest {
 	@Value("${nabu.rest.service.url}")
 	private String nabuUrl;
 
-    @Test
-    public void dummu() {}
-    
-	//@Test
+	@Test
 	public void testCleanDataspace() throws Exception {
 
 		// Mock initial call to Chouette to import job
@@ -102,22 +93,9 @@ public class ChouetteCleanDataspaceRouteTest {
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 				.to("mock:updateStatus");
-				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringValidation").skipSendToOriginalEndpoint()
-				.to("mock:checkScheduledJobsBeforeTriggeringValidation");
+				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringNextAction").skipSendToOriginalEndpoint()
+				.to("mock:checkScheduledJobsBeforeTriggeringNextAction");
 			}
-		});
-
-		// Mock Nabu / providerRepository (done differently since RestTemplate
-		// is being used which skips Camel)
-		context.addRoutes(new RouteBuilder() {
-			@Override
-			public void configure() throws Exception {
-				from("netty4-http:" + nabuUrl + "/providers/2").setBody()
-						.constant(IOUtils.toString(new FileReader(
-								"src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))
-						.setHeader(Exchange.CONTENT_TYPE, constant("application/json"));
-			}
-
 		});
 
 		// we must manually start when we are done with all the advice with
@@ -128,30 +106,30 @@ public class ChouetteCleanDataspaceRouteTest {
 		chouetteCreateImport.returnReplyHeader("Location", new SimpleExpression(
 				chouetteUrl.replace("http4://", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
 
-	
+
 		pollJobStatus.expectedMessageCount(1);
-		
-		
-		updateStatus.expectedMessageCount(2);
-		
-		
-		
+
+
+		updateStatus.expectedMessageCount(1);
+
+
+
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put(Constants.PROVIDER_ID, "2");
-	
+
 		importTemplate.sendBodyAndHeaders(null, headers);
 
 		chouetteCreateImport.assertIsSatisfied();
 		pollJobStatus.assertIsSatisfied();
-		
+
 		Exchange exchange = pollJobStatus.getReceivedExchanges().get(0);
 		exchange.getIn().setHeader("action_report_result", "OK");
 		exchange.getIn().setHeader("validation_report_result", "OK");
-		processImportResultTemplate.send(exchange );
-		
-	
+
+		processImportResultTemplate.send(exchange);
+
 		updateStatus.assertIsSatisfied();
-		
+
 	}
 
 }

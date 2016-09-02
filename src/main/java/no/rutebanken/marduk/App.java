@@ -34,7 +34,6 @@ public class App extends FatJarRouter {
         
         configureJsonPath();
         
-        
         FatJarRouter.main(args);
     }
 

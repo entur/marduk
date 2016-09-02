@@ -1,55 +1,49 @@
 package no.rutebanken.marduk.rest;
 
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.io.FileReader;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
-import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
-import org.apache.camel.test.spring.CamelSpringDelegatingTestContextLoader;
 import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
-import org.apache.camel.test.spring.CamelTestContextBootstrapper;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.BootstrapWith;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.File;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import no.rutebanken.marduk.Constants;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(CamelSpringJUnit4ClassRunner.class)
-@BootstrapWith(CamelTestContextBootstrapper.class)
-@ContextConfiguration(loader = CamelSpringDelegatingTestContextLoader.class, classes = { CamelConfig.class })
+@SpringBootTest(classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@UseAdviceWith(true)
-
-public class AdminRestRouteBUilderTest {
+@ActiveProfiles({ "default", "dev" })
+@UseAdviceWith
+@ContextConfiguration
+public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
-	private ModelCamelContext context;
+	ModelCamelContext camelContext;
 
 	@EndpointInject(uri = "mock:chouetteImportQueue")
 	protected MockEndpoint importQueue;
@@ -78,21 +72,21 @@ public class AdminRestRouteBUilderTest {
 	@Test
 	public void runImport() throws Exception {
 
-		context.getRouteDefinition("admin-chouette-import").adviceWith(context, new AdviceWithRouteBuilder() {
+		camelContext.getRouteDefinition("admin-chouette-import").adviceWith(camelContext, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
 				interceptSendToEndpoint("activemq:queue:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue");
-
 			}
 		});
 
+
 		// we must manually start when we are done with all the advice with
-		context.start();
+		camelContext.start();
 
 		S3Files d = new S3Files();
 		d.add(new S3Files.File("file1", null, null));
 		d.add(new S3Files.File("file2", null, null));
-	
+
 		ObjectMapper mapper = new ObjectMapper();
 		StringWriter writer = new StringWriter();
 		mapper.writeValue(writer, d);
@@ -120,7 +114,7 @@ public class AdminRestRouteBUilderTest {
 	@Test
 	public void runExport() throws Exception {
 
-		context.getRouteDefinition("admin-chouette-export").adviceWith(context, new AdviceWithRouteBuilder() {
+		camelContext.getRouteDefinition("admin-chouette-export").adviceWith(camelContext, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
 				interceptSendToEndpoint("activemq:queue:ChouetteExportQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportQueue");
@@ -129,7 +123,7 @@ public class AdminRestRouteBUilderTest {
 		});
 
 		// we must manually start when we are done with all the advice with
-		context.start();
+		camelContext.start();
 
 		// Do rest call
 		Map<String, Object> headers = new HashMap<String, Object>();
@@ -162,22 +156,7 @@ public class AdminRestRouteBUilderTest {
 		File importFile = new File(refBase, filename);
 		importFile.createNewFile();
 
-		// we must manually start when we are done with all the advice with
-		// Mock Nabu / providerRepository (done differently since RestTemplate
-		// is being used which skips Camel)
-		context.addRoutes(new RouteBuilder() {
-			@Override
-			public void configure() throws Exception {
-				from("netty4-http:" + nabuUrl + "/providers/2").setBody()
-						.constant(IOUtils.toString(new FileReader(
-								"src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))
-						.setHeader(Exchange.CONTENT_TYPE, constant("application/json"));
-
-			}
-
-		});
-
-		context.start();
+		camelContext.start();
 
 		// Do rest call
 		Map<String, Object> headers = new HashMap<String, Object>();
