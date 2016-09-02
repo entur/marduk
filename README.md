@@ -144,6 +144,8 @@ logging.level.org.jclouds=INFO
 
 spring.profiles.active=test
 
+# Graph registration endpoint in etcd
+etcd.graph.notification.url=http://etcd-client:2379/v2/keys/prod/otp/marduk.file
 ```
 
 * Run with maven `mvn spring-boot:run -Dspring.profiles.active=dev`

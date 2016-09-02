@@ -1,28 +1,30 @@
 package no.rutebanken.marduk.routes.otp;
 
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
-import static no.rutebanken.marduk.Constants.METADATA_DESCRIPTION;
-import static no.rutebanken.marduk.Constants.METADATA_FILE;
-import static org.apache.commons.io.FileUtils.deleteDirectory;
-
-import java.io.File;
-import java.io.InputStream;
-import java.util.Date;
-
+import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import java.io.File;
+import java.io.InputStream;
+import java.util.Date;
+
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.METADATA_DESCRIPTION;
+import static no.rutebanken.marduk.Constants.METADATA_FILE;
+import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 @Component
 public class GraphPublishRouteBuilder extends BaseRouteBuilder {
 
     @Value("${otp.graph.deployment.notification.url:none}")
     private String otpGraphDeploymentNotificationUrl;
+
+    @Value("${etcd.graph.notification.url:none}")
+    private String etcdGraphDeploymentNotificationUrl;
 
     @Value("${otp.graph.build.directory}")
     private String otpGraphBuildDirectory;
@@ -48,6 +50,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, correlation()+"Done uploading new OTP graph.")
                 .to("direct:notify")
+                .to("direct:notifyEtcd")
                 .to("direct:cleanUp")
                 .routeId("otp-graph-upload");
 
@@ -68,6 +71,23 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                     .otherwise()
                         .log(LoggingLevel.WARN, correlation()+"No notification url configured for otp graph building. Doing nothing.")
                         .routeId("otp-graph-notify");
+
+        /* Putting value directly into etcd */
+        from("direct:notifyEtcd")
+                .setProperty("notificationUrl", constant(etcdGraphDeploymentNotificationUrl))
+                .choice()
+                    .when(exchangeProperty("notificationUrl").isNotEqualTo("none"))
+                        .log(LoggingLevel.INFO, correlation()+"Notifying " + etcdGraphDeploymentNotificationUrl + " about new otp graph.")
+                        .process(e -> e.getIn().setBody("value="+e.getIn().getHeader(FILE_HANDLE, String.class)))
+                        .removeHeaders("*")
+                        .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.PUT))
+                        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                        .toD("${property.notificationUrl}")
+                        .log(LoggingLevel.INFO, correlation()+"Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
+                .otherwise()
+                    .log(LoggingLevel.WARN, correlation()+"No notification url configured for etcd endpoint. Doing nothing.")
+                    .routeId("otp-graph-notify-etcd");
+
 
         from("direct:cleanUp")
                 .log(LoggingLevel.DEBUG, correlation()+"Deleting build folder ${property." + Exchange.FILE_PARENT + "} ...")
