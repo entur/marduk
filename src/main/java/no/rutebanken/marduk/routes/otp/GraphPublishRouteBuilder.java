@@ -50,6 +50,10 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, correlation()+"Done uploading new OTP graph.")
                 .to("direct:notify")
+                // Need to add the header again, as it is cleared by notify.
+                .process(
+                        e -> e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"))
+                )
                 .to("direct:notifyEtcd")
                 .to("direct:cleanUp")
                 .routeId("otp-graph-upload");
@@ -81,6 +85,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                         .process(e -> e.getIn().setBody("value="+e.getIn().getHeader(FILE_HANDLE, String.class)))
                         .removeHeaders("*")
                         .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.PUT))
+                        .setHeader(Exchange.CONTENT_TYPE, constant("application/x-www-form-urlencoded"))
                         .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                         .toD("${property.notificationUrl}")
                         .log(LoggingLevel.INFO, correlation()+"Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
