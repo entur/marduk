@@ -50,6 +50,9 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, correlation()+"Done uploading new OTP graph.")
                 .to("direct:notify")
+                .process( // Adding header again, as it was removed by notify
+                        e -> e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"))
+                )
                 .to("direct:notifyEtcd")
                 .to("direct:cleanUp")
                 .routeId("otp-graph-upload");
