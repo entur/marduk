@@ -40,7 +40,7 @@ import no.rutebanken.marduk.routes.status.Status.State;
  * Exports files from Chouette
  */
 @Component
-public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
+public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
 
     @Value("${chouette.url}")
     private String chouetteUrl;
@@ -69,7 +69,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
                 .process(e -> e.getIn().setHeader(JSON_PART, getJsonFileContent(e.getIn().getHeader(PROVIDER_ID, Long.class)))) //Using header to add json data
                 .log(LoggingLevel.INFO,correlation()+"Creating multipart request")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .process(e -> toMultipart(e))
+                .process(e -> toExportMultipart(e))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
@@ -132,18 +132,7 @@ public class ChouetteExportRouteBuilder extends BaseRouteBuilder {
         		.routeId("chouette-process-export-gtfs-feedinfo");
     }
 
-    void toMultipart(Exchange exchange) {
-        String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);
-        if (Strings.isNullOrEmpty(jsonPart)) {
-            throw new IllegalArgumentException("No json data");
-        }
-
-        MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
-        entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
-
-        exchange.getOut().setBody(entityBuilder.build());
-        exchange.getOut().setHeaders(exchange.getIn().getHeaders());
-    }
+   
 
     String getJsonFileContent(Long providerId) {
         try {

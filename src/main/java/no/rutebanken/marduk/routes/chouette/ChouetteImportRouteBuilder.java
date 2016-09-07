@@ -36,7 +36,7 @@ import no.rutebanken.marduk.routes.status.Status.State;
  * Submits files to Chouette
  */
 @Component
-public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
+public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
 
 	@Value("${chouette.url}")
@@ -126,7 +126,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:sendImportJobRequest")
                 .log(LoggingLevel.DEBUG,correlation()+"Creating multipart request")
-                .process(e -> toMultipart(e))
+                .process(e -> toImportMultipart(e))
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/importer/${header." + FILE_TYPE + ".toLowerCase()}"))
@@ -199,29 +199,7 @@ public class ChouetteImportRouteBuilder extends BaseRouteBuilder {
 		
     }
 
-    void toMultipart(Exchange exchange) {
-        String fileName = exchange.getIn().getHeader(FILE_HANDLE, String.class);
-        if (Strings.isNullOrEmpty(fileName)) {
-            throw new IllegalArgumentException("No file name");
-        }
-
-        String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);
-        if (Strings.isNullOrEmpty(jsonPart)) {
-            throw new IllegalArgumentException("No json data");
-        }
-
-        InputStream inputStream = exchange.getIn().getBody(InputStream.class);
-        if (inputStream == null) {
-            throw new IllegalArgumentException("No data");
-        }
-
-        MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
-        entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
-        entityBuilder.addBinaryBody("feed", inputStream, ContentType.DEFAULT_BINARY, fileName);
-
-        exchange.getOut().setBody(entityBuilder.build());
-        exchange.getOut().setHeaders(exchange.getIn().getHeaders());
-    }
+  
 
     private Object getImportParameters(String fileName, String fileType, Long providerId,boolean cleanRepository) {
         if (FileType.REGTOPP.name().equals(fileType)){

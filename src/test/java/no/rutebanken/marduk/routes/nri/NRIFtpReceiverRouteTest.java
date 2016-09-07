@@ -97,7 +97,9 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
 		});
 
 		// we must manually start when we are done with all the advice with
+		context.startRoute("nri-ftp-activemq");
 		context.start();
+		
 
 		// setup expectations on the mocks
 		sorTrondelag.expectedMessageCount(3);

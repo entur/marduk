@@ -27,7 +27,6 @@ import org.springframework.stereotype.Component;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.rest.ProviderAndJobs;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.JobResponseWithLinks;
@@ -36,7 +35,7 @@ import no.rutebanken.marduk.routes.status.Status.Action;
 import no.rutebanken.marduk.routes.status.Status.State;
 
 @Component
-public class ChouettePollJobStatusRoute extends BaseRouteBuilder {
+public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
 
 	@Value("${chouette.max.retries:3000}")

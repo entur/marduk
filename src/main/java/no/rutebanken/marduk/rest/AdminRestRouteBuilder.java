@@ -1,8 +1,18 @@
 package no.rutebanken.marduk.rest;
 
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.rest.S3Files.File;
+import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.chouette.json.JobResponse;
+import no.rutebanken.marduk.routes.chouette.json.Status;
+import org.apache.camel.Body;
+import org.apache.camel.LoggingLevel;
+import org.apache.camel.model.rest.RestBindingMode;
+import org.apache.camel.model.rest.RestParamType;
+import org.apache.camel.model.rest.RestPropertyDefinition;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -10,20 +20,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.apache.camel.Body;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.model.rest.RestBindingMode;
-import org.apache.camel.model.rest.RestParamType;
-import org.apache.camel.model.rest.RestPropertyDefinition;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.rest.S3Files.File;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.chouette.json.JobResponse;
-import no.rutebanken.marduk.routes.chouette.json.Status;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 /**
  * REST interface for backdoor triggering of messages
@@ -98,7 +97,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         rest("/services/chouette/{providerId}")
 		    	.post("/import")
-		    		.description("Triggers the import->validate->export process in Chouette for eacn S3 file handle. Use /files call to obtain available files. Files are imported in the same order as they are prvided")
+		    		.description("Triggers the import->validate->export process in Chouette for each S3 file handle. Use /files call to obtain available files. Files are imported in the same order as they are provided")
 		    		.param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
 		    		.type(S3Files.class)
 		    		.outType(String.class)
@@ -255,16 +254,34 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 			    .endRest();
 
 		rest("/services/fetch")
-			.post("/osm")
+				.post("/osm")
 				.description("Triggers downloading of the latest OSM data")
 				.consumes(PLAIN)
 				.produces(PLAIN)
-	    		.responseMessage().code(200).message("Command accepted").endResponseMessage()
+				.responseMessage().code(200).message("Command accepted").endResponseMessage()
 				.route()
-	    		.log(LoggingLevel.INFO,"OSM update map data")
+				.log(LoggingLevel.INFO,"OSM update map data")
 				.removeHeaders("CamelHttp*")
 				.to("direct:considerToFetchOsmMapOverNorway")
 				.routeId("admin-fetch-osm")
+				.endRest();
+
+		rest("/services/marduk")
+				.post("/file")
+				.description("Adjust the marduk file in hubot and etcd")
+				.consumes(PLAIN)
+				.produces(PLAIN)
+				.responseMessage().code(200).message("Command accepted").endResponseMessage()
+				.route()
+				.convertBodyTo(String.class)
+				// Does not work - expecting json for some reason: .process(p -> p.getOut().setHeader(FILE_HANDLE, p.getIn().getBody()))
+				.setHeader(FILE_HANDLE,simple("static"))
+				.process(p -> {throw new MardukException("This an endpoint for development purposes ONLY. ");})
+				.log(LoggingLevel.INFO,"Want to set ${header."+FILE_HANDLE+"}")
+				.to("direct:notify")
+				.to("direct:notifyEtcd")
+				.setBody(simple("done"))
+				.routeId("admin-marduk-file")
 				.endRest();
     }
     

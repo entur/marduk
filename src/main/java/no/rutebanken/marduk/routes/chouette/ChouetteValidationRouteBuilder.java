@@ -17,7 +17,6 @@ import com.google.common.base.Strings;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.ValidationParameters;
 import no.rutebanken.marduk.routes.status.Status;
 import no.rutebanken.marduk.routes.status.Status.Action;
@@ -27,7 +26,7 @@ import no.rutebanken.marduk.routes.status.Status.State;
  * Exports files from Chouette
  */
 @Component
-public class ChouetteValidationRouteBuilder extends BaseRouteBuilder {
+public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder {
 
     @Value("${chouette.url}")
     private String chouetteUrl;
