@@ -1,18 +1,24 @@
-package no.rutebanken.marduk.rest;
+package no.rutebanken.marduk.domain;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class S3Files {
+public class BlobStoreFiles {
 
 	@JsonProperty("files")
 	private List<File> files = new ArrayList<File>();
 
-	public void add(File filename) {
-		files.add(filename);
+	public void add(File file) {
+		files.add(file);
+	}
+
+	public void add(Collection<File> files) {
+		this.files.addAll(files);
 	}
 
 	public List<File> getFiles() {

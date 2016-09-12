@@ -30,11 +30,10 @@
 		<docker.maven.plugin.version>0.13.9</docker.maven.plugin.version>
 		<spring-boot-plugin.version>1.4.0.RELEASE</spring-boot-plugin.version>
 		<spring-boot.version>1.4.0.RELEASE</spring-boot.version>
-		<jclouds.version>1.9.2</jclouds.version>
 		<httpcomponents.version>4.5.1</httpcomponents.version>
 		<otp.version>1.1.0.RB-SNAPSHOT</otp.version>
 		<assertj-core.version>3.3.0</assertj-core.version>
-		<!-- Newest version is 2.17.2, but upgrade breaks http://camel.apache.org/camel-2170-release.html -->
+		<google-cloud.version>0.3.0</google-cloud.version>
 		<camel-version>2.17.3</camel-version>
 
 		<!-- Docker & Fabric8 Configs -->
@@ -68,18 +67,6 @@
 			</dependency>
 
 			<dependency>
-				<groupId>com.google.code.gson</groupId>
-				<artifactId>gson</artifactId>
-				<version>2.3</version>
-			</dependency>
-
-			<dependency>
-				<groupId>com.google.inject</groupId>
-				<artifactId>guice</artifactId>
-				<version>3.0</version>
-			</dependency>
-
-			<dependency>
 				<groupId>org.apache.camel</groupId>
 				<artifactId>camel-netty4-http</artifactId>
 				<version>${camel-version}</version>
@@ -108,6 +95,13 @@
 				<artifactId>camel-test</artifactId>
 				<version>${camel-version}</version>
 				<scope>test</scope>
+			</dependency>
+
+			<!-- Version from google-cloud-storage -->
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-all</artifactId>
+				<version>4.1.1.Final</version>
 			</dependency>
 
 		</dependencies>
@@ -149,17 +143,7 @@
 			<artifactId>camel-ftp</artifactId>
 			<version>${camel-version}</version>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.camel</groupId>
-			<artifactId>camel-jclouds</artifactId>
-			<version>${camel-version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>javax.ws.rs</groupId>
-					<artifactId>jsr311-api</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+
 		<dependency>
 			<groupId>org.apache.camel</groupId>
 			<artifactId>camel-jackson</artifactId>
@@ -206,19 +190,15 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.apache.jclouds</groupId>
-			<artifactId>jclouds-allblobstore</artifactId>
-			<version>${jclouds.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.jclouds.api</groupId>
-			<artifactId>filesystem</artifactId>
-			<version>${jclouds.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.jclouds.provider</groupId>
-			<artifactId>aws-s3</artifactId>
-			<version>${jclouds.version}</version>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>google-cloud-storage</artifactId>
+			<version>${google-cloud.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>javax.servlet</groupId>
+					<artifactId>servlet-api</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
@@ -251,12 +231,6 @@
 			<artifactId>camel-spring-javaconfig</artifactId>
 			<version>${camel-version}</version>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<!-- Outdated version is needed due to jcloud -->
-			<version>17.0</version>
 		</dependency>
 
 		<dependency>

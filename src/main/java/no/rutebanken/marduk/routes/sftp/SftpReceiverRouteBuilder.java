@@ -71,7 +71,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
                     .log(LoggingLevel.INFO, correlation()+"Putting handle ${header." + FILE_HANDLE + "} on queue...")
                     .setHeader(Constants.FILE_NAME,exchangeProperty(Exchange.FILE_NAME))
                     .to("activemq:queue:ProcessFileQueue")
-                    .routeId("sftp-s3-"+provider.chouetteInfo.referential);
+                    .routeId("sftp-gcs-"+provider.chouetteInfo.referential);
         }
     }
 

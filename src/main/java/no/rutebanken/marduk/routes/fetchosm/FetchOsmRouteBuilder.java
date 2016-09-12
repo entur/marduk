@@ -27,7 +27,7 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
  * <p>
  *     <ul>
  *         <li>download pbf</li>
- *         <li>give to s3 upload queue</li>
+ *         <li>give to blob store route</li>
  *     </ul>
  * </p>
  */

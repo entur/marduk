@@ -3,6 +3,8 @@ package no.rutebanken.marduk.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.domain.BlobStoreFiles;
+import no.rutebanken.marduk.repository.FakeBlobStoreRepository;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
@@ -12,7 +14,6 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
-import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,6 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.HashMap;
@@ -45,6 +47,9 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 	@Autowired
 	ModelCamelContext camelContext;
 
+	@Autowired
+	private FakeBlobStoreRepository fakeBlobStoreRepository;
+
 	@EndpointInject(uri = "mock:chouetteImportQueue")
 	protected MockEndpoint importQueue;
 
@@ -63,12 +68,6 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 	@Value("${nabu.rest.service.url}")
 	private String nabuUrl;
 
-	@Value("${blobstore.filesystem.baseDirectory}")
-	private String blobStoreBaseDirectory;
-
-	@Value("${blobstore.containerName}")
-	private String containerName;
-
 	@Test
 	public void runImport() throws Exception {
 
@@ -83,9 +82,9 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 		// we must manually start when we are done with all the advice with
 		camelContext.start();
 
-		S3Files d = new S3Files();
-		d.add(new S3Files.File("file1", null, null));
-		d.add(new S3Files.File("file2", null, null));
+		BlobStoreFiles d = new BlobStoreFiles();
+		d.add(new BlobStoreFiles.File("file1", null, null));
+		d.add(new BlobStoreFiles.File("file2", null, null));
 
 		ObjectMapper mapper = new ObjectMapper();
 		StringWriter writer = new StringWriter();
@@ -142,19 +141,16 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 	}
 
 	@Test
-	public void getS3Files() throws Exception {
+	public void getBlobStoreFiles() throws Exception {
 
 		// Preparations
-		String filename = "ruter_fake_file.zip";
-		String filestorePath = Constants.BLOBSTORE_PATH_INBOUND_RECEIVED+"rut";
-		File blobBase = new File(blobStoreBaseDirectory);
-		File containerBase = new File(blobBase, containerName);
-		File refBase = new File(containerBase, filestorePath);
-		FileUtils.deleteQuietly(refBase);
-		refBase.mkdirs();
+		String filename = "ruter_fake_data.zip";
+		String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND_RECEIVED+"rut/";
+		String pathname = "src/main/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
 
-		File importFile = new File(refBase, filename);
-		importFile.createNewFile();
+		//populate fake blob repo
+		fakeBlobStoreRepository.uploadBlob(fileStorePath + filename, new FileInputStream(new File(pathname)));
+		BlobStoreFiles blobStoreFiles = fakeBlobStoreRepository.listBlobs(fileStorePath);
 
 		camelContext.start();
 
@@ -165,9 +161,9 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 		// Parse response
 
 		ObjectMapper mapper = new ObjectMapper();
-		S3Files rsp = mapper.readValue(response, S3Files.class);
+		BlobStoreFiles rsp = mapper.readValue(response, BlobStoreFiles.class);
 		Assert.assertEquals(1, rsp.getFiles().size());
-		Assert.assertEquals(filestorePath+"/"+filename, rsp.getFiles().get(0).getName());
+		Assert.assertEquals(fileStorePath + filename, rsp.getFiles().get(0).getName());
 
 	}
 

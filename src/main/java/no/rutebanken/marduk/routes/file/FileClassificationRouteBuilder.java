@@ -26,7 +26,6 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
         onException(ValidationException.class)
                 .handled(true)
                 .log(LoggingLevel.INFO, correlation()+"Could not process file ${header." + FILE_HANDLE + "}") 
-                //.to("direct:removeBlob") Keep file for now
                 .process(e -> Status.addStatus(e, Status.Action.FILE_TRANSFER, Status.State.FAILED))
                 .to("direct:updateStatus")
                 .setBody(simple(""))      //remove file data from body
@@ -46,7 +45,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 	.to("direct:splitRarFile")
                 .otherwise()
                     .log(LoggingLevel.INFO, correlation()+"Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
-                    .setBody(simple(""))   //remove file data from body since this is in jclouds blobstore
+                    .setBody(simple(""))   //remove file data from body since this is in blobstore
                     .to("activemq:queue:ChouetteImportQueue")
                 .end()
                 .routeId("file-classify");

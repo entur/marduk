@@ -20,6 +20,8 @@ spring.main.sources=no.rutebanken.marduk
 # the options from org.apache.camel.spring.boot.CamelConfigurationProperties can be configured here
 camel.springboot.name=Marduk
 
+marduk.shutdown.timeout=1
+
 # Nabu rest service
 nabu.rest.service.url=http://nabu:8080/jersey/
 
@@ -31,11 +33,6 @@ activemq.broker.mgmt.port=8161
 spring.activemq.pooled=true
 spring.activemq.user=admin
 spring.activemq.password=your_password
-
-# File system blobstore settings
-blobstore.provider=filesystem
-blobstore.containerName=test-container
-blobstore.filesystem.baseDirectory=./files/filesystemstorage
 
 # JPA settings
 spring.jpa.show-sql=true
@@ -72,13 +69,15 @@ logging.level.org.apache=INFO
 spring.profiles.active=dev
 
 ```
-* Typical application properties for test environment, with S3 blobstore:
+* Typical application properties for test environment, with GCS blobstore:
 
 ```
 spring.main.sources=no.rutebanken.marduk
 
 # the options from org.apache.camel.spring.boot.CamelConfigurationProperties can be configured here
 camel.springboot.name=Marduk
+
+marduk.shutdown.timeout=300
 
 # Nabu rest service
 nabu.rest.service.url=http://nabu:8080/jersey/
@@ -93,11 +92,10 @@ activemq.broker.name=amqp-srv1
 activemq.broker.host=activemq
 activemq.broker.mgmt.port=8161
 
-# Amazon S3 blobstore settings
-blobstore.provider=aws-s3
-blobstore.containerName=junit-test-rutebanken
-blobstore.aws-s3.identity=AKIAIBRVMDRJKQBK6YEQ
-blobstore.aws-s3.credential=2fRLhBLqhGcqT8mSr/450QVecdw84LQetF3T44uQ
+# Google Cloud Storage blobstore settings
+blobstore.containerName=marduk-test
+blobstore.gcs.credential.path=/home/tomgag/Downloads/Carbon-a4d50ca8176c.json
+blobstore.gcs.projectId=carbon-1287
 
 # JPA settings
 spring.jpa.show-sql=true
@@ -140,7 +138,6 @@ otp.graph.blobstore.subdirectory=output/otpgraphs
 logging.config=classpath:logback.xml
 logging.level.no.rutebanken=INFO
 logging.level.org.apache=INFO
-logging.level.org.jclouds=INFO
 
 spring.profiles.active=test
 

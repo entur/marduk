@@ -1,8 +1,19 @@
 package no.rutebanken.marduk.rest;
 
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.rest.S3Files.File;
+import no.rutebanken.marduk.domain.BlobStoreFiles.File;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
@@ -14,15 +25,11 @@ import org.apache.camel.model.rest.RestPropertyDefinition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.BlobStoreFiles.File;
+import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.chouette.json.JobResponse;
+import no.rutebanken.marduk.routes.chouette.json.Status;
 
 /**
  * REST interface for backdoor triggering of messages
@@ -97,9 +104,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         rest("/services/chouette/{providerId}")
 		    	.post("/import")
-		    		.description("Triggers the import->validate->export process in Chouette for each S3 file handle. Use /files call to obtain available files. Files are imported in the same order as they are provided")
+		    		.description("Triggers the import->validate->export process in Chouette for each blob store file handle. Use /files call to obtain available files. Files are imported in the same order as they are provided")
 		    		.param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
-		    		.type(S3Files.class)
+		    		.type(BlobStoreFiles.class)
 		    		.outType(String.class)
 					.consumes(JSON)
 					.produces(PLAIN)
@@ -127,14 +134,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	        	.get("/files")
 	        		.description("List files available for reimport into Chouette")
 	        		.param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
-	        		.outType(S3Files.class)
+	        		.outType(BlobStoreFiles.class)
 					.consumes(PLAIN)
 					.produces(JSON)
 		    		.responseMessage().code(200).endResponseMessage()
 		    		.responseMessage().code(500).message("Invalid providerId").endResponseMessage()
 		    		.route()
 		    		.setHeader(PROVIDER_ID,header("providerId"))
-		    		.log(LoggingLevel.INFO,correlation()+"S3 get files")
+		    		.log(LoggingLevel.INFO,correlation()+"blob store get files")
 		    		.removeHeaders("CamelHttp*")
 				    .to("direct:listBlobs")
 				    .routeId("admin-chouette-import-list")
@@ -301,7 +308,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     }
     
     public static class ImportFilesSplitter {
-    	public List<String> splitFiles(@Body S3Files files) {
+    	public List<String> splitFiles(@Body BlobStoreFiles files) {
     		return files.getFiles().stream().map(File::getName).collect(Collectors.toList());
     	}
     }

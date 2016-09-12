@@ -2,6 +2,8 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.repository.BlobStoreRepository;
+import no.rutebanken.marduk.repository.FakeBlobStoreRepository;
 import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -20,6 +22,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +36,9 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 
 	@Autowired
 	private ModelCamelContext context;
+
+	@Autowired
+	private FakeBlobStoreRepository fakeBlobStoreRepository;
 
 	@EndpointInject(uri = "mock:chouetteCreateImport")
 	protected MockEndpoint chouetteCreateImport;
@@ -70,27 +76,14 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 	@Value("${nabu.rest.service.url}")
 	private String nabuUrl;
 
-	@Value("${blobstore.filesystem.baseDirectory}")
-	private String blobStoreBaseDirectory;
-
-	@Value("${blobstore.containerName}")
-	private String containerName;
-
 	@Test
 	public void testImportFileToDataspace() throws Exception {
 
 		String filename = "ruter_fake_data.zip";
+		String pathname = "src/main/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
 
-		File blobBase = new File(blobStoreBaseDirectory);
-		File containerBase = new File(blobBase, containerName);
-		File refBase = new File(containerBase, "rut");
-		refBase.mkdirs();
-
-		File importFile = new File(refBase, filename);
-		if (!importFile.exists()) {
-			FileUtil.copyFile(new File("src/main/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip"),
-					importFile);
-		}
+		//populate fake blob repo
+		fakeBlobStoreRepository.uploadBlob("rut/" + filename, new FileInputStream(new File(pathname)));
 
 		// Mock initial call to Chouette to import job
 		context.getRouteDefinition("chouette-send-import-job").adviceWith(context, new AdviceWithRouteBuilder() {

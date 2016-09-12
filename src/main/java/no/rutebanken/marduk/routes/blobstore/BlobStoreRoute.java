@@ -3,30 +3,20 @@ package no.rutebanken.marduk.routes.blobstore;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 
 import static no.rutebanken.marduk.Constants.*;
 
 @Component
 public class BlobStoreRoute extends BaseRouteBuilder {
 
-    @Value("${blobstore.provider}")
-    private String provider;
-
-    @Value("${blobstore.containerName}")
-    private String containerName;
-
     @Override
     public void configure() throws Exception {
 
         from("direct:uploadBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                //Using properties to hold headers, as jclouds component wipes them
+                //Using properties to hold headers, as bean component wipes them
                 .setProperty(FILE_HANDLE, header(FILE_HANDLE))
                 .setProperty(FILE_NAME, header(FILE_NAME))
                 .setProperty(FILE_TYPE, header(FILE_TYPE))
@@ -36,15 +26,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setProperty(FILE_TARGET_MD5, header(FILE_TARGET_MD5))
                 .setProperty(Exchange.FILE_NAME, header(Exchange.FILE_NAME))
                 .setProperty(Exchange.FILE_PARENT, header(Exchange.FILE_PARENT))
-                .process(e -> {
-                    if (e.getIn().getBody() instanceof InputStream) {
-                        InputStream is = e.getIn().getBody(InputStream.class);
-                        e.getIn().setBody(IOUtils.toByteArray(is));
-                    }
-                    e.getOut().setBody(new ByteArrayInputStream(e.getIn().getBody(byte[].class)), InputStream.class);
-                    e.getOut().setHeaders(e.getIn().getHeaders());
-                })
-                .toD("jclouds:blobstore:" + provider + "?operation=CamelJcloudsPut&container=" + containerName + "&blobName=${header." + FILE_HANDLE + "}")
+                .bean("blobStoreService","uploadBlob")
                 .setBody(simple(""))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 //restore headers from properties
@@ -62,7 +44,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:getBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                //Using properties to hold headers, as jclouds component wipes them
+                //Using properties to hold headers, as bean component wipes them
                 .setProperty(FILE_HANDLE, header(FILE_HANDLE))
                 .setProperty(FILE_NAME, header(FILE_NAME))
                 .setProperty(FILE_TYPE, header(FILE_TYPE))
@@ -72,7 +54,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setProperty(FILE_TARGET_MD5, header(FILE_TARGET_MD5))
                 .setProperty(Exchange.FILE_NAME, header(Exchange.FILE_NAME))
                 .setProperty(Exchange.FILE_PARENT, header(Exchange.FILE_PARENT))
-                .toD("jclouds:blobstore:" + provider + "?operation=CamelJcloudsGet&container=" + containerName + "&blobName=${header." + FILE_HANDLE + "}")
+                .bean("blobStoreService","getBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 //restore headers from properties
                 .setHeader(FILE_HANDLE, exchangeProperty(FILE_HANDLE))
@@ -84,22 +66,14 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .setHeader(FILE_TARGET_MD5, exchangeProperty(FILE_TARGET_MD5))
                 .setHeader(Exchange.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(Exchange.FILE_PARENT))
-                .log(LoggingLevel.INFO,correlation()+ "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.")
+                .log(LoggingLevel.INFO, correlation()+ "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.")
                 .routeId("blobstore-download");
-  
 
-        from("direct:removeBlob")
-            .log(LoggingLevel.INFO,correlation()+"Removing blob: ${header." + FILE_HANDLE + "}")
-                .toD("jclouds:blobstore:" + provider + "?operation=CamelJcloudsRemoveBlob&container=" + containerName + "&blobName=${header." + FILE_HANDLE + "}")
-                .routeId("blobstore-remove");
-
-
-        
         from("direct:listBlobs")
         	// TODO make this route work
 	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
             .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-	        .bean("blobStoreService","getFiles")
+	        .bean("blobStoreService","listBlobs")
 	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 	        .log(LoggingLevel.INFO,correlation()+"Returning from fetching file list from blob store.")
             .routeId("blobstore-list");

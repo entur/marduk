@@ -3,9 +3,11 @@ package no.rutebanken.marduk;
 import java.util.EnumSet;
 import java.util.Set;
 
+import no.rutebanken.marduk.config.GcsStorageConfig;
 import org.apache.camel.spring.boot.FatJarRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
@@ -16,15 +18,15 @@ import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 
-import no.rutebanken.marduk.config.AwsS3BlobStoreConfig;
-import no.rutebanken.marduk.config.FileSystemBlobStoreConfig;
-
 /**
  * A spring-boot application that includes a Camel route builder to setup the Camel routes
  */
 @SpringBootApplication
-@Import({FileSystemBlobStoreConfig.class, AwsS3BlobStoreConfig.class})
+@Import(GcsStorageConfig.class)
 public class App extends FatJarRouter {
+
+	@Value("${marduk.shutdown.timeout:300}")
+	private Long shutdownTimeout;
 
     private static Logger logger = LoggerFactory.getLogger(App.class);
 
@@ -36,6 +38,12 @@ public class App extends FatJarRouter {
         
         FatJarRouter.main(args);
     }
+
+	@Override
+	public void configure() throws Exception {
+		super.configure();
+		getContext().getShutdownStrategy().setTimeout(shutdownTimeout);
+	}
 
 	private static void configureJsonPath() {
 		Configuration.setDefaults(new Configuration.Defaults() {
