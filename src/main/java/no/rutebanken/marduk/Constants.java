@@ -4,6 +4,8 @@ public class Constants {
     public static final String FILE_TYPE = "RutebankenFileType";
     public static final String FILE_HANDLE = "RutebankenFileHandle";
     public static final String PROVIDER_ID = "RutebankenProviderId";
+    public static final String ORIGINAL_PROVIDER_ID = "RutebankenOriginalProviderId"; // The original provider id that started this chain of events 
+    																				  // (providerId can change during the process when transferring data from one referential to another
     public static final String CORRELATION_ID = "RutebankenCorrelationId";
     public static final String CHOUETTE_REFERENTIAL = "RutebankenChouetteReferential";
     public static final String JSON_PART = "RutebankenJsonPart";
@@ -23,10 +25,10 @@ public class Constants {
 
 	public static final String BLOBSTORE_PATH_INBOUND_RECEIVED = "inbound/received/";
 	
-    public static final String CHOUETTE_JOB_STATUS_URL = "chouette_job_status_url";
-    public static final String CHOUETTE_JOB_ID = "chouette_job_id";
-	public static final String CHOUETTE_JOB_STATUS_ROUTING_DESTINATION = "chouette_job_status_routing_destination";
-	public static final String CHOUETTE_JOB_STATUS_JOB_TYPE = "chouette_job_status_type";
+    public static final String CHOUETTE_JOB_STATUS_URL = "RutebankenChouetteJobStatusURL";
+    public static final String CHOUETTE_JOB_ID = "RutebankenChouetteJobId";
+	public static final String CHOUETTE_JOB_STATUS_ROUTING_DESTINATION = "RutebankenChouetteJobStatusRoutingDestination";
+	public static final String CHOUETTE_JOB_STATUS_JOB_TYPE = "RutebankenCHouetteJobStatusType";
 
 
 

@@ -1,6 +1,5 @@
 package no.rutebanken.marduk.routes.chouette;
 
-import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_URL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.JSON_PART;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
@@ -44,23 +43,25 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 .process(e -> { 
                 	// Add correlation id only if missing
                 	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
-                	e.getIn().setHeader(Constants.FILE_NAME,constant("None"));
+                	e.getIn().setHeader(Constants.FILE_NAME,"None");
+                	e.getIn().setHeader(Constants.FILE_HANDLE,"transfer.zip");
                 	e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential);
                 	e.getIn().setHeader(JSON_PART, getExportParameters(e.getIn().getHeader(PROVIDER_ID, Long.class)));
                 })
                 .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.PENDING))
 		        .to("direct:updateStatus")
                 .log(LoggingLevel.INFO,correlation()+"Creating multipart request")
-                .process(e -> toExportMultipart(e))
+                .process(e -> toGenericChouetteMultipart(e))
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/neptune")
                 .process(e -> {
-                    e.getIn().setHeader(CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,constant("direct:processTransferExportResult"));
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(Action.DATASPACE_TRANSFER.name()));
+                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
+                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,"direct:processTransferExportResult");
+                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, Action.DATASPACE_TRANSFER.name());
                     })
 		        .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.STARTED))
 		        .to("direct:updateStatus")
                 .log(LoggingLevel.INFO,correlation()+"Sending transfer export to poll job status")
+                .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
                 .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-transfer-export-job");
 
@@ -82,8 +83,22 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 	                	Provider currentProvider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
 	                	Provider destinationProvider = getProviderRepository().getProvider(currentProvider.chouetteInfo.migrateDataToProvider);
 	        			e.getIn().setHeader(CHOUETTE_REFERENTIAL, destinationProvider.chouetteInfo.referential);
-	                    e.getIn().setHeader(JSON_PART, getImportParameters("transfer.zip",  currentProvider.chouetteInfo.migrateDataToProvider,false));
+	                    e.getIn().setHeader(JSON_PART, getImportParameters("transfer.zip",  currentProvider.chouetteInfo.migrateDataToProvider,true));
 	                }) //Using header to add json data
+	                .removeHeaders("Camel*")
+	                .process(e -> toImportMultipart(e))
+	                .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
+	                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/importer/neptune"))
+	                .log(LoggingLevel.INFO,correlation()+ "Calling Chouette with URL: ${exchangeProperty.chouette_url}")
+	                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
+	                .toD("${exchangeProperty.chouette_url}")
+	                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+	                .process(e -> {
+	                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL,e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
+	                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,"direct:processTransferImportResult");
+	                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, Action.DATASPACE_TRANSFER.name());
+	                })
+	                .to("activemq:queue:ChouettePollStatusQueue")
                 .when(simple("${header.action_report_result} == 'NOK'"))
                     .log(LoggingLevel.WARN,correlation()+"Export for transfer failed")
 		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.FAILED))
@@ -95,19 +110,6 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 			        .to("direct:updateStatus")
 			        .stop()
                 .end()
-                .process(e -> toImportMultipart(e))
-                .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
-                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/importer/neptune"))
-                .log(LoggingLevel.INFO,correlation()+ "Calling Chouette with URL: ${exchangeProperty.chouette_url}")
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
-                .toD("${exchangeProperty.chouette_url}")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .process(e -> {
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL,e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,constant("direct:processTransferImportResult"));
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(Action.DATASPACE_TRANSFER.name()));
-                })
-                .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-transfer-import-job");
         
         
@@ -116,34 +118,43 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
  		        .setBody(constant(""))
  		        .choice()
- 				.when(PredicateBuilder.and(constant("false").isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
- 		            .to("direct:checkScheduledJobsBeforeTriggeringGTFSExport")
- 		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.OK))
- 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'OK'"))
- 		            .to("direct:checkScheduledJobsBeforeTriggeringGTFSExport")
- 		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.OK))
- 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'NOK'"))
- 		        	.log(LoggingLevel.INFO,correlation()+"Import ok but transfer validation failed")
+// 				.when(PredicateBuilder.and(constant("false").isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
+// 		            .to("direct:checkScheduledJobsBeforeTriggeringNeptuneValidation")
+// 		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.OK))
+ 		        .when(simple("${header.action_report_result} == 'OK'"))
+		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.OK))
+	 		        .to("direct:updateStatus")
+	                .process(e -> {
+	                	// Update provider, now context switches to next provider level
+	                	Provider currentProvider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
+	                	e.getIn().setHeader(Constants.ORIGINAL_PROVIDER_ID,e.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID,e.getIn().getHeader(Constants.PROVIDER_ID)));
+	                	e.getIn().setHeader(Constants.PROVIDER_ID, currentProvider.chouetteInfo.migrateDataToProvider);
+	                }) 
+ 		            .to("direct:checkScheduledJobsBeforeTriggeringNeptuneValidation")
+ 		        .when(simple("${header.action_report_result} == 'NOK'"))
+ 		        	.log(LoggingLevel.INFO,correlation()+"Transfer import failed")
  		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.FAILED))
+ 	 		        .to("direct:updateStatus")
  		        .otherwise()
  		            .log(LoggingLevel.ERROR,correlation()+"Something went wrong on transfer import")
  		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.FAILED))
+ 	 		        .to("direct:updateStatus")
  		        .end()
- 		        .to("direct:updateStatus")
  		        .routeId("chouette-process-transfer-import-status");
  	
  		 // Check that no other import jobs in status SCHEDULED exists for this referential. If so, do not trigger export
- 		from("direct:checkScheduledJobsBeforeTriggeringGTFSExport")
- 			.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?action=importer&status=SCHEDULED&status=STARTED"))
+ 		from("direct:checkScheduledJobsBeforeTriggeringNeptuneValidation")
+ 			.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?action=importer&status=SCHEDULED&status=STARTED")) // TODO: check on validator as well?
  			.toD("${exchangeProperty.job_status_url}")
  			.choice()
  			.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
- 				.log(LoggingLevel.INFO,correlation()+"Transfer import and validation ok, skipping next step as there are more import jobs active")
+ 				.log(LoggingLevel.INFO,correlation()+"Transfer import ok, skipping validation as ther are more import jobs active")
              .otherwise()
- 				.log(LoggingLevel.INFO,correlation()+"Transfer import and validation ok, triggering next step.")
+ 				.log(LoggingLevel.INFO,correlation()+"Transfer import ok, triggering validation.")
  		        .setBody(constant(""))
+ 		        
  		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-				.to("activemq:queue:ChouetteExportQueue")
+				.to("activemq:queue:ChouetteValidationQueue")
              .end()
              .routeId("chouette-process-job-list-after-transfer-import");
 

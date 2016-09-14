@@ -155,7 +155,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 				interceptSendToEndpoint(chouetteUrl + "/*")
 						.skipSendToOriginalEndpoint()
 						.to("mock:chouetteGetJobs");
-				interceptSendToEndpoint("activemq:queue:ChouetteExportQueue")
+				interceptSendToEndpoint("activemq:queue:ChouetteTransferExportQueue")
 					.skipSendToOriginalEndpoint()
 					.to("mock:chouetteExportQueue");
 			}
@@ -180,7 +180,11 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 			}
 		});
 
-		triggerJobListTemplate.sendBodyAndHeader(null, Constants.CHOUETTE_REFERENTIAL, "rut");
+		Map<String, Object> headers = new HashMap<String,Object>();
+		headers.put(Constants.CHOUETTE_REFERENTIAL, "rut");
+		headers.put(Constants.PROVIDER_ID,2);
+		
+		triggerJobListTemplate.sendBodyAndHeaders(null,headers);
 		
 		chouetteGetJobs.assertIsSatisfied();
 

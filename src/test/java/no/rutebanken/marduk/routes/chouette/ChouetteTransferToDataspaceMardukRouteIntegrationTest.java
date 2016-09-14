@@ -16,6 +16,7 @@ import org.apache.camel.model.language.SimpleExpression;
 import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,7 +111,7 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 				.to("mock:updateStatus");
-				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringGTFSExport").skipSendToOriginalEndpoint()
+				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringNeptuneValidation").skipSendToOriginalEndpoint()
 				.to("mock:checkScheduledJobsBeforeTriggeringNextAction");
 			}
 		});
@@ -176,6 +177,9 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 		chouetteCreateImport.assertIsSatisfied();
 		chouetteCreateExport.assertIsSatisfied();
 		pollJobStatus.assertIsSatisfied();
+		
+		Assert.assertNotNull(pollJobStatus.assertExchangeReceived(0).getIn().getHeader(Constants.FILE_NAME));
+		
 		checkScheduledJobsBeforeTriggeringNextAction.assertIsSatisfied();
 		updateStatus.assertIsSatisfied();
 		

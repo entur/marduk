@@ -237,7 +237,22 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				    .setHeader(PROVIDER_ID,header("providerId"))
 			    	.inOnly("activemq:queue:ChouetteCleanQueue")
 				    .routeId("admin-chouette-clean")
+			    	.endRest()
+		    	.post("/transfer")
+					.description("Triggers transfer of data from one dataspace to the next")
+					.param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
+					.consumes(PLAIN)
+					.produces(PLAIN)
+					.responseMessage().code(200).message("Command accepted").endResponseMessage()
+			    	.route()
+				    .setHeader(PROVIDER_ID,header("providerId"))
+					.log(LoggingLevel.INFO,correlation()+"Chouette transfer dataspace")
+					.removeHeaders("CamelHttp*")
+				    .setHeader(PROVIDER_ID,header("providerId"))
+			    	.inOnly("activemq:queue:ChouetteTransferExportQueue")
+				    .routeId("admin-chouette-transfer")
 			    	.endRest();
+		
         
         rest("/services/graph")
 	    	.post("/build")

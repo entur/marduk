@@ -19,7 +19,6 @@ public class NeptuneExportParameters {
         public Parameters(NeptuneExport neptuneExport) {
             this.neptuneExport = neptuneExport;
         }
-
     }
 
     public static class NeptuneExport {
@@ -41,9 +40,10 @@ public class NeptuneExportParameters {
         @JsonProperty("references_type")
         @JsonInclude(JsonInclude.Include.ALWAYS)
         public String referencesType = "";
-
-        // TODO add neptune extensions
         
+        @JsonProperty("add_extension")
+        public String addExtension = "1";
+
         public NeptuneExport(String name, String objectIdPrefix, String referentialName, String organisationName, String userName) {
             this.name = name;
             this.objectIdPrefix = objectIdPrefix;

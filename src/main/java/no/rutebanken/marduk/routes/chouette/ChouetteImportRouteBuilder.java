@@ -1,30 +1,21 @@
 package no.rutebanken.marduk.routes.chouette;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
 import static no.rutebanken.marduk.Constants.JSON_PART;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
-import java.io.InputStream;
-import java.net.NoRouteToHostException;
 import java.util.UUID;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
-import org.apache.camel.http.common.HttpOperationFailedException;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import com.google.common.base.Strings;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.GtfsImportParameters;
 import no.rutebanken.marduk.routes.chouette.json.RegtoppImportParameters;
 import no.rutebanken.marduk.routes.file.FileType;
@@ -42,8 +33,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 	@Value("${chouette.url}")
     private String chouetteUrl;
 
-    @SuppressWarnings("unchecked")
-	@Override
+ 	@Override
     public void configure() throws Exception {
         super.configure();
 
@@ -189,8 +179,13 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 				.choice()
 					.when(constant("true").isEqualTo(header(Constants.ENABLE_VALIDATION)))
+						.log(LoggingLevel.INFO,correlation()+"Import ok, triggering validation")
 						.to("activemq:queue:ChouetteValidationQueue")
+					.when(method(getClass(),"shouldTransferData").isEqualTo(true))
+						.log(LoggingLevel.INFO,correlation()+"Import ok, transfering data to next dataspace")
+						.to("activemq:queue:ChouetteTransferExportQueue")
 					.otherwise()
+						.log(LoggingLevel.INFO,correlation()+"Import ok, triggering export")
 						.to("activemq:queue:ChouetteExportQueue")
 				.end()
 		        

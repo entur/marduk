@@ -90,7 +90,7 @@ public class Status {
             throw new IllegalArgumentException("No file name");
         }
 
-        String providerIdString = exchange.getIn().getHeader(PROVIDER_ID, String.class);
+        String providerIdString = exchange.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID, exchange.getIn().getHeader(PROVIDER_ID, String.class),String.class);
         if (Strings.isNullOrEmpty(providerIdString)) {
             throw new IllegalArgumentException("No provider id");
         }

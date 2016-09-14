@@ -8,12 +8,8 @@ import java.util.UUID;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import com.google.common.base.Strings;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
@@ -23,7 +19,7 @@ import no.rutebanken.marduk.routes.status.Status.Action;
 import no.rutebanken.marduk.routes.status.Status.State;
 
 /**
- * Exports files from Chouette
+ * Runs validation in Chouette
  */
 @Component
 public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder {
@@ -49,7 +45,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 	            .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(e -> e.getIn().setHeader(JSON_PART, getJsonFileContent(e.getIn().getHeader(PROVIDER_ID, Long.class)))) //Using header to add json data
                 .log(LoggingLevel.DEBUG,correlation()+"Creating multipart request")
-                .process(e -> toMultipart(e))
+                .process(e -> toGenericChouetteMultipart(e))
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/validator") // TODO set to validation
                 .process(e -> {
@@ -85,28 +81,18 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 				.choice()
 				.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
 					.log(LoggingLevel.INFO,correlation()+"Validation ok, skipping export as there are more import jobs active")
+				.when(method(getClass(),"shouldTransferData").isEqualTo(true))
+					.log(LoggingLevel.INFO,correlation()+"Validation ok, transfering data to next dataspace")
+					.to("activemq:queue:ChouetteTransferExportQueue")
 				.otherwise()
 					.log(LoggingLevel.INFO,correlation()+"Validation ok, triggering GTFS export.")
 			        .setBody(constant(""))
-					.to("activemq:queue:ChouetteExportQueue")
+					.to("activemq:queue:ChouetteExportQueue") // Check on provider if should trigger transfer
 				.end()
 				.routeId("chouette-process-job-list-after-validation");
 
     }
     
-
-    void toMultipart(Exchange exchange) {
-        String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);
-        if (Strings.isNullOrEmpty(jsonPart)) {
-            throw new IllegalArgumentException("No json data");
-        }
-
-        MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
-        entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
-
-        exchange.getOut().setBody(entityBuilder.build());
-        exchange.getOut().setHeaders(exchange.getIn().getHeaders());
-    }
 
     String getJsonFileContent(Long providerId) {
         ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
