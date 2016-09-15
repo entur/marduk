@@ -4,5 +4,6 @@ public enum FileType {
     GTFS,
     REGTOPP,
     INVALID, 
-    RAR;
+    RAR, 
+    NEPTUNE;
 }

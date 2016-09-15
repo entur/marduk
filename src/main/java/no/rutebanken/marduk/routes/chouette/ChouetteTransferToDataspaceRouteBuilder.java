@@ -161,18 +161,18 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
     }
 
 	private String getImportParameters(String importName, Long providerId, boolean cleanRepository) {
-		ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
+		Provider provider = getProviderRepository().getProvider(providerId);
 		NeptuneImportParameters regtoppImportParameters = NeptuneImportParameters.create(importName,
-				chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user,
-				cleanRepository, chouetteInfo.enableValidation);
+				provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user,
+				cleanRepository, provider.chouetteInfo.enableValidation);
 		return regtoppImportParameters.toJsonString();
 	}
 
 	private String getExportParameters(Long providerId) {
 		try {
-			ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
+			Provider provider  = getProviderRepository().getProvider(providerId);
 			NeptuneExportParameters.NeptuneExport gtfsExport = new NeptuneExportParameters.NeptuneExport("export",
-					chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user);
+					provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user);
 			NeptuneExportParameters.Parameters parameters = new NeptuneExportParameters.Parameters(gtfsExport);
 			NeptuneExportParameters importParameters = new NeptuneExportParameters(parameters);
 			ObjectMapper mapper = new ObjectMapper();

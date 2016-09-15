@@ -32,15 +32,12 @@ public class NeptuneImportParameters extends ChouetteJobParameters{
         @JsonProperty("referential_name")
         public String referentialName;
 
-        @JsonProperty("object_id_prefix")
-        public String objectIdPrefix;
 
     }
 
-    public static NeptuneImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository,boolean enableValidation) {
+    public static NeptuneImportParameters create(String name,String referentialName, String organisationName, String userName, boolean cleanRepository,boolean enableValidation) {
         NeptuneImport neptuneImport = new NeptuneImport();
         neptuneImport.name = name;
-        neptuneImport.objectIdPrefix = objectIdPrefix;
         neptuneImport.referentialName = referentialName;
         neptuneImport.organisationName = organisationName;
         neptuneImport.userName = userName;
