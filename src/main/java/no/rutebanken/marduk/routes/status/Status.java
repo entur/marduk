@@ -60,7 +60,7 @@ public class Status {
 //    @JsonProperty("channel")
 //    public Channel channel;
 
-    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd'T'HH:mm:ss", timezone="CET")
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS", timezone = "CET")
     @JsonProperty("date")
     public Date date;
 
