@@ -18,7 +18,7 @@ public class GcsStorageConfig {
     @Value("${blobstore.gcs.credential.path}")
     private String credentialPath;
 
-    @Value("${blobstore.gcs.projectId}")
+    @Value("${blobstore.gcs.project.id}")
     private String projectId;
 
     @Bean

@@ -93,9 +93,9 @@ activemq.broker.host=activemq
 activemq.broker.mgmt.port=8161
 
 # Google Cloud Storage blobstore settings
-blobstore.containerName=marduk-test
+blobstore.container.name=marduk-test
 blobstore.gcs.credential.path=/home/tomgag/Downloads/Carbon-a4d50ca8176c.json
-blobstore.gcs.projectId=carbon-1287
+blobstore.gcs.project.id=carbon-1287
 
 # JPA settings
 spring.jpa.show-sql=true

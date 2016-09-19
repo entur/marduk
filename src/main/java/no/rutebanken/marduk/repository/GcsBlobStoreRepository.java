@@ -31,7 +31,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Value("${blobstore.containerName}")
+    @Value("${blobstore.container.name}")
     private String containerName;
 
     @Autowired
@@ -52,7 +52,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public InputStream getBlob(String name) {
-        logger.debug("Fetching blob " + name + " from bucker " + containerName);
+        logger.debug("Fetching blob " + name + " from bucket " + containerName);
         BlobId blobId = BlobId.of(containerName, name);
         Blob blob = storage.get(blobId);
         InputStream result = null;
