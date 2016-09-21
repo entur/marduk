@@ -65,7 +65,7 @@ public class NeptuneExportParameters {
 
 			LocalDate today = new LocalDate();
 
-			startDate = today.minusYears(1).toString();
+			startDate = today.minusDays(2).toString();
 			endDate = today.plusYears(1).toString();
 
 		}
