@@ -83,7 +83,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 		String pathname = "src/main/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
 
 		//populate fake blob repo
-		fakeBlobStoreRepository.uploadBlob("rut/" + filename, new FileInputStream(new File(pathname)));
+		fakeBlobStoreRepository.uploadBlob("rut/" + filename, new FileInputStream(new File(pathname)), false);
 
 		// Mock initial call to Chouette to import job
 		context.getRouteDefinition("chouette-send-import-job").adviceWith(context, new AdviceWithRouteBuilder() {

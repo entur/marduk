@@ -45,7 +45,7 @@ public class FakeBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public void uploadBlob(String objectName, InputStream inputStream) {
+    public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
         try {
             logger.debug("upload blob called in fake");
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();

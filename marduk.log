@@ -1,0 +1,331 @@
+[INFO] Scanning for projects...
+[INFO]                                                                         
+[INFO] ------------------------------------------------------------------------
+[INFO] Building marduk 0.0.1-SNAPSHOT
+[INFO] ------------------------------------------------------------------------
+[INFO] 
+[INFO] >>> spring-boot-maven-plugin:1.4.0.RELEASE:run (default-cli) > test-compile @ marduk >>>
+Downloading: https://nexus.rutebanken.org/content/groups/public/io/grpc/grpc-core/maven-metadata.xml
+836/836 B               Downloaded: https://nexus.rutebanken.org/content/groups/public/io/grpc/grpc-core/maven-metadata.xml (836 B at 0.5 KB/sec)
+Downloading: https://nexus.rutebanken.org/content/groups/public/org/opentripplanner/otp/1.1.0.RB-SNAPSHOT/maven-metadata.xml
+2/2 KB               Downloaded: https://nexus.rutebanken.org/content/groups/public/org/opentripplanner/otp/1.1.0.RB-SNAPSHOT/maven-metadata.xml (2 KB at 7.6 KB/sec)
+[WARNING] The POM for org.onebusaway:onebusaway-gtfs:jar:20160715.092402-10:1.3.5-conveyal is missing, no dependency information available
+[WARNING] The POM for crosby.binary:osmpbf:jar:20150914.191218-1:1.3.4 is missing, no dependency information available
+Downloading: https://nexus.rutebanken.org/content/groups/public/com/conveyal/osm-lib/0.1-SNAPSHOT/maven-metadata.xml
+766/766 B               Downloaded: https://nexus.rutebanken.org/content/groups/public/com/conveyal/osm-lib/0.1-SNAPSHOT/maven-metadata.xml (766 B at 4.6 KB/sec)
+Downloading: https://nexus.rutebanken.org/content/groups/public/com/conveyal/gtfs-lib/0.2-SNAPSHOT/maven-metadata.xml
+767/767 B               Downloaded: https://nexus.rutebanken.org/content/groups/public/com/conveyal/gtfs-lib/0.2-SNAPSHOT/maven-metadata.xml (767 B at 3.0 KB/sec)
+[WARNING] The POM for com.conveyal:gtfs-lib:jar:20160307.194541-8:0.2 is missing, no dependency information available
+[INFO] 
+[INFO] --- maven-enforcer-plugin:1.4.1:enforce (enforce) @ marduk ---
+[INFO] 
+[INFO] --- jacoco-maven-plugin:0.7.6.201602180812:prepare-agent (default-prepare-agent) @ marduk ---
+[INFO] argLine set to -javaagent:/home/tomgag/.m2/repository/org/jacoco/org.jacoco.agent/0.7.6.201602180812/org.jacoco.agent-0.7.6.201602180812-runtime.jar=destfile=/home/tomgag/code/rutebanken/marduk/target/jacoco.exec
+[INFO] 
+[INFO] --- fabric8-maven-plugin:2.2.84:json (json) @ marduk ---
+[INFO] Configured with file: /home/tomgag/code/rutebanken/marduk/target/classes/kubernetes.json
+2016-09-26 21:31:55 INFO  Version:17 - HV000001: Hibernate Validator 5.2.2.Final
+[INFO] Generated env mappings: {}
+[INFO] Generated port mappings: {}
+[INFO] Removed 'version' label from service selector for service `marduk`
+[INFO] Generated ports: []
+[INFO] Icon URL: https://cdn.rawgit.com/fabric8io/fabric8/master/fabric8-maven-plugin/src/main/resources/icons/camel.svg
+[INFO] Looking at repo with directory /home/tomgag/code/rutebanken/marduk/.git
+[INFO] Added environment annotations:
+[INFO]     ReplicationController marduk replicas: 1, image: dr.rutebanken.org/rutebanken/marduk:0.0.1-SNAPSHOT
+[INFO] Template is now:
+[INFO]     ReplicationController marduk replicas: 1, image: dr.rutebanken.org/rutebanken/marduk:0.0.1-SNAPSHOT
+[INFO] 
+[INFO] --- maven-resources-plugin:2.7:resources (default-resources) @ marduk ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 7 resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.5.1:compile (default-compile) @ marduk ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- maven-resources-plugin:2.7:testResources (default-testResources) @ marduk ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 18 resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.5.1:testCompile (default-testCompile) @ marduk ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] <<< spring-boot-maven-plugin:1.4.0.RELEASE:run (default-cli) < test-compile @ marduk <<<
+[INFO] 
+[INFO] --- spring-boot-maven-plugin:1.4.0.RELEASE:run (default-cli) @ marduk ---
+21:31:57,523 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.groovy]
+21:31:57,523 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+21:31:57,523 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [file:/home/tomgag/code/rutebanken/marduk/target/classes/logback.xml]
+21:31:57,523 |-WARN in ch.qos.logback.classic.LoggerContext[default] - Resource [logback.xml] occurs multiple times on the classpath.
+21:31:57,523 |-WARN in ch.qos.logback.classic.LoggerContext[default] - Resource [logback.xml] occurs at [jar:file:/home/tomgag/.m2/repository/com/conveyal/r5/0.1/r5-0.1-20160307.111216-85.jar!/logback.xml]
+21:31:57,523 |-WARN in ch.qos.logback.classic.LoggerContext[default] - Resource [logback.xml] occurs at [file:/home/tomgag/code/rutebanken/marduk/target/classes/logback.xml]
+21:31:57,523 |-WARN in ch.qos.logback.classic.LoggerContext[default] - Resource [logback.xml] occurs at [jar:file:/home/tomgag/.m2/repository/com/conveyal/osm-lib/0.1-SNAPSHOT/osm-lib-0.1-SNAPSHOT.jar!/logback.xml]
+21:31:57,523 |-WARN in ch.qos.logback.classic.LoggerContext[default] - Resource [logback.xml] occurs at [jar:file:/home/tomgag/.m2/repository/org/opentripplanner/otp/1.1.0.RB-SNAPSHOT/otp-1.1.0.RB-SNAPSHOT.jar!/logback.xml]
+21:31:57,572 |-INFO in ch.qos.logback.classic.joran.action.ConfigurationAction - debug attribute not set
+21:31:57,578 |-INFO in ch.qos.logback.core.joran.util.ConfigurationWatchListUtil@55746f1f - Adding [jar:file:/home/tomgag/.m2/repository/org/springframework/boot/spring-boot/1.4.0.RELEASE/spring-boot-1.4.0.RELEASE.jar!/org/springframework/boot/logging/logback/base.xml] to configuration watch list.
+21:31:57,578 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@2e91e0af - URL [jar:file:/home/tomgag/.m2/repository/org/springframework/boot/spring-boot/1.4.0.RELEASE/spring-boot-1.4.0.RELEASE.jar!/org/springframework/boot/logging/logback/base.xml] is not of type file
+21:31:57,579 |-INFO in ch.qos.logback.core.joran.util.ConfigurationWatchListUtil@55746f1f - Adding [jar:file:/home/tomgag/.m2/repository/org/springframework/boot/spring-boot/1.4.0.RELEASE/spring-boot-1.4.0.RELEASE.jar!/org/springframework/boot/logging/logback/defaults.xml] to configuration watch list.
+21:31:57,579 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@2e91e0af - URL [jar:file:/home/tomgag/.m2/repository/org/springframework/boot/spring-boot/1.4.0.RELEASE/spring-boot-1.4.0.RELEASE.jar!/org/springframework/boot/logging/logback/defaults.xml] is not of type file
+21:31:57,581 |-INFO in ch.qos.logback.core.joran.action.ConversionRuleAction - registering conversion word clr with class [org.springframework.boot.logging.logback.ColorConverter]
+21:31:57,581 |-INFO in ch.qos.logback.core.joran.action.ConversionRuleAction - registering conversion word wex with class [org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter]
+21:31:57,581 |-INFO in ch.qos.logback.core.joran.action.ConversionRuleAction - registering conversion word wEx with class [org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter]
+21:31:57,584 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - About to instantiate appender of type [org.springframework.boot.logging.logback.LevelRemappingAppender]
+21:31:57,585 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - Naming appender as [DEBUG_LEVEL_REMAPPER]
+21:31:57,591 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [org.apache.catalina.startup.DigesterFactory] to ERROR
+21:31:57,591 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [org.apache.catalina.util.LifecycleBase] to ERROR
+21:31:57,591 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [org.apache.coyote.http11.Http11NioProtocol] to WARN
+21:31:57,591 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [org.apache.sshd.common.util.SecurityUtils] to WARN
+21:31:57,591 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [org.apache.tomcat.util.net.NioSelectorPool] to WARN
+21:31:57,591 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [org.crsh.plugin] to WARN
+21:31:57,591 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [org.crsh.ssh] to WARN
+21:31:57,592 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [org.eclipse.jetty.util.component.AbstractLifeCycle] to ERROR
+21:31:57,592 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [org.hibernate.validator.internal.util.Version] to WARN
+21:31:57,592 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [org.springframework.boot.actuate.autoconfigure.CrshAutoConfiguration] to WARN
+21:31:57,592 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting additivity of logger [org.springframework.boot.actuate.endpoint.jmx] to false
+21:31:57,592 |-INFO in ch.qos.logback.core.joran.action.AppenderRefAction - Attaching appender named [DEBUG_LEVEL_REMAPPER] to Logger[org.springframework.boot.actuate.endpoint.jmx]
+21:31:57,593 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting additivity of logger [org.thymeleaf] to false
+21:31:57,593 |-INFO in ch.qos.logback.core.joran.action.AppenderRefAction - Attaching appender named [DEBUG_LEVEL_REMAPPER] to Logger[org.thymeleaf]
+21:31:57,593 |-INFO in ch.qos.logback.core.joran.util.ConfigurationWatchListUtil@55746f1f - Adding [jar:file:/home/tomgag/.m2/repository/org/springframework/boot/spring-boot/1.4.0.RELEASE/spring-boot-1.4.0.RELEASE.jar!/org/springframework/boot/logging/logback/console-appender.xml] to configuration watch list.
+21:31:57,593 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@2e91e0af - URL [jar:file:/home/tomgag/.m2/repository/org/springframework/boot/spring-boot/1.4.0.RELEASE/spring-boot-1.4.0.RELEASE.jar!/org/springframework/boot/logging/logback/console-appender.xml] is not of type file
+21:31:57,594 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+21:31:57,597 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - Naming appender as [CONSOLE]
+21:31:57,597 |-INFO in ch.qos.logback.core.joran.action.NestedComplexPropertyIA - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+21:31:57,621 |-INFO in ch.qos.logback.core.joran.util.ConfigurationWatchListUtil@55746f1f - Adding [jar:file:/home/tomgag/.m2/repository/org/springframework/boot/spring-boot/1.4.0.RELEASE/spring-boot-1.4.0.RELEASE.jar!/org/springframework/boot/logging/logback/file-appender.xml] to configuration watch list.
+21:31:57,621 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@2e91e0af - URL [jar:file:/home/tomgag/.m2/repository/org/springframework/boot/spring-boot/1.4.0.RELEASE/spring-boot-1.4.0.RELEASE.jar!/org/springframework/boot/logging/logback/file-appender.xml] is not of type file
+21:31:57,622 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - About to instantiate appender of type [ch.qos.logback.core.rolling.RollingFileAppender]
+21:31:57,624 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - Naming appender as [FILE]
+21:31:57,625 |-INFO in ch.qos.logback.core.joran.action.NestedComplexPropertyIA - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+21:31:57,630 |-INFO in ch.qos.logback.core.rolling.FixedWindowRollingPolicy@17656835 - No compression will be used
+21:31:57,632 |-INFO in ch.qos.logback.core.rolling.RollingFileAppender[FILE] - Active log file name: /tmp/spring.log
+21:31:57,633 |-INFO in ch.qos.logback.core.rolling.RollingFileAppender[FILE] - File property is set to [/tmp/spring.log]
+21:31:57,633 |-INFO in ch.qos.logback.classic.joran.action.RootLoggerAction - Setting level of ROOT logger to INFO
+21:31:57,634 |-INFO in ch.qos.logback.core.joran.action.AppenderRefAction - Attaching appender named [CONSOLE] to Logger[ROOT]
+21:31:57,634 |-INFO in ch.qos.logback.core.joran.action.AppenderRefAction - Attaching appender named [FILE] to Logger[ROOT]
+21:31:57,634 |-INFO in ch.qos.logback.classic.joran.action.ConfigurationAction - End of configuration.
+21:31:57,634 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@f4a866a - Registering current configuration as safe fallback point
+
+2016-09-26 21:31:57.638  INFO   --- [           main] no.rutebanken.marduk.App                 : Starting Marduk...
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::        (v1.4.0.RELEASE)
+
+2016-09-26 21:31:58.058  INFO 32231 --- [           main] o.apache.camel.spring.boot.FatJarRouter  : Starting FatJarRouter v2.17.3 on localhost.localdomain with PID 32231 (/home/tomgag/.m2/repository/org/apache/camel/camel-spring-boot/2.17.3/camel-spring-boot-2.17.3.jar started by tomgag in /home/tomgag/code/rutebanken/marduk)
+2016-09-26 21:31:58.059  INFO 32231 --- [           main] o.apache.camel.spring.boot.FatJarRouter  : The following profiles are active: test
+2016-09-26 21:31:58.144  INFO 32231 --- [           main] ationConfigEmbeddedWebApplicationContext : Refreshing org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext@7ae3cc77: startup date [Mon Sep 26 21:31:58 CEST 2016]; root of context hierarchy
+2016-09-26 21:31:58.870  INFO 32231 --- [           main] o.s.b.f.s.DefaultListableBeanFactory     : Overriding bean definition for bean 'requestContextFilter' with a different definition: replacing [Root bean: class [null]; scope=; abstract=false; lazyInit=false; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=org.springframework.boot.autoconfigure.jersey.JerseyAutoConfiguration; factoryMethodName=requestContextFilter; initMethodName=null; destroyMethodName=(inferred); defined in class path resource [org/springframework/boot/autoconfigure/jersey/JerseyAutoConfiguration.class]] with [Root bean: class [org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration$WebMvcAutoConfigurationAdapter]; scope=; abstract=false; lazyInit=false; autowireMode=3; dependencyCheck=0; autowireCandidate=true; primary=false; factoryBeanName=null; factoryMethodName=requestContextFilter; initMethodName=null; destroyMethodName=(inferred); defined in class path resource [org/springframework/boot/autoconfigure/web/WebMvcAutoConfiguration$WebMvcAutoConfigurationAdapter.class]]
+2016-09-26 21:31:59.122  INFO 32231 --- [           main] f.a.AutowiredAnnotationBeanPostProcessor : JSR-330 'javax.inject.Inject' annotation found and supported for autowiring
+2016-09-26 21:31:59.183  INFO 32231 --- [           main] trationDelegate$BeanPostProcessorChecker : Bean 'org.apache.camel.spring.boot.CamelAutoConfiguration' of type [class org.apache.camel.spring.boot.CamelAutoConfiguration$$EnhancerBySpringCGLIB$$42959ea1] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2016-09-26 21:31:59.779  INFO 32231 --- [           main] org.eclipse.jetty.util.log               : Logging initialized @9740ms
+2016-09-26 21:31:59.833  INFO 32231 --- [           main] e.j.JettyEmbeddedServletContainerFactory : Server initialized with port: 8776
+2016-09-26 21:31:59.834  INFO 32231 --- [           main] org.eclipse.jetty.server.Server          : jetty-9.3.11.v20160721
+2016-09-26 21:31:59.864  INFO 32231 --- [           main] application                              : Initializing Spring embedded WebApplicationContext
+2016-09-26 21:31:59.864  INFO 32231 --- [           main] o.s.web.context.ContextLoader            : Root WebApplicationContext: initialization completed in 1720 ms
+2016-09-26 21:32:00.101  INFO 32231 --- [           main] o.s.b.w.servlet.ServletRegistrationBean  : Mapping servlet: 'no.rutebanken.marduk.config.JerseyConfig' to [/jersey/*]
+2016-09-26 21:32:00.103  INFO 32231 --- [           main] o.s.b.w.servlet.ServletRegistrationBean  : Mapping servlet: 'dispatcherServlet' to [/]
+2016-09-26 21:32:00.104  INFO 32231 --- [           main] o.s.b.w.servlet.FilterRegistrationBean   : Mapping filter: 'characterEncodingFilter' to: [/*]
+2016-09-26 21:32:00.106  INFO 32231 --- [           main] o.s.b.w.servlet.FilterRegistrationBean   : Mapping filter: 'hiddenHttpMethodFilter' to: [/*]
+2016-09-26 21:32:00.106  INFO 32231 --- [           main] o.s.b.w.servlet.FilterRegistrationBean   : Mapping filter: 'httpPutFormContentFilter' to: [/*]
+2016-09-26 21:32:00.106  INFO 32231 --- [           main] o.s.b.w.servlet.FilterRegistrationBean   : Mapping filter: 'requestContextFilter' to: [/*]
+2016-09-26 21:32:00.107  INFO 32231 --- [           main] o.e.jetty.server.handler.ContextHandler  : Started o.s.b.c.e.j.JettyEmbeddedWebAppContext@5ee2d069{/,file:///tmp/jetty-docbase.2747737807234778490.8776/,AVAILABLE}
+2016-09-26 21:32:00.107  INFO 32231 --- [           main] org.eclipse.jetty.server.Server          : Started @10069ms
+2016-09-26 21:32:00.489  INFO 32231 --- [           main] s.w.s.m.m.a.RequestMappingHandlerAdapter : Looking for @ControllerAdvice: org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext@7ae3cc77: startup date [Mon Sep 26 21:31:58 CEST 2016]; root of context hierarchy
+2016-09-26 21:32:00.559  INFO 32231 --- [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped "{[/error],produces=[text/html]}" onto public org.springframework.web.servlet.ModelAndView org.springframework.boot.autoconfigure.web.BasicErrorController.errorHtml(javax.servlet.http.HttpServletRequest,javax.servlet.http.HttpServletResponse)
+2016-09-26 21:32:00.560  INFO 32231 --- [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped "{[/error]}" onto public org.springframework.http.ResponseEntity<java.util.Map<java.lang.String, java.lang.Object>> org.springframework.boot.autoconfigure.web.BasicErrorController.error(javax.servlet.http.HttpServletRequest)
+2016-09-26 21:32:00.589  INFO 32231 --- [           main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Mapped URL path [/webjars/**] onto handler of type [class org.springframework.web.servlet.resource.ResourceHttpRequestHandler]
+2016-09-26 21:32:00.589  INFO 32231 --- [           main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Mapped URL path [/**] onto handler of type [class org.springframework.web.servlet.resource.ResourceHttpRequestHandler]
+2016-09-26 21:32:00.627  INFO 32231 --- [           main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Mapped URL path [/**/favicon.ico] onto handler of type [class org.springframework.web.servlet.resource.ResourceHttpRequestHandler]
+2016-09-26 21:32:00.892  INFO 32231 --- [           main] o.a.c.i.converter.DefaultTypeConverter   : Loaded 212 type converters
+2016-09-26 21:32:01.270  INFO 32231 --- [           main] o.s.j.e.a.AnnotationMBeanExporter        : Registering beans for JMX exposure on startup
+2016-09-26 21:32:01.286  INFO 32231 --- [           main] o.s.c.support.DefaultLifecycleProcessor  : Starting beans in phase 2147483647
+2016-09-26 21:32:01.372 DEBUG 32231 --- [           main] n.r.marduk.rest.AdminRestRouteBuilder    : Adding routeId: route1 as rest-api route
+2016-09-26 21:32:01.681  INFO 32231 --- [           main] o.a.camel.spring.boot.RoutesCollector    : Loading additional Camel XML routes from: classpath:camel/*.xml
+2016-09-26 21:32:01.682  INFO 32231 --- [           main] o.a.camel.spring.boot.RoutesCollector    : Loading additional Camel XML rests from: classpath:camel-rest/*.xml
+2016-09-26 21:32:01.683  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Apache Camel 2.17.3 (CamelContext: Marduk) is starting
+2016-09-26 21:32:01.685  INFO 32231 --- [           main] o.a.c.m.ManagedManagementStrategy        : JMX is enabled
+2016-09-26 21:32:01.797  INFO 32231 --- [           main] o.a.c.i.DefaultRuntimeEndpointRegistry   : Runtime endpoint registry is in extended mode gathering usage statistics of all incoming and outgoing endpoints (cache limit: 1000)
+2016-09-26 21:32:02.564  INFO 32231 --- [           main] o.a.camel.component.http4.HttpComponent  : Created ClientConnectionManager org.apache.http.impl.conn.PoolingHttpClientConnectionManager@9b49a6c
+2016-09-26 21:32:02.570  INFO 32231 --- [           main] o.a.camel.component.http4.HttpComponent  : Created ClientConnectionManager org.apache.http.impl.conn.PoolingHttpClientConnectionManager@3149bdb3
+2016-09-26 21:32:02.584  INFO 32231 --- [           main] o.a.c.component.quartz2.QuartzComponent  : Create and initializing scheduler.
+2016-09-26 21:32:02.586  INFO 32231 --- [           main] o.a.c.component.quartz2.QuartzComponent  : Setting org.quartz.scheduler.jmx.export=true to ensure QuartzScheduler(s) will be enlisted in JMX.
+2016-09-26 21:32:02.604  INFO 32231 --- [           main] org.quartz.impl.StdSchedulerFactory      : Using default implementation for ThreadExecutor
+2016-09-26 21:32:02.606  INFO 32231 --- [           main] org.quartz.simpl.SimpleThreadPool        : Job execution threads will use class loader of thread: main
+2016-09-26 21:32:02.617  INFO 32231 --- [           main] org.quartz.core.SchedulerSignalerImpl    : Initialized Scheduler Signaller of type: class org.quartz.core.SchedulerSignalerImpl
+2016-09-26 21:32:02.617  INFO 32231 --- [           main] org.quartz.core.QuartzScheduler          : Quartz Scheduler v.2.2.2 created.
+2016-09-26 21:32:02.618  INFO 32231 --- [           main] org.quartz.simpl.RAMJobStore             : RAMJobStore initialized.
+2016-09-26 21:32:02.623  INFO 32231 --- [           main] org.quartz.core.QuartzScheduler          : Scheduler meta-data: Quartz Scheduler (v2.2.2) 'DefaultQuartzScheduler-Marduk' with instanceId 'NON_CLUSTERED'
+  Scheduler class: 'org.quartz.core.QuartzScheduler' - running locally.
+  NOT STARTED.
+  Currently in standby mode.
+  Number of jobs executed: 0
+  Using thread pool 'org.quartz.simpl.SimpleThreadPool' - with 10 threads.
+  Using job-store 'org.quartz.simpl.RAMJobStore' - which does not support persistence. and is not clustered.
+
+2016-09-26 21:32:02.624  INFO 32231 --- [           main] org.quartz.impl.StdSchedulerFactory      : Quartz scheduler 'DefaultQuartzScheduler-Marduk' initialized from an externally provided properties instance.
+2016-09-26 21:32:02.624  INFO 32231 --- [           main] org.quartz.impl.StdSchedulerFactory      : Quartz scheduler version: 2.2.2
+2016-09-26 21:32:02.639  INFO 32231 --- [           main] o.a.c.component.quartz2.QuartzEndpoint   : Job marduk.fetchOsmMap (triggerType=CronTriggerImpl, jobClass=CamelJob) is scheduled. Next fire date is Mon Sep 26 21:35:00 CEST 2016
+2016-09-26 21:32:02.738  INFO 32231 --- [           main] o.a.camel.component.http4.HttpComponent  : Created ClientConnectionManager org.apache.http.impl.conn.PoolingHttpClientConnectionManager@6b0abe8d
+2016-09-26 21:32:02.856  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : AllowUseOriginalMessage is enabled. If access to the original message is not needed, then its recommended to turn this option off as it may improve performance.
+2016-09-26 21:32:02.860  INFO 32231 --- [           main] o.a.c.impl.DefaultStreamCachingStrategy  : StreamCaching in use with spool directory: /tmp/camel/camel-tmp-5bb12278-b8cd-42e9-a5fe-938816ce3a14 and rules: [Spool > 128K body size]
+2016-09-26 21:32:02.990  INFO 32231 --- [           main] o.a.c.c.n.h.HttpServerBootstrapFactory   : BootstrapFactory on port 8080 is using bootstrap configuration: [NettyServerBootstrapConfiguration{protocol='http', host='0.0.0.0', port=8080, broadcast=false, sendBufferSize=65536, receiveBufferSize=65536, receiveBufferSizePredictor=0, workerCount=0, bossCount=1, keepAlive=true, tcpNoDelay=true, reuseAddress=true, connectTimeout=10000, backlog=0, serverInitializerFactory=org.apache.camel.component.netty4.http.HttpServerInitializerFactory@4cc85da7, nettyServerBootstrapFactory=null, options=null, ssl=false, sslHandler=null, sslContextParameters='null', needClientAuth=false, enabledProtocols='TLSv1,TLSv1.1,TLSv1.2, keyStoreFile=null, trustStoreFile=null, keyStoreResource='null', trustStoreResource='null', keyStoreFormat='JKS', securityProvider='SunX509', passphrase='null', bossGroup=null, workerGroup=null, networkInterface='null', reconnect='true', reconnectInterval='10000'}]
+2016-09-26 21:32:03.538  INFO 32231 --- [           main] o.a.camel.component.file.FileEndpoint    : Endpoint is configured with noop=true so forcing endpoint to be idempotent as well
+2016-09-26 21:32:03.538  INFO 32231 --- [           main] o.a.camel.component.file.FileEndpoint    : Using default memory based idempotent repository with cache max size: 1000
+2016-09-26 21:32:03.982  INFO 32231 --- [           main] c.n.SingleTCPNettyServerBootstrapFactory : ServerBootstrap binding to 0.0.0.0:8080
+2016-09-26 21:32:04.035  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.038  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-chouette-list-jobs-all started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/chouette/jobs?httpMethodRestrict=GET%2COPTIONS]
+2016-09-26 21:32:04.039  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.039  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-chouette-import started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/chouette/%7BproviderId%7D/import?httpMethodRestrict=POST%2COPTIONS]
+2016-09-26 21:32:04.040  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.040  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-chouette-import-list started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/chouette/%7BproviderId%7D/files?httpMethodRestrict=GET%2COPTIONS]
+2016-09-26 21:32:04.041  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.042  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-chouette-list-jobs started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/chouette/%7BproviderId%7D/jobs?httpMethodRestrict=GET%2COPTIONS]
+2016-09-26 21:32:04.042  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.043  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-chouette-cancel-all-jobs started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/chouette/%7BproviderId%7D/jobs?httpMethodRestrict=DELETE%2COPTIONS]
+2016-09-26 21:32:04.043  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.044  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-chouette-cancel-job started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/chouette/%7BproviderId%7D/jobs/%7BjobId%7D?httpMethodRestrict=DELETE%2COPTIONS]
+2016-09-26 21:32:04.045  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.045  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-chouette-export started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/chouette/%7BproviderId%7D/export?httpMethodRestrict=POST%2COPTIONS]
+2016-09-26 21:32:04.046  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.046  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-chouette-validate started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/chouette/%7BproviderId%7D/validate?httpMethodRestrict=POST%2COPTIONS]
+2016-09-26 21:32:04.047  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.047  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-chouette-clean started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/chouette/%7BproviderId%7D/clean?httpMethodRestrict=POST%2COPTIONS]
+2016-09-26 21:32:04.047  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.048  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-chouette-transfer started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/chouette/%7BproviderId%7D/transfer?httpMethodRestrict=POST%2COPTIONS]
+2016-09-26 21:32:04.048  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.049  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-build-graph started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/graph/build?httpMethodRestrict=POST%2COPTIONS]
+2016-09-26 21:32:04.049  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.049  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-fetch-osm started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/fetch/osm?httpMethodRestrict=POST%2COPTIONS]
+2016-09-26 21:32:04.050  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.050  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: admin-marduk-file started and consuming from: Endpoint[http://0.0.0.0:8080/admin/services/marduk/file?httpMethodRestrict=POST%2COPTIONS]
+2016-09-26 21:32:04.051  INFO 32231 --- [           main] o.a.c.component.netty4.NettyConsumer     : Netty consumer bound to: 0.0.0.0:8080
+2016-09-26 21:32:04.051  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: route1 started and consuming from: Endpoint[http://0.0.0.0:8080/admin/api-doc?httpMethodRestrict=GET%2COPTIONS]
+2016-09-26 21:32:04.051  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: blobstore-upload started and consuming from: Endpoint[direct://uploadBlob]
+2016-09-26 21:32:04.052  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: blobstore-download started and consuming from: Endpoint[direct://getBlob]
+2016-09-26 21:32:04.052  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: blobstore-list started and consuming from: Endpoint[direct://listBlobs]
+2016-09-26 21:32:04.057  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-send-export-job started and consuming from: Endpoint[activemq://queue:ChouetteExportQueue?transacted=true]
+2016-09-26 21:32:04.058  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-process-export-status started and consuming from: Endpoint[direct://processExportResult]
+2016-09-26 21:32:04.059  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-process-export-gtfs-feedinfo started and consuming from: Endpoint[direct://addGtfsFeedInfo]
+2016-09-26 21:32:04.060  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-clean-dataspace started and consuming from: Endpoint[activemq://queue:ChouetteCleanQueue?maxConcurrentConsumers=3&transacted=true]
+2016-09-26 21:32:04.061  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-import-dataspace started and consuming from: Endpoint[activemq://queue:ChouetteImportQueue?transacted=true]
+2016-09-26 21:32:04.061  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-import-add-parameters started and consuming from: Endpoint[direct://addImportParameters]
+2016-09-26 21:32:04.062  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-send-import-job started and consuming from: Endpoint[direct://sendImportJobRequest]
+2016-09-26 21:32:04.063  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-process-import-status started and consuming from: Endpoint[direct://processImportResult]
+2016-09-26 21:32:04.064  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-process-job-list-after-import started and consuming from: Endpoint[direct://checkScheduledJobsBeforeTriggeringNextAction]
+2016-09-26 21:32:04.066  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-list-jobs started and consuming from: Endpoint[direct://chouetteGetJobs]
+2016-09-26 21:32:04.066  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-cancel-job started and consuming from: Endpoint[direct://chouetteCancelJob]
+2016-09-26 21:32:04.067  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-cancel-all-jobs started and consuming from: Endpoint[direct://chouetteCancelAllJobs]
+2016-09-26 21:32:04.068  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-get-jobs-all started and consuming from: Endpoint[direct://chouetteGetJobsAll]
+2016-09-26 21:32:04.069  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-validate-job-status-parameters started and consuming from: Endpoint[activemq://queue:ChouettePollStatusQueue?maxConcurrentConsumers=5&transacted=true]
+2016-09-26 21:32:04.069  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-get-job-status started and consuming from: Endpoint[direct://checkJobStatus]
+2016-09-26 21:32:04.070  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-process-job-reports started and consuming from: Endpoint[direct://jobStatusDone]
+2016-09-26 21:32:04.070  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-process-validation-report started and consuming from: Endpoint[direct://checkValidationReport]
+2016-09-26 21:32:04.071  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-send-transfer-export-job started and consuming from: Endpoint[activemq://queue:ChouetteTransferExportQueue?transacted=true]
+2016-09-26 21:32:04.072  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-send-transfer-import-job started and consuming from: Endpoint[direct://processTransferExportResult]
+2016-09-26 21:32:04.072  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-process-transfer-import-status started and consuming from: Endpoint[direct://processTransferImportResult]
+2016-09-26 21:32:04.073  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-process-job-list-after-transfer-import started and consuming from: Endpoint[direct://checkScheduledJobsBeforeTriggeringNeptuneValidation]
+2016-09-26 21:32:04.078  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-send-validation-job started and consuming from: Endpoint[activemq://queue:ChouetteValidationQueue?maxConcurrentConsumers=3&transacted=true]
+2016-09-26 21:32:04.079  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-process-validation-status started and consuming from: Endpoint[direct://processValidationResult]
+2016-09-26 21:32:04.079  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: chouette-process-job-list-after-validation started and consuming from: Endpoint[direct://checkScheduledJobsBeforeTriggeringExport]
+2016-09-26 21:32:04.080  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: osm-fetch-map started and consuming from: Endpoint[direct://fetchOsmMapOverNorway]
+2016-09-26 21:32:04.081  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: osm-fetch-md5sum started and consuming from: Endpoint[direct://fetchOsmMapOverNorwayMd5]
+2016-09-26 21:32:04.081  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: osm-check-for-newer-map started and consuming from: Endpoint[direct://considerToFetchOsmMapOverNorway]
+2016-09-26 21:32:04.083  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: osm-trigger-fetching started and consuming from: Endpoint[quartz2://marduk/fetchOsmMap?cron=0+0%2F5+*+*+*+%3F&trigger.timeZone=Europe%2FOslo]
+2016-09-26 21:32:04.083  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: osm-notify-updated-map started and consuming from: Endpoint[direct://notifyOsmStatus]
+2016-09-26 21:32:04.085  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: file-classify started and consuming from: Endpoint[activemq://queue:ProcessFileQueue?transacted=true]
+2016-09-26 21:32:04.086  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: file-split-rar started and consuming from: Endpoint[direct://splitRarFile]
+2016-09-26 21:32:04.279  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: route2 started and consuming from: Endpoint[activemq://queue:ExternalFileUploadQueue?disableReplyTo=true&messageConverter=%23blobMessageConverter]
+2016-09-26 21:32:07.286  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: nri-ftp-activemq started and consuming from: Endpoint[ftp://localhost/rutedata?binary=true&delay=86400s&delete=false&filter=%23regtoppFileFilter&ftpClient.controlEncoding=UTF-8&passiveMode=true&password=xxxxxx&recursive=true&sorter=%23caseIdNriFtpSorter&username=greenbird]
+2016-09-26 21:32:07.288  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: otp-graph-upload started and consuming from: Endpoint[file://files/otpgraph?doneFileName=Graph.obj.done&fileName=Graph.obj&noop=true&recursive=true]
+2016-09-26 21:32:07.289  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: otp-graph-notify started and consuming from: Endpoint[direct://notify]
+2016-09-26 21:32:07.289  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: otp-graph-notify-etcd started and consuming from: Endpoint[direct://notifyEtcd]
+2016-09-26 21:32:07.290  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: otp-graph-cleanup started and consuming from: Endpoint[direct://cleanUp]
+2016-09-26 21:32:07.294  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: otp-graph-build started and consuming from: Endpoint[activemq://queue:OtpGraphQueue?maxConcurrentConsumers=1]
+2016-09-26 21:32:07.295  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: otp-graph-fetch-gtfs started and consuming from: Endpoint[direct://fetchLatestGtfs]
+2016-09-26 21:32:07.296  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: otp-graph-get-gtfs started and consuming from: Endpoint[direct://getGtfsFiles]
+2016-09-26 21:32:07.297  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: otp-graph-fetch-config started and consuming from: Endpoint[direct://fetchConfig]
+2016-09-26 21:32:07.297  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: otp-graph-fetch-map started and consuming from: Endpoint[direct://fetchMap]
+2016-09-26 21:32:07.297  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: otp-graph-build-otp started and consuming from: Endpoint[direct://buildGraph]
+2016-09-26 21:32:07.484  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-ost started and consuming from: Endpoint[sftp://ostfold@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:07.591  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-rut started and consuming from: Endpoint[sftp://oslo-akershus@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:07.693  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-hed started and consuming from: Endpoint[sftp://hedmark@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:07.800  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-opp started and consuming from: Endpoint[sftp://oppland@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:07.916  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-bra started and consuming from: Endpoint[sftp://buskerud@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:08.016  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-vkt started and consuming from: Endpoint[sftp://vestfold@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:08.114  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-akt started and consuming from: Endpoint[sftp://agder@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:08.226  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-kol started and consuming from: Endpoint[sftp://rogaland@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:08.339  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-hrd started and consuming from: Endpoint[sftp://hordaland@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:08.492  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-sof started and consuming from: Endpoint[sftp://sogn-fjordane@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:08.611  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-mor started and consuming from: Endpoint[sftp://more-romsdal@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:08.721  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-atb started and consuming from: Endpoint[sftp://sor-trondelag@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:08.817  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-ntr started and consuming from: Endpoint[sftp://nord-trondelag@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:08.919  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-nor started and consuming from: Endpoint[sftp://nordland@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:09.014  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-tro started and consuming from: Endpoint[sftp://troms@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:09.118  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-fin started and consuming from: Endpoint[sftp://finnmark@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:09.230  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-tog started and consuming from: Endpoint[sftp://tog@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:09.343  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-tel started and consuming from: Endpoint[sftp://telemark@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:09.470  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-nri started and consuming from: Endpoint[sftp://nri@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:12.776  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: sftp-gcs-norway started and consuming from: Endpoint[sftp://norway@192.168.99.100:30022?connectTimeout=1000&delay=30s&delete=true&localWorkDirectory=files%2Ftmp&privateKeyFile=%2Fhome%2Ftomgag%2F.ssh%2Flamassu.pem&sorter=%23caseIdSftpSorter]
+2016-09-26 21:32:12.777  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Route: update-status started and consuming from: Endpoint[direct://updateStatus]
+2016-09-26 21:32:12.777  INFO 32231 --- [           main] o.a.c.component.quartz2.QuartzComponent  : Starting scheduler.
+2016-09-26 21:32:12.777  INFO 32231 --- [           main] org.quartz.core.QuartzScheduler          : Scheduler DefaultQuartzScheduler-Marduk_$_NON_CLUSTERED started.
+2016-09-26 21:32:12.777  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Total 81 routes, of which 81 are started.
+2016-09-26 21:32:12.778  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Apache Camel 2.17.3 (CamelContext: Marduk) started in 11.094 seconds
+2016-09-26 21:32:13.185  INFO 32231 --- [           main] application                              : Initializing Spring FrameworkServlet 'dispatcherServlet'
+2016-09-26 21:32:13.185  INFO 32231 --- [           main] o.s.web.servlet.DispatcherServlet        : FrameworkServlet 'dispatcherServlet': initialization started
+2016-09-26 21:32:13.200  INFO 32231 --- [           main] o.s.web.servlet.DispatcherServlet        : FrameworkServlet 'dispatcherServlet': initialization completed in 15 ms
+2016-09-26 21:32:13.210  INFO 32231 --- [           main] o.e.jetty.server.AbstractConnector       : Started ServerConnector@6512ea42{HTTP/1.1,[http/1.1]}{0.0.0.0:8776}
+2016-09-26 21:32:13.212  INFO 32231 --- [           main] .s.b.c.e.j.JettyEmbeddedServletContainer : Jetty started on port(s) 8776 (http/1.1)
+2016-09-26 21:32:13.216  INFO 32231 --- [           main] o.apache.camel.spring.boot.FatJarRouter  : Started FatJarRouter in 15.372 seconds (JVM running for 23.178)
+2016-09-26 21:32:13.216  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Apache Camel 2.17.3 (CamelContext: Marduk) is starting
+2016-09-26 21:32:13.217  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Total 81 routes, of which 81 are started.
+2016-09-26 21:32:13.217  INFO 32231 --- [           main] o.a.camel.spring.SpringCamelContext      : Apache Camel 2.17.3 (CamelContext: Marduk) started in 0.001 seconds
+2016-09-26 21:35:00.020  INFO 32231 --- [Marduk_Worker-1] osm-trigger-fetching                     : Quartz triggers fetch of OSM map over Norway.
+2016-09-26 21:35:00.237 DEBUG 32231 --- [Marduk_Worker-1] n.r.m.r.fetchosm.FetchOsmRouteBuilder    : MD5 sum fetched and set in header
+2016-09-26 21:35:00.238 DEBUG 32231 --- [Marduk_Worker-1] n.r.m.routes.blobstore.BlobStoreRoute    : Exchange[
+, Id: ID-localhost-localdomain-44579-1474918320685-0-2
+, ExchangePattern: InOnly
+, Properties: {CamelCharsetName=UTF-8, CamelCreatedTimestamp=Mon Sep 26 21:35:00 CEST 2016, CamelMessageHistory=[DefaultMessageHistory[routeId=osm-trigger-fetching, node=log72], DefaultMessageHistory[routeId=osm-trigger-fetching, node=to88], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=log69], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=to85], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=log67], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=setHeader70], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=to84], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=convertBodyTo4], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=process66], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=log68], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=setHeader71], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=to86], DefaultMessageHistory[routeId=blobstore-download, node=to7]], CamelToEndpoint=log://no.rutebanken.marduk.routes.blobstore.BlobStoreRoute?level=DEBUG&multiline=true&showAll=true}
+, Headers: {RutebankenFileHandle=osm/norway-latest.osm.pbf.md5, RutebankenMd5SumRecordedForTargetFile=647ef7c103e69f1fe5484d58e6fc4613}
+, BodyType: String
+, Body: 647ef7c103e69f1fe5484d58e6fc4613  norway-latest.osm.pbf
+, Out: null: 
+]
+2016-09-26 21:35:00.242 DEBUG 32231 --- [Marduk_Worker-1] n.r.m.repository.GcsBlobStoreRepository  : Fetching blob osm/norway-latest.osm.pbf.md5 from bucket marduk-test
+2016-09-26 21:35:01.287  WARN 32231 --- [Marduk_Worker-1] n.r.m.repository.GcsBlobStoreRepository  : Could not find 'osm/norway-latest.osm.pbf.md5' in bucket 'marduk-test'
+2016-09-26 21:35:01.288 DEBUG 32231 --- [Marduk_Worker-1] n.r.m.routes.blobstore.BlobStoreRoute    : Exchange[
+, Id: ID-localhost-localdomain-44579-1474918320685-0-2
+, ExchangePattern: InOnly
+, Properties: {CamelCharsetName=UTF-8, CamelCreatedTimestamp=Mon Sep 26 21:35:00 CEST 2016, CamelMessageHistory=[DefaultMessageHistory[routeId=osm-trigger-fetching, node=log72], DefaultMessageHistory[routeId=osm-trigger-fetching, node=to88], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=log69], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=to85], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=log67], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=setHeader70], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=to84], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=convertBodyTo4], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=process66], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=log68], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=setHeader71], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=to86], DefaultMessageHistory[routeId=blobstore-download, node=to7], DefaultMessageHistory[routeId=blobstore-download, node=setProperty10], DefaultMessageHistory[routeId=blobstore-download, node=setProperty11], DefaultMessageHistory[routeId=blobstore-download, node=setProperty12], DefaultMessageHistory[routeId=blobstore-download, node=setProperty13], DefaultMessageHistory[routeId=blobstore-download, node=setProperty14], DefaultMessageHistory[routeId=blobstore-download, node=setProperty15], DefaultMessageHistory[routeId=blobstore-download, node=setProperty16], DefaultMessageHistory[routeId=blobstore-download, node=setProperty17], DefaultMessageHistory[routeId=blobstore-download, node=setProperty18], DefaultMessageHistory[routeId=blobstore-download, node=bean2], DefaultMessageHistory[routeId=blobstore-download, node=to8]], CamelToEndpoint=log://no.rutebanken.marduk.routes.blobstore.BlobStoreRoute?level=DEBUG&multiline=true&showAll=true, RutebankenFileHandle=osm/norway-latest.osm.pbf.md5, RutebankenMd5SumRecordedForTargetFile=647ef7c103e69f1fe5484d58e6fc4613}
+, Headers: {RutebankenFileHandle=osm/norway-latest.osm.pbf.md5, RutebankenMd5SumRecordedForTargetFile=647ef7c103e69f1fe5484d58e6fc4613}
+, BodyType: null
+, Body: [Body is null]
+, Out: null: 
+]
+2016-09-26 21:35:01.289  INFO 32231 --- [Marduk_Worker-1] blobstore-download                       : [providerId= referential= correlationId=] Returning from fetching file osm/norway-latest.osm.pbf.md5 from blob store.
+2016-09-26 21:35:01.290  INFO 32231 --- [Marduk_Worker-1] osm-check-for-newer-map                  : Need to update the map file. Calling the update map route
+2016-09-26 21:35:01.331 DEBUG 32231 --- [Marduk_Worker-1] n.r.m.r.fetchosm.FetchOsmRouteBuilder    : MD5 sum fetched and set in header
+2016-09-26 21:35:01.334 DEBUG 32231 --- [Marduk_Worker-1] n.r.m.routes.blobstore.BlobStoreRoute    : Exchange[
+, Id: ID-localhost-localdomain-44579-1474918320685-0-2
+, ExchangePattern: InOnly
+, Properties: {CamelCharsetName=UTF-8, CamelCreatedTimestamp=Mon Sep 26 21:35:00 CEST 2016, CamelFilterMatched=false, CamelMessageHistory=[DefaultMessageHistory[routeId=osm-trigger-fetching, node=log72], DefaultMessageHistory[routeId=osm-trigger-fetching, node=to88], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=log69], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=to85], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=log67], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=setHeader70], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=to84], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=convertBodyTo4], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=process66], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=log68], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=setHeader71], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=to86], DefaultMessageHistory[routeId=blobstore-download, node=to7], DefaultMessageHistory[routeId=blobstore-download, node=setProperty10], DefaultMessageHistory[routeId=blobstore-download, node=setProperty11], DefaultMessageHistory[routeId=blobstore-download, node=setProperty12], DefaultMessageHistory[routeId=blobstore-download, node=setProperty13], DefaultMessageHistory[routeId=blobstore-download, node=setProperty14], DefaultMessageHistory[routeId=blobstore-download, node=setProperty15], DefaultMessageHistory[routeId=blobstore-download, node=setProperty16], DefaultMessageHistory[routeId=blobstore-download, node=setProperty17], DefaultMessageHistory[routeId=blobstore-download, node=setProperty18], DefaultMessageHistory[routeId=blobstore-download, node=bean2], DefaultMessageHistory[routeId=blobstore-download, node=to8], DefaultMessageHistory[routeId=blobstore-download, node=setHeader25], DefaultMessageHistory[routeId=blobstore-download, node=setHeader26], DefaultMessageHistory[routeId=blobstore-download, node=setHeader27], DefaultMessageHistory[routeId=blobstore-download, node=setHeader28], DefaultMessageHistory[routeId=blobstore-download, node=setHeader29], DefaultMessageHistory[routeId=blobstore-download, node=setHeader30], DefaultMessageHistory[routeId=blobstore-download, node=setHeader31], DefaultMessageHistory[routeId=blobstore-download, node=setHeader32], DefaultMessageHistory[routeId=blobstore-download, node=setHeader33], DefaultMessageHistory[routeId=blobstore-download, node=log15], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=convertBodyTo5], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=process67], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=choice17], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=log71], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=to87], DefaultMessageHistory[routeId=osm-fetch-map, node=log65], DefaultMessageHistory[routeId=osm-fetch-map, node=to79], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=log67], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=setHeader70], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=to84], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=convertBodyTo4], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=process66], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=log68], DefaultMessageHistory[routeId=osm-fetch-map, node=convertBodyTo2], DefaultMessageHistory[routeId=osm-fetch-map, node=setHeader65], DefaultMessageHistory[routeId=osm-fetch-map, node=to80], DefaultMessageHistory[routeId=blobstore-upload, node=to5]], CamelToEndpoint=log://no.rutebanken.marduk.routes.blobstore.BlobStoreRoute?level=DEBUG&multiline=true&showAll=true, RutebankenFileHandle=osm/norway-latest.osm.pbf.md5, RutebankenMd5SumRecordedForTargetFile=647ef7c103e69f1fe5484d58e6fc4613}
+, Headers: {RutebankenFileHandle=osm/norway-latest.osm.pbf.md5, RutebankenMd5SumRecordedForTargetFile=647ef7c103e69f1fe5484d58e6fc4613}
+, BodyType: org.apache.camel.converter.stream.ByteArrayInputStreamCache
+, Body: [Body is instance of org.apache.camel.StreamCache]
+, Out: null: 
+]
+2016-09-26 21:35:01.335 DEBUG 32231 --- [Marduk_Worker-1] n.r.m.repository.GcsBlobStoreRepository  : Uploading blob osm/norway-latest.osm.pbf.md5 to bucket marduk-test
+2016-09-26 21:35:01.553  INFO 32231 --- [Marduk_Worker-1] n.r.m.repository.GcsBlobStoreRepository  : Stored blob with name 'osm/norway-latest.osm.pbf.md5' and size '56' in bucket 'marduk-test'
+2016-09-26 21:35:01.553 DEBUG 32231 --- [Marduk_Worker-1] n.r.m.routes.blobstore.BlobStoreRoute    : Exchange[
+, Id: ID-localhost-localdomain-44579-1474918320685-0-2
+, ExchangePattern: InOnly
+, Properties: {CamelCharsetName=UTF-8, CamelCreatedTimestamp=Mon Sep 26 21:35:00 CEST 2016, CamelFilterMatched=false, CamelMessageHistory=[DefaultMessageHistory[routeId=osm-trigger-fetching, node=log72], DefaultMessageHistory[routeId=osm-trigger-fetching, node=to88], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=log69], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=to85], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=log67], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=setHeader70], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=to84], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=convertBodyTo4], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=process66], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=log68], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=setHeader71], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=to86], DefaultMessageHistory[routeId=blobstore-download, node=to7], DefaultMessageHistory[routeId=blobstore-download, node=setProperty10], DefaultMessageHistory[routeId=blobstore-download, node=setProperty11], DefaultMessageHistory[routeId=blobstore-download, node=setProperty12], DefaultMessageHistory[routeId=blobstore-download, node=setProperty13], DefaultMessageHistory[routeId=blobstore-download, node=setProperty14], DefaultMessageHistory[routeId=blobstore-download, node=setProperty15], DefaultMessageHistory[routeId=blobstore-download, node=setProperty16], DefaultMessageHistory[routeId=blobstore-download, node=setProperty17], DefaultMessageHistory[routeId=blobstore-download, node=setProperty18], DefaultMessageHistory[routeId=blobstore-download, node=bean2], DefaultMessageHistory[routeId=blobstore-download, node=to8], DefaultMessageHistory[routeId=blobstore-download, node=setHeader25], DefaultMessageHistory[routeId=blobstore-download, node=setHeader26], DefaultMessageHistory[routeId=blobstore-download, node=setHeader27], DefaultMessageHistory[routeId=blobstore-download, node=setHeader28], DefaultMessageHistory[routeId=blobstore-download, node=setHeader29], DefaultMessageHistory[routeId=blobstore-download, node=setHeader30], DefaultMessageHistory[routeId=blobstore-download, node=setHeader31], DefaultMessageHistory[routeId=blobstore-download, node=setHeader32], DefaultMessageHistory[routeId=blobstore-download, node=setHeader33], DefaultMessageHistory[routeId=blobstore-download, node=log15], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=convertBodyTo5], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=process67], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=choice17], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=log71], DefaultMessageHistory[routeId=osm-check-for-newer-map, node=to87], DefaultMessageHistory[routeId=osm-fetch-map, node=log65], DefaultMessageHistory[routeId=osm-fetch-map, node=to79], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=log67], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=setHeader70], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=to84], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=convertBodyTo4], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=process66], DefaultMessageHistory[routeId=osm-fetch-md5sum, node=log68], DefaultMessageHistory[routeId=osm-fetch-map, node=convertBodyTo2], DefaultMessageHistory[routeId=osm-fetch-map, node=setHeader65], DefaultMessageHistory[routeId=osm-fetch-map, node=to80], DefaultMessageHistory[routeId=blobstore-upload, node=to5], DefaultMessageHistory[routeId=blobstore-upload, node=choice1], DefaultMessageHistory[routeId=blobstore-upload, node=setHeader15], DefaultMessageHistory[routeId=blobstore-upload, node=setProperty1], DefaultMessageHistory[routeId=blobstore-upload, node=setProperty2], DefaultMessageHistory[routeId=blobstore-upload, node=setProperty3], DefaultMessageHistory[routeId=blobstore-upload, node=setProperty4], DefaultMessageHistory[routeId=blobstore-upload, node=setProperty5], DefaultMessageHistory[routeId=blobstore-upload, node=setProperty6], DefaultMessageHistory[routeId=blobstore-upload, node=setProperty7], DefaultMessageHistory[routeId=blobstore-upload, node=setProperty8], DefaultMessageHistory[routeId=blobstore-upload, node=setProperty9], DefaultMessageHistory[routeId=blobstore-upload, node=bean1], DefaultMessageHistory[routeId=blobstore-upload, node=setBody3], DefaultMessageHistory[routeId=blobstore-upload, node=to6]], CamelToEndpoint=log://no.rutebanken.marduk.routes.blobstore.BlobStoreRoute?level=DEBUG&multiline=true&showAll=true, RutebankenFileHandle=osm/norway-latest.osm.pbf.md5, RutebankenMd5SumRecordedForTargetFile=647ef7c103e69f1fe5484d58e6fc4613}
+, Headers: {RutebankenBlobstoreMakeBlobPublic=false, RutebankenFileHandle=osm/norway-latest.osm.pbf.md5, RutebankenMd5SumRecordedForTargetFile=647ef7c103e69f1fe5484d58e6fc4613}
+, BodyType: String
+, Body: 
+, Out: null: 
+]
+2016-09-26 21:35:01.553  INFO 32231 --- [Marduk_Worker-1] blobstore-upload                         : [providerId= referential= correlationId=] Stored file osm/norway-latest.osm.pbf.md5 in blob store.

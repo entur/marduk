@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.io.InputStream;
 import java.util.Date;
 
+import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 
 /**
@@ -87,6 +88,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 })
                 // Probably not needed: .convertBodyTo(InputStream.class)
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm +"/"+"norway-latest.osm.pbf"))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
                 .to("direct:uploadBlob")
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
                 .setHeader(FINISHED, constant("true"))

@@ -17,6 +17,10 @@ public class BlobStoreRoute extends BaseRouteBuilder {
         from("direct:uploadBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 //Using properties to hold headers, as bean component wipes them
+                .choice()
+                    .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
+                    .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))     //defaulting to false if not specified
+                .end()
                 .setProperty(FILE_HANDLE, header(FILE_HANDLE))
                 .setProperty(FILE_NAME, header(FILE_NAME))
                 .setProperty(FILE_TYPE, header(FILE_TYPE))

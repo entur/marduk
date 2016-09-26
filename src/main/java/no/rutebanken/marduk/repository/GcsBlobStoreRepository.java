@@ -2,11 +2,9 @@ package no.rutebanken.marduk.repository;
 
 import com.google.cloud.Page;
 import com.google.cloud.ReadChannel;
-import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.BlobId;
-import com.google.cloud.storage.BlobInfo;
-import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.*;
 import com.google.cloud.storage.Storage.BlobListOption;
+import com.google.common.collect.ImmutableList;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,10 +76,14 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public void uploadBlob(String name, InputStream inputStream) {
+    public void uploadBlob(String name, InputStream inputStream, boolean makePublic) {
         logger.debug("Uploading blob " + name + " to bucket " + containerName);
         BlobId blobId = BlobId.of(containerName, name);
-        BlobInfo blobInfo = BlobInfo.builder(blobId).contentType("application/octet-stream").build();
+        BlobInfo.Builder builder = BlobInfo.builder(blobId).contentType("application/octet-stream");
+        if (makePublic) {
+            builder.acl(ImmutableList.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)));
+        }
+        BlobInfo blobInfo = builder.build();
         Blob blob = storage.create(blobInfo, inputStream);
         logger.info("Stored blob with name '" + blob.name() + "' and size '" + blob.size() + "' in bucket '" + blob.bucket() + "'");
     }

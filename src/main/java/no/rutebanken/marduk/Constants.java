@@ -31,5 +31,6 @@ public class Constants {
 	public static final String CHOUETTE_JOB_STATUS_JOB_TYPE = "RutebankenCHouetteJobStatusType";
 
 
-
+    public static final String BLOBSTORE_MAKE_BLOB_PUBLIC = "RutebankenBlobstoreMakeBlobPublic";
 }
+

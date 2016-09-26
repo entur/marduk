@@ -10,5 +10,5 @@ public interface BlobStoreRepository {
 
     InputStream getBlob(String objectName);
 
-    void uploadBlob(String objectName, InputStream inputStream);
+    void uploadBlob(String objectName, InputStream inputStream, boolean makePublic);
 }

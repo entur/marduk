@@ -5,6 +5,7 @@ import com.google.cloud.AuthCredentials;
 import com.google.cloud.Page;
 import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.*;
+import com.google.common.collect.ImmutableList;
 import no.rutebanken.marduk.Constants;
 
 import java.io.*;
@@ -13,27 +14,18 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.util.Iterator;
 
-//import com.google.api.services.samples.storage.util.CredentialsProvider;
-
-/**
- * Created by tomgag on 06.09.16.
- */
 public class GoogleApiTest {
 
-    private static final String BUCKET_NAME = "tommy-test-bucket-will-be-removed";
+    private static final String BUCKET_NAME = "marduk-test";
     private static final String FILE_NAME = "/home/tomgag/code/rutebanken/rutedata/input/ruter/gtfs/ruter.zip";
-
-//    public static StorageObject uploadSimple(Storage storage, String bucketName, String objectName,
-//                                             String data) throws UnsupportedEncodingException, IOException {
-//        return uploadSimple(storage, bucketName, objectName, new ByteArrayInputStream(
-//                data.getBytes("UTF-8")), "text/plain");
-//    }
 
 
     public static Blob uploadSimple(Storage storage, String bucketName, String objectName,
                                              InputStream data, String contentType) throws IOException {
         BlobId blobId = BlobId.of(bucketName, objectName);
-        BlobInfo blobInfo = BlobInfo.builder(blobId).contentType(contentType).build();
+        BlobInfo blobInfo = BlobInfo.builder(blobId)
+                .acl(ImmutableList.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)))
+                .contentType(contentType).build();
         return storage.create(blobInfo, data);
     }
 
@@ -64,16 +56,13 @@ public class GoogleApiTest {
     }
 
     public static void main(String[] args) throws Exception {
-        //Works in GCP ?
-//        Storage storage = StorageOptions.defaultInstance().service();
-
         StorageOptions options = StorageOptions.builder()
                 .projectId("carbon-1287")
                 .authCredentials(AuthCredentials.createForJson(
-                        new FileInputStream("/home/tomgag/Downloads/Carbon-a4d50ca8176c.json"))).build();
+                        new FileInputStream("/home/tomgag/.ssh/Carbon-a4d50ca8176c.json"))).build();
         Storage storage = options.service();
 
-        String directory = Constants.BLOBSTORE_PATH_INBOUND_RECEIVED + "2/";
+        String directory = Constants.BLOBSTORE_PATH_INBOUND_RECEIVED;
 
         String objectName1 = directory + "ruter1.zip";
 
