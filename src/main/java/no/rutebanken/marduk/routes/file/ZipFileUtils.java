@@ -1,11 +1,6 @@
 package no.rutebanken.marduk.routes.file;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,9 +10,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 
 public class ZipFileUtils {
 
@@ -29,13 +21,17 @@ public class ZipFileUtils {
 		}
 	}
 
-	public Set<String> listFilesInZip(byte[] bytes) {
+	public Set<String> listFilesInZip(byte[] data) {
+		return listFilesInZip(new ByteArrayInputStream(data));
+	}
+
+	public Set<String> listFilesInZip(InputStream inputStream) {
 		Set<String> fileNames = new HashSet<>();
-		try (ZipArchiveInputStream zipInputStream = new ZipArchiveInputStream(new ByteArrayInputStream(bytes))) {
-			ZipArchiveEntry zipArchiveEntry = zipInputStream.getNextZipEntry();
-			while (zipArchiveEntry != null) {
-				fileNames.add(zipArchiveEntry.getName());
-				zipArchiveEntry = zipInputStream.getNextZipEntry();
+		try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
+			ZipEntry zipEntry = zipInputStream.getNextEntry();
+			while (zipEntry != null) {
+				fileNames.add(zipEntry.getName());
+				zipEntry = zipInputStream.getNextEntry();
 			}
 			return fileNames;
 		} catch (IOException e) {

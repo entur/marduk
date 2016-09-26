@@ -23,18 +23,7 @@ public class NeptuneExportParameters {
 		}
 	}
 
-	public static class NeptuneExport {
-
-		public String name;
-
-		@JsonProperty("user_name")
-		public String userName;
-
-		@JsonProperty("organisation_name")
-		public String organisationName;
-
-		@JsonProperty("referential_name")
-		public String referentialName;
+	public static class NeptuneExport extends AbstractImportParameters {
 
 		@JsonProperty("projection_type")
 		public String projectionType = "4326"; // WGS84

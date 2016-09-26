@@ -14,27 +14,7 @@ public class RegtoppImportParameters extends ChouetteJobParameters {
 
 	}
 
-	static class RegtoppImport {
-
-		public String name;
-
-		@JsonProperty("clean_repository")
-		public String cleanRepository = "0";
-
-		@JsonProperty("no_save")
-		public String noSave = "0";
-
-		@JsonProperty("user_name")
-		public String userName;
-
-		@JsonProperty("organisation_name")
-		public String organisationName;
-
-		@JsonProperty("referential_name")
-		public String referentialName;
-
-		@JsonProperty("object_id_prefix")
-		public String objectIdPrefix;
+	static class RegtoppImport extends AbstractImportParameters {
 
 		@JsonProperty("references_type")
 		@JsonInclude(JsonInclude.Include.ALWAYS)

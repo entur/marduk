@@ -13,27 +13,7 @@ public class NeptuneImportParameters extends ChouetteJobParameters{
 
     }
 
-    static class NeptuneImport {
-
-        public String name;
-
-        @JsonProperty("clean_repository")
-        public String cleanRepository = "0";
-
-        @JsonProperty("no_save")
-        public String noSave = "0";
-
-        @JsonProperty("user_name")
-        public String userName;
-
-        @JsonProperty("organisation_name")
-        public String organisationName;
-
-        @JsonProperty("referential_name")
-        public String referentialName;
-
-
-    }
+    static class NeptuneImport extends AbstractImportParameters { }
 
     public static NeptuneImportParameters create(String name,String referentialName, String organisationName, String userName, boolean cleanRepository,boolean enableValidation) {
         NeptuneImport neptuneImport = new NeptuneImport();

@@ -1,15 +1,21 @@
 package no.rutebanken.marduk.routes.file.beans;
 
-import java.util.Set;
-
+import no.rutebanken.marduk.exceptions.FileValidationException;
+import no.rutebanken.marduk.routes.file.FileType;
+import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.camel.Exchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.exceptions.FileValidationException;
-import no.rutebanken.marduk.routes.file.FileType;
-import no.rutebanken.marduk.routes.file.ZipFileUtils;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.Set;
+
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_TYPE;
+import static no.rutebanken.marduk.routes.file.FileType.*;
+import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.firstElementQNameMatchesNetex;
+import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.validateZipContent;
 
 public class FileTypeClassifierBean {
 
@@ -18,42 +24,44 @@ public class FileTypeClassifierBean {
 	private static final String requiredRegtoppFilesExtensionsRegex = "(?i).+\\.tix|(?i).+\\.hpl|(?i).+\\.dko";
 	private static final String requiredGtfsFilesRegex = "agency.txt|stops.txt|routes.txt|trips.txt|stop_times.txt";
 	private static final String requiredNeptuneFilesRegex = "[A-Z]{1,}\\-Line\\-[0-9].*\\.xml";
+	private static final String xmlFilesRegex = ".+\\.xml";	//TODO can we be more specific?
 
-	private final ZipFileUtils zipFileUtils = new ZipFileUtils();
+	private final static ZipFileUtils zipFileUtils = new ZipFileUtils();
 
 	public boolean validateFile(byte[] data, Exchange exchange) {
-		String relativePath = exchange.getIn().getHeader(Constants.FILE_HANDLE, String.class);
+		String relativePath = exchange.getIn().getHeader(FILE_HANDLE, String.class);
 		logger.debug("Validating file with path '" + relativePath + "'.");
-		if (relativePath == null || relativePath.trim().equals("")) {
-			throw new IllegalArgumentException("Could not get file path from file_handle header.");
-		}
 		try {
-			if (relativePath.toUpperCase().endsWith(".ZIP")) {
-				logger.debug("File ends with .zip");
-				if (isRegtoppZip(zipFileUtils.listFilesInZip(data))) {
-					exchange.getIn().setHeader(Constants.FILE_TYPE, FileType.REGTOPP.name());
-					return true;
-				} else if (isGtfsZip(zipFileUtils.listFilesInZip(data))) {
-					exchange.getIn().setHeader(Constants.FILE_TYPE, FileType.GTFS.name());
-					logger.debug("This is a gtfs zip.");
-					return true;
-				} else if (isNeptuneZip(zipFileUtils.listFilesInZip(data))) {
-					exchange.getIn().setHeader(Constants.FILE_TYPE, FileType.NEPTUNE.name());
-					logger.debug("This is a neptune zip.");
-					return true;
-				}
-				throw new FileValidationException("Could not classify file '" + relativePath + "'.");
-			} else if (relativePath.toUpperCase().endsWith(".RAR")) {
-
-				exchange.getIn().setHeader(Constants.FILE_TYPE, FileType.RAR.name());
-				logger.debug("This is a rar file.");
-				return true;
+			if (relativePath == null || relativePath.trim().equals("")) {
+				throw new IllegalArgumentException("Could not get file path from " + FILE_HANDLE + " header.");
 			}
-			throw new FileValidationException("Could not classify file '" + relativePath + "'.");
+			FileType fileType = classifyFile(relativePath, data);
+			logger.debug("File is classified as " + fileType);
+			exchange.getIn().setHeader(FILE_TYPE, fileType.name());
+			return true;
 		} catch (RuntimeException e) {
 			logger.warn("Failed while trying to classify file '" + relativePath + "'.", e);
 			return false;
 		}
+	}
+
+	public FileType classifyFile(String relativePath, byte[] data) {
+		if (relativePath.toUpperCase().endsWith(".ZIP")) {
+			Set<String> filesNamesInZip = zipFileUtils.listFilesInZip(new ByteArrayInputStream(data));
+			if (isRegtoppZip(filesNamesInZip)) {
+				return REGTOPP;
+			} else if (isGtfsZip(filesNamesInZip)) {
+				return GTFS;
+			} else if (isNetexZip(filesNamesInZip, new ByteArrayInputStream(data))) {
+				return NETEXPROFILE;
+			} else if (isNeptuneZip(filesNamesInZip)) {
+				return NEPTUNE;
+			}
+			throw new FileValidationException("Could not classify file '" + relativePath + "'.");
+		} else if (relativePath.toUpperCase().endsWith(".RAR")) {
+			return RAR;
+		}
+		throw new FileValidationException("Could not classify file '" + relativePath + "'.");
 	}
 
 	public static boolean isRegtoppZip(Set<String> filesInZip) {
@@ -66,6 +74,19 @@ public class FileTypeClassifierBean {
 
 	public static boolean isNeptuneZip(final Set<String> filesInZip) {
 		return filesInZip.stream().anyMatch(p -> p.matches(requiredNeptuneFilesRegex));
+	}
+
+	public static boolean isNetexZip(final Set<String> filesInZip, InputStream inputStream) {
+		return filesInZip.stream().anyMatch(p -> p.matches(xmlFilesRegex)) //TODO skip file extension check unless it can be more specific?
+				&& isNetexXml(inputStream);
+	}
+
+	private static boolean isNetexXml(InputStream inputStream) {
+		try {
+			return validateZipContent(inputStream, firstElementQNameMatchesNetex());
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }

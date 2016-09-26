@@ -10,6 +10,8 @@ public class MardukException extends RuntimeException {
 	 */
 	private static final long serialVersionUID = 1L;
 
+    public MardukException(){ super(); }
+
 	public MardukException(String message) {
         super( message );
     }

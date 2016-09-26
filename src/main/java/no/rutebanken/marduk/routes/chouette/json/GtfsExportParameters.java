@@ -22,18 +22,7 @@ public class GtfsExportParameters {
 
     }
 
-    public static class GtfsExport {
-
-        public String name;
-
-        @JsonProperty("user_name")
-        public String userName;
-
-        @JsonProperty("organisation_name")
-        public String organisationName;
-
-        @JsonProperty("referential_name")
-        public String referentialName;
+    public static class GtfsExport extends AbstractImportParameters {
 
         @JsonProperty("object_id_prefix")
         public String objectIdPrefix;

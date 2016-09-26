@@ -7,6 +7,7 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 import java.util.UUID;
 
+import no.rutebanken.marduk.routes.chouette.json.NetexImportParameters;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
@@ -77,9 +78,9 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 	            .process(e -> {
 	                if(FileType.REGTOPP.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))) {
 		            	e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip"));
-	                } else  if(FileType.GTFS.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))){
+	                } else if(FileType.GTFS.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))){
 		            	e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_gtfs.zip"));
-	                } else  if(FileType.NEPTUNE.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))){
+	                } else if(FileType.NEPTUNE.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))){
 		            	e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_neptune.zip"));
 	                } else {
 	                	throw new RuntimeException("Only know how to clean regtopp and gtfs spaces so far, must add support for netex");
@@ -197,16 +198,16 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 		
     }
 
-  
-
     private Object getImportParameters(String fileName, String fileType, Long providerId,boolean cleanRepository) {
         if (FileType.REGTOPP.name().equals(fileType)){
             return getRegtoppImportParametersAsString(fileName, providerId, cleanRepository);
         } else if (FileType.GTFS.name().equals(fileType)) {
             return getGtfsImportParametersAsString(fileName, providerId, cleanRepository);
+        } else if (FileType.NETEXPROFILE.name().equals(fileType)) {
+            return getNetexImportParametersAsString(fileName, providerId, cleanRepository);
         } else if (FileType.NEPTUNE.name().equals(fileType)) {
-            return getNeptuneImportParametersAsString(fileName, providerId, cleanRepository);
-        } else {
+			return getNeptuneImportParametersAsString(fileName, providerId, cleanRepository);
+		} else {
             throw new IllegalArgumentException("Cannot create import parameters from file type '" + fileType + "'");
         }
     }
@@ -226,6 +227,14 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
         GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user,cleanRepository,chouetteInfo.enableValidation);
         return gtfsImportParameters.toJsonString();
     }
+
+	String getNetexImportParametersAsString(String importName, Long providerId, boolean cleanRepository) {
+		Provider provider = getProviderRepository().getProvider(providerId);
+		NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.chouetteInfo.prefix,
+				provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user,
+				cleanRepository, provider.chouetteInfo.enableValidation);
+		return netexImportParameters.toJsonString();
+	}
 
     String getNeptuneImportParametersAsString(String importName, Long providerId, boolean cleanRepository) {
 		Provider provider = getProviderRepository().getProvider(providerId);

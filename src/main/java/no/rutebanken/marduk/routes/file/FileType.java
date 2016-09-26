@@ -5,5 +5,6 @@ public enum FileType {
     REGTOPP,
     INVALID, 
     RAR, 
-    NEPTUNE;
+    NEPTUNE,
+    NETEXPROFILE
 }
