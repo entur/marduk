@@ -1,11 +1,5 @@
 package no.rutebanken.marduk.routes.chouette;
 
-import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_URL;
-import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.JSON_PART;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +25,8 @@ import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.Status;
 import no.rutebanken.marduk.routes.status.Status.Action;
 import no.rutebanken.marduk.routes.status.Status.State;
+
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Exports files from Chouette
@@ -92,7 +88,7 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
 	                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
 	                .toD("${header.data_url}")
 	                .to("direct:addGtfsFeedInfo")
-	                .setHeader(FILE_HANDLE, simple("outbound/gtfs/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
+	                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
 	                .to("direct:uploadBlob")
 	                .to("activemq:queue:OtpGraphQueue")
 		            .process(e -> Status.addStatus(e, Action.EXPORT, State.OK))

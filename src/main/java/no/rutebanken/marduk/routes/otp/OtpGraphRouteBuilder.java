@@ -7,10 +7,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
 
-import static no.rutebanken.marduk.Constants.CURRENT_AGGREGATED_GTFS_FILENAME;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
-import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
+import static no.rutebanken.marduk.Constants.*;
+import static org.apache.camel.model.rest.RestParamType.body;
 
 /**
  * Trigger OTP graph building
@@ -81,9 +79,9 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-graph-fetch-gtfs");
 
         from("direct:getGtfsFiles")
-            	.log(LoggingLevel.INFO,correlation()+"Fetching outbound/gtfs/${body}")
+            	.log(LoggingLevel.INFO,correlation()+"Fetching " + BLOBSTORE_PATH_OUTBOUND + "gtfs/${body}")
                 .setProperty("fileName", body())
-                .setHeader(FILE_HANDLE, simple("outbound/gtfs/${property.fileName}"))
+                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${property.fileName}"))
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))

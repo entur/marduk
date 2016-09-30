@@ -62,7 +62,7 @@ public class GoogleApiTest {
                         new FileInputStream("/home/tomgag/.ssh/Carbon-a4d50ca8176c.json"))).build();
         Storage storage = options.service();
 
-        String directory = Constants.BLOBSTORE_PATH_INBOUND_RECEIVED;
+        String directory = Constants.BLOBSTORE_PATH_INBOUND;
 
         String objectName1 = directory + "ruter1.zip";
 

@@ -23,12 +23,13 @@ public class Constants {
     public static final String ENABLE_VALIDATION = "RutebankenEnableValidation";
 
 
-	public static final String BLOBSTORE_PATH_INBOUND_RECEIVED = "inbound/received/";
+	public static final String BLOBSTORE_PATH_INBOUND = "inbound/";
+    public static final String BLOBSTORE_PATH_OUTBOUND = "outbound/";
 	
     public static final String CHOUETTE_JOB_STATUS_URL = "RutebankenChouetteJobStatusURL";
     public static final String CHOUETTE_JOB_ID = "RutebankenChouetteJobId";
 	public static final String CHOUETTE_JOB_STATUS_ROUTING_DESTINATION = "RutebankenChouetteJobStatusRoutingDestination";
-	public static final String CHOUETTE_JOB_STATUS_JOB_TYPE = "RutebankenCHouetteJobStatusType";
+	public static final String CHOUETTE_JOB_STATUS_JOB_TYPE = "RutebankenChouetteJobStatusType";
 
 
     public static final String BLOBSTORE_MAKE_BLOB_PUBLIC = "RutebankenBlobstoreMakeBlobPublic";

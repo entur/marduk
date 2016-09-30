@@ -2,8 +2,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.repository.BlobStoreRepository;
-import no.rutebanken.marduk.repository.FakeBlobStoreRepository;
+import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -11,7 +10,6 @@ import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
 import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
-import org.apache.camel.util.FileUtil;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,7 +36,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 	private ModelCamelContext context;
 
 	@Autowired
-	private FakeBlobStoreRepository fakeBlobStoreRepository;
+	private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
 	@EndpointInject(uri = "mock:chouetteCreateImport")
 	protected MockEndpoint chouetteCreateImport;
@@ -83,7 +81,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 		String pathname = "src/main/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
 
 		//populate fake blob repo
-		fakeBlobStoreRepository.uploadBlob("rut/" + filename, new FileInputStream(new File(pathname)), false);
+		inMemoryBlobStoreRepository.uploadBlob("rut/" + filename, new FileInputStream(new File(pathname)), false);
 
 		// Mock initial call to Chouette to import job
 		context.getRouteDefinition("chouette-send-import-job").adviceWith(context, new AdviceWithRouteBuilder() {

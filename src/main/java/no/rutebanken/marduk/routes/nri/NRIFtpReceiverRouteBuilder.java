@@ -44,7 +44,7 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
 	    		String newFileName = relativeFilePath.replace(' ', '_').replace('/', '_');
 	    		e.getIn().setHeader(Constants.FILE_NAME, newFileName);
 	    		e.getIn().setHeader(FILE_HANDLE, 
-	            		simple(Constants.BLOBSTORE_PATH_INBOUND_RECEIVED + provider.chouetteInfo.referential + "/" + provider.chouetteInfo.referential + "-${date:now:yyyyMMddHHmmss}-"+newFileName).evaluate(e, String.class));
+	            		simple(Constants.BLOBSTORE_PATH_INBOUND + provider.chouetteInfo.referential + "/" + provider.chouetteInfo.referential + "-${date:now:yyyyMMddHHmmss}-"+newFileName).evaluate(e, String.class));
 	            e.getIn().setHeader(PROVIDER_ID, provider.id);
         	}
         })

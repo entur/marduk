@@ -5,8 +5,8 @@
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-	<version>0.0.4</version>
-	<relativePath></relativePath>
+	    <version>0.0.4</version>
+	    <relativePath></relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -26,6 +26,8 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
+        <gcp-storage.version>0.0.1-SNAPSHOT</gcp-storage.version>
+
         <!-- versions for use in mvn plugins as we cannot inherit them from a BOM -->
         <fabric8.version>2.2.84</fabric8.version>
         <docker.maven.plugin.version>0.13.9</docker.maven.plugin.version>
@@ -34,7 +36,6 @@
         <httpcomponents.version>4.5.1</httpcomponents.version>
         <otp.version>1.1.0.RB-SNAPSHOT</otp.version>
         <assertj-core.version>3.3.0</assertj-core.version>
-        <google-cloud.version>0.3.0</google-cloud.version>
         <camel-version>2.17.3</camel-version>
 
         <!-- Docker & Fabric8 Configs -->
@@ -86,6 +87,22 @@
     </dependencyManagement>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.rutebanken.helpers</groupId>
+            <artifactId>gcp-storage</artifactId>
+            <version>${gcp-storage.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-codec-http2</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.camel</groupId>
@@ -174,10 +191,10 @@
             <artifactId>activemq-camel</artifactId>
         </dependency>
 
-        <dependency>
+    <!-- <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-storage</artifactId>
-            <version>${google-cloud.version}</version>
+            <version>${google.cloud.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
@@ -188,7 +205,7 @@
                     <artifactId>netty-codec-http2</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
+        </dependency> -->
 
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>

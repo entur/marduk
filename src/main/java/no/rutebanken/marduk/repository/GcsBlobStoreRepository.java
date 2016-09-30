@@ -1,45 +1,39 @@
 package no.rutebanken.marduk.repository;
 
-import com.google.cloud.Page;
-import com.google.cloud.ReadChannel;
-import com.google.cloud.storage.*;
-import com.google.cloud.storage.Storage.BlobListOption;
-import com.google.common.collect.ImmutableList;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.Storage;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.rutebanken.helper.gcp.BlobStoreHelper;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
 import java.util.Date;
 import java.util.Iterator;
 
 @Repository
 @Profile("test")
+@Scope("prototype")
 public class GcsBlobStoreRepository implements BlobStoreRepository {
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private Storage storage;
 
-    @Value("${blobstore.container.name}")
     private String containerName;
 
-    @Autowired
-    private Storage storage;
+    @Override
+    public void setStorage(Storage storage) {
+        this.storage = storage;
+    }
+
+    @Override
+    public void setContainerName(String containerName) {
+        this.containerName = containerName;
+    }
 
     @Override
     public BlobStoreFiles listBlobs(String prefix) {
-        logger.debug("Listing blobs in bucket " + containerName + " with prefix " + prefix + " recursively.");
-        Page<Blob> blobs = storage.list(containerName, BlobListOption.prefix(prefix));
-        Iterator<Blob> blobIterator = blobs.iterateAll();
+        Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage, containerName, prefix);
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         while (blobIterator.hasNext()) {
             Blob blob = blobIterator.next();
@@ -50,42 +44,11 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public InputStream getBlob(String name) {
-        logger.debug("Fetching blob " + name + " from bucket " + containerName);
-        BlobId blobId = BlobId.of(containerName, name);
-        Blob blob = storage.get(blobId);
-        InputStream result = null;
-        if (blob != null) {
-            try (ReadChannel reader = blob.reader()) {
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                WritableByteChannel channel = Channels.newChannel(outputStream);
-                ByteBuffer bytes = ByteBuffer.allocate(64 * 1024);
-                while (reader.read(bytes) > 0) {
-                    bytes.flip();
-                    channel.write(bytes);
-                    bytes.clear();
-                }
-                result = new ByteArrayInputStream(outputStream.toByteArray());
-                logger.info("Retrieved blob with name '" + blob.name() + "' and size '" + blob.size() + "' from bucket '" + blob.bucket() + "'");
-            } catch (IOException e){
-                throw new RuntimeException(e);
-            }
-        } else {
-            logger.warn("Could not find '" + blobId.name() + "' in bucket '" + blobId.bucket() + "'");
-        }
-        return result;
+        return BlobStoreHelper.getBlob(storage, containerName, name);
     }
 
     @Override
     public void uploadBlob(String name, InputStream inputStream, boolean makePublic) {
-        logger.debug("Uploading blob " + name + " to bucket " + containerName);
-        BlobId blobId = BlobId.of(containerName, name);
-        BlobInfo.Builder builder = BlobInfo.builder(blobId).contentType("application/octet-stream");
-        if (makePublic) {
-            builder.acl(ImmutableList.of(Acl.of(Acl.User.ofAllUsers(), Acl.Role.READER)));
-        }
-        BlobInfo blobInfo = builder.build();
-        Blob blob = storage.create(blobInfo, inputStream);
-        logger.info("Stored blob with name '" + blob.name() + "' and size '" + blob.size() + "' in bucket '" + blob.bucket() + "'");
+        BlobStoreHelper.uploadBlob(storage, containerName, name, inputStream, makePublic);
     }
-
 }

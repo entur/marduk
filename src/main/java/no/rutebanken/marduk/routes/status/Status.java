@@ -85,7 +85,7 @@ public class Status {
     }
 
     public static void addStatus(Exchange exchange, Status.Action action, Status.State state) {
-        String fileName =exchange.getIn().getHeader(Constants.FILE_NAME,String.class);
+        String fileName = exchange.getIn().getHeader(Constants.FILE_NAME,String.class);
         if (Strings.isNullOrEmpty(fileName)) {
             throw new IllegalArgumentException("No file name");
         }
