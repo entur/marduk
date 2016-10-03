@@ -7,7 +7,6 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
 import java.io.ByteArrayInputStream;
@@ -25,12 +24,12 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private Map<String, byte[]> uploads = new HashMap<>();
+    private Map<String, byte[]> blobs = new HashMap<>();
 
     @Override
     public BlobStoreFiles listBlobs(String prefix) {
         logger.debug("list blobs called in in-memory blob store");
-        List<BlobStoreFiles.File> files = uploads.keySet().stream()
+        List<BlobStoreFiles.File> files = blobs.keySet().stream()
                 .filter(k -> !k.startsWith(prefix + "/"))
                 .map(k -> new BlobStoreFiles.File(k, new Date(), 1234L))    //TODO Add real details?
                 .collect(Collectors.toList());
@@ -42,7 +41,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     @Override
     public InputStream getBlob(String objectName) {
         logger.debug("get blob called in in-memory blob store");
-        byte[] data = uploads.get(objectName);
+        byte[] data = blobs.get(objectName);
         return (data == null) ? null : new ByteArrayInputStream(data);
     }
 
@@ -53,10 +52,16 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             IOUtils.copy(inputStream, byteArrayOutputStream);
             byte[] data = byteArrayOutputStream.toByteArray();
-            uploads.put(objectName, data);
+            blobs.put(objectName, data);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public boolean delete(String objectName) {
+        blobs.remove(objectName);
+        return true;
     }
 
     @Override

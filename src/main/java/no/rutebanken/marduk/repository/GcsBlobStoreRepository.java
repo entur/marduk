@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.repository;
 
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import org.rutebanken.helper.gcp.BlobStoreHelper;
@@ -50,5 +51,10 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
     @Override
     public void uploadBlob(String name, InputStream inputStream, boolean makePublic) {
         BlobStoreHelper.uploadBlob(storage, containerName, name, inputStream, makePublic);
+    }
+
+    @Override
+    public boolean delete(String objectName) {
+        return storage.delete(BlobId.of(containerName, objectName));
     }
 }

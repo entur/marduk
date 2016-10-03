@@ -16,4 +16,7 @@ public interface BlobStoreRepository {
     void setStorage(Storage storage);
 
     void setContainerName(String containerName);
+
+    boolean delete(String objectName);
+
 }

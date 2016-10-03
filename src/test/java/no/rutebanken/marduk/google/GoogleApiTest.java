@@ -29,6 +29,11 @@ public class GoogleApiTest {
         return storage.create(blobInfo, data);
     }
 
+    public static boolean delete(Storage storage, String bucketName, String objectName)  {
+        BlobId blobId = BlobId.of(bucketName, objectName);
+        return storage.delete(blobId);
+    }
+
     public static Iterator<Blob> list(Storage storage, String bucketName, String directory)
             throws IOException {
         Page<Blob> blobs = storage.list(bucketName, // Storage.BlobListOption.currentDirectory(),  //opposite of recursive...
@@ -66,20 +71,22 @@ public class GoogleApiTest {
 
         String objectName1 = directory + "ruter1.zip";
 
-        byte[] data = "Yes, this works!".getBytes();
-        Blob blob = uploadSimple(storage, BUCKET_NAME, objectName1, new ByteArrayInputStream(data), "application/octet-stream");
-        System.out.println(blob.name() + " (size: " + blob.size() + ")");
+//        byte[] data = "Yes, this works!".getBytes();
+//        Blob blob = uploadSimple(storage, BUCKET_NAME, objectName1, new ByteArrayInputStream(data), "application/octet-stream");
+//        System.out.println(blob.name() + " (size: " + blob.size() + ")");
 
-        String objectName = directory + "ruter2.zip";
+        delete(storage, BUCKET_NAME, objectName1);
 
-        Blob blob1 = uploadSimple(storage, BUCKET_NAME, objectName, new FileInputStream(FILE_NAME), "application/octet-stream");
-        System.out.println(blob1.name() + " (size: " + blob1.size() + ")");
-
-        list(storage, BUCKET_NAME, directory).forEachRemaining(blob2 -> System.out.println("*" + blob2.name() + " (size: " + blob2.size() + ")"));
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        downloadToOutputStream(storage, BUCKET_NAME, objectName1, out);
-        System.out.println("Downloaded " + out.toByteArray().length + " bytes");
+//        String objectName = directory + "ruter2.zip";
+//
+//        Blob blob1 = uploadSimple(storage, BUCKET_NAME, objectName, new FileInputStream(FILE_NAME), "application/octet-stream");
+//        System.out.println(blob1.name() + " (size: " + blob1.size() + ")");
+//
+//        list(storage, BUCKET_NAME, directory).forEachRemaining(blob2 -> System.out.println("*" + blob2.name() + " (size: " + blob2.size() + ")"));
+//
+//        ByteArrayOutputStream out = new ByteArrayOutputStream();
+//        downloadToOutputStream(storage, BUCKET_NAME, objectName1, out);
+//        System.out.println("Downloaded " + out.toByteArray().length + " bytes");
     }
 
 }

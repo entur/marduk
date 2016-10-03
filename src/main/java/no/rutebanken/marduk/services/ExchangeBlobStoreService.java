@@ -19,10 +19,10 @@ public class ExchangeBlobStoreService {
     private BlobStoreRepository repository;
 
     @Autowired
-    Storage exchangeStorage;
+    private Storage exchangeStorage;
 
     @Value("${blobstore.gcs.exchange.container.name}")
-    String containerName;
+    private String containerName;
 
     @PostConstruct
     public void init(){
@@ -32,6 +32,10 @@ public class ExchangeBlobStoreService {
 
     public InputStream getBlob(@Header(value = FILE_HANDLE) String name) {
         return repository.getBlob(name);
+    }
+
+    public boolean deleteBlob(@Header(value = FILE_HANDLE) String name) {
+        return repository.delete(name);
     }
 
 }
