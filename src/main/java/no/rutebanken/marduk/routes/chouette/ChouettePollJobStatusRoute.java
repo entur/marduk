@@ -1,18 +1,13 @@
 package no.rutebanken.marduk.routes.chouette;
 
-import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-import static no.rutebanken.marduk.routes.chouette.json.Status.ABORTED;
-import static no.rutebanken.marduk.routes.chouette.json.Status.CANCELED;
-import static no.rutebanken.marduk.routes.chouette.json.Status.SCHEDULED;
-import static no.rutebanken.marduk.routes.chouette.json.Status.STARTED;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.rest.ProviderAndJobs;
+import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
+import no.rutebanken.marduk.routes.chouette.json.JobResponse;
+import no.rutebanken.marduk.routes.chouette.json.JobResponseWithLinks;
+import no.rutebanken.marduk.routes.status.Status;
+import no.rutebanken.marduk.routes.status.Status.Action;
+import no.rutebanken.marduk.routes.status.Status.State;
 import org.apache.activemq.ScheduledMessage;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -25,14 +20,15 @@ import org.apache.http.client.utils.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.rest.ProviderAndJobs;
-import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
-import no.rutebanken.marduk.routes.chouette.json.JobResponse;
-import no.rutebanken.marduk.routes.chouette.json.JobResponseWithLinks;
-import no.rutebanken.marduk.routes.status.Status;
-import no.rutebanken.marduk.routes.status.Status.Action;
-import no.rutebanken.marduk.routes.status.Status.State;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.routes.chouette.json.Status.*;
 
 @Component
 public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
@@ -195,8 +191,8 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 	// Update status
                 	.choice()
                     .when(simple("${exchangeProperty.current_status} == '" + STARTED + "' && ${header.loopCounter} == 1"))
-	                    .process(e -> Status.addStatus(e,Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.STARTED))
-	                    .to("direct:updateStatus")
+						.process(e -> Status.builder(e).action( Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.STARTED).jobId(e.getIn().getHeader(Constants.CHOUETTE_JOB_ID, Long.class)).build())
+						.to("direct:updateStatus")
 	                .end()
                   	.setHeader(ScheduledMessage.AMQ_SCHEDULED_DELAY,constant(retryDelay))
                   	// Remove or ActiveMQ will think message is overdue and resend immediately
@@ -215,12 +211,12 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .choice()
                 .when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "'"))
                     .log(LoggingLevel.WARN,correlation()+"Job timed out with state ${header.current_status}. Config should probably be tweaked. Stopping route.")
-                    .process(e -> Status.addStatus(e, Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.TIMEOUT))
+				.process(e -> Status.builder(e).action( Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.TIMEOUT).build())
                     .to("direct:updateStatus")
                     .stop()
                 .when(simple("${header.current_status} == '" + ABORTED + "' || ${header.current_status} == '" + CANCELED + "'"))
                     .log(LoggingLevel.WARN,correlation()+"Job ended in state ${header.current_status}. Stopping route.")
-                    .process(e -> Status.addStatus(e, Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.FAILED))
+					.process(e -> Status.builder(e).action( Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.FAILED).build())
                     .to("direct:updateStatus")
                     .stop()
                 .end()

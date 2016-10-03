@@ -1,7 +1,11 @@
 package no.rutebanken.marduk.routes.status;
 
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
+import no.rutebanken.marduk.Constants;
+import org.apache.camel.Exchange;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -9,68 +13,37 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 
-import org.apache.camel.Exchange;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
-
-import no.rutebanken.marduk.Constants;
+import static no.rutebanken.marduk.Constants.*;
 
 public class Status {
-
-    /* Example
-
-        {
-          "status": {
-            "file_name": "00011-gtfs.zip",
-            "correlation_id": "123456789",
-            "provider_id": "2",
-            "action": "IMPORT",
-            "state": "PENDING",
-            "date": "2015-09-02T00:00:00Z",
-            "status": "OK"
-           }
-        }
-
-     */
 
     public enum Action {FILE_TRANSFER, IMPORT, EXPORT, VALIDATION, CLEAN, DATASPACE_TRANSFER}
 
     public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK}
 
-//    public enum Channel {SFTP, WEB}
-
     @JsonProperty("file_name")
-    public String fileName;
+    private String fileName;
 
     @JsonProperty("correlation_id")
-    public String correlationId;
+    private String correlationId;
 
     @JsonProperty("provider_id")
-    public Long providerId;
+    private Long providerId;
+
+    @JsonProperty("job_id")
+    private Long jobId;
 
     @JsonProperty("action")
-    public Action action;
+    private Action action;
 
     @JsonProperty("state")
-    public State state;
+    private State state;
 
-//    @JsonProperty("channel")
-//    public Channel channel;
-
-	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS", timezone = "CET")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS", timezone = "CET")
     @JsonProperty("date")
-    public Date date;
+    private Date date;
 
-    public Status(String fileName, Long providerId, Action action, State state, String correlationId) {
-        this.fileName = fileName;
-        this.providerId = providerId;
-        this.action = action;
-        this.state = state;
-        this.correlationId = correlationId;
-        this.date = Date.from( Instant.now(Clock.systemDefaultZone()));            //LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
+    private Status() {
     }
 
     public String toString() {
@@ -84,25 +57,92 @@ public class Status {
         }
     }
 
-    public static void addStatus(Exchange exchange, Status.Action action, Status.State state) {
-        String fileName = exchange.getIn().getHeader(Constants.FILE_NAME,String.class);
-        if (Strings.isNullOrEmpty(fileName)) {
-            throw new IllegalArgumentException("No file name");
+    public static Builder builder(){
+        return new Builder();
+    }
+
+    public static Builder builder(Exchange exchange){
+        return new ExchangeBuilder(exchange);
+    }
+
+    public static class Builder {
+
+        protected Status status = new Status();
+
+        private Builder() {
         }
 
-        String providerIdString = exchange.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID, exchange.getIn().getHeader(PROVIDER_ID, String.class),String.class);
-        if (Strings.isNullOrEmpty(providerIdString)) {
-            throw new IllegalArgumentException("No provider id");
-        }
-        Long providerId = Long.valueOf(providerIdString);
-
-        String correlationId = exchange.getIn().getHeader(CORRELATION_ID, String.class);
-        if (Strings.isNullOrEmpty(correlationId)) {
-            throw new IllegalArgumentException("No correlation id");
+        public Builder action(Status.Action action) {
+            status.action = action;
+            return this;
         }
 
-        exchange.getOut().setBody(new Status(fileName, providerId, action, state, correlationId).toString());
-        exchange.getOut().setHeaders(exchange.getIn().getHeaders());
+        public Builder state(Status.State state) {
+            status.state = state;
+            return this;
+        }
+
+        public Builder jobId(Long jobId) {
+            status.jobId = jobId;
+            return this;
+        }
+
+        public Builder fileName(String fileName) {
+            status.fileName = fileName;
+            return this;
+        }
+
+        public Builder providerId(Long providerId) {
+            status.providerId = providerId;
+            return this;
+        }
+
+        public Builder correlationId(String correlationId) {
+            status.correlationId = correlationId;
+            return this;
+        }
+
+        public Status build() {
+            if (Strings.isNullOrEmpty(status.fileName)) {
+                throw new IllegalArgumentException("No file name");
+            }
+
+            if (status.providerId == null) {
+                throw new IllegalArgumentException("No provider id");
+            }
+
+            if (status.providerId == null) {
+                throw new IllegalArgumentException("No correlation id");
+            }
+
+            status.date = Date.from(Instant.now(Clock.systemDefaultZone()));
+            return status;
+        }
+    }
+
+    public static class ExchangeBuilder extends Builder {
+
+        private Exchange exchange;
+
+        private ExchangeBuilder(Exchange exchange) {
+            super();
+            this.exchange = exchange;
+            status.fileName = exchange.getIn().getHeader(Constants.FILE_NAME, String.class);
+            status.providerId = Long.valueOf(exchange.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID, exchange.getIn().getHeader(PROVIDER_ID, String.class), String.class));
+            status.correlationId = exchange.getIn().getHeader(CORRELATION_ID, String.class);
+            status.jobId = exchange.getIn().getHeader(CHOUETTE_JOB_ID, Long.class);
+        }
+
+        @Override
+        public Status build() {
+            if (exchange == null) {
+                throw new IllegalStateException(this.getClass() + " does not holc an instance of exchange. Use builder with exchange parameter.");
+            }
+            Status status = super.build();
+            exchange.getOut().setBody(status.toString());
+            exchange.getOut().setHeaders(exchange.getIn().getHeaders());
+            return status;
+        }
     }
 
 }

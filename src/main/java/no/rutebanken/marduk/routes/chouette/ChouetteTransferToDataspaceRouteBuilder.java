@@ -1,29 +1,23 @@
 package no.rutebanken.marduk.routes.chouette;
 
-import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.JSON_PART;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.UUID;
-
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.PredicateBuilder;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.NeptuneExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.NeptuneImportParameters;
 import no.rutebanken.marduk.routes.status.Status;
 import no.rutebanken.marduk.routes.status.Status.Action;
 import no.rutebanken.marduk.routes.status.Status.State;
+import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.UUID;
+
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Transfers data from one space to another in Chouette
@@ -48,7 +42,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 	e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential);
                 	e.getIn().setHeader(JSON_PART, getExportParameters(e.getIn().getHeader(PROVIDER_ID, Long.class)));
                 })
-                .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.PENDING))
+				.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.PENDING).build())
 		        .to("direct:updateStatus")
                 .log(LoggingLevel.INFO,correlation()+"Creating multipart request")
                 .process(e -> toGenericChouetteMultipart(e))
@@ -58,7 +52,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,"direct:processTransferExportResult");
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, Action.DATASPACE_TRANSFER.name());
                     })
-		        .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.STARTED))
+				.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.STARTED).build())
 		        .to("direct:updateStatus")
                 .log(LoggingLevel.INFO,correlation()+"Sending transfer export to poll job status")
                 .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
@@ -84,7 +78,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 	                	Provider destinationProvider = getProviderRepository().getProvider(currentProvider.chouetteInfo.migrateDataToProvider);
 	        			e.getIn().setHeader(CHOUETTE_REFERENTIAL, destinationProvider.chouetteInfo.referential);
 	                    e.getIn().setHeader(JSON_PART, getImportParameters("transfer.zip",  currentProvider.chouetteInfo.migrateDataToProvider,true));
-	                }) //Using header to add json data
+	                }) //Using header to addToExchange json data
 	                .removeHeaders("Camel*")
 	                .process(e -> toImportMultipart(e))
 	                .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
@@ -101,12 +95,12 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 	                .to("activemq:queue:ChouettePollStatusQueue")
                 .when(simple("${header.action_report_result} == 'NOK'"))
                     .log(LoggingLevel.WARN,correlation()+"Export for transfer failed")
-		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.FAILED))
+					.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.FAILED).build())
 			        .to("direct:updateStatus")
 			        .stop()
                 .otherwise()
                     .log(LoggingLevel.ERROR,correlation()+"Something went wrong on export for transfer")
-		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.FAILED))
+					.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.FAILED).build())
 			        .to("direct:updateStatus")
 			        .stop()
                 .end()
@@ -122,7 +116,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 // 		            .to("direct:checkScheduledJobsBeforeTriggeringNeptuneValidation")
 // 		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.OK))
  		        .when(simple("${header.action_report_result} == 'OK'"))
-		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.OK))
+				 	.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.OK).build())
 	 		        .to("direct:updateStatus")
 	                .process(e -> {
 	                	// Update provider, now context switches to next provider level
@@ -133,11 +127,11 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  		            .to("direct:checkScheduledJobsBeforeTriggeringNeptuneValidation")
  		        .when(simple("${header.action_report_result} == 'NOK'"))
  		        	.log(LoggingLevel.INFO,correlation()+"Transfer import failed")
- 		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.FAILED))
+				 	.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.FAILED).build())
  	 		        .to("direct:updateStatus")
  		        .otherwise()
  		            .log(LoggingLevel.ERROR,correlation()+"Something went wrong on transfer import")
- 		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.FAILED))
+				 	.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.FAILED).build())
  	 		        .to("direct:updateStatus")
  		        .end()
  		        .routeId("chouette-process-transfer-import-status");

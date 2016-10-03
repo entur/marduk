@@ -1,23 +1,6 @@
 package no.rutebanken.marduk.routes.chouette;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.UUID;
-
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.routes.chouette.json.GtfsExportParameters;
@@ -25,6 +8,17 @@ import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.Status;
 import no.rutebanken.marduk.routes.status.Status.Action;
 import no.rutebanken.marduk.routes.status.Status.State;
+import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.io.*;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.*;
 
@@ -54,11 +48,11 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
                 	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
                 })
         		.setHeader(Constants.FILE_NAME,constant("None"))
-		        .process(e -> Status.addStatus(e, Action.EXPORT, State.PENDING))
+				.process(e -> Status.builder(e).action(Action.EXPORT).state(State.PENDING).build())
 		        .to("direct:updateStatus")
         		
         		.process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-                .process(e -> e.getIn().setHeader(JSON_PART, getJsonFileContent(e.getIn().getHeader(PROVIDER_ID, Long.class)))) //Using header to add json data
+                .process(e -> e.getIn().setHeader(JSON_PART, getJsonFileContent(e.getIn().getHeader(PROVIDER_ID, Long.class)))) //Using header to addToExchange json data
                 .log(LoggingLevel.INFO,correlation()+"Creating multipart request")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> toGenericChouetteMultipart(e))
@@ -91,13 +85,13 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
 	                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
 	                .to("direct:uploadBlob")
 	                .to("activemq:queue:OtpGraphQueue")
-		            .process(e -> Status.addStatus(e, Action.EXPORT, State.OK))
+					.process(e -> Status.builder(e).action(Action.EXPORT).state(State.OK).build())
                 .when(simple("${header.action_report_result} == 'NOK'"))
                     .log(LoggingLevel.WARN,correlation()+"Export failed")
-		            .process(e -> Status.addStatus(e, Action.EXPORT, State.FAILED))
+					.process(e -> Status.builder(e).action(Action.EXPORT).state(State.FAILED).build())
                 .otherwise()
                     .log(LoggingLevel.ERROR,correlation()+"Something went wrong on export")
-		            .process(e -> Status.addStatus(e, Action.EXPORT, State.FAILED))
+					.process(e -> Status.builder(e).action(Action.EXPORT).state(State.FAILED).build())
                 .end()
 		        .to("direct:updateStatus")
 		        .routeId("chouette-process-export-status");

@@ -1,17 +1,16 @@
 package no.rutebanken.marduk.routes.file;
 
 
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.FILE_TYPE;
-
+import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
+import no.rutebanken.marduk.routes.status.Status;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
-import no.rutebanken.marduk.routes.status.Status;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_TYPE;
 
 /**
  * Receives file handle, pulls file from blob store, xlassifies files and performs initial validation.
@@ -25,14 +24,14 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
         onException(ValidationException.class)
                 .handled(true)
-                .log(LoggingLevel.INFO, correlation()+"Could not process file ${header." + FILE_HANDLE + "}") 
-                .process(e -> Status.addStatus(e, Status.Action.FILE_TRANSFER, Status.State.FAILED))
+                .log(LoggingLevel.INFO, correlation()+"Could not process file ${header." + FILE_HANDLE + "}")
+				.process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.FAILED).build())
                 .to("direct:updateStatus")
                 .setBody(simple(""))      //remove file data from body
                 .to("activemq:queue:DeadLetterQueue");
 
         from("activemq:queue:ProcessFileQueue?transacted=true")
-                .process(e -> Status.addStatus(e, Status.Action.FILE_TRANSFER, Status.State.OK))
+				.process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.OK).build())
                 .to("direct:updateStatus")
                 .to("direct:getBlob")
                 .convertBodyTo(byte[].class)

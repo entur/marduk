@@ -1,22 +1,19 @@
 package no.rutebanken.marduk.routes.chouette;
 
-import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.JSON_PART;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-
-import java.util.UUID;
-
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.routes.chouette.json.ValidationParameters;
 import no.rutebanken.marduk.routes.status.Status;
 import no.rutebanken.marduk.routes.status.Status.Action;
 import no.rutebanken.marduk.routes.status.Status.State;
+import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.util.UUID;
+
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Runs validation in Chouette
@@ -38,12 +35,11 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 	// Add correlation id only if missing
                 	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
                 })
-
-		        .process(e -> Status.addStatus(e, Action.VALIDATION, State.PENDING))
+				.process(e -> Status.builder(e).action(Action.VALIDATION).state(State.PENDING).build())
 		        .to("direct:updateStatus")
 
 	            .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-                .process(e -> e.getIn().setHeader(JSON_PART, getJsonFileContent(e.getIn().getHeader(PROVIDER_ID, Long.class)))) //Using header to add json data
+                .process(e -> e.getIn().setHeader(JSON_PART, getJsonFileContent(e.getIn().getHeader(PROVIDER_ID, Long.class)))) //Using header to addToExchange json data
                 .log(LoggingLevel.DEBUG,correlation()+"Creating multipart request")
                 .process(e -> toGenericChouetteMultipart(e))
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
@@ -63,13 +59,13 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 		        .choice()
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'OK'"))
 		            .to("direct:checkScheduledJobsBeforeTriggeringExport")
-		            .process(e -> Status.addStatus(e, Action.VALIDATION, State.OK))
+				 	.process(e -> Status.builder(e).action(Action.VALIDATION).state(State.OK).build())
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'NOK'"))
 		        	.log(LoggingLevel.INFO,correlation()+"Validation failed (processed ok, but timetable data is faulty)")
-		            .process(e -> Status.addStatus(e, Action.VALIDATION, State.FAILED))
+				 	.process(e -> Status.builder(e).action(Action.VALIDATION).state(State.FAILED).build())
 		        .otherwise()
 		            .log(LoggingLevel.ERROR,correlation()+"Validation went wrong")
-		            .process(e -> Status.addStatus(e, Action.VALIDATION, State.FAILED))
+					.process(e -> Status.builder(e).action(Action.VALIDATION).state(State.FAILED).build())
 		        .end()
 		        .to("direct:updateStatus")
 		        .routeId("chouette-process-validation-status");
