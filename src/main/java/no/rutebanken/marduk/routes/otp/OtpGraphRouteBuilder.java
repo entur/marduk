@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
+import static org.apache.camel.builder.Builder.exceptionStackTrace;
 import static org.apache.camel.model.rest.RestParamType.body;
 
 /**
@@ -116,7 +117,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 	                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 	                .log(LoggingLevel.INFO,correlation()+"Done building new OTP graph.")
         		.doCatch(Exception.class)
-        			.log(LoggingLevel.ERROR,correlation()+"Graph building failed: "+exceptionMessage())
+        			.log(LoggingLevel.ERROR,correlation()+"Graph building failed: "+exceptionMessage() + " stacktrace: " + exceptionStackTrace())
         		.end()
         		.routeId("otp-graph-build-otp");
 
