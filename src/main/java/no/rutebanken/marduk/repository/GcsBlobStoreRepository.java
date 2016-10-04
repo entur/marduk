@@ -55,6 +55,6 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public boolean delete(String objectName) {
-        return storage.delete(BlobId.of(containerName, objectName));
+        return BlobStoreHelper.delete(storage, BlobId.of(containerName, objectName));
     }
 }
