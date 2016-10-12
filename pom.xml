@@ -26,7 +26,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <gcp-storage.version>0.0.1-SNAPSHOT</gcp-storage.version>
+        <gcp-storage.version>0.0.1</gcp-storage.version>
 
         <!-- versions for use in mvn plugins as we cannot inherit them from a BOM -->
         <fabric8.version>2.2.84</fabric8.version>
