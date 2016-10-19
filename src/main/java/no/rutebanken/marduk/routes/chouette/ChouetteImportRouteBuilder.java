@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.*;
-import static no.rutebanken.marduk.routes.chouette.ChouetteUtils.*;
+import static no.rutebanken.marduk.Utils.*;
 
 /**
  * Submits files to Chouette
@@ -128,7 +128,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e ->  {
 					e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, getHttp4(e.getIn().getHeader("Location", String.class)));
-					e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getJobIdFromLocationUrl(e.getIn().getHeader("Location", String.class)));
+					e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,constant("direct:processImportResult"))
         		.setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(Action.IMPORT.name()))

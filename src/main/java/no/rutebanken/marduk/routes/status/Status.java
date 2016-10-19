@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.routes.status;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -15,6 +16,7 @@ import java.util.Date;
 
 import static no.rutebanken.marduk.Constants.*;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Status {
 
     public enum Action {FILE_TRANSFER, IMPORT, EXPORT, VALIDATION, CLEAN, DATASPACE_TRANSFER}
@@ -29,6 +31,7 @@ public class Status {
 
     @JsonProperty("provider_id")
     private Long providerId;
+
 
     @JsonProperty("job_id")
     private Long jobId;

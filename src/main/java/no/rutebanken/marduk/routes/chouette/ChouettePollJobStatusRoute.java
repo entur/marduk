@@ -260,7 +260,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
         from("direct:checkValidationReport")
         		.choice()
-        		.when().jsonpath("$.validation_report.tests[?(@.severity == 'ERROR' && @.result == 'NOK')]")
+        		.when().jsonpath("$.validation_report.check_points[?(@.severity == 'ERROR' && @.result == 'NOK')]")
        				.setHeader("validation_report_result", constant("NOK"))
 		    	.otherwise()
 		    		.setHeader("validation_report_result",constant("OK"))
