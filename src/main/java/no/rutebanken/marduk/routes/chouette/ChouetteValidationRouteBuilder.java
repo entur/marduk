@@ -1,8 +1,7 @@
 package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.ChouetteInfo;
-import no.rutebanken.marduk.routes.chouette.json.ValidationParameters;
+import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.status.Status;
 import no.rutebanken.marduk.routes.status.Status.Action;
 import no.rutebanken.marduk.routes.status.Status.State;
@@ -39,7 +38,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 		        .to("direct:updateStatus")
 
 	            .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-                .process(e -> e.getIn().setHeader(JSON_PART, getJsonFileContent(e.getIn().getHeader(PROVIDER_ID, Long.class)))) //Using header to addToExchange json data
+                .process(e -> e.getIn().setHeader(JSON_PART, Parameters.getValidationParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class))))) //Using header to addToExchange json data
                 .log(LoggingLevel.DEBUG,correlation()+"Creating multipart request")
                 .process(e -> toGenericChouetteMultipart(e))
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
@@ -90,14 +89,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
     }
     
 
-    String getJsonFileContent(Long providerId) {
-        ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
-    
-        ValidationParameters validationParameters = ValidationParameters.create("Automatisk",
-                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user);
-        validationParameters.enableValidation = true;
-        return validationParameters.toJsonString();
-    }
+
 }
 
 

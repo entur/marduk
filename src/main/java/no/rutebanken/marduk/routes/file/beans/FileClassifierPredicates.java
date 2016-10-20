@@ -61,17 +61,61 @@ public class FileClassifierPredicates {
         try (ZipInputStream stream = new ZipInputStream(inputStream)) {
             ZipEntry entry;
             while ( ( entry = stream.getNextEntry()) != null) {
-                if (!predicate.test(stream)) {
-                    String s = String.format("Entry %s with size %d is invalid.",
-                            entry.getName(), entry.getSize(),
-                            new Date(entry.getTime()));
-                    logger.info(s);
-                    return false;
+                if (testPredicate(predicate, stream, entry)) return false;
+            }
+            return true;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public static boolean validateZipContent(InputStream inputStream, Predicate<InputStream> predicate, String skipFileRegex) {
+        try (ZipInputStream stream = new ZipInputStream(inputStream)) {
+            ZipEntry entry;
+            while ( ( entry = stream.getNextEntry()) != null) {
+                if (!entry.getName().matches(skipFileRegex)) {
+                    if (testPredicate(predicate, stream, entry)) return false;
+                } else {
+                    logger.info("Skipped file with name " + entry.getName());
                 }
             }
             return true;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static boolean testPredicate(Predicate<InputStream> predicate, ZipInputStream stream, ZipEntry entry) {
+        if (!predicate.test(new CloseIgnoringInputStream(stream))) {
+            String s = String.format("Entry %s with size %d is invalid.",
+                    entry.getName(), entry.getSize(),
+                    new Date(entry.getTime()));
+            logger.info(s);
+            return true;
+        }
+        return false;
+    }
+}
+
+
+class CloseIgnoringInputStream extends InputStream {
+
+    private ZipInputStream stream;
+
+    public CloseIgnoringInputStream(ZipInputStream inStream) {
+        stream = inStream;
+    }
+
+    public int read() throws IOException {
+        return stream.read();
+    }
+
+    public void close() {
+        //ignore
+    }
+
+    public void reallyClose() throws IOException {
+        stream.close();
     }
 }

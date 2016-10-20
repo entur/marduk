@@ -1,20 +1,28 @@
-package no.rutebanken.marduk.routes.chouette.json;
+package no.rutebanken.marduk.routes.chouette.json.importer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import no.rutebanken.marduk.routes.chouette.json.AbstractParameters;
+import no.rutebanken.marduk.routes.chouette.json.ChouetteJobParameters;
 
-public class GtfsImportParameters extends ChouetteJobParameters{
+import javax.xml.bind.annotation.XmlElement;
+
+public class GtfsImportParameters extends ChouetteJobParameters {
 
     public Parameters parameters;
 
 	static class Parameters {
 
         @JsonProperty("gtfs-import")
-        public GtfsImport gtfsImport;
+        public Gtfs gtfsImport;
 
     }
 
-    static class GtfsImport extends AbstractImportParameters {
+    static class Gtfs extends AbstractImportParameters {
+
+        @JsonProperty("object_id_prefix")
+        @JsonInclude(JsonInclude.Include.ALWAYS)
+        public String objectIdPrefix;
 
         @JsonProperty("max_distance_for_commercial")
         public String maxDistanceForCommercial = "0";
@@ -36,7 +44,7 @@ public class GtfsImportParameters extends ChouetteJobParameters{
     }
 
     public static GtfsImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository,boolean enableValidation) {
-        GtfsImport gtfsImport = new GtfsImport();
+        Gtfs gtfsImport = new Gtfs();
         gtfsImport.name = name;
         gtfsImport.objectIdPrefix = objectIdPrefix;
         gtfsImport.referentialName = referentialName;

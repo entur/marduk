@@ -1,7 +1,9 @@
-package no.rutebanken.marduk.routes.chouette.json;
+package no.rutebanken.marduk.routes.chouette.json.importer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import no.rutebanken.marduk.routes.chouette.json.AbstractParameters;
+import no.rutebanken.marduk.routes.chouette.json.ChouetteJobParameters;
 
 public class RegtoppImportParameters extends ChouetteJobParameters {
 
@@ -10,14 +12,17 @@ public class RegtoppImportParameters extends ChouetteJobParameters {
 	static class Parameters {
 
 		@JsonProperty("regtopp-import")
-		public RegtoppImport regtoppImport;
+		public Regtopp regtoppImport;
 
 	}
 
-	static class RegtoppImport extends AbstractImportParameters {
+	static class Regtopp extends AbstractImportParameters {
+
+		@JsonProperty("object_id_prefix")
+		@JsonInclude(JsonInclude.Include.ALWAYS)
+		private String objectIdPrefix;
 
 		@JsonProperty("references_type")
-		@JsonInclude(JsonInclude.Include.ALWAYS)
 		public String referencesType = "";
 
 		@JsonProperty("version")
@@ -35,7 +40,7 @@ public class RegtoppImportParameters extends ChouetteJobParameters {
 	public static RegtoppImportParameters create(String name, String objectIdPrefix, String referentialName,
 			String organisationName, String userName, String version, String coordinateProjection,
 			String calendarStrategy, boolean cleanRepository, boolean enableValidation) {
-		RegtoppImport regtoppImport = new RegtoppImport();
+		Regtopp regtoppImport = new Regtopp();
 		regtoppImport.name = name;
 		regtoppImport.objectIdPrefix = objectIdPrefix;
 		regtoppImport.referentialName = referentialName;

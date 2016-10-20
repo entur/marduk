@@ -1,10 +1,8 @@
 package no.rutebanken.marduk.routes.chouette;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.routes.chouette.json.NeptuneExportParameters;
-import no.rutebanken.marduk.routes.chouette.json.NeptuneImportParameters;
+import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.status.Status;
 import no.rutebanken.marduk.routes.status.Status.Action;
 import no.rutebanken.marduk.routes.status.Status.State;
@@ -13,8 +11,6 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.io.StringWriter;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.*;
@@ -40,7 +36,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 	e.getIn().setHeader(Constants.FILE_NAME,"None");
                 	e.getIn().setHeader(Constants.FILE_HANDLE,"transfer.zip");
                 	e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential);
-                	e.getIn().setHeader(JSON_PART, getExportParameters(e.getIn().getHeader(PROVIDER_ID, Long.class)));
+                	e.getIn().setHeader(JSON_PART, Parameters.getNeptuneExportParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class))));
                 })
 				.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.PENDING).build())
 		        .to("direct:updateStatus")
@@ -77,7 +73,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 	                	Provider currentProvider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
 	                	Provider destinationProvider = getProviderRepository().getProvider(currentProvider.chouetteInfo.migrateDataToProvider);
 	        			e.getIn().setHeader(CHOUETTE_REFERENTIAL, destinationProvider.chouetteInfo.referential);
-	                    e.getIn().setHeader(JSON_PART, getImportParameters("transfer.zip",  currentProvider.chouetteInfo.migrateDataToProvider,true));
+	                    e.getIn().setHeader(JSON_PART, Parameters.getNeptuneImportParameters("transfer.zip",  getProviderRepository().getProvider(currentProvider.chouetteInfo.migrateDataToProvider),true));
 	                }) //Using header to addToExchange json data
 	                .removeHeaders("Camel*")
 	                .process(e -> toImportMultipart(e))
@@ -153,30 +149,6 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
              .routeId("chouette-process-job-list-after-transfer-import");
 
     }
-
-	private String getImportParameters(String importName, Long providerId, boolean cleanRepository) {
-		Provider provider = getProviderRepository().getProvider(providerId);
-		NeptuneImportParameters regtoppImportParameters = NeptuneImportParameters.create(importName,
-				provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user,
-				cleanRepository, provider.chouetteInfo.enableValidation);
-		return regtoppImportParameters.toJsonString();
-	}
-
-	private String getExportParameters(Long providerId) {
-		try {
-			Provider provider  = getProviderRepository().getProvider(providerId);
-			NeptuneExportParameters.NeptuneExport gtfsExport = new NeptuneExportParameters.NeptuneExport("export",
-					provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user);
-			NeptuneExportParameters.Parameters parameters = new NeptuneExportParameters.Parameters(gtfsExport);
-			NeptuneExportParameters importParameters = new NeptuneExportParameters(parameters);
-			ObjectMapper mapper = new ObjectMapper();
-			StringWriter writer = new StringWriter();
-			mapper.writeValue(writer, importParameters);
-			return writer.toString();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
 
 }
 

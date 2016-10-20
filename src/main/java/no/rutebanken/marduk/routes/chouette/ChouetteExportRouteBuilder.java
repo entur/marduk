@@ -1,9 +1,7 @@
 package no.rutebanken.marduk.routes.chouette;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.ChouetteInfo;
-import no.rutebanken.marduk.routes.chouette.json.GtfsExportParameters;
+import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.Status;
 import no.rutebanken.marduk.routes.status.Status.Action;
@@ -13,11 +11,9 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
+import java.io.File;
+import java.io.InputStream;
+import java.io.PrintWriter;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.*;
@@ -52,7 +48,7 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
 		        .to("direct:updateStatus")
         		
         		.process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-                .process(e -> e.getIn().setHeader(JSON_PART, getJsonFileContent(e.getIn().getHeader(PROVIDER_ID, Long.class)))) //Using header to addToExchange json data
+                .process(e -> e.getIn().setHeader(JSON_PART, Parameters.getGtfsExportParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class))))) //Using header to addToExchange json data
                 .log(LoggingLevel.INFO,correlation()+"Creating multipart request")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> toGenericChouetteMultipart(e))
@@ -118,27 +114,6 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
         		.routeId("chouette-process-export-gtfs-feedinfo");
     }
 
-   
-
-    String getJsonFileContent(Long providerId) {
-        try {
-            ChouetteInfo chouetteInfo = getProviderRepository().getProvider(providerId).chouetteInfo;
-            GtfsExportParameters.GtfsExport gtfsExport = new GtfsExportParameters.GtfsExport("export",
-                    chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user);
-            GtfsExportParameters.Parameters parameters = new GtfsExportParameters.Parameters(gtfsExport);
-            GtfsExportParameters importParameters = new GtfsExportParameters(parameters);
-            ObjectMapper mapper = new ObjectMapper();
-            StringWriter writer = new StringWriter();
-            mapper.writeValue(writer, importParameters);
-            return writer.toString();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    Date toDate(LocalDate localDate) {
-        return Date.from(localDate.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant().truncatedTo(ChronoUnit.DAYS));
-    }
 
 }
 

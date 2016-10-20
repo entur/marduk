@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.routes.chouette.json;
+package no.rutebanken.marduk.routes.chouette.json.exporter;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -22,7 +22,7 @@ public class GtfsExportParameters {
 
     }
 
-    public static class GtfsExport extends AbstractImportParameters {
+    public static class GtfsExport extends AbstractExportParameters {
 
         @JsonProperty("object_id_prefix")
         public String objectIdPrefix;
@@ -48,6 +48,7 @@ public class GtfsExportParameters {
             this.referentialName = referentialName;
             this.organisationName = organisationName;
             this.userName = userName;
+            this.startDate = DateUtils.startDateFor(2L);
         }
 
     }

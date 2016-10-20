@@ -1,18 +1,20 @@
-package no.rutebanken.marduk.routes.chouette.json;
+package no.rutebanken.marduk.routes.chouette.json.importer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import no.rutebanken.marduk.routes.chouette.json.AbstractParameters;
+import no.rutebanken.marduk.routes.chouette.json.ChouetteJobParameters;
 
-public class NetexImportParameters extends ChouetteJobParameters{
+public class NetexImportParameters extends ChouetteJobParameters {
 
     public Parameters parameters;
 
 	static class Parameters {
         @JsonProperty("netexprofile-import")
-        public NetexImport netexImport;
+        public Netex netexImport;
     }
 
-    static class NetexImport extends AbstractImportParameters {
+    static class Netex extends AbstractImportParameters {
         @JsonProperty("profile_id")
         private String profileId = "norway";
 
@@ -32,10 +34,9 @@ public class NetexImportParameters extends ChouetteJobParameters{
     }
 
 
-    public static NetexImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository, boolean enableValidation) {
-        NetexImport netexImport = new NetexImport();
+    public static NetexImportParameters create(String name, String referentialName, String organisationName, String userName, boolean cleanRepository, boolean enableValidation) {
+        Netex netexImport = new Netex();
         netexImport.name = name;
-        netexImport.objectIdPrefix = objectIdPrefix.toUpperCase();
         netexImport.referentialName = referentialName;
         netexImport.organisationName = organisationName;
         netexImport.userName = userName;

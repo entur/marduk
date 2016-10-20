@@ -1,8 +1,5 @@
-package no.rutebanken.marduk.routes.chouette.json;
+package no.rutebanken.marduk.routes.chouette.json.exporter;
 
-import org.joda.time.LocalDate;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class NeptuneExportParameters {
@@ -23,40 +20,20 @@ public class NeptuneExportParameters {
 		}
 	}
 
-	public static class NeptuneExport extends AbstractImportParameters {
+	public static class NeptuneExport extends AbstractExportParameters {
 
 		@JsonProperty("projection_type")
 		public String projectionType = "4326"; // WGS84
 
-		@JsonProperty("references_type")
-		@JsonInclude(JsonInclude.Include.ALWAYS)
-		public String referencesType = null;
-
-		@JsonProperty("reference_ids")
-		@JsonInclude(JsonInclude.Include.ALWAYS)
-		public String[] referenceIds = new String[0];
-
 		@JsonProperty("add_extension")
 		public String addExtension = "1";
 
-		@JsonProperty("start_date")
-		public String startDate = null;
-
-		@JsonProperty("end_date")
-		public String endDate = null;
-
 		public NeptuneExport(String name, String referentialName, String organisationName, String userName) {
 			this.name = name;
-
 			this.referentialName = referentialName;
 			this.organisationName = organisationName;
 			this.userName = userName;
-
-			LocalDate today = new LocalDate();
-
-			startDate = today.minusDays(2).toString();
-			endDate = today.plusYears(1).toString();
-
+			this.startDate = DateUtils.startDateFor(2L);
 		}
 
 	}
