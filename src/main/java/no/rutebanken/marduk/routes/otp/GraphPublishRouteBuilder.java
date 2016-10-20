@@ -42,7 +42,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .convertBodyTo(InputStream.class)
                 .process(
-                        e -> e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-" + Utils.getOtpVersion() + "-"))
+                        e -> e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"))
                 )
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:uploadBlob")
