@@ -146,9 +146,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				    .to("direct:listBlobs")
 				    .routeId("admin-chouette-import-list")
 				    .endRest()
-				.get("/stats")
+				.get("/lineStats")
 					.description("List stats about data in chouette for a given provider")
 					.param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
+				//TODO add class for binding
 				.bindingMode(RestBindingMode.off)
 //				.outType()
 					.consumes(PLAIN)
