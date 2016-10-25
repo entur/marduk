@@ -92,6 +92,8 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
                 .setHeader(FINISHED, constant("true"))
+                .log(LoggingLevel.INFO, "Map was updated, therefore triggering OSM graph build")
+                .inOnly("activemq:queue:OtpGraphQueue")
                 .to("direct:notifyOsmStatus")
                 .log(LoggingLevel.DEBUG, "Processing of OSM map finished")
                 .routeId("osm-fetch-map");
