@@ -23,7 +23,8 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .removeHeaders("Camel*")
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
-                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/statistics/${header." + CHOUETTE_REFERENTIAL + "}/line"))
+                // TODO validity categories should be extracted as a config parameter
+                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/statistics/${header." + CHOUETTE_REFERENTIAL + "}/line?minDaysValidityCategory=120&minDaysValidityCategory=127"))
                 .toD("${exchangeProperty.chouette_url}");
     }
 
