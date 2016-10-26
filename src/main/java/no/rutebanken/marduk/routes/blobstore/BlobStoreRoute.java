@@ -76,7 +76,11 @@ public class BlobStoreRoute extends BaseRouteBuilder {
         from("direct:listBlobs")
         	// TODO make this route work
 	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-            .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+            .process(e -> {
+                // TODO workaround for referential rename. Could call this something else in DB, if prefix isn't used
+                String prefix = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.prefix.toLowerCase();
+                e.getIn().setHeader(CHOUETTE_REFERENTIAL, prefix);
+            })
 	        .bean("blobStoreService","listBlobs")
 	        .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
 	        .log(LoggingLevel.INFO,correlation()+"Returning from fetching file list from blob store.")
