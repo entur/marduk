@@ -57,18 +57,18 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
         	.autoStartup("{{otp.graph.build.autoStartup:true}}")
                 .choice()
                 .when(constant(purgeQueue))
-                    .log(LoggingLevel.INFO,correlation()+"Purging OtpGraphQueue.")
+                    .log(LoggingLevel.INFO, getClass().getName(), correlation()+"Purging OtpGraphQueue.")
                     .to("http4://" + brokerMgmtHost + ":" + brokerMgmtPort + "/api/jolokia/exec/org.apache.activemq:type=Broker,brokerName=" +
                         brokerName + ",destinationType=Queue,destinationName=OtpGraphQueue/purge()?authUsername=" + brokerUser + "&authPassword=" + brokerPassword)
                 .end()
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
                 .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
-                .log(LoggingLevel.INFO,correlation()+"Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation()+"Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:fetchLatestGtfs")
                 .to("direct:fetchConfig")
                 .to("direct:fetchMap")
                 .to("direct:buildGraph")
-                .log(LoggingLevel.INFO,correlation()+"Done with OTP graph building route.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation()+"Done with OTP graph building route.")
                 .routeId("otp-graph-build");
 
         from("direct:fetchLatestGtfs")
@@ -79,7 +79,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-graph-fetch-gtfs");
 
         from("direct:getGtfsFiles")
-            	.log(LoggingLevel.INFO,correlation()+"Fetching " + BLOBSTORE_PATH_OUTBOUND + "gtfs/${body}")
+            	.log(LoggingLevel.INFO, getClass().getName(), correlation()+"Fetching " + BLOBSTORE_PATH_OUTBOUND + "gtfs/${body}")
                 .setProperty("fileName", body())
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${property.fileName}"))
                 .to("direct:getBlob")
@@ -87,23 +87,23 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .when(body().isNotEqualTo(null))
                 .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/${property.fileName}")
                 .otherwise()
-                .log(LoggingLevel.INFO,correlation()+"${property.fileName} was empty when trying to fetch it from blobstore.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation()+"${property.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("otp-graph-get-gtfs");
 
         from("direct:fetchConfig")
-                .log(LoggingLevel.DEBUG,correlation()+"Fetching config ...")
+                .log(LoggingLevel.DEBUG, getClass().getName(), correlation()+"Fetching config ...")
                 .to("language:constant:resource:classpath:no/rutebanken/marduk/routes/otp/" + BUILD_CONFIG_JSON)
                 .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/" + BUILD_CONFIG_JSON)
-                .log(LoggingLevel.DEBUG, correlation()+BUILD_CONFIG_JSON + " fetched.")
+                .log(LoggingLevel.DEBUG, getClass().getName(), correlation()+BUILD_CONFIG_JSON + " fetched.")
                 .routeId("otp-graph-fetch-config");
 
         from("direct:fetchMap")
-                .log(LoggingLevel.DEBUG,correlation()+"Fetching map ...")
+                .log(LoggingLevel.DEBUG, getClass().getName(), correlation()+"Fetching map ...")
                 .removeHeaders("*")
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm +"/"+"norway-latest.osm.pbf"))
                 .to("direct:getBlob")
                 .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/" + NORWAY_LATEST_OSM_PBF)
-                .log(LoggingLevel.DEBUG,correlation()+NORWAY_LATEST_OSM_PBF + " fetched.")
+                .log(LoggingLevel.DEBUG,  getClass().getName(), correlation()+NORWAY_LATEST_OSM_PBF + " fetched.")
                 .routeId("otp-graph-fetch-map");
 
 
