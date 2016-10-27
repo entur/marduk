@@ -7,6 +7,7 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import java.util.Collection;
 import java.util.UUID;
 
+import no.rutebanken.marduk.routes.status.Status;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -65,11 +66,13 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
                     .log(LoggingLevel.INFO, correlation()+"Received file on sftp route for '" + provider.sftpAccount + "'. Storing file ...")
                     .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_INBOUND + provider.chouetteInfo.referential + "/" + provider.chouetteInfo.referential + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
                     .setHeader(PROVIDER_ID, constant(provider.id))
+                    .setHeader(Constants.FILE_NAME, header(Exchange.FILE_NAME))
                     .log(LoggingLevel.INFO, correlation()+"File handle is: ${header." + FILE_HANDLE + "}")
                     .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                     .to("direct:uploadBlob")
+                    .process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.STARTED).build())
+                    .to("direct:updateStatus")
                     .log(LoggingLevel.INFO, correlation()+"Putting handle ${header." + FILE_HANDLE + "} on queue...")
-                    .setHeader(Constants.FILE_NAME,exchangeProperty(Exchange.FILE_NAME))
                     .to("activemq:queue:ProcessFileQueue")
                     .routeId("sftp-gcs-"+provider.chouetteInfo.referential);
         }

@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
-import static org.apache.camel.model.rest.RestParamType.body;
 
 /**
  * Trigger OTP graph building

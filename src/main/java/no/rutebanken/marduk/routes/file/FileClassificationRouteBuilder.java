@@ -13,7 +13,7 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
 
 /**
- * Receives file handle, pulls file from blob store, xlassifies files and performs initial validation.
+ * Receives file handle, pulls file from blob store, classifies files and performs initial validation.
  */
 @Component
 public class FileClassificationRouteBuilder extends BaseRouteBuilder {

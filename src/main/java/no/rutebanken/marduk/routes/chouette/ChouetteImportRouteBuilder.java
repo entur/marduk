@@ -94,7 +94,6 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 	Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
 					e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
 					e.getIn().setHeader(Constants.ENABLE_VALIDATION, provider.chouetteInfo.enableValidation);
-					
                 })
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:addImportParameters")

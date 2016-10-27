@@ -1,19 +1,9 @@
 package no.rutebanken.marduk.rest;
 
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
@@ -25,11 +15,13 @@ import org.apache.camel.model.rest.RestPropertyDefinition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.BlobStoreFiles.File;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.chouette.json.JobResponse;
-import no.rutebanken.marduk.routes.chouette.json.Status;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * REST interface for backdoor triggering of messages
