@@ -29,6 +29,9 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
 
     @Value("${sftp.keyfile}")
     private String sftpKeyFile;
+
+    @Value("${sftp.known.hosts.file}")
+    private String knownHostsFile;
     
     @Override
     public void configure() throws Exception {
@@ -40,7 +43,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
         Collection<Provider> providers = getProviderRepository().getProviders();
         providers.stream().filter(p -> p.sftpAccount != null).forEach(p -> {
             try {
-                context.addRoutes(new DynamcSftpPollerRouteBuilder(context, p, sftpHost, sftpKeyFile));
+                context.addRoutes(new DynamcSftpPollerRouteBuilder(p, sftpHost, sftpKeyFile, knownHostsFile));
             } catch (Exception e){
                 throw new RuntimeException(e);
             }
@@ -51,16 +54,18 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
         private final Provider provider;
         private final String sftpHost;
         private final String sftpKeyFile;
+        private final String knownHostsFile;
 
-        private DynamcSftpPollerRouteBuilder(CamelContext context, Provider provider, String sftpHost, String sftpKeyFile) {
+        private DynamcSftpPollerRouteBuilder(Provider provider, String sftpHost, String sftpKeyFile, String knownHostsFile) {
             this.provider = provider;
             this.sftpHost = sftpHost;
             this.sftpKeyFile = sftpKeyFile;
+            this.knownHostsFile = knownHostsFile;
         }
 
         @Override
         public void configure() throws Exception {
-            from("sftp://" + provider.sftpAccount + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&sorter=#caseIdSftpSorter&delay=30s&delete=true&localWorkDirectory=files/tmp&connectTimeout=1000")
+            from("sftp://" + provider.sftpAccount + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&knownHostsFile=" + knownHostsFile + "&sorter=#caseIdSftpSorter&delay=30s&delete=true&localWorkDirectory=files/tmp&connectTimeout=1000")
 					.autoStartup("{{sftp.autoStartup:true}}")
 				    .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
                     .log(LoggingLevel.INFO, correlation()+"Received file on sftp route for '" + provider.sftpAccount + "'. Storing file ...")
