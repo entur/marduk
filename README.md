@@ -30,6 +30,9 @@ chouette.export.days.forward=365
 chouette.max.retries=3000
 chouette.retry.delay=5000
 chouette.url=http4://192.168.99.100:30084
+chouette.stats.validity.categories=120,127
+chouette.stats.days=180
+
 logging.config=classpath:logback.xml
 logging.level.no=DEBUG
 logging.level.no.rutebanken.marduk.routes.fetchosm=DEBUG
@@ -135,6 +138,8 @@ chouette.retry.delay=30000
 chouette.export.days.forward=365
 # optional
 chouette.export.days.back=365
+chouette.stats.validity.categories=120,127
+chouette.stats.days=180
 
 # sftp settings
 sftp.host=lamassu:2224

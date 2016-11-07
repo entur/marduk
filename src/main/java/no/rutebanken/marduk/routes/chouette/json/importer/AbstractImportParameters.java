@@ -11,4 +11,7 @@ public class AbstractImportParameters extends AbstractParameters {
     @JsonProperty("no_save")
     public String noSave = "0";
 
+    @JsonProperty("update_stop_places")
+    public boolean updateStopPlaces = true;
+
 }

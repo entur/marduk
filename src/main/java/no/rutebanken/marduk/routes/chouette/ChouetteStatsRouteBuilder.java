@@ -22,6 +22,9 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     @Value("${chouette.stats.validity.categories}")
     private String[] validityCategories;
 
+    @Value("${chouette.stats.days}")
+    private int days;
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -31,7 +34,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .removeHeaders("Camel*")
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
-                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/statistics/${header." + CHOUETTE_REFERENTIAL + "}/line?" + getValidityCategories()))
+                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/statistics/${header." + CHOUETTE_REFERENTIAL + "}/line?days=" + days + "&" + getValidityCategories()))
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Calling chouette with ${property.chouette_url}")
                 .toD("${exchangeProperty.chouette_url}");
     }

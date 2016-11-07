@@ -29,6 +29,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
         super.configure();
 
         from("activemq:queue:ChouetteTransferExportQueue?transacted=true").streamCaching()
+				.transacted()
         		.log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette transfer for provider with id ${header." + PROVIDER_ID + "}")
                 .process(e -> { 
                 	// Add correlation id only if missing

@@ -28,6 +28,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
         super.configure();
 
         from("activemq:queue:ChouetteValidationQueue?transacted=true&maxConcurrentConsumers=3").streamCaching()
+				.transacted()
                 .log(LoggingLevel.INFO,correlation()+"Starting Chouette validation")
                 .setHeader(Constants.FILE_NAME,constant("None"))
                 .process(e -> { 

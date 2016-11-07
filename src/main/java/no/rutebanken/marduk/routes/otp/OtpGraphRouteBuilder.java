@@ -1,7 +1,9 @@
 package no.rutebanken.marduk.routes.otp;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.component.http4.HttpMethods;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -52,24 +54,32 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        //TODO Report status?
-        from("activemq:queue:OtpGraphQueue?maxConcurrentConsumers=1")
-        	.autoStartup("{{otp.graph.build.autoStartup:true}}")
-                .choice()
-                .when(constant(purgeQueue))
-                    .log(LoggingLevel.INFO, getClass().getName(), correlation()+"Purging OtpGraphQueue.")
-                    .to("http4://" + brokerMgmtHost + ":" + brokerMgmtPort + "/api/jolokia/exec/org.apache.activemq:type=Broker,brokerName=" +
-                        brokerName + ",destinationType=Queue,destinationName=OtpGraphQueue/purge()?authUsername=" + brokerUser + "&authPassword=" + brokerPassword)
-                .end()
+        from("activemq:queue:OtpGraphQueue?transacted=true&maxConcurrentConsumers=1").autoStartup("{{otp.graph.build.autoStartup:true}}")
+                .transacted()
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
                 .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation()+"Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
-                .to("direct:fetchLatestGtfs")
                 .to("direct:fetchConfig")
                 .to("direct:fetchMap")
+                .to("direct:purgeQueue")
+                .to("direct:fetchLatestGtfs")
                 .to("direct:buildGraph")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation()+"Done with OTP graph building route.")
                 .routeId("otp-graph-build");
+
+        from("direct:purgeQueue")
+                .choice()
+                    .when(constant(purgeQueue))
+                    .removeHeaders("CamelHttp*")
+                    .setBody(constant(""))
+                    .setProperty("purge_url", simple("http4://" + brokerMgmtHost + ":" + brokerMgmtPort + "/api/jolokia/exec/org.apache.activemq:type=Broker,brokerName=" +
+                            brokerName + ",destinationType=Queue,destinationName=OtpGraphQueue/purge()?authUsername=" + brokerUser + "&authPassword=" + brokerPassword))
+                    .log(LoggingLevel.INFO, getClass().getName(), correlation()+"Purging OtpGraphQueue on url ${property.purge_url}")
+                    .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
+                    .toD("${property.purge_url}")
+                    .log(LoggingLevel.INFO, getClass().getName(), correlation()+"Result of purge is ${header.CamelHttpResponseCode} ${header.CamelHttpResponseText}")
+                    .end()
+                .routeId("otp-graph-purge-queue");
 
         from("direct:fetchLatestGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs files for all providers.")

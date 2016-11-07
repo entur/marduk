@@ -31,6 +31,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("activemq:queue:DeadLetterQueue");
 
         from("activemq:queue:ProcessFileQueue?transacted=true")
+				.transacted()
 				.process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.OK).build())
                 .to("direct:updateStatus")
                 .to("direct:getBlob")
