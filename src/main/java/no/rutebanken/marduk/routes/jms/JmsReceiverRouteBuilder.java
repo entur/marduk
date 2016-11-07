@@ -19,7 +19,8 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        from("activemq:queue:MardukInboundQueue")
+        from("activemq:queue:MardukInboundQueue?transacted=true")
+            .transacted()
             .log(LoggingLevel.INFO, correlation()+"Received notification about file ${header.CamelFileName} on jms. Fetching file ...")
                 .log(LoggingLevel.INFO, correlation() + "Fetching blob ${header." + FILE_HANDLE + "}")
                 .to("direct:fetchExternalBlob")

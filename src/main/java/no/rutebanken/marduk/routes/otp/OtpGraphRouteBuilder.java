@@ -1,6 +1,5 @@
 package no.rutebanken.marduk.routes.otp;
 
-import com.sun.net.httpserver.HttpExchange;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -12,7 +11,6 @@ import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
-import static org.apache.camel.builder.Builder.simple;
 
 /**
  * Trigger OTP graph building
@@ -56,9 +54,8 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        //TODO Report status?
-        from("activemq:queue:OtpGraphQueue?maxConcurrentConsumers=1")
-        	.autoStartup("{{otp.graph.build.autoStartup:true}}")
+        from("activemq:queue:OtpGraphQueue?transacted=true&maxConcurrentConsumers=1").autoStartup("{{otp.graph.build.autoStartup:true}}")
+                .transacted()
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
                 .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation()+"Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")

@@ -38,6 +38,7 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
         super.configure();
 
         from("activemq:queue:ChouetteExportQueue?transacted=true").streamCaching()
+				.transacted()
         		.log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette export for provider with id ${header." + PROVIDER_ID + "}")
                 .process(e -> { 
                 	// Add correlation id only if missing

@@ -4,6 +4,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import no.rutebanken.marduk.config.GcsStorageConfig;
+import no.rutebanken.marduk.config.TransactionManagerConfig;
 import org.apache.camel.spring.boot.FatJarRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,7 @@ import com.jayway.jsonpath.spi.mapper.MappingProvider;
  * A spring-boot application that includes a Camel route builder to setup the Camel routes
  */
 @SpringBootApplication
-@Import(GcsStorageConfig.class)
+@Import({GcsStorageConfig.class, TransactionManagerConfig.class})
 public class App extends FatJarRouter {
 
 	@Value("${marduk.shutdown.timeout:300}")

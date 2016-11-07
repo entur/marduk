@@ -10,6 +10,7 @@ import no.rutebanken.marduk.routes.status.Status.State;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
+import org.apache.camel.language.Bean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +34,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        
+
 //        RedeliveryPolicy chouettePolicy = new RedeliveryPolicy();
 //        chouettePolicy.setMaximumRedeliveries(3);
 //        chouettePolicy.setRedeliveryDelay(30000);
@@ -54,6 +55,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
 
         from("activemq:queue:ChouetteCleanQueue?transacted=true&maxConcurrentConsumers=3")
+				.transacted()
 		        .log(LoggingLevel.INFO,correlation()+"Starting Chouette dataspace clean")
 		        .setHeader(FILE_NAME,constant("clean_repository.zip"))
 	            .setProperty(FILE_NAME, header(FILE_NAME))
@@ -83,8 +85,8 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 		        .to("direct:addImportParameters")
 		        .routeId("chouette-clean-dataspace");
 
-
         from("activemq:queue:ChouetteImportQueue?transacted=true").streamCaching()
+				.transacted()
                 .log(LoggingLevel.INFO,correlation()+ "Starting Chouette import")
                 .process(e -> Status.builder(e).action(Action.IMPORT).state(State.PENDING).build())
                 .to("direct:updateStatus")
