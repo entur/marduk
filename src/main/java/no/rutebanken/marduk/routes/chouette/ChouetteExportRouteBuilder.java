@@ -96,7 +96,7 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
         		.log(LoggingLevel.INFO,correlation()+"Adding feed_info.txt to GTFS file")
         		.process(e -> {
         			// Add feed info
-        			String feedInfoContent = "feed_id,feed_publisher_name,feed_publisher_url,feed_lang\n"+e.getIn().getHeader(CHOUETTE_REFERENTIAL)+",Rutebanken,http://www.rutebanken.org,no";
+        			String feedInfoContent = "feed_id,feed_publisher_name,feed_publisher_url,feed_lang\nRB,Rutebanken,http://www.rutebanken.org,no";
         			
         			File tmpFolder = new File(System.getProperty("java.io.tmpdir"));
         			File tmpFolder2 = new File(tmpFolder,UUID.randomUUID().toString());
