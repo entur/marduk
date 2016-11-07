@@ -59,7 +59,7 @@ public class Parameters {
         try {
             ChouetteInfo chouetteInfo = provider.chouetteInfo;
             GtfsExportParameters.GtfsExport gtfsExport = new GtfsExportParameters.GtfsExport("export",
-                    chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user);
+                    chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user,true);
             GtfsExportParameters.Parameters parameters = new GtfsExportParameters.Parameters(gtfsExport);
             GtfsExportParameters importParameters = new GtfsExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();

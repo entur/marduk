@@ -41,14 +41,18 @@ public class GtfsExportParameters {
         @JsonInclude(JsonInclude.Include.ALWAYS)
         public String routeTypeIdScheme = "extended";
 
+        @JsonProperty("keep_original_id")
+        public boolean keepOriginalId = false;
 
-        public GtfsExport(String name, String objectIdPrefix, String referentialName, String organisationName, String userName) {
+
+        public GtfsExport(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean keepOriginalId) {
             this.name = name;
             this.objectIdPrefix = objectIdPrefix;
             this.referentialName = referentialName;
             this.organisationName = organisationName;
             this.userName = userName;
             this.startDate = DateUtils.startDateFor(2L);
+            this.keepOriginalId = keepOriginalId;
         }
 
     }
