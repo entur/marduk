@@ -13,5 +13,10 @@ public class AbstractImportParameters extends AbstractParameters {
 
     @JsonProperty("update_stop_places")
     public boolean updateStopPlaces = true;
+    
+    @JsonProperty("keep_obsolete_lines")
+    public boolean keepObsoleteLines = true;
+    
+    
 
 }
