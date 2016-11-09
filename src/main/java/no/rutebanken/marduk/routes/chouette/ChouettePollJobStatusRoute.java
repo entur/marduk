@@ -74,6 +74,8 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 //                .handled(true);
         
         from("direct:chouetteGetJobs")
+				// TODO Reduce to DEBUG level. Using INFO to identify bug.
+				.log(LoggingLevel.INFO,correlation()+"Fetching jobs for provider id '${header." + PROVIDER_ID + "}'")
         		.process( e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .removeHeaders("Camel*")
                 .setBody(constant(""))
