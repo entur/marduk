@@ -19,7 +19,7 @@ import static no.rutebanken.marduk.Constants.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Status {
 
-    public enum Action {FILE_TRANSFER, IMPORT, EXPORT, VALIDATION, CLEAN, DATASPACE_TRANSFER}
+    public enum Action {FILE_TRANSFER, FILE_CLASSIFICATION, IMPORT, EXPORT, VALIDATION, CLEAN, DATASPACE_TRANSFER}
 
     public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK}
 

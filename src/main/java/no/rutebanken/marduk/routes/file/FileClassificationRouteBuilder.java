@@ -25,7 +25,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
         onException(ValidationException.class)
                 .handled(true)
                 .log(LoggingLevel.INFO, correlation()+"Could not process file ${header." + FILE_HANDLE + "}")
-				.process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.FAILED).build())
+				.process(e -> Status.builder(e).action(Status.Action.FILE_CLASSIFICATION).state(Status.State.FAILED).build())
                 .to("direct:updateStatus")
                 .setBody(simple(""))      //remove file data from body
                 .to("activemq:queue:DeadLetterQueue");
