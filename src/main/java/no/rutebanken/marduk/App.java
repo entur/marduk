@@ -44,6 +44,7 @@ public class App extends FatJarRouter {
 	public void configure() throws Exception {
 		super.configure();
 		getContext().getShutdownStrategy().setTimeout(shutdownTimeout);
+		getContext().setUseMDCLogging(true);
 	}
 
 	private static void configureJsonPath() {

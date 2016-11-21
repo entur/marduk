@@ -16,6 +16,7 @@
                             },
                             "message": "%message\n%ex{full}",
                             "severity": "%level",
+                            "breadcrumb": "%X{camel.breadcrumbId}",
                             "reportLocation": {
                                 "filePath": "%logger",
                                 "lineNumber": "%line",
