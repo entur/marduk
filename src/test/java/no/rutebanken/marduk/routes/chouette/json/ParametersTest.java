@@ -22,7 +22,7 @@ public class ParametersTest {
     final String regtoppReferenceJson =  "{\"parameters\":{\"regtopp-import\":{\"name\":\"test\",\"clean_repository\":\"0\",\"no_save\":\"0\"," +
             "\"user_name\":\"Chouette\",\"organisation_name\":\"Rutebanken\",\"referential_name\":\"testDS\",\"object_id_prefix\":\"tds\"," +
 
-            "\"references_type\":\"\",\"version\":\"R12\",\"coordinate_projection\":\"EPSG:32632\",\"calendar_strategy\":\"ADD\", \"test\": false, \"update_stop_places\": true, \"keep_obsolete_lines\": false}}}";
+            "\"references_type\":\"\",\"version\":\"R12\",\"coordinate_projection\":\"EPSG:32632\",\"calendar_strategy\":\"ADD\", \"test\": false, \"update_stop_places\": true, \"keep_obsolete_lines\": false, \"batch_parse\": true}}}";
 
     @Test
     public void createGtfsImportParameters() throws Exception {
@@ -32,14 +32,14 @@ public class ParametersTest {
 
     @Test
     public void createRegtoppImportParameters() throws Exception {
-        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", "R12", "EPSG:32632","ADD",false,false,false);
+        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", "R12", "EPSG:32632","ADD",false,false,false,true);
         System.out.println(importParameters.toJsonString());
         assertJsonEquals(regtoppReferenceJson, importParameters.toJsonString());
     }
 
     @Test
     public void createRegtoppImportParametersWithValidation() throws Exception {
-        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", "R12", "EPSG:32632","ADD",false,true,false);
+        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", "R12", "EPSG:32632","ADD",false,true,false,true);
         System.out.println(importParameters.toJsonString());
 
     }

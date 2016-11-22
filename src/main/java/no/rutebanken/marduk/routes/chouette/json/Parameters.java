@@ -3,7 +3,6 @@ package no.rutebanken.marduk.routes.chouette.json;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.routes.chouette.json.*;
 import no.rutebanken.marduk.routes.chouette.json.exporter.GtfsExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.exporter.NeptuneExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.importer.GtfsImportParameters;
@@ -38,7 +37,7 @@ public class Parameters {
         }
         RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.prefix,
                 chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion,
-                chouetteInfo.regtoppCoordinateProjection,chouetteInfo.regtoppCalendarStrategy,cleanRepository,chouetteInfo.enableValidation,false);
+                chouetteInfo.regtoppCoordinateProjection,chouetteInfo.regtoppCalendarStrategy,cleanRepository,chouetteInfo.enableValidation,false,true);
         return regtoppImportParameters.toJsonString();
     }
 

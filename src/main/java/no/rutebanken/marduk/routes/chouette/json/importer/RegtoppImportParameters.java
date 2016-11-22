@@ -34,14 +34,15 @@ public class RegtoppImportParameters extends ChouetteJobParameters {
 
 		@JsonProperty("calendar_strategy")
 		public String calendarStrategy;
-		
-		
 
+		@JsonProperty("batch_parse")
+		public boolean batchParse;
+		
 	}
 
 	public static RegtoppImportParameters create(String name, String objectIdPrefix, String referentialName,
 			String organisationName, String userName, String version, String coordinateProjection,
-			String calendarStrategy, boolean cleanRepository, boolean enableValidation, boolean keepObsoleteLines) {
+			String calendarStrategy, boolean cleanRepository, boolean enableValidation, boolean keepObsoleteLines, boolean batchParse) {
 		Regtopp regtoppImport = new Regtopp();
 		regtoppImport.name = name;
 		regtoppImport.objectIdPrefix = objectIdPrefix;
@@ -54,6 +55,7 @@ public class RegtoppImportParameters extends ChouetteJobParameters {
 		regtoppImport.calendarStrategy = calendarStrategy;
 		regtoppImport.cleanRepository = cleanRepository ? "1" : "0";
 		regtoppImport.keepObsoleteLines = keepObsoleteLines;
+		regtoppImport.batchParse = batchParse;
 		
 		Parameters parameters = new Parameters();
 		parameters.regtoppImport = regtoppImport;
