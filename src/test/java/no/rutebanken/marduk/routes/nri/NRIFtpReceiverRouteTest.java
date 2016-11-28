@@ -12,7 +12,6 @@ import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockftpserver.fake.FakeFtpServer;
@@ -40,8 +39,6 @@ import static org.mockito.Mockito.when;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles({ "default", "dev" })
 @UseAdviceWith
-@Ignore
-// TODO Tommy is going to look at this test
 public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
