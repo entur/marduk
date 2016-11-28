@@ -3,7 +3,6 @@ package no.rutebanken.marduk.routes.jms;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.Status;
-import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
 
@@ -30,7 +29,7 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
             .log(LoggingLevel.INFO, correlation() + "File handle is: ${header." + FILE_HANDLE + "}")
             .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
             .to("direct:uploadBlob")
-            .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
+            .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
             .process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.STARTED).build())
             .to("direct:updateStatus")
             .to("direct:deleteExternalBlob")
