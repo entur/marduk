@@ -44,15 +44,15 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
 	@Autowired
 	private ModelCamelContext context;
 
-	@EndpointInject(uri = "mock:sor-trondelag")
-	protected MockEndpoint sorTrondelag;
+	@EndpointInject(uri = "mock:buskerud")
+	protected MockEndpoint buskerud;
 	
     @Value("${nabu.rest.service.url}")
     private String nabuUrl;
 
 	@Before
 	public void setUpProvider() throws IOException {
-		when(providerRepository.getProvider(12L)).thenReturn(Provider.create(IOUtils.toString(new FileReader(
+		when(providerRepository.getProvider(5L)).thenReturn(Provider.create(IOUtils.toString(new FileReader(
 				"src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json"))));
 	}
 
@@ -66,19 +66,19 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
 
 		FileSystem fileSystem = new UnixFakeFileSystem();
 		fileSystem.add(new DirectoryEntry("/rutedata"));
-		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)"));
-		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/1585"));
-		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/1585/AtB Hovedsett 2016_unzipped"));
-		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985"));
-		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/984"));
-		fileSystem.add(new DirectoryEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985/AtB Hovedsett 2016_unzipped"));
-		FileEntry file1585 = new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/1585/AtB Hovedsett 2017.zip");
+		fileSystem.add(new DirectoryEntry("/rutedata/Brakar (Buskerud fylke)"));
+		fileSystem.add(new DirectoryEntry("/rutedata/Brakar (Buskerud fylke)/1585"));
+		fileSystem.add(new DirectoryEntry("/rutedata/Brakar (Buskerud fylke)/1585/Hovedsett 2016_unzipped"));
+		fileSystem.add(new DirectoryEntry("/rutedata/Brakar (Buskerud fylke)/985"));
+		fileSystem.add(new DirectoryEntry("/rutedata/Brakar (Buskerud fylke)/984"));
+		fileSystem.add(new DirectoryEntry("/rutedata/Brakar (Buskerud fylke)/985/Hovedsett 2016_unzipped"));
+		FileEntry file1585 = new FileEntry("/rutedata/Brakar (Buskerud fylke)/1585/Hovedsett 2017.zip");
 		file1585.setContents(IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")));
 		fileSystem.add(file1585);
-		FileEntry file984 = new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/984/AtB Hovedsett 2016.zip");
+		FileEntry file984 = new FileEntry("/rutedata/Brakar (Buskerud fylke)/984/Hovedsett 2016.zip");
 		file984.setContents(IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")));
 		fileSystem.add(file984 );
-		FileEntry file985 = new FileEntry("/rutedata/AtB (Sør-Trøndelag fylke)/985/AtB Hovedsett 2016_v2.zip");
+		FileEntry file985 = new FileEntry("/rutedata/Brakar (Buskerud fylke)/985/Hovedsett 2016_v2.zip");
 		file985.setContents(IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")));
 		fileSystem.add(file985);
 
@@ -92,7 +92,7 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
 			@Override
 			public void configure() throws Exception {
 				interceptSendToEndpoint("activemq:queue:ProcessFileQueue").skipSendToOriginalEndpoint()
-				.to("mock:sor-trondelag");
+				.to("mock:buskerud");
 			}
 		});
 
@@ -102,17 +102,17 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
 		
 
 		// setup expectations on the mocks
-		sorTrondelag.expectedMessageCount(3);
+		buskerud.expectedMessageCount(3);
 
 		// assert that the test was okay
-		sorTrondelag.assertIsSatisfied();
+		buskerud.assertIsSatisfied();
 		
-		List<Exchange> exchanges = sorTrondelag.getExchanges();
+		List<Exchange> exchanges = buskerud.getExchanges();
 		assertEquals(2L, exchanges.get(0).getIn().getHeader(Constants.PROVIDER_ID));
 		assertNotNull(exchanges.get(0).getIn().getHeader(Constants.CORRELATION_ID));
-		assertEquals("AtB_(Sør-Trøndelag_fylke)_984_AtB_Hovedsett_2016.zip", (String) exchanges.get(0).getIn().getHeader(Constants.FILE_NAME));
-		assertEquals("AtB_(Sør-Trøndelag_fylke)_985_AtB_Hovedsett_2016_v2.zip", (String) exchanges.get(1).getIn().getHeader(Constants.FILE_NAME));
-		assertEquals("AtB_(Sør-Trøndelag_fylke)_1585_AtB_Hovedsett_2017.zip", (String) exchanges.get(2).getIn().getHeader(Constants.FILE_NAME));
+		assertEquals("Brakar_(Buskerud_fylke)_984_Hovedsett_2016.zip", exchanges.get(0).getIn().getHeader(Constants.FILE_NAME));
+		assertEquals("Brakar_(Buskerud_fylke)_985_Hovedsett_2016_v2.zip", exchanges.get(1).getIn().getHeader(Constants.FILE_NAME));
+		assertEquals("Brakar_(Buskerud_fylke)_1585_Hovedsett_2017.zip", exchanges.get(2).getIn().getHeader(Constants.FILE_NAME));
 	}
 
 }
