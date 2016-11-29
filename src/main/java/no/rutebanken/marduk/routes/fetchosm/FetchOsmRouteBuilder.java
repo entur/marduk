@@ -133,7 +133,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     .setBody(simple("No need to updated the map file, as the MD5 sum has not changed"))
                 .otherwise()
                     .log(LoggingLevel.INFO, "Need to update the map file. Calling the update map route")
-                    .inOnly("direct:fetchOsmMapOverNorway")
+                        .inOnly("direct:fetchOsmMapOverNorway")
                     .setBody(simple("Need to fetch map file. Called update map route"))
                 .end()
                 .routeId("osm-check-for-newer-map");

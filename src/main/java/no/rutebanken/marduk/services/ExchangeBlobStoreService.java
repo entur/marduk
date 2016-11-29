@@ -2,6 +2,7 @@ package no.rutebanken.marduk.services;
 
 import com.google.cloud.storage.Storage;
 import no.rutebanken.marduk.repository.BlobStoreRepository;
+import org.apache.camel.Exchange;
 import org.apache.camel.Header;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,11 +31,13 @@ public class ExchangeBlobStoreService {
         repository.setContainerName(containerName);
     }
 
-    public InputStream getBlob(@Header(value = FILE_HANDLE) String name) {
+    public InputStream getBlob(@Header(value = FILE_HANDLE) String name, Exchange exchange) {
+        ExchangeUtils.addHeadersAndAttachments(exchange);
         return repository.getBlob(name);
     }
 
-    public boolean deleteBlob(@Header(value = FILE_HANDLE) String name) {
+    public boolean deleteBlob(@Header(value = FILE_HANDLE) String name, Exchange exchange) {
+        ExchangeUtils.addHeadersAndAttachments(exchange);
         return repository.delete(name);
     }
 
