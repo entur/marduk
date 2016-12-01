@@ -91,7 +91,18 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.process(e -> e.getIn().setHeader("status", e.getIn().getHeader("status") != null? e.getIn().getHeader("status") : Arrays.asList("STARTED","SCHEDULED")))
 			    .to("direct:chouetteGetJobsAll")
 			    .routeId("admin-chouette-list-jobs-all")
-			    .endRest();      	
+				.endRest()
+			.delete("/jobs")
+				.description("Cancel all Chouette jobs for all providers")
+				.responseMessage().code(200).message("All jobs canceled").endResponseMessage()
+				.responseMessage().code(500).message("Could not cancel all jobs").endResponseMessage()
+				.route()
+				.log(LoggingLevel.INFO,correlation()+"Cancel all chouette jobs for all providers")
+				.removeHeaders("CamelHttp*")
+				.to("direct:chouetteCancelAllJobsForAllProviders")
+				.routeId("admin-chouette-cancel-all-jobs-all")
+				.setBody(constant(null))
+			    .endRest();
         
 
         rest("/services/chouette/{providerId}")
@@ -195,7 +206,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 		    		.setHeader(PROVIDER_ID,header("providerId"))
 		    		.log(LoggingLevel.INFO,correlation()+"Cancel all chouette jobs")
 		    		.removeHeaders("CamelHttp*")
-				    .to("direct:chouetteCancelAllJobs")
+				    .to("direct:chouetteCancelAllJobsForProvider")
 				    .routeId("admin-chouette-cancel-all-jobs")
 				    .endRest()
 	        	.delete("/jobs/{jobId}")
