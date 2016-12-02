@@ -78,7 +78,9 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 		            	e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_gtfs.zip"));
 	                } else if(FileType.NEPTUNE.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))){
 		            	e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_neptune.zip"));
-	                } else {
+	                } else if(FileType.NETEXPROFILE.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))) {
+						e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_netex.zip"));
+					} else {
 	                	throw new RuntimeException("Only know how to clean regtopp and gtfs spaces so far, must addToExchange support for netex");
 	                }
 	            })
