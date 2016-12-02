@@ -3,18 +3,15 @@ package no.rutebanken.marduk.routes.chouette;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
-import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.status.Status;
 import no.rutebanken.marduk.routes.status.Status.Action;
 import no.rutebanken.marduk.routes.status.Status.State;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
-import org.apache.camel.language.Bean;
+import org.apache.camel.component.http4.HttpMethods;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.Utils.getHttp4;
@@ -53,38 +50,16 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 //                .to("log:" + getClass().getName() + "?level=ERROR&showAll=true&multiline=true")
 //                .handled(true);
 
-
-        from("activemq:queue:ChouetteCleanQueue?transacted=true&maxConcurrentConsumers=3")
-				.transacted()
+        from("direct:chouetteCleanReferential")
 		        .log(LoggingLevel.INFO,correlation()+"Starting Chouette dataspace clean")
-		        .setHeader(FILE_NAME,constant("clean_repository.zip"))
-	            .setProperty(FILE_NAME, header(FILE_NAME))
-		        .setHeader(Constants.FILE_HANDLE,constant("clean_repository.zip"))
                 .process(e ->  {
-                	// Add correlation id only if missing
-                	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
                 	Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                	e.getIn().setHeader(FILE_TYPE, provider.chouetteInfo.dataFormat.toUpperCase());
-                    e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);                	
+                    e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
                 })
-                
-		        .setHeader(Constants.CLEAN_REPOSITORY, constant(true))
-		        .process(e -> Status.builder(e).action(Action.IMPORT).state(State.PENDING).build())
-		        .to("direct:updateStatus")
-	            .process(e -> {
-	                if(FileType.REGTOPP.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))) {
-		            	e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip"));
-	                } else if(FileType.GTFS.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))){
-		            	e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_gtfs.zip"));
-	                } else if(FileType.NEPTUNE.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))){
-		            	e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_neptune.zip"));
-	                } else if(FileType.NETEXPROFILE.name().equals(e.getIn().getHeader(Constants.FILE_TYPE))) {
-						e.getIn().setBody(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_netex.zip"));
-					} else {
-	                	throw new RuntimeException("Only know how to clean regtopp and gtfs spaces so far, must addToExchange support for netex");
-	                }
-	            })
-		        .to("direct:addImportParameters")
+				.removeHeaders("Camel*")
+				.setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
+				.setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/clean"))
+				.toD("${property.chouette_url}")
 		        .routeId("chouette-clean-dataspace");
 
         from("activemq:queue:ChouetteImportQueue?transacted=true").streamCaching()

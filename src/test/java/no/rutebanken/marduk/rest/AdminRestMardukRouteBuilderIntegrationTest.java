@@ -147,7 +147,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 		// Preparations
 		String filename = "ruter_fake_data.zip";
 		String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND +"rut/";
-		String pathname = "src/main/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
+		String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
 
 		//populate fake blob repo
 		inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, new FileInputStream(new File(pathname)), false);

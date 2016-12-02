@@ -142,10 +142,6 @@ public class Status {
                 throw new IllegalStateException(this.getClass() + " does not hold an instance of exchange.");
             }
 
-            Boolean clean = exchange.getIn().getHeader(Constants.CLEAN_REPOSITORY, Boolean.class);
-            if (clean != null && clean && status.action == Action.IMPORT){
-                status.action = Action.CLEAN;
-            }
             Status status = super.build();
             exchange.getOut().setBody(status.toString());
             exchange.getOut().setHeaders(exchange.getIn().getHeaders());

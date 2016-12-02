@@ -16,6 +16,7 @@ public class ApplicationStatusResource {
     @Path("/ready")
     public Response isReady() {
         //TODO
+        //Nabu
         //SFTP?
         //BlobStore?
         //ActiveMQ?
