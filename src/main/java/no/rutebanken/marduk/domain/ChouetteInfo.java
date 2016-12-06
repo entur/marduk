@@ -17,7 +17,11 @@ public class ChouetteInfo {
     public boolean enableValidation = false;
 	public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
 
-    @Override
+    public Long getMigrateDataToProvider() {
+		return migrateDataToProvider;
+	}
+
+	@Override
     public String toString() {
         return "ChouetteInfo{" +
                 "id=" + id +

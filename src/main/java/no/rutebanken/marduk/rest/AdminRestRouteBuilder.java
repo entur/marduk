@@ -102,7 +102,28 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.to("direct:chouetteCancelAllJobsForAllProviders")
 				.routeId("admin-chouette-cancel-all-jobs-all")
 				.setBody(constant(null))
-			    .endRest();
+			    .endRest()
+	    	.post("/clean/{filter}")
+				.description("Triggers the clean ALL dataspace process in Chouette. Only timetable data are deleted, not job data (imports, exports, validations)")
+	    		.param()
+	    			.required(Boolean.TRUE)
+	    			.name("filter")
+	    			.type(RestParamType.path)
+	    			.description("Optional filter to clean only level 1, level 2 or all spaces (no parameter value)")
+	    			.allowableValues("all","level1","level2")
+	    			
+	    			.endParam()
+				.consumes(PLAIN)
+				.produces(PLAIN)
+				.responseMessage().code(200).message("Command accepted").endResponseMessage()
+	    		.responseMessage().code(500).message("Internal error - check filter").endResponseMessage()
+		    	.route()
+				.log(LoggingLevel.INFO,correlation()+"Chouette clean all dataspaces")
+				.removeHeaders("CamelHttp*")
+				.to("direct:chouetteCleanAllReferentials")
+				.setBody(constant(null))
+			    .routeId("admin-chouette-clean-all")
+		    	.endRest();
         
 
         rest("/services/chouette/{providerId}")

@@ -58,13 +58,6 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder(getContext());
-        ExecutorService allProvidersExecutorService = 
-        		poolBuilder
-        		.poolSize(20)
-        		.maxPoolSize(20)
-        		.maxQueueSize(1000)
-        		.build("allProvidersExecutorService");
         
 //        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
 //                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))

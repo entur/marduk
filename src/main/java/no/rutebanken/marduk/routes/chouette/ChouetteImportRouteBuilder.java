@@ -50,6 +50,29 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 //                .to("log:" + getClass().getName() + "?level=ERROR&showAll=true&multiline=true")
 //                .handled(true);
 
+		from("direct:chouetteCleanAllReferentials")
+		.process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
+		.split().body().parallelProcessing().executorService(allProvidersExecutorService)
+		.removeHeaders("Camel*")
+		.setHeader(Constants.PROVIDER_ID,simple("${body.id}"))
+		.validate(header("filter").in("all","level1","level2"))
+		.choice()
+			.when(header("filter").isEqualTo("level1"))
+				.filter(simple("${body.chouetteInfo.migrateDataToProvider} != null"))
+				.setBody(constant(null))
+				.to("direct:chouetteCleanReferential")
+			.endChoice()
+			.when(header("filter").isEqualTo("level2"))
+				.filter(simple("${body.chouetteInfo.migrateDataToProvider} == null"))
+				.setBody(constant(null))
+				.to("direct:chouetteCleanReferential")
+			.endChoice()
+			.otherwise()
+				.setBody(constant(null))
+				.to("direct:chouetteCleanReferential")
+			.end()
+		.routeId("chouette-clean-referentials-for-all-providers");
+
         from("direct:chouetteCleanReferential")
 		        .log(LoggingLevel.INFO,correlation()+"Starting Chouette dataspace clean")
                 .process(e ->  {

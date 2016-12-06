@@ -4,8 +4,10 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.JSON_PART;
 
 import java.io.InputStream;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.builder.ThreadPoolBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 
@@ -16,6 +18,22 @@ import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 
 public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
+
+	protected ExecutorService allProvidersExecutorService;
+	@Override
+	public synchronized void configure() throws Exception {
+		super.configure();
+
+        if(allProvidersExecutorService == null) {
+			ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder(getContext());
+	         allProvidersExecutorService = 
+	        		poolBuilder
+	        		.poolSize(20)
+	        		.maxPoolSize(20)
+	        		.maxQueueSize(1000)
+	        		.build("allProvidersExecutorService");
+        }
+	}
 
 	protected void toGenericChouetteMultipart(Exchange exchange) {
 	    String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);

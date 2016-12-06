@@ -20,7 +20,10 @@ public class Provider {
     public String name;
     public String sftpAccount;
 
-    public ChouetteInfo chouetteInfo;
+    public ChouetteInfo getChouetteInfo() {
+		return chouetteInfo;
+	}
+	public ChouetteInfo chouetteInfo;
 
     @Override
     public String toString() {
