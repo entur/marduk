@@ -17,17 +17,14 @@ public class GcsStorageConfig {
     @Value("${blobstore.gcs.exchange.credential.path}")
     private String exchangeCredentialPath;
 
-    @Value("${blobstore.gcs.project.id}")
-    private String projectId;
-
     @Bean
     public Storage storage() {
-        return BlobStoreHelper.getStorage(credentialPath, projectId);
+        return BlobStoreHelper.getStorage(credentialPath);
     }
 
     @Bean
     public Storage exchangeStorage() {
-        return BlobStoreHelper.getStorage(exchangeCredentialPath, projectId);
+        return BlobStoreHelper.getStorage(exchangeCredentialPath);
     }
 
 }
