@@ -6,7 +6,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class ChouetteInfo {
 
     public Long id;
-    public String prefix;
+    public String xmlns;
+    public String xmlnsurl;
     public String referential;
     public String organisation;
     public String user;
@@ -25,7 +26,8 @@ public class ChouetteInfo {
     public String toString() {
         return "ChouetteInfo{" +
                 "id=" + id +
-                ", prefix='" + prefix + '\'' +
+                ", xmlns='" + xmlns + '\'' +
+                ", xmlnsurl='" + xmlnsurl + '\'' +
                 ", referential='" + referential + '\'' +
                 ", organisation='" + organisation + '\'' +
                 ", user='" + user + '\'' +
