@@ -8,7 +8,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
 @Component
-@Produces("application/json")
+//@Produces("application/json")
 @Path("/appstatus")
 public class ApplicationStatusResource {
 

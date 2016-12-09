@@ -30,7 +30,6 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
 		.process(e -> {
             e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString());
 		})
-		.log(LoggingLevel.INFO, correlation()+"Received file ${header.CamelFileName} on NRI ftp route")
         .process(e -> {
     		RemoteFile<?> p = (RemoteFile<?>) e.getProperty(FileComponent.FILE_EXCHANGE_FILE);
     		String relativeFilePath = p.getRelativeFilePath();
@@ -49,6 +48,8 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
         	}
         })
         .filter(header(PROVIDER_ID).isNotNull())
+		.to("direct:filterDuplicateFile")
+		.log(LoggingLevel.INFO, correlation()+"Received new file ${header.CamelFileName} on NRI ftp route")
         .log(LoggingLevel.INFO, correlation()+"File handle is: ${header." + FILE_HANDLE + "}")
         .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
         .to("direct:uploadBlob")

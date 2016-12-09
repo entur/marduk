@@ -21,7 +21,7 @@ public class Status {
 
     public enum Action {FILE_TRANSFER, FILE_CLASSIFICATION, IMPORT, EXPORT, VALIDATION, CLEAN, DATASPACE_TRANSFER}
 
-    public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK}
+    public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK, DUPLICATE}
 
     @JsonProperty("file_name")
     private String fileName;

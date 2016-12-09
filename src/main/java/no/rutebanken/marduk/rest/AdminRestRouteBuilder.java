@@ -61,7 +61,16 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
         
         .contextPath("/admin");
-        
+
+        rest("/application")
+        	.post("/filestores/clean")
+				.description("Clean Idempotent File Stores")
+				.responseMessage().code(200).endResponseMessage()
+				.responseMessage().code(500).message("Internal error").endResponseMessage()
+				.route().routeId("admin-application-clean-idempotent-file-repos")
+				.to("direct:cleanIdempotentFileStore")
+				.setBody(constant(null))
+				.endRest();
 
         rest("/services/chouette")
 	    	.get("/jobs")
@@ -111,7 +120,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    			.type(RestParamType.path)
 	    			.description("Optional filter to clean only level 1, level 2 or all spaces (no parameter value)")
 	    			.allowableValues("all","level1","level2")
-	    			
+
 	    			.endParam()
 				.consumes(PLAIN)
 				.produces(PLAIN)
@@ -173,9 +182,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.get("/lineStats")
 					.description("List stats about data in chouette for a given provider")
 					.param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
-				//TODO add class for binding
 				.bindingMode(RestBindingMode.off)
-//				.outType()
 					.consumes(PLAIN)
 					.produces(JSON)
 					.responseMessage().code(200).endResponseMessage()
