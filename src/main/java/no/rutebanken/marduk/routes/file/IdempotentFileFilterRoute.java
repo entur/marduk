@@ -27,7 +27,7 @@ public class IdempotentFileFilterRoute extends BaseRouteBuilder {
         from("direct:filterDuplicateFile").routeId("filter-duplicate-file")
                 .choice()
                     .when(simple("{{idempotent.skip:false}}"))
-                    .log(LoggingLevel.WARN, getClass().getName(), "Idempotent filter is disabled.")
+                    .log(LoggingLevel.WARN, getClass().getName(), "Idempotent filter is disabled. This also means that consumed SFTP files will be deleted.")
                 .otherwise()
                    .to("direct:runIdempotentConsumer")
                 .endChoice();
