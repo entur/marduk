@@ -33,7 +33,12 @@ public class BlobStoreService {
 
     public BlobStoreFiles listBlobs(@Header(value = Constants.CHOUETTE_REFERENTIAL) String referential, Exchange exchange) {
         ExchangeUtils.addHeadersAndAttachments(exchange);
-        return repository.listBlobs(Constants.BLOBSTORE_PATH_INBOUND + referential + "/");
+        return repository.listBlobs(referential + "/");
+    }
+
+    public BlobStoreFiles listBlobsFlat(@Header(value = Constants.CHOUETTE_REFERENTIAL) String referential, Exchange exchange) {
+        ExchangeUtils.addHeadersAndAttachments(exchange);
+        return repository.listBlobsFlat(referential + "/");
     }
 
     public InputStream getBlob(@Header(value = Constants.FILE_HANDLE) String name, Exchange exchange) {

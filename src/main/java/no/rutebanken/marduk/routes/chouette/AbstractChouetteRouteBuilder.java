@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.routes.chouette;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.JSON_PART;
 
 import java.io.InputStream;
@@ -50,7 +51,7 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 	}
 
 	protected void toImportMultipart(Exchange exchange) {
-	    String fileName = exchange.getIn().getHeader(FILE_HANDLE, String.class);
+	    String fileName = exchange.getIn().getHeader(FILE_NAME, String.class);
 	    if (Strings.isNullOrEmpty(fileName)) {
 	        throw new IllegalArgumentException("No file handle");
 	    }

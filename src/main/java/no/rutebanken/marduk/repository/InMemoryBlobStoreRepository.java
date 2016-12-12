@@ -39,6 +39,15 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
+    public BlobStoreFiles listBlobsFlat(String prefix) {
+        List<BlobStoreFiles.File> files = listBlobs(prefix).getFiles();
+        List<BlobStoreFiles.File> result = files.stream().map(k -> new BlobStoreFiles.File(k.getName().replaceFirst(prefix + "/", ""), new Date(), 1234L)).collect(Collectors.toList());
+        BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
+        blobStoreFiles.add(result);
+        return blobStoreFiles;
+    }
+
+    @Override
     public InputStream getBlob(String objectName) {
         logger.debug("get blob called in in-memory blob store");
         byte[] data = blobs.get(objectName);

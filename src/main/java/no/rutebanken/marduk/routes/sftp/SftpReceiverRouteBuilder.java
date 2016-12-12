@@ -70,7 +70,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
                     .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
                     .to("direct:filterDuplicateFile")
                     .log(LoggingLevel.INFO, correlation()+"Received new file on sftp route for '" + provider.sftpAccount + "'. Storing file ...")
-                    .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_INBOUND + provider.chouetteInfo.referential + "/" + provider.chouetteInfo.referential + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
+                    .setHeader(FILE_HANDLE, simple(provider.chouetteInfo.referential + "/${header.CamelFileNameOnly}"))
                     .log(LoggingLevel.INFO, correlation()+"File handle is: ${header." + FILE_HANDLE + "}")
                     .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                     .to("direct:uploadBlob")

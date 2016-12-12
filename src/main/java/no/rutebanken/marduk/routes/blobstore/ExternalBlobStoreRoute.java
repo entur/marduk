@@ -18,7 +18,7 @@ public class ExternalBlobStoreRoute extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true");
 
         from("direct:deleteExternalBlob")
-                .log(LoggingLevel.INFO, correlation() + "Deleting blob ${header." + FILE_HANDLE + "} from blob store.")
+                .log(LoggingLevel.INFO, correlation() + "Deleting blob ${header." + FILE_HANDLE + "} from external blob store.")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .bean("exchangeBlobStoreService","deleteBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true");
