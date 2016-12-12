@@ -28,8 +28,6 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
                 .process(
                     e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential)
                 )
-             .process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.STARTED).build())
-             .to("direct:updateStatus")
             .to("direct:filterDuplicateFile")
             .log(LoggingLevel.INFO, correlation() + "File handle is: ${header." + FILE_HANDLE + "}")
             .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
