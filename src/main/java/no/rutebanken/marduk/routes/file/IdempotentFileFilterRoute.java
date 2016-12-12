@@ -25,16 +25,25 @@ public class IdempotentFileFilterRoute extends BaseRouteBuilder {
         super.configure();
 
         from("direct:filterDuplicateFile").routeId("filter-duplicate-file")
-                .process(e -> e.getIn().setHeader("file_digest", DigestUtils.md5Hex(e.getIn().getBody(InputStream.class))))
+                .choice()
+                    .when(simple("{{idempotent.skip:false}}"))
+                    .log(LoggingLevel.WARN, getClass().getName(), "Idempotent filter is disabled.")
+                .otherwise()
+                   .to("direct:runIdempotentConsumer")
+                .endChoice();
+
+
+        from("direct:runIdempotentConsumer")
+         .process(e -> e.getIn().setHeader("file_digest", DigestUtils.md5Hex(e.getIn().getBody(InputStream.class))))
                 .idempotentConsumer(simple("${header.file_digest}")).messageIdRepository(digestIdempotentRepository).skipDuplicate(false)
                 .filter(exchangeProperty(Exchange.DUPLICATE_MESSAGE).isEqualTo(true))
-                    .log(LoggingLevel.DEBUG, getClass().getName(), "Detected ${header." + Exchange.FILE_NAME + "} as duplicate based on digest.")
-                    .stop()
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Detected ${header." + Exchange.FILE_NAME + "} as duplicate based on digest.")
+                .stop()
                 .end()
                 .idempotentConsumer(header(Exchange.FILE_NAME)).messageIdRepository(fileNameIdempotentRepository).skipDuplicate(false)
                 .filter(exchangeProperty(Exchange.DUPLICATE_MESSAGE).isEqualTo(true))
-                    .log(LoggingLevel.WARN, getClass().getName(), "Detected ${header." + Exchange.FILE_NAME + "} as duplicate based on file name.")
-                    .stop()
+                .log(LoggingLevel.WARN, getClass().getName(), "Detected ${header." + Exchange.FILE_NAME + "} as duplicate based on file name.")
+                .stop()
                 .end();
     }
 }
