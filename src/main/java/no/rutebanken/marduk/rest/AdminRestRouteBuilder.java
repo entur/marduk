@@ -155,7 +155,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	
 	                .process(e -> {
 	                	String fileNameForStatusLogging = e.getIn().getBody(String.class);
-	                	fileNameForStatusLogging = fileNameForStatusLogging.replaceFirst("inbound/received/.*/", "");
 	                	fileNameForStatusLogging = "reimport-"+fileNameForStatusLogging;
 	                	e.getIn().setHeader(Constants.FILE_NAME, fileNameForStatusLogging);
 	                })
@@ -176,7 +175,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 		    		.setHeader(PROVIDER_ID,header("providerId"))
 		    		.log(LoggingLevel.INFO,correlation()+"blob store get files")
 		    		.removeHeaders("CamelHttp*")
-				    .to("direct:listBlobs")
+				    .to("direct:listBlobsFlat")
 				    .routeId("admin-chouette-import-list")
 				    .endRest()
 				.get("/lineStats")

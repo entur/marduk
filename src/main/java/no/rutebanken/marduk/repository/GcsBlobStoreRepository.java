@@ -5,6 +5,8 @@ import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import org.rutebanken.helper.gcp.BlobStoreHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
@@ -17,6 +19,8 @@ import java.util.Iterator;
 @Profile("test")
 @Scope("prototype")
 public class GcsBlobStoreRepository implements BlobStoreRepository {
+
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private Storage storage;
 
@@ -38,7 +42,18 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         while (blobIterator.hasNext()) {
             Blob blob = blobIterator.next();
-            blobStoreFiles.add(new BlobStoreFiles.File(blob.name(), new Date(blob.updateTime()), blob.size()));
+            blobStoreFiles.add(new BlobStoreFiles.File(blob.getName(), new Date(blob.getUpdateTime()), blob.getSize()));
+        }
+        return blobStoreFiles;
+    }
+
+    @Override
+    public BlobStoreFiles listBlobsFlat(String prefix) {
+        Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage, containerName, prefix);
+        BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
+        while (blobIterator.hasNext()) {
+            Blob blob = blobIterator.next();
+            blobStoreFiles.add(new BlobStoreFiles.File(blob.getName().replace(prefix, ""), new Date(blob.getUpdateTime()), blob.getSize()));
         }
         return blobStoreFiles;
     }

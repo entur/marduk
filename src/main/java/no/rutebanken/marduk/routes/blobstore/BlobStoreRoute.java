@@ -4,6 +4,8 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
 
+import java.io.FileOutputStream;
+
 import static no.rutebanken.marduk.Constants.*;
 
 @Component
@@ -35,9 +37,17 @@ public class BlobStoreRoute extends BaseRouteBuilder {
 	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
             .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
             .bean("blobStoreService","listBlobs")
-	        .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
+	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 	        .log(LoggingLevel.INFO,correlation()+"Returning from fetching file list from blob store.")
             .routeId("blobstore-list");
+
+        from("direct:listBlobsFlat")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+                .bean("blobStoreService","listBlobsFlat")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .log(LoggingLevel.INFO,correlation()+"Returning from fetching file list from blob store.")
+                .routeId("blobstore-list-flat");
 
     }
 }

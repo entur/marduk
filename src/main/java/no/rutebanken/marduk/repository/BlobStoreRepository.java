@@ -9,6 +9,8 @@ public interface BlobStoreRepository {
 
     BlobStoreFiles listBlobs(String prefix);
 
+    BlobStoreFiles listBlobsFlat(String prefix);
+
     InputStream getBlob(String objectName);
 
     void uploadBlob(String objectName, InputStream inputStream, boolean makePublic);
