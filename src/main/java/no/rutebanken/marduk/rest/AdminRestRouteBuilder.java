@@ -7,8 +7,10 @@ import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
+import no.rutebanken.marduk.services.GraphStatusResponse;
 import org.apache.camel.Body;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
@@ -323,7 +325,21 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    		.setBody(simple(""))
 			    .inOnly("activemq:queue:OtpGraphQueue")
 			    .routeId("admin-build-graph")
-			    .endRest();
+			    .endRest()
+			.get("/status")
+				.description("Query status of OTP graph building")
+				.consumes(PLAIN)
+				.produces(JSON)
+				.responseMessage().code(200).endResponseMessage()
+				.responseMessage().code(500).endResponseMessage()
+				.outType(GraphStatusResponse.class)
+				.route()
+				.log(LoggingLevel.INFO,"OTP get graph status")
+				.removeHeaders("CamelHttp*")
+				.setBody(simple(null))
+				.bean("graphStatusService", "getStatus")
+				.routeId("admin-build-graph-status")
+				.endRest();
 
 		rest("/services/fetch")
 				.post("/osm")
