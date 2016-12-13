@@ -149,13 +149,15 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 		    		.removeHeaders("CamelHttp*")
 		    		.setHeader(PROVIDER_ID,header("providerId"))
 		        	.split(method(ImportFilesSplitter.class,"splitFiles"))
-	            	.setHeader(FILE_HANDLE,body())
+
+	            	.process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
+							+ getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
+							+ "/" + e.getIn().getBody(String.class)))
 				    .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
 		    		.log(LoggingLevel.INFO,correlation()+"Chouette start import fileHandle=${body}")
 	
 	                .process(e -> {
-	                	String fileNameForStatusLogging = e.getIn().getBody(String.class);
-	                	fileNameForStatusLogging = "reimport-"+fileNameForStatusLogging;
+						String fileNameForStatusLogging = "reimport-"+e.getIn().getBody(String.class);
 	                	e.getIn().setHeader(Constants.FILE_NAME, fileNameForStatusLogging);
 	                })
 	            	.setBody(constant(null))

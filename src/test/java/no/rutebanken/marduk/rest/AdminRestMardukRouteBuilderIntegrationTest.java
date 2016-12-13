@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
@@ -16,6 +17,7 @@ import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.compress.utils.IOUtils;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +35,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_INBOUND;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
 @RunWith(CamelSpringRunner.class)
 @SpringBootTest(classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk")
@@ -68,6 +72,11 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
 	@Value("${nabu.rest.service.url}")
 	private String nabuUrl;
+
+	@Before
+	public void setUpProvider() {
+		when(providerRepository.getReferential(2L)).thenReturn("rut");
+	}
 
 	@Test
 	public void runImport() throws Exception {
@@ -108,7 +117,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 		String providerId = (String) exchanges.get(0).getIn().getHeader(PROVIDER_ID);
 		assertEquals("2", providerId);
 		String s3FileHandle = (String) exchanges.get(0).getIn().getHeader(FILE_HANDLE);
-		assertEquals("file1", s3FileHandle);
+		assertEquals(BLOBSTORE_PATH_INBOUND + "rut/file1", s3FileHandle);
 	}
 
 	@Test

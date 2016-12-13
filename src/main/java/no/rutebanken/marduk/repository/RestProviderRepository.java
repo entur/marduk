@@ -54,4 +54,9 @@ public class RestProviderRepository implements ProviderRepository {
         return false;
     }
 
+    @Override
+    public String getReferential(Long id) {
+        return getProvider(id).chouetteInfo.referential;
+    }
+
 }
