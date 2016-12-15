@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import no.rutebanken.marduk.App;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
@@ -42,7 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
 @RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk")
+@SpringBootTest(classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles({ "default", "dev" })
 @UseAdviceWith

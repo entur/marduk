@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = ChouetteExportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk")
+@SpringBootTest(classes = ChouetteExportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles({ "default", "dev" })
 @UseAdviceWith

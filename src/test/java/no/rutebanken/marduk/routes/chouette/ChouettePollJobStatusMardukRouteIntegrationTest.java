@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = ChouettePollJobStatusRoute.class, properties = "spring.main.sources=no.rutebanken.marduk")
+@SpringBootTest(classes = ChouettePollJobStatusRoute.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles({ "default", "dev" })
 @UseAdviceWith

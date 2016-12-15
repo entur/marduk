@@ -18,7 +18,7 @@ public class IdempotentRepositoryConfig {
     @Value("${idempotent.file.store.cache.size:500}")
     private int cacheSize;
 
-    @Value("${idempotent.file.store.max.size:1073741824}")  //1 GB pr store
+    @Value("${idempotent.file.store.max.size:536870912}")  //0,5 GB pr store
     private long maxFileStoreSize;
 
     @Bean
