@@ -1,7 +1,7 @@
 package no.rutebanken.marduk;
 
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.repository.ProviderCacheRepository;
+import no.rutebanken.marduk.repository.CacheProviderRepository;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 public class MardukRouteBuilderIntegrationTestBase {
 
     @MockBean
-    public ProviderCacheRepository providerRepository;
+    public CacheProviderRepository providerRepository;
 
     @Before
     public void setUp() throws IOException {

@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 
 @Repository
-public class ProviderCacheRepository implements ProviderRepository {
+public class CacheProviderRepository implements ProviderRepository {
 
     @Autowired
     RestProviderDAO restProviderService;
@@ -51,18 +51,18 @@ public class ProviderCacheRepository implements ProviderRepository {
             Collection<Provider> newProviders = restProviderService.getProviders();
             Map<Long, Provider> providerMap = newProviders.stream().collect(Collectors.toMap(p -> p.getId(), p -> p));
             if (providerMap.isEmpty()){
-                logger.warn("Result from REST Provider Service is empty. Skipping cache updateUpdated cache.");
+                logger.warn("Result from REST Provider Service is empty. Skipping provider cache update. Keeping " + cache.size() + " existing elements.");
                 return;
             }
             cache.putAll(providerMap);
-            logger.info("Updated cache with result from REST Provider Service. Cache now has " + cache.size() + " elements");
+            logger.info("Updated provider cache with result from REST Provider Service. Cache now has " + cache.size() + " elements");
             writeCacheToFile();
         } else {
             if (isEmpty()){
-                logger.warn("REST Provider Service is unavailable and cache is empty. Trying to populate from file.");
+                logger.warn("REST Provider Service is unavailable and provider cache is empty. Trying to populate from file.");
                 populateCacheFromFile(cacheFilePath);
             } else {
-                logger.warn("REST Provider Service is unavailable. Could not update cache, but keeping existing elements.");
+                logger.warn("REST Provider Service is unavailable. Could not update provider cache, but keeping " + cache.size() + " existing elements.");
             }
         }
     }
@@ -79,16 +79,16 @@ public class ProviderCacheRepository implements ProviderRepository {
         File cacheFile = getCacheFile();
         if (cacheFile != null && cacheFile.exists()){
             try {
-                logger.info("Populating cache from file '" + cacheFile + "'");
+                logger.info("Populating provider cache from file '" + cacheFile + "'");
                 ObjectMapper objectMapper = new ObjectMapper();
                 Map<Long, Provider> map = objectMapper.readValue(new FileInputStream(cacheFile), new TypeReference<Map<Long, Provider>>(){});
                 cache.putAll(map);
-                logger.info("Cache now has " + cache.size() + " elements");
+                logger.info("Provider cache now has " + cache.size() + " elements");
             } catch (IOException e){
-                logger.error("Could not populate cache from file '" + cacheFilePath + "'.", e);
+                logger.error("Could not populate provider cache from file '" + cacheFilePath + "'.", e);
             }
         } else {
-            logger.error("No cache file '" + cacheFile + "'. Cannot populate cache.");
+            logger.error("No cache file '" + cacheFile + "'. Cannot populate provider cache.");
         }
     }
 
@@ -98,9 +98,9 @@ public class ProviderCacheRepository implements ProviderRepository {
             File cacheFile = getCacheFile();
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(cacheFile, map);
-            logger.info("Updated cache file.");
+            logger.info("Updated provider cache file.");
         } catch (IOException e) {
-            logger.error("Could not write cache to file '" + cacheFilePath + "'.", e);
+            logger.error("Could not write provider cache to file '" + cacheFilePath + "'.", e);
         }
     }
 
@@ -112,7 +112,7 @@ public class ProviderCacheRepository implements ProviderRepository {
             }
             return new File(cacheFilePath + "/" + FILENAME);
         } catch (IOException e) {
-            logger.error("Could not read cache file '" + cacheFilePath + "'.", e);
+            logger.error("Could not read provider cache file '" + cacheFilePath + "'.", e);
         }
         return null;
     }

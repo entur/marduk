@@ -9,7 +9,7 @@ import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import no.rutebanken.marduk.config.GcsStorageConfig;
 import no.rutebanken.marduk.config.IdempotentRepositoryConfig;
 import no.rutebanken.marduk.config.TransactionManagerConfig;
-import no.rutebanken.marduk.repository.ProviderCacheRepository;
+import no.rutebanken.marduk.repository.CacheProviderRepository;
 import org.apache.camel.spring.boot.FatJarRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ public class App extends FatJarRouter {
     private static Logger logger = LoggerFactory.getLogger(App.class);
 
     @Autowired
-	ProviderCacheRepository providerRepository;
+	CacheProviderRepository providerRepository;
 
     // must have a main method spring-boot can run
     public static void main(String... args) {
