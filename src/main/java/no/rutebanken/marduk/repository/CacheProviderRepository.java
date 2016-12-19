@@ -79,13 +79,13 @@ public class CacheProviderRepository implements ProviderRepository {
         File cacheFile = getCacheFile();
         if (cacheFile != null && cacheFile.exists()){
             try {
-                logger.info("Populating provider cache from file '" + cacheFile + "'");
+                logger.info("Populating provider cache from file '" + cacheFile + "',");
                 ObjectMapper objectMapper = new ObjectMapper();
                 Map<Long, Provider> map = objectMapper.readValue(new FileInputStream(cacheFile), new TypeReference<Map<Long, Provider>>(){});
                 cache.putAll(map);
-                logger.info("Provider cache now has " + cache.size() + " elements");
+                logger.info("Provider cache now has " + cache.size() + " elements.");
             } catch (IOException e){
-                logger.error("Could not populate provider cache from file '" + cacheFilePath + "'.", e);
+                logger.error("Could not populate provider cache from file '" + cacheFile + "'.", e);
             }
         } else {
             logger.error("No cache file '" + cacheFile + "'. Cannot populate provider cache.");
@@ -93,26 +93,27 @@ public class CacheProviderRepository implements ProviderRepository {
     }
 
     private void writeCacheToFile() {
+        File cacheFile = getCacheFile();
         try {
             Map<Long, Provider> map = cache.asMap();
-            File cacheFile = getCacheFile();
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(cacheFile, map);
-            logger.info("Updated provider cache file.");
+            logger.info("Updated provider cache file '" + cacheFile + "'.");
         } catch (IOException e) {
-            logger.error("Could not write provider cache to file '" + cacheFilePath + "'.", e);
+            logger.error("Could not write provider cache '" + cacheFile + "'.", e);
         }
     }
 
     File getCacheFile(){
+        String cacheFile = cacheFilePath + "/" + FILENAME;
         try {
             File directory = new File(cacheFilePath);
             if (!directory.exists()) {
                 FileUtils.forceMkdir(directory);
             }
-            return new File(cacheFilePath + "/" + FILENAME);
+            return new File(cacheFile);
         } catch (IOException e) {
-            logger.error("Could not read provider cache file '" + cacheFilePath + "'.", e);
+            logger.error("Could not read provider cache file '" + cacheFile + "'.", e);
         }
         return null;
     }
