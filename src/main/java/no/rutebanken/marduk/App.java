@@ -62,7 +62,7 @@ public class App extends FatJarRouter {
 
 	protected void waitForProviderRepository() throws InterruptedException {
 		while (!providerRepository.isReady()){
-			logger.warn("Not staring camel routes since provider repository not available. Waiting " + providerRetryInterval/1000 + " secs before retrying...");
+			logger.warn("Provider Repository not available. Waiting " + providerRetryInterval/1000 + " secs before retrying...");
 			Thread.sleep(providerRetryInterval);
             providerRepository.populate();
         }
