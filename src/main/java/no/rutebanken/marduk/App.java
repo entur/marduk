@@ -33,7 +33,7 @@ public class App extends FatJarRouter {
 	@Value("${marduk.shutdown.timeout:300}")
 	private Long shutdownTimeout;
 
-	@Value("${marduk.provider.service.retry.interval:30000}")
+	@Value("${marduk.provider.service.retry.interval:5000}")
 	private Integer providerRetryInterval;
 
     private static Logger logger = LoggerFactory.getLogger(App.class);
