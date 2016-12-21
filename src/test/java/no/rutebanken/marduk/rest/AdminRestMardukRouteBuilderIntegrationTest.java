@@ -45,7 +45,7 @@ import static org.mockito.Mockito.when;
 @RunWith(CamelSpringRunner.class)
 @SpringBootTest(classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@ActiveProfiles({ "default", "dev" })
+@ActiveProfiles({ "default", "in-memory-blobstore" })
 @UseAdviceWith
 @ContextConfiguration
 public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {

@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile("dev")
+@Profile("in-memory-blobstore")
 public class InMemoryGcsStorageConfig {
 
     @Bean
@@ -21,9 +21,7 @@ public class InMemoryGcsStorageConfig {
     }
 
     private Storage getStorage() {
-        StorageOptions options = StorageOptions.builder().projectId("1234").build();
-        return options.service();
+        return StorageOptions.newBuilder().setProjectId("1234").build().getService();
     }
-
 
 }

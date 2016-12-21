@@ -26,7 +26,7 @@ import java.util.Map;
 @RunWith(CamelSpringRunner.class)
 @SpringBootTest(classes = ChouetteTransferToDataspaceRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@ActiveProfiles({ "default", "dev" })
+@ActiveProfiles({ "default", "in-memory-blobstore" })
 @UseAdviceWith
 public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 

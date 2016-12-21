@@ -28,8 +28,8 @@ public class CacheProviderRepository implements ProviderRepository {
     @Autowired
     RestProviderDAO restProviderService;
 
-    @Value("${provider.cache.file.path}")
-    private String cacheFilePath;
+    @Value("${provider.cache.path}")
+    private String cachePath;
 
     @Value("${marduk.provider.cache.refresh.max.size:100}")
     private Integer cacheMaxSize;
@@ -60,7 +60,7 @@ public class CacheProviderRepository implements ProviderRepository {
         } else {
             if (isEmpty()){
                 logger.warn("REST Provider Service is unavailable and provider cache is empty. Trying to populate from file.");
-                populateCacheFromFile(cacheFilePath);
+                populateCacheFromFile(cachePath);
             } else {
                 logger.warn("REST Provider Service is unavailable. Could not update provider cache, but keeping " + cache.size() + " existing elements.");
             }
@@ -105,9 +105,9 @@ public class CacheProviderRepository implements ProviderRepository {
     }
 
     File getCacheFile(){
-        String cacheFile = cacheFilePath + "/" + FILENAME;
+        String cacheFile = cachePath + "/" + FILENAME;
         try {
-            File directory = new File(cacheFilePath);
+            File directory = new File(cachePath);
             if (!directory.exists()) {
                 FileUtils.forceMkdir(directory);
             }

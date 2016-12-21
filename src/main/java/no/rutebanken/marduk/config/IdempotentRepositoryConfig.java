@@ -9,11 +9,8 @@ import java.io.File;
 
 public class IdempotentRepositoryConfig {
 
-    @Value("${idempotent.digest.file.store.path}")
-    private String digestIdempotentFileStorePath;
-
-    @Value("${idempotent.filename.file.store.path}")
-    private String filenameIdempotentFileStorePath;
+    @Value("${idempotent.file.store.path}")
+    private String idempotentFileStorePath;
 
     @Value("${idempotent.file.store.cache.size:500}")
     private int cacheSize;
@@ -21,10 +18,14 @@ public class IdempotentRepositoryConfig {
     @Value("${idempotent.file.store.max.size:536870912}")  //0,5 GB pr store
     private long maxFileStoreSize;
 
+    private final String digestFilterFile = "digeststore.dat";
+
+    private final String fileNameFilterFile = "filenamestore.dat";
+
     @Bean
     public IdempotentRepository digestIdempotentRepository() {
         FileIdempotentRepository idempotentRepository = new FileIdempotentRepository();
-        idempotentRepository.setFileStore(new File(digestIdempotentFileStorePath));
+        idempotentRepository.setFileStore(new File(idempotentFileStorePath + "/" + digestFilterFile));
         idempotentRepository.setMaxFileStoreSize(maxFileStoreSize);
         idempotentRepository.setCacheSize(cacheSize);
         return idempotentRepository;
@@ -33,7 +34,7 @@ public class IdempotentRepositoryConfig {
     @Bean
     public IdempotentRepository fileNameIdempotentRepository() {
         FileIdempotentRepository idempotentRepository = new FileIdempotentRepository();
-        idempotentRepository.setFileStore(new File(filenameIdempotentFileStorePath));
+        idempotentRepository.setFileStore(new File(idempotentFileStorePath + "/" + fileNameFilterFile));
         idempotentRepository.setMaxFileStoreSize(maxFileStoreSize);
         idempotentRepository.setCacheSize(cacheSize);
         return idempotentRepository;
