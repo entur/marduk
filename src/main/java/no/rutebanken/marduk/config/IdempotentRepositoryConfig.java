@@ -12,7 +12,7 @@ public class IdempotentRepositoryConfig {
     @Value("${idempotent.file.store.path}")
     private String idempotentFileStorePath;
 
-    @Value("${idempotent.file.store.cache.size:500}")
+    @Value("${idempotent.file.store.cache.size:5000000}")
     private int cacheSize;
 
     @Value("${idempotent.file.store.max.size:536870912}")  //0,5 GB pr store
