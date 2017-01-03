@@ -24,8 +24,12 @@ public class IdempotentRepositoryConfig {
 
     @Bean
     public IdempotentRepository digestIdempotentRepository() {
+    	
+    	File folder = new File(idempotentFileStorePath);
+    	folder.mkdirs();
+    	
         FileIdempotentRepository idempotentRepository = new FileIdempotentRepository();
-        idempotentRepository.setFileStore(new File(idempotentFileStorePath + "/" + digestFilterFile));
+        idempotentRepository.setFileStore(new File(folder,digestFilterFile));
         idempotentRepository.setMaxFileStoreSize(maxFileStoreSize);
         idempotentRepository.setCacheSize(cacheSize);
         return idempotentRepository;
@@ -33,8 +37,11 @@ public class IdempotentRepositoryConfig {
 
     @Bean
     public IdempotentRepository fileNameIdempotentRepository() {
-        FileIdempotentRepository idempotentRepository = new FileIdempotentRepository();
-        idempotentRepository.setFileStore(new File(idempotentFileStorePath + "/" + fileNameFilterFile));
+    	File folder = new File(idempotentFileStorePath);
+    	folder.mkdirs();
+
+    	FileIdempotentRepository idempotentRepository = new FileIdempotentRepository();
+        idempotentRepository.setFileStore(new File(folder,fileNameFilterFile));
         idempotentRepository.setMaxFileStoreSize(maxFileStoreSize);
         idempotentRepository.setCacheSize(cacheSize);
         return idempotentRepository;
