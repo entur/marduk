@@ -2,7 +2,7 @@
     "areaVisibility": false,
     "osmWayPropertySet": "norway",
     "allowDuplicateStops": true,
-    "pruningThresholdIslandWithoutStops": 40,
+    "pruningThresholdIslandWithoutStops": 5,
     "pruningThresholdIslandWithStops": 5
     
 }
