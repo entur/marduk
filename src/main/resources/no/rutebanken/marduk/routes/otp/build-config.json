@@ -1,8 +1,7 @@
 {
     "areaVisibility": true,
     "osmWayPropertySet": "norway",
-    "allowDuplicateStops": true,
-    "islandWithoutStopsMaxSize": 5,
-    "islandWithStopsMaxSize": 5
+    "allowDuplicateStops": true
+    
     
 }
