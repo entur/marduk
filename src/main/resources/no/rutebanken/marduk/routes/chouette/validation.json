@@ -25,10 +25,10 @@
     },
     "mode_air": {
         "allowed_transport": "1",
-        "inter_stop_area_distance_min": "200",
-        "inter_stop_area_distance_max": "10000",
+        "inter_stop_area_distance_min": "30000",
+        "inter_stop_area_distance_max": "2000000",
         "speed_max": "900",
-        "speed_min": "300",
+        "speed_min": "200",
         "inter_stop_duration_variation_max": "60"
     },
     "mode_waterborne": {
@@ -67,8 +67,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "300",
         "inter_stop_area_distance_max": "2000",
-        "speed_max": "60",
-        "speed_min": "30",
+        "speed_max": "50",
+        "speed_min": "20",
         "inter_stop_duration_variation_max": "300"
     },
     "mode_shuttle": {
