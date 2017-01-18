@@ -1,18 +1,18 @@
 package no.rutebanken.marduk.routes.chouette.json;
 
+import java.io.IOException;
+import java.io.StringWriter;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.routes.chouette.json.exporter.GenericExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.exporter.GtfsExportParameters;
-import no.rutebanken.marduk.routes.chouette.json.exporter.NeptuneExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.importer.GtfsImportParameters;
-import no.rutebanken.marduk.routes.chouette.json.importer.NeptuneImportParameters;
 import no.rutebanken.marduk.routes.chouette.json.importer.NetexImportParameters;
 import no.rutebanken.marduk.routes.chouette.json.importer.RegtoppImportParameters;
 import no.rutebanken.marduk.routes.file.FileType;
-
-import java.io.IOException;
-import java.io.StringWriter;
 
 public class Parameters {
 
@@ -23,8 +23,6 @@ public class Parameters {
             return getGtfsImportParameters(fileName, provider, cleanRepository);
         } else if (FileType.NETEXPROFILE.name().equals(fileType)) {
             return getNetexImportParameters(fileName, provider, cleanRepository);
-        } else if (FileType.NEPTUNE.name().equals(fileType)) {
-            return getNeptuneImportParameters(fileName, provider, cleanRepository);
         } else {
             throw new IllegalArgumentException("Cannot create import parameters from file type '" + fileType + "'");
         }
@@ -57,7 +55,7 @@ public class Parameters {
     public static String getGtfsExportParameters(Provider provider) {
         try {
             ChouetteInfo chouetteInfo = provider.chouetteInfo;
-            GtfsExportParameters.GtfsExport gtfsExport = new GtfsExportParameters.GtfsExport("export",
+            GtfsExportParameters.GtfsExport gtfsExport = new GtfsExportParameters.GtfsExport("for journey planning",
                     chouetteInfo.xmlns, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user,true);
             GtfsExportParameters.Parameters parameters = new GtfsExportParameters.Parameters(gtfsExport);
             GtfsExportParameters importParameters = new GtfsExportParameters(parameters);
@@ -70,19 +68,12 @@ public class Parameters {
         }
     }
 
-    public static String getNeptuneImportParameters(String importName, Provider provider, boolean cleanRepository) {
-        NeptuneImportParameters neptuneImportParameters = NeptuneImportParameters.create(importName,
-                provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user,
-                cleanRepository, provider.chouetteInfo.enableValidation);
-        return neptuneImportParameters.toJsonString();
-    }
-
-    public static String getNeptuneExportParameters(Provider provider) {
+    public static String getGenericExportParameters(Provider provider, Provider destProvider) {
         try {
-            NeptuneExportParameters.NeptuneExport gtfsExport = new NeptuneExportParameters.NeptuneExport("export",
-                    provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user);
-            NeptuneExportParameters.Parameters parameters = new NeptuneExportParameters.Parameters(gtfsExport);
-            NeptuneExportParameters importParameters = new NeptuneExportParameters(parameters);
+            GenericExportParameters.GenericExport genericExport = new GenericExportParameters.GenericExport("data transfer",
+                    provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user, destProvider.chouetteInfo.referential);
+            GenericExportParameters.Parameters parameters = new GenericExportParameters.Parameters(genericExport);
+            GenericExportParameters importParameters = new GenericExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
             StringWriter writer = new StringWriter();
             mapper.writeValue(writer, importParameters);

@@ -36,12 +36,6 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 	@EndpointInject(uri = "mock:chouetteCreateExport")
 	protected MockEndpoint chouetteCreateExport;
 
-	@EndpointInject(uri = "mock:chouetteGetData")
-	protected MockEndpoint chouetteGetData;
-
-	@EndpointInject(uri = "mock:chouetteCreateImport")
-	protected MockEndpoint chouetteCreateImport;
-
 	@EndpointInject(uri = "mock:pollJobStatus")
 	protected MockEndpoint pollJobStatus;
 
@@ -54,9 +48,6 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 	@Produce(uri = "activemq:queue:ChouetteTransferExportQueue")
 	protected ProducerTemplate transferTemplate;
 
-	@Produce(uri = "direct:processTransferImportResult")
-	protected ProducerTemplate processTransferImportResultTemplate;
-
 	@Produce(uri = "direct:processTransferExportResult")
 	protected ProducerTemplate processTransferExportResultTemplate;
 
@@ -68,10 +59,10 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 	public void testTransferDataToDataspaceDataspace() throws Exception {
 
 		// Mock initial call to Chouette to export job
-		context.getRouteDefinition("chouette-send-transfer-export-job").adviceWith(context, new AdviceWithRouteBuilder() {
+		context.getRouteDefinition("chouette-send-transfer-job").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/neptune")
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/generic")
 					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
 				
 				interceptSendToEndpoint("activemq:queue:ChouettePollStatusQueue")
@@ -82,52 +73,20 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 }
 		});
 
-		// Mock  call to Chouette to import job
-		context.getRouteDefinition("chouette-send-transfer-import-job").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() throws Exception {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data_url")
-				.skipSendToOriginalEndpoint().to("mock:chouetteGetData");
-
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/neptune")
-				.skipSendToOriginalEndpoint().to("mock:chouetteCreateImport");
-
-				interceptSendToEndpoint("activemq:queue:ChouettePollStatusQueue")
-				.skipSendToOriginalEndpoint().to("mock:pollJobStatus");
-
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-				.to("mock:updateStatus");
-			}
-		});
+	
 
 		// Mock update status calls
-		context.getRouteDefinition("chouette-process-transfer-import-status").adviceWith(context, new AdviceWithRouteBuilder() {
+		context.getRouteDefinition("chouette-process-transfer-status").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 				.to("mock:updateStatus");
-				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringNeptuneValidation").skipSendToOriginalEndpoint()
+				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation").skipSendToOriginalEndpoint()
 				.to("mock:checkScheduledJobsBeforeTriggeringNextAction");
 			}
 		});
 
-		chouetteGetData.expectedMessageCount(1);
-		chouetteGetData.returnReplyBody(new Expression() {
-
-			@SuppressWarnings("unchecked")
-			@Override
-			public <T> T evaluate(Exchange ex, Class<T> arg1) {
-				try {
-					// Should be Neptune content, but this will do
-					return (T) IOUtils.toString(getClass()
-							.getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"));
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return null;
-				}
-			}
-		});
+	
 
 		// we must manually start when we are done with all the advice with
 		context.start();
@@ -138,12 +97,8 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 		chouetteCreateExport.returnReplyHeader("Location", new SimpleExpression(
 				chouetteUrl.replace("http4://", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
 
-		// 1 export call
-		chouetteCreateImport.expectedMessageCount(1);
-		chouetteCreateImport.returnReplyHeader("Location", new SimpleExpression(
-				chouetteUrl.replace("http4://", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
-
-		pollJobStatus.expectedMessageCount(2);
+	
+		pollJobStatus.expectedMessageCount(1);
 		updateStatus.expectedMessageCount(3);
 		checkScheduledJobsBeforeTriggeringNextAction.expectedMessageCount(1);
 		
@@ -152,13 +107,6 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 		headers.put(Constants.PROVIDER_ID, "2");
 		transferTemplate.sendBodyAndHeaders(null, headers);
 		
-		Map<String, Object> exportJobCompletedHeaders = new HashMap<String, Object>();
-		exportJobCompletedHeaders.put(Constants.PROVIDER_ID, "2");
-		exportJobCompletedHeaders.put("action_report_result", "OK");
-		exportJobCompletedHeaders.put("data_url", chouetteUrl + "/chouette_iev/referentials/rut/data_url");
-		exportJobCompletedHeaders.put(Constants.FILE_HANDLE, "None");
-		exportJobCompletedHeaders.put(Constants.FILE_NAME, "None");
-		processTransferExportResultTemplate.sendBodyAndHeaders(null, exportJobCompletedHeaders);
 
 		Map<String, Object> importJobCompletedHeaders = new HashMap<String, Object>();
 		importJobCompletedHeaders.put(Constants.PROVIDER_ID, "2");
@@ -167,9 +115,8 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 		importJobCompletedHeaders.put(Constants.FILE_HANDLE, "None");
 		importJobCompletedHeaders.put(Constants.FILE_NAME, "None");
 		importJobCompletedHeaders.put(Constants.CORRELATION_ID, "None");
-		processTransferImportResultTemplate.sendBodyAndHeaders(null, importJobCompletedHeaders);
+		processTransferExportResultTemplate.sendBodyAndHeaders(null, importJobCompletedHeaders);
 
-		chouetteCreateImport.assertIsSatisfied();
 		chouetteCreateExport.assertIsSatisfied();
 		pollJobStatus.assertIsSatisfied();
 		

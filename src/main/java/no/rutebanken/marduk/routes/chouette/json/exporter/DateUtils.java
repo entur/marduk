@@ -10,4 +10,8 @@ public class DateUtils {
         return Date.from(LocalDate.now().atStartOfDay().minusDays(daysBack).atZone(ZoneId.systemDefault()).toInstant());
     }
 
+    public static Date endDateFor(long daysForward){
+        return Date.from(LocalDate.now().atStartOfDay().plusDays(daysForward).atZone(ZoneId.systemDefault()).toInstant());
+    }
+
 }
