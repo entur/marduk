@@ -38,18 +38,37 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .validate().method(FileTypeClassifierBean.class, "validateFile")
                 .choice()
                 .when(header(FILE_TYPE).isEqualTo(FileType.INVALID.name()))
-                    .log(LoggingLevel.WARN, correlation()+"Unexpected file type or invalid file ${header." + FILE_HANDLE + "}")
+                    .log(LoggingLevel.WARN, correlation() + "Unexpected file type or invalid file ${header." + FILE_HANDLE + "}")
+                    .to("direct:repackZipFile")
                 .when(header(FILE_TYPE).isEqualTo(FileType.RAR.name()))
-                	.log(LoggingLevel.INFO, correlation()+"Splitting and repackaging file ${header." + FILE_HANDLE + "}")
+                	.log(LoggingLevel.INFO, correlation() + "Splitting and repackaging file ${header." + FILE_HANDLE + "}")
                 	.to("direct:splitRarFile")
                 .otherwise()
-                    .log(LoggingLevel.INFO, correlation()+"Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
+                    .choice()
+                    .when(header(FILE_TYPE).isEqualTo(FileType.GTFS.name()))
+                        .log(LoggingLevel.INFO, correlation() + "Transforming GTFS file ${header." + FILE_HANDLE + "}")
+                        .to("direct:transformGtfsFile")
+                    .end()
+                    .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                     .setBody(simple(""))   //remove file data from body since this is in blobstore
                     .to("activemq:queue:ChouetteImportQueue")
                 .end()
                 .routeId("file-classify");
     
     
+        from("direct:transformGtfsFile")
+        	.bean(method(ZipFileUtils.class, "transformGtfsFile"))
+        	.log(LoggingLevel.INFO, correlation()+"ZIP-file transformed ${header." + FILE_HANDLE + "}")
+            .to("direct:uploadBlob")
+        	.routeId("file-transform-gtfs");
+
+        from("direct:repackZipFile")
+        	.bean(method(ZipFileUtils.class, "rePackZipFile"))
+        	.log(LoggingLevel.INFO, correlation()+"ZIP-file repacked ${header." + FILE_HANDLE + "}")
+            .to("direct:uploadBlob")
+        	.to("activemq:queue:ProcessFileQueue")
+        	.routeId("file-repack-zip");
+
         from("direct:splitRarFile")
         	.split(method(RARToZipFilesSplitter.class,"splitRarFile"))
         	.process(e -> {
@@ -57,10 +76,10 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
         		String currentPartPadded = StringUtils.leftPad(""+currentPart, 4, '0');
         		String numParts = e.getProperty("CamelSplitSize",String.class);
         		e.getIn().setHeader(FILE_HANDLE, e.getIn().getHeader(FILE_HANDLE)+"_part_"+currentPartPadded+"_of_"+numParts+".zip");
-        	})
+            })
         	.log(LoggingLevel.INFO, correlation()+"New fragment from RAR file ${header." + FILE_HANDLE + "}")
             .to("direct:uploadBlob")
-        	.to("activemq:queue:ProcessFileQueue")
+                .to("activemq:queue:ProcessFileQueue")
         	.routeId("file-split-rar");
 
     }
