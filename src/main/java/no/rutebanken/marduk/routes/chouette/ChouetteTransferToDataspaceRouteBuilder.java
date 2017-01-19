@@ -29,6 +29,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
         super.configure();
 
         from("activemq:queue:ChouetteTransferExportQueue?transacted=true").streamCaching()
+				.transacted()
         		.log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette transfer for provider with id ${header." + PROVIDER_ID + "}")
                 .process(e -> { 
                 	// Add correlation id only if missing
@@ -76,7 +77,9 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 	                    e.getIn().setHeader(JSON_PART, Parameters.getNeptuneImportParameters("transfer.zip",  getProviderRepository().getProvider(currentProvider.chouetteInfo.migrateDataToProvider),true));
 	                }) //Using header to addToExchange json data
 	                .removeHeaders("Camel*")
+					.setHeader(FILE_NAME, constant("transfer.zip"))  //temporarily setting FILE_NAME=transfer.zip for reuse
 	                .process(e -> toImportMultipart(e))
+					.setHeader(FILE_NAME, constant("None"))		//restoring FILE_NAME
 	                .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
 	                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/importer/neptune"))
 	                .log(LoggingLevel.INFO,correlation()+ "Calling Chouette with URL: ${exchangeProperty.chouette_url}")

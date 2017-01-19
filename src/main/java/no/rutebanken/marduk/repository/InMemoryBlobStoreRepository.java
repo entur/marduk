@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Repository
-@Profile("dev")
+@Profile("in-memory-blobstore")
 public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -35,6 +35,15 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
                 .collect(Collectors.toList());
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(files);
+        return blobStoreFiles;
+    }
+
+    @Override
+    public BlobStoreFiles listBlobsFlat(String prefix) {
+        List<BlobStoreFiles.File> files = listBlobs(prefix).getFiles();
+        List<BlobStoreFiles.File> result = files.stream().map(k -> new BlobStoreFiles.File(k.getName().replaceFirst(prefix + "/", ""), new Date(), 1234L)).collect(Collectors.toList());
+        BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
+        blobStoreFiles.add(result);
         return blobStoreFiles;
     }
 

@@ -7,8 +7,10 @@ import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
+import no.rutebanken.marduk.services.GraphStatusResponse;
 import org.apache.camel.Body;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
@@ -61,7 +63,16 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
         
         .contextPath("/admin");
-        
+
+        rest("/application")
+        	.post("/filestores/clean")
+				.description("Clean Idempotent File Stores")
+				.responseMessage().code(200).endResponseMessage()
+				.responseMessage().code(500).message("Internal error").endResponseMessage()
+				.route().routeId("admin-application-clean-idempotent-file-repos")
+				.to("direct:cleanIdempotentFileStore")
+				.setBody(constant(null))
+				.endRest();
 
         rest("/services/chouette")
 	    	.get("/jobs")
@@ -91,7 +102,39 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.process(e -> e.getIn().setHeader("status", e.getIn().getHeader("status") != null? e.getIn().getHeader("status") : Arrays.asList("STARTED","SCHEDULED")))
 			    .to("direct:chouetteGetJobsAll")
 			    .routeId("admin-chouette-list-jobs-all")
-			    .endRest();      	
+				.endRest()
+			.delete("/jobs")
+				.description("Cancel all Chouette jobs for all providers")
+				.responseMessage().code(200).message("All jobs canceled").endResponseMessage()
+				.responseMessage().code(500).message("Could not cancel all jobs").endResponseMessage()
+				.route()
+				.log(LoggingLevel.INFO,correlation()+"Cancel all chouette jobs for all providers")
+				.removeHeaders("CamelHttp*")
+				.to("direct:chouetteCancelAllJobsForAllProviders")
+				.routeId("admin-chouette-cancel-all-jobs-all")
+				.setBody(constant(null))
+			    .endRest()
+	    	.post("/clean/{filter}")
+				.description("Triggers the clean ALL dataspace process in Chouette. Only timetable data are deleted, not job data (imports, exports, validations)")
+	    		.param()
+	    			.required(Boolean.TRUE)
+	    			.name("filter")
+	    			.type(RestParamType.path)
+	    			.description("Optional filter to clean only level 1, level 2 or all spaces (no parameter value)")
+	    			.allowableValues("all","level1","level2")
+
+	    			.endParam()
+				.consumes(PLAIN)
+				.produces(PLAIN)
+				.responseMessage().code(200).message("Command accepted").endResponseMessage()
+	    		.responseMessage().code(500).message("Internal error - check filter").endResponseMessage()
+		    	.route()
+				.log(LoggingLevel.INFO,correlation()+"Chouette clean all dataspaces")
+				.removeHeaders("CamelHttp*")
+				.to("direct:chouetteCleanAllReferentials")
+				.setBody(constant(null))
+			    .routeId("admin-chouette-clean-all")
+		    	.endRest();
         
 
         rest("/services/chouette/{providerId}")
@@ -108,14 +151,15 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 		    		.removeHeaders("CamelHttp*")
 		    		.setHeader(PROVIDER_ID,header("providerId"))
 		        	.split(method(ImportFilesSplitter.class,"splitFiles"))
-	            	.setHeader(FILE_HANDLE,body())
+
+	            	.process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
+							+ getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
+							+ "/" + e.getIn().getBody(String.class)))
 				    .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
 		    		.log(LoggingLevel.INFO,correlation()+"Chouette start import fileHandle=${body}")
 	
 	                .process(e -> {
-	                	String fileNameForStatusLogging = e.getIn().getBody(String.class);
-	                	fileNameForStatusLogging = fileNameForStatusLogging.replaceFirst("inbound/received/.*/", "");
-	                	fileNameForStatusLogging = "reimport-"+fileNameForStatusLogging;
+						String fileNameForStatusLogging = "reimport-"+e.getIn().getBody(String.class);
 	                	e.getIn().setHeader(Constants.FILE_NAME, fileNameForStatusLogging);
 	                })
 	            	.setBody(constant(null))
@@ -135,15 +179,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 		    		.setHeader(PROVIDER_ID,header("providerId"))
 		    		.log(LoggingLevel.INFO,correlation()+"blob store get files")
 		    		.removeHeaders("CamelHttp*")
-				    .to("direct:listBlobs")
+				    .to("direct:listBlobsFlat")
 				    .routeId("admin-chouette-import-list")
 				    .endRest()
 				.get("/lineStats")
 					.description("List stats about data in chouette for a given provider")
 					.param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
-				//TODO add class for binding
 				.bindingMode(RestBindingMode.off)
-//				.outType()
 					.consumes(PLAIN)
 					.produces(JSON)
 					.responseMessage().code(200).endResponseMessage()
@@ -195,7 +237,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 		    		.setHeader(PROVIDER_ID,header("providerId"))
 		    		.log(LoggingLevel.INFO,correlation()+"Cancel all chouette jobs")
 		    		.removeHeaders("CamelHttp*")
-				    .to("direct:chouetteCancelAllJobs")
+				    .to("direct:chouetteCancelAllJobsForProvider")
 				    .routeId("admin-chouette-cancel-all-jobs")
 				    .endRest()
 	        	.delete("/jobs/{jobId}")
@@ -250,8 +292,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				    .setHeader(PROVIDER_ID,header("providerId"))
 		    		.log(LoggingLevel.INFO,correlation()+"Chouette clean dataspace")
 		    		.removeHeaders("CamelHttp*")
-				    .setHeader(PROVIDER_ID,header("providerId"))
-			    	.inOnly("activemq:queue:ChouetteCleanQueue")
+					.to("direct:chouetteCleanReferential")
 				    .routeId("admin-chouette-clean")
 			    	.endRest()
 		    	.post("/transfer")
@@ -282,7 +323,21 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 	    		.setBody(simple(""))
 			    .inOnly("activemq:queue:OtpGraphQueue")
 			    .routeId("admin-build-graph")
-			    .endRest();
+			    .endRest()
+			.get("/status")
+				.description("Query status of OTP graph building")
+				.consumes(PLAIN)
+				.produces(JSON)
+				.responseMessage().code(200).endResponseMessage()
+				.responseMessage().code(500).endResponseMessage()
+				.outType(GraphStatusResponse.class)
+				.route()
+				.log(LoggingLevel.DEBUG,"OTP get graph status")
+				.removeHeaders("CamelHttp*")
+				.setBody(simple(null))
+				.bean("graphStatusService", "getStatus")
+				.routeId("admin-build-graph-status")
+				.endRest();
 
 		rest("/services/fetch")
 				.post("/osm")

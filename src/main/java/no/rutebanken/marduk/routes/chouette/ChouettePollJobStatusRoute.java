@@ -58,13 +58,6 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder(getContext());
-        ExecutorService allProvidersExecutorService = 
-        		poolBuilder
-        		.poolSize(20)
-        		.maxPoolSize(20)
-        		.maxQueueSize(1000)
-        		.build("allProvidersExecutorService");
         
 //        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
 //                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
@@ -74,6 +67,8 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 //                .handled(true);
         
         from("direct:chouetteGetJobs")
+				// TODO Reduce to DEBUG level. Using INFO to identify bug.
+				.log(LoggingLevel.INFO,correlation()+"Fetching jobs for provider id '${header." + PROVIDER_ID + "}'")
         		.process( e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .removeHeaders("Camel*")
                 .setBody(constant(""))
@@ -107,23 +102,32 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
         from("direct:chouetteCancelJob")
 				.process( e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
 		        .removeHeaders("Camel*")
-		        .setBody(constant(""))
+		        .setBody(constant(null))
 		        .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.DELETE))
 		        .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/scheduled_jobs/${header." + Constants.CHOUETTE_JOB_ID + "}"))
 		        .toD("${exchangeProperty.chouette_url}")
 		        .setBody(constant(null))
 		        .routeId("chouette-cancel-job");
 		
-        from("direct:chouetteCancelAllJobs")
+        from("direct:chouetteCancelAllJobsForProvider")
 				.process(e -> e.getIn().setHeader("status", Arrays.asList("STARTED","SCHEDULED")))
 				.to("direct:chouetteGetJobs")
 				.sort(body(), new JobResponseDescendingSorter())
 				.removeHeaders("Camel*")
 				.split().body().parallelProcessing().executorService(allProvidersExecutorService)
 		        .setHeader(Constants.CHOUETTE_JOB_ID,simple("${body.id}"))
-		        .setBody(constant(""))
+		        .setBody(constant(null))
 		        .to("direct:chouetteCancelJob")
-		        .routeId("chouette-cancel-all-jobs");
+		        .routeId("chouette-cancel-all-jobs-for-provider");
+
+		from("direct:chouetteCancelAllJobsForAllProviders")
+				.process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
+				.split().body().parallelProcessing().executorService(allProvidersExecutorService)
+				.setHeader(Constants.PROVIDER_ID,simple("${body.id}"))
+				.setBody(constant(null))
+				.removeHeaders("Camel*")
+				.to("direct:chouetteCancelAllJobsForProvider")
+				.routeId("chouette-cancel-all-jobs-for-all-providers");
 		
         from("direct:chouetteGetJobsAll")
         		.process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
@@ -160,6 +164,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 			
         
         from("activemq:queue:ChouettePollStatusQueue?transacted=true&maxConcurrentConsumers=" + maxConsumers)
+                .transacted()
 				.validate(header(Constants.CORRELATION_ID).isNotNull())
 				.validate(header(Constants.PROVIDER_ID).isNotNull())
 				.validate(header(Constants.FILE_NAME).isNotNull())

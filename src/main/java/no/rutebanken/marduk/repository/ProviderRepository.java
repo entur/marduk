@@ -10,5 +10,5 @@ public interface ProviderRepository {
 
     Provider getProvider(Long id);
 
-    boolean isConnected();
+    String getReferential(Long id);
 }

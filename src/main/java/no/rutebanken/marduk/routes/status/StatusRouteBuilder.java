@@ -12,7 +12,7 @@ public class StatusRouteBuilder extends RouteBuilder {
         from("direct:updateStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), "Sending off status: ${body}")
         .to("activemq:queue:ExternalProviderStatus")
-        .routeId("update-status");
+        .routeId("update-status").startupOrder(1);
     }
 
 }

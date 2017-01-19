@@ -4,15 +4,15 @@ import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.component.file.GenericFileFilter;
 import org.springframework.stereotype.Component;
 
-@Component(value = "regtoppFileFilter")
-public class RegtoppFileFilter<T> implements GenericFileFilter<T> {
+@Component(value = "ftpFileFilter")
+public class FtpFileFilter<T> implements GenericFileFilter<T> {
 
 	public boolean accept(GenericFile<T> file) {
 
 		String filenameUppercase = file.getFileName().toUpperCase();
 
-		// we only want zip or rar files or directories
+		// we only want zip or rar files or directories and not the GTFS folder
 		return file.isDirectory()
-				|| (!file.isDirectory() && (filenameUppercase.endsWith(".ZIP") || filenameUppercase.endsWith(".RAR")));
+				|| (!file.isDirectory() && !file.getAbsoluteFilePath().contains("/GTFS/") && (filenameUppercase.endsWith(".ZIP") || filenameUppercase.endsWith(".RAR")));
 	}
 }

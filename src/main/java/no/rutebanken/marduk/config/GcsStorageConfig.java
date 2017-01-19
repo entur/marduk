@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile("test")
+@Profile("gcs-blobstore")
 public class GcsStorageConfig {
 
     @Value("${blobstore.gcs.credential.path}")

@@ -1,10 +1,11 @@
 package no.rutebanken.marduk.routes.otp;
 
-import com.sun.net.httpserver.HttpExchange;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.services.GraphStatusService;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -12,7 +13,6 @@ import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
-import static org.apache.camel.builder.Builder.simple;
 
 /**
  * Trigger OTP graph building
@@ -51,15 +51,18 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.purge.queue:true}")
     private boolean purgeQueue;
 
+    @Autowired
+    GraphStatusService graphStatusService;
+
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
-        //TODO Report status?
-        from("activemq:queue:OtpGraphQueue?maxConcurrentConsumers=1")
-        	.autoStartup("{{otp.graph.build.autoStartup:true}}")
+        from("activemq:queue:OtpGraphQueue?transacted=true&maxConcurrentConsumers=1").autoStartup("{{otp.graph.build.autoStartup:true}}")
+                .transacted()
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
+                .bean(graphStatusService, "setBuilding")
                 .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation()+"Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:fetchConfig")
@@ -67,6 +70,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:purgeQueue")
                 .to("direct:fetchLatestGtfs")
                 .to("direct:buildGraph")
+                .bean(graphStatusService, "setIdle")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation()+"Done with OTP graph building route.")
                 .routeId("otp-graph-build");
 

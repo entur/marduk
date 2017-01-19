@@ -1,12 +1,8 @@
 package no.rutebanken.marduk.routes.sftp;
 
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-
-import java.util.Collection;
-import java.util.UUID;
-
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.Status;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
@@ -14,9 +10,10 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import java.util.Collection;
+import java.util.UUID;
+
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Downloads file from lamassu, putting it in blob store, posting handle on queue.
@@ -32,7 +29,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
 
     @Value("${sftp.known.hosts.file}")
     private String knownHostsFile;
-    
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -48,6 +45,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
                 throw new RuntimeException(e);
             }
         });
+
     }
 
     private static final class DynamcSftpPollerRouteBuilder extends BaseRouteBuilder {
@@ -65,13 +63,14 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
 
         @Override
         public void configure() throws Exception {
-            from("sftp://" + provider.sftpAccount + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&knownHostsFile=" + knownHostsFile + "&sorter=#caseIdSftpSorter&delay=30s&delete=true&localWorkDirectory=files/tmp&connectTimeout=1000")
+            from("sftp://" + provider.sftpAccount + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&knownHostsFile=" + knownHostsFile + "&sorter=#caseIdSftpSorter&delay={{sftp.delay}}&delete={{idempotent.skip:false}}&localWorkDirectory=files/tmp&connectTimeout=1000")
 					.autoStartup("{{sftp.autoStartup:true}}")
-				    .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
-                    .log(LoggingLevel.INFO, correlation()+"Received file on sftp route for '" + provider.sftpAccount + "'. Storing file ...")
-                    .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_INBOUND + provider.chouetteInfo.referential + "/" + provider.chouetteInfo.referential + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
                     .setHeader(PROVIDER_ID, constant(provider.id))
                     .setHeader(Constants.FILE_NAME, header(Exchange.FILE_NAME))
+                    .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
+                    .to("direct:filterDuplicateFile")
+                    .log(LoggingLevel.INFO, correlation()+"Received new file on sftp route for '" + provider.sftpAccount + "'. Storing file ...")
+                    .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_INBOUND + provider.chouetteInfo.referential + "/" + provider.chouetteInfo.referential + "-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
                     .log(LoggingLevel.INFO, correlation()+"File handle is: ${header." + FILE_HANDLE + "}")
                     .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                     .to("direct:uploadBlob")

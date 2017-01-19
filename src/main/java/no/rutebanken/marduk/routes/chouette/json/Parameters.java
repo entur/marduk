@@ -3,7 +3,6 @@ package no.rutebanken.marduk.routes.chouette.json;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.routes.chouette.json.*;
 import no.rutebanken.marduk.routes.chouette.json.exporter.GtfsExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.exporter.NeptuneExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.importer.GtfsImportParameters;
@@ -36,22 +35,22 @@ public class Parameters {
         if (!chouetteInfo.usesRegtopp()){
             throw new IllegalArgumentException("Could not get regtopp information about provider '" + provider.id + "'.");
         }
-        RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.prefix,
+        RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.xmlns,
                 chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion,
-                chouetteInfo.regtoppCoordinateProjection,chouetteInfo.regtoppCalendarStrategy,cleanRepository,chouetteInfo.enableValidation);
+                chouetteInfo.regtoppCoordinateProjection,chouetteInfo.regtoppCalendarStrategy,cleanRepository,chouetteInfo.enableValidation,false,true);
         return regtoppImportParameters.toJsonString();
     }
 
     static String getGtfsImportParameters(String importName, Provider provider, boolean cleanRepository) {
         ChouetteInfo chouetteInfo = provider.chouetteInfo;
-        GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.prefix,
+        GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.xmlns,
                 chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user,cleanRepository,chouetteInfo.enableValidation);
         return gtfsImportParameters.toJsonString();
     }
 
     static String getNetexImportParameters(String importName, Provider provider, boolean cleanRepository) {
         NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.name,
-                provider.chouetteInfo.organisation, provider.chouetteInfo.user, cleanRepository, provider.chouetteInfo.enableValidation);
+                provider.chouetteInfo.organisation, provider.chouetteInfo.user, cleanRepository, provider.chouetteInfo.enableValidation,provider.chouetteInfo.xmlns, provider.chouetteInfo.xmlnsurl);
         return netexImportParameters.toJsonString();
     }
 
@@ -59,7 +58,7 @@ public class Parameters {
         try {
             ChouetteInfo chouetteInfo = provider.chouetteInfo;
             GtfsExportParameters.GtfsExport gtfsExport = new GtfsExportParameters.GtfsExport("export",
-                    chouetteInfo.prefix, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user);
+                    chouetteInfo.xmlns, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user,true);
             GtfsExportParameters.Parameters parameters = new GtfsExportParameters.Parameters(gtfsExport);
             GtfsExportParameters importParameters = new GtfsExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();

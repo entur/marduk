@@ -8,7 +8,10 @@ import java.util.UUID;
 
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.file.FileComponent;
+import org.apache.camel.component.file.GenericFile;
+import org.apache.camel.component.file.GenericFileFilter;
 import org.apache.camel.component.file.remote.RemoteFile;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
@@ -25,12 +28,11 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
 
 	@Override
 	public void configure() throws Exception {
-		from("ftp://{{nri.ftp.host}}/{{nri.ftp.folder}}?username={{nri.ftp.username}}&password={{nri.ftp.password}}&delay={{nri.ftp.delay}}&recursive=true&delete=false&filter=#regtoppFileFilter&sorter=#caseIdNriFtpSorter&ftpClient.controlEncoding=UTF-8&passiveMode=true&binary=true")
+		from("ftp://{{nri.ftp.host}}/{{nri.ftp.folder}}?username={{nri.ftp.username}}&password={{nri.ftp.password}}&filter=#ftpFileFilter&delay={{nri.ftp.delay:1h}}&initialDelay={{nri.ftp.initialDelay:1m}}&recursive=true&delete=false&sorter=#caseIdNriFtpSorter&ftpClient.controlEncoding=UTF-8&passiveMode=true&binary=true")
 		.autoStartup("{{nri.ftp.autoStartup:true}}")
 		.process(e -> {
             e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString());
 		})
-		.log(LoggingLevel.INFO, correlation()+"Received file ${header.CamelFileName} on NRI ftp route")
         .process(e -> {
     		RemoteFile<?> p = (RemoteFile<?>) e.getProperty(FileComponent.FILE_EXCHANGE_FILE);
     		String relativeFilePath = p.getRelativeFilePath();
@@ -49,6 +51,8 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
         	}
         })
         .filter(header(PROVIDER_ID).isNotNull())
+		.to("direct:filterDuplicateFile")
+		.log(LoggingLevel.INFO, correlation()+"Received new file ${header.CamelFileName} on NRI ftp route")
         .log(LoggingLevel.INFO, correlation()+"File handle is: ${header." + FILE_HANDLE + "}")
         .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
         .to("direct:uploadBlob")

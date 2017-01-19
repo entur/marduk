@@ -1,4 +1,7 @@
 {
-    "areaVisibility": false,
-    "osmWayPropertySet": "norway"
+    "areaVisibility": true,
+    "osmWayPropertySet": "norway",
+    "allowDuplicateStops": true
+    
+    
 }

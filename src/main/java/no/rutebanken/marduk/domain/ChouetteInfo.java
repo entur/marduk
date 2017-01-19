@@ -6,7 +6,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class ChouetteInfo {
 
     public Long id;
-    public String prefix;
+    public String xmlns;
+    public String xmlnsurl;
     public String referential;
     public String organisation;
     public String user;
@@ -17,11 +18,16 @@ public class ChouetteInfo {
     public boolean enableValidation = false;
 	public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
 
-    @Override
+    public Long getMigrateDataToProvider() {
+		return migrateDataToProvider;
+	}
+
+	@Override
     public String toString() {
         return "ChouetteInfo{" +
                 "id=" + id +
-                ", prefix='" + prefix + '\'' +
+                ", xmlns='" + xmlns + '\'' +
+                ", xmlnsurl='" + xmlnsurl + '\'' +
                 ", referential='" + referential + '\'' +
                 ", organisation='" + organisation + '\'' +
                 ", user='" + user + '\'' +

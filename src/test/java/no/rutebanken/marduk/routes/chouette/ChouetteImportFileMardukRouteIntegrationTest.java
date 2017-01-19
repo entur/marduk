@@ -9,7 +9,7 @@ import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
-import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
+import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
@@ -29,10 +29,10 @@ import java.util.Map;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 
-@RunWith(CamelSpringJUnit4ClassRunner.class)
-@SpringBootTest(classes = ChouetteImportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk")
+@RunWith(CamelSpringRunner.class)
+@SpringBootTest(classes = ChouetteImportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@ActiveProfiles({ "default", "dev" })
+@ActiveProfiles({ "default", "in-memory-blobstore" })
 @UseAdviceWith
 public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
@@ -82,7 +82,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 	public void testImportFileToDataspace() throws Exception {
 
 		String filename = "ruter_fake_data.zip";
-		String pathname = "src/main/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
+		String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
 
 		//populate fake blob repo
 		inMemoryBlobStoreRepository.uploadBlob("rut/" + filename, new FileInputStream(new File(pathname)), false);
@@ -110,7 +110,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 			@Override
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-				.to("mock:updateStatus");
+						.to("mock:updateStatus");
 				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringNextAction").skipSendToOriginalEndpoint()
 				.to("mock:checkScheduledJobsBeforeTriggeringNextAction");
 			}

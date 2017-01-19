@@ -1,9 +1,11 @@
 package no.rutebanken.marduk.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import no.rutebanken.marduk.App;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
@@ -12,10 +14,11 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
-import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
+import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.compress.utils.IOUtils;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,14 +36,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_INBOUND;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
-@RunWith(CamelSpringJUnit4ClassRunner.class)
-@SpringBootTest(classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk")
+@RunWith(CamelSpringRunner.class)
+@SpringBootTest(classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@ActiveProfiles({ "default", "dev" })
+@ActiveProfiles({ "default", "in-memory-blobstore" })
 @UseAdviceWith
 @ContextConfiguration
 public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
@@ -68,6 +73,11 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
 	@Value("${nabu.rest.service.url}")
 	private String nabuUrl;
+
+	@Before
+	public void setUpProvider() {
+		when(providerRepository.getReferential(2L)).thenReturn("rut");
+	}
 
 	@Test
 	public void runImport() throws Exception {
@@ -108,7 +118,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 		String providerId = (String) exchanges.get(0).getIn().getHeader(PROVIDER_ID);
 		assertEquals("2", providerId);
 		String s3FileHandle = (String) exchanges.get(0).getIn().getHeader(FILE_HANDLE);
-		assertEquals("file1", s3FileHandle);
+		assertEquals(BLOBSTORE_PATH_INBOUND + "rut/file1", s3FileHandle);
 	}
 
 	@Test
@@ -147,7 +157,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 		// Preparations
 		String filename = "ruter_fake_data.zip";
 		String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND +"rut/";
-		String pathname = "src/main/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
+		String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
 
 		//populate fake blob repo
 		inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, new FileInputStream(new File(pathname)), false);

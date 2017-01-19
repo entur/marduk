@@ -40,7 +40,7 @@ public class FileTypeClassifierBean {
 			exchange.getIn().setHeader(FILE_TYPE, fileType.name());
 			return true;
 		} catch (RuntimeException e) {
-			logger.warn("Failed while trying to classify file '" + relativePath + "'.", e);
+			logger.warn("Failed while trying to classify file '" + relativePath + "'.");
 			return false;
 		}
 	}

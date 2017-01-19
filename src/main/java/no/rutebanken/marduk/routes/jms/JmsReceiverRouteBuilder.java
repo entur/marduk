@@ -19,20 +19,24 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        from("activemq:queue:MardukInboundQueue")
-            .log(LoggingLevel.INFO, correlation()+"Received notification about file ${header.CamelFileName} on jms. Fetching file ...")
-                .log(LoggingLevel.INFO, correlation() + "Fetching blob ${header." + FILE_HANDLE + "}")
-                .to("direct:fetchExternalBlob")
-                .process(
-                    e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential)
-                )
+        from("activemq:queue:MardukInboundQueue?transacted=true").streamCaching()
+            .transacted()
+            .setHeader(Exchange.FILE_NAME, header(Constants.FILE_NAME))
+            .log(LoggingLevel.INFO, correlation()+"Received notification about file '${header." + Constants.FILE_NAME + "}' on jms. Fetching file ...")
+            .log(LoggingLevel.INFO, correlation() + "Fetching blob ${header." + FILE_HANDLE + "}")
+            .to("direct:fetchExternalBlob")
+            .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+            .to("direct:filterDuplicateFile")
             .log(LoggingLevel.INFO, correlation() + "File handle is: ${header." + FILE_HANDLE + "}")
             .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
             .to("direct:uploadBlob")
-            .setHeader(Constants.FILE_NAME, exchangeProperty(Exchange.FILE_NAME))
+            .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
             .process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.STARTED).build())
             .to("direct:updateStatus")
-            .to("direct:deleteExternalBlob")
+            .choice()
+                .when(simple("{{blobstore.delete.external.blobs:true}}"))
+                .to("direct:deleteExternalBlob")
+             .end()
             .to("activemq:queue:ProcessFileQueue");
 
     }

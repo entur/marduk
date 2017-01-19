@@ -8,7 +8,7 @@ import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
-import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
+import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
@@ -25,10 +25,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@RunWith(CamelSpringJUnit4ClassRunner.class)
-@SpringBootTest(classes = ChouettePollJobStatusRoute.class, properties = "spring.main.sources=no.rutebanken.marduk")
+@RunWith(CamelSpringRunner.class)
+@SpringBootTest(classes = ChouettePollJobStatusRoute.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@ActiveProfiles({ "default", "dev" })
+@ActiveProfiles({ "default", "in-memory-blobstore" })
 @UseAdviceWith
 public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 

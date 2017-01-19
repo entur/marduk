@@ -8,7 +8,7 @@
     "walk_frequent_traveller_speed_max": "5",
     "walk_mobility_restricted_traveller_speed_max": "1",
     "inter_access_link_distance_max": "300",
-    "inter_stop_duration_max": "40",
+    "inter_stop_duration_max": "300",
     "facility_stop_area_distance_max": "300",
     "check_allowed_transport_modes": "0",
     "check_lines_in_groups": "0",
@@ -25,10 +25,10 @@
     },
     "mode_air": {
         "allowed_transport": "1",
-        "inter_stop_area_distance_min": "200",
-        "inter_stop_area_distance_max": "10000",
-        "speed_max": "800",
-        "speed_min": "500",
+        "inter_stop_area_distance_min": "30000",
+        "inter_stop_area_distance_max": "2000000",
+        "speed_max": "900",
+        "speed_min": "200",
         "inter_stop_duration_variation_max": "60"
     },
     "mode_waterborne": {
@@ -67,8 +67,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "300",
         "inter_stop_area_distance_max": "2000",
-        "speed_max": "60",
-        "speed_min": "30",
+        "speed_max": "50",
+        "speed_min": "20",
         "inter_stop_duration_variation_max": "300"
     },
     "mode_shuttle": {
