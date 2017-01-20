@@ -56,6 +56,8 @@ public class FileTypeClassifierBean {
 				return NETEXPROFILE;
 			} else if (isNeptuneZip(filesNamesInZip)) {
 				return NEPTUNE;
+			} else if (ZipFileUtils.zipFileContainsSingleFolder(data)) {
+				return ZIP_WITH_SINGLE_FOLDER;
 			}
 			throw new FileValidationException("Could not classify file '" + relativePath + "'.");
 		} else if (relativePath.toUpperCase().endsWith(".RAR")) {

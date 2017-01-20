@@ -3,6 +3,7 @@ package no.rutebanken.marduk.routes.chouette;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
+import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -24,6 +25,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 
 @RunWith(CamelSpringRunner.class)
 @SpringBootTest(classes = ChouetteImportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
@@ -106,7 +110,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 			@Override
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-				.to("mock:updateStatus");
+						.to("mock:updateStatus");
 				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringNextAction").skipSendToOriginalEndpoint()
 				.to("mock:checkScheduledJobsBeforeTriggeringNextAction");
 			}
@@ -147,6 +151,82 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 		updateStatus.assertIsSatisfied();
 		
 		
+	}
+
+	@Test
+	public void testImportInvalidFileToDataspace() throws Exception {
+
+		String filename = "ruter_gtfs_folder.zip";
+		String pathname = "src/test/resources/no/rutebanken/marduk/routes/file/beans/gtfs-folder.zip";
+
+		//populate fake blob repo
+		inMemoryBlobStoreRepository.uploadBlob(filename, new FileInputStream(new File(pathname)), false);
+
+		// Mock initial call to Chouette to import job
+		context.getRouteDefinition("chouette-send-import-job").adviceWith(context, new AdviceWithRouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/gtfs")
+						.skipSendToOriginalEndpoint().to("mock:chouetteCreateImport");
+			}
+		});
+
+		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
+		context.getRouteDefinition("chouette-validate-job-status-parameters").adviceWith(context, new AdviceWithRouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
+				.to("mock:pollJobStatus");
+			}
+		});
+
+		// Mock update status calls
+		context.getRouteDefinition("chouette-process-import-status").adviceWith(context, new AdviceWithRouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+				.to("mock:updateStatus");
+				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringNextAction").skipSendToOriginalEndpoint()
+				.to("mock:checkScheduledJobsBeforeTriggeringNextAction");
+			}
+		});
+
+		// we must manually start when we are done with all the advice with
+		context.start();
+
+		// 1 initial import call
+		chouetteCreateImport.expectedMessageCount(1);
+		chouetteCreateImport.returnReplyHeader("Location", new SimpleExpression(
+				chouetteUrl.replace("http4://", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
+
+
+		pollJobStatus.expectedMessageCount(1);
+
+		updateStatus.expectedMessageCount(1);
+		checkScheduledJobsBeforeTriggeringNextAction.expectedMessageCount(1);
+
+
+		Map<String, Object> headers = new HashMap<String, Object>();
+		headers.put(Constants.PROVIDER_ID, "2");
+		headers.put(Constants.FILE_NAME, filename);
+		headers.put(Constants.CORRELATION_ID, "corr_id");
+		headers.put(Constants.FILE_HANDLE, filename);
+
+		assertTrue("Testing invalid file, but file is not invalid.", ZipFileUtils.zipFileContainsSingleFolder(IOUtils.toByteArray(inMemoryBlobStoreRepository.getBlob(filename))));
+		importTemplate.sendBodyAndHeaders(null, headers);
+
+		chouetteCreateImport.assertIsSatisfied();
+		pollJobStatus.assertIsSatisfied();
+
+		Exchange exchange = pollJobStatus.getReceivedExchanges().get(0);
+		exchange.getIn().setHeader("action_report_result", "OK");
+		exchange.getIn().setHeader("validation_report_result", "OK");
+		processImportResultTemplate.send(exchange );
+
+		checkScheduledJobsBeforeTriggeringNextAction.assertIsSatisfied();
+		updateStatus.assertIsSatisfied();
+
+		assertFalse("Invalid file has not been replaced during import.", ZipFileUtils.zipFileContainsSingleFolder(IOUtils.toByteArray(inMemoryBlobStoreRepository.getBlob(filename))));
 	}
 
 
