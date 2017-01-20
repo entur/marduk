@@ -360,8 +360,14 @@
         </dependency>
         <dependency>
             <groupId>org.onebusaway</groupId>
-            <artifactId>onebusaway-gtfs-transformer-cli</artifactId>
+            <artifactId>onebusaway-gtfs-transformer</artifactId>
             <version>1.3.12</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.kurtraschke</groupId>
+                    <artifactId>wsf-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
