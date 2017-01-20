@@ -38,7 +38,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .convertBodyTo(byte[].class)
                 .validate().method(FileTypeClassifierBean.class, "validateFile")
                 .choice()
-                .when(header(FILE_TYPE).isEqualTo(FileType.INVALID.name()))
+                .when(header(FILE_TYPE).isEqualTo(FileType.ZIP_WITH_SINGLE_FOLDER.name()))
                     .log(LoggingLevel.WARN, correlation() + "Unexpected file type or invalid file ${header." + FILE_HANDLE + "}")
                     .to("direct:repackZipFile")
                 .when(header(FILE_TYPE).isEqualTo(FileType.RAR.name()))
