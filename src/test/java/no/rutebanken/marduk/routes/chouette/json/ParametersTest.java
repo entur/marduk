@@ -50,7 +50,7 @@ public class ParametersTest {
         Provider destProvider = new Provider();
         destProvider.chouetteInfo = new ChouetteInfo();
         destProvider.chouetteInfo.referential = "rb_ost";
-        String neptuneExportParameters = Parameters.getGenericExportParameters(provider,destProvider);
+        String neptuneExportParameters = Parameters.getTransferExportParameters(provider,destProvider);
         System.out.println(neptuneExportParameters);
 
     }

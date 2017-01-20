@@ -62,7 +62,7 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 		context.getRouteDefinition("chouette-send-transfer-job").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/generic")
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/transfer")
 					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
 				
 				interceptSendToEndpoint("activemq:queue:ChouettePollStatusQueue")

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.routes.chouette.json.exporter.GenericExportParameters;
+import no.rutebanken.marduk.routes.chouette.json.exporter.TransferExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.exporter.GtfsExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.importer.GtfsImportParameters;
 import no.rutebanken.marduk.routes.chouette.json.importer.NetexImportParameters;
@@ -68,12 +68,12 @@ public class Parameters {
         }
     }
 
-    public static String getGenericExportParameters(Provider provider, Provider destProvider) {
+    public static String getTransferExportParameters(Provider provider, Provider destProvider) {
         try {
-            GenericExportParameters.GenericExport genericExport = new GenericExportParameters.GenericExport("data transfer",
+            TransferExportParameters.TransferExport transferExport = new TransferExportParameters.TransferExport("data transfer",
                     provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user, destProvider.chouetteInfo.referential);
-            GenericExportParameters.Parameters parameters = new GenericExportParameters.Parameters(genericExport);
-            GenericExportParameters importParameters = new GenericExportParameters(parameters);
+            TransferExportParameters.Parameters parameters = new TransferExportParameters.Parameters(transferExport);
+            TransferExportParameters importParameters = new TransferExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
             StringWriter writer = new StringWriter();
             mapper.writeValue(writer, importParameters);

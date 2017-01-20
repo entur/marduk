@@ -39,13 +39,13 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 	Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                 	Provider destProvider = getProviderRepository().getProvider(provider.chouetteInfo.migrateDataToProvider);
 					e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
-                	e.getIn().setHeader(JSON_PART, Parameters.getGenericExportParameters(provider,destProvider));
+                	e.getIn().setHeader(JSON_PART, Parameters.getTransferExportParameters(provider,destProvider));
                 })
 				.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.PENDING).build())
 		        .to("direct:updateStatus")
                 .log(LoggingLevel.INFO,correlation()+"Creating multipart request")
                 .process(e -> toGenericChouetteMultipart(e))
-                .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/generic")
+                .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/transfer")
                 .process(e -> {
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,"direct:processTransferExportResult");
