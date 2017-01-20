@@ -47,7 +47,10 @@ public class ParametersTest {
     @Test
     public void getNeptuneExportParameters() throws Exception {
         Provider provider = getProvider();
-        String neptuneExportParameters = Parameters.getNeptuneExportParameters(provider);
+        Provider destProvider = new Provider();
+        destProvider.chouetteInfo = new ChouetteInfo();
+        destProvider.chouetteInfo.referential = "rb_ost";
+        String neptuneExportParameters = Parameters.getTransferExportParameters(provider,destProvider);
         System.out.println(neptuneExportParameters);
 
     }
