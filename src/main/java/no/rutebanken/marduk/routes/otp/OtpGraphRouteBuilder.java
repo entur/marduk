@@ -27,6 +27,12 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.build.directory}")
     private String otpGraphBuildDirectory;
 
+    /**
+     * This is the name which the graph file is stored remotely.
+     */
+    @Value("${otp.graph.file.name:norway-latest.osm.pbf}")
+    private String otpGraphFileName;
+
     @Value("${otp.graph.blobstore.subdirectory}")
     private String blobStoreSubdirectory;
 
@@ -117,10 +123,11 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:fetchMap")
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation()+"Fetching map ...")
                 .removeHeaders("*")
-                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm +"/"+"norway-latest.osm.pbf"))
+                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm +"/"+otpGraphFileName ))
                 .to("direct:getBlob")
+                // Should really store to otpGraphFileName, but store to NORWAY_LATEST in fear of side effects later in the build
                 .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/" + NORWAY_LATEST_OSM_PBF)
-                .log(LoggingLevel.DEBUG,  getClass().getName(), correlation()+NORWAY_LATEST_OSM_PBF + " fetched.")
+                .log(LoggingLevel.DEBUG,  getClass().getName(), correlation()+NORWAY_LATEST_OSM_PBF + " fetched (original name: "+otpGraphFileName+").")
                 .routeId("otp-graph-fetch-map");
 
 
