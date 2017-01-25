@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.status.Status;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.spi.IdempotentRepository;
@@ -37,11 +38,13 @@ public class IdempotentFileFilterRoute extends BaseRouteBuilder {
          .process(e -> e.getIn().setHeader("file_digest", DigestUtils.md5Hex(e.getIn().getBody(InputStream.class))))
                 .idempotentConsumer(simple("${header.file_digest}")).messageIdRepository(digestIdempotentRepository).skipDuplicate(false)
                 .filter(exchangeProperty(Exchange.DUPLICATE_MESSAGE).isEqualTo(true))
+                .process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.DUPLICATE).build()).to("direct:updateStatus")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Detected ${header." + Exchange.FILE_NAME + "} as duplicate based on digest.")
                 .stop()
                 .end()
                 .idempotentConsumer(header(Exchange.FILE_NAME)).messageIdRepository(fileNameIdempotentRepository).skipDuplicate(false)
                 .filter(exchangeProperty(Exchange.DUPLICATE_MESSAGE).isEqualTo(true))
+                .process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.DUPLICATE).build()).to("direct:updateStatus")
                 .log(LoggingLevel.WARN, getClass().getName(), "Detected ${header." + Exchange.FILE_NAME + "} as duplicate based on file name.")
                 .stop()
                 .end();
