@@ -34,7 +34,6 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 .process(e -> { 
                 	// Add correlation id only if missing
                 	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
-                	e.getIn().setHeader(Constants.FILE_NAME,"None");
                 	e.getIn().setHeader(Constants.FILE_HANDLE,"transfer.zip");
                 	Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                 	Provider destProvider = getProviderRepository().getProvider(provider.chouetteInfo.migrateDataToProvider);

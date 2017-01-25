@@ -113,14 +113,11 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 		importJobCompletedHeaders.put("action_report_result", "OK");
 		importJobCompletedHeaders.put("validation_report_result", "OK");
 		importJobCompletedHeaders.put(Constants.FILE_HANDLE, "None");
-		importJobCompletedHeaders.put(Constants.FILE_NAME, "None");
 		importJobCompletedHeaders.put(Constants.CORRELATION_ID, "None");
 		processTransferExportResultTemplate.sendBodyAndHeaders(null, importJobCompletedHeaders);
 
 		chouetteCreateExport.assertIsSatisfied();
 		pollJobStatus.assertIsSatisfied();
-		
-		Assert.assertNotNull(pollJobStatus.assertExchangeReceived(0).getIn().getHeader(Constants.FILE_NAME));
 		
 		checkScheduledJobsBeforeTriggeringNextAction.assertIsSatisfied();
 		updateStatus.assertIsSatisfied();

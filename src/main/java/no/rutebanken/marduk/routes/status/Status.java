@@ -106,10 +106,6 @@ public class Status {
         }
 
         public Status build() {
-            if (Strings.isNullOrEmpty(status.fileName)) {
-                throw new IllegalArgumentException("No file name");
-            }
-
             if (status.providerId == null) {
                 throw new IllegalArgumentException("No provider id");
             }

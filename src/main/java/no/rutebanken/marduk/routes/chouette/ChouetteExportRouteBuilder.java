@@ -44,7 +44,6 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
                 	// Add correlation id only if missing
                 	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
                 })
-        		.setHeader(Constants.FILE_NAME,constant("None"))
 				.process(e -> Status.builder(e).action(Action.EXPORT).state(State.PENDING).build())
 		        .to("direct:updateStatus")
         		

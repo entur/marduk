@@ -30,7 +30,6 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
         from("activemq:queue:ChouetteValidationQueue?transacted=true&maxConcurrentConsumers=3").streamCaching()
 				.transacted()
                 .log(LoggingLevel.INFO,correlation()+"Starting Chouette validation")
-                .setHeader(Constants.FILE_NAME,constant("None"))
                 .process(e -> { 
                 	// Add correlation id only if missing
                 	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));

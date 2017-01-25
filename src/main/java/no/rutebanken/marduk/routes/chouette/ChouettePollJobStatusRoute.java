@@ -167,7 +167,6 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .transacted()
 				.validate(header(Constants.CORRELATION_ID).isNotNull())
 				.validate(header(Constants.PROVIDER_ID).isNotNull())
-				.validate(header(Constants.FILE_NAME).isNotNull())
 				.validate(header(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION).isNotNull())
 				.validate(header(Constants.CHOUETTE_JOB_STATUS_URL).isNotNull())
 				.validate(header(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE).isNotNull())
@@ -175,7 +174,6 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 				.routeId("chouette-validate-job-status-parameters");
 				
 		from("direct:checkJobStatus")
-		.validate(header(Constants.FILE_NAME).isNotNull())
         		.process(e -> {
               		e.getIn().setHeader("loopCounter", (Integer)e.getIn().getHeader("loopCounter",0) + 1);
         		})
@@ -210,7 +208,6 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
        
 
         from("direct:jobStatusDone")
-		.validate(header(Constants.FILE_NAME).isNotNull())
                 .log(LoggingLevel.DEBUG,correlation()+"Exited retry loop with status ${header.current_status}")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .choice()
