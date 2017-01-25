@@ -35,7 +35,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 	// Add correlation id only if missing
                 	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
                 })
-				.process(e -> Status.builder(e).action(Action.VALIDATION).state(State.PENDING).build())
+				.process(e -> Status.builder(e).action(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,Status.Action.class)).state(State.PENDING).build())
 		        .to("direct:updateStatus")
 
 	            .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
@@ -48,7 +48,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,constant("direct:processValidationResult"))
-        		.setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(Action.VALIDATION.name()))
+				.process(e -> {e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE,e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL));})
 		        .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-validation-job");
 
@@ -59,13 +59,13 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 		        .choice()
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'OK'"))
 		            .to("direct:checkScheduledJobsBeforeTriggeringExport")
-				 	.process(e -> Status.builder(e).action(Action.VALIDATION).state(State.OK).build())
+				 	.process(e -> Status.builder(e).action(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,Status.Action.class)).state(State.OK).build())
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'NOK'"))
 		        	.log(LoggingLevel.INFO,correlation()+"Validation failed (processed ok, but timetable data is faulty)")
-				 	.process(e -> Status.builder(e).action(Action.VALIDATION).state(State.FAILED).build())
+				 	.process(e -> Status.builder(e).action(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,Status.Action.class)).state(State.FAILED).build())
 		        .otherwise()
 		            .log(LoggingLevel.ERROR,correlation()+"Validation went wrong")
-					.process(e -> Status.builder(e).action(Action.VALIDATION).state(State.FAILED).build())
+					.process(e -> Status.builder(e).action(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,Status.Action.class)).state(State.FAILED).build())
 		        .end()
 		        .to("direct:updateStatus")
 		        .routeId("chouette-process-validation-status");

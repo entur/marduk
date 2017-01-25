@@ -180,6 +180,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 				.choice()
 					.when(constant("true").isEqualTo(header(Constants.ENABLE_VALIDATION)))
 						.log(LoggingLevel.INFO,correlation()+"Import ok, triggering validation")
+						.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(Status.Action.VALIDATION_LEVEL_1.name()))
 						.to("activemq:queue:ChouetteValidationQueue")
 					.when(method(getClass(),"shouldTransferData").isEqualTo(true))
 						.log(LoggingLevel.INFO,correlation()+"Import ok, transfering data to next dataspace")

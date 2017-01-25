@@ -98,6 +98,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  		        .setBody(constant(""))
  		        
  		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+				.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(Status.Action.VALIDATION_LEVEL_2.name()))
 				.to("activemq:queue:ChouetteValidationQueue")
              .end()
              .routeId("chouette-process-job-list-after-transfer");
