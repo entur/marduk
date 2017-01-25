@@ -2,6 +2,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.routes.status.Status;
 import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -120,6 +121,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 		
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put(Constants.PROVIDER_ID, "2");
+		headers.put(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, Status.Action.VALIDATION_LEVEL_2.toString());
 		validationTemplate.sendBodyAndHeaders(null, headers);
 
 		chouetteCreateValidation.assertIsSatisfied();
