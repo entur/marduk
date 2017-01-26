@@ -1,23 +1,18 @@
 package no.rutebanken.marduk.routes.nri;
 
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-
 import java.util.UUID;
 
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.file.FileComponent;
-import org.apache.camel.component.file.GenericFile;
-import org.apache.camel.component.file.GenericFileFilter;
 import org.apache.camel.component.file.remote.RemoteFile;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Downloads zip files from NRI ftp, sends to activemq
@@ -39,18 +34,19 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
     		String topFolder = relativeFilePath.substring(0, relativeFilePath.indexOf("/"));
 
     		Long providerId = mapRootFolderToProviderId(topFolder);
-    		
+
 
         	if(providerId != null) {
 	        	Provider provider = getProviderRepository().getProvider(providerId);
 	    		String newFileName = relativeFilePath.replace(' ', '_').replace('/', '_');
 	    		e.getIn().setHeader(Constants.FILE_NAME, newFileName);
-	    		e.getIn().setHeader(FILE_HANDLE, 
+	    		e.getIn().setHeader(FILE_HANDLE,
 	            		simple(Constants.BLOBSTORE_PATH_INBOUND + provider.chouetteInfo.referential + "/" + provider.chouetteInfo.referential + "-${date:now:yyyyMMddHHmmss}-"+newFileName).evaluate(e, String.class));
 	            e.getIn().setHeader(PROVIDER_ID, provider.id);
         	}
         })
         .filter(header(PROVIDER_ID).isNotNull())
+         .setHeader(FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES,simple("true"))
 		.to("direct:filterDuplicateFile")
 		.log(LoggingLevel.INFO, correlation()+"Received new file ${header.CamelFileName} on NRI ftp route")
         .log(LoggingLevel.INFO, correlation()+"File handle is: ${header." + FILE_HANDLE + "}")
