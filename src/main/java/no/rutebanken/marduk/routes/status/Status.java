@@ -110,8 +110,16 @@ public class Status {
                 throw new IllegalArgumentException("No provider id");
             }
 
-            if (status.providerId == null) {
+            if (status.correlationId == null) {
                 throw new IllegalArgumentException("No correlation id");
+            }
+
+            if (status.action == null) {
+                throw new IllegalArgumentException("No action");
+            }
+
+            if (status.state == null) {
+                throw new IllegalArgumentException("No state");
             }
 
             status.date = Date.from(Instant.now(Clock.systemDefaultZone()));
