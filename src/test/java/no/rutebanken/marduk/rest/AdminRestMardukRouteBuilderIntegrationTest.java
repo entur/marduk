@@ -1,16 +1,11 @@
 package no.rutebanken.marduk.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import no.rutebanken.marduk.App;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
-import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
-import org.apache.camel.EndpointInject;
-import org.apache.camel.Exchange;
-import org.apache.camel.Produce;
-import org.apache.camel.ProducerTemplate;
+import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
@@ -36,16 +31,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_INBOUND;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
 @RunWith(CamelSpringRunner.class)
 @SpringBootTest(classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@ActiveProfiles({ "default", "in-memory-blobstore" })
+@ActiveProfiles({"default", "in-memory-blobstore"})
 @UseAdviceWith
 @ContextConfiguration
 public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
@@ -70,6 +63,13 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
 	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files")
 	protected ProducerTemplate listFilesTemplate;
+
+	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files/existing_regtopp-file.zip")
+	protected ProducerTemplate getFileTemplate;
+
+	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files/unknown-file.zip")
+	protected ProducerTemplate getUnknownFileTemplate;
+
 
 	@Value("${nabu.rest.service.url}")
 	private String nabuUrl;
@@ -156,7 +156,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
 		// Preparations
 		String filename = "ruter_fake_data.zip";
-		String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND +"rut/";
+		String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
 		String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
 
 		//populate fake blob repo
@@ -178,6 +178,41 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 		Assert.assertEquals(1, rsp.getFiles().size());
 		Assert.assertEquals(fileStorePath + filename, rsp.getFiles().get(0).getName());
 
+	}
+
+
+	@Test
+	public void getBlobStoreFile() throws Exception {
+		// Preparations
+		String filename = "existing_regtopp-file.zip";
+		String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
+		String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
+		FileInputStream testFileStream = new FileInputStream(new File(pathname));
+		//populate fake blob repo
+		inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFileStream, false);
+
+
+		camelContext.start();
+
+		// Do rest call
+		Map<String, Object> headers = new HashMap<String, Object>();
+		headers.put(Exchange.HTTP_METHOD, "GET");
+		InputStream response = (InputStream) getFileTemplate.requestBodyAndHeaders(null, headers);
+		// Parse response
+
+		Assert.assertTrue(org.apache.commons.io.IOUtils.contentEquals(testFileStream, response));
+	}
+
+
+	@Test(expected = CamelExecutionException.class)
+	public void getBlobStoreFile_unknownFile() throws Exception {
+
+		camelContext.start();
+
+		// Do rest call
+		Map<String, Object> headers = new HashMap<String, Object>();
+		headers.put(Exchange.HTTP_METHOD, "GET");
+		getUnknownFileTemplate.requestBodyAndHeaders(null, headers);
 	}
 
 }
