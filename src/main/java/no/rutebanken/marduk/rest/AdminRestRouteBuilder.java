@@ -9,6 +9,7 @@ import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
 import no.rutebanken.marduk.services.GraphStatusResponse;
 import org.apache.camel.Body;
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.rest.RestBindingMode;
@@ -31,20 +32,21 @@ import static no.rutebanken.marduk.Constants.*;
 @Component
 public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
-	
+
 	private static final String JSON = "application/json";
+	private static final String X_OCTET_STREAM = "application/x-octet-stream";
 	private static final String PLAIN = "text/plain";
-	
+
 	@Value("${server.admin.port}")
 	public String port;
-	
+
 	@Value("${server.admin.host}")
 	public String host;
-	
+
     @Override
     public void configure() throws Exception {
         super.configure();
-        
+
         RestPropertyDefinition corsAllowedHeaders = new RestPropertyDefinition();
         corsAllowedHeaders.setKey("Access-Control-Allow-Headers");
         corsAllowedHeaders.setValue("Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
@@ -61,7 +63,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         .port(port)
         .apiContextPath("/api-doc")
         .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
-        
+
         .contextPath("/admin");
 
         rest("/application")
@@ -135,7 +137,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.setBody(constant(null))
 			    .routeId("admin-chouette-clean-all")
 		    	.endRest();
-        
+
 
         rest("/services/chouette/{providerId}")
 		    	.post("/import")
@@ -157,13 +159,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 							+ "/" + e.getIn().getBody(String.class)))
 				    .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
 		    		.log(LoggingLevel.INFO,correlation()+"Chouette start import fileHandle=${body}")
-	
+
 	                .process(e -> {
 						String fileNameForStatusLogging = "reimport-"+e.getIn().getBody(String.class);
 	                	e.getIn().setHeader(Constants.FILE_NAME, fileNameForStatusLogging);
 	                })
 	            	.setBody(constant(null))
-				   
+
 	                .inOnly("activemq:queue:ProcessFileQueue")
 				    .routeId("admin-chouette-import")
 				    .endRest()
@@ -182,6 +184,25 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				    .to("direct:listBlobsFlat")
 				    .routeId("admin-chouette-import-list")
 				    .endRest()
+				.get("/files/{fileName}")
+					.description("Download file for reimport into Chouette")
+					.param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
+					.param().name("fileName").type(RestParamType.path).description("Name of file to fetch").dataType("String").endParam()
+					.consumes(PLAIN)
+					.produces(X_OCTET_STREAM)
+					.responseMessage().code(200).endResponseMessage()
+					.responseMessage().code(500).message("Invalid fileName").endResponseMessage()
+					.route()
+					.setHeader(PROVIDER_ID,header("providerId"))
+                	.process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
+                        + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
+                        + "/" + e.getIn().getHeader("fileName")))
+					.log(LoggingLevel.INFO,correlation()+"blob store download file by name")
+					.removeHeaders("CamelHttp*")
+					.to("direct:getBlob")
+					.choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
+					.routeId("admin-chouette-file-download")
+					.endRest()
 				.get("/lineStats")
 					.description("List stats about data in chouette for a given provider")
 					.param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
@@ -310,8 +331,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 			    	.inOnly("activemq:queue:ChouetteTransferExportQueue")
 				    .routeId("admin-chouette-transfer")
 			    	.endRest();
-		
-        
+
+
         rest("/services/graph")
 	    	.post("/build")
 	    		.description("Triggers building of the OTP graph using existing gtfs and map data")
@@ -371,7 +392,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.routeId("admin-marduk-file")
 				.endRest();
     }
-    
+
     public static class ImportFilesSplitter {
     	public List<String> splitFiles(@Body BlobStoreFiles files) {
     		return files.getFiles().stream().map(File::getName).collect(Collectors.toList());
