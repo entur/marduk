@@ -300,7 +300,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				    .setHeader(PROVIDER_ID,header("providerId"))
 		    		.log(LoggingLevel.INFO,correlation()+"Chouette start validation")
 		    		.removeHeaders("CamelHttp*")
-					.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(no.rutebanken.marduk.routes.status.Status.Action.VALIDATION_LEVEL_2.name()))
+					.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(no.rutebanken.marduk.routes.status.Status.Action.VALIDATION_LEVEL_1.name()))
 			    	.inOnly("activemq:queue:ChouetteValidationQueue")
 				    .routeId("admin-chouette-validate")
 			    	.endRest()
