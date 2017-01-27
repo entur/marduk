@@ -5,8 +5,7 @@
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-	    <version>0.0.6</version>
-	    <relativePath></relativePath>
+	      <version>0.0.6</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -26,7 +25,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <gcp-storage.version>0.0.2</gcp-storage.version>
+        <gcp-storage.version>0.0.3-SNAPSHOT</gcp-storage.version>
 
         <!-- versions for use in mvn plugins as we cannot inherit them from a BOM -->
         <fabric8.version>2.2.84</fabric8.version>
