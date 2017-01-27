@@ -34,6 +34,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 				.transacted()
 				.process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.OK).build())
                 .to("direct:updateStatus")
+		        .process(e -> Status.builder(e).action(Status.Action.FILE_CLASSIFICATION).state(Status.State.STARTED).build()).to("direct:updateStatus")
                 .to("direct:getBlob")
                 .convertBodyTo(byte[].class)
                 .validate().method(FileTypeClassifierBean.class, "validateFile")
@@ -54,6 +55,8 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                     .setBody(simple(""))   //remove file data from body since this is in blobstore
                     .to("activemq:queue:ChouetteImportQueue")
                 .end()
+		        .process(e -> Status.builder(e).action(Status.Action.FILE_CLASSIFICATION).state(Status.State.OK).build()).to("direct:updateStatus")
+		        .to("direct:getBlob")
                 .routeId("file-classify");
     
     
