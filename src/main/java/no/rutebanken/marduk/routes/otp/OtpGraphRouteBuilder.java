@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.routes.otp;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.file.GtfsFileUtils;
 import no.rutebanken.marduk.services.GraphStatusService;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -75,6 +76,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:fetchMap")
                 .to("direct:purgeQueue")
                 .to("direct:fetchLatestGtfs")
+		        .to("direct:mergeGtfs")
                 .to("direct:buildGraph")
                 .bean(graphStatusService, "setIdle")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation()+"Done with OTP graph building route.")
@@ -108,10 +110,17 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/${property.fileName}")
+                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/org/${property.fileName}")
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation()+"${property.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("otp-graph-get-gtfs");
+
+	    from("direct:mergeGtfs")
+			    .log(LoggingLevel.DEBUG, getClass().getName(), "Merging gtfs files for all providers.")
+				.setBody(simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP +"}/org"))
+			    .bean(method(GtfsFileUtils.class, "mergeGtfsFilesInDirectory"))
+			    .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP +"}/merged.zip")
+			    .routeId("otp-graph-merge-gtfs");
 
         from("direct:fetchConfig")
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation()+"Fetching config ...")
