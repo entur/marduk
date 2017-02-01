@@ -119,9 +119,9 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
 		List<Exchange> exchanges = buskerud.getExchanges();
 		assertEquals(2L, exchanges.get(0).getIn().getHeader(Constants.PROVIDER_ID));
 		assertNotNull(exchanges.get(0).getIn().getHeader(Constants.CORRELATION_ID));
-		assertEquals("Brakar_(Buskerud_fylke)_984_Hovedsett_2016.zip", exchanges.get(0).getIn().getHeader(Constants.FILE_NAME));
-		assertEquals("Brakar_(Buskerud_fylke)_985_Hovedsett_2016_v2.zip", exchanges.get(1).getIn().getHeader(Constants.FILE_NAME));
-		assertEquals("Brakar_(Buskerud_fylke)_1585_Hovedsett_2017.zip", exchanges.get(2).getIn().getHeader(Constants.FILE_NAME));
+		assertEquals("984_Hovedsett_2016.zip", exchanges.get(0).getIn().getHeader(Constants.FILE_NAME));
+		assertEquals("985_Hovedsett_2016_v2.zip", exchanges.get(1).getIn().getHeader(Constants.FILE_NAME));
+		assertEquals("1585_Hovedsett_2017.zip", exchanges.get(2).getIn().getHeader(Constants.FILE_NAME));
 	}
 
 }
