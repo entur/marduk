@@ -17,6 +17,7 @@ import java.io.PrintWriter;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
 
 /**
  * Exports files from Chouette
@@ -43,6 +44,7 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .process(e -> { 
                 	// Add correlation id only if missing
                 	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
+	                e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
                 })
 				.process(e -> Status.builder(e).action(Action.EXPORT).state(State.PENDING).build())
 		        .to("direct:updateStatus")
@@ -59,6 +61,7 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> {
                     e.getIn().setHeader(CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
+	                e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,constant("direct:processExportResult"))
         		.setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(Action.EXPORT.name()))

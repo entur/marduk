@@ -88,6 +88,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
         from("activemq:queue:ChouetteImportQueue?transacted=true").streamCaching()
 				.transacted()
                 .log(LoggingLevel.INFO,correlation()+ "Starting Chouette import")
+				.removeHeader(Constants.CHOUETTE_JOB_ID)
                 .process(e -> Status.builder(e).action(Action.IMPORT).state(State.PENDING).build())
                 .to("direct:updateStatus")
                 .to("direct:getBlob")

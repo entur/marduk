@@ -19,138 +19,147 @@ import static no.rutebanken.marduk.Constants.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Status {
 
-    public enum Action {FILE_TRANSFER, FILE_CLASSIFICATION, IMPORT, EXPORT, VALIDATION_LEVEL_1, VALIDATION_LEVEL_2, CLEAN, DATASPACE_TRANSFER}
+	public enum Action {FILE_TRANSFER, FILE_CLASSIFICATION, IMPORT, EXPORT, VALIDATION_LEVEL_1, VALIDATION_LEVEL_2, CLEAN, DATASPACE_TRANSFER}
 
-    public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK, DUPLICATE}
+	public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK, DUPLICATE}
 
-    @JsonProperty("file_name")
-    private String fileName;
+	@JsonProperty("file_name")
+	private String fileName;
 
-    @JsonProperty("correlation_id")
-    private String correlationId;
+	@JsonProperty("correlation_id")
+	private String correlationId;
 
-    @JsonProperty("provider_id")
-    private Long providerId;
+	@JsonProperty("provider_id")
+	private Long providerId;
 
 
-    @JsonProperty("job_id")
-    private Long jobId;
+	@JsonProperty("job_id")
+	private Long jobId;
 
-    @JsonProperty("action")
-    private Action action;
+	@JsonProperty("action")
+	private Action action;
 
-    @JsonProperty("state")
-    private State state;
+	@JsonProperty("state")
+	private State state;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS", timezone = "CET")
-    @JsonProperty("date")
-    private Date date;
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS", timezone = "CET")
+	@JsonProperty("date")
+	private Date date;
 
-    private Status() {
-    }
+	@JsonProperty("referential")
+	private String referential;
 
-    public String toString() {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            StringWriter writer = new StringWriter();
-            mapper.writeValue(writer, this);
-            return writer.toString();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+	private Status() {
+	}
 
-    public static Builder builder(){
-        return new Builder();
-    }
+	public String toString() {
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			StringWriter writer = new StringWriter();
+			mapper.writeValue(writer, this);
+			return writer.toString();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-    public static Builder builder(Exchange exchange){
-        return new ExchangeBuilder(exchange);
-    }
+	public static Builder builder() {
+		return new Builder();
+	}
 
-    public static class Builder {
+	public static Builder builder(Exchange exchange) {
+		return new ExchangeBuilder(exchange);
+	}
 
-        protected Status status = new Status();
+	public static class Builder {
 
-        private Builder() {
-        }
+		protected Status status = new Status();
 
-        public Builder action(Status.Action action) {
-            status.action = action;
-            return this;
-        }
+		private Builder() {
+		}
 
-        public Builder state(Status.State state) {
-            status.state = state;
-            return this;
-        }
+		public Builder action(Status.Action action) {
+			status.action = action;
+			return this;
+		}
 
-        public Builder jobId(Long jobId) {
-            status.jobId = jobId;
-            return this;
-        }
+		public Builder state(Status.State state) {
+			status.state = state;
+			return this;
+		}
 
-        public Builder fileName(String fileName) {
-            status.fileName = fileName;
-            return this;
-        }
+		public Builder jobId(Long jobId) {
+			status.jobId = jobId;
+			return this;
+		}
 
-        public Builder providerId(Long providerId) {
-            status.providerId = providerId;
-            return this;
-        }
+		public Builder fileName(String fileName) {
+			status.fileName = fileName;
+			return this;
+		}
 
-        public Builder correlationId(String correlationId) {
-            status.correlationId = correlationId;
-            return this;
-        }
+		public Builder providerId(Long providerId) {
+			status.providerId = providerId;
+			return this;
+		}
 
-        public Status build() {
-            if (status.providerId == null) {
-                throw new IllegalArgumentException("No provider id");
-            }
+		public Builder correlationId(String correlationId) {
+			status.correlationId = correlationId;
+			return this;
+		}
 
-            if (status.correlationId == null) {
-                throw new IllegalArgumentException("No correlation id");
-            }
+		public Builder referential(String referential) {
+			status.referential = referential;
+			return this;
+		}
 
-            if (status.action == null) {
-                throw new IllegalArgumentException("No action");
-            }
+		public Status build() {
+			if (status.providerId == null) {
+				throw new IllegalArgumentException("No provider id");
+			}
 
-            if (status.state == null) {
-                throw new IllegalArgumentException("No state");
-            }
+			if (status.correlationId == null) {
+				throw new IllegalArgumentException("No correlation id");
+			}
 
-            status.date = Date.from(Instant.now(Clock.systemDefaultZone()));
-            return status;
-        }
-    }
+			if (status.action == null) {
+				throw new IllegalArgumentException("No action");
+			}
 
-    public static class ExchangeBuilder extends Builder {
+			if (status.state == null) {
+				throw new IllegalArgumentException("No state");
+			}
 
-        private Exchange exchange;
+			status.date = Date.from(Instant.now(Clock.systemDefaultZone()));
+			return status;
+		}
+	}
 
-        private ExchangeBuilder(Exchange exchange) {
-            super();
-            this.exchange = exchange;
-            status.fileName = exchange.getIn().getHeader(Constants.FILE_NAME, String.class);
-            status.providerId = Long.valueOf(exchange.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID, exchange.getIn().getHeader(PROVIDER_ID, String.class), String.class));
-            status.correlationId = exchange.getIn().getHeader(CORRELATION_ID, String.class);
-            status.jobId = exchange.getIn().getHeader(CHOUETTE_JOB_ID, Long.class);
-        }
+	public static class ExchangeBuilder extends Builder {
 
-        @Override
-        public Status build() {
-            if (exchange == null) {
-                throw new IllegalStateException(this.getClass() + " does not hold an instance of exchange.");
-            }
+		private Exchange exchange;
 
-            Status status = super.build();
-            exchange.getOut().setBody(status.toString());
-            exchange.getOut().setHeaders(exchange.getIn().getHeaders());
-            return status;
-        }
-    }
+		private ExchangeBuilder(Exchange exchange) {
+			super();
+			this.exchange = exchange;
+			status.fileName = exchange.getIn().getHeader(Constants.FILE_NAME, String.class);
+			status.providerId = Long.valueOf(exchange.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID, exchange.getIn().getHeader(PROVIDER_ID, String.class), String.class));
+			status.correlationId = exchange.getIn().getHeader(CORRELATION_ID, String.class);
+			status.jobId = exchange.getIn().getHeader(CHOUETTE_JOB_ID, Long.class);
+			status.referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);
+		}
+
+		@Override
+		public Status build() {
+			if (exchange == null) {
+				throw new IllegalStateException(this.getClass() + " does not hold an instance of exchange.");
+			}
+
+			Status status = super.build();
+			exchange.getOut().setBody(status.toString());
+			exchange.getOut().setHeaders(exchange.getIn().getHeaders());
+			return status;
+		}
+	}
 
 }
