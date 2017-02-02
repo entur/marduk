@@ -23,7 +23,7 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
 
 	@Override
 	public void configure() throws Exception {
-		from("ftp://{{nri.ftp.host}}/{{nri.ftp.folder}}?username={{nri.ftp.username}}&password={{nri.ftp.password}}&filter=#ftpFileFilter&delay={{nri.ftp.delay:1h}}&initialDelay={{nri.ftp.initialDelay:1m}}&recursive=true&delete=false&sorter=#caseIdNriFtpSorter&ftpClient.controlEncoding=UTF-8&passiveMode=true&binary=true")
+		singletonFrom("ftp://{{nri.ftp.host}}/{{nri.ftp.folder}}?username={{nri.ftp.username}}&password={{nri.ftp.password}}&filter=#ftpFileFilter&delay={{nri.ftp.delay:1h}}&initialDelay={{nri.ftp.initialDelay:1m}}&recursive=true&delete=false&sorter=#caseIdNriFtpSorter&ftpClient.controlEncoding=UTF-8&passiveMode=true&binary=true")
 		.autoStartup("{{nri.ftp.autoStartup:true}}")
 		.process(e -> {
             e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString());

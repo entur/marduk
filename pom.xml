@@ -36,6 +36,7 @@
         <otp.version>1.1.0.RB-SNAPSHOT</otp.version>
         <assertj-core.version>3.3.0</assertj-core.version>
         <camel-version>2.18.1</camel-version>
+        <postgresql.version>9.4-1201-jdbc41</postgresql.version>
 
         <!-- Docker & Fabric8 Configs -->
         <docker.from>eu.gcr.io/carbon-1287/java-base-image</docker.from>
@@ -205,6 +206,21 @@
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-camel</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-hazelcast</artifactId>
+            <version>${camel-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.rutebanken.helpers</groupId>
+            <artifactId>hazelcast-helper</artifactId>
+            <version>0.0.3-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-sql</artifactId>
+            <version>${camel-version}</version>
+        </dependency>
 
     <!-- <dependency>
             <groupId>com.google.cloud</groupId>
@@ -245,6 +261,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jersey</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
         <!-- http://mvnrepository.com/artifact/org.apache.camel/camel-spring-javaconfig -->
         <dependency>
             <groupId>org.apache.camel</groupId>
@@ -257,6 +278,13 @@
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-validator</artifactId>
             <version>5.2.3.Final</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>

@@ -63,7 +63,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
 
         @Override
         public void configure() throws Exception {
-            from("sftp://" + provider.sftpAccount + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&knownHostsFile=" + knownHostsFile + "&sorter=#caseIdSftpSorter&delay={{sftp.delay}}&delete={{idempotent.skip:false}}&localWorkDirectory=files/tmp&connectTimeout=1000")
+            singletonFrom("sftp://" + provider.sftpAccount + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&knownHostsFile=" + knownHostsFile + "&sorter=#caseIdSftpSorter&delay={{sftp.delay}}&delete={{idempotent.skip:false}}&localWorkDirectory=files/tmp&connectTimeout=1000")
 					.autoStartup("{{sftp.autoStartup:true}}")
                     .setHeader(PROVIDER_ID, constant(provider.id))
                     .setHeader(Constants.FILE_NAME, header(Exchange.FILE_NAME))
