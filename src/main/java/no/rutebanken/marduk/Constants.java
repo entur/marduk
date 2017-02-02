@@ -34,6 +34,6 @@ public class Constants {
 
     public static final String BLOBSTORE_MAKE_BLOB_PUBLIC = "RutebankenBlobstoreMakeBlobPublic";
 
-    public static final String SINGLETON_ROUTE_DEFINITIONS_NAME = "RutebankenSingletonRouteDefinition";
+    public static final String SINGLETON_ROUTE_DEFINITION_GROUP_NAME = "RutebankenSingletonRouteDefinitionGroup";
 }
 

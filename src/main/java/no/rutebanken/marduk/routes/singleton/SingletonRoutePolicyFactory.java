@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITIONS_NAME;
+import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NAME;
 
 /**
  * Create policies for enforcing that routes are started as singleton, using Hazelcast for cluster  sync.
@@ -23,6 +23,9 @@ import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITIONS_NAME;
 public class SingletonRoutePolicyFactory extends HazelCastService implements RoutePolicyFactory {
 
 	private static final Logger log = LoggerFactory.getLogger(SingletonRoutePolicyFactory.class);
+
+	@Value("${rutebanken.route.singleton.policy.ignore:false}")
+	private boolean ignorePolicy;
 
 	public SingletonRoutePolicyFactory(@Autowired KubernetesService kubernetesService,
 			                                  @Value("${rutebanken.hazelcast.management.url:}") String managementUrl) {
@@ -45,7 +48,7 @@ public class SingletonRoutePolicyFactory extends HazelCastService implements Rou
 	@Override
 	public RoutePolicy createRoutePolicy(CamelContext camelContext, String routeId, RouteDefinition routeDefinition) {
 		try {
-			if (SINGLETON_ROUTE_DEFINITIONS_NAME.equals(routeDefinition.getGroup())) {
+			if (!ignorePolicy && SINGLETON_ROUTE_DEFINITION_GROUP_NAME.equals(routeDefinition.getGroup())) {
 				return build(routeId);
 			}
 		} catch (Exception e) {
