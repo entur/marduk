@@ -12,24 +12,18 @@ import java.io.IOException;
 @Component
 public class IdempotentFileStoreService {
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
-    IdempotentRepository digestIdempotentRepository;
+	@Autowired
+	IdempotentRepository digestIdempotentRepository;
 
-    @Autowired
-    IdempotentRepository fileNameIdempotentRepository;
+	@Autowired
+	IdempotentRepository fileNameIdempotentRepository;
 
-    public void clean() {
-        try {
-            logger.info("Starting cleaning of filestores.");
-            fileNameIdempotentRepository.clear();
-            ((FileIdempotentRepository) fileNameIdempotentRepository).reset();
-            digestIdempotentRepository.clear();
-            ((FileIdempotentRepository) digestIdempotentRepository).reset();
-            logger.info("Done cleaning filestores.");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+	public void clean() {
+		logger.info("Starting cleaning of filestores.");
+		fileNameIdempotentRepository.clear();
+		digestIdempotentRepository.clear();
+		logger.info("Done cleaning filestores.");
+	}
 }
