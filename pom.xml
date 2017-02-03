@@ -260,7 +260,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jersey</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
 
         <!-- http://mvnrepository.com/artifact/org.apache.camel/camel-spring-javaconfig -->
         <dependency>
