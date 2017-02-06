@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
 import no.rutebanken.marduk.Constants;
 import org.apache.camel.Exchange;
 
@@ -19,7 +18,7 @@ import static no.rutebanken.marduk.Constants.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Status {
 
-	public enum Action {FILE_TRANSFER, FILE_CLASSIFICATION, IMPORT, EXPORT, VALIDATION_LEVEL_1, VALIDATION_LEVEL_2, CLEAN, DATASPACE_TRANSFER}
+	public enum Action {FILE_TRANSFER, FILE_CLASSIFICATION, IMPORT, EXPORT, VALIDATION_LEVEL_1, VALIDATION_LEVEL_2, CLEAN, DATASPACE_TRANSFER, BUILD_GRAPH}
 
 	public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK, DUPLICATE}
 

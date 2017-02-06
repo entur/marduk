@@ -138,7 +138,7 @@ public class ChouetteExportFileMardukRouteIntegrationTest extends MardukRouteBui
 		pollJobStatus.expectedMessageCount(1);
 		
 		
-		updateStatus.expectedMessageCount(1);
+		updateStatus.expectedMessageCount(2);
 		
 		otpGraphQueue.expectedMessageCount(1);
 		
