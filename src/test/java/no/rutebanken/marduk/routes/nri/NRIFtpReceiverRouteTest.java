@@ -3,7 +3,7 @@ package no.rutebanken.marduk.routes.nri;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.services.IdempotentFileStoreService;
+import no.rutebanken.marduk.services.IdempotentRepositoryService;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
@@ -46,7 +46,7 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
 	private ModelCamelContext context;
 
 	@Autowired
-	IdempotentFileStoreService idempotentFileStoreService;
+	IdempotentRepositoryService idempotentRepositoryService;
 
 	@EndpointInject(uri = "mock:buskerud")
 	protected MockEndpoint buskerud;
@@ -57,7 +57,7 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
 	@Before
 	public void setUpProvider() throws IOException {
 		//wipe idempotent stores
-		idempotentFileStoreService.clean();
+		idempotentRepositoryService.clean();
 		when(providerRepository.getProvider(5L)).thenReturn(Provider.create(IOUtils.toString(new FileReader(
 				"src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json"))));
 	}
