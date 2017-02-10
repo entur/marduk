@@ -56,10 +56,10 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 	@Produce(uri = "direct:checkValidationReport")
 	protected ProducerTemplate validationReportTemplate;
 
-	@EndpointInject(uri = "mock:chouetteGetJobs")
+	@EndpointInject(uri = "mock:chouetteGetJobsForProvider")
 	protected MockEndpoint getJobs;
 
-	@Produce(uri = "direct:chouetteGetJobs")
+	@Produce(uri = "direct:chouetteGetJobsForProvider")
 	protected ProducerTemplate getJobsTemplate;
 
 	@Value("${chouette.url}")
@@ -218,7 +218,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 			public void configure() throws Exception {
 				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs")
 				.skipSendToOriginalEndpoint()
-				.to("mock:chouetteGetJobs");
+				.to("mock:chouetteGetJobsForProvider");
 			}
 		});
 

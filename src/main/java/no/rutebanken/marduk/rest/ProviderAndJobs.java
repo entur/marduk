@@ -2,23 +2,24 @@ package no.rutebanken.marduk.rest;
 
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 public class ProviderAndJobs {
 	private Long providerId;
 
-	private int numJobs = 0;
+	private List<JobResponse> pendingJobs=new ArrayList();
 
-	private JobResponse[] pendingJobs;
-
-	public ProviderAndJobs(Long id, JobResponse[] pendingJobs) {
+	public ProviderAndJobs(Long id, Collection<JobResponse> pendingJobs) {
 		super();
 		this.providerId = id;
-		this.pendingJobs = pendingJobs;
 		if (pendingJobs != null) {
-			this.numJobs = pendingJobs.length;
+			this.pendingJobs.addAll(pendingJobs);
 		}
 	}
 
-	public JobResponse[] getPendingJobs() {
+	public List<JobResponse> getPendingJobs() {
 		return pendingJobs;
 	}
 
@@ -27,7 +28,7 @@ public class ProviderAndJobs {
 	}
 
 	public int getNumJobs() {
-		return numJobs;
+		return pendingJobs.size();
 	}
 
 }

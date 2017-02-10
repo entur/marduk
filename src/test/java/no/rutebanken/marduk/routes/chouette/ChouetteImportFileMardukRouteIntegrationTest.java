@@ -48,7 +48,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 	@EndpointInject(uri = "mock:pollJobStatus")
 	protected MockEndpoint pollJobStatus;
 
-	@EndpointInject(uri = "mock:chouetteGetJobs")
+	@EndpointInject(uri = "mock:chouetteGetJobsForProvider")
 	protected MockEndpoint chouetteGetJobs;
 
 	@EndpointInject(uri = "mock:processImportResult")
@@ -247,7 +247,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 			public void configure() throws Exception {
 				interceptSendToEndpoint(chouetteUrl + "/*")
 						.skipSendToOriginalEndpoint()
-						.to("mock:chouetteGetJobs");
+						.to("mock:chouetteGetJobsForProvider");
 				interceptSendToEndpoint("activemq:queue:ChouetteValidationQueue")
 					.skipSendToOriginalEndpoint()
 					.to("mock:chouetteValidationQueue");

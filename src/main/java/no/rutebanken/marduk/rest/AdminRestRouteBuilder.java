@@ -244,7 +244,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 		    		.setHeader(PROVIDER_ID,header("providerId"))
 		    		.log(LoggingLevel.INFO,correlation()+"Get chouette jobs status=${header.status} action=${header.action}")
 		    		.removeHeaders("CamelHttp*")
-				    .to("direct:chouetteGetJobs")
+				    .to("direct:chouetteGetJobsForProvider")
 				    .routeId("admin-chouette-list-jobs")
 				    .endRest()
 	        	.delete("/jobs")
