@@ -16,41 +16,44 @@ import java.io.InputStream;
 @Service
 public class BlobStoreService {
 
-    @Autowired
-    BlobStoreRepository repository;
+	@Autowired
+	BlobStoreRepository repository;
 
-    @Autowired
-    Storage storage;
+	@Autowired
+	Storage storage;
 
-    @Value("${blobstore.gcs.container.name}")
-    String containerName;
+	@Value("${blobstore.gcs.container.name}")
+	String containerName;
 
-    @PostConstruct
-    public void init(){
-        repository.setStorage(storage);
-        repository.setContainerName(containerName);
-    }
+	@PostConstruct
+	public void init() {
+		repository.setStorage(storage);
+		repository.setContainerName(containerName);
+	}
 
-    public BlobStoreFiles listBlobs(@Header(value = Constants.CHOUETTE_REFERENTIAL) String referential, Exchange exchange) {
-        ExchangeUtils.addHeadersAndAttachments(exchange);
-        return repository.listBlobs(Constants.BLOBSTORE_PATH_INBOUND + referential + "/");
-    }
+	public BlobStoreFiles listBlobs(@Header(value = Constants.CHOUETTE_REFERENTIAL) String referential, Exchange exchange) {
+		ExchangeUtils.addHeadersAndAttachments(exchange);
+		return repository.listBlobs(Constants.BLOBSTORE_PATH_INBOUND + referential + "/");
+	}
 
-    public BlobStoreFiles listBlobsFlat(@Header(value = Constants.CHOUETTE_REFERENTIAL) String referential, Exchange exchange) {
-        ExchangeUtils.addHeadersAndAttachments(exchange);
-        return repository.listBlobsFlat(Constants.BLOBSTORE_PATH_INBOUND + referential + "/");
-    }
+	public BlobStoreFiles listBlobsFlat(@Header(value = Constants.CHOUETTE_REFERENTIAL) String referential, Exchange exchange) {
+		ExchangeUtils.addHeadersAndAttachments(exchange);
+		return repository.listBlobsFlat(Constants.BLOBSTORE_PATH_INBOUND + referential + "/");
+	}
 
-    public InputStream getBlob(@Header(value = Constants.FILE_HANDLE) String name, Exchange exchange) {
-        ExchangeUtils.addHeadersAndAttachments(exchange);
-        return repository.getBlob(name);
-    }
+	public InputStream getBlob(@Header(value = Constants.FILE_HANDLE) String name, Exchange exchange) {
+		ExchangeUtils.addHeadersAndAttachments(exchange);
+		return repository.getBlob(name);
+	}
 
-    public void uploadBlob(@Header(value = Constants.FILE_HANDLE) String name,
-                           @Header(value = Constants.BLOBSTORE_MAKE_BLOB_PUBLIC) boolean makePublic, InputStream inputStream, Exchange exchange) {
-        ExchangeUtils.addHeadersAndAttachments(exchange);
-        repository.uploadBlob(name, inputStream, makePublic);
-    }
+	public void uploadBlob(@Header(value = Constants.FILE_HANDLE) String name,
+			                      @Header(value = Constants.BLOBSTORE_MAKE_BLOB_PUBLIC) boolean makePublic, InputStream inputStream, Exchange exchange) {
+		ExchangeUtils.addHeadersAndAttachments(exchange);
+		repository.uploadBlob(name, inputStream, makePublic);
+	}
 
+	public void uploadBlob(String name, boolean makePublic, InputStream inputStream) {
+		repository.uploadBlob(name, inputStream, makePublic);
+	}
 
 }

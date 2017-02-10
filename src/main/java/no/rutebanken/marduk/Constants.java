@@ -32,8 +32,17 @@ public class Constants {
 	public static final String CHOUETTE_JOB_STATUS_JOB_TYPE = "RutebankenChouetteJobStatusType";
     public static final String CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL = "RutebankenChouetteJobStatusValidationLevel";
 
+    public static final String JOB_STATUS_URL = "RutebankenJobStatusURL";
+    public static final String JOB_ID = "RutebankenJobId";
+    public static final String JOB_STATUS_ROUTING_DESTINATION = "RutebankenobStatusRoutingDestination";
+
+    public static final String KARTVERKET_DATASETID = "RutebankenKartverketDataSetId";
+    public static final String KARTVERKET_FORMAT = "RutebankenKartverketFormat";
+
     public static final String BLOBSTORE_MAKE_BLOB_PUBLIC = "RutebankenBlobstoreMakeBlobPublic";
 
     public static final String SINGLETON_ROUTE_DEFINITION_GROUP_NAME = "RutebankenSingletonRouteDefinitionGroup";
+
+
 }
 
