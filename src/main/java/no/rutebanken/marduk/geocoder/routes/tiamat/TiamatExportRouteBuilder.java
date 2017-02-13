@@ -15,7 +15,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 	/**
 	 * One time per 24H on MON-FRI
 	 */
-	@Value("${kartverket.download.topographic.place.cron.schedule:0+*+*/23+?+*+MON-FRI}")
+	@Value("${tiamat.export.cron.schedule:0+*+*/23+?+*+MON-FRI}")
 	private String cronSchedule;
 
 	@Value("${tiamat.url}")

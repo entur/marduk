@@ -19,7 +19,7 @@ public class TiamatTopographicPlaceUpdateRouteBuilder extends BaseRouteBuilder {
 	private String blobStoreSubdirectoryForAdministrativeUnits;
 
 
-	@Value("${tiamat.update.topographic.place.cron.schedule:0+*+*/23+?+*+MON-FRI}")
+	@Value("${tiama.topographic.place.update.cron.schedule:0+*+*/23+?+*+MON-FRI}")
 	private String cronSchedule;
 
 	@Value("${tiamat.url}")
