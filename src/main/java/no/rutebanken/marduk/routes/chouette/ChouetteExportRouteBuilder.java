@@ -82,8 +82,11 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
 				.to("direct:addGtfsFeedInfo")
 				.setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
 				.to("direct:uploadBlob")
+				.process(e -> Status.builder(e).action(Action.EXPORT).state(State.OK).build()).to("direct:updateStatus")
+				.removeHeader(Constants.CHOUETTE_JOB_ID)
+				.setBody(constant(null))
 				.to("activemq:queue:OtpGraphQueue")
-				.process(e -> Status.builder(e).action(Action.EXPORT).state(State.OK).build())
+				.process(e -> Status.builder(e).action(Action.BUILD_GRAPH).state(State.PENDING).build())
 				.when(simple("${header.action_report_result} == 'NOK'"))
 				.log(LoggingLevel.WARN, correlation() + "Export failed")
 				.process(e -> Status.builder(e).action(Action.EXPORT).state(State.FAILED).build())
@@ -92,10 +95,6 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
 				.process(e -> Status.builder(e).action(Action.EXPORT).state(State.FAILED).build())
 				.end()
 				.to("direct:updateStatus")
-				.process(e -> {
-					e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
-					Status.builder(e).action(Action.BUILD_GRAPH).state(State.PENDING).build();
-				}).to("direct:updateStatus")
 				.routeId("chouette-process-export-status");
 
 		from("direct:addGtfsFeedInfo")
