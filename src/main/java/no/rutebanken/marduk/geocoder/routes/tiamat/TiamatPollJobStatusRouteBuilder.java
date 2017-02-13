@@ -1,9 +1,10 @@
 package no.rutebanken.marduk.geocoder.routes.tiamat;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.geocoder.tiamat.xml.ExportJob;
-import no.rutebanken.marduk.geocoder.tiamat.xml.JobStatus;
+import no.rutebanken.marduk.geocoder.routes.tiamat.xml.ExportJob;
+import no.rutebanken.marduk.geocoder.routes.tiamat.xml.JobStatus;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.status.StatusEvent;
 import org.apache.activemq.ScheduledMessage;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -45,18 +46,14 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 				.process(e -> {
 					e.getIn().setHeader("loopCounter", (Integer) e.getIn().getHeader("loopCounter", 0) + 1);
 				})
-				.setProperty("url", header(Constants.JOB_STATUS_URL))
 				.removeHeaders("Camel*")
 				.setBody(constant(""))
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
-				.process(e ->
-						         e.getIn().getBody()
-				)
-				.toD("${exchangeProperty.url}")
+				.toD(tiamatUrl + "${header." + Constants.JOB_STATUS_URL + "}")
 				.convertBodyTo(ExportJob.class)
-				.setProperty("current_status", simple("${body.status}"))
+				.setHeader("current_status", simple("${body.status}"))
 				.choice()
-				.when(PredicateBuilder.or(simple("${body.status} != ${type:no.rutebanken.marduk.geocoder.tiamat.xml.JobStatus.Processing}"),
+				.when(PredicateBuilder.or(simple("${header.current_status} != '" + JobStatus.PROCESSING + "'"),
 						simple("${header.loopCounter} > " + maxRetries)))
 				.to("direct:tiamatJobStatusDone")
 				.otherwise()
@@ -66,6 +63,7 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 				.removeHeader("scheduledJobId")
 				.setBody(constant(""))
 				.to("activemq:queue:TiamatPollStatusQueue")
+
 				.end()
 				.routeId("tiamat-get-job-status");
 
@@ -75,15 +73,14 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 				.choice()
 				.when(simple("${header.current_status} == '" + JobStatus.PROCESSING + "'"))
 				.log(LoggingLevel.WARN, correlation() + " timed out with state ${header.current_status}. Config should probably be tweaked. Stopping route.")
-// TODO event?
+				.process(e -> StatusEvent.builder(e).state(StatusEvent.State.TIMEOUT).build()).to("direct:sendStatusEvent")
 				.stop()
 				.when(simple("${header.current_status} == '" + JobStatus.FAILED + "'"))
 				.log(LoggingLevel.WARN, correlation() + " ended in state ${header.current_status}. Stopping route.")
-// TODO event?
+				.process(e -> StatusEvent.builder(e).state(StatusEvent.State.FAILED).build()).to("direct:sendStatusEvent")
 				.stop()
 				.end()
 				.toD("${header." + Constants.JOB_STATUS_ROUTING_DESTINATION + "}")
-// TODO event?
 				.stop()
 				.end()
 				.routeId("tiamat-process-job-status-done");

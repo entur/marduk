@@ -2,8 +2,9 @@ package no.rutebanken.marduk.geocoder.routes.tiamat;
 
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.geocoder.tiamat.xml.ExportJob;
+import no.rutebanken.marduk.geocoder.routes.tiamat.xml.ExportJob;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.status.StatusEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,7 +22,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 	@Value("${tiamat.url}")
 	private String tiamatUrl;
 
-	private String tiamatExportPath = "jersey/publication_delivery/async";
+	private String tiamatExportPath = "jersey/publication_delivery/";
 
 	@Override
 	public void configure() throws Exception {
@@ -35,13 +36,14 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 		singletonFrom("activemq:queue:TiamatExportQueue?transacted=true&messageListenerContainerFactoryRef=batchListenerContainerFactory")
 				.autoStartup("{{tiamat.export.autoStartup:false}}")
 				.transacted()
+				.process(e -> StatusEvent.builder(e).start(StatusEvent.Action.EXPORT).entity("Tiamat publication delivery").build()).to("direct:sendStatusEvent")
 				.log(LoggingLevel.INFO, "Start Tiamat export")
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
 				.setBody(constant(null))
-				.to(tiamatUrl + tiamatExportPath)
+				.to(tiamatUrl + tiamatExportPath + "async")
 				.convertBodyTo(ExportJob.class)
 				.setHeader(Constants.JOB_ID, simple("${body.id}"))
-				.setHeader(Constants.JOB_STATUS_URL, simple("${body.jobUrl}"))
+				.setHeader(Constants.JOB_STATUS_URL, simple(tiamatExportPath + "${body.jobUrl}"))
 				.setHeader(Constants.JOB_STATUS_ROUTING_DESTINATION, constant("direct:processTiamatExportResults"))
 				.log(LoggingLevel.INFO, "Started Tiamat export of file: ${body.fileName}")
 				.to("activemq:queue:TiamatPollStatusQueue")
@@ -50,6 +52,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 
 
 		from("direct:processTiamatExportResults")
+				.process(e -> StatusEvent.builder(e).state(StatusEvent.State.OK).build()).to("direct:sendStatusEvent")
 				.to("activemq:queue:PeliasUpdateQueue")
 				.routeId("tiamat-export-results");
 	}

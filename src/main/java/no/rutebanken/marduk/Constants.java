@@ -45,6 +45,8 @@ public class Constants {
 
     public static final String CONTENT_CHANGED = "RutebankenContentChanged";
     public static final String FOLDER_NAME = "RutebankenFolderName";
-
+    public static final String STATUS_EVENT_CORRELATION_ID = "RutebankenStatusEventCorrelationId";
+    public static final String STATUS_EVENT_ACTION = "RutebankenStatusEventAction";
+    public static final String STATUS_EVENT_ENTITY = "RutebankenStatusEventEntity";
 }
 
