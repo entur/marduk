@@ -33,9 +33,6 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 
 		from("activemq:queue:TiamatPollStatusQueue?transacted=true&maxConcurrentConsumers=" + maxConsumers)
 				.transacted()
-				.process(e ->
-						         e.getIn().getBody()
-				)
 				.validate(header(Constants.JOB_ID).isNotNull())
 				.validate(header(Constants.JOB_STATUS_URL).isNotNull())
 				.validate(header(Constants.JOB_STATUS_ROUTING_DESTINATION).isNotNull())

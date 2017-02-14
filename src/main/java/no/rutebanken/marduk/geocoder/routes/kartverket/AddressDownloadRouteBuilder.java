@@ -27,7 +27,8 @@ public class AddressDownloadRouteBuilder extends BaseRouteBuilder {
 	public void configure() throws Exception {
 		super.configure();
 
-		from("quartz2://marduk/addressDownload?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+		singletonFrom("quartz2://marduk/addressDownload?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+				.autoStartup("{{kartverket.address.download.autoStartup:false}}")
 				.log(LoggingLevel.INFO, "Quartz triggers address download.")
 				.to("activemq:queue:AddressDownloadQueue")
 				.routeId("address-download-quartz");

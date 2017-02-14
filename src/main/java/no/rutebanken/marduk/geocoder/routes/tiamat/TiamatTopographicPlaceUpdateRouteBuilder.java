@@ -29,7 +29,8 @@ public class TiamatTopographicPlaceUpdateRouteBuilder extends BaseRouteBuilder {
 	public void configure() throws Exception {
 		super.configure();
 
-		from("quartz2://marduk/tiamatTopographicPlaceUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+		singletonFrom("quartz2://marduk/tiamatTopographicPlaceUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+				.autoStartup("{{tiamat.topographic.place.update.autoStartup:false}}")
 				.log(LoggingLevel.INFO, "Quartz triggers Tiamat update of topographic place info.")
 				.to("activemq:queue:TiamatTopographicPlaceUpdateQueue")
 				.routeId("tiamat-topographic-place-update-quartz");

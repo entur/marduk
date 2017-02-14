@@ -41,7 +41,8 @@ public class TopographicPlaceDownloadRouteBuilder extends BaseRouteBuilder {
 	public void configure() throws Exception {
 		super.configure();
 
-		from("quartz2://marduk/topographicPlaceDownload?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+		singletonFrom("quartz2://marduk/topographicPlaceDownload?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+				.autoStartup("{{kartverket.topographic.place.download.autoStartup:false}}")
 				.log(LoggingLevel.INFO, "Quartz triggers download of topographic place information.")
 				.to("activemq:queue:TopographicPlaceDownloadQueue")
 				.routeId("topographic-place-download-quartz");
@@ -50,22 +51,12 @@ public class TopographicPlaceDownloadRouteBuilder extends BaseRouteBuilder {
 				.autoStartup("{{kartverket.topographic.place.download.autoStartup:false}}")
 				.transacted()
 				.log(LoggingLevel.INFO, "Start downloading topographic place information")
-				.process(e->
-						         e.getIn()
-				)
 				.log(LoggingLevel.INFO, "Test ${header.RutebankenContentChanged}")
-				.process(e->
-						         e.getIn()
-				)
 				.to("direct:transferAdministrativeUnitsFile")
 				.to("direct:transferTopographicPlacesFilesPerFylke")
-				.process(e->
-						         e.getIn()
-				)
 				.choice()
 				.when(simple("${header." + CONTENT_CHANGED + "}"))
 				.log(LoggingLevel.INFO, "Uploaded updated topographic place information from mapping authority. Initiating update of Tiamat")
-
 				.setBody(constant(null))
 				.to("activemq:queue:TopographicPlaceTiamatUpdateQueue")
 				.otherwise()

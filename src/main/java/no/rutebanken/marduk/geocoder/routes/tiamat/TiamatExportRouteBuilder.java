@@ -28,7 +28,8 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 	public void configure() throws Exception {
 		super.configure();
 
-		from("quartz2://marduk/tiamatExport?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+		singletonFrom("quartz2://marduk/tiamatExport?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+				.autoStartup("{{tiamat.export.autoStartup:false}}")
 				.log(LoggingLevel.INFO, "Quartz triggers Tiamat export.")
 				.to("activemq:queue:TiamatExportQueue")
 				.routeId("tiamat-export-quartz");
