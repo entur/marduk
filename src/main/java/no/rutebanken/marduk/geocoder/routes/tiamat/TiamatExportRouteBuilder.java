@@ -4,7 +4,7 @@ package no.rutebanken.marduk.geocoder.routes.tiamat;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.geocoder.routes.tiamat.xml.ExportJob;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.StatusEvent;
+import no.rutebanken.marduk.routes.status.SystemStatus;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,7 +36,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 		singletonFrom("activemq:queue:TiamatExportQueue?transacted=true&messageListenerContainerFactoryRef=batchListenerContainerFactory")
 				.autoStartup("{{tiamat.export.autoStartup:false}}")
 				.transacted()
-				.process(e -> StatusEvent.builder(e).start(StatusEvent.Action.EXPORT).entity("Tiamat publication delivery").build()).to("direct:sendStatusEvent")
+				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.EXPORT).entity("Tiamat publication delivery").build()).to("direct:updateSystemStatus")
 				.log(LoggingLevel.INFO, "Start Tiamat export")
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
 				.setBody(constant(null))
@@ -52,7 +52,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 
 
 		from("direct:processTiamatExportResults")
-				.process(e -> StatusEvent.builder(e).state(StatusEvent.State.OK).build()).to("direct:sendStatusEvent")
+				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				// TODO send name of export file(s)? (really only needs the latest and greatest, but must make sure that it is for correct scope (nationwide,no queryparams)
 				.to("activemq:queue:PeliasUpdateQueue")
 				.routeId("tiamat-export-results");

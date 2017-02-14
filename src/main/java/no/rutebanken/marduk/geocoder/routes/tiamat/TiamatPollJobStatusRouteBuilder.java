@@ -4,7 +4,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.geocoder.routes.tiamat.xml.ExportJob;
 import no.rutebanken.marduk.geocoder.routes.tiamat.xml.JobStatus;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.StatusEvent;
+import no.rutebanken.marduk.routes.status.SystemStatus;
 import org.apache.activemq.ScheduledMessage;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -73,11 +73,11 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 				.choice()
 				.when(simple("${header.current_status} == '" + JobStatus.PROCESSING + "'"))
 				.log(LoggingLevel.WARN, correlation() + " timed out with state ${header.current_status}. Config should probably be tweaked. Stopping route.")
-				.process(e -> StatusEvent.builder(e).state(StatusEvent.State.TIMEOUT).build()).to("direct:sendStatusEvent")
+				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.TIMEOUT).build()).to("direct:updateSystemStatus")
 				.stop()
 				.when(simple("${header.current_status} == '" + JobStatus.FAILED + "'"))
 				.log(LoggingLevel.WARN, correlation() + " ended in state ${header.current_status}. Stopping route.")
-				.process(e -> StatusEvent.builder(e).state(StatusEvent.State.FAILED).build()).to("direct:sendStatusEvent")
+				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.FAILED).build()).to("direct:updateSystemStatus")
 				.stop()
 				.end()
 				.toD("${header." + Constants.JOB_STATUS_ROUTING_DESTINATION + "}")

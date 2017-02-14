@@ -16,7 +16,7 @@ import java.util.UUID;
 import static no.rutebanken.marduk.Constants.*;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class StatusEvent {
+public class SystemStatus {
 	public enum Action {FILE_TRANSFER, EXPORT, UPDATE, BUILD_GRAPH}
 
 	public enum State {STARTED, TIMEOUT, FAILED, OK}
@@ -25,10 +25,10 @@ public class StatusEvent {
 	private String correlationId;
 
 	@JsonProperty("action")
-	private StatusEvent.Action action;
+	private SystemStatus.Action action;
 
 	@JsonProperty("state")
-	private StatusEvent.State state;
+	private SystemStatus.State state;
 
 	@JsonProperty("entity")
 	private String entity;
@@ -38,7 +38,7 @@ public class StatusEvent {
 	private Date date;
 
 
-	private StatusEvent() {
+	private SystemStatus() {
 	}
 
 	public String toString() {
@@ -52,87 +52,87 @@ public class StatusEvent {
 		}
 	}
 
-	public static StatusEvent.Builder builder() {
-		return new StatusEvent.Builder();
+	public static SystemStatus.Builder builder() {
+		return new SystemStatus.Builder();
 	}
 
-	public static StatusEvent.Builder builder(Exchange exchange) {
-		return new StatusEvent.ExchangeBuilder(exchange);
+	public static SystemStatus.Builder builder(Exchange exchange) {
+		return new SystemStatus.ExchangeBuilder(exchange);
 	}
 
 	public static class Builder {
 
-		protected StatusEvent statusEvent = new StatusEvent();
+		protected SystemStatus systemStatus = new SystemStatus();
 
 		private Builder() {
 		}
 
-		public StatusEvent.Builder action(StatusEvent.Action action) {
-			statusEvent.action = action;
+		public SystemStatus.Builder action(SystemStatus.Action action) {
+			systemStatus.action = action;
 			return this;
 		}
 
-		public StatusEvent.Builder state(StatusEvent.State state) {
-			statusEvent.state = state;
+		public SystemStatus.Builder state(SystemStatus.State state) {
+			systemStatus.state = state;
 			return this;
 		}
 
-		public StatusEvent.Builder start(Action action) {
-			statusEvent.correlationId = UUID.randomUUID().toString();
-			statusEvent.action = action;
-			statusEvent.state = State.STARTED;
+		public SystemStatus.Builder start(Action action) {
+			systemStatus.correlationId = UUID.randomUUID().toString();
+			systemStatus.action = action;
+			systemStatus.state = State.STARTED;
 			return this;
 		}
 
-		public StatusEvent.Builder entity(String entity) {
-			statusEvent.entity = entity;
+		public SystemStatus.Builder entity(String entity) {
+			systemStatus.entity = entity;
 			return this;
 		}
 
-		public StatusEvent build() {
-			if (statusEvent.correlationId == null) {
+		public SystemStatus build() {
+			if (systemStatus.correlationId == null) {
 				throw new IllegalArgumentException("No correlation id");
 			}
 
-			if (statusEvent.action == null) {
+			if (systemStatus.action == null) {
 				throw new IllegalArgumentException("No action");
 			}
 
-			if (statusEvent.state == null) {
+			if (systemStatus.state == null) {
 				throw new IllegalArgumentException("No state");
 			}
 
-			statusEvent.date = Date.from(Instant.now(Clock.systemDefaultZone()));
-			return statusEvent;
+			systemStatus.date = Date.from(Instant.now(Clock.systemDefaultZone()));
+			return systemStatus;
 		}
 	}
 
-	public static class ExchangeBuilder extends StatusEvent.Builder {
+	public static class ExchangeBuilder extends SystemStatus.Builder {
 
 		private Exchange exchange;
 
 		private ExchangeBuilder(Exchange exchange) {
 			super();
 			this.exchange = exchange;
-			statusEvent.correlationId = exchange.getIn().getHeader(STATUS_EVENT_CORRELATION_ID, String.class);
-			String actionString = exchange.getIn().getHeader(STATUS_EVENT_ACTION, String.class);
+			systemStatus.correlationId = exchange.getIn().getHeader(SYSTEM_STATUS_CORRELATION_ID, String.class);
+			String actionString = exchange.getIn().getHeader(SYSTEM_STATUS_ACTION, String.class);
 			if (actionString != null) {
-				statusEvent.action = Action.valueOf(actionString);
+				systemStatus.action = Action.valueOf(actionString);
 			}
-			statusEvent.entity = exchange.getIn().getHeader(STATUS_EVENT_ENTITY, String.class);
+			systemStatus.entity = exchange.getIn().getHeader(SYSTEM_STATUS_ENTITY, String.class);
 		}
 
 
 		@Override
-		public StatusEvent build() {
+		public SystemStatus build() {
 			if (exchange == null) {
 				throw new IllegalStateException(this.getClass() + " does not hold an instance of exchange.");
 			}
 
-			StatusEvent status = super.build();
-			exchange.getIn().setHeader(STATUS_EVENT_CORRELATION_ID, statusEvent.correlationId);
-			exchange.getIn().setHeader(STATUS_EVENT_ACTION, statusEvent.action.toString());
-			exchange.getIn().setHeader(STATUS_EVENT_ENTITY, statusEvent.entity);
+			SystemStatus status = super.build();
+			exchange.getIn().setHeader(SYSTEM_STATUS_CORRELATION_ID, systemStatus.correlationId);
+			exchange.getIn().setHeader(SYSTEM_STATUS_ACTION, systemStatus.action.toString());
+			exchange.getIn().setHeader(SYSTEM_STATUS_ENTITY, systemStatus.entity);
 
 			exchange.getOut().setBody(status.toString());
 			exchange.getOut().setHeaders(exchange.getIn().getHeaders());

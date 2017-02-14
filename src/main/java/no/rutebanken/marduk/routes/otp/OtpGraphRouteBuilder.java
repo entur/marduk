@@ -3,7 +3,7 @@ package no.rutebanken.marduk.routes.otp;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.GtfsFileUtils;
 import no.rutebanken.marduk.routes.status.Status;
-import no.rutebanken.marduk.routes.status.StatusEvent;
+import no.rutebanken.marduk.routes.status.SystemStatus;
 import no.rutebanken.marduk.services.GraphStatusService;
 import org.apache.activemq.command.ActiveMQMessage;
 import org.apache.camel.LoggingLevel;
@@ -53,7 +53,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 		singletonFrom("activemq:queue:OtpGraphQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{otp.graph.build.autoStartup:true}}")
 				.transacted()
 				.setProperty(PROP_MESSAGES, simple("${body}"))
-				.process(e -> StatusEvent.builder(e).start(StatusEvent.Action.BUILD_GRAPH).build()).to("direct:sendStatusEvent")
+				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.BUILD_GRAPH).build()).to("direct:updateSystemStatus")
 				.to("direct:sendStatusStartedForJobs")
 				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
 				.bean(graphStatusService, "setBuilding")
@@ -66,7 +66,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 				.to("direct:buildGraph")
 				.to("direct:sendStatusOKForJobs")
 				.bean(graphStatusService, "setIdle")
-				.process(e -> StatusEvent.builder(e).state(StatusEvent.State.OK).build()).to("direct:sendStatusEvent")
+				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				.log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP graph building route.")
 				.routeId("otp-graph-build");
 
