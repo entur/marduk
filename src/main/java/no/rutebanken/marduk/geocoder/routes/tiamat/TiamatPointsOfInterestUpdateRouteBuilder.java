@@ -13,7 +13,7 @@ public class TiamatPointsOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 	@Value("${tiamat.poi.update.cron.schedule:0+*+*/23+?+*+MON-FRI}")
 	private String cronSchedule;
 
-	@Value("${geofabrik.poi.blobstore.subdirectory:geofabrik/poi}")
+	@Value("${osm.poi.blobstore.subdirectory:osm/poi}")
 	private String blobStoreSubdirectoryForPointsOfInterest;
 
 	@Override

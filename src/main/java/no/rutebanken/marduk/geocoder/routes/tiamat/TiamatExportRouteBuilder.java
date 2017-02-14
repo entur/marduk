@@ -22,7 +22,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 	@Value("${tiamat.url}")
 	private String tiamatUrl;
 
-	private String tiamatExportPath = "jersey/publication_delivery/";
+	private String tiamatExportPath = "/jersey/publication_delivery/";
 
 	@Override
 	public void configure() throws Exception {
@@ -53,6 +53,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:processTiamatExportResults")
 				.process(e -> StatusEvent.builder(e).state(StatusEvent.State.OK).build()).to("direct:sendStatusEvent")
+				// TODO send name of export file(s)? (really only needs the latest and greatest, but must make sure that it is for correct scope (nationwide,no queryparams)
 				.to("activemq:queue:PeliasUpdateQueue")
 				.routeId("tiamat-export-results");
 	}
