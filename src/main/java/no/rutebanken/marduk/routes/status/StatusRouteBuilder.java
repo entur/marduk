@@ -7,12 +7,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class StatusRouteBuilder extends RouteBuilder {
 
-    @Override
-    public void configure() throws Exception {
-        from("direct:updateStatus")
-                .log(LoggingLevel.INFO, getClass().getName(), "Sending off status: ${body}")
-        .to("activemq:queue:ExternalProviderStatus")
-        .routeId("update-status").startupOrder(1);
-    }
+	@Override
+	public void configure() throws Exception {
+		from("direct:updateStatus")
+				.log(LoggingLevel.INFO, getClass().getName(), "Sending off job status event: ${body}")
+				.to("activemq:queue:ExternalProviderStatus")
+				.routeId("update-status").startupOrder(1);
+
+		from("direct:updateSystemStatus")
+				.log(LoggingLevel.INFO, getClass().getName(), "Sending off system status event: ${body}")
+				.to("activemq:queue:MardukSystemStatusQueue")
+				.routeId("send-status-event").startupOrder(2);
+	}
+
 
 }

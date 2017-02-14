@@ -87,7 +87,6 @@ spring.profiles.active=gcs-blobstore
 etcd.graph.notification.url=none
 otp.graph.deployment.notification.url=none
 
-idempotent.file.store.path=files/idempotentstore
 idempotent.skip=false
 
 provider.cache.path=files/providercache
