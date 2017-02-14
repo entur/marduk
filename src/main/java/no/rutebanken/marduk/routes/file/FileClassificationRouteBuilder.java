@@ -58,13 +58,17 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 		        .process(e -> Status.builder(e).action(Status.Action.FILE_CLASSIFICATION).state(Status.State.OK).build()).to("direct:updateStatus")
 		        .to("direct:getBlob")
                 .routeId("file-classify");
-    
-    
-        from("direct:transformGtfsFile")
-        	.bean(method(ZipFileUtils.class, "transformGtfsFile"))
-        	.log(LoggingLevel.INFO, correlation()+"ZIP-file transformed ${header." + FILE_HANDLE + "}")
-            .to("direct:uploadBlob")
-        	.routeId("file-transform-gtfs");
+
+
+	    from("direct:transformGtfsFile")
+			    .choice().when(simple("{{gtfs.transform.skip:false}}"))
+			    .log(LoggingLevel.INFO, getClass().getName(), "Skipping gtfs transformation for ${header." + FILE_HANDLE + "}")
+			    .otherwise()
+			    .bean(method(ZipFileUtils.class, "transformGtfsFile"))
+			    .log(LoggingLevel.INFO, correlation() + "ZIP-file transformed ${header." + FILE_HANDLE + "}")
+			    .to("direct:uploadBlob")
+				.endChoice()
+			    .routeId("file-transform-gtfs");
 
         from("direct:repackZipFile")
         	.bean(method(ZipFileUtils.class, "rePackZipFile"))
