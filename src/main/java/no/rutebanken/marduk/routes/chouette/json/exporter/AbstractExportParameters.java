@@ -29,6 +29,6 @@ public class AbstractExportParameters extends AbstractParameters {
     public boolean addMetadata = false;
 
     @JsonProperty("validate_after_export")
-    public boolean validateAfterExport = false;
+    public boolean validateAfterExport = true;
 
 }
