@@ -1,8 +1,7 @@
 {
-    "areaVisibility": true,
-    “platformEntriesLinking”: true,
-    "osmWayPropertySet": "norway",
-    "allowDuplicateStops": true
-    
+    areaVisibility: true,
+    platformEntriesLinking: true,
+    osmWayPropertySet: "norway",
+    allowDuplicateStops: true    
     
 }
