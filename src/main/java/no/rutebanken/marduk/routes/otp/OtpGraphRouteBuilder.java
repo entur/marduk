@@ -124,7 +124,6 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:fetchMap")
 				.log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Fetching map ...")
-				.removeHeaders("*")
 				.setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm + "/" + otpGraphFileName))
 				.to("direct:getBlob")
 				// Should really store to otpGraphFileName, but store to NORWAY_LATEST in fear of side effects later in the build
