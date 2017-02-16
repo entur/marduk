@@ -66,7 +66,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 				.to("direct:buildGraph")
 				.to("direct:sendStatusOKForJobs")
 				.bean(graphStatusService, "setIdle")
-				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
+		//		.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				.log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP graph building route.")
 				.routeId("otp-graph-build");
 
