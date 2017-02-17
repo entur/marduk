@@ -24,7 +24,6 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
 	private static final String BUILD_CONFIG_JSON = "build-config.json";
 	private static final String NORWAY_LATEST_OSM_PBF = "norway-latest.osm.pbf";
-	private static final String TIMESTAMP = "RutebankenTimeStamp";
 
 	@Value("${otp.graph.build.directory}")
 	private String otpGraphBuildDirectory;

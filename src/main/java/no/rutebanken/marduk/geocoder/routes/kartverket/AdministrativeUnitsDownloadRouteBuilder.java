@@ -1,20 +1,15 @@
 package no.rutebanken.marduk.geocoder.routes.kartverket;
 
 
-import no.rutebanken.marduk.geocoder.services.KartverketService;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.CONTENT_CHANGED;
-import static no.rutebanken.marduk.Constants.FOLDER_NAME;
-import static no.rutebanken.marduk.Constants.KARTVERKET_DATASETID;
-import static no.rutebanken.marduk.Constants.KARTVERKET_FORMAT;
+import static no.rutebanken.marduk.Constants.*;
 
 @Component
-public class TopographicPlaceDownloadRouteBuilder extends BaseRouteBuilder {
+public class AdministrativeUnitsDownloadRouteBuilder extends BaseRouteBuilder {
 
 	/**
 	 * One time per 24H on MON-FRI
@@ -47,7 +42,7 @@ public class TopographicPlaceDownloadRouteBuilder extends BaseRouteBuilder {
 				.to("activemq:queue:TopographicPlaceDownloadQueue")
 				.routeId("topographic-place-download-quartz");
 
-		singletonFrom("activemq:queue:TopographicPlaceDownloadQueue?transacted=true&messageListenerContainerFactoryRef=batchListenerContainerFactory")
+		singletonFrom("activemq:queue:AdministrativeUnitsDownloadQueue?transacted=true&messageListenerContainerFactoryRef=batchListenerContainerFactory")
 				.autoStartup("{{kartverket.topographic.place.download.autoStartup:false}}")
 				.transacted()
 				.log(LoggingLevel.INFO, "Start downloading topographic place information")
@@ -58,13 +53,14 @@ public class TopographicPlaceDownloadRouteBuilder extends BaseRouteBuilder {
 				.when(simple("${header." + CONTENT_CHANGED + "}"))
 				.log(LoggingLevel.INFO, "Uploaded updated topographic place information from mapping authority. Initiating update of Tiamat")
 				.setBody(constant(null))
-				.to("activemq:queue:TopographicPlaceTiamatUpdateQueue")
+				.to("activemq:queue:TiamatAdministrativeUnitsUpdateQueue")
 				.otherwise()
 				.log(LoggingLevel.INFO, "Finished downloading topographic place information from mapping authority with no changes")
 				.endChoice()
 				.routeId("topographic-place-download");
 
 
+		// TODO separate route?
 		from("direct:transferTopographicPlacesFilesPerFylke")
 				.log(LoggingLevel.INFO, "Downloading topographic places per area")
 				.setHeader(KARTVERKET_DATASETID, constant(topographicPlaceDataSetId))

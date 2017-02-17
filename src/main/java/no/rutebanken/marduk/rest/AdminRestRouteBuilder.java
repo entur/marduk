@@ -395,25 +395,37 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.endRest();
 
 
-		rest("geocoder/topographicplace")
+		rest("geocoder/administrativeUnits")
 				.get("/download")
-				.description("Trigger download of topographic place info from Norwegian mapping authority")
+				.description("Trigger download of administrative units from Norwegian mapping authority")
 				.responseMessage().code(200).endResponseMessage()
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
-				.route().routeId("admin-topographic-place-download")
+				.route().routeId("admin-administrative-units-download")
 				.removeHeaders("CamelHttp*")
-				.inOnly("activemq:queue:TopographicPlaceDownloadQueue")
+				.inOnly("activemq:queue:AdministrativeUnitsDownloadQueue")
 				.setBody(constant(null))
 				.endRest()
 				.get("/update")
-				.description("Trigger import of topographic place info to Tiamat")
+				.description("Trigger import of administrative units to Tiamat")
 				.responseMessage().code(200).endResponseMessage()
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
-				.route().routeId("admin-topographic-place-tiamat-update")
+				.route().routeId("admin-administrative-units-tiamat-update")
 				.removeHeaders("CamelHttp*")
-				.inOnly("activemq:queue:TiamatTopographicPlaceUpdateQueue")
+				.inOnly("activemq:queue:TiamatAdministrativeUnitsUpdateQueue")
 				.setBody(constant(null))
 				.endRest();
+
+		rest("geocoder/poi")
+				.get("/update")
+				.description("Trigger import of place of interest info to Tiamat")
+				.responseMessage().code(200).endResponseMessage()
+				.responseMessage().code(500).message("Internal error").endResponseMessage()
+				.route().routeId("admin-place-of-interest-tiamat-update")
+				.removeHeaders("CamelHttp*")
+				.inOnly("activemq:queue:TiamatPlaceOfInterestUpdateQueue")
+				.setBody(constant(null))
+				.endRest();
+
 
 		rest("geocoder/address")
 				.get("/download")

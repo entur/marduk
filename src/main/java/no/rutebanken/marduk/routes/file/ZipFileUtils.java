@@ -130,6 +130,42 @@ public class ZipFileUtils {
 		return tmpFile;
 	}
 
+	public static void unzipFile(InputStream inputStream, String targetFolder) {
+		try {
+			byte[] buffer = new byte[1024];
+			ZipInputStream zis = new ZipInputStream(inputStream);
+			ZipEntry zipEntry = zis.getNextEntry();
+			while (zipEntry != null) {
+				String fileName = zipEntry.getName();
+
+				File newFile = new File(targetFolder + "/" + fileName);
+				if (fileName.endsWith("/")) {
+					newFile.mkdirs();
+					continue;
+				}
+
+				File parent = newFile.getParentFile();
+				if (parent != null) {
+					parent.mkdirs();
+				}
+
+
+				FileOutputStream fos = new FileOutputStream(newFile);
+				int len;
+				while ((len = zis.read(buffer)) > 0) {
+					fos.write(buffer, 0, len);
+				}
+				fos.close();
+				zipEntry = zis.getNextEntry();
+			}
+			zis.closeEntry();
+			zis.close();
+		} catch (IOException ioE) {
+			throw new RuntimeException("Unzipping archive failed: " + ioE.getMessage(), ioE);
+		}
+	}
+
+
 	private static File getFile(byte[] data) throws IOException {
 		File inputFile = File.createTempFile("marduk-input", ".zip");
 
@@ -215,7 +251,7 @@ public class ZipFileUtils {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return null;
 	}
 
