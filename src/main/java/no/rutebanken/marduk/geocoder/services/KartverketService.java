@@ -28,7 +28,7 @@ public class KartverketService {
 	private String password;
 
 
-	@Value("${kartverket.download.directory}")
+	@Value("${kartverket.download.directory:files/karverket}")
 	private String localDownloadDir;
 
 
@@ -60,9 +60,10 @@ public class KartverketService {
 		return files;
 	}
 
-	private Downloader getDownloader(String dataSetId, String format) {
+	Downloader getDownloader(String dataSetId, String format) {
 		Downloader kd;
 		if (isUUID(dataSetId)) {
+			// UUIDs are used in the API
 			kd = new GeoNorgeDownloadAPI();
 			if (format != null) {
 				kd.setFileNameFilter(n -> n.contains(format));
