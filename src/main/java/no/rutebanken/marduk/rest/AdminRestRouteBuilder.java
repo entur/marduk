@@ -439,6 +439,18 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.endRest();
 
 
+		rest("geocoder/placeNames")
+				.get("/download")
+				.description("Trigger download of place names from Norwegian mapping authority")
+				.responseMessage().code(200).endResponseMessage()
+				.responseMessage().code(500).message("Internal error").endResponseMessage()
+				.route().routeId("admin-place-names-download")
+				.removeHeaders("CamelHttp*")
+				.inOnly("activemq:queue:AddressDownloadQueue")
+				.setBody(constant(null))
+				.endRest();
+
+
 		rest("geocoder/tiamat")
 				.get("/export")
 				.description("Trigger export from Tiamat")

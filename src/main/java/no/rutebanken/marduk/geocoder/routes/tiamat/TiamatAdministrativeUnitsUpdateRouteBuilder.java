@@ -23,8 +23,8 @@ import static no.rutebanken.marduk.Constants.TIMESTAMP;
 @Component
 public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilder {
 
-	@Value("${kartverket.administrative.units.blobstore.subdirectory:kartverket/administrativeUnits}")
-	private String blobStoreSubdirectoryForAdministrativeUnits;
+	@Value("${kartverket.place.names.blobstore.subdirectory:kartverket}")
+	private String blobStoreSubdirectoryForKartverket;
 
 	@Value("${tiamat.administrative.units.update.cron.schedule:0+*+*/23+?+*+MON-FRI}")
 	private String cronSchedule;
@@ -63,14 +63,13 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 				.to("direct:fetchAdministrativeUnits")
 				.to("direct:mapAdministrativeUnitsToNetex")
 				.to("direct:updateAdministrativeUnitsInTiamat")
-				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				.log(LoggingLevel.INFO, "Started job updating administrative units in Tiamat")
 				.end()
 				.routeId("tiamat-admin-units-update");
 
 		from("direct:fetchAdministrativeUnits")
 				.log(LoggingLevel.DEBUG, getClass().getName(), "Fetching latest administrative units ...")
-				.setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForAdministrativeUnits + "/" + adminUnitsArchiveFileName))
+				.setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForKartverket + "/" + adminUnitsArchiveFileName))
 				.to("direct:getBlob")
 				.process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), workingDirectory(e)))
 				.routeId("tiamat-fetch-admin-units-geojson");
@@ -91,6 +90,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 
 		from("direct:processTiamatAdministrativeUnitsUpdateCompleted")
 				.to("activemq:queue:PeliasUpdateQueue")
+				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				.routeId("tiamat-admin-units-update-completed");
 	}
 

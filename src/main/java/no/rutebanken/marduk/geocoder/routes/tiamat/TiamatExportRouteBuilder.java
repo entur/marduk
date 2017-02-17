@@ -10,6 +10,8 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+
 @Component
 public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 
@@ -23,6 +25,11 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 	private String tiamatUrl;
 
 	private String tiamatExportPath = "/jersey/publication_delivery/";
+
+	@Value("${tiamat.export.blobstore.subdirectory:tiamat}")
+	private String blobStoreSubdirectoryForTiamatExport;
+
+	private String TIAMAT_EXPORT_LATEST_FILE_NAME = "timat_export_latest.zip";
 
 	@Override
 	public void configure() throws Exception {
@@ -53,10 +60,19 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 
 
 		from("direct:processTiamatExportResults")
+				.to("direct:tiamatExportMoveFileToMardukBlobStore")
 				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
-				// TODO send name of export file(s)? (really only needs the latest and greatest, but must make sure that it is for correct scope (nationwide,no queryparams)
 				.to("activemq:queue:PeliasUpdateQueue")
 				.routeId("tiamat-export-results");
+
+
+		from("direct:tiamatExportMoveFileToMardukBlobStore")
+				.log(LoggingLevel.DEBUG, getClass().getName(), "Fetching tiamat export file ...")
+				.toD(tiamatUrl+"/${header." + Constants.JOB_STATUS_URL + "}/content")
+				.setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForTiamatExport + "/" + TIAMAT_EXPORT_LATEST_FILE_NAME))
+				.to("direct:uploadBlob")
+				.routeId("tiamat-export-move-file");
+
 	}
 
 

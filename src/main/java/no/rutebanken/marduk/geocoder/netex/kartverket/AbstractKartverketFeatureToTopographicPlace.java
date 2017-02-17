@@ -2,7 +2,6 @@ package no.rutebanken.marduk.geocoder.netex.kartverket;
 
 
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Polygon;
 import net.opengis.gml._3.AbstractRingPropertyType;
 import net.opengis.gml._3.DirectPositionListType;
@@ -82,13 +81,19 @@ public abstract class AbstractKartverketFeatureToTopographicPlace {
 		if (geometry instanceof Polygon) {
 			LinearRingType linearRing = new LinearRingType();
 
+			Polygon polygon = (Polygon) geometry;
+
 			List<Double> values = new ArrayList();
-			for (Coordinate coordinate : ((Geometry) geometry).getCoordinates()) {
+			for (Coordinate coordinate : polygon.getExteriorRing().getCoordinates()) {
 				values.add(coordinate.x);
 				values.add(coordinate.y);
 			}
+
+			// Ignoring interior rings because the corresponding exclaves are not handled.
+
 			DirectPositionListType positionList = new DirectPositionListType().withValue(values);
 			linearRing.withPosList(positionList);
+
 			return new PolygonType().withId(participantRef + "-" + getId())
 					       .withExterior(new AbstractRingPropertyType().withAbstractRing(
 							       new net.opengis.gml._3.ObjectFactory().createLinearRing(linearRing)));
