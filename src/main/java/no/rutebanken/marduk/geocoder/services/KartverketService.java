@@ -28,7 +28,7 @@ public class KartverketService {
 	private String password;
 
 
-	@Value("${kartverket.download.directory:files/karverket}")
+	@Value("${kartverket.download.directory:files/kartverket}")
 	private String localDownloadDir;
 
 

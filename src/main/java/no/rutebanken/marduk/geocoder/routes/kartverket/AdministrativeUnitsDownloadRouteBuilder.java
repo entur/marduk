@@ -31,13 +31,13 @@ public class AdministrativeUnitsDownloadRouteBuilder extends BaseRouteBuilder {
 		super.configure();
 
 		singletonFrom("quartz2://marduk/administrativeUnitsDownload?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
-				.autoStartup("{{kartverket.admin.units.download.autoStartup:false}}")
+				.autoStartup("{{kartverket.administrative.units.download.autoStartup:false}}")
 				.log(LoggingLevel.INFO, "Quartz triggers download of administrative units.")
 				.to("activemq:queue:AdministrativeUnitsDownloadQueue")
 				.routeId("admin-units-download-quartz");
 
 		singletonFrom("activemq:queue:AdministrativeUnitsDownloadQueue?transacted=true&messageListenerContainerFactoryRef=batchListenerContainerFactory")
-				.autoStartup("{{kartverket.admin.units.download.autoStartup:false}}")
+				.autoStartup("{{kartverket.administrative.units.download.autoStartup:false}}")
 				.transacted()
 				.log(LoggingLevel.INFO, "Start downloading administrative units")
 				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.FILE_TRANSFER).entity("Kartverket administrative units").build()).to("direct:updateSystemStatus")
