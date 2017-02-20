@@ -1,12 +1,9 @@
 package no.rutebanken.marduk.geocoder.netex.kartverket;
 
 
-import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Polygon;
-import net.opengis.gml._3.AbstractRingPropertyType;
-import net.opengis.gml._3.DirectPositionListType;
-import net.opengis.gml._3.LinearRingType;
 import net.opengis.gml._3.PolygonType;
+import no.rutebanken.marduk.geocoder.netex.NetexGeoUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.opengis.feature.Feature;
 import org.opengis.feature.Property;
@@ -14,19 +11,12 @@ import org.rutebanken.netex.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 public abstract class AbstractKartverketFeatureToTopographicPlace {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected Feature feature;
 
 	protected String participantRef;
-
-	private static Set<String> ids = new HashSet<>();
 
 	public AbstractKartverketFeatureToTopographicPlace(Feature feature, String participantRef) {
 		this.feature = feature;
@@ -79,24 +69,7 @@ public abstract class AbstractKartverketFeatureToTopographicPlace {
 		Object geometry = feature.getDefaultGeometryProperty().getValue();
 
 		if (geometry instanceof Polygon) {
-			LinearRingType linearRing = new LinearRingType();
-
-			Polygon polygon = (Polygon) geometry;
-
-			List<Double> values = new ArrayList();
-			for (Coordinate coordinate : polygon.getExteriorRing().getCoordinates()) {
-				values.add(coordinate.x);
-				values.add(coordinate.y);
-			}
-
-			// Ignoring interior rings because the corresponding exclaves are not handled.
-
-			DirectPositionListType positionList = new DirectPositionListType().withValue(values);
-			linearRing.withPosList(positionList);
-
-			return new PolygonType().withId(participantRef + "-" + getId())
-					       .withExterior(new AbstractRingPropertyType().withAbstractRing(
-							       new net.opengis.gml._3.ObjectFactory().createLinearRing(linearRing)));
+			return NetexGeoUtil.toNetexPolygon((Polygon) geometry).withId(participantRef + "-" + getId());
 		}
 		return null;
 	}

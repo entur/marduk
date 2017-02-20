@@ -2,10 +2,8 @@ package no.rutebanken.marduk.geocoder.netex.kartverket;
 
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceReader;
 import org.apache.commons.io.FileUtils;
-import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
-import org.opengis.feature.Feature;
 import org.rutebanken.netex.model.MultilingualString;
 import org.rutebanken.netex.model.TopographicPlace;
 
@@ -30,13 +28,16 @@ public class GeoJsonTopographicPlaceReader implements TopographicPlaceReader {
 	public void addToQueue(BlockingQueue<TopographicPlace> queue) throws IOException, InterruptedException {
 		for (File file : files) {
 			FeatureJSON fJson = new FeatureJSON();
+			FeatureIterator<org.opengis.feature.simple.SimpleFeature> itr = fJson.streamFeatureCollection(FileUtils.openInputStream(file));
 
-			FeatureCollection collection = fJson.readFeatureCollection(FileUtils.openInputStream(file));
-
-			FeatureIterator<Feature> itr = collection.features();
 			while (itr.hasNext()) {
-				queue.put((KartverketFeatureMapper.create(itr.next(), PARTICIPANT_REF)).toTopographicPlace());
+				TopographicPlace topographicPlace = KartverketFeatureMapper.create(itr.next(), PARTICIPANT_REF).toTopographicPlace();
+
+				if (topographicPlace != null) {
+					queue.put(topographicPlace);
+				}
 			}
+			itr.close();
 		}
 	}
 

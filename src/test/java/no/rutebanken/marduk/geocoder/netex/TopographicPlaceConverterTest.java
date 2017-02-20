@@ -3,6 +3,7 @@ package no.rutebanken.marduk.geocoder.netex;
 
 import no.rutebanken.marduk.geocoder.netex.kartverket.GeoJsonTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.netex.pbf.PbfTopographicPlaceReader;
+import no.rutebanken.marduk.geocoder.routes.kartverket.geojson.FeatureJSONFilter;
 import org.junit.Test;
 import org.rutebanken.netex.model.IanaCountryTldEnumeration;
 import org.rutebanken.netex.model.PublicationDeliveryStructure;
@@ -26,20 +27,18 @@ import static javax.xml.bind.JAXBContext.newInstance;
 public class TopographicPlaceConverterTest {
 
 
-//	@Test
-//	public void testConvertAdminUnitsFromGeoJson() throws Exception {
-//		String targetPath = "files/adm-units.xml";
-//		new TopographicPlaceConverter().toNetexFile(new GeoJsonTopographicPlaceReader
-//				                                            (new File("conf/abas/fylker.geojson"),
-//// TODO test with fylker?
-//		new File("conf/abas/kommuner.geojson")
-//				,
-//				new File("conf/abas/grunnkretser.geojson")
-//				                                            ),
-//		targetPath);
-//		validateNetexFile(targetPath);
-//	}
-//
+	@Test
+	public void testFilterConvertAdminUnitsFromGeoJson() throws Exception {
+		String filteredFilePath = "files/filtered-fylker.geojson";
+		new FeatureJSONFilter("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson", filteredFilePath, "fylkesnr", "area").filter();
+
+		String targetPath = "files/adm-units.xml";
+		new TopographicPlaceConverter().toNetexFile(new GeoJsonTopographicPlaceReader
+				                                            (new File(filteredFilePath)
+				                                            ), targetPath);
+		validateNetexFile(targetPath);
+	}
+
 
 	@Test
 	public void testConvertPlaceOfInterestFromOsmPbf() throws Exception {
@@ -62,4 +61,6 @@ public class TopographicPlaceConverterTest {
 		XMLStreamReader xmlReader = XMLInputFactory.newInstance().createXMLStreamReader(new FileInputStream(new File(path)));
 		unmarshaller.unmarshal(xmlReader);
 	}
+
+
 }

@@ -3,6 +3,9 @@ package no.rutebanken.marduk.geocoder.netex.pbf;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
+import net.opengis.gml._3.PolygonType;
+import no.rutebanken.marduk.geocoder.netex.NetexGeoUtil;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceNetexWriter;
 import org.apache.commons.lang3.StringUtils;
 import org.opentripplanner.openstreetmap.model.OSMNode;
@@ -79,18 +82,15 @@ public class TopographicPlaceOsmContentHandler implements OpenStreetMapContentHa
 			if (gatherNodesUsedInWaysPhase) {
 				nodeRefsUsedInWays.addAll(osmWay.getNodeRefs());
 			} else {
-				Point centroid = calculateCentroid(osmWay);
-
-				if (centroid != null) {
-					TopographicPlace topographicPlace = map(osmWay).withCentroid(
-							toCentroid(centroid.getX(), centroid.getY()));
+				TopographicPlace topographicPlace = map(osmWay);
+				if (addGeometry(osmWay, topographicPlace)) {
 					topographicPlaceQueue.add(topographicPlace);
 				}
 			}
 		}
 	}
 
-	private Point calculateCentroid(OSMWay osmWay) {
+	private boolean addGeometry(OSMWay osmWay, TopographicPlace topographicPlace) {
 		List<Coordinate> coordinates = new ArrayList();
 		for (Long nodeRef : osmWay.getNodeRefs()) {
 			OSMNode node = nodes.get(nodeRef);
@@ -101,15 +101,15 @@ public class TopographicPlaceOsmContentHandler implements OpenStreetMapContentHa
 
 		if (coordinates.size() != osmWay.getNodeRefs().size()) {
 			logger.info("Ignoring osmWay with missing nodes: " + osmWay.getAssumedName());
-			return null;
+			return false;
 		}
+		topographicPlace.withCentroid(toCentroid(coordinates));
 		try {
-			// TODO require polygon or not?
-			return new GeometryFactory().createMultiPoint(coordinates.toArray(new Coordinate[coordinates.size()])).getCentroid();
+			topographicPlace.withPolygon(toPolygon(coordinates, participantRef + "-" + osmWay.getId()));
 		} catch (RuntimeException e) {
-			logger.info("Ignoring osmWay because centroid calculation failed: " + osmWay.getAssumedName() + " .Exception: " + e.getMessage());
-			return null;
+			logger.info("Could not create polygon for osm way: " + osmWay.getAssumedName() + ". Exception: " + e.getMessage());
 		}
+		return true;
 	}
 
 	@Override
@@ -157,6 +157,19 @@ public class TopographicPlaceOsmContentHandler implements OpenStreetMapContentHa
 	protected MultilingualString multilingualString(String val) {
 		return new MultilingualString().withLang("no").withValue(val);
 	}
+
+
+	private PolygonType toPolygon(List<Coordinate> coordinates, String id) {
+		Polygon polygon = new GeometryFactory().createPolygon(coordinates.toArray(new Coordinate[coordinates.size()]));
+		return NetexGeoUtil.toNetexPolygon(polygon).withId(id);
+	}
+
+
+	SimplePoint_VersionStructure toCentroid(List<Coordinate> coordinates) {
+		Point centroid = new GeometryFactory().createMultiPoint(coordinates.toArray(new Coordinate[coordinates.size()])).getCentroid();
+		return toCentroid(centroid.getX(), centroid.getY());
+	}
+
 
 	SimplePoint_VersionStructure toCentroid(double latitude, double longitude) {
 		return new SimplePoint_VersionStructure().withLocation(
