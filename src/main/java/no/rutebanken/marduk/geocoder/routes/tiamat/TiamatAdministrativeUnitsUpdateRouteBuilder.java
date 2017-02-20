@@ -60,7 +60,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 				.transacted()
 				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
 				.log(LoggingLevel.INFO, "Starting update of administrative units in Tiamat")
-				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.UPDATE).entity("Tiamat Administrative units" + "").build()).to("direct:updateSystemStatus")
+				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.UPDATE).entity("Tiamat Administrative units").build()).to("direct:updateSystemStatus")
 				.to("direct:fetchAdministrativeUnits")
 				.to("direct:filterAdministrativeUnitsExclaves")
 				.to("direct:mapAdministrativeUnitsToNetex")

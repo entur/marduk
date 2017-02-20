@@ -65,7 +65,6 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 				.to("direct:fetchPlaceOfInterest")
 				.to("direct:mapPlaceOfInterestToNetex")
 				.to("direct:updatePlaceOfInterestInTiamat")
-				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				.log(LoggingLevel.INFO, "Started job updating POI information in Tiamat")
 				.end()
 				.routeId("tiamat-poi-update");
@@ -91,6 +90,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:processTiamatPlaceOfInterestUpdateCompleted")
 				.to("activemq:queue:PeliasUpdateQueue")
+				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				.routeId("tiamat-poi-update-completed");
 
 	}
