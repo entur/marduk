@@ -94,6 +94,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 		from("direct:updateAdministrativeUnitsInTiamat")
 				//				.setHeader(Constants.JOB_ID, simple("${body.id}")) TODO import not ready
 //				.setHeader(Constants.JOB_STATUS_URL, simple("${body.jobUrl}"))
+				// clean up local folder now? Or after job is completed
 				.setHeader(Constants.JOB_STATUS_ROUTING_DESTINATION, constant("direct:processTiamatAdministrativeUnitsUpdateCompleted"))
 				.routeId("tiamat-admin-units-update-start");
 

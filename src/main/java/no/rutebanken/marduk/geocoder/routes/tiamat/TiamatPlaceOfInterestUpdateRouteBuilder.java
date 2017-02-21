@@ -85,6 +85,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 		from("direct:updatePlaceOfInterestInTiamat")
 				//.setHeader(Constants.JOB_ID, simple("${body.id}")) TODO import not ready
 				// .setHeader(Constants.JOB_STATUS_URL, simple("${body.jobUrl}"))
+				// clean up local dir now or after import completed
 				.setHeader(Constants.JOB_STATUS_ROUTING_DESTINATION, constant("direct:processTiamatPlaceOfInterestUpdateCompleted"))
 				.routeId("tiamat-poi-update-start");
 

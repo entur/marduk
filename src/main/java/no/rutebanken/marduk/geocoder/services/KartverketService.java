@@ -5,6 +5,7 @@ import no.jskdata.Downloader;
 import no.jskdata.GeoNorgeDownloadAPI;
 import no.jskdata.KartverketDownload;
 import no.rutebanken.marduk.Constants;
+import org.apache.camel.Exchange;
 import org.apache.camel.Header;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -28,19 +29,16 @@ public class KartverketService {
 	private String password;
 
 
-	@Value("${kartverket.download.directory:files/kartverket}")
-	private String localDownloadDir;
-
-
 	public List<File> downloadFiles(@Header(value = Constants.KARTVERKET_DATASETID) String dataSetId,
-			                               @Header(value = Constants.KARTVERKET_FORMAT) String format) {
+			                               @Header(value = Constants.KARTVERKET_FORMAT) String format,
+			                               @Header(value = Exchange.FILE_PARENT) String localDownloadDir) {
 		Downloader kd = getDownloader(dataSetId, format);
 
-		return downloadFilesInternal(dataSetId, kd);
+		return downloadFilesInternal(dataSetId, kd, localDownloadDir);
 	}
 
 
-	private List<File> downloadFilesInternal(String dataSetId, Downloader kd) {
+	private List<File> downloadFilesInternal(String dataSetId, Downloader kd, String localDownloadDir) {
 		List<File> files = new ArrayList<>();
 		try {
 			kd.login();
