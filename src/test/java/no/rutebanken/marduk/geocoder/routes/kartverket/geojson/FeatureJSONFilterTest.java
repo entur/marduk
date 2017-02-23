@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.geocoder.routes.kartverket.geojson;
 
+import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONFilter;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
