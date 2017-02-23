@@ -23,6 +23,7 @@ public class PlaceNamesStreamToElasticsearchCommandTest {
 		commands.forEach(c -> assertCommand(c));
 
 		PeliasDocument kalland = commands.stream().map(c -> (PeliasDocument) c.getSource()).filter(d -> "Kalland".equals(d.getName().getDefaultName())).collect(Collectors.toList()).get(0);
+		assertKalland(kalland);
 	}
 
 	private void assertKalland(PeliasDocument kalland) {
