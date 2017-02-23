@@ -4,7 +4,7 @@ package no.rutebanken.marduk.geocoder.routes.tiamat;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceConverter;
 import no.rutebanken.marduk.geocoder.netex.kartverket.GeoJsonTopographicPlaceReader;
-import no.rutebanken.marduk.geocoder.routes.kartverket.geojson.FeatureJSONFilter;
+import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONFilter;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.SystemStatus;

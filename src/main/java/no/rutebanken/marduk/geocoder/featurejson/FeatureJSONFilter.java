@@ -1,10 +1,9 @@
-package no.rutebanken.marduk.geocoder.routes.kartverket.geojson;
+package no.rutebanken.marduk.geocoder.featurejson;
 
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.geotools.feature.DefaultFeatureCollection;
-import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.opengis.feature.Feature;
@@ -63,7 +62,7 @@ public class FeatureJSONFilter {
 			fJson.writeFeatureCollection(filteredCollection, new FileOutputStream(targetFilePath));
 
 		} catch (IOException ioE) {
-			throw new RuntimeException("Filtering failed for geojson file: " + sourceFilePath, ioE);
+			throw new RuntimeException("Filtering failed for featureJSON file: " + sourceFilePath, ioE);
 		}
 	}
 
