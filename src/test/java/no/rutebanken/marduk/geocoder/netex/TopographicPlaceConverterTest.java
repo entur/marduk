@@ -3,22 +3,18 @@ package no.rutebanken.marduk.geocoder.netex;
 
 import no.rutebanken.marduk.geocoder.netex.kartverket.GeoJsonTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.netex.pbf.PbfTopographicPlaceReader;
-import no.rutebanken.marduk.geocoder.routes.kartverket.geojson.FeatureJSONFilter;
+import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONFilter;
 import org.junit.Test;
 import org.rutebanken.netex.model.IanaCountryTldEnumeration;
 import org.rutebanken.netex.model.PublicationDeliveryStructure;
 import org.rutebanken.netex.validation.NeTExValidator;
-import org.xml.sax.SAXException;
 
 import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.List;
 
