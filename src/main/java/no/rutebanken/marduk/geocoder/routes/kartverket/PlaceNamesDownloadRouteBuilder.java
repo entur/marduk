@@ -22,7 +22,7 @@ public class PlaceNamesDownloadRouteBuilder extends BaseRouteBuilder {
 	private String blobStoreSubdirectoryForKartverket;
 
 
-	@Value("${kartverket.place.names.dataSetId:30caed2f-454e-44be-b5cc-26bb5c0110ca}")
+	@Value("${kartverket.place.names.dataSetId:stedsnavn-ssr-wgs84-geojson}")
 	private String placeNamesDataSetId;
 
 	private static final String FORMAT_GEO_JSON = "geoJSON";
