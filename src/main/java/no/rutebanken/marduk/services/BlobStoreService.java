@@ -31,6 +31,12 @@ public class BlobStoreService {
 		repository.setContainerName(containerName);
 	}
 
+	public BlobStoreFiles listBlobsInFolder(@Header(value = Exchange.FILE_PARENT) String folder, Exchange exchange) {
+		ExchangeUtils.addHeadersAndAttachments(exchange);
+		return repository.listBlobs(folder + "/");
+	}
+
+
 	public BlobStoreFiles listBlobs(@Header(value = Constants.CHOUETTE_REFERENTIAL) String referential, Exchange exchange) {
 		ExchangeUtils.addHeadersAndAttachments(exchange);
 		return repository.listBlobs(Constants.BLOBSTORE_PATH_INBOUND + referential + "/");

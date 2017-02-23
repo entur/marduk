@@ -446,7 +446,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
 				.route().routeId("admin-place-names-download")
 				.removeHeaders("CamelHttp*")
-				.inOnly("activemq:queue:AddressDownloadQueue")
+				.inOnly("activemq:queue:PlaceNamesDownloadQueue")
 				.setBody(constant(null))
 				.endRest();
 
@@ -462,6 +462,17 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.setBody(constant(null))
 				.endRest();
 
+
+		rest("geocoder/pelias")
+				.get("/update")
+				.description("Trigger update of Pelias")
+				.responseMessage().code(200).endResponseMessage()
+				.responseMessage().code(500).message("Internal error").endResponseMessage()
+				.route().routeId("admin-pelias-update")
+				.removeHeaders("CamelHttp*")
+				.inOnly("activemq:queue:PeliasUpdateQueue")
+				.setBody(constant(null))
+				.endRest();
 	}
 
 	public static class ImportFilesSplitter {
