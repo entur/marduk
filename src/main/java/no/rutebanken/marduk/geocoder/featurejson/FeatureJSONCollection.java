@@ -36,7 +36,7 @@ public class FeatureJSONCollection {
 	}
 
 	public <R> List<R> mapToList(Function<SimpleFeature, ? extends R> mapper) {
-		List<R> list = new ArrayList();
+		List<R> list = new ArrayList<>();
 		forEach(f -> list.add(mapper.apply(f)));
 		return list;
 	}

@@ -18,7 +18,7 @@ public class NetexGeoUtil {
 		LinearRingType linearRing = new LinearRingType();
 		;
 
-		List<Double> values = new ArrayList();
+		List<Double> values = new ArrayList<>();
 		for (Coordinate coordinate : polygon.getExteriorRing().getCoordinates()) {
 			values.add(coordinate.x);
 			values.add(coordinate.y);

@@ -10,7 +10,7 @@ import java.util.*;
 public class ProviderAndJobsMapper {
 
 	public List<ProviderAndJobs> mapJobResponsesToProviderAndJobs(JobResponse[] jobs, Collection<Provider> providers) {
-		Map<String, List<JobResponse>> jobsPerProvider = new HashMap();
+		Map<String, List<JobResponse>> jobsPerProvider = new HashMap<>();
 
 		for (JobResponse jobResponse : jobs) {
 			List<JobResponse> jobsForProvider = jobsPerProvider.get(jobResponse.referential);
@@ -21,7 +21,7 @@ public class ProviderAndJobsMapper {
 			jobsForProvider.add(jobResponse);
 		}
 
-		List<ProviderAndJobs> providerAndJobsList = new ArrayList();
+		List<ProviderAndJobs> providerAndJobsList = new ArrayList<>();
 		for (Provider provider : providers) {
 			String referential = provider.getChouetteInfo().referential;
 			providerAndJobsList.add(new ProviderAndJobs(provider.getId(), jobsPerProvider.get(referential)));

@@ -20,7 +20,7 @@ public class PbfTopographicPlaceReaderTest {
 				new PbfTopographicPlaceReader(Arrays.asList("leisure=common", "naptan:indicator"), IanaCountryTldEnumeration.NO,
 						                             new File("src/test/resources/no/rutebanken/marduk/geocoder/pbf/sample.pbf"));
 
-		BlockingQueue<TopographicPlace> queue = new LinkedBlockingDeque();
+		BlockingQueue<TopographicPlace> queue = new LinkedBlockingDeque<>();
 		reader.addToQueue(queue);
 
 		Assert.assertEquals(4, queue.size());

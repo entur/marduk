@@ -28,7 +28,7 @@ public class JmsBatchMessage extends ActiveMQObjectMessage implements Serializab
 
 	@Override
 	public Serializable getObject() throws JMSException {
-		return new ArrayList(messages);
+		return new ArrayList<>(messages);
 	}
 
 

@@ -69,7 +69,7 @@ public class BatchMessageListenerContainer extends DefaultMessageListenerContain
 				consumerToClose = consumerToUse;
 			}
 
-			List<ActiveMQMessage> messages = new ArrayList();
+			List<ActiveMQMessage> messages = new ArrayList<>();
 
 			int count = 0;
 			Message message = null;

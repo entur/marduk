@@ -17,7 +17,7 @@ public class ElasticsearchBulkCommandWriterTest {
 
 	@Test
 	public void testWriteBulkCommandWithPeliasDocuments() throws Exception {
-		List<ElasticsearchCommand> commands = new ArrayList();
+		List<ElasticsearchCommand> commands = new ArrayList<>();
 		for (int i = 0; i < 2; i++) {
 			commands.add(ElasticsearchCommand.indexCommand("pelias", "poi", null, doc("møre" + i)));
 

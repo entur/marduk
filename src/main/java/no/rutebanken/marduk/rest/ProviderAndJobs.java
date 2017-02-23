@@ -9,7 +9,7 @@ import java.util.List;
 public class ProviderAndJobs {
 	private Long providerId;
 
-	private List<JobResponse> pendingJobs=new ArrayList();
+	private List<JobResponse> pendingJobs=new ArrayList<>();
 
 	public ProviderAndJobs(Long id, Collection<JobResponse> pendingJobs) {
 		super();

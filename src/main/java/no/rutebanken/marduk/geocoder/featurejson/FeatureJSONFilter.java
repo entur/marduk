@@ -30,7 +30,7 @@ public class FeatureJSONFilter {
 	private String comparatorProperty;
 
 
-	private final Map<Object, SimpleFeature> map = new HashMap();
+	private final Map<Object, SimpleFeature> map = new HashMap<>();
 
 	public FeatureJSONFilter(String sourceFilePath, String targetFilePath, String correlationProperty, String comparatorProperty) {
 		this.sourceFilePath = sourceFilePath;

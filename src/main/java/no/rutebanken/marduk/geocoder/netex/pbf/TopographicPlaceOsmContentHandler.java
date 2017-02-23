@@ -42,9 +42,9 @@ public class TopographicPlaceOsmContentHandler implements OpenStreetMapContentHa
 
 	private static final String TAG_NAME = "name";
 
-	private Map<Long, OSMNode> nodes = new HashMap();
+	private Map<Long, OSMNode> nodes = new HashMap<>();
 
-	private Set<Long> nodeRefsUsedInWays = new HashSet();
+	private Set<Long> nodeRefsUsedInWays = new HashSet<>();
 
 	private boolean gatherNodesUsedInWaysPhase = true;
 
@@ -58,7 +58,7 @@ public class TopographicPlaceOsmContentHandler implements OpenStreetMapContentHa
 
 	private List<String> cleanFilter(List<String> rawFilter) {
 		if (CollectionUtils.isEmpty(rawFilter)) {
-			return new ArrayList();
+			return new ArrayList<>();
 		}
 		return rawFilter.stream().filter(f -> !StringUtils.isEmpty(f)).map(String::trim).collect(Collectors.toList());
 	}
@@ -91,7 +91,7 @@ public class TopographicPlaceOsmContentHandler implements OpenStreetMapContentHa
 	}
 
 	private boolean addGeometry(OSMWay osmWay, TopographicPlace topographicPlace) {
-		List<Coordinate> coordinates = new ArrayList();
+		List<Coordinate> coordinates = new ArrayList<>();
 		for (Long nodeRef : osmWay.getNodeRefs()) {
 			OSMNode node = nodes.get(nodeRef);
 			if (node != null) {

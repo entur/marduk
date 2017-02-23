@@ -19,7 +19,7 @@ public class TopographicPlaceConverter {
 
 	public void toNetexFile(TopographicPlaceReader input, String targetPath) {
 		try {
-			BlockingQueue<TopographicPlace> topographicPlaceQueue = new LinkedBlockingDeque(QUEUE_SIZE);
+			BlockingQueue<TopographicPlace> topographicPlaceQueue = new LinkedBlockingDeque<>(QUEUE_SIZE);
 
 			ReaderTask reader = new ReaderTask(topographicPlaceQueue, input);
 			new Thread(reader).start();

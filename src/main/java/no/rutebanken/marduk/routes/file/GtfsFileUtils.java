@@ -29,7 +29,7 @@ public class GtfsFileUtils {
 			logger.debug("Merging GTFS-files");
 			long t1 = System.currentTimeMillis();
 			File outputFile = File.createTempFile("marduk-merge", ".zip");
-			buildGtfsMerger(EDuplicateDetectionStrategy.IDENTITY).run(new ArrayList(files), outputFile);
+			buildGtfsMerger(EDuplicateDetectionStrategy.IDENTITY).run(new ArrayList<>(files), outputFile);
 			logger.debug("Merged GTFS-files - spent {} ms", (System.currentTimeMillis() - t1));
 			return outputFile;
 		} catch (IOException ioException) {
