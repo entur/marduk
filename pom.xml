@@ -103,6 +103,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.beanio</groupId>
+            <artifactId>beanio</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.rutebanken.helpers</groupId>
             <artifactId>gcp-storage</artifactId>
             <version>${gcp-storage.version}</version>
