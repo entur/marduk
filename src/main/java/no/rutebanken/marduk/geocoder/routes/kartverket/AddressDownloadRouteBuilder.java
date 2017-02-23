@@ -40,7 +40,7 @@ public class AddressDownloadRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.INFO, "Start downloading address information from mapping authority")
 				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.FILE_TRANSFER).entity("Kartverket addresses").build()).to("direct:updateSystemStatus")
 				.setHeader(KARTVERKET_DATASETID, constant(addressesDataSetId))
-				.setHeader(FOLDER_NAME, constant(blobStoreSubdirectoryForKartverket))
+				.setHeader(FOLDER_NAME, constant(blobStoreSubdirectoryForKartverket + "/addresses"))
 				.to("direct:uploadUpdatedFiles")
 				.choice()
 				.when(simple("${header." + CONTENT_CHANGED + "}"))
