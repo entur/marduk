@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.geocoder.routes.pelias.kartverket;
+package no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket;
 
 
 import com.vividsolutions.jts.geom.Coordinate;
