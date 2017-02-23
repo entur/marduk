@@ -8,7 +8,7 @@ import java.io.InputStream;
 import java.util.Collection;
 
 @Service
-public class PlaceNameStreamToElasticsearchCommands {
+public class PlaceNamesStreamToElasticsearchCommands {
 
 	private static final String TYPE = "poi";
 

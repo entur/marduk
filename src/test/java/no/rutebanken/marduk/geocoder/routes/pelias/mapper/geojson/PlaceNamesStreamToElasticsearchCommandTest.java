@@ -14,7 +14,7 @@ public class PlaceNamesStreamToElasticsearchCommandTest {
 
 	@Test
 	public void testTransform() throws Exception {
-		PlaceNameStreamToElasticsearchCommands transformer = new PlaceNameStreamToElasticsearchCommands();
+		PlaceNamesStreamToElasticsearchCommands transformer = new PlaceNamesStreamToElasticsearchCommands();
 		Collection<ElasticsearchCommand> commands = transformer
 				                                            .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/geojson/stedsnavn.geojson"));
 
