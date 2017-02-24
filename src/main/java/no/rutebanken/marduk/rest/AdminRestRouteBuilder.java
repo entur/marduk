@@ -4,6 +4,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTask;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
@@ -11,7 +12,6 @@ import no.rutebanken.marduk.services.GraphStatusResponse;
 import org.apache.camel.Body;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
-
+import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 /**
  * REST interface for backdoor triggering of messages
  */
@@ -402,7 +402,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
 				.route().routeId("admin-administrative-units-download")
 				.removeHeaders("CamelHttp*")
-				.inOnly("activemq:queue:AdministrativeUnitsDownloadQueue")
+				.setBody(constant(KARTVERKET_ADMINISTRATIVE_UNITS_DOWNLOAD))
+				.inOnly("direct:geoCoderStart")
 				.setBody(constant(null))
 				.endRest()
 				.get("/update")
@@ -411,7 +412,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
 				.route().routeId("admin-administrative-units-tiamat-update")
 				.removeHeaders("CamelHttp*")
-				.inOnly("activemq:queue:TiamatAdministrativeUnitsUpdateQueue")
+				.setBody(constant(TIAMAT_ADMINISTRATIVE_UNITS_UPDATE_START))
+				.inOnly("direct:geoCoderStart")
 				.setBody(constant(null))
 				.endRest();
 
@@ -422,7 +424,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
 				.route().routeId("admin-place-of-interest-tiamat-update")
 				.removeHeaders("CamelHttp*")
-				.inOnly("activemq:queue:TiamatPlaceOfInterestUpdateQueue")
+				.setBody(constant(TIAMAT_PLACES_OF_INTEREST_UPDATE_START))
+				.inOnly("direct:geoCoderStart")
 				.setBody(constant(null))
 				.endRest();
 
@@ -434,7 +437,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
 				.route().routeId("admin-address-download")
 				.removeHeaders("CamelHttp*")
-				.inOnly("activemq:queue:AddressDownloadQueue")
+				.setBody(constant(KARTVERKET_ADDRESS_DOWNLOAD))
+				.inOnly("direct:geoCoderStart")
 				.setBody(constant(null))
 				.endRest();
 
@@ -446,7 +450,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
 				.route().routeId("admin-place-names-download")
 				.removeHeaders("CamelHttp*")
-				.inOnly("activemq:queue:PlaceNamesDownloadQueue")
+				.setBody(constant(KARTVERKET_ADDRESS_DOWNLOAD))
+				.inOnly("direct:geoCoderStart")
 				.setBody(constant(null))
 				.endRest();
 
@@ -458,7 +463,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
 				.route().routeId("admin-tiamat-export")
 				.removeHeaders("CamelHttp*")
-				.inOnly("activemq:queue:TiamatExportQueue")
+				.setBody(constant(TIAMAT_EXPORT_START))
+				.inOnly("direct:geoCoderStart")
 				.setBody(constant(null))
 				.endRest();
 
@@ -470,7 +476,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
 				.route().routeId("admin-pelias-update")
 				.removeHeaders("CamelHttp*")
-				.inOnly("activemq:queue:PeliasUpdateQueue")
+				.setBody(constant(PELIAS_UPDATE_START))
+				.inOnly("direct:geoCoderStart")
 				.setBody(constant(null))
 				.endRest();
 	}

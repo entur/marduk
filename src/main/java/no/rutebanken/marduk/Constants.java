@@ -50,5 +50,6 @@ public class Constants {
     public static final String SYSTEM_STATUS_ENTITY = "RutebankenSystemStatusEntity";
 
     public static final String TIMESTAMP = "RutebankenTimeStamp";
+
 }
 

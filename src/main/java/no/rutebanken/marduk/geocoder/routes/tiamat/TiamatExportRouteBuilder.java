@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 
 @Component
 public class TiamatExportRouteBuilder extends BaseRouteBuilder {
@@ -18,7 +19,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 	/**
 	 * One time per 24H on MON-FRI
 	 */
-	@Value("${tiamat.export.cron.schedule:0+*+*/23+?+*+MON-FRI}")
+	@Value("${tiamat.export.cron.schedule:0+0+23+?+*+MON-FRI}")
 	private String cronSchedule;
 
 	@Value("${tiamat.url}")
@@ -29,7 +30,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 	@Value("${tiamat.export.blobstore.subdirectory:tiamat}")
 	private String blobStoreSubdirectoryForTiamatExport;
 
-	private String TIAMAT_EXPORT_LATEST_FILE_NAME = "timat_export_latest.zip";
+	private String TIAMAT_EXPORT_LATEST_FILE_NAME = "tiamat_export_latest.zip";
 
 	@Override
 	public void configure() throws Exception {
@@ -38,12 +39,11 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 		singletonFrom("quartz2://marduk/tiamatExport?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
 				.autoStartup("{{tiamat.export.autoStartup:false}}")
 				.log(LoggingLevel.INFO, "Quartz triggers Tiamat export.")
-				.to("activemq:queue:TiamatExportQueue")
+				.setBody(constant(TIAMAT_EXPORT_START))
+				.to("direct:geoCoderStart")
 				.routeId("tiamat-export-quartz");
 
-		singletonFrom("activemq:queue:TiamatExportQueue?transacted=true&messageListenerContainerFactoryRef=batchListenerContainerFactory")
-				.autoStartup("{{tiamat.export.autoStartup:false}}")
-				.transacted()
+		from(TIAMAT_EXPORT_START.getEndpoint())
 				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.EXPORT).entity("Tiamat publication delivery").build()).to("direct:updateSystemStatus")
 				.log(LoggingLevel.INFO, "Start Tiamat export")
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
@@ -54,7 +54,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 				.setHeader(Constants.JOB_STATUS_URL, simple(tiamatExportPath + "${body.jobUrl}"))
 				.setHeader(Constants.JOB_STATUS_ROUTING_DESTINATION, constant("direct:processTiamatExportResults"))
 				.log(LoggingLevel.INFO, "Started Tiamat export of file: ${body.fileName}")
-				.to("activemq:queue:TiamatPollStatusQueue")
+				.setProperty(GEOCODER_NEXT_TASK, constant(TIAMAT_EXPORT_POLL))
 				.end()
 				.routeId("tiamat-export");
 
@@ -62,7 +62,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 		from("direct:processTiamatExportResults")
 				.to("direct:tiamatExportMoveFileToMardukBlobStore")
 				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
-				.to("activemq:queue:PeliasUpdateQueue")
+				.setProperty(GEOCODER_NEXT_TASK, constant(PELIAS_UPDATE_START))
 				.routeId("tiamat-export-results");
 
 

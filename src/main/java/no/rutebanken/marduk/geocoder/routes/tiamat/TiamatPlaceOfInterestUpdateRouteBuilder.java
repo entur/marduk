@@ -18,6 +18,7 @@ import java.util.List;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
+import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 
 // TODO specific per source?
 @Component
@@ -25,7 +26,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 	/**
 	 * One time per 24H on MON-FRI
 	 */
-	@Value("${tiamat.poi.update.cron.schedule:0+*+*/23+?+*+MON-FRI}")
+	@Value("${tiamat.poi.update.cron.schedule:0+0+23+?+*+MON-FRI}")
 	private String cronSchedule;
 
 	@Value("${tiamat.poi.update.directory:files/tiamat/poi/update}")
@@ -53,12 +54,11 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 		singletonFrom("quartz2://marduk/tiamatPlaceOfInterestUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
 				.autoStartup("{{tiamat.poi.update.autoStartup:false}}")
 				.log(LoggingLevel.INFO, "Quartz triggers Tiamat update of place of interest.")
-				.to("activemq:queue:TiamatPlaceOfInterestUpdateQueue")
+				.setBody(constant(TIAMAT_PLACES_OF_INTEREST_UPDATE_START))
+				.to("direct:geoCoderStart")
 				.routeId("tiamat-poi-update-quartz");
 
-		singletonFrom("activemq:queue:TiamatPlaceOfInterestUpdateQueue?transacted=true&messageListenerContainerFactoryRef=batchListenerContainerFactory")
-				.autoStartup("{{tiamat.poi.update.autoStartup:false}}")
-				.transacted()
+		from(TIAMAT_PLACES_OF_INTEREST_UPDATE_START.getEndpoint())
 				.log(LoggingLevel.INFO, "Start updating POI information in Tiamat")
 				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.UPDATE).entity("Tiamat POI").build()).to("direct:updateSystemStatus")
 				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
@@ -90,7 +90,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 				.routeId("tiamat-poi-update-start");
 
 		from("direct:processTiamatPlaceOfInterestUpdateCompleted")
-				.to("activemq:queue:PeliasUpdateQueue")
+				.setProperty(GEOCODER_NEXT_TASK, constant(TIAMAT_EXPORT_START))
 				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				.routeId("tiamat-poi-update-completed");
 

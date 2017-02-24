@@ -2,9 +2,9 @@ package no.rutebanken.marduk.geocoder.routes.tiamat;
 
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONFilter;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceConverter;
 import no.rutebanken.marduk.geocoder.netex.kartverket.GeoJsonTopographicPlaceReader;
-import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONFilter;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.SystemStatus;
@@ -20,6 +20,7 @@ import java.util.List;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
+import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 
 @Component
 public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilder {
@@ -27,7 +28,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 	@Value("${kartverket.place.names.blobstore.subdirectory:kartverket}")
 	private String blobStoreSubdirectoryForKartverket;
 
-	@Value("${tiamat.administrative.units.update.cron.schedule:0+*+*/23+?+*+MON-FRI}")
+	@Value("${tiamat.administrative.units.update.cron.schedule:0+0+23+?+*+MON-FRI}")
 	private String cronSchedule;
 
 	@Value("${tiamat.url}")
@@ -52,12 +53,11 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 		singletonFrom("quartz2://marduk/tiamatTAdministrativeUnitsUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
 				.autoStartup("{{tiamat.administrative.units.update.autoStartup:false}}")
 				.log(LoggingLevel.INFO, "Quartz triggers Tiamat update of administrative units.")
-				.to("activemq:queue:TiamatAdministrativeUnitsUpdateQueue")
+				.setBody(constant(TIAMAT_ADMINISTRATIVE_UNITS_UPDATE_START))
+				.to("direct:geoCoderStart")
 				.routeId("tiamat-admin-units-update-quartz");
 
-		singletonFrom("activemq:queue:TiamatAdministrativeUnitsUpdateQueue?transacted=true&messageListenerContainerFactoryRef=batchListenerContainerFactory")
-				.autoStartup("{{tiamat.administrative.units.update.autoStartup:false}}")
-				.transacted()
+		from(TIAMAT_ADMINISTRATIVE_UNITS_UPDATE_START.getEndpoint())
 				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
 				.log(LoggingLevel.INFO, "Starting update of administrative units in Tiamat")
 				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.UPDATE).entity("Tiamat Administrative units").build()).to("direct:updateSystemStatus")
@@ -100,7 +100,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 
 
 		from("direct:processTiamatAdministrativeUnitsUpdateCompleted")
-				.to("activemq:queue:PeliasUpdateQueue")
+				.setProperty(GEOCODER_NEXT_TASK, constant(TIAMAT_EXPORT_START))
 				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				.routeId("tiamat-admin-units-update-completed");
 	}

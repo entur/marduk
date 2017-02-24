@@ -12,6 +12,8 @@ import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
+
 @Component
 public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 
@@ -25,14 +27,11 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 	@Value("${tiamat.url}")
 	private String tiamatUrl;
 
-	private int maxConsumers = 5;
-
 	@Override
 	public void configure() throws Exception {
 		super.configure();
 
-		from("activemq:queue:TiamatPollStatusQueue?transacted=true&maxConcurrentConsumers=" + maxConsumers)
-				.transacted()
+		from(TIAMAT_EXPORT_POLL.getEndpoint())
 				.validate(header(Constants.JOB_ID).isNotNull())
 				.validate(header(Constants.JOB_STATUS_URL).isNotNull())
 				.validate(header(Constants.JOB_STATUS_ROUTING_DESTINATION).isNotNull())
@@ -58,9 +57,7 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 				.setHeader(ScheduledMessage.AMQ_SCHEDULED_DELAY, constant(retryDelay))
 				// Remove or ActiveMQ will think message is overdue and resend immediately
 				.removeHeader("scheduledJobId")
-				.setBody(constant(""))
-				.to("activemq:queue:TiamatPollStatusQueue")
-
+				.setProperty(GEOCODER_NEXT_TASK, simple("${header." + GEOCODER_CURRENT_TASK + "}"))
 				.end()
 				.routeId("tiamat-get-job-status");
 
@@ -69,16 +66,13 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.DEBUG, correlation() + " exited retry loop with status ${header.current_status}")
 				.choice()
 				.when(simple("${header.current_status} == '" + JobStatus.PROCESSING + "'"))
-				.log(LoggingLevel.WARN, correlation() + " timed out with state ${header.current_status}. Config should probably be tweaked. Stopping route.")
+				.log(LoggingLevel.WARN, correlation() + " timed out with state ${header.current_status}. Config should probably be tweaked. Not rescheduling.")
 				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.TIMEOUT).build()).to("direct:updateSystemStatus")
-				.stop()
 				.when(simple("${header.current_status} == '" + JobStatus.FAILED + "'"))
-				.log(LoggingLevel.WARN, correlation() + " ended in state ${header.current_status}. Stopping route.")
+				.log(LoggingLevel.WARN, correlation() + " ended in state ${header.current_status}. Not rescheduling.")
 				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.FAILED).build()).to("direct:updateSystemStatus")
-				.stop()
 				.end()
 				.toD("${header." + Constants.JOB_STATUS_ROUTING_DESTINATION + "}")
-				.stop()
 				.end()
 				.routeId("tiamat-process-job-status-done");
 	}

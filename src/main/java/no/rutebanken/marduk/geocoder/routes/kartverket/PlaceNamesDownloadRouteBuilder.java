@@ -7,15 +7,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.*;
-import static no.rutebanken.marduk.Constants.FOLDER_NAME;
-import static no.rutebanken.marduk.Constants.KARTVERKET_DATASETID;
+import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 
 @Component
 public class PlaceNamesDownloadRouteBuilder extends BaseRouteBuilder {
 	/**
 	 * One time per 24H on MON-FRI
 	 */
-	@Value("${kartverket.place.names.download.cron.schedule:0+*+*/23+?+*+MON-FRI}")
+	@Value("${kartverket.place.names.download.cron.schedule:0+0+23+?+*+MON-FRI}")
 	private String cronSchedule;
 
 	@Value("${kartverket.place.names.blobstore.subdirectory:kartverket}")
@@ -34,12 +33,11 @@ public class PlaceNamesDownloadRouteBuilder extends BaseRouteBuilder {
 		singletonFrom("quartz2://marduk/placeNamesDownload?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
 				.autoStartup("{{kartverket.place.names.download.autoStartup:false}}")
 				.log(LoggingLevel.INFO, "Quartz triggers download of place names.")
-				.to("activemq:queue:PlaceNamesDownloadQueue")
+				.setBody(constant(KARTVERKET_PLACE_NAMES_DOWNLOAD))
+				.to("direct:geoCoderStart")
 				.routeId("place-names-download-quartz");
 
-		singletonFrom("activemq:queue:PlaceNamesDownloadQueue?transacted=true&messageListenerContainerFactoryRef=batchListenerContainerFactory")
-				.autoStartup("{{kartverket.place.names.download.autoStartup:false}}")
-				.transacted()
+		from(KARTVERKET_PLACE_NAMES_DOWNLOAD.getEndpoint())
 				.log(LoggingLevel.INFO, "Start downloading place names")
 				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.FILE_TRANSFER).entity("Kartverket place names").build()).to("direct:updateSystemStatus")
 				.to("direct:transferPlaceNamesFiles")
@@ -47,7 +45,7 @@ public class PlaceNamesDownloadRouteBuilder extends BaseRouteBuilder {
 				.when(simple("${header." + CONTENT_CHANGED + "}"))
 				.log(LoggingLevel.INFO, "Uploaded updated place names from mapping authority. Initiating update of Tiamat")
 				.setBody(constant(null))
-				.to("activemq:queue:PeliasUpdateQueue")
+				.setProperty(GEOCODER_NEXT_TASK, constant(PELIAS_UPDATE_START))
 				.otherwise()
 				.log(LoggingLevel.INFO, "Finished downloading place names from mapping authority with no changes")
 				.end()

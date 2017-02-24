@@ -20,6 +20,8 @@ import java.util.List;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
+import static no.rutebanken.marduk.geocoder.GeoCoderConstants.KARTVERKET_ADDRESS_DOWNLOAD;
+import static no.rutebanken.marduk.geocoder.GeoCoderConstants.PELIAS_UPDATE_START;
 
 @Component
 public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
@@ -27,7 +29,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 	/**
 	 * One time per 24H on MON-FRI
 	 */
-	@Value("${pelias.update.cron.schedule:0+*+*/23+?+*+MON-FRI}")
+	@Value("${pelias.update.cron.schedule:0+0+23+?+*+MON-FRI}")
 	private String cronSchedule;
 
 	@Value("${babylon.url}")
@@ -53,12 +55,11 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 		singletonFrom("quartz2://marduk/peliasUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
 				.autoStartup("{{pelias.update.autoStartup:false}}")
 				.log(LoggingLevel.INFO, "Quartz triggers download of administrative units.")
-				.to("activemq:queue:PeliasUpdateQueue")
+				.setBody(constant(PELIAS_UPDATE_START))
+				.to("direct:geoCoderStart")
 				.routeId("pelias-update-quartz");
 
-		singletonFrom("activemq:queue:PeliasUpdateQueue?transacted=true&messageListenerContainerFactoryRef=batchListenerContainerFactory")
-				.autoStartup("{{pelias.update.autoStartup:false}}")
-				.transacted()
+		from(PELIAS_UPDATE_START.getEndpoint())
 				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
 				.log(LoggingLevel.INFO, "Start updating Pelias")
 				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.UPDATE).entity("Pelias").build()).to("direct:updateSystemStatus")
@@ -72,9 +73,15 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 
 				// TODO deploy pelias
 
+				// TODO - how do we handle files that no longer exists. Fetch bloblist in download route and delete no longer present? risky if md5 still in idempotent filter?
+
+				// TODO detect and fail job when data is missing?
+
 				// TODO clean up
 				.setHeader(Exchange.FILE_PARENT, simple(localWorkingDirectory + "/?fileName=${property." + TIMESTAMP + "}"))
 				.to("direct:cleanUpLocalDirectory")
+
+				.to("direct:processPeliasDeployCompleted")  // TODO replace with polling after deploy
 				.routeId("pelias-upload");
 
 
@@ -88,17 +95,6 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.DEBUG, "Finished inserting addresses to ES")
 				.routeId("pelias-insert-addresses");
 
-//		from("direct:fetchLatestAddresses")
-//				.log(LoggingLevel.DEBUG, getClass().getName(), "Fetching latest addresses from blobstore ...")
-//				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/addresses"))
-//				.bean("blobStoreService", "listBlobsInFolder")
-//				.split(simple("${body.files}"))
-//				.setHeader(FILE_HANDLE, simple("${body.name}"))
-//				.to("direct:getBlob")
-//				.toD("file:" + localWorkingDirectory + "?fileName=${property." + TIMESTAMP + "}/${header." + FILE_HANDLE + "}")
-//				.routeId("pelias-fetch-latest-addresses");
-//
-
 		from("direct:insertTiamatData")
 				.log(LoggingLevel.DEBUG, "Start inserting Tiamat data to ES")
 				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForTiamatExport))
@@ -107,11 +103,6 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.to("direct:insertToPeliasFromFilesInFolder")
 				.log(LoggingLevel.DEBUG, "Finished inserting Tiamat data to ES")
 				.routeId("pelias-insert-tiamat-data");
-
-
-		// TODO - how do we handle files that no longer exists. Fetch bloblist in download route and delete no longer present? risky if md5 still in idempotent filter?
-
-		// TODO detect and fail job when data is missing?
 
 		from("direct:insertPlaceNames")
 				.log(LoggingLevel.DEBUG, "Start inserting place names to ES")
@@ -127,7 +118,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.bean("blobStoreService", "listBlobsInFolder")
 				.split(simple("${body.files}"))
 				.setHeader(FILE_HANDLE, simple("${body.name}"))
-				.to("direct:getBlobTODO")
+				.to("direct:getBlob")
 				.to("direct:unzipIfZippedFile")
 				.split().exchange(e -> listFiles(e))
 				.log(LoggingLevel.INFO, "Updating indexes in pelias from file: ${body.name}")
@@ -153,7 +144,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.routeId("pelias-convert-commands-from-addresses");
 
 		from("direct:convertToPeliasCommandsFromTiamat")
-				.setBody(constant(new ArrayList()))
+				.bean("deliveryPublicationToElasticsearchCommands", "transform")
 				.routeId("pelias-convert-commands-from-tiamat");
 
 
