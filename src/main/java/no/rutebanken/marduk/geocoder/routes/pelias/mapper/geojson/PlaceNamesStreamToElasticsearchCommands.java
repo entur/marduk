@@ -10,11 +10,8 @@ import java.util.Collection;
 @Service
 public class PlaceNamesStreamToElasticsearchCommands {
 
-	private static final String TYPE = "poi";
-
-
 	public Collection<ElasticsearchCommand> transform(InputStream placeNamesStream) {
 		return new FeatureJSONCollection(placeNamesStream)
-				       .mapToList(f -> ElasticsearchCommand.indexCommand("pelias", TYPE, null, new PlaceNameToPeliasDocument(f).toPeliasDocument()));
+				       .mapToList(f -> ElasticsearchCommand.peliasIndexCommand(new PlaceNameToPeliasDocument(f).toPeliasDocument()));
 	}
 }

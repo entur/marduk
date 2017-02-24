@@ -19,7 +19,7 @@ public class ElasticsearchBulkCommandWriterTest {
 	public void testWriteBulkCommandWithPeliasDocuments() throws Exception {
 		List<ElasticsearchCommand> commands = new ArrayList<>();
 		for (int i = 0; i < 2; i++) {
-			commands.add(ElasticsearchCommand.indexCommand("pelias", "poi", null, doc("møre" + i)));
+			commands.add(ElasticsearchCommand.peliasIndexCommand(doc("møre" + i)));
 
 		}
 
@@ -33,13 +33,10 @@ public class ElasticsearchBulkCommandWriterTest {
 
 
 	private PeliasDocument doc(String name) {
-		PeliasDocument peliasDocument = new PeliasDocument();
+		PeliasDocument peliasDocument = new PeliasDocument("layer","source","sourceId");
 		peliasDocument.setAlpha3("nor");
 		peliasDocument.setName(new Name(name, null));
 		peliasDocument.setCenterPoint(new GeoPoint(51.7651177, -0.2336668));
-		peliasDocument.setSource("source");
-		peliasDocument.setLayer("layer");
-		peliasDocument.setSourceId("sourceId");
 		return peliasDocument;
 	}
 

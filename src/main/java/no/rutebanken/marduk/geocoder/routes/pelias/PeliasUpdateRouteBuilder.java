@@ -1,12 +1,13 @@
 package no.rutebanken.marduk.geocoder.routes.pelias;
 
 import com.google.common.collect.Lists;
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.SystemStatus;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
+import org.apache.camel.processor.aggregate.UseOriginalAggregationStrategy;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,13 +15,12 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static no.rutebanken.marduk.Constants.CONTENT_CHANGED;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
-import static no.rutebanken.marduk.geocoder.GeoCoderConstants.KARTVERKET_ADDRESS_DOWNLOAD;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.PELIAS_UPDATE_START;
 
 @Component
@@ -44,9 +44,12 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 	@Value("${pelias.download.directory:files/pelias}")
 	private String localWorkingDirectory;
 
-
 	@Value("${pelias.insert.batch.size:10000}")
 	private int insertBatchSize;
+
+	private static final String FILE_EXTENSION = "RutebankenFileExtension";
+	private static final String CONVERSION_ROUTE = "RutebankenConversionRoute";
+	private static final String WORKING_DIRECTORY = "RutebankenWorkingDirectory";
 
 	@Override
 	public void configure() throws Exception {
@@ -67,7 +70,8 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				// TODO start ES
 
 				// TODO poll, create pelias index?
-				.multicast(new GroupedMessageAggregationStrategy()).parallelProcessing().to("direct:insertAddresses", "direct:insertPlaceNames", "direct:insertTiamatData")
+
+				.to("direct:insertElasticsearchIndexData")
 
 				// TODO build docker image
 
@@ -75,42 +79,50 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 
 				// TODO - how do we handle files that no longer exists. Fetch bloblist in download route and delete no longer present? risky if md5 still in idempotent filter?
 
-				// TODO detect and fail job when data is missing?
-
-				// TODO clean up
-				.setHeader(Exchange.FILE_PARENT, simple(localWorkingDirectory + "/?fileName=${property." + TIMESTAMP + "}"))
+				.setHeader(Exchange.FILE_PARENT, simple(localWorkingDirectory + "?fileName=${property." + TIMESTAMP + "}"))
 				.to("direct:cleanUpLocalDirectory")
-
 				.to("direct:processPeliasDeployCompleted")  // TODO replace with polling after deploy
 				.routeId("pelias-upload");
 
 
+		from("direct:insertElasticsearchIndexData")
+				.multicast(new UseOriginalAggregationStrategy())
+				.parallelProcessing()
+				.stopOnException()
+				.to("direct:insertAddresses", "direct:insertPlaceNames", "direct:insertTiamatData")
+				.end()
+				.routeId("pelias-insert-index-data");
+
 		from("direct:insertAddresses")
 				.log(LoggingLevel.DEBUG, "Start inserting addresses to ES")
 				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/addresses"))
-				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/?fileName=${property." + TIMESTAMP + "}/addresses"))
+				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/${property." + TIMESTAMP + "}/addresses"))
 				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromAddresses"))
 				.setHeader(FILE_EXTENSION, constant("csv"))
 				.to("direct:insertToPeliasFromFilesInFolder")
+				.validate(header(Constants.CONTENT_CHANGED).isNotNull())
 				.log(LoggingLevel.DEBUG, "Finished inserting addresses to ES")
 				.routeId("pelias-insert-addresses");
 
 		from("direct:insertTiamatData")
 				.log(LoggingLevel.DEBUG, "Start inserting Tiamat data to ES")
 				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForTiamatExport))
-				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/?fileName=${property." + TIMESTAMP + "}/tiamat"))
+				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/${property." + TIMESTAMP + "}/tiamat"))
 				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromTiamat"))
+				.setHeader(FILE_EXTENSION, constant("xml"))
 				.to("direct:insertToPeliasFromFilesInFolder")
+				.validate(header(Constants.CONTENT_CHANGED).isNotNull())
 				.log(LoggingLevel.DEBUG, "Finished inserting Tiamat data to ES")
 				.routeId("pelias-insert-tiamat-data");
 
 		from("direct:insertPlaceNames")
 				.log(LoggingLevel.DEBUG, "Start inserting place names to ES")
 				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/placeNames"))
-				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/?fileName=${property." + TIMESTAMP + "}/placeNames"))
+				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/${property." + TIMESTAMP + "}/placeNames"))
 				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromPlaceNames"))
 				.setHeader(FILE_EXTENSION, constant("geojson"))
 				.to("direct:insertToPeliasFromFilesInFolder")
+				.validate(header(Constants.CONTENT_CHANGED).isNotNull())
 				.log(LoggingLevel.DEBUG, "Finished inserting place names to ES")
 				.routeId("pelias-insert-place-names");
 
@@ -144,7 +156,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.routeId("pelias-convert-commands-from-addresses");
 
 		from("direct:convertToPeliasCommandsFromTiamat")
-				.bean("deliveryPublicationToElasticsearchCommands", "transform")
+				.bean("deliveryPublicationStreamToElasticsearchCommands", "transform")
 				.routeId("pelias-convert-commands-from-tiamat");
 
 
@@ -152,14 +164,16 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
 				//	.setHeader(Exchange.HTTP_CHARACTER_ENCODING, constant("UTF-8"))
 				.setHeader(Exchange.CONTENT_TYPE, constant("application/json; charset=utf-8"))
-				.split().exchange(e -> Lists.partition(e.getIn().getBody(List.class), insertBatchSize))
+				.split().exchange(e ->
+						                  Lists.partition(e.getIn().getBody(List.class), insertBatchSize))
 				.bean("elasticsearchCommandWriterService")
 				.log(LoggingLevel.INFO, "Adding batch of indexes to elasticsearch")
 				.process(e ->
 						         e.getIn())
-				.to("http4:localhost:9200/_bulk")
+				.toD("http4://localhost:9200/_bulk") // TODO url as prop? or retrieved from polling babylon after starting pod?
+				.setHeader(CONTENT_CHANGED, constant(true))                // TODO parse response?
 				.log(LoggingLevel.INFO, "Finished adding batch of indexes to elasticsearch")
-				// TODO parse response?
+
 				.routeId("pelias-invoke-bulk-command");
 
 		from("direct:processPeliasDeployCompleted")
@@ -167,21 +181,8 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				.routeId("pelias-deploy-completed");
 
-// TODO replace with gc
-		from("direct:getBlobTODO")
-				.process(e ->
-						         e.getIn().setBody(new FileInputStream("files/blob/" + e.getIn().getHeader(FILE_HANDLE, String.class))))
-				.routeId("delete-me");
-
 	}
 
-	private static final String FILE_EXTENSION = "RutebankenFileExtension";
-	private static final String CONVERSION_ROUTE = "RutebankenConversionRoute";
-	private static final String WORKING_DIRECTORY = "RutebankenWorkingDirectory";
-
-	private String workingDirectory(Exchange e) {
-		return localWorkingDirectory + "/" + e.getProperty(TIMESTAMP);
-	}
 
 	private Collection<File> listFiles(Exchange e) {
 		String fileExtension = e.getIn().getHeader(FILE_EXTENSION, String.class);

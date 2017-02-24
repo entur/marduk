@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<PublicationDelivery xmlns="http://www.netex.org.uk/netex" xmlns:ns2="http://www.opengis.net/gml/3.2"
+                     xmlns:ns3="http://www.siri.org.uk/siri" version="any">
+    <PublicationTimestamp>2017-01-25T14:07:27.443+01:00</PublicationTimestamp>
+    <ParticipantRef>NSR</ParticipantRef>
+    <dataObjects>
+        <SiteFrame created="2017-01-25T14:07:26.486+01:00" modification="new" version="any" id="NSR:SiteFrame:1">
+            <topographicPlaces modificationSet="all">
+                <TopographicPlace modification="new" version="any" id="NSR:TopographicPlace:1">
+                    <Name lang="no">Østfold</Name>
+                    <Descriptor>
+                        <Name>Østfold</Name>
+                    </Descriptor>
+                    <TopographicPlaceType>county</TopographicPlaceType>
+                    <CountryRef ref="no"/>
+                </TopographicPlace>
+                <TopographicPlace modification="new" version="any" id="NSR:TopographicPlace:2">
+                    <Name lang="no">Sarpsborg</Name>
+                    <Descriptor>
+                        <Name>Sarpsborg</Name>
+                    </Descriptor>
+                    <TopographicPlaceType>town</TopographicPlaceType>
+                    <CountryRef ref="no"/>
+                    <ParentTopographicPlaceRef ref="1"/>
+                </TopographicPlace>
+                <TopographicPlace modification="new" version="any" id="NSR:TopographicPlace:3">
+                    <Name lang="no">Fredrikstad</Name>
+                    <Descriptor>
+                        <Name>Fredrikstad</Name>
+                    </Descriptor>
+                    <TopographicPlaceType>town</TopographicPlaceType>
+                    <CountryRef ref="no"/>
+                    <ParentTopographicPlaceRef ref="1"/>
+                </TopographicPlace>
+            </topographicPlaces>
+            <stopPlaces>
+                <StopPlace created="2017-01-23T16:59:34.554+01:00" changed="2017-01-23T16:59:34.554+01:00"
+                           modification="new" version="4" id="NSR:StopPlace:39231" xsi:schemaLocation=""
+                           xmlns="http://www.netex.org.uk/netex" xmlns:ns2="http://www.opengis.net/gml/3.2"
+                           xmlns:ns3="http://www.siri.org.uk/siri"
+                           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <keyList>
+                        <KeyValue>
+                            <Key>imported-id</Key>
+                            <Value>AVI:StopPlace:EVE</Value>
+                        </KeyValue>
+                    </keyList>
+                    <Name lang="no">Harstad/Narvik Lufthavn</Name>
+                    <Centroid>
+                        <Location>
+                            <Longitude>16.687364</Longitude>
+                            <Latitude>68.490412</Latitude>
+                        </Location>
+                    </Centroid>
+                    <AccessModes></AccessModes>
+                    <TopographicPlaceRef ref="92"/>
+                    <OtherTransportModes></OtherTransportModes>
+                    <StopPlaceType>airport</StopPlaceType>
+                    <quays>
+                        <Quay created="2017-01-23T16:59:34.553+01:00" changed="2017-01-23T16:59:34.553+01:00"
+                              modification="new" version="1" id="NSR:Quay:69617">
+                            <keyList>
+                                <KeyValue>
+                                    <Key>imported-id</Key>
+                                    <Value>AVI:Quay:EVE</Value>
+                                </KeyValue>
+                            </keyList>
+                            <Centroid>
+                                <Location>
+                                    <Longitude>16.687364</Longitude>
+                                    <Latitude>68.490412</Latitude>
+                                </Location>
+                            </Centroid>
+                            <AccessModes></AccessModes>
+                            <OtherTransportModes></OtherTransportModes>
+                        </Quay>
+                    </quays>
+                </StopPlace>
+            </stopPlaces>
+        </SiteFrame>
+    </dataObjects>
+</PublicationDelivery>
+

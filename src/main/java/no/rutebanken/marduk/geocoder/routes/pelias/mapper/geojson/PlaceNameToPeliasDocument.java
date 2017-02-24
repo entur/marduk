@@ -19,14 +19,10 @@ public class PlaceNameToPeliasDocument {
 	}
 
 	public PeliasDocument toPeliasDocument() {
-		PeliasDocument document = new PeliasDocument();
+		PeliasDocument document = new PeliasDocument("NEIGHBOURHOOD", "Kartverket", "SSR-ID:" + getProperty("enh_ssr_id"));
 
 		document.setName(new Name(getProperty("enh_snavn"), null));
 		document.setCenterPoint(mapCenterPoint());
-
-		document.setLayer(PeliasDocument.LAYER_NEIGHBOURHOOD);
-		document.setSource("Kartverket");
-		document.setSourceId("SSR-ID:" + getProperty("enh_ssr_id"));
 
 		return document;
 	}

@@ -13,9 +13,6 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PeliasDocument {
 
-	public static final String LAYER_NEIGHBOURHOOD = "neighbourhood";
-
-
 	@JsonProperty("source")
 	private String source;
 
@@ -48,7 +45,7 @@ public class PeliasDocument {
 	private AddressParts addressParts;
 
 	@JsonProperty("parent")
-	private AddressParts parent;
+	private Parent parent;
 
 	@JsonProperty("population")
 	private Long population;
@@ -60,6 +57,15 @@ public class PeliasDocument {
 	@JsonProperty("category")
 	private List<String> category;
 
+
+	private PeliasDocument() {
+	}
+
+	public PeliasDocument(String layer, String source, String sourceId) {
+		this.source = source;
+		this.layer = layer;
+		this.sourceId = sourceId;
+	}
 
 	public String getAlpha3() {
 		return alpha3;
@@ -126,11 +132,11 @@ public class PeliasDocument {
 		this.addressParts = addressParts;
 	}
 
-	public AddressParts getParent() {
+	public Parent getParent() {
 		return parent;
 	}
 
-	public void setParent(AddressParts parent) {
+	public void setParent(Parent parent) {
 		this.parent = parent;
 	}
 

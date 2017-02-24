@@ -4,6 +4,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ElasticsearchCommand {
@@ -60,11 +61,11 @@ public class ElasticsearchCommand {
 		this.source = source;
 	}
 
-	public static ElasticsearchCommand indexCommand(String index, String type, String id, Object source) {
+	public static ElasticsearchCommand peliasIndexCommand(PeliasDocument document) {
 
 		ElasticsearchCommand command = new ElasticsearchCommand();
-		command.setIndex(new ActionMetaData(index,type, id));
-		command.setSource(source);
+		command.setIndex(new ActionMetaData("pelias", document.getLayer(), document.getSourceId()));
+		command.setSource(document);
 		return command;
 
 	}

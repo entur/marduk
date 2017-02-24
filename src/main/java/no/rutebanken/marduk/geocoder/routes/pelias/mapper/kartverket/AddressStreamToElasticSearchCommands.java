@@ -15,13 +15,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
 @Service
 public class AddressStreamToElasticSearchCommands {
-
-	private static final String TYPE = "address";
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -33,15 +31,11 @@ public class AddressStreamToElasticSearchCommands {
 
 
 	private ElasticsearchCommand toCommand(KartverketAddress address) {
-		return ElasticsearchCommand.indexCommand("pelias", TYPE, null, toPeliasDocument(address));
+		return ElasticsearchCommand.peliasIndexCommand(toPeliasDocument(address));
 	}
 
 	private PeliasDocument toPeliasDocument(KartverketAddress address) {
-		PeliasDocument document = new PeliasDocument();
-		document.setLayer(PeliasDocument.LAYER_NEIGHBOURHOOD);
-		document.setSource("Kartverket");
-		document.setSourceId("AddressId:" + address.getAddresseId());
-
+		PeliasDocument document = new PeliasDocument("ADDRESS", "Kartverket", "AddressId:" + address.getAddresseId());
 		document.setAddressParts(toAddressParts(address));
 		document.setCenterPoint(toCenterPoint(address));
 		return document;
