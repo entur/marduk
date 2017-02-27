@@ -35,6 +35,9 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 	@Value("${babylon.url}")
 	private String babylonUrl;
 
+	@Value("${elasticsearch.scratch.url:http4://es-scratch:9200}")
+	private String elasticsearchScratchUrl;
+
 	@Value("${tiamat.export.blobstore.subdirectory:tiamat}")
 	private String blobStoreSubdirectoryForTiamatExport;
 
@@ -168,9 +171,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 						                  Lists.partition(e.getIn().getBody(List.class), insertBatchSize))
 				.bean("elasticsearchCommandWriterService")
 				.log(LoggingLevel.INFO, "Adding batch of indexes to elasticsearch")
-				.process(e ->
-						         e.getIn())
-				.toD("http4://localhost:9200/_bulk") // TODO url as prop? or retrieved from polling babylon after starting pod?
+				.toD(elasticsearchScratchUrl + "/_bulk")
 				.setHeader(CONTENT_CHANGED, constant(true))                // TODO parse response?
 				.log(LoggingLevel.INFO, "Finished adding batch of indexes to elasticsearch")
 
