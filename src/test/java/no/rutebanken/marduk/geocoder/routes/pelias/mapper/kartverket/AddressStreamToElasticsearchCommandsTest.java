@@ -6,13 +6,14 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.AddressParts;
+import no.rutebanken.marduk.geocoder.routes.pelias.json.Parent;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import no.rutebanken.marduk.geocoder.routes.pelias.mapper.GeometryTransformer;
-import no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket.AddressStreamToElasticSearchCommands;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.FileInputStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
@@ -42,15 +43,25 @@ public class AddressStreamToElasticsearchCommandsTest {
 		AddressParts addressParts = known.getAddressParts();
 
 		Assert.assertEquals("Bergheimveien", addressParts.getStreet());
-		Assert.assertEquals("14", addressParts.getNumber());
+		Assert.assertEquals("14A", addressParts.getNumber());
 		Assert.assertEquals("1850", addressParts.getZip());
+		Assert.assertEquals("Bergheimveien", addressParts.getName());
 
 		Point utm33Point = new GeometryFactory().createPoint(new Coordinate(293546.2, 6607447.1));
 		Point wgs84Point = GeometryTransformer.fromUTM(utm33Point, "33");
 
-
 		Assert.assertEquals(wgs84Point.getX(), known.getCenterPoint().getLat(), 0.0001);
 		Assert.assertEquals(wgs84Point.getY(), known.getCenterPoint().getLon(), 0.0001);
+
+		Parent parent = known.getParent();
+		Assert.assertEquals(Arrays.asList("NOR"), parent.getCountryId());
+		Assert.assertEquals(Arrays.asList("1850"), parent.getPostalCodeId());
+		Assert.assertEquals(Arrays.asList("01"), parent.getCountyId());
+		Assert.assertEquals(Arrays.asList("0125"), parent.getLocaladminId());
+		Assert.assertEquals(Arrays.asList("01250508"), parent.getBoroughId());
+
+		Assert.assertEquals("NOR", known.getAlpha3());
+		Assert.assertEquals(Arrays.asList("Vegadresse"), known.getCategory());
 	}
 
 	private void assertCommand(ElasticsearchCommand command) {

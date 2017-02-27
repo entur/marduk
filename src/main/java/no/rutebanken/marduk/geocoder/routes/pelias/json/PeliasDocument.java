@@ -3,6 +3,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias.json;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.geojson.Polygon;
 
 
 import java.util.List;
@@ -34,9 +35,8 @@ public class PeliasDocument {
 	@JsonProperty("center_point")
 	private GeoPoint centerPoint;
 
-	// TODO use lucene model?
 	@JsonProperty("shape")
-	private Object shape;
+	private Polygon shape;
 
 	@JsonProperty("boudning_box")
 	private String boundingBox;
@@ -50,13 +50,11 @@ public class PeliasDocument {
 	@JsonProperty("population")
 	private Long population;
 
-
 	@JsonProperty("popularity")
 	private Long popularity;
 
 	@JsonProperty("category")
 	private List<String> category;
-
 
 	private PeliasDocument() {
 	}
@@ -108,11 +106,11 @@ public class PeliasDocument {
 		this.phrase = phrase;
 	}
 
-	public Object getShape() {
+	public Polygon getShape() {
 		return shape;
 	}
 
-	public void setShape(Object shape) {
+	public void setShape(Polygon shape) {
 		this.shape = shape;
 	}
 

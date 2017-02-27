@@ -14,8 +14,6 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
 
 	@Test
 	public void testTransform() throws Exception {
-
-
 		Collection<ElasticsearchCommand> commands = new DeliveryPublicationStreamToElasticsearchCommands()
 				                                            .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/netex/tiamat-export.xml"));
 
@@ -26,8 +24,6 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
 		assertKnownStopPlace(byId(commands, "NSR:StopPlace:39231"));
 		assertKnownCounty(byId(commands, "NSR:TopographicPlace:1"));
 		assertKnownTown(byId(commands, "NSR:TopographicPlace:3"));
-
-
 	}
 
 	private PeliasDocument byId(Collection<ElasticsearchCommand> commands, String id) {

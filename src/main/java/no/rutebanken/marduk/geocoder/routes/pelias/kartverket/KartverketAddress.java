@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.kartverket;
 
+import org.apache.commons.lang3.StringUtils;
 import org.beanio.annotation.Field;
 import org.beanio.annotation.Record;
 
@@ -87,6 +88,32 @@ public class KartverketAddress {
 
 	@Field(at = 28)
 	private String postnummerområde;
+
+
+	protected String pad(String val, int length) {
+		if (val == null) {
+			return null;
+		}
+		return StringUtils.leftPad(val, length, "0");
+	}
+
+	public String getFullKommuneNo() {
+		return pad(kommunenr, 4);
+	}
+
+	public String getFylkesNo() {
+		if (kommunenr == null) {
+			return null;
+		}
+		return getFullKommuneNo().substring(0, 2);
+	}
+
+	public String getFullGrunnkretsNo() {
+		if (kommunenr == null || grunnkretsnr == null) {
+			return null;
+		}
+		return getFullKommuneNo() + pad(grunnkretsnr, 4);
+	}
 
 
 	public String getAddresseId() {

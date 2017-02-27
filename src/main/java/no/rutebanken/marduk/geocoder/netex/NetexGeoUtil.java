@@ -16,12 +16,11 @@ public class NetexGeoUtil {
 
 	public static PolygonType toNetexPolygon(Polygon polygon) {
 		LinearRingType linearRing = new LinearRingType();
-		;
 
 		List<Double> values = new ArrayList<>();
 		for (Coordinate coordinate : polygon.getExteriorRing().getCoordinates()) {
-			values.add(coordinate.x);
-			values.add(coordinate.y);
+			values.add(coordinate.y); // lat
+			values.add(coordinate.x); // lon
 		}
 
 		// Ignoring interior rings because the corresponding exclaves are not handled.
