@@ -10,6 +10,7 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,16 +74,25 @@ public class GeoCoderControlRouteTest extends MardukRouteBuilderIntegrationTestB
 	}
 
 	@Test
-	public void testTaskHeadersAreRehydratedToContext() throws Exception {
+	public void testTaskIsDehydratedAndRehydratedWithHeaders() throws Exception {
 
 		String correlationID = "corrIdTest";
-		GeoCoderTask task1 = task(GeoCoderTask.Phase.DOWNLOAD_SOURCE_DATA);
-		task1.getHeaders().put(Constants.SYSTEM_STATUS_CORRELATION_ID, correlationID);
+		GeoCoderTask task = task(GeoCoderTask.Phase.DOWNLOAD_SOURCE_DATA);
+		GeoCoderTask taskNextIteration = task(GeoCoderTask.Phase.DOWNLOAD_SOURCE_DATA);
 
-		destination.expectedHeaderReceived(Constants.SYSTEM_STATUS_CORRELATION_ID, correlationID);
-		destination.expectedPropertyReceived(GeoCoderConstants.GEOCODER_CURRENT_TASK, task1);
-		destination.expectedBodiesReceived(task1);
-		geoCoderQueueTemplate.sendBody(new GeoCoderTaskMessage(task1).toString());
+		destination.whenExchangeReceived(1, e -> {
+			Assert.assertEquals(task, e.getProperty(GeoCoderConstants.GEOCODER_CURRENT_TASK, GeoCoderTask.class));
+			e.getIn().setHeader(Constants.SYSTEM_STATUS_CORRELATION_ID, correlationID);
+			e.setProperty(GeoCoderConstants.GEOCODER_NEXT_TASK, taskNextIteration);
+		});
+
+		destination.whenExchangeReceived(2, e -> {
+			Assert.assertEquals(taskNextIteration, e.getProperty(GeoCoderConstants.GEOCODER_CURRENT_TASK, GeoCoderTask.class));
+			Assert.assertEquals(correlationID, e.getIn().getHeader(Constants.SYSTEM_STATUS_CORRELATION_ID));
+		});
+
+		destination.expectedBodiesReceived(task, taskNextIteration);
+		geoCoderQueueTemplate.sendBody(new GeoCoderTaskMessage(task).toString());
 
 		context.start();
 
