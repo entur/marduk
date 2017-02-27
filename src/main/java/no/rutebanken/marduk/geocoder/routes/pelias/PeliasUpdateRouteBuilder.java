@@ -141,7 +141,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.INFO, "Updating indexes in elasticsearch from file: ${body.name}")
 				.toD("${header." + CONVERSION_ROUTE + "}")
 				.to("direct:invokePeliasBulkCommand")
-				.process(e -> deleteDirectory(new File(e.getIn().getHeader(WORKING_DIRECTORY, String.class))))
+				.to("direct:cleanupIfZippedFile")
 				.routeId("pelias-insert-from-folder");
 
 
@@ -151,6 +151,13 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getIn().getHeader(WORKING_DIRECTORY, String.class)))
 				.end()
 				.routeId("file-unzip-if-zipped");
+
+		from("direct:cleanupIfZippedFile")
+				.choice()
+				.when(header(FILE_HANDLE).endsWith(".zip"))
+				.process(e -> deleteDirectory(new File(e.getIn().getHeader(WORKING_DIRECTORY, String.class))))
+				.end()
+				.routeId("file-cleanup-if-zipped");
 
 
 		from("direct:convertToPeliasCommandsFromPlaceNames")

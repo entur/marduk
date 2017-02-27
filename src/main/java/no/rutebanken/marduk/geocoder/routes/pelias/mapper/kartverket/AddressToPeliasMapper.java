@@ -7,12 +7,10 @@ import com.vividsolutions.jts.geom.Point;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.*;
 import no.rutebanken.marduk.geocoder.routes.pelias.kartverket.KartverketAddress;
 import no.rutebanken.marduk.geocoder.routes.pelias.mapper.GeometryTransformer;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.Locale;
 
 public class AddressToPeliasMapper {
 
