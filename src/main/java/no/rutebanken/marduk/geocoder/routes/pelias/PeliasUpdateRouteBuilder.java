@@ -22,6 +22,7 @@ import static no.rutebanken.marduk.Constants.CONTENT_CHANGED;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.PELIAS_UPDATE_START;
+import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 @Component
 public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
@@ -89,6 +90,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 
 
 		from("direct:insertElasticsearchIndexData")
+				.setHeader(CONTENT_CHANGED, constant(false))
 				.multicast(new UseOriginalAggregationStrategy())
 				.parallelProcessing()
 				.stopOnException()
@@ -103,7 +105,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromAddresses"))
 				.setHeader(FILE_EXTENSION, constant("csv"))
 				.to("direct:insertToPeliasFromFilesInFolder")
-				.validate(header(Constants.CONTENT_CHANGED).isNotNull())
+				.validate(header(Constants.CONTENT_CHANGED).isEqualTo(Boolean.TRUE))
 				.log(LoggingLevel.DEBUG, "Finished inserting addresses to ES")
 				.routeId("pelias-insert-addresses");
 
@@ -114,7 +116,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromTiamat"))
 				.setHeader(FILE_EXTENSION, constant("xml"))
 				.to("direct:insertToPeliasFromFilesInFolder")
-				.validate(header(Constants.CONTENT_CHANGED).isNotNull())
+				.validate(header(Constants.CONTENT_CHANGED).isEqualTo(Boolean.TRUE))
 				.log(LoggingLevel.DEBUG, "Finished inserting Tiamat data to ES")
 				.routeId("pelias-insert-tiamat-data");
 
@@ -125,7 +127,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromPlaceNames"))
 				.setHeader(FILE_EXTENSION, constant("geojson"))
 				.to("direct:insertToPeliasFromFilesInFolder")
-				.validate(header(Constants.CONTENT_CHANGED).isNotNull())
+				.validate(header(Constants.CONTENT_CHANGED).isEqualTo(Boolean.TRUE))
 				.log(LoggingLevel.DEBUG, "Finished inserting place names to ES")
 				.routeId("pelias-insert-place-names");
 
@@ -136,9 +138,10 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.to("direct:getBlob")
 				.to("direct:unzipIfZippedFile")
 				.split().exchange(e -> listFiles(e))
-				.log(LoggingLevel.INFO, "Updating indexes in pelias from file: ${body.name}")
+				.log(LoggingLevel.INFO, "Updating indexes in elasticsearch from file: ${body.name}")
 				.toD("${header." + CONVERSION_ROUTE + "}")
 				.to("direct:invokePeliasBulkCommand")
+				.process(e -> deleteDirectory(new File(e.getIn().getHeader(WORKING_DIRECTORY, String.class))))
 				.routeId("pelias-insert-from-folder");
 
 
