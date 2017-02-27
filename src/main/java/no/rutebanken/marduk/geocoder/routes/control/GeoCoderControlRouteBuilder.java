@@ -65,7 +65,6 @@ public class GeoCoderControlRouteBuilder extends BaseRouteBuilder {
 	private void rehydrate(Exchange e) {
 		GeoCoderTaskMessage msg = e.getIn().getBody(GeoCoderTaskMessage.class);
 		GeoCoderTask task = msg.popNextTask();
-		log.info("QueuedTasks: " + msg.getTasks().size() + " .Processing: " + task);
 		task.getHeaders().forEach((k, v) -> e.getIn().setHeader(k, v));
 		e.setProperty(GEOCODER_CURRENT_TASK, task);
 		e.getIn().setBody(task);
