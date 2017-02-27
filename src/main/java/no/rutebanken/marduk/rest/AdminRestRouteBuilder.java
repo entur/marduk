@@ -450,7 +450,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
 				.route().routeId("admin-place-names-download")
 				.removeHeaders("CamelHttp*")
-				.setBody(constant(KARTVERKET_ADDRESS_DOWNLOAD))
+				.setBody(constant(KARTVERKET_PLACE_NAMES_DOWNLOAD))
 				.inOnly("direct:geoCoderStart")
 				.setBody(constant(null))
 				.endRest();
