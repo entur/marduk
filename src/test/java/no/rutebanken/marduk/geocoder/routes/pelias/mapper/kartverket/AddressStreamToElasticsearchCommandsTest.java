@@ -60,6 +60,7 @@ public class AddressStreamToElasticsearchCommandsTest {
 		Assert.assertEquals(Arrays.asList("0125"), parent.getLocaladminId());
 		Assert.assertEquals(Arrays.asList("01250508"), parent.getBoroughId());
 
+		Assert.assertEquals("Bergheimveien 14A", known.getName().getDefaultName());
 		Assert.assertEquals("NOR", known.getAlpha3());
 		Assert.assertEquals(Arrays.asList("Vegadresse"), known.getCategory());
 	}

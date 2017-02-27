@@ -26,11 +26,15 @@ public class AddressToPeliasMapper {
 		document.setAddressParts(toAddressParts(address));
 		document.setCenterPoint(toCenterPoint(address));
 		document.setParent(toParent(address));
-// TODO
-		document.setName(new Name(address.getAddressenavn() + " " + address.getNr() + address.getBokstav(), null));
+
+		document.setName(toName(address));
 		document.setAlpha3("NOR");
 		document.setCategory(Arrays.asList(address.getType()));
 		return document;
+	}
+
+	private Name toName(KartverketAddress address) {
+		return new Name(address.getAddressenavn() + " " + address.getNr() + address.getBokstav(), null);
 	}
 
 	private GeoPoint toCenterPoint(KartverketAddress address) {
