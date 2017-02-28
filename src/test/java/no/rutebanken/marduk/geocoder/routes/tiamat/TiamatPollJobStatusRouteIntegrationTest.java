@@ -159,7 +159,7 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
 
 	private Exchange checkStatus(int retryCnt) {
 		Exchange exchange = checkTiamatJobStatusTemplate.request("direct:checkTiamatJobStatus", e -> {
-			e.getIn().setHeader("loopCounter", retryCnt);
+			e.getIn().setHeader(Constants.LOOP_COUNTER, retryCnt);
 			e.getIn().setHeader(Constants.JOB_STATUS_URL, JOB_STATUS_URL);
 			e.getIn().setHeader(Constants.JOB_ID, "1");
 			e.getIn().setHeader(Constants.JOB_STATUS_ROUTING_DESTINATION, "mock:complete");

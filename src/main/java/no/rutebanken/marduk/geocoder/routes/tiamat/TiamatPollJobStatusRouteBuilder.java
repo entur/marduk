@@ -12,6 +12,7 @@ import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.LOOP_COUNTER;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 
 @Component
@@ -39,7 +40,8 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 				.routeId("tiamat-validate-job-status-parameters");
 
 		from("direct:checkTiamatJobStatus")
-				.process(e -> e.getIn().setHeader("loopCounter", (Integer) e.getIn().getHeader("loopCounter", 0) + 1))
+				// TODO must use
+				.process(e -> e.getIn().setHeader(LOOP_COUNTER, (Integer) e.getIn().getHeader(LOOP_COUNTER, 0) + 1))
 				.removeHeaders("Camel*")
 				.setBody(constant(""))
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
@@ -48,7 +50,7 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 				.setHeader("current_status", simple("${body.status}"))
 				.choice()
 				.when(PredicateBuilder.or(simple("${header.current_status} != '" + JobStatus.PROCESSING + "'"),
-						simple("${header.loopCounter} > " + maxRetries)))
+						simple("${header." + LOOP_COUNTER + "} > " + maxRetries)))
 				.to("direct:tiamatJobStatusDone")
 				.otherwise()
 				.setHeader(ScheduledMessage.AMQ_SCHEDULED_DELAY, constant(retryDelay))

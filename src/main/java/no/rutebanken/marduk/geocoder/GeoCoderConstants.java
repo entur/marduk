@@ -29,9 +29,12 @@ public class GeoCoderConstants {
 			= new GeoCoderTask(GeoCoderTask.Phase.TIAMAT_EXPORT, "direct:tiamatExport");
 
 	public static final GeoCoderTask TIAMAT_EXPORT_POLL
-			= new GeoCoderTask(GeoCoderTask.Phase.TIAMAT_EXPORT, 1,"direct:tiamatPollJobStatus");
+			= new GeoCoderTask(GeoCoderTask.Phase.TIAMAT_EXPORT, 1, "direct:tiamatPollJobStatus");
 
 	public static final GeoCoderTask PELIAS_UPDATE_START =
 			new GeoCoderTask(GeoCoderTask.Phase.PELIAS_UPDATE, "direct:peliasUpdate");
+
+	public static final GeoCoderTask PELIAS_ES_SCRATCH_STATUS_POLL =
+			new GeoCoderTask(GeoCoderTask.Phase.PELIAS_UPDATE, 1, "direct:pollElasticsearchScratchStatus");
 
 }

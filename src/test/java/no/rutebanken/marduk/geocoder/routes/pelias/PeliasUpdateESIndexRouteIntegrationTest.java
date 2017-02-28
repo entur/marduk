@@ -22,11 +22,11 @@ import java.io.File;
 import java.io.FileInputStream;
 
 @RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = PeliasUpdateRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(classes = PeliasUpdateEsIndexRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles({"default", "in-memory-blobstore"})
 @UseAdviceWith
-public class PeliasUpdateRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
@@ -42,6 +42,9 @@ public class PeliasUpdateRouteIntegrationTest extends MardukRouteBuilderIntegrat
 
 	@EndpointInject(uri = "mock:es-scratch")
 	protected MockEndpoint esScratchMock;
+
+	@EndpointInject(uri = "mock:shutDownEsScratch")
+	protected MockEndpoint shutdownEsScratchMock;
 
 	@Produce(uri = "direct:insertElasticsearchIndexData")
 	protected ProducerTemplate insertESDataTemplate;
@@ -61,19 +64,30 @@ public class PeliasUpdateRouteIntegrationTest extends MardukRouteBuilderIntegrat
 			}
 		});
 
-		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForKartverket+"/placeNames/placenames.geojson",
+		// Stub for elastic search scratch instance
+		context.getRouteDefinition("pelias-insert-index-data").adviceWith(context, new AdviceWithRouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				interceptSendToEndpoint("direct:shutdownElasticsearchScratchInstance")
+						.skipSendToOriginalEndpoint().to("mock:shutDownEsScratch");
+			}
+		});
+
+
+		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForKartverket + "/placeNames/placenames.geojson",
 				new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson")), false);
-		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForKartverket+"/addresses/addresses.csv",
+		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForKartverket + "/addresses/addresses.csv",
 				new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/csv/addresses.csv")), false);
-		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForTiamatExport+"/tiamat/tiamat-export-latest.xml",
+		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForTiamatExport + "/tiamat/tiamat-export-latest.xml",
 				new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/netex/tiamat-export.xml")), false);
 
 		esScratchMock.expectedMessageCount(3);
-
+		shutdownEsScratchMock.expectedMessageCount(1);
 		context.start();
 
 		insertESDataTemplate.sendBody(null);
 
 		esScratchMock.assertIsSatisfied();
+		shutdownEsScratchMock.assertIsSatisfied();
 	}
 }
