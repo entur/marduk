@@ -2,6 +2,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias;
 
 import com.google.common.collect.Lists;
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.geocoder.routes.MarkContentChangedAggregationStrategy;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.SystemStatus;
@@ -91,7 +92,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.multicast(new UseOriginalAggregationStrategy())
 				.parallelProcessing()
 				.stopOnException()
-				.to("direct:insertAddresses", "direct:insertPlaceNames", "direct:insertTiamatData")
+				.to("direct:insertTiamatData") // TODO
 				.end()
 				.routeId("pelias-insert-index-data");
 
@@ -131,29 +132,29 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 		from("direct:insertToPeliasFromFilesInFolder")
 				.bean("blobStoreService", "listBlobsInFolder")
 				.split(simple("${body.files}"))
+				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
 				.setHeader(FILE_HANDLE, simple("${body.name}"))
 				.to("direct:getBlob")
-				.to("direct:unzipIfZippedFile")
+				.choice()
+				.when(header(FILE_HANDLE).endsWith(".zip"))
+				.to("direct:insertToPeliasFromZipArchive")
+				.otherwise()
+				.log(LoggingLevel.INFO, "Updating indexes in elasticsearch from file: ${header." + FILE_HANDLE + "}")
+				.toD("${header." + CONVERSION_ROUTE + "}")
+				.to("direct:invokePeliasBulkCommand")
+				.end()
+				.routeId("pelias-insert-from-folder");
+
+
+		from("direct:insertToPeliasFromZipArchive")
+				.process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getIn().getHeader(WORKING_DIRECTORY, String.class)))
 				.split().exchange(e -> listFiles(e))
+				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
 				.log(LoggingLevel.INFO, "Updating indexes in elasticsearch from file: ${body.name}")
 				.toD("${header." + CONVERSION_ROUTE + "}")
 				.to("direct:invokePeliasBulkCommand")
-				.to("direct:cleanupIfZippedFile")
-				.routeId("pelias-insert-from-folder");
-
-		from("direct:unzipIfZippedFile")
-				.choice()
-				.when(header(FILE_HANDLE).endsWith(".zip"))
-				.process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getIn().getHeader(WORKING_DIRECTORY, String.class)))
-				.end()
-				.routeId("file-unzip-if-zipped");
-
-		from("direct:cleanupIfZippedFile")
-				.choice()
-				.when(header(FILE_HANDLE).endsWith(".zip"))
 				.process(e -> deleteDirectory(new File(e.getIn().getHeader(WORKING_DIRECTORY, String.class))))
-				.end()
-				.routeId("file-cleanup-if-zipped");
+				.routeId("pelias-insert-from-zip");
 
 
 		from("direct:convertToPeliasCommandsFromPlaceNames")
@@ -175,6 +176,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.setHeader(Exchange.CONTENT_TYPE, constant("application/json; charset=utf-8"))
 				.split().exchange(e ->
 						                  Lists.partition(e.getIn().getBody(List.class), insertBatchSize))
+				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
 				.bean("elasticsearchCommandWriterService")
 				.log(LoggingLevel.INFO, "Adding batch of indexes to elasticsearch for ${header." + FILE_HANDLE + "}")
 				.toD(elasticsearchScratchUrl + "/_bulk")
