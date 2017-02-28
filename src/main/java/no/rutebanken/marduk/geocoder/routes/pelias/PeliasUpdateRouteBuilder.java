@@ -2,7 +2,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias;
 
 import com.google.common.collect.Lists;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.geocoder.routes.MarkContentChangedAggregationStrategy;
+import no.rutebanken.marduk.geocoder.routes.util.MarkContentChangedAggregationStrategy;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.SystemStatus;

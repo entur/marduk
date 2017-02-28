@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.geocoder.routes;
+package no.rutebanken.marduk.geocoder.routes.util;
 
 
 import org.apache.camel.Exchange;

@@ -1,6 +1,6 @@
 package no.rutebanken.marduk.geocoder.routes.kartverket;
 
-import no.rutebanken.marduk.geocoder.routes.MarkContentChangedAggregationStrategy;
+import no.rutebanken.marduk.geocoder.routes.util.MarkContentChangedAggregationStrategy;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.services.BlobStoreService;
@@ -36,7 +36,6 @@ public class KartverketFileRouteBuilder extends BaseRouteBuilder {
 	@Override
 	public void configure() throws Exception {
 		super.configure();
-
 
 		from("direct:uploadUpdatedFiles")
 				.setHeader(FILE_PARENT, simple(localDownloadDir + "/${date:now:yyyyMMddHHmmss}"))
