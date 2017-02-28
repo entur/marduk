@@ -92,7 +92,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.multicast(new UseOriginalAggregationStrategy())
 				.parallelProcessing()
 				.stopOnException()
-				.to("direct:insertTiamatData") // TODO
+				.to("direct:insertAddresses", "direct:insertPlaceNames", "direct:insertTiamatData")
 				.end()
 				.routeId("pelias-insert-index-data");
 
