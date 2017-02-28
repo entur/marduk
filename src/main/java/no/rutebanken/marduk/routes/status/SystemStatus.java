@@ -52,6 +52,26 @@ public class SystemStatus {
 		}
 	}
 
+	public String getCorrelationId() {
+		return correlationId;
+	}
+
+	public Action getAction() {
+		return action;
+	}
+
+	public State getState() {
+		return state;
+	}
+
+	public String getEntity() {
+		return entity;
+	}
+
+	public Date getDate() {
+		return date;
+	}
+
 	public static SystemStatus.Builder builder() {
 		return new SystemStatus.Builder();
 	}
@@ -89,6 +109,10 @@ public class SystemStatus {
 			return this;
 		}
 
+		public SystemStatus.Builder correlationId(String correlationId) {
+			systemStatus.correlationId = correlationId;
+			return this;
+		}
 		public SystemStatus build() {
 			if (systemStatus.correlationId == null) {
 				throw new IllegalArgumentException("No correlation id");

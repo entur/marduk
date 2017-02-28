@@ -39,9 +39,7 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 				.routeId("tiamat-validate-job-status-parameters");
 
 		from("direct:checkTiamatJobStatus")
-				.process(e -> {
-					e.getIn().setHeader("loopCounter", (Integer) e.getIn().getHeader("loopCounter", 0) + 1);
-				})
+				.process(e -> e.getIn().setHeader("loopCounter", (Integer) e.getIn().getHeader("loopCounter", 0) + 1))
 				.removeHeaders("Camel*")
 				.setBody(constant(""))
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
@@ -53,7 +51,6 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 						simple("${header.loopCounter} > " + maxRetries)))
 				.to("direct:tiamatJobStatusDone")
 				.otherwise()
-
 				.setHeader(ScheduledMessage.AMQ_SCHEDULED_DELAY, constant(retryDelay))
 				// Remove or ActiveMQ will think message is overdue and resend immediately
 				.removeHeader("scheduledJobId")
