@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.io.InputStream;
 
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+
 @Service
 public class BlobStoreService {
 
@@ -56,6 +58,11 @@ public class BlobStoreService {
 			                      @Header(value = Constants.BLOBSTORE_MAKE_BLOB_PUBLIC) boolean makePublic, InputStream inputStream, Exchange exchange) {
 		ExchangeUtils.addHeadersAndAttachments(exchange);
 		repository.uploadBlob(name, inputStream, makePublic);
+	}
+
+	public boolean deleteBlob(@Header(value = FILE_HANDLE) String name, Exchange exchange) {
+		ExchangeUtils.addHeadersAndAttachments(exchange);
+		return repository.delete(name);
 	}
 
 	public void uploadBlob(String name, boolean makePublic, InputStream inputStream) {

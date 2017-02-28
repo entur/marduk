@@ -1,6 +1,9 @@
 package no.rutebanken.marduk.geocoder.routes.kartverket;
 
+import no.rutebanken.marduk.geocoder.routes.MarkContentChangedAggregationStrategy;
+import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.services.BlobStoreService;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.spi.IdempotentRepository;
@@ -9,9 +12,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
+import static org.apache.camel.Exchange.FILE_PARENT;
 
 @Component
 public class KartverketFileRouteBuilder extends BaseRouteBuilder {
@@ -21,27 +30,24 @@ public class KartverketFileRouteBuilder extends BaseRouteBuilder {
 	@Value("${kartverket.download.directory:files/kartverket}")
 	private String localDownloadDir;
 
+	@Autowired
+	private BlobStoreService blobStoreService;
+
 	@Override
 	public void configure() throws Exception {
 		super.configure();
 
 
 		from("direct:uploadUpdatedFiles")
-				.setHeader(Exchange.FILE_PARENT, simple(localDownloadDir + "/${date:now:yyyyMMddHHmmss}"))
+				.setHeader(FILE_PARENT, simple(localDownloadDir + "/${date:now:yyyyMMddHHmmss}"))
 				.bean("kartverketService", "downloadFiles")
+				.process(e -> deleteNoLongerActiveFiles(e))
 				.to("direct:kartverketUploadOnlyUpdatedFiles")
-				.process(e ->
-						         e.getIn())
 				.to("direct:cleanUpLocalDirectory")
 				.routeId("upload-updated-files");
 
 		from("direct:kartverketUploadOnlyUpdatedFiles")
-				.split().body().aggregationStrategy((oldExchange, newExchange) -> {
-			if (newExchange.getIn().getHeader(CONTENT_CHANGED, false, Boolean.class)) {
-				return newExchange;
-			}
-			return oldExchange;
-		})
+				.split().body().aggregationStrategy(new MarkContentChangedAggregationStrategy())
 				.to("direct:kartverketUploadFileIfUpdated")
 				.routeId("kartverket-upload-only--updated-files");
 
@@ -56,5 +62,14 @@ public class KartverketFileRouteBuilder extends BaseRouteBuilder {
 				.setHeader(CONTENT_CHANGED, constant(true))
 				.end()
 				.routeId("upload-file-if-updated");
+	}
+
+	private void deleteNoLongerActiveFiles(Exchange e) {
+		List<File> activeFiles = e.getIn().getBody(List.class);
+		Set<String> activeFileNames = activeFiles.stream().map(f -> f.getName()).collect(Collectors.toSet());
+		BlobStoreFiles blobs = blobStoreService.listBlobsInFolder(e.getIn().getHeader(FOLDER_NAME, String.class), e);
+
+		blobs.getFiles().stream().filter(b -> !activeFileNames.contains(Paths.get(b.getName()).getFileName().toString())).forEach(b -> blobStoreService.deleteBlob(b.getName(), e));
+
 	}
 }

@@ -25,7 +25,7 @@ import static org.apache.camel.builder.Builder.constant;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles({"default", "in-memory-blobstore"})
 @UseAdviceWith
-public class GeoCoderControlRouteTest extends MardukRouteBuilderIntegrationTestBase {
+public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
