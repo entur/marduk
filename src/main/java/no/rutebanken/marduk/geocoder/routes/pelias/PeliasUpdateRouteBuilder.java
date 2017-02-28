@@ -13,14 +13,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 
-import static no.rutebanken.marduk.Constants.CONTENT_CHANGED;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.TIMESTAMP;
+import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.PELIAS_UPDATE_START;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 
@@ -144,7 +141,6 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.to("direct:cleanupIfZippedFile")
 				.routeId("pelias-insert-from-folder");
 
-
 		from("direct:unzipIfZippedFile")
 				.choice()
 				.when(header(FILE_HANDLE).endsWith(".zip"))
@@ -180,10 +176,10 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.split().exchange(e ->
 						                  Lists.partition(e.getIn().getBody(List.class), insertBatchSize))
 				.bean("elasticsearchCommandWriterService")
-				.log(LoggingLevel.INFO, "Adding batch of indexes to elasticsearch")
+				.log(LoggingLevel.INFO, "Adding batch of indexes to elasticsearch for ${header." + FILE_HANDLE + "}")
 				.toD(elasticsearchScratchUrl + "/_bulk")
 				.setHeader(CONTENT_CHANGED, constant(true))                // TODO parse response?
-				.log(LoggingLevel.INFO, "Finished adding batch of indexes to elasticsearch")
+				.log(LoggingLevel.INFO, "Finished adding batch of indexes to elasticsearch for ${header." + FILE_HANDLE + "}")
 
 				.routeId("pelias-invoke-bulk-command");
 
