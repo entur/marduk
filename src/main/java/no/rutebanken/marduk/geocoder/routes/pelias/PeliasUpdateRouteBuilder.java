@@ -71,6 +71,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.choice()
 				.when(simple("${body.availableReplicas} > 0"))
 				// Shutdown if already running
+				.log(LoggingLevel.INFO, "Elasticsearch scratch instance already running. Scaling down first.")
 				.setHeader(JOB_STATUS_ROUTING_DESTINATION, constant("direct:startElasticsearchScratchInstance"))
 				.to("direct:shutdownElasticsearchScratchInstance")
 				.otherwise()
@@ -82,15 +83,15 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.routeId("pelias-es-scratch-start");
 
 
-		from (	"direct:insertElasticsearchIndexDataCompleted")
+		from("direct:insertElasticsearchIndexDataCompleted")
 				.setHeader(JOB_STATUS_ROUTING_DESTINATION, constant("direct:buildElasticsearchImage"))
-				.to("direct:shutdownElasticsearchScratchInstance")
+				.setProperty(GEOCODER_NEXT_TASK, constant(GeoCoderConstants.PELIAS_ES_SCRATCH_STOP))
 				.routeId("pelias-es-index-complete");
 
 
-		from (	"direct:insertElasticsearchIndexDataFailed")
+		from("direct:insertElasticsearchIndexDataFailed")
 				.log(LoggingLevel.ERROR, "Elasticsearch scratch index build failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
-				.bean(updateStatusService,"setIdle")
+				.bean(updateStatusService, "setIdle")
 				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.FAILED).build()).to("direct:updateSystemStatus")
 				.routeId("pelias-es-index-failed");
 

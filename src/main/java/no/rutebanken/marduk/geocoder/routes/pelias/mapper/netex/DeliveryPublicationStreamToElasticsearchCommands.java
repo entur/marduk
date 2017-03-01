@@ -2,13 +2,11 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 
 import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
-import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
-import no.rutebanken.marduk.geocoder.routes.pelias.json.Name;
-import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import org.apache.commons.collections.CollectionUtils;
-import org.rutebanken.netex.model.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.rutebanken.netex.model.Common_VersionFrameStructure;
+import org.rutebanken.netex.model.Place_VersionStructure;
+import org.rutebanken.netex.model.PublicationDeliveryStructure;
+import org.rutebanken.netex.model.Site_VersionFrameStructure;
 import org.springframework.stereotype.Service;
 
 import javax.xml.bind.JAXBContext;

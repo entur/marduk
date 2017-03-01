@@ -1,8 +1,10 @@
 package no.rutebanken.marduk.geocoder.routes.pelias;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.geocoder.GeoCoderConstants;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.EndpointInject;
+import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
@@ -10,6 +12,7 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,9 +46,6 @@ public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderI
 	@EndpointInject(uri = "mock:es-scratch")
 	protected MockEndpoint esScratchMock;
 
-	@EndpointInject(uri = "mock:shutDownEsScratch")
-	protected MockEndpoint shutdownEsScratchMock;
-
 	@Produce(uri = "direct:insertElasticsearchIndexData")
 	protected ProducerTemplate insertESDataTemplate;
 	@Autowired
@@ -64,16 +64,6 @@ public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderI
 			}
 		});
 
-		// Stub for elastic search scratch instance
-		context.getRouteDefinition("pelias-insert-index-data").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() throws Exception {
-				interceptSendToEndpoint("direct:shutdownElasticsearchScratchInstance")
-						.skipSendToOriginalEndpoint().to("mock:shutDownEsScratch");
-			}
-		});
-
-
 		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForKartverket + "/placeNames/placenames.geojson",
 				new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson")), false);
 		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForKartverket + "/addresses/addresses.csv",
@@ -82,12 +72,13 @@ public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderI
 				new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/netex/tiamat-export.xml")), false);
 
 		esScratchMock.expectedMessageCount(3);
-		shutdownEsScratchMock.expectedMessageCount(1);
+
 		context.start();
 
-		insertESDataTemplate.sendBody(null);
+		Exchange e = insertESDataTemplate.request("direct:insertElasticsearchIndexData", ex -> {
+		});
 
+		Assert.assertEquals(GeoCoderConstants.PELIAS_ES_SCRATCH_STOP, e.getProperty(GeoCoderConstants.GEOCODER_NEXT_TASK));
 		esScratchMock.assertIsSatisfied();
-		shutdownEsScratchMock.assertIsSatisfied();
 	}
 }
