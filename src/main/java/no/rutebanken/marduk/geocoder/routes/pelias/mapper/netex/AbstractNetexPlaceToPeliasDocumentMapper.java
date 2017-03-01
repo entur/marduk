@@ -1,8 +1,6 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
 import net.opengis.gml._3.AbstractRingType;
 import net.opengis.gml._3.LinearRingType;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
@@ -20,17 +18,15 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
 
 	private String participantRef;
 
-	private GeometryFactory geometryFactory = new GeometryFactory();
-
 	public AbstractNetexPlaceToPeliasDocumentMapper(String participantRef) {
 		this.participantRef = participantRef;
 	}
 
 	public PeliasDocument toPeliasDocument(T place) {
 		PeliasDocument document = new PeliasDocument(getLayer(place), participantRef, place.getId());
-
-		document.setName(new Name(place.getName().getValue(), null));
-
+		if (place.getName() != null) {
+			document.setName(new Name(place.getName().getValue(), null));
+		}
 		if (place.getCentroid() != null) {
 			LocationStructure loc = place.getCentroid().getLocation();
 			document.setCenterPoint(new GeoPoint(loc.getLatitude().doubleValue(), loc.getLongitude().doubleValue()));
