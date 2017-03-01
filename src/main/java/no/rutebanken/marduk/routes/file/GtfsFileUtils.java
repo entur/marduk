@@ -32,14 +32,7 @@ public class GtfsFileUtils {
 			File outputFile = File.createTempFile("marduk-merge", ".zip");
 			buildGtfsMerger(EDuplicateDetectionStrategy.IDENTITY).run(new ArrayList<>(files), outputFile);
 
-
-			ByteArrayOutputStream feedInfoStream = extractFeedInfoFile(files);
-			if (feedInfoStream != null) {
-				File tmp = new File(FEED_INFO_FILE_NAME);
-				feedInfoStream.writeTo(new FileOutputStream(tmp));
-				FileUtils.copyInputStreamToFile(ZipFileUtils.addFilesToZip(new FileInputStream(outputFile), tmp), outputFile);
-				tmp.delete();
-			}
+			addFeedInfoFromFirstGtfsFile(files, outputFile);
 
 			logger.debug("Merged GTFS-files - spent {} ms", (System.currentTimeMillis() - t1));
 			return outputFile;
@@ -47,6 +40,16 @@ public class GtfsFileUtils {
 			throw new MardukException("Merging of GTFS files failed", ioException);
 		}
 
+	}
+
+	private static void addFeedInfoFromFirstGtfsFile(Collection<File> files, File outputFile) throws IOException {
+		ByteArrayOutputStream feedInfoStream = extractFeedInfoFile(files);
+		if (feedInfoStream != null) {
+			File tmp = new File(FEED_INFO_FILE_NAME);
+			feedInfoStream.writeTo(new FileOutputStream(tmp));
+			FileUtils.copyInputStreamToFile(ZipFileUtils.addFilesToZip(new FileInputStream(outputFile), tmp), outputFile);
+			tmp.delete();
+		}
 	}
 
 
