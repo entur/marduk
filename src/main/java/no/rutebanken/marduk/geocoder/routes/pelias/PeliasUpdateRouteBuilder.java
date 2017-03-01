@@ -95,10 +95,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.when(simple("${body.availableReplicas} == ${header." + NO_OF_REPLICAS + "}"))
 				.toD("${header." + JOB_STATUS_ROUTING_DESTINATION + "}")
 				.otherwise()
-				.setHeader(ScheduledMessage.AMQ_SCHEDULED_DELAY, constant(retryDelay))
-				// Remove or ActiveMQ will think message is overdue and resend immediately
-				.removeHeader("scheduledJobId")
-				.setProperty(GEOCODER_NEXT_TASK, simple("${header." + GEOCODER_CURRENT_TASK + "}"))
+				.setProperty(GEOCODER_RESCHEDULE_TASK, constant(true))
 				.end()
 				.routeId("pelias-es-scratch-status");
 

@@ -8,7 +8,7 @@ public class GeoCoderConstants {
 
 	public static final String GEOCODER_NEXT_TASK = "RutebankenGeoCoderNextTask";
 	public static final String GEOCODER_CURRENT_TASK = "RutebankenGeoCoderCurrentTask";
-
+	public static final String GEOCODER_RESCHEDULE_TASK = "RutebankenGeoCoderRescheduleTask";
 
 	public static final GeoCoderTask KARTVERKET_ADDRESS_DOWNLOAD
 			= new GeoCoderTask(GeoCoderTask.Phase.DOWNLOAD_SOURCE_DATA, "direct:kartverketAddressDownload");

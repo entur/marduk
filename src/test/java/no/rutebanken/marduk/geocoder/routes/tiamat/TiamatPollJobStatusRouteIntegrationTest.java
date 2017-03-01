@@ -6,7 +6,6 @@ import no.rutebanken.marduk.geocoder.GeoCoderConstants;
 import no.rutebanken.marduk.geocoder.routes.tiamat.xml.ExportJob;
 import no.rutebanken.marduk.geocoder.routes.tiamat.xml.JobStatus;
 import no.rutebanken.marduk.routes.status.SystemStatus;
-import org.apache.activemq.ScheduledMessage;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
@@ -87,37 +86,17 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
 	}
 
 	@Test
-	public void testTimeout() throws Exception {
-		tiamatMock.expectedMessageCount(1);
-
-		systemStatusQueueMock.whenExchangeReceived(1, e ->
-				Assert.assertTrue(e.getIn().getBody(String.class).contains(SystemStatus.State.TIMEOUT.toString()))
-		);
-		tiamatMock.returnReplyBody(constant(new ExportJob(JobStatus.PROCESSING)));
-		context.start();
-
-		Exchange e = checkStatus(maxRetries);
-
-		tiamatMock.assertIsSatisfied();
-		completeEndpointMock.assertIsSatisfied();
-		systemStatusQueueMock.assertIsSatisfied();
-		Assert.assertNull(e.getProperty(GeoCoderConstants.GEOCODER_NEXT_TASK));
-		Assert.assertNull(e.getException());
-	}
-
-	@Test
 	public void testInProgress() throws Exception {
 		tiamatMock.expectedMessageCount(1);
 		tiamatMock.returnReplyBody(constant(new ExportJob(JobStatus.PROCESSING)));
 		context.start();
 
-		Exchange e = checkStatus(0);
+		Exchange e = checkStatus();
 
 		tiamatMock.assertIsSatisfied();
 		systemStatusQueueMock.assertIsSatisfied();
 		completeEndpointMock.assertIsSatisfied();
-		Assert.assertEquals(retryDelay, e.getIn().getHeader(ScheduledMessage.AMQ_SCHEDULED_DELAY, Long.class).longValue());
-		Assert.assertEquals(GeoCoderConstants.TIAMAT_EXPORT_POLL, e.getProperty(GeoCoderConstants.GEOCODER_NEXT_TASK));
+		Assert.assertTrue(e.getProperty(GeoCoderConstants.GEOCODER_RESCHEDULE_TASK, Boolean.class));
 	}
 
 	@Test
@@ -129,37 +108,35 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
 
 		context.start();
 
-		Exchange e = checkStatus(0);
+		Exchange e = checkStatus();
 
 		tiamatMock.assertIsSatisfied();
 		completeEndpointMock.assertIsSatisfied();
-		Assert.assertNull(e.getProperty(GeoCoderConstants.GEOCODER_NEXT_TASK));
+		Assert.assertNull(e.getProperty(GeoCoderConstants.GEOCODER_RESCHEDULE_TASK));
 		Assert.assertNull(e.getException());
 	}
 
 	@Test
 	public void testFailed() throws Exception {
 		tiamatMock.expectedMessageCount(1);
-		systemStatusQueueMock.whenExchangeReceived(1, e ->
-				Assert.assertTrue(e.getIn().getBody(String.class).contains(SystemStatus.State.FAILED.toString()))
-		);
+		systemStatusQueueMock
+				.whenExchangeReceived(1, e -> Assert.assertTrue(e.getIn().getBody(String.class).contains(SystemStatus.State.FAILED.toString())));
 		tiamatMock.returnReplyBody(constant(new ExportJob(JobStatus.FAILED)));
 
 		context.start();
 
-		Exchange e = checkStatus(0);
+		Exchange e = checkStatus();
 
 		tiamatMock.assertIsSatisfied();
 		completeEndpointMock.assertIsSatisfied();
 		systemStatusQueueMock.assertIsSatisfied();
-		Assert.assertNull(e.getProperty(GeoCoderConstants.GEOCODER_NEXT_TASK));
+		Assert.assertNull(e.getProperty(GeoCoderConstants.GEOCODER_RESCHEDULE_TASK));
 		Assert.assertNull(e.getException());
 	}
 
 
-	private Exchange checkStatus(int retryCnt) {
+	private Exchange checkStatus() {
 		Exchange exchange = checkTiamatJobStatusTemplate.request("direct:checkTiamatJobStatus", e -> {
-			e.getIn().setHeader(Constants.LOOP_COUNTER, retryCnt);
 			e.getIn().setHeader(Constants.JOB_STATUS_URL, JOB_STATUS_URL);
 			e.getIn().setHeader(Constants.JOB_ID, "1");
 			e.getIn().setHeader(Constants.JOB_STATUS_ROUTING_DESTINATION, "mock:complete");
