@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static no.rutebanken.marduk.Constants.*;
+import static org.apache.camel.builder.Builder.exceptionStackTrace;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 @Component
@@ -54,6 +55,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 		super.configure();
 
 		from("direct:insertElasticsearchIndexData")
+				.bean(updateStatusService, "setBuilding")
 				.setHeader(CONTENT_CHANGED, constant(false))
 				.doTry()
 				.multicast(new UseOriginalAggregationStrategy())
@@ -61,12 +63,18 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.stopOnException()
 				.to("direct:insertAddresses", "direct:insertPlaceNames", "direct:insertTiamatData")
 				.end()
-				.to("direct:insertElasticsearchIndexDataCompleted")
-				.endDoTry().doCatch(PredicateValidationException.class, MardukException.class)
-				.to("direct:insertElasticsearchIndexDataFailed")
-				.doFinally()
+
+				.endDoTry().doFinally()
 				.setHeader(Exchange.FILE_PARENT, simple(localWorkingDirectory + "?fileName=${property." + TIMESTAMP + "}"))
 				.to("direct:cleanUpLocalDirectory")
+				.end()
+
+				.choice()
+				.when(e -> updateStatusService.getStatus() != PeliasUpdateStatusService.Status.ABORT)
+				.to("direct:insertElasticsearchIndexDataCompleted")
+				.otherwise()
+				.log(LoggingLevel.INFO, "Pelias update aborted")
+				.to("direct:insertElasticsearchIndexDataFailed")
 				.end()
 
 				.routeId("pelias-insert-index-data");
@@ -77,8 +85,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/${property." + TIMESTAMP + "}/addresses"))
 				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromAddresses"))
 				.setHeader(FILE_EXTENSION, constant("csv"))
-				.to("direct:insertToPeliasFromFilesInFolder")
-				.validate(header(Constants.CONTENT_CHANGED).isEqualTo(Boolean.TRUE))
+				.to("direct:haltIfContentIsMissing")
 				.log(LoggingLevel.DEBUG, "Finished inserting addresses to ES")
 				.routeId("pelias-insert-addresses");
 
@@ -88,8 +95,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/${property." + TIMESTAMP + "}/tiamat"))
 				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromTiamat"))
 				.setHeader(FILE_EXTENSION, constant("xml"))
-				.to("direct:insertToPeliasFromFilesInFolder")
-				.validate(header(Constants.CONTENT_CHANGED).isEqualTo(Boolean.TRUE))
+				.to("direct:haltIfContentIsMissing")
 				.log(LoggingLevel.DEBUG, "Finished inserting Tiamat data to ES")
 				.routeId("pelias-insert-tiamat-data");
 
@@ -99,8 +105,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/${property." + TIMESTAMP + "}/placeNames"))
 				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromPlaceNames"))
 				.setHeader(FILE_EXTENSION, constant("geojson"))
-				.to("direct:insertToPeliasFromFilesInFolder")
-				.validate(header(Constants.CONTENT_CHANGED).isEqualTo(Boolean.TRUE))
+				.to("direct:haltIfContentIsMissing")
 				.log(LoggingLevel.DEBUG, "Finished inserting place names to ES")
 				.routeId("pelias-insert-place-names");
 
@@ -108,10 +113,16 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 		from("direct:haltIfContentIsMissing")
 				.doTry()
 				.to("direct:insertToPeliasFromFilesInFolder")
+				.choice()
+				.when(e ->
+						      updateStatusService.getStatus() != PeliasUpdateStatusService.Status.ABORT)
 				.validate(header(Constants.CONTENT_CHANGED).isEqualTo(Boolean.TRUE))
+				.end()
 				.endDoTry()
 				.doCatch(PredicateValidationException.class, MardukException.class)
 				.bean(updateStatusService, "signalAbort")
+				.log(LoggingLevel.ERROR, "Elasticsearch scratch index build failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
+				.end()
 				.routeId("pelias-insert-halt-if-content-missing");
 
 		from("direct:insertToPeliasFromFilesInFolder")

@@ -7,9 +7,9 @@ import java.util.Date;
 @Service
 public class PeliasUpdateStatusService {
 
-	public enum Status { IDLE, BUILDING, ABORT }
+	public enum Status {IDLE, BUILDING, ABORT}
 
-	private Status status =Status.IDLE;
+	private Status status = Status.IDLE;
 	private Date started = new Date();
 
 	public Status getStatus() {
@@ -26,8 +26,10 @@ public class PeliasUpdateStatusService {
 		started = new Date();
 	}
 
-	public void signalAbort(){
-		status = Status.ABORT;
-		started = new Date();
+	public void signalAbort() {
+		if (status == Status.BUILDING) {
+			status = Status.ABORT;
+			started = new Date();
+		}
 	}
 }

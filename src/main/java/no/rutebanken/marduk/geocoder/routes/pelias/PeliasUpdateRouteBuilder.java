@@ -90,7 +90,6 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 
 
 		from("direct:insertElasticsearchIndexDataFailed")
-				.log(LoggingLevel.ERROR, "Elasticsearch scratch index build failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
 				.bean(updateStatusService, "setIdle")
 				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.FAILED).build()).to("direct:updateSystemStatus")
 				.routeId("pelias-es-index-failed");
