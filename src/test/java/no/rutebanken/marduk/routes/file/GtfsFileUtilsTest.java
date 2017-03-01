@@ -19,6 +19,8 @@ public class GtfsFileUtilsTest {
 		File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(input1, input1));
 
 		Assert.assertTrue(FileUtils.sizeOf(merged) <= FileUtils.sizeOf(input1));
+
+		Assert.assertTrue(new ZipFileUtils().listFilesInZip(merged).stream().anyMatch(n -> "feed_info.txt" .equals(n)));
 	}
 
 	@Test
@@ -30,7 +32,10 @@ public class GtfsFileUtilsTest {
 
 		Assert.assertTrue(FileUtils.sizeOf(merged) >= FileUtils.sizeOf(input1));
 		Assert.assertTrue(FileUtils.sizeOf(merged) >= FileUtils.sizeOf(input2));
+
+		Assert.assertTrue(new ZipFileUtils().listFilesInZip(merged).stream().anyMatch(n -> "feed_info.txt" .equals(n)));
 	}
+
 
 
 }

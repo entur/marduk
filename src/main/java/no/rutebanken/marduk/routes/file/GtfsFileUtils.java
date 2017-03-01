@@ -10,18 +10,19 @@ import org.onebusaway.gtfs_merge.strategies.EntityMergeStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
 
 public class GtfsFileUtils {
 	private static Logger logger = LoggerFactory.getLogger(GtfsFileUtils.class);
 
+	private static final String FEED_INFO_FILE_NAME = "feed_info.txt";
 
 	public static File mergeGtfsFilesInDirectory(String path) {
 		return mergeGtfsFiles(FileUtils.listFiles(new File(path), new String[]{"zip"}, false));
 	}
+
 
 	static File mergeGtfsFiles(Collection<File> files) {
 
@@ -30,6 +31,16 @@ public class GtfsFileUtils {
 			long t1 = System.currentTimeMillis();
 			File outputFile = File.createTempFile("marduk-merge", ".zip");
 			buildGtfsMerger(EDuplicateDetectionStrategy.IDENTITY).run(new ArrayList<>(files), outputFile);
+
+
+			ByteArrayOutputStream feedInfoStream = extractFeedInfoFile(files);
+			if (feedInfoStream != null) {
+				File tmp = new File(FEED_INFO_FILE_NAME);
+				feedInfoStream.writeTo(new FileOutputStream(tmp));
+				FileUtils.copyInputStreamToFile(ZipFileUtils.addFilesToZip(new FileInputStream(outputFile), tmp), outputFile);
+				tmp.delete();
+			}
+
 			logger.debug("Merged GTFS-files - spent {} ms", (System.currentTimeMillis() - t1));
 			return outputFile;
 		} catch (IOException ioException) {
@@ -49,6 +60,18 @@ public class GtfsFileUtils {
 			}
 		}
 		return merger;
+	}
+
+
+	private static ByteArrayOutputStream extractFeedInfoFile(Collection<File> files) throws IOException {
+		ZipFileUtils zipFileUtils = new ZipFileUtils();
+		for (File file : files) {
+			if (zipFileUtils.listFilesInZip(file).stream().anyMatch(f -> FEED_INFO_FILE_NAME.equals(f))) {
+				return zipFileUtils.extractFileFromZipFile(new FileInputStream(file), FEED_INFO_FILE_NAME);
+			}
+
+		}
+		return null;
 	}
 
 }

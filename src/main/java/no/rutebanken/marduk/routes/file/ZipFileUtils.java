@@ -130,6 +130,34 @@ public class ZipFileUtils {
 		return tmpFile;
 	}
 
+
+	public static ByteArrayOutputStream extractFileFromZipFile(InputStream inputStream, String extractFileName) {
+		try {
+			byte[] buffer = new byte[1024];
+			ZipInputStream zis = new ZipInputStream(inputStream);
+			ZipEntry zipEntry = zis.getNextEntry();
+			while (zipEntry != null) {
+				String fileName = zipEntry.getName();
+
+				if (extractFileName.equals(fileName)) {
+
+					ByteArrayOutputStream fos = new ByteArrayOutputStream();
+					int len;
+					while ((len = zis.read(buffer)) > 0) {
+						fos.write(buffer, 0, len);
+					}
+					fos.close();
+					return fos;
+				}
+				zipEntry = zis.getNextEntry();
+			}
+
+		} catch (IOException ioE) {
+			throw new RuntimeException("Unzipping archive failed: " + ioE.getMessage(), ioE);
+		}
+		return null;
+	}
+
 	public static void unzipFile(InputStream inputStream, String targetFolder) {
 		try {
 			byte[] buffer = new byte[1024];
@@ -219,7 +247,8 @@ public class ZipFileUtils {
 		return null;
 	}
 
-	public static InputStream addFilesToZip(InputStream source, File[] files) {
+
+	public static InputStream addFilesToZip(InputStream source, File... files) {
 		try {
 			String name = UUID.randomUUID().toString();
 			File tmpZip = File.createTempFile(name, null);
