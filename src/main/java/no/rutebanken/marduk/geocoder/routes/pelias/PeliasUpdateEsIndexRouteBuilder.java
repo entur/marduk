@@ -2,13 +2,16 @@ package no.rutebanken.marduk.geocoder.routes.pelias;
 
 import com.google.common.collect.Lists;
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.geocoder.routes.util.MarkContentChangedAggregationStrategy;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.UseOriginalAggregationStrategy;
+import org.apache.camel.processor.validation.PredicateValidationException;
 import org.apache.commons.io.FileUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +23,7 @@ import java.util.List;
 import static no.rutebanken.marduk.Constants.CONTENT_CHANGED;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
+import static org.apache.camel.builder.Builder.exceptionStackTrace;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 @Component
@@ -41,6 +45,8 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 	@Value("${pelias.insert.batch.size:10000}")
 	private int insertBatchSize;
 
+	@Autowired
+	private PeliasUpdateStatusService updateStatusService;
 
 	private static final String FILE_EXTENSION = "RutebankenFileExtension";
 	private static final String CONVERSION_ROUTE = "RutebankenConversionRoute";
@@ -52,14 +58,20 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:insertElasticsearchIndexData")
 				.setHeader(CONTENT_CHANGED, constant(false))
+				.doTry()
 				.multicast(new UseOriginalAggregationStrategy())
 				.parallelProcessing()
 				.stopOnException()
 				.to("direct:insertAddresses", "direct:insertPlaceNames", "direct:insertTiamatData")
 				.end()
+				.to("direct:insertElasticsearchIndexDataCompleted")
+				.endDoTry().doCatch(PredicateValidationException.class, MardukException.class)
+				.to("direct:insertElasticsearchIndexDataFailed")
+				.doFinally()
 				.setHeader(Exchange.FILE_PARENT, simple(localWorkingDirectory + "?fileName=${property." + TIMESTAMP + "}"))
 				.to("direct:cleanUpLocalDirectory")
-				.to("direct:shutdownElasticsearchScratchInstance")
+				.end()
+
 				.routeId("pelias-insert-index-data");
 
 		from("direct:insertAddresses")
@@ -95,10 +107,21 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.DEBUG, "Finished inserting place names to ES")
 				.routeId("pelias-insert-place-names");
 
+
+		from("direct:haltIfContentIsMissing")
+				.doTry()
+				.to("direct:insertToPeliasFromFilesInFolder")
+				.validate(header(Constants.CONTENT_CHANGED).isEqualTo(Boolean.TRUE))
+				.endDoTry()
+				.doCatch(PredicateValidationException.class, MardukException.class)
+				.bean(updateStatusService, "signalAbort")
+				.routeId("pelias-insert-halt-if-content-missing");
+
 		from("direct:insertToPeliasFromFilesInFolder")
 				.bean("blobStoreService", "listBlobsInFolder")
 				.split(simple("${body.files}"))
 				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
+				.to("direct:haltIfAborted")
 				.setHeader(FILE_HANDLE, simple("${body.name}"))
 				.to("direct:getBlob")
 				.choice()
@@ -116,6 +139,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getIn().getHeader(WORKING_DIRECTORY, String.class)))
 				.split().exchange(e -> listFiles(e))
 				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
+				.to("direct:haltIfAborted")
 				.log(LoggingLevel.INFO, "Updating indexes in elasticsearch from file: ${body.name}")
 				.toD("${header." + CONVERSION_ROUTE + "}")
 				.to("direct:invokePeliasBulkCommand")
@@ -143,6 +167,8 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.split().exchange(e ->
 						                  Lists.partition(e.getIn().getBody(List.class), insertBatchSize))
 				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
+				.to("direct:haltIfAborted")
+
 				.bean("elasticsearchCommandWriterService")
 				.log(LoggingLevel.INFO, "Adding batch of indexes to elasticsearch for ${header." + FILE_HANDLE + "}")
 				.toD(elasticsearchScratchUrl + "/_bulk")
@@ -150,7 +176,16 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.INFO, "Finished adding batch of indexes to elasticsearch for ${header." + FILE_HANDLE + "}")
 
 				.routeId("pelias-invoke-bulk-command");
+
+		from("direct:haltIfAborted")
+				.choice()
+				.when(e -> updateStatusService.getStatus() == PeliasUpdateStatusService.Status.ABORT)
+				.log(LoggingLevel.DEBUG, "Stopping route because status is ABORT")
+				.stop()
+				.end()
+				.routeId("pelias-halt-if-aborted");
 	}
+
 
 	private Collection<File> listFiles(Exchange e) {
 		String fileExtension = e.getIn().getHeader(FILE_EXTENSION, String.class);

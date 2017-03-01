@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 
+import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.Name;
@@ -30,7 +31,7 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
 			PublicationDeliveryStructure deliveryStructure = unmarshall(publicationDeliveryStream);
 			return fromDeliveryPublicationStructure(deliveryStructure);
 		} catch (Exception e) {
-			throw new RuntimeException("Parsing of DeliveryPublications failed: " + e.getMessage(), e);
+			throw new FileValidationException("Parsing of DeliveryPublications failed: " + e.getMessage(), e);
 		}
 	}
 

@@ -4,7 +4,6 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTask;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
@@ -26,6 +25,7 @@ import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
+
 /**
  * REST interface for backdoor triggering of messages
  */
@@ -99,7 +99,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.responseMessage().code(200).endResponseMessage()
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
 				.route()
-				.log(LoggingLevel.INFO, correlation() + "Get chouette active jobs all providers")
+				.log(LoggingLevel.DEBUG, correlation() + "Get chouette active jobs all providers")
 				.removeHeaders("CamelHttp*")
 				.process(e -> e.getIn().setHeader("status", e.getIn().getHeader("status") != null ? e.getIn().getHeader("status") : Arrays.asList("STARTED", "SCHEDULED")))
 				.to("direct:chouetteGetJobsAll")
@@ -479,7 +479,16 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.setBody(constant(PELIAS_UPDATE_START))
 				.inOnly("direct:geoCoderStart")
 				.setBody(constant(null))
+				.endRest()
+				.get("/abort")
+				.description("Abort update of Pelias")
+				.responseMessage().code(200).endResponseMessage()
+				.responseMessage().code(500).message("Internal error").endResponseMessage()
+				.route().routeId("admin-pelias-update-abort")
+				.bean("peliasUpdateStatusService", "signalAbort")
+				.setBody(constant(null))
 				.endRest();
+
 	}
 
 	public static class ImportFilesSplitter {

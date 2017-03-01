@@ -6,17 +6,18 @@ import no.rutebanken.marduk.geocoder.routes.pelias.babylon.DeploymentStatus;
 import no.rutebanken.marduk.geocoder.routes.pelias.babylon.ScalingOrder;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.SystemStatus;
-import org.apache.activemq.ScheduledMessage;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
 import org.apache.camel.model.dataformat.JsonLibrary;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.JOB_STATUS_ROUTING_DESTINATION;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
+import static org.apache.camel.builder.Builder.exceptionStackTrace;
 
 @Component
 public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
@@ -40,6 +41,8 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 	@Value("${tiamat.retry.delay:15000}")
 	private long retryDelay;
 
+	@Autowired
+	private PeliasUpdateStatusService updateStatusService;
 
 	private static String NO_OF_REPLICAS = "RutebankenESNoOfReplicas";
 
@@ -57,19 +60,42 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 		from(PELIAS_UPDATE_START.getEndpoint())
 				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
 				.log(LoggingLevel.INFO, "Start updating Pelias")
+				.bean(updateStatusService, "setBuilding")
 				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.UPDATE).entity("Pelias").build()).to("direct:updateSystemStatus")
 				.to("direct:startElasticsearchScratchInstance")
 				.routeId("pelias-upload");
 
 		from("direct:startElasticsearchScratchInstance")
+				.to("direct:getElasticsearchScratchStatus")
+
+				.choice()
+				.when(simple("${body.availableReplicas} > 0"))
+				// Shutdown if already running
+				.setHeader(JOB_STATUS_ROUTING_DESTINATION, constant("direct:startElasticsearchScratchInstance"))
+				.to("direct:shutdownElasticsearchScratchInstance")
+				.otherwise()
 				.setHeader(NO_OF_REPLICAS, constant(1))
 				.setHeader(JOB_STATUS_ROUTING_DESTINATION, constant("direct:insertElasticsearchIndexData"))
 				.to("direct:rescaleElasticsearchScratchInstance")
+				.end()
+
 				.routeId("pelias-es-scratch-start");
+
+
+		from (	"direct:insertElasticsearchIndexDataCompleted")
+				.setHeader(JOB_STATUS_ROUTING_DESTINATION, constant("direct:buildElasticsearchImage"))
+				.to("direct:shutdownElasticsearchScratchInstance")
+				.routeId("pelias-es-index-complete");
+
+
+		from (	"direct:insertElasticsearchIndexDataFailed")
+				.log(LoggingLevel.ERROR, "Elasticsearch scratch index build failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
+				.bean(updateStatusService,"setIdle")
+				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.FAILED).build()).to("direct:updateSystemStatus")
+				.routeId("pelias-es-index-failed");
 
 		from("direct:shutdownElasticsearchScratchInstance")
 				.setHeader(NO_OF_REPLICAS, constant(0))
-				.setHeader(JOB_STATUS_ROUTING_DESTINATION, constant("direct:buildElasticsearchImage"))
 				.to("direct:rescaleElasticsearchScratchInstance")
 				.routeId("pelias-es-scratch-shutdown");
 
@@ -84,19 +110,21 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.setProperty(GEOCODER_NEXT_TASK, constant(GeoCoderConstants.PELIAS_ES_SCRATCH_STATUS_POLL))
 				.routeId("pelias-es-scratch-rescale");
 
-		// TODO loopcounter. re-use for build + deploy (+ tiamat?)
-
 		from("direct:pollElasticsearchScratchStatus")
-				.setBody(constant(null))
-				.setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
-				.to(babylonUrl + "/status?deployment=" + elasticsearchScratchDeploymentName)
-				.unmarshal().json(JsonLibrary.Jackson, DeploymentStatus.class)
+				.to("direct:getElasticsearchScratchStatus")
 				.choice()
 				.when(simple("${body.availableReplicas} == ${header." + NO_OF_REPLICAS + "}"))
 				.toD("${header." + JOB_STATUS_ROUTING_DESTINATION + "}")
 				.otherwise()
 				.setProperty(GEOCODER_RESCHEDULE_TASK, constant(true))
 				.end()
+				.routeId("pelias-es-scratch-status-poll");
+
+		from("direct:getElasticsearchScratchStatus")
+				.setBody(constant(null))
+				.setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
+				.to(babylonUrl + "/status?deployment=" + elasticsearchScratchDeploymentName)
+				.unmarshal().json(JsonLibrary.Jackson, DeploymentStatus.class)
 				.routeId("pelias-es-scratch-status");
 
 
@@ -113,6 +141,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 		from("direct:processPeliasDeployCompleted")
 				.log(LoggingLevel.INFO, "Finished updating pelias")
 				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
+				.bean(updateStatusService, "setIdle")
 				.routeId("pelias-deploy-completed");
 
 	}

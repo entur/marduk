@@ -38,7 +38,6 @@ public class KartverketAddressReader {
 		builder.addRecord(KartverketAddress.class);
 		factory.define(builder);
 
-		// TODO InputStreamReader isr = new InputStreamReader(is, (String) context.get(RegtoppConstant.CHARSET));
 		BufferedReader buffReader = new BufferedReader(new InputStreamReader(inputStream));
 
 		return factory.createReader(streamName, buffReader);
@@ -46,7 +45,7 @@ public class KartverketAddressReader {
 
 	private List<KartverketAddress> asList(BeanReader in) {
 		List<KartverketAddress> addresses = new ArrayList<>();
-		Object record = null;
+		Object record;
 		while ((record = in.read()) != null) {
 			if (in.getLineNumber() > 1) {
 				KartverketAddress address = (KartverketAddress) record;

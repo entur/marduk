@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.geocoder.featurejson;
 
+import no.rutebanken.marduk.exceptions.FileValidationException;
 import org.geotools.feature.FeatureIterator;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.opengis.feature.simple.SimpleFeature;
@@ -26,7 +27,7 @@ public class FeatureJSONCollection {
 		try {
 			itr = new FeatureJSON().streamFeatureCollection(inputStream);
 		} catch (IOException ioE) {
-			throw new RuntimeException("Failed to stream FeatureJSON: " + ioE.getMessage(), ioE);
+			throw new FileValidationException("Failed to stream FeatureJSON: " + ioE.getMessage(), ioE);
 		}
 
 		while (itr.hasNext()) {
