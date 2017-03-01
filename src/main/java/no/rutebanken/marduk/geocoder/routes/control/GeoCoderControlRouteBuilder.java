@@ -71,7 +71,7 @@ public class GeoCoderControlRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:geoCoderDelayIfRetry")
 				.choice()
-				.when(e -> shouldDelayProcessing(e))
+				.when(simple("${header." + LOOP_COUNTER + "} > 0"))
 				.log(LoggingLevel.INFO, getClass().getName(), "Delay processing of: ${body}. Retry no: ${header." + LOOP_COUNTER + "}")
 				.delay(retryDelay)
 				.end()
@@ -101,19 +101,6 @@ public class GeoCoderControlRouteBuilder extends BaseRouteBuilder {
 				.routeId("geocoder-reschedule-task");
 	}
 
-
-	/**
-	 * Delay processing if task has been processed before and has not waited on queue already.
-	 */
-	private boolean shouldDelayProcessing(Exchange e) {
-		if (e.getIn().getHeader(LOOP_COUNTER, 0, Long.class) == 0) {
-			return false;
-		}
-
-		Date msgCreatedTime = e.getProperty(Exchange.CREATED_TIMESTAMP, new Date(), Date.class);
-
-		return msgCreatedTime.after(DateUtils.addMilliseconds(new Date(), -retryDelay));
-	}
 
 	private void rehydrate(Exchange e) {
 		GeoCoderTaskMessage msg = e.getIn().getBody(GeoCoderTaskMessage.class);
