@@ -396,7 +396,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 
 		rest("geocoder/administrativeUnits")
-				.get("/download")
+				.post("/download")
 				.description("Trigger download of administrative units from Norwegian mapping authority")
 				.responseMessage().code(200).endResponseMessage()
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -406,7 +406,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.inOnly("direct:geoCoderStart")
 				.setBody(constant(null))
 				.endRest()
-				.get("/update")
+				.post("/update")
 				.description("Trigger import of administrative units to Tiamat")
 				.responseMessage().code(200).endResponseMessage()
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -418,7 +418,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.endRest();
 
 		rest("geocoder/poi")
-				.get("/update")
+				.post("/update")
 				.description("Trigger import of place of interest info to Tiamat")
 				.responseMessage().code(200).endResponseMessage()
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -431,7 +431,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 
 		rest("geocoder/address")
-				.get("/download")
+				.post("/download")
 				.description("Trigger download of address info from Norwegian mapping authority")
 				.responseMessage().code(200).endResponseMessage()
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -444,7 +444,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 
 		rest("geocoder/placeNames")
-				.get("/download")
+				.post("/download")
 				.description("Trigger download of place names from Norwegian mapping authority")
 				.responseMessage().code(200).endResponseMessage()
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -457,7 +457,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 
 		rest("geocoder/tiamat")
-				.get("/export")
+				.post("/export")
 				.description("Trigger export from Tiamat")
 				.responseMessage().code(200).endResponseMessage()
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -470,7 +470,21 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 
 		rest("geocoder/pelias")
-				.get("/update")
+				.get("/status")
+				.description("Query status of Pelias index build")
+				.consumes(PLAIN)
+				.produces(JSON)
+				.responseMessage().code(200).endResponseMessage()
+				.responseMessage().code(500).endResponseMessage()
+				.outType(GraphStatusResponse.class)
+				.route()
+				.log(LoggingLevel.DEBUG, "Pelias update get status")
+				.removeHeaders("CamelHttp*")
+				.setBody(simple(null))
+				.bean("peliasUpdateStatusService", "getStatus")
+				.routeId("admin-pelias-update-status")
+				.endRest()
+				.post("/update")
 				.description("Trigger update of Pelias")
 				.responseMessage().code(200).endResponseMessage()
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -480,14 +494,16 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.inOnly("direct:geoCoderStart")
 				.setBody(constant(null))
 				.endRest()
-				.get("/abort")
+				.post("/abort")
 				.description("Abort update of Pelias")
 				.responseMessage().code(200).endResponseMessage()
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
 				.route().routeId("admin-pelias-update-abort")
+				.log(LoggingLevel.INFO, "Signalling abort of Pelias update")
 				.bean("peliasUpdateStatusService", "signalAbort")
 				.setBody(constant(null))
 				.endRest();
+
 
 	}
 
