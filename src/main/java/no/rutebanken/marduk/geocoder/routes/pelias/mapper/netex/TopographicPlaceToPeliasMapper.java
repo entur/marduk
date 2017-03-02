@@ -29,7 +29,7 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
 				return "county";
 
 			case AREA:
-				return "borough";
+				return "locality";
 
 			case PLACE_OF_INTEREST:
 				return "building"; // TODO add custom layer?

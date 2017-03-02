@@ -33,7 +33,7 @@ public class PlaceNameToPeliasDocument {
 		if (geometry instanceof Geometry) {
 			Point centroid = ((Geometry) geometry).getCentroid();
 
-			return new GeoPoint(centroid.getX(), centroid.getY());
+			return new GeoPoint(centroid.getY(), centroid.getX());
 		}
 		return null;
 	}

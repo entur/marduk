@@ -26,8 +26,8 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
 		assertKnownTown(byId(commands, "NSR:TopographicPlace:3"));
 	}
 
-	private PeliasDocument byId(Collection<ElasticsearchCommand> commands, String id) {
-		return commands.stream().map(c -> (PeliasDocument) c.getSource()).filter(d -> d.getSourceId().equals(id)).collect(Collectors.toList()).get(0);
+	private PeliasDocument byId(Collection<ElasticsearchCommand> commands, String sourceId) {
+		return commands.stream().map(c -> (PeliasDocument) c.getSource()).filter(d -> d.getSourceId().equals(sourceId)).collect(Collectors.toList()).get(0);
 	}
 
 

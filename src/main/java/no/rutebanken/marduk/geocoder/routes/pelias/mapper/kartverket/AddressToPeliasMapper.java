@@ -14,13 +14,14 @@ import java.util.Arrays;
 
 public class AddressToPeliasMapper {
 
+	private static final String SOURCE = "Kartverket";
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private GeometryFactory factory = new GeometryFactory();
 
 	public PeliasDocument toPeliasDocument(KartverketAddress address) {
-		PeliasDocument document = new PeliasDocument("address", "Kartverket", address.getAddresseId());
+		PeliasDocument document = new PeliasDocument("address", SOURCE, address.getAddresseId());
 		document.setAddressParts(toAddressParts(address));
 		document.setCenterPoint(toCenterPoint(address));
 		document.setParent(toParent(address));
@@ -47,7 +48,7 @@ public class AddressToPeliasMapper {
 		Point p = factory.createPoint(new Coordinate(address.getOst(), address.getNord()));
 		try {
 			Point conv = GeometryTransformer.fromUTM(p, utmZone);
-			return new GeoPoint(conv.getX(), conv.getY());
+			return new GeoPoint(conv.getY(), conv.getX());
 		} catch (Exception e) {
 			logger.info("Ignoring center point for address (" + address.getAddresseId() + ") where geometry transformation failed: " + address.getKoordinatsystemKode());
 		}
@@ -57,11 +58,11 @@ public class AddressToPeliasMapper {
 
 	private Parent toParent(KartverketAddress address) {
 		return Parent.builder().withPostalCodeId(address.getPostnrn())
-				       .withCountryId("NOR")
-				       .withCountyId(address.getFylkesNo())
-				       .withLocaladminId(address.getFullKommuneNo())
-				       .withBoroughId(address.getFullGrunnkretsNo())
-				       .withBorough(address.getGrunnkretsnavn())
+				       .withCountryId(SOURCE + ":country:NOR")
+				       .withCountyId(SOURCE + ":county:" + address.getFylkesNo())
+				       .withLocaladminId(SOURCE + ":localadmin:" + address.getFullKommuneNo())
+				       .withlocalityId(SOURCE + ":locality:" + address.getFullGrunnkretsNo())
+				       .withlocality(address.getGrunnkretsnavn())
 				       .build();
 	}
 

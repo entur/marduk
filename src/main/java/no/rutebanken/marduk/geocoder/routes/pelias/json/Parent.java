@@ -15,7 +15,7 @@ public class Parent {
 	private List<String> county;
 	private List<String> postalCode;
 	private List<String> localadmin;
-	private List<String> borough;
+	private List<String> locality;
 
 	@JsonProperty("country_id")
 	private List<String> countryId;
@@ -25,8 +25,8 @@ public class Parent {
 	private List<String> postalCodeId;
 	@JsonProperty("localadmin_id")
 	private List<String> localadminId;
-	@JsonProperty("borough_id")
-	private List<String> boroughId;
+	@JsonProperty("locality_id")
+	private List<String> localityId;
 
 
 	public List<String> getCountry() {
@@ -61,12 +61,12 @@ public class Parent {
 		this.localadmin = localadmin;
 	}
 
-	public List<String> getBorough() {
-		return borough;
+	public List<String> getlocality() {
+		return locality;
 	}
 
-	public void setBorough(List<String> borough) {
-		this.borough = borough;
+	public void setlocality(List<String> locality) {
+		this.locality = locality;
 	}
 
 	public List<String> getCountryId() {
@@ -101,12 +101,12 @@ public class Parent {
 		this.localadminId = localadminId;
 	}
 
-	public List<String> getBoroughId() {
-		return boroughId;
+	public List<String> getlocalityId() {
+		return localityId;
 	}
 
-	public void setBoroughId(List<String> boroughId) {
-		this.boroughId = boroughId;
+	public void setlocalityId(List<String> localityId) {
+		this.localityId = localityId;
 	}
 
 	public static Parent.Builder builder() {
@@ -145,11 +145,11 @@ public class Parent {
 			return this;
 		}
 
-		public Builder withBorough(String borough) {
-			if (parent.borough == null) {
-				parent.borough = new ArrayList<>();
+		public Builder withlocality(String locality) {
+			if (parent.locality == null) {
+				parent.locality = new ArrayList<>();
 			}
-			parent.borough.add(borough);
+			parent.locality.add(locality);
 			return this;
 		}
 
@@ -185,11 +185,11 @@ public class Parent {
 			return this;
 		}
 
-		public Builder withBoroughId(String boroughId) {
-			if (parent.boroughId == null) {
-				parent.boroughId = new ArrayList<>();
+		public Builder withlocalityId(String localityId) {
+			if (parent.localityId == null) {
+				parent.localityId = new ArrayList<>();
 			}
-			parent.boroughId.add(boroughId);
+			parent.localityId.add(localityId);
 			return this;
 		}
 
