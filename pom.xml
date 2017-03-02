@@ -223,6 +223,12 @@
             <artifactId>camel-hazelcast</artifactId>
             <version>${camel-version}</version>
         </dependency>
+        <!-- Due to maven artifact cache, this dependency needs to be explicit -->
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-client</artifactId>
+            <version>2.2.0</version>
+        </dependency>
         <dependency>
             <groupId>org.rutebanken.helpers</groupId>
             <artifactId>hazelcast-helper</artifactId>
