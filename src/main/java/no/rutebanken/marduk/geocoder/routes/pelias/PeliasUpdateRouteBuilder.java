@@ -15,9 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.JOB_STATUS_ROUTING_DESTINATION;
-import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
-import static org.apache.camel.builder.Builder.exceptionStackTrace;
 
 @Component
 public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
@@ -58,7 +56,6 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.routeId("pelias-update-quartz");
 
 		from(PELIAS_UPDATE_START.getEndpoint())
-				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
 				.log(LoggingLevel.INFO, "Start updating Pelias")
 				.bean(updateStatusService, "setBuilding")
 				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.UPDATE).entity("Pelias").build()).to("direct:updateSystemStatus")

@@ -57,6 +57,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 		from("direct:insertElasticsearchIndexData")
 				.bean(updateStatusService, "setBuilding")
 				.setHeader(CONTENT_CHANGED, constant(false))
+				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
 				.doTry()
 				.multicast(new UseOriginalAggregationStrategy())
 				.parallelProcessing()
@@ -114,14 +115,13 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.doTry()
 				.to("direct:insertToPeliasFromFilesInFolder")
 				.choice()
-				.when(e ->
-						      updateStatusService.getStatus() != PeliasUpdateStatusService.Status.ABORT)
+				.when(e -> updateStatusService.getStatus() != PeliasUpdateStatusService.Status.ABORT)
 				.validate(header(Constants.CONTENT_CHANGED).isEqualTo(Boolean.TRUE))
 				.end()
 				.endDoTry()
 				.doCatch(PredicateValidationException.class, MardukException.class)
 				.bean(updateStatusService, "signalAbort")
-				.log(LoggingLevel.ERROR, "Elasticsearch scratch index build failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
+				.log(LoggingLevel.ERROR, "Elasticsearch scratch index build failed for ${header." + WORKING_DIRECTORY + "}: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
 				.end()
 				.routeId("pelias-insert-halt-if-content-missing");
 
