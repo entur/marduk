@@ -17,6 +17,7 @@ import java.util.Date;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.geocoder.GeoCoderConstants.TIAMAT_PLACES_OF_INTEREST_UPDATE_START;
 
 /**
  * Fetch data file as listed on: http://download.geofabrik.de/europe/norway.html
@@ -92,8 +93,10 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
                 .setHeader(FINISHED, constant("true"))
-                .log(LoggingLevel.INFO, "Map was updated, therefore triggering OSM graph build")
+                .log(LoggingLevel.INFO, "Map was updated, therefore triggering OSM graph build and Tiamat POI update")
                 .inOnly("activemq:queue:OtpGraphQueue")
+                .setBody(constant(TIAMAT_PLACES_OF_INTEREST_UPDATE_START))
+                .inOnly("direct:geoCoderStart")
                 .to("direct:notifyOsmStatus")
                 .log(LoggingLevel.DEBUG, "Processing of OSM map finished")
                 .routeId("osm-fetch-map");
