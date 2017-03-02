@@ -68,11 +68,19 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 		rest("/application")
 				.post("/filestores/clean")
-				.description("Clean Idempotent File Stores")
+				.description("Clean unique filname and digest Idempotent Stores")
 				.responseMessage().code(200).endResponseMessage()
 				.responseMessage().code(500).message("Internal error").endResponseMessage()
-				.route().routeId("admin-application-clean-idempotent-file-repos")
+				.route().routeId("admin-application-clean-unique-filename-and-digest-idempotent-repos")
 				.to("direct:cleanIdempotentFileStore")
+				.setBody(constant(null))
+				.endRest()
+				.post("/idempotent/download/clean")
+				.description("Clean Idempotent repo for downloads")
+				.responseMessage().code(200).endResponseMessage()
+				.responseMessage().code(500).message("Internal error").endResponseMessage()
+				.route().routeId("admin-application-clean-idempotent-download-repos")
+				.to("direct:cleanIdempotentDownloadRepo")
 				.setBody(constant(null))
 				.endRest();
 

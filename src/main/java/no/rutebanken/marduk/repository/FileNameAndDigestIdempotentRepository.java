@@ -14,10 +14,10 @@ import java.sql.Timestamp;
  */
 public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageIdRepository<String> {
 
-	private String queryString = "SELECT COUNT(*) FROM CAMEL_FILEPROCESSED WHERE processorName = ? AND (digest = ? or fileName=?)";
-	private String insertString = "INSERT INTO CAMEL_FILEPROCESSED (processorName, digest,fileName, createdAt) VALUES (?,?, ?, ?)";
-	private String deleteString = "DELETE FROM CAMEL_FILEPROCESSED WHERE processorName = ? AND digest = ? and fileName=?";
-	private String clearString = "DELETE FROM CAMEL_FILEPROCESSED WHERE processorName = ?";
+	private String queryString = "SELECT COUNT(*) FROM CAMEL_UNIQUE_FILENAME_AND_DIGEST WHERE processorName = ? AND (digest = ? or fileName=?)";
+	private String insertString = "INSERT INTO CAMEL_UNIQUE_FILENAME_AND_DIGEST (processorName, digest,fileName, createdAt) VALUES (?,?, ?, ?)";
+	private String deleteString = "DELETE FROM CAMEL_UNIQUE_FILENAME_AND_DIGEST WHERE processorName = ? AND digest = ? and fileName=?";
+	private String clearString = "DELETE FROM CAMEL_UNIQUE_FILENAME_AND_DIGEST WHERE processorName = ?";
 
 
 	public FileNameAndDigestIdempotentRepository(DataSource dataSource, String processorName) {

@@ -14,6 +14,9 @@ public class ApplicationAdminRoute extends RouteBuilder {
     @Override
     public void configure() throws Exception {
         from("direct:cleanIdempotentFileStore")
-                .bean(idempotentRepositoryService, "clean");
+                .bean(idempotentRepositoryService, "cleanUniqueFileNameAndDigestRepo");
+
+        from("direct:cleanIdempotentDownloadRepo")
+                .bean(idempotentRepositoryService, "cleanIdempotentDownloadRepo");
     }
 }

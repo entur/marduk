@@ -26,7 +26,7 @@ import static org.apache.camel.Exchange.FILE_PARENT;
 @Component
 public class KartverketFileRouteBuilder extends BaseRouteBuilder {
 	@Autowired
-	private IdempotentRepository uniqueDigestPerFileNameIdempotentRepository;
+	private IdempotentRepository idempotentDownloadRepository;
 
 	@Value("${kartverket.download.directory:files/kartverket}")
 	private String localDownloadDir;
@@ -57,7 +57,7 @@ public class KartverketFileRouteBuilder extends BaseRouteBuilder {
 				.setHeader(FILE_HANDLE, simple("${header." + FOLDER_NAME + "}/${body.name}"))
 				.process(e -> e.getIn().setHeader("file_NameAndDigest", new FileNameAndDigest(e.getIn().getHeader(FILE_HANDLE, String.class),
 						                                                                             DigestUtils.md5Hex(e.getIn().getBody(InputStream.class)))))
-				.idempotentConsumer(header("file_NameAndDigest")).messageIdRepository(uniqueDigestPerFileNameIdempotentRepository)
+				.idempotentConsumer(header("file_NameAndDigest")).messageIdRepository(idempotentDownloadRepository)
 				.log(LoggingLevel.INFO, "Uploading ${header." + FILE_HANDLE + "}")
 				.to("direct:uploadBlob")
 				.setHeader(CONTENT_CHANGED, constant(true))

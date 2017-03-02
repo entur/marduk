@@ -14,9 +14,18 @@ public class IdempotentRepositoryService {
 	@Autowired
 	IdempotentRepository fileNameAndDigestIdempotentRepository;
 
-	public void clean() {
-		logger.info("Starting cleaning of idempotent message repository.");
+	@Autowired
+	IdempotentRepository idempotentDownloadRepository;
+
+	public void cleanUniqueFileNameAndDigestRepo() {
+		logger.info("Starting cleaning of unique file name and digest idempotent message repository.");
 		fileNameAndDigestIdempotentRepository.clear();
-		logger.info("Done cleaning idempotent message repository.");
+		logger.info("Done cleaning unique file name and digest idempotent message repository.");
+	}
+
+	public void cleanIdempotentDownloadRepo() {
+		logger.info("Starting cleaning of idempotent download repository.");
+		idempotentDownloadRepository.clear();
+		logger.info("Done cleaning idempotent download repository.");
 	}
 }

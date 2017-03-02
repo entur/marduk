@@ -44,7 +44,7 @@ public class KartverketFileRouteBuilderIntegrationTest extends MardukRouteBuilde
 
 
 	@Autowired
-	private IdempotentRepository uniqueDigestPerFileNameIdempotentRepository;
+	private IdempotentRepository idempotentDownloadRepository;
 
 	@MockBean
 	public KartverketService kartverketService;
@@ -56,7 +56,7 @@ public class KartverketFileRouteBuilderIntegrationTest extends MardukRouteBuilde
 
 	@Test
 	public void testNewFilesAreUploadedToBlobStore() throws Exception {
-		uniqueDigestPerFileNameIdempotentRepository.clear();
+		idempotentDownloadRepository.clear();
 		String[] fileNames=new String[]{"1","2","3"};
 		when(kartverketService.downloadFiles(anyString(), anyString(), anyString())).thenReturn(files(fileNames));
 
@@ -81,7 +81,7 @@ public class KartverketFileRouteBuilderIntegrationTest extends MardukRouteBuilde
 
 	@Test
 	public void testNoLongerActiveFilesAreDeletedFromBlobStore() throws Exception {
-		uniqueDigestPerFileNameIdempotentRepository.clear();
+		idempotentDownloadRepository.clear();
 		inMemoryBlobStoreRepository.uploadBlob(blobFolder + "/1", new StringInputStream("1"), false);
 		inMemoryBlobStoreRepository.uploadBlob(blobFolder + "/2", new StringInputStream("2"), false);
 		inMemoryBlobStoreRepository.uploadBlob(blobFolder + "/3", new StringInputStream("3"), false);

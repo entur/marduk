@@ -57,7 +57,7 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
 	@Before
 	public void setUpProvider() throws IOException {
 		//wipe idempotent stores
-		idempotentRepositoryService.clean();
+		idempotentRepositoryService.cleanUniqueFileNameAndDigestRepo();
 		when(providerRepository.getProvider(5L)).thenReturn(Provider.create(IOUtils.toString(new FileReader(
 				"src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json"))));
 	}
