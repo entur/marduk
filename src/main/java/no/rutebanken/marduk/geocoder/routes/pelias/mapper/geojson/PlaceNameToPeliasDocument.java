@@ -5,12 +5,16 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Point;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.Name;
+import no.rutebanken.marduk.geocoder.routes.pelias.json.Parent;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opengis.feature.Property;
 import org.opengis.feature.simple.SimpleFeature;
 
 public class PlaceNameToPeliasDocument {
+
+	private static final String SOURCE = "Kartverket";
 
 	private SimpleFeature feature;
 
@@ -19,12 +23,21 @@ public class PlaceNameToPeliasDocument {
 	}
 
 	public PeliasDocument toPeliasDocument() {
-		PeliasDocument document = new PeliasDocument("neighbourhood", "Kartverket", "SSR-ID:" + getProperty("enh_ssr_id"));
+		PeliasDocument document = new PeliasDocument("neighbourhood", SOURCE, "SSR-ID:" + getProperty("enh_ssr_id"));
 
 		document.setName(new Name(getProperty("enh_snavn"), null));
 		document.setCenterPoint(mapCenterPoint());
 
+		document.setParent(toParent());
 		return document;
+	}
+
+	private Parent toParent() {
+		return Parent.builder()
+				       .withCountryId(SOURCE + ":country:NOR")
+				       .withLocaladminId(SOURCE + ":localadmin:" + StringUtils.leftPad("" + getProperty("enh_komm"), 4, "0"))
+				       .withCountyId(SOURCE + ":county:" + StringUtils.leftPad("" + getProperty("kom_fylkesnr"), 2, "0"))
+				       .build();
 	}
 
 	private GeoPoint mapCenterPoint() {
@@ -37,7 +50,6 @@ public class PlaceNameToPeliasDocument {
 		}
 		return null;
 	}
-
 
 	protected <T> T getProperty(String propertyName) {
 		Property property = feature.getProperty(propertyName);

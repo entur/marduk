@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.FileInputStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
@@ -29,6 +30,10 @@ public class PlaceNamesStreamToElasticsearchCommandTest {
 	private void assertKalland(PeliasDocument kalland) {
 		Assert.assertEquals(Double.valueOf(58.088692), kalland.getCenterPoint().getLat());
 		Assert.assertEquals(Double.valueOf(7.508508), kalland.getCenterPoint().getLon());
+
+		Assert.assertEquals(Arrays.asList("Kartverket:country:NOR"),kalland.getParent().getCountryId());
+		Assert.assertEquals(Arrays.asList("Kartverket:county:10"),kalland.getParent().getCountyId());
+		Assert.assertEquals(Arrays.asList("Kartverket:localadmin:1002"),kalland.getParent().getLocaladminId());
 	}
 
 	private void assertCommand(ElasticsearchCommand command) {
