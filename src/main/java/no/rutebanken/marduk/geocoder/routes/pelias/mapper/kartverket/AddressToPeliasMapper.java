@@ -20,7 +20,7 @@ public class AddressToPeliasMapper {
 	private GeometryFactory factory = new GeometryFactory();
 
 	public PeliasDocument toPeliasDocument(KartverketAddress address) {
-		PeliasDocument document = new PeliasDocument("ADDRESS", "Kartverket", "AddressId:" + address.getAddresseId());
+		PeliasDocument document = new PeliasDocument("address", "Kartverket", address.getAddresseId());
 		document.setAddressParts(toAddressParts(address));
 		document.setCenterPoint(toCenterPoint(address));
 		document.setParent(toParent(address));

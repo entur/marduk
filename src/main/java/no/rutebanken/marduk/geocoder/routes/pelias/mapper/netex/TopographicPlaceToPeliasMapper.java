@@ -20,6 +20,22 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
 
 	@Override
 	protected String getLayer(TopographicPlace place) {
-		return place.getTopographicPlaceType().toString();
+		switch (place.getTopographicPlaceType()){
+
+			case TOWN:
+				return "localadmin";
+
+			case COUNTY:
+				return "county";
+
+			case AREA:
+				return "borough";
+
+			case PLACE_OF_INTEREST:
+				return "building"; // TODO add custom layer?
+		}
+
+		return "locality"; // TODO what should be default?
+
 	}
 }

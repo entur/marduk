@@ -17,6 +17,6 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
 
 	@Override
 	protected String getLayer(StopPlace place) {
-		return "STOP_PLACE";
+		return "stop";
 	}
 }

@@ -34,7 +34,7 @@ public class PlaceNamesStreamToElasticsearchCommandTest {
 	private void assertCommand(ElasticsearchCommand command) {
 		Assert.assertNotNull(command.getIndex());
 		Assert.assertEquals("pelias", command.getIndex().getIndex());
-		Assert.assertEquals("NEIGHBOURHOOD", command.getIndex().getType());
+		Assert.assertEquals("neighbourhood", command.getIndex().getType());
 	}
 
 }

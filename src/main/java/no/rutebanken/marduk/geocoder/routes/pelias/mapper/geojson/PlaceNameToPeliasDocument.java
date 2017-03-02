@@ -19,7 +19,7 @@ public class PlaceNameToPeliasDocument {
 	}
 
 	public PeliasDocument toPeliasDocument() {
-		PeliasDocument document = new PeliasDocument("NEIGHBOURHOOD", "Kartverket", "SSR-ID:" + getProperty("enh_ssr_id"));
+		PeliasDocument document = new PeliasDocument("neighbourhood", "Kartverket", "SSR-ID:" + getProperty("enh_ssr_id"));
 
 		document.setName(new Name(getProperty("enh_snavn"), null));
 		document.setCenterPoint(mapCenterPoint());

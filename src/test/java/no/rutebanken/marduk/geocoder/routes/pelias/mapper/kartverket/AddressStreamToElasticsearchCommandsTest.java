@@ -68,6 +68,6 @@ public class AddressStreamToElasticsearchCommandsTest {
 	private void assertCommand(ElasticsearchCommand command) {
 		Assert.assertNotNull(command.getIndex());
 		Assert.assertEquals("pelias", command.getIndex().getIndex());
-		Assert.assertEquals("ADDRESS", command.getIndex().getType());
+		Assert.assertEquals("address", command.getIndex().getType());
 	}
 }
