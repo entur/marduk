@@ -3,14 +3,15 @@ package no.rutebanken.marduk.geocoder.routes.pelias.kartverket;
 import org.beanio.BeanReader;
 import org.beanio.StreamFactory;
 import org.beanio.builder.DelimitedParserBuilder;
-import org.beanio.builder.FixedLengthParserBuilder;
 import org.beanio.builder.StreamBuilder;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 
 public class KartverketAddressReader {
@@ -38,7 +39,7 @@ public class KartverketAddressReader {
 		builder.addRecord(KartverketAddress.class);
 		factory.define(builder);
 
-		BufferedReader buffReader = new BufferedReader(new InputStreamReader(inputStream));
+		BufferedReader buffReader = new BufferedReader(new InputStreamReader(inputStream, Charset.forName("UTF-8")));
 
 		return factory.createReader(streamName, buffReader);
 	}
