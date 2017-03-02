@@ -27,8 +27,8 @@ public class PlaceNamesStreamToElasticsearchCommandTest {
 	}
 
 	private void assertKalland(PeliasDocument kalland) {
-		Assert.assertEquals(Double.valueOf(7.508508), kalland.getCenterPoint().getLat());
-		Assert.assertEquals(Double.valueOf(58.088692), kalland.getCenterPoint().getLon());
+		Assert.assertEquals(Double.valueOf(58.088692), kalland.getCenterPoint().getLat());
+		Assert.assertEquals(Double.valueOf(7.508508), kalland.getCenterPoint().getLon());
 	}
 
 	private void assertCommand(ElasticsearchCommand command) {

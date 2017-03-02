@@ -50,8 +50,8 @@ public class AddressStreamToElasticsearchCommandsTest {
 		Point utm33Point = new GeometryFactory().createPoint(new Coordinate(293546.2, 6607447.1));
 		Point wgs84Point = GeometryTransformer.fromUTM(utm33Point, "33");
 
-		Assert.assertEquals(wgs84Point.getX(), known.getCenterPoint().getLat(), 0.0001);
-		Assert.assertEquals(wgs84Point.getY(), known.getCenterPoint().getLon(), 0.0001);
+		Assert.assertEquals(wgs84Point.getY(), known.getCenterPoint().getLat(), 0.0001);
+		Assert.assertEquals(wgs84Point.getX(), known.getCenterPoint().getLon(), 0.0001);
 
 		Parent parent = known.getParent();
 		Assert.assertEquals(Arrays.asList("NOR"), parent.getCountryId());
