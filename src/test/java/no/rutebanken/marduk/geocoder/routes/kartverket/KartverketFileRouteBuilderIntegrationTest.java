@@ -44,7 +44,7 @@ public class KartverketFileRouteBuilderIntegrationTest extends MardukRouteBuilde
 
 
 	@Autowired
-	private IdempotentRepository digestIdempotentRepository;
+	private IdempotentRepository uniqueDigestPerFileNameIdempotentRepository;
 
 	@MockBean
 	public KartverketService kartverketService;
@@ -56,38 +56,47 @@ public class KartverketFileRouteBuilderIntegrationTest extends MardukRouteBuilde
 
 	@Test
 	public void testNewFilesAreUploadedToBlobStore() throws Exception {
-		digestIdempotentRepository.clear();
-		when(kartverketService.downloadFiles(anyString(), anyString(), anyString())).thenReturn(files("1", "2", "3"));
+		uniqueDigestPerFileNameIdempotentRepository.clear();
+		String[] fileNames=new String[]{"1","2","3"};
+		when(kartverketService.downloadFiles(anyString(), anyString(), anyString())).thenReturn(files(fileNames));
 
 		context.start();
-		startUpdate(true);
+		startUpdate(blobFolder, true);
 
-		Assert.assertNotNull(inMemoryBlobStoreRepository.getBlob(blobFolder + "/1"));
-		Assert.assertNotNull(inMemoryBlobStoreRepository.getBlob(blobFolder + "/2"));
-		Assert.assertNotNull(inMemoryBlobStoreRepository.getBlob(blobFolder + "/3"));
+		assertBlobs(blobFolder,fileNames);
 
 		// Verify that second invocation does nothing if content is unchanged
-		startUpdate(false);
+		startUpdate(blobFolder, false);
+
+
+		String otherBlobFolder = "otherBlobTest";
+		startUpdate(otherBlobFolder, true);
+
+		assertBlobs(otherBlobFolder,fileNames);
+	}
+
+	private void assertBlobs(String path, String... objectNames) {
+		Arrays.stream(objectNames).forEach(o -> Assert.assertNotNull(inMemoryBlobStoreRepository.getBlob(path + "/" + o)));
 	}
 
 	@Test
 	public void testNoLongerActiveFilesAreDeletedFromBlobStore() throws Exception {
-		digestIdempotentRepository.clear();
+		uniqueDigestPerFileNameIdempotentRepository.clear();
 		inMemoryBlobStoreRepository.uploadBlob(blobFolder + "/1", new StringInputStream("1"), false);
 		inMemoryBlobStoreRepository.uploadBlob(blobFolder + "/2", new StringInputStream("2"), false);
 		inMemoryBlobStoreRepository.uploadBlob(blobFolder + "/3", new StringInputStream("3"), false);
 		when(kartverketService.downloadFiles(anyString(), anyString(), anyString())).thenReturn(files("1"));
 
 		context.start();
-		startUpdate(true);
+		startUpdate(blobFolder, true);
 
-		Assert.assertNotNull(inMemoryBlobStoreRepository.getBlob(blobFolder + "/1"));
+		assertBlobs(blobFolder,"1");
 		Assert.assertNull(inMemoryBlobStoreRepository.getBlob(blobFolder + "/2"));
 		Assert.assertNull(inMemoryBlobStoreRepository.getBlob(blobFolder + "/3"));
 	}
 
 
-	private void startUpdate(boolean shouldChangeContent) {
+	private void startUpdate(String blobFolder, boolean shouldChangeContent) {
 		Exchange exchange = uploadUpdatedFilesTemplate.request("direct:uploadUpdatedFiles", e -> e.getIn().setHeader(Constants.FOLDER_NAME, blobFolder));
 		Assert.assertEquals(shouldChangeContent, Boolean.TRUE.equals(exchange.getIn().getHeader(Constants.CONTENT_CHANGED)));
 	}

@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.config;
 
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
+import no.rutebanken.marduk.repository.UniqueDigestPerFileNameIdempotentRepository;
 import org.apache.camel.processor.idempotent.jdbc.JdbcMessageIdRepository;
 import org.apache.camel.spi.IdempotentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,18 +15,14 @@ public class IdempotentRepositoryConfig {
 	@Autowired
 	private DataSource datasource;
 
-
-	@Autowired
-	private TransactionTemplate transactionTemplate;
-
 	@Bean
 	public IdempotentRepository fileNameAndDigestIdempotentRepository() {
 		return new FileNameAndDigestIdempotentRepository(datasource, "nameAndDigest");
 	}
 
 	@Bean
-	public IdempotentRepository digestIdempotentRepository() {
-		return new JdbcMessageIdRepository(datasource, transactionTemplate, "digest");
+	public IdempotentRepository uniqueDigestPerFileNameIdempotentRepository() {
+		return new UniqueDigestPerFileNameIdempotentRepository(datasource, "uniqueDigestForName");
 	}
 
 }

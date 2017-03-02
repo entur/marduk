@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.geocoder.routes.kartverket;
 
+import no.rutebanken.marduk.domain.FileNameAndDigest;
 import no.rutebanken.marduk.geocoder.routes.util.MarkContentChangedAggregationStrategy;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -25,7 +26,7 @@ import static org.apache.camel.Exchange.FILE_PARENT;
 @Component
 public class KartverketFileRouteBuilder extends BaseRouteBuilder {
 	@Autowired
-	private IdempotentRepository digestIdempotentRepository;
+	private IdempotentRepository uniqueDigestPerFileNameIdempotentRepository;
 
 	@Value("${kartverket.download.directory:files/kartverket}")
 	private String localDownloadDir;
@@ -54,8 +55,9 @@ public class KartverketFileRouteBuilder extends BaseRouteBuilder {
 		from("direct:kartverketUploadFileIfUpdated")
 				.setHeader(Exchange.FILE_NAME, simple(("${body.name}")))
 				.setHeader(FILE_HANDLE, simple("${header." + FOLDER_NAME + "}/${body.name}"))
-				.process(e -> e.getIn().setHeader("file_digest", DigestUtils.md5Hex(e.getIn().getBody(InputStream.class))))
-				.idempotentConsumer(header("file_digest")).messageIdRepository(digestIdempotentRepository)
+				.process(e -> e.getIn().setHeader("file_NameAndDigest", new FileNameAndDigest(e.getIn().getHeader(FILE_HANDLE, String.class),
+						                                                                             DigestUtils.md5Hex(e.getIn().getBody(InputStream.class)))))
+				.idempotentConsumer(header("file_NameAndDigest")).messageIdRepository(uniqueDigestPerFileNameIdempotentRepository)
 				.log(LoggingLevel.INFO, "Uploading ${header." + FILE_HANDLE + "}")
 				.to("direct:uploadBlob")
 				.setHeader(CONTENT_CHANGED, constant(true))
