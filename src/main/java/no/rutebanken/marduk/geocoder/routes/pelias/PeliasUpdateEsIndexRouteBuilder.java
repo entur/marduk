@@ -64,12 +64,10 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.stopOnException()
 				.to("direct:insertAddresses", "direct:insertPlaceNames", "direct:insertTiamatData")
 				.end()
-
 				.endDoTry().doFinally()
 				.setHeader(Exchange.FILE_PARENT, simple(localWorkingDirectory + "?fileName=${property." + TIMESTAMP + "}"))
 				.to("direct:cleanUpLocalDirectory")
 				.end()
-
 				.choice()
 				.when(e -> updateStatusService.getStatus() != PeliasUpdateStatusService.Status.ABORT)
 				.to("direct:insertElasticsearchIndexDataCompleted")
@@ -118,6 +116,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.when(e -> updateStatusService.getStatus() != PeliasUpdateStatusService.Status.ABORT)
 				.validate(header(Constants.CONTENT_CHANGED).isEqualTo(Boolean.TRUE))
 				.end()
+
 				.endDoTry()
 				.doCatch(PredicateValidationException.class, MardukException.class)
 				.bean(updateStatusService, "signalAbort")
@@ -127,7 +126,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:insertToPeliasFromFilesInFolder")
 				.bean("blobStoreService", "listBlobsInFolder")
-				.split(simple("${body.files}"))
+				.split(simple("${body.files}")).stopOnException()
 				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
 				.to("direct:haltIfAborted")
 				.setHeader(FILE_HANDLE, simple("${body.name}"))
@@ -145,7 +144,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:insertToPeliasFromZipArchive")
 				.process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getIn().getHeader(WORKING_DIRECTORY, String.class)))
-				.split().exchange(e -> listFiles(e))
+				.split().exchange(e -> listFiles(e)).stopOnException()
 				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
 				.to("direct:haltIfAborted")
 				.log(LoggingLevel.INFO, "Updating indexes in elasticsearch from file: ${body.name}")
@@ -170,10 +169,9 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:invokePeliasBulkCommand")
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
-				//	.setHeader(Exchange.HTTP_CHARACTER_ENCODING, constant("UTF-8"))
 				.setHeader(Exchange.CONTENT_TYPE, constant("application/json; charset=utf-8"))
 				.split().exchange(e ->
-						                  Lists.partition(e.getIn().getBody(List.class), insertBatchSize))
+						                  Lists.partition(e.getIn().getBody(List.class), insertBatchSize)).stopOnException()
 				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
 				.to("direct:haltIfAborted")
 
