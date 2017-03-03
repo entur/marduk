@@ -3,6 +3,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias;
 import com.google.common.collect.Lists;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.geocoder.routes.util.AbortRouteException;
 import no.rutebanken.marduk.geocoder.routes.util.MarkContentChangedAggregationStrategy;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
@@ -57,15 +58,18 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 		from("direct:insertElasticsearchIndexData")
 				.bean(updateStatusService, "setBuilding")
 				.setHeader(CONTENT_CHANGED, constant(false))
-				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
+				.setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
+				.to("direct:cleanUpLocalDirectory")
 				.doTry()
 				.multicast(new UseOriginalAggregationStrategy())
 				.parallelProcessing()
 				.stopOnException()
 				.to("direct:insertAddresses", "direct:insertPlaceNames", "direct:insertTiamatData")
 				.end()
-				.endDoTry().doFinally()
-				.setHeader(Exchange.FILE_PARENT, simple(localWorkingDirectory + "?fileName=${property." + TIMESTAMP + "}"))
+				.endDoTry()
+				.doCatch(AbortRouteException.class)
+				.doFinally()
+				.setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
 				.to("direct:cleanUpLocalDirectory")
 				.end()
 				.choice()
@@ -81,7 +85,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 		from("direct:insertAddresses")
 				.log(LoggingLevel.DEBUG, "Start inserting addresses to ES")
 				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/addresses"))
-				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/${property." + TIMESTAMP + "}/addresses"))
+				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/addresses"))
 				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromAddresses"))
 				.setHeader(FILE_EXTENSION, constant("csv"))
 				.to("direct:haltIfContentIsMissing")
@@ -91,7 +95,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 		from("direct:insertTiamatData")
 				.log(LoggingLevel.DEBUG, "Start inserting Tiamat data to ES")
 				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForTiamatExport))
-				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/${property." + TIMESTAMP + "}/tiamat"))
+				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/tiamat"))
 				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromTiamat"))
 				.setHeader(FILE_EXTENSION, constant("xml"))
 				.to("direct:haltIfContentIsMissing")
@@ -101,7 +105,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 		from("direct:insertPlaceNames")
 				.log(LoggingLevel.DEBUG, "Start inserting place names to ES")
 				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/placeNames"))
-				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/${property." + TIMESTAMP + "}/placeNames"))
+				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/placeNames"))
 				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromPlaceNames"))
 				.setHeader(FILE_EXTENSION, constant("geojson"))
 				.to("direct:haltIfContentIsMissing")
@@ -187,7 +191,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.choice()
 				.when(e -> updateStatusService.getStatus() == PeliasUpdateStatusService.Status.ABORT)
 				.log(LoggingLevel.DEBUG, "Stopping route because status is ABORT")
-				.stop()
+				.throwException(new AbortRouteException())
 				.end()
 				.routeId("pelias-halt-if-aborted");
 	}
