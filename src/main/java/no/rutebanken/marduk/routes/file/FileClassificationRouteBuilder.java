@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
 
 /**
@@ -84,6 +85,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
         		String currentPartPadded = StringUtils.leftPad(""+currentPart, 4, '0');
         		String numParts = e.getProperty("CamelSplitSize",String.class);
         		e.getIn().setHeader(FILE_HANDLE, e.getIn().getHeader(FILE_HANDLE)+"_part_"+currentPartPadded+"_of_"+numParts+".zip");
+        		e.getIn().setHeader(FILE_NAME,e.getIn().getHeader(FILE_NAME)+"_part_"+currentPartPadded+"_of_"+numParts+".zip");
             })
         	.log(LoggingLevel.INFO, correlation()+"New fragment from RAR file ${header." + FILE_HANDLE + "}")
             .to("direct:uploadBlob")
