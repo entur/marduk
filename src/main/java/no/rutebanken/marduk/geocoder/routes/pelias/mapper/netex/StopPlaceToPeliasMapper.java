@@ -4,6 +4,8 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import org.rutebanken.netex.model.StopPlace;
 
+import java.util.Arrays;
+
 public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentMapper<StopPlace> {
 
 	// Using region as substitute layer for stops to avoid having to fork pelias (custom layers not configurable).
@@ -15,6 +17,9 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
 
 	@Override
 	protected void populateDocument(StopPlace place, PeliasDocument document) {
+		if (place.getStopPlaceType() != null) {
+			document.setCategory(Arrays.asList(place.getStopPlaceType().value()));
+		}
 
 	}
 
