@@ -54,7 +54,6 @@ public class PlaceNamesDownloadRouteBuilder extends BaseRouteBuilder {
 
 
 		from("direct:transferPlaceNamesFiles")
-				.log(LoggingLevel.INFO, "Downloading place names per county")
 				.setHeader(KARTVERKET_DATASETID, constant(placeNamesDataSetId))
 				.setHeader(FOLDER_NAME, constant(blobStoreSubdirectoryForKartverket + "/placeNames"))
 				.setHeader(KARTVERKET_FORMAT, constant(FORMAT_GEO_JSON))
