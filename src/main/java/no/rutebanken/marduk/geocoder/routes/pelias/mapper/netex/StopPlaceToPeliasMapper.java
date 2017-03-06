@@ -6,6 +6,9 @@ import org.rutebanken.netex.model.StopPlace;
 
 public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentMapper<StopPlace> {
 
+	// Using region as substitute layer for stops to avoid having to fork pelias (custom layers not configurable).
+	public static final String STOP_PLACE_LAYER = "region";
+
 	public StopPlaceToPeliasMapper(String participantRef) {
 		super(participantRef);
 	}
@@ -17,6 +20,6 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
 
 	@Override
 	protected String getLayer(StopPlace place) {
-		return "stop";
+		return STOP_PLACE_LAYER;
 	}
 }
