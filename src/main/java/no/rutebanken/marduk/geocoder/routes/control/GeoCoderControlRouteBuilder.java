@@ -5,13 +5,11 @@ import no.rutebanken.marduk.routes.status.SystemStatus;
 import org.apache.activemq.command.ActiveMQTextMessage;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collection;
-import java.util.Date;
 
 import static no.rutebanken.marduk.Constants.LOOP_COUNTER;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
@@ -48,7 +46,7 @@ public class GeoCoderControlRouteBuilder extends BaseRouteBuilder {
 				.to("direct:geoCoderDelayIfRetry")
 				.log(LoggingLevel.INFO, getClass().getName(), "Processing: ${body}. QueuedTasks: ${exchangeProperty." + TASK_MESSAGE + ".tasks.size}")
 				.toD("${body.endpoint}")
-				.setBody(simple("${exchangeProperty." + TASK_MESSAGE + "}"))
+
 
 				.choice()
 				.when(simple("${exchangeProperty." + GEOCODER_RESCHEDULE_TASK + "}"))
@@ -57,6 +55,7 @@ public class GeoCoderControlRouteBuilder extends BaseRouteBuilder {
 				.removeHeader(LOOP_COUNTER)
 				.end()
 
+				.setBody(simple("${exchangeProperty." + TASK_MESSAGE + "}"))
 				.to("direct:geoCoderDehydrate")
 
 				.choice()
@@ -93,7 +92,7 @@ public class GeoCoderControlRouteBuilder extends BaseRouteBuilder {
 				.process(e -> e.getIn().setHeader(LOOP_COUNTER, (Integer) e.getIn().getHeader(LOOP_COUNTER, 0) + 1))
 				.choice()
 				.when(simple("${header." + LOOP_COUNTER + "} > " + maxRetries))
-				.log(LoggingLevel.WARN, getClass().getName(), "${header." + GEOCODER_CURRENT_TASK + "} timed out with state ${header.current_status}. Config should probably be tweaked. Not rescheduling.")
+				.log(LoggingLevel.WARN, getClass().getName(), "${header." + GEOCODER_CURRENT_TASK + "} timed out. Config should probably be tweaked. Not rescheduling.")
 				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.TIMEOUT).build()).to("direct:updateSystemStatus")
 				.otherwise()
 				.setProperty(GEOCODER_NEXT_TASK, simple("${header." + GEOCODER_CURRENT_TASK + "}"))

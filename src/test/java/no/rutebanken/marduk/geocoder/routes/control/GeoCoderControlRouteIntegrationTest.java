@@ -3,8 +3,6 @@ package no.rutebanken.marduk.geocoder.routes.control;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.geocoder.GeoCoderConstants;
-import no.rutebanken.marduk.geocoder.routes.tiamat.xml.ExportJob;
-import no.rutebanken.marduk.geocoder.routes.tiamat.xml.JobStatus;
 import no.rutebanken.marduk.routes.status.SystemStatus;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
@@ -23,8 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-
-import static org.apache.camel.builder.Builder.constant;
 
 @RunWith(CamelSpringRunner.class)
 @SpringBootTest(classes = GeoCoderControlRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
@@ -114,7 +110,7 @@ public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderInteg
 	@Test
 	public void testTimeout() throws Exception {
 
-		context.getRouteDefinition("tiamat-process-job-status-done").adviceWith(context, new AdviceWithRouteBuilder() {
+		context.getRouteDefinition("geocoder-reschedule-task").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateSystemStatus")
@@ -123,14 +119,19 @@ public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderInteg
 		});
 		systemStatusQueueMock
 				.whenExchangeReceived(1, e -> Assert.assertTrue(e.getIn().getBody(String.class).contains(SystemStatus.State.TIMEOUT.toString())));
-
+		systemStatusQueueMock.expectedMessageCount(1);
 		destination.whenExchangeReceived(1, e -> {
 			e.setProperty(GeoCoderConstants.GEOCODER_RESCHEDULE_TASK, true);
 		});
 
 		context.start();
+		GeoCoderTask task = task(GeoCoderTask.Phase.DOWNLOAD_SOURCE_DATA);
+		task.getHeaders().put(Constants.LOOP_COUNTER, maxRetries);
+		task.getHeaders().put(Constants.SYSTEM_STATUS_CORRELATION_ID, "corrId");
+		task.getHeaders().put(Constants.SYSTEM_STATUS_ACTION, SystemStatus.Action.FILE_TRANSFER);
+		task.getHeaders().put(Constants.SYSTEM_STATUS_ENTITY, "e");
 
-		geoCoderQueueTemplate.sendBodyAndHeader(null, Constants.LOOP_COUNTER, maxRetries);
+		geoCoderQueueTemplate.sendBody(new GeoCoderTaskMessage(task).toString());
 
 		destination.assertIsSatisfied();
 		systemStatusQueueMock.assertIsSatisfied();
