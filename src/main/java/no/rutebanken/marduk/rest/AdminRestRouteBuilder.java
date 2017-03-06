@@ -4,7 +4,6 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTask;
 import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
@@ -534,8 +533,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 	}
 
-	private List<GeoCoderTaskType> geoCoderTaskTypesFromString(Collection<String> typeStrings) {
-		return typeStrings.stream().map(s -> GeoCoderTaskType.valueOf(s)).collect(Collectors.toList());
+	private Set<GeoCoderTaskType> geoCoderTaskTypesFromString(Collection<String> typeStrings) {
+		return typeStrings.stream().map(s -> GeoCoderTaskType.valueOf(s)).collect(Collectors.toSet());
 	}
 
 	public static class ImportFilesSplitter {
