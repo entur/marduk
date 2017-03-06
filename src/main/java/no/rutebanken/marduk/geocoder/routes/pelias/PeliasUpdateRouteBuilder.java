@@ -37,7 +37,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 	@Value("${elasticsearch.build.file.name:es-image-build-pod.yaml}")
 	private String elasticsearchBuildFileName;
 
-	@Value("${elasticsearch.build.job.name:=es-build-job}")
+	@Value("${elasticsearch.build.job.name:es-build-job}")
 	private String elasticsearchBuildJobName;
 
 	@Value("${tiamat.max.retries:3000}")
