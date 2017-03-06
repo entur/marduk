@@ -7,8 +7,11 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.FileInputStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
+
+import static no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex.StopPlaceToPeliasMapper.STOP_PLACE_LAYER;
 
 public class DeliveryPublicationStreamToElasticsearchCommandsTest {
 
@@ -33,7 +36,8 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
 
 	private void assertKnownStopPlace(PeliasDocument known) throws Exception {
 		Assert.assertEquals("Harstad/Narvik Lufthavn", known.getName().getDefaultName());
-		Assert.assertEquals("stop", known.getLayer());
+		Assert.assertEquals(STOP_PLACE_LAYER, known.getLayer());
+		Assert.assertEquals(Arrays.asList("airport"), known.getCategory());
 		Assert.assertEquals(68.490412, known.getCenterPoint().getLat(), 0.0001);
 		Assert.assertEquals(16.687364, known.getCenterPoint().getLon(), 0.0001);
 
