@@ -5,8 +5,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PodStatus {
-	@JsonFormat(shape= JsonFormat.Shape.BOOLEAN)
+	@JsonFormat(shape = JsonFormat.Shape.BOOLEAN)
 	public Boolean present;
+	@JsonFormat(shape = JsonFormat.Shape.BOOLEAN)
+	public Boolean running;
+
 	public String name;
 
 	public Boolean getPresent() {

@@ -150,7 +150,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.to(babylonUrl + "/pod?name=" + elasticsearchBuildJobName)
 				.unmarshal().json(JsonLibrary.Jackson, PodStatus.class)
 				.choice()
-				.when(simple("${body.present} == false"))
+				.when(simple("${body.running} == false"))
 				.to("direct:deleteElasticsearchBuildJob")
 				.otherwise()
 				.log(LoggingLevel.INFO, "Elasticsearch build job still running, rescheduling poll job")
