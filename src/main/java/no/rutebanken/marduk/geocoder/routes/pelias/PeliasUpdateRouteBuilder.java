@@ -3,7 +3,9 @@ package no.rutebanken.marduk.geocoder.routes.pelias;
 
 import no.rutebanken.marduk.geocoder.GeoCoderConstants;
 import no.rutebanken.marduk.geocoder.routes.pelias.babylon.DeploymentStatus;
+import no.rutebanken.marduk.geocoder.routes.pelias.babylon.PodStatus;
 import no.rutebanken.marduk.geocoder.routes.pelias.babylon.ScalingOrder;
+import no.rutebanken.marduk.geocoder.routes.pelias.babylon.StartFile;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.SystemStatus;
 import org.apache.camel.Exchange;
@@ -32,6 +34,11 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 	@Value("${elasticsearch.scratch.deployment.name:es-scratch}")
 	private String elasticsearchScratchDeploymentName;
 
+	@Value("${elasticsearch.build.file.name:es-image-build-pod.yaml}")
+	private String elasticsearchBuildFileName;
+
+	@Value("${elasticsearch.build.job.name:=es-build-job}")
+	private String elasticsearchBuildJobName;
 
 	@Value("${tiamat.max.retries:3000}")
 	private int maxRetries;
@@ -126,13 +133,28 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 
 
 		from("direct:buildElasticsearchImage")
-				.log(LoggingLevel.INFO, "Building new Elasticsearch image from scratch image (not implemented!)")
-				// TODO build docker image
-
-				// TODO poll for build
-				// TODO deploy pelias
-				// TODO poll for deploy
+				.log(LoggingLevel.INFO, "Requesting Babylon to build new elasticsearch image for pelias")
+				.setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
+				.setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
+				.setBody(constant(new StartFile(elasticsearchBuildFileName)))
+				.marshal().json(JsonLibrary.Jackson)
+				.to(babylonUrl + "/run")
+				.setProperty(GEOCODER_NEXT_TASK, constant(GeoCoderConstants.PELIAS_ES_BUILD_POLL))
 				.routeId("pelias-es-build");
+
+		from("direct:pollElasticsearchBuildCompleted")
+				.setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
+				.setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
+				.setBody(constant(null))
+				.to(babylonUrl+"/pod?name="+elasticsearchBuildJobName)
+				.unmarshal().json(JsonLibrary.Jackson, PodStatus.class)
+				.choice()
+				.when(simple("!${body.present}"))
+				.to("direct:processPeliasDeployCompleted")
+				.otherwise()
+				.setProperty(GEOCODER_RESCHEDULE_TASK, constant(true))
+				.end()
+				.routeId("pelias-es-build-poll-completed");
 
 
 		from("direct:processPeliasDeployCompleted")
@@ -140,6 +162,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				.bean(updateStatusService, "setIdle")
 				.routeId("pelias-deploy-completed");
+
 
 	}
 
