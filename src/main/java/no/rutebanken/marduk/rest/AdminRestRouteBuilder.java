@@ -4,6 +4,8 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTask;
+import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
@@ -17,10 +19,7 @@ import org.apache.camel.model.rest.RestPropertyDefinition;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
@@ -513,6 +512,30 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 				.endRest();
 
 
+		rest("geocoder")
+				.post("/start")
+				.param().name("task")
+				.type(RestParamType.query)
+				.allowableValues(Arrays.asList(GeoCoderTaskType.values()).stream().map(GeoCoderTaskType::name).collect(Collectors.toList()))
+				.required(Boolean.TRUE)
+				.description("Tasks to be executed")
+				.endParam()
+				.description("Update geocoder tasks")
+				.responseMessage().code(200).endResponseMessage()
+				.responseMessage().code(500).message("Internal error").endResponseMessage()
+				.route().routeId("admin-geocoder-update")
+				.validate(header("task").isNotNull())
+				.removeHeaders("CamelHttp*")
+				.process(e -> e.getIn().setBody(geoCoderTaskTypesFromString(e.getIn().getHeader("task", Collection.class))))
+				.inOnly("direct:geoCoderStartBatch")
+				.setBody(constant(null))
+				.endRest();
+
+
+	}
+
+	private List<GeoCoderTaskType> geoCoderTaskTypesFromString(Collection<String> typeStrings) {
+		return typeStrings.stream().map(s -> GeoCoderTaskType.valueOf(s)).collect(Collectors.toList());
 	}
 
 	public static class ImportFilesSplitter {

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.LOOP_COUNTER;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
@@ -27,6 +28,10 @@ public class GeoCoderControlRouteBuilder extends BaseRouteBuilder {
 	@Value("${geocoder.retry.delay:15000}")
 	private int retryDelay;
 
+	private GeoCoderTaskMessage createMessageFromTaskTypes(Collection<GeoCoderTaskType> taskTypes) {
+		return new GeoCoderTaskMessage(taskTypes.stream().map(t -> t.getGeoCoderTask()).collect(Collectors.toList()));
+	}
+
 	@Override
 	public void configure() throws Exception {
 		super.configure();
@@ -35,6 +40,12 @@ public class GeoCoderControlRouteBuilder extends BaseRouteBuilder {
 				.process(e -> e.getIn().setBody(new GeoCoderTaskMessage(e.getIn().getBody(GeoCoderTask.class)).toString()))
 				.to("activemq:queue:GeoCoderQueue")
 				.routeId("geocoder-start");
+
+		from("direct:geoCoderStartBatch")
+				.process(e -> e.getIn().setBody(createMessageFromTaskTypes(e.getIn().getBody(Collection.class)).toString()))
+				.to("activemq:queue:GeoCoderQueue")
+				.routeId("geocoder-start-batch");
+
 
 		singletonFrom("activemq:queue:GeoCoderQueue?transacted=true&messageListenerContainerFactoryRef=batchListenerContainerFactory")
 				.autoStartup("{{geocoder.autoStartup:false}}")

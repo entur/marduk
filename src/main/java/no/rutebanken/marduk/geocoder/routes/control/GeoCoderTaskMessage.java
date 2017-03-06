@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -17,6 +18,13 @@ public class GeoCoderTaskMessage {
 
 	public GeoCoderTaskMessage() {
 		tasks = new TreeSet<>();
+	}
+
+	public GeoCoderTaskMessage(Collection<GeoCoderTask> tasks) {
+		this();
+		if (tasks != null) {
+			this.tasks.addAll(tasks);
+		}
 	}
 
 	public GeoCoderTaskMessage(GeoCoderTask... taskArray) {
