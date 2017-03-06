@@ -27,4 +27,12 @@ public class PodStatus {
 	public void setName(String name) {
 		this.name = name;
 	}
+
+	public Boolean getRunning() {
+		return running;
+	}
+
+	public void setRunning(Boolean running) {
+		this.running = running;
+	}
 }
