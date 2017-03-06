@@ -147,17 +147,25 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
 				.setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
 				.setBody(constant(null))
-				.to(babylonUrl+"/pod?name="+elasticsearchBuildJobName)
+				.to(babylonUrl + "/pod?name=" + elasticsearchBuildJobName)
 				.unmarshal().json(JsonLibrary.Jackson, PodStatus.class)
 				.choice()
 				.when(simple("${body.present} == false"))
-				.to("direct:processPeliasDeployCompleted")
+				.to("direct:deleteElasticsearchBuildJob")
 				.otherwise()
 				.log(LoggingLevel.INFO, "Elasticsearch build job still running, rescheduling poll job")
 				.setProperty(GEOCODER_RESCHEDULE_TASK, constant(true))
 				.end()
 				.routeId("pelias-es-build-poll-completed");
 
+		from("direct:deleteElasticsearchBuildJob")
+				.log(LoggingLevel.INFO, "Requesting Babylon to delete elasticsearch build job")
+				.setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.DELETE))
+				.setBody(constant(null))
+				.to(babylonUrl + "/pod?name=" + elasticsearchBuildJobName)
+				.log(LoggingLevel.INFO, "Successfully deleted elasticsearch build job")
+				.to("direct:processPeliasDeployCompleted")
+				.routeId("pelias-es-build-job-delete");
 
 		from("direct:processPeliasDeployCompleted")
 				.log(LoggingLevel.INFO, "Finished updating pelias")
