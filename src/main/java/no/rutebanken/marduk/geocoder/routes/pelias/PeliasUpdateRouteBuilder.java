@@ -143,6 +143,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.routeId("pelias-es-build");
 
 		from("direct:pollElasticsearchBuildCompleted")
+				.log(LoggingLevel.INFO, "Polling Babylon for status on elasticsearch build job")
 				.setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
 				.setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
 				.setBody(constant(null))
@@ -152,6 +153,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 				.when(simple("!${body.present}"))
 				.to("direct:processPeliasDeployCompleted")
 				.otherwise()
+				.log(LoggingLevel.INFO, "Elasticsearch build job still running, rescheduling poll job")
 				.setProperty(GEOCODER_RESCHEDULE_TASK, constant(true))
 				.end()
 				.routeId("pelias-es-build-poll-completed");
