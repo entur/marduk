@@ -25,7 +25,7 @@ public class TopographicPlaceConverterTest {
 
 	@Test
 	public void testFilterConvertAdminUnitsFromGeoJson() throws Exception {
-		String filteredFilePath = "files/filtered-fylker.geojson";
+		String filteredFilePath = "target/filtered-fylker.geojson";
 		new FeatureJSONFilter("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson", filteredFilePath, "fylkesnr", "area").filter();
 
 		String targetPath = "files/adm-units.xml";
@@ -41,7 +41,7 @@ public class TopographicPlaceConverterTest {
 		List<String> filter = Arrays.asList("leisure=common", "naptan:indicator");
 		TopographicPlaceReader reader = new PbfTopographicPlaceReader(filter, IanaCountryTldEnumeration.NO,
 				                                                             new File("src/test/resources/no/rutebanken/marduk/geocoder/pbf/sample.pbf"));
-		String targetPath = "files/poi.xml";
+		String targetPath = "target/poi.xml";
 		new TopographicPlaceConverter().toNetexFile(reader,
 				targetPath);
 
