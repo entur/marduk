@@ -33,7 +33,7 @@ public class PlaceNamesStreamToElasticsearchCommandTest {
 
 		Assert.assertEquals(Arrays.asList("NOR"),kalland.getParent().getCountryId());
 		Assert.assertEquals(Arrays.asList("10"),kalland.getParent().getCountyId());
-		Assert.assertEquals(Arrays.asList("1002"),kalland.getParent().getlocalityId());
+		Assert.assertEquals(Arrays.asList("1002"),kalland.getParent().getLocalityId());
 	}
 
 	private void assertCommand(ElasticsearchCommand command) {

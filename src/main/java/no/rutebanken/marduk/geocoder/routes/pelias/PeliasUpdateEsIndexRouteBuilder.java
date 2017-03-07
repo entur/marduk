@@ -3,6 +3,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias;
 import com.google.common.collect.Lists;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.geocoder.GeoCoderConstants;
 import no.rutebanken.marduk.geocoder.routes.util.AbortRouteException;
 import no.rutebanken.marduk.geocoder.routes.util.MarkContentChangedAggregationStrategy;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -60,6 +61,8 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.setHeader(CONTENT_CHANGED, constant(false))
 				.setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
 				.to("direct:cleanUpLocalDirectory")
+				.bean("adminUnitRepositoryBuilder", "build")
+				.setProperty(GeoCoderConstants.GEOCODER_ADMIN_UNIT_REPO, simple("body"))
 				.doTry()
 				.multicast(new UseOriginalAggregationStrategy())
 				.parallelProcessing()
@@ -184,6 +187,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:invokePeliasBulkCommand")
 				.bean("peliasIndexValidCommandFilter")
+				.bean("peliasIndexParentInfoEnricher")
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
 				.setHeader(Exchange.CONTENT_TYPE, constant("application/json; charset=utf-8"))
 				.split().exchange(e ->

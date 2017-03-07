@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collection;
 
 @Service
-public class PeliasIndexAddMissingParentInfo {
+public class PeliasIndexParentInfoEnricher {
 
 	/**
 	 * Enrich indexing commands with parent info if missing.
@@ -23,8 +23,10 @@ public class PeliasIndexAddMissingParentInfo {
 	}
 
 	void addMissingParentInfo(ElasticsearchCommand command, AdminUnitRepository adminUnitRepository) {
+		if (!(command.getSource() instanceof PeliasDocument)){
+			return;
+		}
 		PeliasDocument peliasDocument = (PeliasDocument) command.getSource();
-
 		Parent parent = peliasDocument.getParent();
 
 		if (parent != null) {
@@ -34,6 +36,10 @@ public class PeliasIndexAddMissingParentInfo {
 			if (size(parent.getLocalityId()) > size(parent.getLocality())) {
 				parent.getLocalityId().stream().forEach(localityId -> parent.addLocality(adminUnitRepository.getAdminUnitName(localityId)));
 			}
+			if (size(parent.getBoroughId()) > size(parent.getBorough())) {
+				parent.getBoroughId().stream().forEach(boroughId -> parent.addBorough(adminUnitRepository.getAdminUnitName(boroughId)));
+			}
+
 		}
 	}
 
