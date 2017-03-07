@@ -45,6 +45,8 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
 	private static final String PROP_MESSAGES = "RutebankenPropMessages";
 
+	private static final String HEADER_STATUS = "RutebankenGraphBuildStatus";
+
 	@Override
 	public void configure() throws Exception {
 		super.configure();
@@ -63,28 +65,22 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 				.to("direct:fetchLatestGtfs")
 				.to("direct:mergeGtfs")
 				.to("direct:buildGraph")
-				.to("direct:sendStatusOKForJobs")
 				.bean(graphStatusService, "setIdle")
-				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				.log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP graph building route.")
 				.routeId("otp-graph-build");
 
 		from("direct:sendStatusStartedForJobs")
 				.transacted("PROPAGATION_REQUIRES_NEW")
-				.split().exchangeProperty(PROP_MESSAGES)
-				.filter(simple("${body.properties[" + CHOUETTE_REFERENTIAL + "]}"))
-				.process(e -> {
-					e.getIn().setHeaders(((ActiveMQMessage) e.getIn().getBody()).getProperties());
-					Status.builder(e).action(Status.Action.BUILD_GRAPH).state(Status.State.STARTED).build();
-				})
-				.to("direct:updateStatus");
+				.setHeader(HEADER_STATUS, constant(Status.State.STARTED))
+				.to("direct:sendStatusForJobs");
 
-		from("direct:sendStatusOKForJobs")
+		from("direct:sendStatusForJobs")
 				.split().exchangeProperty(PROP_MESSAGES)
 				.filter(simple("${body.properties[" + CHOUETTE_REFERENTIAL + "]}"))
 				.process(e -> {
+					Status.State state = e.getIn().getHeader(HEADER_STATUS, Status.State.class);
 					e.getIn().setHeaders(((ActiveMQMessage) e.getIn().getBody()).getProperties());
-					Status.builder(e).action(Status.Action.BUILD_GRAPH).state(Status.State.OK).build();
+					Status.builder(e).action(Status.Action.BUILD_GRAPH).state(state).build();
 				})
 				.to("direct:updateStatus");
 
@@ -139,11 +135,16 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 				.toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + GRAPH_OBJ + ".done")
 				.to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 				.log(LoggingLevel.INFO, correlation() + "Done building new OTP graph.")
+				.setHeader(HEADER_STATUS, constant(Status.State.OK))
+				.to("direct:sendStatusForJobs")
+				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
 				.doCatch(Exception.class)
 				.log(LoggingLevel.ERROR, correlation() + "Graph building failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
+				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.FAILED).build()).to("direct:updateSystemStatus")
+				.setHeader(HEADER_STATUS, constant(Status.State.FAILED))
+				.to("direct:sendStatusForJobs")
 				.end()
 				.routeId("otp-graph-build-otp");
-
 
 	}
 
