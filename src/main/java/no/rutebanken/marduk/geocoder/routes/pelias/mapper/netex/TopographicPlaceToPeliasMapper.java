@@ -23,7 +23,7 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
 		switch (place.getTopographicPlaceType()){
 
 			case TOWN:
-				return "localadmin";
+				return "locality";
 
 			case COUNTY:
 				return "county";

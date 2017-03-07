@@ -7,6 +7,8 @@ import com.vividsolutions.jts.geom.Point;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.*;
 import no.rutebanken.marduk.geocoder.routes.pelias.kartverket.KartverketAddress;
 import no.rutebanken.marduk.geocoder.routes.pelias.mapper.GeometryTransformer;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.text.WordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,13 +62,16 @@ public class AddressToPeliasMapper {
 		return Parent.builder().withPostalCodeId(address.getPostnrn())
 				       .withCountryId("NOR")
 				       .withCountyId(address.getFylkesNo())
-				       .withLocaladminId(address.getFullKommuneNo())
-					   .withlocalityId(address.getFullKommuneNo())
+				       .withlocalityId(address.getFullKommuneNo())
 				       .withBoroughId(address.getFullGrunnkretsNo())
-				       .withBorough(address.getGrunnkretsnavn())
+				       .withBorough(formatName(address.getGrunnkretsnavn()))
 				       .build();
 	}
 
+
+	private String formatName(String name) {
+		return WordUtils.capitalize(StringUtils.lowerCase((name)),' ','/');
+	}
 
 	private AddressParts toAddressParts(KartverketAddress address) {
 		AddressParts addressParts = new AddressParts();

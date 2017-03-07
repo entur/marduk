@@ -68,8 +68,7 @@ public class ElasticsearchCommand {
 	public static ElasticsearchCommand peliasIndexCommand(PeliasDocument document) {
 
 		ElasticsearchCommand command = new ElasticsearchCommand();
-		String id = document.getSource() + ":" + document.getLayer() + ":" + document.getSourceId();
-		command.setIndex(new ActionMetaData("pelias", document.getLayer(), id));
+		command.setIndex(new ActionMetaData("pelias", document.getLayer(), document.getSourceId()));
 		command.setSource(document);
 		return command;
 

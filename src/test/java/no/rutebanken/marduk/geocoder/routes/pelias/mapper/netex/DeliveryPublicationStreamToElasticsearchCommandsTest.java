@@ -45,7 +45,7 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
 
 	private void assertKnownTown(PeliasDocument known) throws Exception {
 		Assert.assertEquals("Fredrikstad", known.getDefaultName());
-		Assert.assertEquals("localadmin", known.getLayer());
+		Assert.assertEquals("locality", known.getLayer());
 		Assert.assertEquals("NOR", known.getAlpha3());
 	}
 

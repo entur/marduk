@@ -35,7 +35,6 @@ public class PlaceNameToPeliasDocument {
 		String kommuneNo=StringUtils.leftPad("" + getProperty("enh_komm"), 4, "0");
 		return Parent.builder()
 				       .withCountryId("NOR")
-				       .withLocaladminId(kommuneNo)
 					   .withlocalityId(kommuneNo)
 				       .withCountyId(StringUtils.leftPad("" + getProperty("kom_fylkesnr"), 2, "0"))
 				       .build();

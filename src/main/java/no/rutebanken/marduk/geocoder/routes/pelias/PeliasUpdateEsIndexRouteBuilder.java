@@ -191,7 +191,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.choice()
 				.when(e -> updateStatusService.getStatus() == PeliasUpdateStatusService.Status.ABORT)
 				.log(LoggingLevel.DEBUG, "Stopping route because status is ABORT")
-				.throwException(new AbortRouteException())
+				.throwException(new AbortRouteException("Route has been aborted"))
 				.end()
 				.routeId("pelias-halt-if-aborted");
 	}
