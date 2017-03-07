@@ -62,8 +62,7 @@ public class AddressToPeliasMapper {
 		return Parent.builder().withPostalCodeId(address.getPostnrn())
 				       .withCountryId("NOR")
 				       .withCountyId( address.getFylkesNo())
-					   .withlocality(address.getFullKommuneNo())
-				       .withlocalityId( address.getFullKommuneNo())
+				       .withLocalityId( address.getFullKommuneNo())
 				       .withBoroughId(address.getFullGrunnkretsNo())
 				       .withBorough(formatName(address.getGrunnkretsnavn()))
 				       .build();

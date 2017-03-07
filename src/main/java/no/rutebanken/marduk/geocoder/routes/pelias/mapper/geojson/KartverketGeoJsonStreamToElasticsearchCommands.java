@@ -1,8 +1,8 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.mapper.geojson;
 
 import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONCollection;
+import no.rutebanken.marduk.geocoder.geojson.*;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
-import org.opengis.feature.Property;
 import org.opengis.feature.simple.SimpleFeature;
 import org.springframework.stereotype.Service;
 
@@ -16,22 +16,22 @@ public class KartverketGeoJsonStreamToElasticsearchCommands {
 				       .mapToList(f -> ElasticsearchCommand.peliasIndexCommand(createMapper(f).toPeliasDocument()));
 	}
 
-	AbstractKartverketFeatureToPeliasDocument createMapper(SimpleFeature feature) {
-		Property typeProp = feature.getProperty("objtype");
+	KartverketFeatureToPeliasDocument createMapper(SimpleFeature feature) {
 
-		if (typeProp != null) {
+		AbstractKartverketGeojsonWrapper wrapper = KartverketFeatureWrapperFactory.createWrapper(feature);
 
-			Object type = typeProp.getValue();
-			if ("Fylke".equals(type)) {
-				return new FylkeToPeliasDocument(feature);
-			} else if ("Kommune".equals(type)) {
-				return new KommuneToPeliasDocument(feature);
-			} else if ("Grunnkrets".equals(type)) {
-				return new GrunnkretsToPeliasDocument(feature);
-			}
+		switch (wrapper.getType()) {
+
+			case COUNTY:
+				return new CountyToPeliasDocument((KartverketCounty) wrapper);
+			case LOCALITY:
+				return new LocalityToPeliasDocument((KartverketLocality) wrapper);
+			case BOROUGH:
+				return new BoroughToPeliasDocument((KartverketBorough) wrapper);
+			case NEIGHBOURHOOD:
+				return new NeighbourhoodToPeliasDocument((KartverketNeighbourhood) wrapper);
 		}
-
-		return new PlaceNameToPeliasDocument(feature);
+		return null;
 	}
 
 

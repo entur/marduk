@@ -1,5 +1,7 @@
 package no.rutebanken.marduk.geocoder.netex.kartverket;
 
+import no.rutebanken.marduk.geocoder.geojson.AbstractKartverketGeojsonWrapper;
+import no.rutebanken.marduk.geocoder.geojson.KartverketFeatureWrapperFactory;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceReader;
 import org.apache.commons.io.FileUtils;
 import org.geotools.feature.FeatureIterator;
@@ -31,7 +33,8 @@ public class GeoJsonTopographicPlaceReader implements TopographicPlaceReader {
 			FeatureIterator<org.opengis.feature.simple.SimpleFeature> itr = fJson.streamFeatureCollection(FileUtils.openInputStream(file));
 
 			while (itr.hasNext()) {
-				TopographicPlace topographicPlace = KartverketFeatureMapper.create(itr.next(), PARTICIPANT_REF).toTopographicPlace();
+				AbstractKartverketGeojsonWrapper wrapper = KartverketFeatureWrapperFactory.createWrapper(itr.next());
+				TopographicPlace topographicPlace = new KartverketFeatureToTopographicPlace(wrapper, PARTICIPANT_REF).toTopographicPlace();
 
 				if (topographicPlace != null) {
 					queue.put(topographicPlace);

@@ -1,13 +1,14 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.mapper.geojson;
 
+import no.rutebanken.marduk.geocoder.geojson.KartverketBorough;
 import org.apache.commons.lang3.StringUtils;
 import org.opengis.feature.simple.SimpleFeature;
 
 
-public class GrunnkretsToPeliasDocument extends AbstractKartverketFeatureToPeliasDocument {
+public class BoroughToPeliasDocument extends KartverketFeatureToPeliasDocument {
 
 
-	public GrunnkretsToPeliasDocument(SimpleFeature feature) {
+	public BoroughToPeliasDocument(KartverketBorough feature) {
 		super(feature);
 	}
 
@@ -16,19 +17,10 @@ public class GrunnkretsToPeliasDocument extends AbstractKartverketFeatureToPelia
 		return "borough";
 	}
 
-	@Override
-	protected String getSourceId() {
-		return "" + getProperty("grunnkrets");
-	}
-
-	@Override
-	protected String getName() {
-		return "" + getProperty("gkretsnavn");
-	}
 
 	@Override
 	protected String getLocalityId() {
-		return pad(getProperty("komm"), 4);
+		return feature.getParentId();
 	}
 
 	@Override
