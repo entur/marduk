@@ -71,7 +71,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 
 		from("direct:fetchAdministrativeUnits")
 				.log(LoggingLevel.DEBUG, getClass().getName(), "Fetching latest administrative units ...")
-				.setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForKartverket + "/" + adminUnitsArchiveFileName))
+				.setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForKartverket + "/administrativeUnits/" + adminUnitsArchiveFileName))
 				.to("direct:getBlob")
 				.process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), workingDirectory(e)))
 				.routeId("tiamat-fetch-admin-units-geojson");
