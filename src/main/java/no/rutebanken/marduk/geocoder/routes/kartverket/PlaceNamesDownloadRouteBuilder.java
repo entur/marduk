@@ -17,7 +17,7 @@ public class PlaceNamesDownloadRouteBuilder extends BaseRouteBuilder {
 	@Value("${kartverket.place.names.download.cron.schedule:0+0+23+?+*+MON-FRI}")
 	private String cronSchedule;
 
-	@Value("${kartverket.place.names.blobstore.subdirectory:kartverket}")
+	@Value("${kartverket.blobstore.subdirectory:kartverket}")
 	private String blobStoreSubdirectoryForKartverket;
 
 

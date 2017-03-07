@@ -25,7 +25,7 @@ import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 @Component
 public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilder {
 
-	@Value("${kartverket.place.names.blobstore.subdirectory:kartverket}")
+	@Value("${kartverket.blobstore.subdirectory:kartverket}")
 	private String blobStoreSubdirectoryForKartverket;
 
 	@Value("${tiamat.administrative.units.update.cron.schedule:0+0+23+?+*+MON-FRI}")

@@ -35,7 +35,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 	@Value("${tiamat.export.blobstore.subdirectory:tiamat}")
 	private String blobStoreSubdirectoryForTiamatExport;
 
-	@Value("${kartverket.place.names.blobstore.subdirectory:kartverket}")
+	@Value("${kartverket.blobstore.subdirectory:kartverket}")
 	private String blobStoreSubdirectoryForKartverket;
 
 

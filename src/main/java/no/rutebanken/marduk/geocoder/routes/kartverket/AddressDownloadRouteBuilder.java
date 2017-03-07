@@ -18,7 +18,7 @@ public class AddressDownloadRouteBuilder extends BaseRouteBuilder {
 	@Value("${kartverket.addresses.download.cron.schedule:0+0+23+?+*+MON-FRI}")
 	private String cronSchedule;
 
-	@Value("${kartverket.place.names.blobstore.subdirectory:kartverket}")
+	@Value("${kartverket.blobstore.subdirectory:kartverket}")
 	private String blobStoreSubdirectoryForKartverket;
 
 	@Value("${kartverket.addresses.dataSetId:offisielle-adresser-utm33-csv}")

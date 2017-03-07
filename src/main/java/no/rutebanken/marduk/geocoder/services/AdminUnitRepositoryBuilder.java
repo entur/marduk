@@ -25,7 +25,7 @@ public class AdminUnitRepositoryBuilder {
 	@Value("${marduk.admin.units.cache.max.size:30000}")
 	private Integer cacheMaxSize;
 
-	@Value("${kartverket.place.names.blobstore.subdirectory:kartverket}")
+	@Value("${kartverket.blobstore.subdirectory:kartverket}")
 	private String blobStoreSubdirectoryForKartverket;
 
 	@Value("${pelias.download.directory:files/adminUnitCache}")

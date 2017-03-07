@@ -40,7 +40,7 @@ public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderI
 	@Value("${tiamat.export.blobstore.subdirectory:tiamat}")
 	private String blobStoreSubdirectoryForTiamatExport;
 
-	@Value("${kartverket.place.names.blobstore.subdirectory:kartverket}")
+	@Value("${kartverket.blobstore.subdirectory:kartverket}")
 	private String blobStoreSubdirectoryForKartverket;
 
 	@EndpointInject(uri = "mock:es-scratch")

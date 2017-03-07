@@ -55,7 +55,7 @@ public class AdministrativeUnitsDownloadRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:transferAdministrativeUnitsFile")
 				.setHeader(KARTVERKET_DATASETID, constant(administrativeUnitsDataSetId))
-				.setHeader(FOLDER_NAME, constant(blobStoreSubdirectoryForKartverket))
+				.setHeader(FOLDER_NAME, constant(blobStoreSubdirectoryForKartverket + "/administrativeUnits"))
 				.to("direct:uploadUpdatedFiles")
 				.routeId("administrative-units-to-blobstore");
 	}
