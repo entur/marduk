@@ -26,14 +26,14 @@ public class AddressToPeliasMapper {
 		document.setCenterPoint(toCenterPoint(address));
 		document.setParent(toParent(address));
 
-		document.setName(toName(address));
+		document.setDefaultName(toName(address));
 		document.setAlpha3("NOR");
 		document.setCategory(Arrays.asList(address.getType()));
 		return document;
 	}
 
-	private Name toName(KartverketAddress address) {
-		return new Name(address.getAddressenavn() + " " + address.getNr() + address.getBokstav(), null);
+	private String toName(KartverketAddress address) {
+		return address.getAddressenavn() + " " + address.getNr() + address.getBokstav();
 	}
 
 	private GeoPoint toCenterPoint(KartverketAddress address) {

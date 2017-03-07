@@ -4,7 +4,6 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.geojson;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Point;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
-import no.rutebanken.marduk.geocoder.routes.pelias.json.Name;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.Parent;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 
@@ -25,7 +24,7 @@ public class PlaceNameToPeliasDocument {
 	public PeliasDocument toPeliasDocument() {
 		PeliasDocument document = new PeliasDocument("neighbourhood", SOURCE, "SSR-ID:" + getProperty("enh_ssr_id"));
 
-		document.setName(new Name(getProperty("enh_snavn"), null));
+		document.setDefaultName(getProperty("enh_snavn"));
 		document.setCenterPoint(mapCenterPoint());
 
 		document.setParent(toParent());

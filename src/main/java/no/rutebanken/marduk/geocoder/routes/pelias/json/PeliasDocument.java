@@ -6,7 +6,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.geojson.Polygon;
 
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Document model stored in elasticsearch for Pelias
@@ -27,10 +29,10 @@ public class PeliasDocument {
 	private String alpha3;
 
 	@JsonProperty("name")
-	private Name name;
+	private Map<String, String> nameMap;
 
 	@JsonProperty("phrase")
-	private Name phrase;
+	private Map<String, String> phraseMap;
 
 	@JsonProperty("center_point")
 	private GeoPoint centerPoint;
@@ -90,20 +92,56 @@ public class PeliasDocument {
 		this.layer = layer;
 	}
 
-	public Name getName() {
-		return name;
+	public Map<String, String> getNameMap() {
+		return nameMap;
 	}
 
-	public void setName(Name name) {
-		this.name = name;
+	public void setNameMap(Map<String, String> nameMap) {
+		this.nameMap = nameMap;
 	}
 
-	public Name getPhrase() {
-		return phrase;
+	public void setDefaultName(String name) {
+		addName("default", name);
 	}
 
-	public void setPhrase(Name phrase) {
-		this.phrase = phrase;
+	public String getDefaultName() {
+		if (nameMap != null) {
+			return nameMap.get("default");
+		}
+		return null;
+	}
+
+	public void addName(String language, String name) {
+		if (nameMap == null) {
+			nameMap = new HashMap<>();
+		}
+		nameMap.put(language, name);
+	}
+
+	public void setDefaultPhrase(String phrase) {
+		addPhrase("default", phrase);
+	}
+
+	public String getDefaultPhrase() {
+		if (phraseMap != null) {
+			return phraseMap.get("default");
+		}
+		return null;
+	}
+
+	public void addPhrase(String language, String phrase) {
+		if (phraseMap == null) {
+			phraseMap = new HashMap<>();
+		}
+		phraseMap.put(language, phrase);
+	}
+
+	public Map<String, String> getPhraseMap() {
+		return phraseMap;
+	}
+
+	public void setPhraseMap(Map<String, String> phraseMap) {
+		this.phraseMap = phraseMap;
 	}
 
 	public Polygon getShape() {

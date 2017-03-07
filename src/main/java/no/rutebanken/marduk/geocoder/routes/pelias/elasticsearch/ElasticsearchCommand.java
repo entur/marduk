@@ -4,7 +4,11 @@ package no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
+
+import java.io.IOException;
+import java.io.StringWriter;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ElasticsearchCommand {
@@ -70,4 +74,17 @@ public class ElasticsearchCommand {
 		return command;
 
 	}
+
+	public String toString() {
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			StringWriter writer = new StringWriter();
+			mapper.writeValue(writer, this);
+			return writer.toString();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+
 }

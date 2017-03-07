@@ -35,22 +35,22 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
 
 
 	private void assertKnownStopPlace(PeliasDocument known) throws Exception {
-		Assert.assertEquals("Harstad/Narvik Lufthavn", known.getName().getDefaultName());
+		Assert.assertEquals("Harstad/Narvik Lufthavn", known.getDefaultName());
+		Assert.assertEquals("Harstad/Narvik Lufthavn", known.getNameMap().get("no"));
 		Assert.assertEquals(STOP_PLACE_LAYER, known.getLayer());
 		Assert.assertEquals(Arrays.asList("airport"), known.getCategory());
 		Assert.assertEquals(68.490412, known.getCenterPoint().getLat(), 0.0001);
 		Assert.assertEquals(16.687364, known.getCenterPoint().getLon(), 0.0001);
-
 	}
 
 	private void assertKnownTown(PeliasDocument known) throws Exception {
-		Assert.assertEquals("Fredrikstad", known.getName().getDefaultName());
+		Assert.assertEquals("Fredrikstad", known.getDefaultName());
 		Assert.assertEquals("localadmin", known.getLayer());
 		Assert.assertEquals("NOR", known.getAlpha3());
 	}
 
 	private void assertKnownCounty(PeliasDocument known) throws Exception {
-		Assert.assertEquals("Østfold", known.getName().getDefaultName());
+		Assert.assertEquals("Østfold", known.getDefaultName());
 		Assert.assertEquals("county", known.getLayer());
 		Assert.assertEquals("NOR", known.getAlpha3());
 	}

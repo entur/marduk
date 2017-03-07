@@ -61,7 +61,7 @@ public class AddressStreamToElasticsearchCommandsTest {
 		Assert.assertEquals(Arrays.asList("Kartverket:locality:01250508"), parent.getlocalityId());
 		Assert.assertEquals(Arrays.asList("KIRKÅS/ENGA"), parent.getlocality());
 
-		Assert.assertEquals("Bergheimveien 14A", known.getName().getDefaultName());
+		Assert.assertEquals("Bergheimveien 14A", known.getNameMap().get("default"));
 		Assert.assertEquals("NOR", known.getAlpha3());
 		Assert.assertEquals(Arrays.asList("Vegadresse"), known.getCategory());
 	}

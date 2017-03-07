@@ -4,11 +4,11 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 import net.opengis.gml._3.AbstractRingType;
 import net.opengis.gml._3.LinearRingType;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
-import no.rutebanken.marduk.geocoder.routes.pelias.json.Name;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import org.geojson.LngLatAlt;
 import org.geojson.Polygon;
 import org.rutebanken.netex.model.LocationStructure;
+import org.rutebanken.netex.model.MultilingualString;
 import org.rutebanken.netex.model.Place_VersionStructure;
 
 import java.util.ArrayList;
@@ -24,20 +24,23 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
 
 	public PeliasDocument toPeliasDocument(T place) {
 		PeliasDocument document = new PeliasDocument(getLayer(place), participantRef, place.getId());
-		if (place.getName() != null) {
-			document.setName(new Name(place.getName().getValue(), null));
+		MultilingualString name = place.getName();
+		if (name != null) {
+			document.setDefaultName(name.getValue());
+			if (name.getLang() != null) {
+				document.addName(name.getLang(), name.getValue());
+			}
 		}
+
 		if (place.getCentroid() != null) {
 			LocationStructure loc = place.getCentroid().getLocation();
 			document.setCenterPoint(new GeoPoint(loc.getLatitude().doubleValue(), loc.getLongitude().doubleValue()));
 		}
-		// TODO else? center_point required. Calculate form polygon (if present?) or ignore?
 
 		if (place.getPolygon() != null) {
 			// TODO issues with shape validation in elasticsearch. duplicate coords + intersections cause document to be discarded. is shape even used by pelias?
 			document.setShape(toPolygon(place.getPolygon().getExterior().getAbstractRing().getValue()));
 		}
-
 
 		populateDocument(place, document);
 

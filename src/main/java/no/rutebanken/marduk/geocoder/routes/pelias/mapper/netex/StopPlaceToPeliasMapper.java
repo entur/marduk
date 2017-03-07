@@ -2,6 +2,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 
 
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
+import org.apache.commons.collections.CollectionUtils;
 import org.rutebanken.netex.model.StopPlace;
 
 import java.util.Arrays;
@@ -21,6 +22,12 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
 			document.setCategory(Arrays.asList(place.getStopPlaceType().value()));
 		}
 
+		if (place.getAlternativeNames() != null && !CollectionUtils.isEmpty(place.getAlternativeNames().getAlternativeName())) {
+			place.getAlternativeNames().getAlternativeName().stream().filter(an -> an.getName() != null && an.getName().getLang() != null).forEach(n -> document.addName(n.getName().getLang(), n.getName().getValue()));
+		}
+
+		// Make stop place rank highest in autocomplete by setting popularity
+		document.setPopularity(Long.MAX_VALUE);
 	}
 
 	@Override
