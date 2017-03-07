@@ -64,6 +64,8 @@ public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderI
 			}
 		});
 
+		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForKartverket + "/administrativeUnits/fylker.geojson",
+				new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson")), false);
 		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForKartverket + "/placeNames/placenames.geojson",
 				new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson")), false);
 		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForKartverket + "/addresses/addresses.csv",
@@ -71,7 +73,7 @@ public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderI
 		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForTiamatExport + "/tiamat/tiamat-export-latest.xml",
 				new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/netex/tiamat-export.xml")), false);
 
-		esScratchMock.expectedMessageCount(3);
+		esScratchMock.expectedMessageCount(4);
 
 		context.start();
 

@@ -64,7 +64,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.multicast(new UseOriginalAggregationStrategy())
 				.parallelProcessing()
 				.stopOnException()
-				.to("direct:insertAddresses", "direct:insertPlaceNames", "direct:insertTiamatData")
+				.to("direct:insertAdministrativeUnits", "direct:insertAddresses", "direct:insertPlaceNames", "direct:insertTiamatData")
 				.end()
 				.endDoTry()
 				.doCatch(AbortRouteException.class)
@@ -106,11 +106,21 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.DEBUG, "Start inserting place names to ES")
 				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/placeNames"))
 				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/placeNames"))
-				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromPlaceNames"))
+				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromKartverketGeoJson"))
 				.setHeader(FILE_EXTENSION, constant("geojson"))
 				.to("direct:haltIfContentIsMissing")
 				.log(LoggingLevel.DEBUG, "Finished inserting place names to ES")
 				.routeId("pelias-insert-place-names");
+
+		from("direct:insertAdministrativeUnits")
+				.log(LoggingLevel.DEBUG, "Start inserting administrative units to ES")
+				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/administrativeUnits"))
+				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/adminUnits"))
+				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromKartverketGeoJson"))
+				.setHeader(FILE_EXTENSION, constant("geojson"))
+				.to("direct:haltIfContentIsMissing")
+				.log(LoggingLevel.DEBUG, "Finished inserting administrative units to ES")
+				.routeId("pelias-insert-admin-units");
 
 
 		from("direct:haltIfContentIsMissing")
@@ -154,13 +164,14 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.INFO, "Updating indexes in elasticsearch from file: ${body.name}")
 				.toD("${header." + CONVERSION_ROUTE + "}")
 				.to("direct:invokePeliasBulkCommand")
+				.end()
 				.process(e -> deleteDirectory(new File(e.getIn().getHeader(WORKING_DIRECTORY, String.class))))
 				.routeId("pelias-insert-from-zip");
 
 
-		from("direct:convertToPeliasCommandsFromPlaceNames")
-				.bean("placeNamesStreamToElasticsearchCommands", "transform")
-				.routeId("pelias-convert-commands-place-names");
+		from("direct:convertToPeliasCommandsFromKartverketGeoJson")
+				.bean("kartverketGeoJsonStreamToElasticsearchCommands", "transform")
+				.routeId("pelias-convert-commands-kartverket-geojson");
 
 		from("direct:convertToPeliasCommandsFromAddresses")
 				.bean("addressStreamToElasticSearchCommands", "transform")

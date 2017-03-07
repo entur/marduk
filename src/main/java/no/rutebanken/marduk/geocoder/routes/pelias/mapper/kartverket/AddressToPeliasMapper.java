@@ -16,7 +16,7 @@ import java.util.Arrays;
 
 public class AddressToPeliasMapper {
 
-	private static final String SOURCE = "Kartverket";
+	private static final String SOURCE = "kartverket";
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -61,8 +61,9 @@ public class AddressToPeliasMapper {
 	private Parent toParent(KartverketAddress address) {
 		return Parent.builder().withPostalCodeId(address.getPostnrn())
 				       .withCountryId("NOR")
-				       .withCountyId(address.getFylkesNo())
-				       .withlocalityId(address.getFullKommuneNo())
+				       .withCountyId( address.getFylkesNo())
+					   .withlocality(address.getFullKommuneNo())
+				       .withlocalityId( address.getFullKommuneNo())
 				       .withBoroughId(address.getFullGrunnkretsNo())
 				       .withBorough(formatName(address.getGrunnkretsnavn()))
 				       .build();
@@ -70,7 +71,7 @@ public class AddressToPeliasMapper {
 
 
 	private String formatName(String name) {
-		return WordUtils.capitalize(StringUtils.lowerCase((name)),' ','/');
+		return WordUtils.capitalize(StringUtils.lowerCase((name)), ' ', '/');
 	}
 
 	private AddressParts toAddressParts(KartverketAddress address) {

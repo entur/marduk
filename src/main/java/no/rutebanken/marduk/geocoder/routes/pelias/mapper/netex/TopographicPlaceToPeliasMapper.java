@@ -32,7 +32,7 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
 				return "borough";
 
 			case PLACE_OF_INTEREST:
-				return "building"; // TODO add custom layer?
+				return "venue"; // TODO add custom layer?
 		}
 
 		return "macrohood"; // TODO what should be default?
