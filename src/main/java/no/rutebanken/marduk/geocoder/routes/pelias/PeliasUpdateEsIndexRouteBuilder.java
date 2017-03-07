@@ -172,13 +172,13 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 
 
 		from("direct:invokePeliasBulkCommand")
+				.bean("peliasIndexValidCommandFilter")
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
 				.setHeader(Exchange.CONTENT_TYPE, constant("application/json; charset=utf-8"))
 				.split().exchange(e ->
 						                  Lists.partition(e.getIn().getBody(List.class), insertBatchSize)).stopOnException()
 				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
 				.to("direct:haltIfAborted")
-
 				.bean("elasticsearchCommandWriterService")
 				.log(LoggingLevel.INFO, "Adding batch of indexes to elasticsearch for ${header." + FILE_HANDLE + "}")
 				.toD(elasticsearchScratchUrl + "/_bulk")
