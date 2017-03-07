@@ -58,11 +58,12 @@ public class AddressToPeliasMapper {
 
 	private Parent toParent(KartverketAddress address) {
 		return Parent.builder().withPostalCodeId(address.getPostnrn())
-				       .withCountryId(SOURCE + ":country:NOR")
-				       .withCountyId(SOURCE + ":county:" + address.getFylkesNo())
-				       .withLocaladminId(SOURCE + ":localadmin:" + address.getFullKommuneNo())
-				       .withlocalityId(SOURCE + ":locality:" + address.getFullGrunnkretsNo())
-				       .withlocality(address.getGrunnkretsnavn())
+				       .withCountryId("NOR")
+				       .withCountyId(address.getFylkesNo())
+				       .withLocaladminId(address.getFullKommuneNo())
+					   .withlocalityId(address.getFullKommuneNo())
+				       .withBoroughId(address.getFullGrunnkretsNo())
+				       .withBorough(address.getGrunnkretsnavn())
 				       .build();
 	}
 

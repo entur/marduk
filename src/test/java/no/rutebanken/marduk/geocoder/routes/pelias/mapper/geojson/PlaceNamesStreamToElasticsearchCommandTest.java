@@ -31,9 +31,10 @@ public class PlaceNamesStreamToElasticsearchCommandTest {
 		Assert.assertEquals(Double.valueOf(58.088692), kalland.getCenterPoint().getLat());
 		Assert.assertEquals(Double.valueOf(7.508508), kalland.getCenterPoint().getLon());
 
-		Assert.assertEquals(Arrays.asList("Kartverket:country:NOR"),kalland.getParent().getCountryId());
-		Assert.assertEquals(Arrays.asList("Kartverket:county:10"),kalland.getParent().getCountyId());
-		Assert.assertEquals(Arrays.asList("Kartverket:localadmin:1002"),kalland.getParent().getLocaladminId());
+		Assert.assertEquals(Arrays.asList("NOR"),kalland.getParent().getCountryId());
+		Assert.assertEquals(Arrays.asList("10"),kalland.getParent().getCountyId());
+		Assert.assertEquals(Arrays.asList("1002"),kalland.getParent().getLocaladminId());
+		Assert.assertEquals(Arrays.asList("1002"),kalland.getParent().getlocalityId());
 	}
 
 	private void assertCommand(ElasticsearchCommand command) {

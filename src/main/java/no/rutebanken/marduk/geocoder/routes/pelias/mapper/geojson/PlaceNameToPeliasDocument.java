@@ -32,10 +32,12 @@ public class PlaceNameToPeliasDocument {
 	}
 
 	private Parent toParent() {
+		String kommuneNo=StringUtils.leftPad("" + getProperty("enh_komm"), 4, "0");
 		return Parent.builder()
-				       .withCountryId(SOURCE + ":country:NOR")
-				       .withLocaladminId(SOURCE + ":localadmin:" + StringUtils.leftPad("" + getProperty("enh_komm"), 4, "0"))
-				       .withCountyId(SOURCE + ":county:" + StringUtils.leftPad("" + getProperty("kom_fylkesnr"), 2, "0"))
+				       .withCountryId("NOR")
+				       .withLocaladminId(kommuneNo)
+					   .withlocalityId(kommuneNo)
+				       .withCountyId(StringUtils.leftPad("" + getProperty("kom_fylkesnr"), 2, "0"))
 				       .build();
 	}
 

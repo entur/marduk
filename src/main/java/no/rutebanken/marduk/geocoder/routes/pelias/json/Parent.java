@@ -16,6 +16,7 @@ public class Parent {
 	private List<String> postalCode;
 	private List<String> localadmin;
 	private List<String> locality;
+	private List<String> borough;
 
 	@JsonProperty("country_id")
 	private List<String> countryId;
@@ -27,7 +28,8 @@ public class Parent {
 	private List<String> localadminId;
 	@JsonProperty("locality_id")
 	private List<String> localityId;
-
+	@JsonProperty("borough_id")
+	private List<String> boroughId;
 
 	public List<String> getCountry() {
 		return country;
@@ -109,6 +111,22 @@ public class Parent {
 		this.localityId = localityId;
 	}
 
+	public List<String> getBorough() {
+		return borough;
+	}
+
+	public void setBorough(List<String> borough) {
+		this.borough = borough;
+	}
+
+	public List<String> getBoroughId() {
+		return boroughId;
+	}
+
+	public void setBoroughId(List<String> boroughId) {
+		this.boroughId = boroughId;
+	}
+
 	public static Parent.Builder builder() {
 		return new Parent.Builder();
 	}
@@ -161,6 +179,15 @@ public class Parent {
 			return this;
 		}
 
+
+		public Builder withBorough(String borough) {
+			if (parent.borough == null) {
+				parent.borough = new ArrayList<>();
+			}
+			parent.borough.add(borough);
+			return this;
+		}
+
 		public Builder withCountryId(String countryId) {
 			if (parent.countryId == null) {
 				parent.countryId = new ArrayList<>();
@@ -198,6 +225,14 @@ public class Parent {
 				parent.countyId = new ArrayList<>();
 			}
 			parent.countyId.add(countyId);
+			return this;
+		}
+
+		public Builder withBoroughId(String boroughId) {
+			if (parent.boroughId == null) {
+				parent.boroughId = new ArrayList<>();
+			}
+			parent.boroughId.add(boroughId);
 			return this;
 		}
 
