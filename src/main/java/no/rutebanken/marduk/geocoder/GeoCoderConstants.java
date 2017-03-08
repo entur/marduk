@@ -41,7 +41,4 @@ public class GeoCoderConstants {
 	public static final GeoCoderTask PELIAS_ES_SCRATCH_STOP =
 			new GeoCoderTask(GeoCoderTask.Phase.PELIAS_UPDATE, 2, "direct:shutdownElasticsearchScratchInstance");
 
-	public static final GeoCoderTask PELIAS_ES_BUILD_POLL =
-			new GeoCoderTask(GeoCoderTask.Phase.PELIAS_UPDATE, 3, "direct:pollElasticsearchBuildCompleted");
-
 }
