@@ -9,8 +9,8 @@ import java.util.Arrays;
 
 public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentMapper<StopPlace> {
 
-	// Using region as substitute layer for stops to avoid having to fork pelias (custom layers not configurable).
-	public static final String STOP_PLACE_LAYER = "region";
+	// Using substitute layer for stops to avoid having to fork pelias (custom layers not configurable).
+	public static final String STOP_PLACE_LAYER = "microhood";
 
 	public StopPlaceToPeliasMapper(String participantRef) {
 		super(participantRef);
