@@ -54,12 +54,12 @@ public class AddressStreamToElasticsearchCommandsTest {
 		Assert.assertEquals(wgs84Point.getX(), known.getCenterPoint().getLon(), 0.0001);
 
 		Parent parent = known.getParent();
-		Assert.assertEquals(Arrays.asList("NOR"), parent.getCountryId());
-		Assert.assertEquals(Arrays.asList("1850"), parent.getPostalCodeId());
-		Assert.assertEquals(Arrays.asList("01"), parent.getCountyId());
-		Assert.assertEquals(Arrays.asList("0125"), parent.getLocalityId());
-		Assert.assertEquals(Arrays.asList("01250508"), parent.getBoroughId());
-		Assert.assertEquals(Arrays.asList("Kirkås/Enga"), parent.getBorough());
+		Assert.assertEquals("NOR", parent.getCountryId());
+		Assert.assertEquals("1850", parent.getPostalCodeId());
+		Assert.assertEquals("01", parent.getCountyId());
+		Assert.assertEquals("0125", parent.getLocalityId());
+		Assert.assertEquals("01250508", parent.getBoroughId());
+		Assert.assertEquals("Kirkås/Enga", parent.getBorough());
 
 		Assert.assertEquals("Bergheimveien 14A", known.getNameMap().get("default"));
 		Assert.assertEquals("NOR", known.getAlpha3());

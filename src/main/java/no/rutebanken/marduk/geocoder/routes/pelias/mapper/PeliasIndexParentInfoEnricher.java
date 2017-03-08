@@ -1,7 +1,11 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.mapper;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
 import no.rutebanken.marduk.geocoder.GeoCoderConstants;
+import no.rutebanken.marduk.geocoder.geojson.KartverketLocality;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
+import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.Parent;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import no.rutebanken.marduk.geocoder.services.AdminUnitRepository;
@@ -14,6 +18,8 @@ import java.util.Collection;
 @Service
 public class PeliasIndexParentInfoEnricher {
 
+	private GeometryFactory geometryFactory = new GeometryFactory();
+
 	/**
 	 * Enrich indexing commands with parent info if missing.
 	 */
@@ -23,27 +29,40 @@ public class PeliasIndexParentInfoEnricher {
 	}
 
 	void addMissingParentInfo(ElasticsearchCommand command, AdminUnitRepository adminUnitRepository) {
-		if (!(command.getSource() instanceof PeliasDocument)){
+		if (!(command.getSource() instanceof PeliasDocument)) {
 			return;
 		}
 		PeliasDocument peliasDocument = (PeliasDocument) command.getSource();
 		Parent parent = peliasDocument.getParent();
 
+
+		GeoPoint centerPoint = peliasDocument.getCenterPoint();
+		if ((parent == null || parent.getLocalityId() == null) && centerPoint != null) {
+			KartverketLocality locality = adminUnitRepository.getLocality(new GeometryFactory().createPoint(new Coordinate(centerPoint.getLon(), centerPoint.getLat())));
+			if (locality != null) {
+				if (parent == null) {
+					parent = new Parent();
+					peliasDocument.setParent(parent);
+				}
+				parent.setLocalityId(locality.getId());
+				parent.setCountyId(locality.getParentId());
+			}
+		}
+
+
 		if (parent != null) {
-			if (size(parent.getCountyId()) > size(parent.getCounty())) {
-				parent.getCountyId().stream().forEach(countyId -> parent.addCounty(adminUnitRepository.getAdminUnitName(countyId)));
+			if (parent.getCountyId() != null && parent.getCounty() == null) {
+				parent.setCounty(adminUnitRepository.getAdminUnitName(parent.getCountyId()));
 			}
-			if (size(parent.getLocalityId()) > size(parent.getLocality())) {
-				parent.getLocalityId().stream().forEach(localityId -> parent.addLocality(adminUnitRepository.getAdminUnitName(localityId)));
+			if (parent.getLocalityId() != null && parent.getLocality() == null) {
+				parent.setLocality(adminUnitRepository.getAdminUnitName(parent.getLocalityId()));
 			}
-			if (size(parent.getBoroughId()) > size(parent.getBorough())) {
-				parent.getBoroughId().stream().forEach(boroughId -> parent.addBorough(adminUnitRepository.getAdminUnitName(boroughId)));
+			if (parent.getBoroughId() != null && parent.getBorough() == null) {
+				parent.setBorough(adminUnitRepository.getAdminUnitName(parent.getBoroughId()));
 			}
+
 
 		}
 	}
 
-	private int size(Collection<?> coll) {
-		return coll == null ? 0 : coll.size();
-	}
 }

@@ -7,7 +7,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.FileInputStream;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
@@ -29,7 +28,7 @@ public class FylkeToElasticsearchCommandTest {
 
 	private void assertBuskerud(PeliasDocument buskerud) {
 		Assert.assertNotNull(buskerud.getShape());
-		Assert.assertEquals(Arrays.asList("NOR"), buskerud.getParent().getCountryId());
+		Assert.assertEquals("NOR", buskerud.getParent().getCountryId());
 		Assert.assertEquals("06", buskerud.getSourceId());
 	}
 

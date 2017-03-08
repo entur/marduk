@@ -3,10 +3,15 @@ package no.rutebanken.marduk.geocoder.services;
 import com.google.cloud.storage.Storage;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.geom.Polygon;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONCollection;
 import no.rutebanken.marduk.geocoder.geojson.AbstractKartverketGeojsonWrapper;
 import no.rutebanken.marduk.geocoder.geojson.KartverketFeatureWrapperFactory;
+import no.rutebanken.marduk.geocoder.geojson.KartverketLocality;
 import no.rutebanken.marduk.repository.BlobStoreRepository;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.FileUtils;
@@ -19,6 +24,8 @@ import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class AdminUnitRepositoryBuilder {
@@ -47,20 +54,40 @@ public class AdminUnitRepositoryBuilder {
 	}
 
 	public AdminUnitRepository build() {
-		return new CacheAdminUnitRepository(new RefreshCache().buildNewCache());
+		RefreshCache refreshJob = new RefreshCache();
+		refreshJob.buildNewCache();
+		return new CacheAdminUnitRepository(refreshJob.tmpCache, refreshJob.localities);
 	}
 
 	private class CacheAdminUnitRepository implements AdminUnitRepository {
 
-		private Cache<String, String> cache;
+		private Cache<String, String> idCache;
 
-		public CacheAdminUnitRepository(Cache<String, String> cache) {
-			this.cache = cache;
+		private List<KartverketLocality> localities;
+
+		public CacheAdminUnitRepository(Cache<String, String> idCache, List<KartverketLocality> localities) {
+			this.idCache = idCache;
+			this.localities = localities;
 		}
 
 		@Override
 		public String getAdminUnitName(String id) {
-			return cache.getIfPresent(id);
+			return idCache.getIfPresent(id);
+		}
+
+		@Override
+		public KartverketLocality getLocality(Point point) {
+			if (localities == null) {
+				return null;
+			}
+			for (KartverketLocality locality : localities) {
+				Geometry geometry = locality.getDefaultGeometry();
+
+				if (geometry != null && geometry.contains(point)) {
+					return locality;
+				}
+			}
+			return null;
 		}
 	}
 
@@ -69,9 +96,12 @@ public class AdminUnitRepositoryBuilder {
 
 		private Cache<String, String> tmpCache;
 
-		public Cache<String, String> buildNewCache() {
+		private List<KartverketLocality> localities;
+
+		public void buildNewCache() {
 			BlobStoreFiles blobs = repository.listBlobs(blobStoreSubdirectoryForKartverket + "/administrativeUnits");
 
+			localities = new ArrayList<>();
 			tmpCache = CacheBuilder.newBuilder().maximumSize(cacheMaxSize).build();
 			for (BlobStoreFiles.File blob : blobs.getFiles()) {
 				if (blob.getName().endsWith(".zip")) {
@@ -84,7 +114,6 @@ public class AdminUnitRepositoryBuilder {
 
 			}
 
-			return tmpCache;
 		}
 
 		private void addAdminUnitsInFile(File file) {
@@ -98,6 +127,10 @@ public class AdminUnitRepositoryBuilder {
 
 		private void addAdminUnit(SimpleFeature feature) {
 			AbstractKartverketGeojsonWrapper wrapper = KartverketFeatureWrapperFactory.createWrapper(feature);
+
+			if (wrapper instanceof KartverketLocality) {
+				localities.add((KartverketLocality) wrapper);
+			}
 
 			tmpCache.put(wrapper.getId(), wrapper.getName());
 		}

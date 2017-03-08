@@ -1,220 +1,152 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.json;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonRootName;
+import com.fasterxml.jackson.annotation.*;
+import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @JsonRootName("parent")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Parent {
 
-	private List<String> country;
-	private List<String> county;
-	private List<String> postalCode;
-	private List<String> localadmin;
-	private List<String> locality;
-	private List<String> borough;
+	@JsonProperty("country")
+	private List<String> countryList;
+	@JsonProperty("county")
+	private List<String> countyList;
+	@JsonProperty("postalCode")
+	private List<String> postalCodeList;
+	@JsonProperty("localadmin")
+	private List<String> localadminList;
+	@JsonProperty("locality")
+	private List<String> localityList;
+	@JsonProperty("borough")
+	private List<String> boroughList;
 
 	@JsonProperty("country_id")
-	private List<String> countryId;
+	private List<String> countryIdList;
 	@JsonProperty("county_id")
-	private List<String> countyId;
+	private List<String> countyIdList;
 	@JsonProperty("postalCode_id")
-	private List<String> postalCodeId;
+	private List<String> postalCodeIdList;
 	@JsonProperty("localadmin_id")
-	private List<String> localadminId;
+	private List<String> localadminIdList;
 	@JsonProperty("locality_id")
-	private List<String> localityId;
+	private List<String> localityIdList;
 	@JsonProperty("borough_id")
-	private List<String> boroughId;
+	private List<String> boroughIdList;
 
-	public List<String> getCountry() {
-		return country;
+	public Parent() {
 	}
 
-	public List<String> getCounty() {
-		return county;
+	@JsonIgnore
+	public String getCountry() {
+		return getFirst(countryList);
+	}
+	@JsonIgnore
+	public String getCounty() {
+		return getFirst(countyList);
+	}
+	@JsonIgnore
+	public String getPostalCode() {
+		return getFirst(postalCodeList);
+	}
+	@JsonIgnore
+	public String getLocaladmin() {
+		return getFirst(localadminList);
+	}
+	@JsonIgnore
+	public String getLocality() {
+		return getFirst(localityList);
+	}
+	@JsonIgnore
+	public String getCountryId() {
+		return getFirst(countryIdList);
+	}
+	@JsonIgnore
+	public String getCountyId() {
+		return getFirst(countyIdList);
 	}
 
-	public List<String> getPostalCode() {
-		return postalCode;
+	@JsonIgnore
+	public String getPostalCodeId() {
+		return getFirst(postalCodeIdList);
+	}
+	@JsonIgnore
+	public String getLocaladminId() {
+		return getFirst(localadminIdList);
+	}
+	@JsonIgnore
+	public String getLocalityId() {
+		return getFirst(localityIdList);
+	}
+	@JsonIgnore
+	public String getBorough() {
+		return getFirst(boroughList);
+	}
+	@JsonIgnore
+	public String getBoroughId() {
+		return getFirst(boroughIdList);
 	}
 
-	public List<String> getLocaladmin() {
-		return localadmin;
+	public void setCountry(String country) {
+		this.countryList = asList(country);
 	}
 
-	public List<String> getLocality() {
-		return locality;
+	public void setCounty(String county) {
+		this.countyList = asList(county);
 	}
 
-	public List<String> getCountryId() {
-		return countryId;
+	public void setPostalCode(String postalCode) {
+		this.postalCodeList = asList(postalCode);
 	}
 
-	public List<String> getCountyId() {
-		return countyId;
+	public void setLocaladmin(String localadmin) {
+		this.localadminList = asList(localadmin);
 	}
 
-
-	public List<String> getPostalCodeId() {
-		return postalCodeId;
+	public void setLocality(String locality) {
+		this.localityList = asList(locality);
 	}
 
-	public List<String> getLocaladminId() {
-		return localadminId;
+	public void setBorough(String borough) {
+		this.boroughList = asList(borough);
 	}
 
-	public List<String> getLocalityId() {
-		return localityId;
-	}
-	public List<String> getBorough() {
-		return borough;
+	public void setCountryId(String countryId) {
+		this.countryIdList = asList(countryId);
 	}
 
-	public List<String> getBoroughId() {
-		return boroughId;
+	public void setCountyId(String countyId) {
+		this.countyIdList = asList(countyId);
+	}
+
+	public void setPostalCodeId(String postalCodeId) {
+		this.postalCodeIdList = asList(postalCodeId);
+	}
+
+	public void setLocaladminId(String localadminId) {
+		this.localadminIdList = asList(localadminId);
+	}
+
+	public void setLocalityId(String localityId) {
+		this.localityIdList = asList(localityId);
+	}
+
+	public void setBoroughId(String boroughId) {
+		this.boroughIdList = asList(boroughId);
+	}
+
+	private <T> List<T> asList(T obj) {
+		return obj == null ? null : Arrays.asList(obj);
+	}
+
+	private <T> T getFirst(List<T> list) {
+		return CollectionUtils.isEmpty(list) ? null : list.get(0);
 	}
 
 	public static Parent.Builder builder() {
 		return new Parent.Builder();
-	}
-
-
-	public void addCountry(String country) {
-		if (country == null) {
-			return;
-		}
-		if (this.country == null) {
-			this.country = new ArrayList<>();
-		}
-		this.country.add(country);
-
-	}
-
-	public void addPostalCode(String postalCode) {
-		if (postalCode == null) {
-			return;
-		}
-		if (this.postalCode == null) {
-			this.postalCode = new ArrayList<>();
-		}
-		this.postalCode.add(postalCode);
-
-	}
-
-	public void addLocaladmin(String localadmin) {
-		if (localadmin == null) {
-			return;
-		}
-		if (this.localadmin == null) {
-			this.localadmin = new ArrayList<>();
-		}
-		this.localadmin.add(localadmin);
-
-	}
-
-	public void addLocality(String locality) {
-		if (locality == null) {
-			return;
-		}
-		if (this.locality == null) {
-			this.locality = new ArrayList<>();
-		}
-		this.locality.add(locality);
-
-	}
-
-	public void addCounty(String county) {
-		if (county == null) {
-			return;
-		}
-		if (this.county == null) {
-			this.county = new ArrayList<>();
-		}
-		this.county.add(county);
-
-	}
-
-
-	public void addBorough(String borough) {
-		if (borough == null) {
-			return;
-		}
-		if (this.borough == null) {
-			this.borough = new ArrayList<>();
-		}
-		this.borough.add(borough);
-
-	}
-
-	public void addCountryId(String countryId) {
-		if (countryId == null) {
-			return;
-		}
-		if (this.countryId == null) {
-			this.countryId = new ArrayList<>();
-		}
-		this.countryId.add(countryId);
-
-	}
-
-	public void addPostalCodeId(String postalCodeId) {
-		if (postalCodeId == null) {
-			return;
-		}
-		if (this.postalCodeId == null) {
-			this.postalCodeId = new ArrayList<>();
-		}
-		this.postalCodeId.add(postalCodeId);
-
-	}
-
-	public void addLocaladminId(String localadminId) {
-		if (localadminId == null) {
-			return;
-		}
-		if (this.localadminId == null) {
-			this.localadminId = new ArrayList<>();
-		}
-		this.localadminId.add(localadminId);
-
-	}
-
-	public void addLocalityId(String localityId) {
-		if (localityId == null) {
-			return;
-		}
-		if (this.localityId == null) {
-			this.localityId = new ArrayList<>();
-		}
-		this.localityId.add(localityId);
-
-	}
-
-	public void addCountyId(String countyId) {
-		if (countyId == null) {
-			return;
-		}
-		if (this.countyId == null) {
-			this.countyId = new ArrayList<>();
-		}
-		this.countyId.add(countyId);
-
-	}
-
-	public void addBoroughId(String boroughId) {
-		if (boroughId == null) {
-			return;
-		}
-		if (this.boroughId == null) {
-			this.boroughId = new ArrayList<>();
-		}
-		this.boroughId.add(boroughId);
-
 	}
 
 
@@ -227,64 +159,64 @@ public class Parent {
 
 
 		public Builder withCountry(String country) {
-			parent.addCountry(country);
+			parent.setCounty(country);
 			return this;
 		}
 
 		public Builder withPostalCode(String postalCode) {
 
-			parent.addPostalCode(postalCode);
+			parent.setPostalCode(postalCode);
 			return this;
 		}
 
 		public Builder withLocaladmin(String localadmin) {
-			parent.addLocaladmin(localadmin);
+			parent.setLocaladmin(localadmin);
 			return this;
 		}
 
 		public Builder withLocality(String locality) {
-			parent.addLocality(locality);
+			parent.setLocality(locality);
 			return this;
 		}
 
 		public Builder withCounty(String county) {
-			parent.addCounty(county);
+			parent.setCounty(county);
 			return this;
 		}
 
 
 		public Builder withBorough(String borough) {
-			parent.addBorough(borough);
+			parent.setBorough(borough);
 			return this;
 		}
 
 		public Builder withCountryId(String countryId) {
-			parent.addCountryId(countryId);
+			parent.setCountryId(countryId);
 			return this;
 		}
 
 		public Builder withPostalCodeId(String postalCodeId) {
-			parent.addPostalCodeId(postalCodeId);
+			parent.setPostalCodeId(postalCodeId);
 			return this;
 		}
 
 		public Builder withLocaladminId(String localadminId) {
-			parent.addLocaladminId(localadminId);
+			parent.setLocaladminId(localadminId);
 			return this;
 		}
 
 		public Builder withLocalityId(String localityId) {
-			parent.addLocalityId(localityId);
+			parent.setLocalityId(localityId);
 			return this;
 		}
 
 		public Builder withCountyId(String countyId) {
-			parent.addCountyId(countyId);
+			parent.setCountyId(countyId);
 			return this;
 		}
 
 		public Builder withBoroughId(String boroughId) {
-			parent.addBoroughId(boroughId);
+			parent.setBoroughId(boroughId);
 			return this;
 		}
 
@@ -292,5 +224,6 @@ public class Parent {
 			return parent;
 		}
 	}
+
 
 }

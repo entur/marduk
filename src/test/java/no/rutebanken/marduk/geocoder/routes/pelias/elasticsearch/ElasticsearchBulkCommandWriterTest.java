@@ -3,6 +3,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch;
 
 import net.logstash.logback.encoder.org.apache.commons.lang.StringUtils;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
+import no.rutebanken.marduk.geocoder.routes.pelias.json.Parent;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import org.junit.Assert;
 import org.junit.Test;
@@ -36,6 +37,9 @@ public class ElasticsearchBulkCommandWriterTest {
 		peliasDocument.setAlpha3("nor");
 		peliasDocument.setDefaultName(name);
 		peliasDocument.setCenterPoint(new GeoPoint(51.7651177, -0.2336668));
+
+		peliasDocument.setParent(Parent.builder().withBorough("bor").withCountryId("NOR").build());
+
 		return peliasDocument;
 	}
 
