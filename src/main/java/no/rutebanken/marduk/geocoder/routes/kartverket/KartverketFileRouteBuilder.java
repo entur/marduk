@@ -70,7 +70,12 @@ public class KartverketFileRouteBuilder extends BaseRouteBuilder {
 		Set<String> activeFileNames = activeFiles.stream().map(f -> f.getName()).collect(Collectors.toSet());
 		BlobStoreFiles blobs = blobStoreService.listBlobsInFolder(e.getIn().getHeader(FOLDER_NAME, String.class), e);
 
-		blobs.getFiles().stream().filter(b -> !activeFileNames.contains(Paths.get(b.getName()).getFileName().toString())).forEach(b -> blobStoreService.deleteBlob(b.getName(), e));
+		blobs.getFiles().stream().filter(b -> !activeFileNames.contains(Paths.get(b.getName()).getFileName().toString())).forEach(b -> deleteNoLongerActiveBlob(b, e));
 
+	}
+
+	private void deleteNoLongerActiveBlob(BlobStoreFiles.File blob, Exchange e) {
+		log.info("Delete blob no longer part of Kartverekt dataset: " + blob);
+		blobStoreService.deleteBlob(blob.getName(), e);
 	}
 }
