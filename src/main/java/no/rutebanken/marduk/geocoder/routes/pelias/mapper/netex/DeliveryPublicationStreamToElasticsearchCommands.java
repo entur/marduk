@@ -25,7 +25,7 @@ import static javax.xml.bind.JAXBContext.newInstance;
 @Service
 public class DeliveryPublicationStreamToElasticsearchCommands {
 
-	@Value("${pelias.stop.place.default.popularity:100}")
+	@Value("${pelias.stop.place.default.popularity:1}")
 	private long defaultPopularity;
 
 	public Collection<ElasticsearchCommand> transform(InputStream publicationDeliveryStream) {
