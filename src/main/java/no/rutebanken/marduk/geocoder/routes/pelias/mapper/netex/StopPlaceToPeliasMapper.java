@@ -12,8 +12,11 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
 	// Using substitute layer for stops to avoid having to fork pelias (custom layers not configurable).
 	public static final String STOP_PLACE_LAYER = "microhood";
 
-	public StopPlaceToPeliasMapper(String participantRef) {
+	private long defaultPopularity;
+
+	public StopPlaceToPeliasMapper(String participantRef, long defaultPopularity) {
 		super(participantRef);
+		this.defaultPopularity = defaultPopularity;
 	}
 
 	@Override
@@ -27,7 +30,7 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
 		}
 
 		// Make stop place rank highest in autocomplete by setting popularity
-		document.setPopularity(Long.MAX_VALUE);
+		document.setPopularity(defaultPopularity);
 	}
 
 	@Override

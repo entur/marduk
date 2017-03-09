@@ -7,6 +7,7 @@ import org.rutebanken.netex.model.Common_VersionFrameStructure;
 import org.rutebanken.netex.model.Place_VersionStructure;
 import org.rutebanken.netex.model.PublicationDeliveryStructure;
 import org.rutebanken.netex.model.Site_VersionFrameStructure;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.xml.bind.JAXBContext;
@@ -23,6 +24,9 @@ import static javax.xml.bind.JAXBContext.newInstance;
 
 @Service
 public class DeliveryPublicationStreamToElasticsearchCommands {
+
+	@Value("${pelias.stop.place.default.popularity:100}")
+	private long defaultPopularity;
 
 	public Collection<ElasticsearchCommand> transform(InputStream publicationDeliveryStream) {
 		try {
@@ -43,7 +47,7 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
 				Site_VersionFrameStructure siteFrame = (Site_VersionFrameStructure) frameStructure;
 
 				if (siteFrame.getStopPlaces() != null) {
-					commands.addAll(addCommands(siteFrame.getStopPlaces().getStopPlace(), new StopPlaceToPeliasMapper(deliveryStructure.getParticipantRef())));
+					commands.addAll(addCommands(siteFrame.getStopPlaces().getStopPlace(), new StopPlaceToPeliasMapper(deliveryStructure.getParticipantRef(), defaultPopularity)));
 				}
 				if (siteFrame.getStopPlaces() != null) {
 					commands.addAll(addCommands(siteFrame.getTopographicPlaces().getTopographicPlace(), new TopographicPlaceToPeliasMapper(deliveryStructure.getParticipantRef())));
