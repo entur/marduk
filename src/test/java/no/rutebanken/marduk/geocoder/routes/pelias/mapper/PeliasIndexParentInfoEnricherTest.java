@@ -6,14 +6,12 @@ import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCo
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import no.rutebanken.marduk.geocoder.services.AdminUnitRepository;
-import org.geotools.feature.simple.SimpleFeatureImpl;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.opengis.feature.simple.SimpleFeature;
 
 public class PeliasIndexParentInfoEnricherTest {
 
