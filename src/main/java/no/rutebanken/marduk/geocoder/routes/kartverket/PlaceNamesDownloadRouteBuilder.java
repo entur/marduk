@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.geocoder.routes.kartverket;
 
+import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.SystemStatus;
 import org.apache.camel.LoggingLevel;
@@ -41,7 +42,8 @@ public class PlaceNamesDownloadRouteBuilder extends BaseRouteBuilder {
 
 		from(KARTVERKET_PLACE_NAMES_DOWNLOAD.getEndpoint())
 				.log(LoggingLevel.INFO, "Start downloading place names")
-				.process(e -> SystemStatus.builder(e).start(FILE_TRANSFER).source(KARTVERKET).target(GC).entity(PLACE_NAME).build()).to("direct:updateSystemStatus")
+				.process(e -> SystemStatus.builder(e).start(GeoCoderTaskType.PLACE_NAMES_DOWNLOAD).action(FILE_TRANSFER)
+						              .source(KARTVERKET).target(GC).entity(PLACE_NAME).build()).to("direct:updateSystemStatus")
 				.to("direct:transferPlaceNamesFiles")
 				.choice()
 				.when(simple("${header." + CONTENT_CHANGED + "}"))

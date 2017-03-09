@@ -2,6 +2,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias;
 
 
 import no.rutebanken.marduk.geocoder.GeoCoderConstants;
+import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.geocoder.routes.pelias.babylon.DeploymentStatus;
 import no.rutebanken.marduk.geocoder.routes.pelias.babylon.ScalingOrder;
 import no.rutebanken.marduk.geocoder.routes.pelias.babylon.StartFile;
@@ -66,7 +67,8 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 		from(PELIAS_UPDATE_START.getEndpoint())
 				.log(LoggingLevel.INFO, "Start updating Pelias")
 				.bean(updateStatusService, "setBuilding")
-				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.UPDATE).target(PELIAS).build()).to("direct:updateSystemStatus")
+				.process(e -> SystemStatus.builder(e).start(GeoCoderTaskType.PELIAS_UPDATE).action(SystemStatus.Action.UPDATE)
+						              .target(PELIAS).build()).to("direct:updateSystemStatus")
 				.to("direct:startElasticsearchScratchInstance")
 				.routeId("pelias-upload");
 

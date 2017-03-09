@@ -5,6 +5,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONFilter;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceConverter;
 import no.rutebanken.marduk.geocoder.netex.kartverket.GeoJsonTopographicPlaceReader;
+import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.SystemStatus;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.InputStream;
 import java.util.List;
+
 import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.*;
 import static no.rutebanken.marduk.routes.status.SystemStatus.System.*;
 import static no.rutebanken.marduk.routes.status.SystemStatus.Action.*;
@@ -62,7 +64,8 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 		from(TIAMAT_ADMINISTRATIVE_UNITS_UPDATE_START.getEndpoint())
 				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
 				.log(LoggingLevel.INFO, "Starting update of administrative units in Tiamat")
-				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.UPDATE).source(GC).target(TIAMAT)
+				.process(e -> SystemStatus.builder(e).start(GeoCoderTaskType.TIAMAT_ADMINISTRATIVE_UNITS_UPDATE)
+						              .action(SystemStatus.Action.UPDATE).source(GC).target(TIAMAT)
 						              .entity(ADMINISTRATIVE_UNITS).build()).to("direct:updateSystemStatus")
 				.to("direct:fetchAdministrativeUnits")
 				.to("direct:filterAdministrativeUnitsExclaves")

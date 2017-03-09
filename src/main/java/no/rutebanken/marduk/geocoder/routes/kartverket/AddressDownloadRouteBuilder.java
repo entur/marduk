@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.geocoder.routes.kartverket;
 
 
+import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.SystemStatus;
 import org.apache.camel.LoggingLevel;
@@ -43,7 +44,7 @@ public class AddressDownloadRouteBuilder extends BaseRouteBuilder {
 
 		from(KARTVERKET_ADDRESS_DOWNLOAD.getEndpoint())
 				.log(LoggingLevel.INFO, "Start downloading address information from mapping authority")
-				.process(e -> SystemStatus.builder(e).start(FILE_TRANSFER).source(KARTVERKET)
+				.process(e -> SystemStatus.builder(e).start(GeoCoderTaskType.ADDRESS_DOWNLOAD).action(FILE_TRANSFER).source(KARTVERKET)
 						              .target(GC).entity(ADDRESS).build()).to("direct:updateSystemStatus")
 				.setHeader(KARTVERKET_DATASETID, constant(addressesDataSetId))
 				.setHeader(FOLDER_NAME, constant(blobStoreSubdirectoryForKartverket + "/addresses"))

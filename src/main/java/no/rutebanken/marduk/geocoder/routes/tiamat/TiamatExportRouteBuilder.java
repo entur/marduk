@@ -2,6 +2,7 @@ package no.rutebanken.marduk.geocoder.routes.tiamat;
 
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.geocoder.routes.tiamat.xml.ExportJob;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.SystemStatus;
@@ -9,6 +10,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
 import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.*;
 import static no.rutebanken.marduk.routes.status.SystemStatus.System.*;
 import static no.rutebanken.marduk.routes.status.SystemStatus.Action.*;
@@ -46,7 +48,8 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 				.routeId("tiamat-export-quartz");
 
 		from(TIAMAT_EXPORT_START.getEndpoint())
-				.process(e -> SystemStatus.builder(e).start(EXPORT).source(TIAMAT).target(GC).entity(DELIVERY_PUBLICATION).build()).to("direct:updateSystemStatus")
+				.process(e -> SystemStatus.builder(e).start(GeoCoderTaskType.TIAMAT_EXPORT).action(EXPORT).source(TIAMAT)
+						              .target(GC).entity(DELIVERY_PUBLICATION).build()).to("direct:updateSystemStatus")
 				.log(LoggingLevel.INFO, "Start Tiamat export")
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
 				.setBody(constant(null))
@@ -70,7 +73,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:tiamatExportMoveFileToMardukBlobStore")
 				.log(LoggingLevel.DEBUG, getClass().getName(), "Fetching tiamat export file ...")
-				.toD(tiamatUrl+"/${header." + Constants.JOB_STATUS_URL + "}/content")
+				.toD(tiamatUrl + "/${header." + Constants.JOB_STATUS_URL + "}/content")
 				.setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForTiamatExport + "/" + TIAMAT_EXPORT_LATEST_FILE_NAME))
 				.to("direct:uploadBlob")
 				.routeId("tiamat-export-move-file");
