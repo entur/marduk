@@ -5,7 +5,9 @@ import no.rutebanken.marduk.routes.status.SystemStatus;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
+import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.*;
+import static no.rutebanken.marduk.routes.status.SystemStatus.System.*;
+import static no.rutebanken.marduk.routes.status.SystemStatus.Action.*;
 import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 
@@ -39,7 +41,7 @@ public class PlaceNamesDownloadRouteBuilder extends BaseRouteBuilder {
 
 		from(KARTVERKET_PLACE_NAMES_DOWNLOAD.getEndpoint())
 				.log(LoggingLevel.INFO, "Start downloading place names")
-				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.FILE_TRANSFER).entity("Kartverket place names").build()).to("direct:updateSystemStatus")
+				.process(e -> SystemStatus.builder(e).start(FILE_TRANSFER).source(KARTVERKET).target(GC).entity(PLACE_NAME).build()).to("direct:updateSystemStatus")
 				.to("direct:transferPlaceNamesFiles")
 				.choice()
 				.when(simple("${header." + CONTENT_CHANGED + "}"))

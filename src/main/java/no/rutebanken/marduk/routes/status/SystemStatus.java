@@ -17,7 +17,11 @@ import static no.rutebanken.marduk.Constants.*;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SystemStatus {
-	public enum Action {FILE_TRANSFER, EXPORT, UPDATE, BUILD_GRAPH}
+	public enum System {KARTVERKET, GC, TIAMAT, PELIAS}
+
+	public enum Entity {GRAPH, ADDRESS, ADMINISTRATIVE_UNITS, POI, PLACE_NAME, DELIVERY_PUBLICATION}
+
+	public enum Action {FILE_TRANSFER, EXPORT, UPDATE, BUILD}
 
 	public enum State {STARTED, TIMEOUT, FAILED, OK}
 
@@ -32,6 +36,12 @@ public class SystemStatus {
 
 	@JsonProperty("entity")
 	private String entity;
+
+	@JsonProperty("source")
+	private String source;
+
+	@JsonProperty("target")
+	private String target;
 
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS", timezone = "CET")
 	@JsonProperty("date")
@@ -104,8 +114,18 @@ public class SystemStatus {
 			return this;
 		}
 
-		public SystemStatus.Builder entity(String entity) {
-			systemStatus.entity = entity;
+		public SystemStatus.Builder entity(Entity entity) {
+			systemStatus.entity = entity.toString();
+			return this;
+		}
+
+		public SystemStatus.Builder source(System source) {
+			systemStatus.source = source.toString();
+			return this;
+		}
+
+		public SystemStatus.Builder target(System target) {
+			systemStatus.target = target.toString();
 			return this;
 		}
 
@@ -113,6 +133,7 @@ public class SystemStatus {
 			systemStatus.correlationId = correlationId;
 			return this;
 		}
+
 		public SystemStatus build() {
 			if (systemStatus.correlationId == null) {
 				throw new IllegalArgumentException("No correlation id");
@@ -144,6 +165,8 @@ public class SystemStatus {
 				systemStatus.action = Action.valueOf(actionString);
 			}
 			systemStatus.entity = exchange.getIn().getHeader(SYSTEM_STATUS_ENTITY, String.class);
+			systemStatus.source = exchange.getIn().getHeader(SYSTEM_STATUS_SOURCE, String.class);
+			systemStatus.target = exchange.getIn().getHeader(SYSTEM_STATUS_TARGET, String.class);
 		}
 
 
@@ -157,6 +180,8 @@ public class SystemStatus {
 			exchange.getIn().setHeader(SYSTEM_STATUS_CORRELATION_ID, systemStatus.correlationId);
 			exchange.getIn().setHeader(SYSTEM_STATUS_ACTION, systemStatus.action.toString());
 			exchange.getIn().setHeader(SYSTEM_STATUS_ENTITY, systemStatus.entity);
+			exchange.getIn().setHeader(SYSTEM_STATUS_SOURCE, systemStatus.source);
+			exchange.getIn().setHeader(SYSTEM_STATUS_TARGET, systemStatus.target);
 
 			exchange.getOut().setBody(status.toString());
 			exchange.getOut().setHeaders(exchange.getIn().getHeaders());

@@ -3,7 +3,6 @@ package no.rutebanken.marduk.geocoder.routes.pelias;
 
 import no.rutebanken.marduk.geocoder.GeoCoderConstants;
 import no.rutebanken.marduk.geocoder.routes.pelias.babylon.DeploymentStatus;
-import no.rutebanken.marduk.geocoder.routes.pelias.babylon.PodStatus;
 import no.rutebanken.marduk.geocoder.routes.pelias.babylon.ScalingOrder;
 import no.rutebanken.marduk.geocoder.routes.pelias.babylon.StartFile;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -15,7 +14,9 @@ import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
+import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.*;
+import static no.rutebanken.marduk.routes.status.SystemStatus.System.*;
+import static no.rutebanken.marduk.routes.status.SystemStatus.Action.*;
 import static no.rutebanken.marduk.Constants.JOB_STATUS_ROUTING_DESTINATION;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 
@@ -65,7 +66,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 		from(PELIAS_UPDATE_START.getEndpoint())
 				.log(LoggingLevel.INFO, "Start updating Pelias")
 				.bean(updateStatusService, "setBuilding")
-				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.UPDATE).entity("Pelias").build()).to("direct:updateSystemStatus")
+				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.UPDATE).target(PELIAS).build()).to("direct:updateSystemStatus")
 				.to("direct:startElasticsearchScratchInstance")
 				.routeId("pelias-upload");
 

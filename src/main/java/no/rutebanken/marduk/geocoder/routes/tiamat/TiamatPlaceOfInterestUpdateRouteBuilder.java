@@ -15,7 +15,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.util.List;
-
+import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.*;
+import static no.rutebanken.marduk.routes.status.SystemStatus.System.*;
+import static no.rutebanken.marduk.routes.status.SystemStatus.Action.*;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
@@ -60,7 +62,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 
 		from(TIAMAT_PLACES_OF_INTEREST_UPDATE_START.getEndpoint())
 				.log(LoggingLevel.INFO, "Start updating POI information in Tiamat")
-				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.UPDATE).entity("Tiamat POI").build()).to("direct:updateSystemStatus")
+				.process(e -> SystemStatus.builder(e).start(UPDATE).source(GC).target(TIAMAT).entity(POI).build()).to("direct:updateSystemStatus")
 				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
 				.to("direct:fetchPlaceOfInterest")
 				.to("direct:mapPlaceOfInterestToNetex")

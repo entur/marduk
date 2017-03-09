@@ -9,6 +9,12 @@ import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
+import static no.rutebanken.marduk.routes.status.SystemStatus.Action.FILE_TRANSFER;
+import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.ADDRESS;
+import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.ADMINISTRATIVE_UNITS;
+import static no.rutebanken.marduk.routes.status.SystemStatus.System.GC;
+import static no.rutebanken.marduk.routes.status.SystemStatus.System.KARTVERKET;
+
 @Component
 public class AddressDownloadRouteBuilder extends BaseRouteBuilder {
 
@@ -37,7 +43,8 @@ public class AddressDownloadRouteBuilder extends BaseRouteBuilder {
 
 		from(KARTVERKET_ADDRESS_DOWNLOAD.getEndpoint())
 				.log(LoggingLevel.INFO, "Start downloading address information from mapping authority")
-				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.FILE_TRANSFER).entity("Kartverket addresses").build()).to("direct:updateSystemStatus")
+				.process(e -> SystemStatus.builder(e).start(FILE_TRANSFER).source(KARTVERKET)
+						              .target(GC).entity(ADDRESS).build()).to("direct:updateSystemStatus")
 				.setHeader(KARTVERKET_DATASETID, constant(addressesDataSetId))
 				.setHeader(FOLDER_NAME, constant(blobStoreSubdirectoryForKartverket + "/addresses"))
 				.to("direct:uploadUpdatedFiles")

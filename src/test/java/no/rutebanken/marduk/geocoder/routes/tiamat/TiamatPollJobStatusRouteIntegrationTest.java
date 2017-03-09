@@ -150,6 +150,6 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
 	}
 
 	private SystemStatus status(SystemStatus.State state) {
-		return SystemStatus.builder().action(SystemStatus.Action.EXPORT).correlationId("corrId").entity("entity").action(SystemStatus.Action.EXPORT).state(state).build();
+		return SystemStatus.builder().action(SystemStatus.Action.EXPORT).correlationId("corrId").entity(SystemStatus.Entity.POI).action(SystemStatus.Action.EXPORT).state(state).build();
 	}
 }
