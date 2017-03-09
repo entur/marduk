@@ -141,15 +141,15 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
 			e.getIn().setHeader(Constants.JOB_ID, "1");
 			e.getIn().setHeader(Constants.JOB_STATUS_ROUTING_DESTINATION, "mock:complete");
 			SystemStatus systemStatus = status(SystemStatus.State.STARTED);
-			e.getIn().setHeader(Constants.SYSTEM_STATUS_CORRELATION_ID, systemStatus.getCorrelationId());
-			e.getIn().setHeader(Constants.SYSTEM_STATUS_ACTION, systemStatus.getAction());
-			e.getIn().setHeader(Constants.SYSTEM_STATUS_ENTITY, systemStatus.getEntity());
+
+			e.getIn().setHeader(Constants.SYSTEM_STATUS, systemStatus.toString());
+
 			e.getIn().setHeader(GeoCoderConstants.GEOCODER_CURRENT_TASK, GeoCoderConstants.TIAMAT_EXPORT_POLL);
 		});
 		return exchange;
 	}
 
 	private SystemStatus status(SystemStatus.State state) {
-		return SystemStatus.builder().action(SystemStatus.Action.EXPORT).correlationId("corrId").entity(SystemStatus.Entity.POI).action(SystemStatus.Action.EXPORT).state(state).build();
+		return SystemStatus.builder().jobType("JOB").action(SystemStatus.Action.EXPORT).correlationId("corrId").entity(SystemStatus.Entity.POI).action(SystemStatus.Action.EXPORT).state(state).build();
 	}
 }

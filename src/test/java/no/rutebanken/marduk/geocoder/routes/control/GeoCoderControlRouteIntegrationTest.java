@@ -84,19 +84,19 @@ public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderInteg
 	@Test
 	public void testTaskIsDehydratedAndRehydratedWithHeaders() throws Exception {
 
-		String correlationID = "corrIdTest";
+		String headerValue = "fileNametest";
 		GeoCoderTask task = task(GeoCoderTask.Phase.DOWNLOAD_SOURCE_DATA);
 		GeoCoderTask taskNextIteration = task(GeoCoderTask.Phase.DOWNLOAD_SOURCE_DATA);
 
 		destination.whenExchangeReceived(1, e -> {
 			Assert.assertEquals(task, e.getProperty(GeoCoderConstants.GEOCODER_CURRENT_TASK, GeoCoderTask.class));
-			e.getIn().setHeader(Constants.SYSTEM_STATUS_CORRELATION_ID, correlationID);
+			e.getIn().setHeader(Constants.FILE_NAME, headerValue);
 			e.setProperty(GeoCoderConstants.GEOCODER_NEXT_TASK, taskNextIteration);
 		});
 
 		destination.whenExchangeReceived(2, e -> {
 			Assert.assertEquals(taskNextIteration, e.getProperty(GeoCoderConstants.GEOCODER_CURRENT_TASK, GeoCoderTask.class));
-			Assert.assertEquals(correlationID, e.getIn().getHeader(Constants.SYSTEM_STATUS_CORRELATION_ID));
+			Assert.assertEquals(headerValue, e.getIn().getHeader(Constants.FILE_NAME));
 		});
 
 		destination.expectedBodiesReceived(task, taskNextIteration);
@@ -120,16 +120,15 @@ public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderInteg
 		systemStatusQueueMock
 				.whenExchangeReceived(1, e -> Assert.assertTrue(e.getIn().getBody(String.class).contains(SystemStatus.State.TIMEOUT.toString())));
 		systemStatusQueueMock.expectedMessageCount(1);
-		destination.whenExchangeReceived(1, e -> {
-			e.setProperty(GeoCoderConstants.GEOCODER_RESCHEDULE_TASK, true);
-		});
+		destination.whenExchangeReceived(1, e ->
+			e.setProperty(GeoCoderConstants.GEOCODER_RESCHEDULE_TASK, true)
+		);
 
 		context.start();
 		GeoCoderTask task = task(GeoCoderTask.Phase.DOWNLOAD_SOURCE_DATA);
 		task.getHeaders().put(Constants.LOOP_COUNTER, maxRetries);
-		task.getHeaders().put(Constants.SYSTEM_STATUS_CORRELATION_ID, "corrId");
-		task.getHeaders().put(Constants.SYSTEM_STATUS_ACTION, SystemStatus.Action.FILE_TRANSFER);
-		task.getHeaders().put(Constants.SYSTEM_STATUS_ENTITY, "e");
+		task.getHeaders().put(Constants.SYSTEM_STATUS, SystemStatus.builder().start(SystemStatus.Action.FILE_TRANSFER)
+				                                               .correlationId("corrId").jobType("job").build().toString());
 
 		geoCoderQueueTemplate.sendBody(new GeoCoderTaskMessage(task).toString());
 

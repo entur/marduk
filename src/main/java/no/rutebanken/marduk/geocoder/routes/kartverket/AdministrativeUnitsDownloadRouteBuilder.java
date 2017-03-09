@@ -1,11 +1,13 @@
 package no.rutebanken.marduk.geocoder.routes.kartverket;
 
 
+import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.SystemStatus;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
 import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.*;
 import static no.rutebanken.marduk.routes.status.SystemStatus.System.*;
 import static no.rutebanken.marduk.routes.status.SystemStatus.Action.*;
@@ -43,7 +45,7 @@ public class AdministrativeUnitsDownloadRouteBuilder extends BaseRouteBuilder {
 
 		from(KARTVERKET_ADMINISTRATIVE_UNITS_DOWNLOAD.getEndpoint())
 				.log(LoggingLevel.INFO, "Start downloading administrative units")
-				.process(e -> SystemStatus.builder(e).start(FILE_TRANSFER).source(KARTVERKET).target(GC)
+				.process(e -> SystemStatus.builder(e).start(GeoCoderTaskType.ADMINISTRATIVE_UNITS_DOWNLOAD).action(FILE_TRANSFER).source(KARTVERKET).target(GC)
 						              .entity(ADMINISTRATIVE_UNITS).build()).to("direct:updateSystemStatus")
 				.to("direct:transferAdministrativeUnitsFile")
 				.choice()

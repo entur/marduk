@@ -45,11 +45,7 @@ public class Constants {
 
     public static final String CONTENT_CHANGED = "RutebankenContentChanged";
     public static final String FOLDER_NAME = "RutebankenFolderName";
-    public static final String SYSTEM_STATUS_CORRELATION_ID = "RutebankenSystemStatusCorrelationId";
-    public static final String SYSTEM_STATUS_ACTION = "RutebankenSystemStatusAction";
-    public static final String SYSTEM_STATUS_ENTITY = "RutebankenSystemStatusEntity";
-    public static final String SYSTEM_STATUS_SOURCE = "RutebankenSystemStatusSource";
-    public static final String SYSTEM_STATUS_TARGET = "RutebankenSystemStatusTarget";
+    public static final String SYSTEM_STATUS = "RutebankenSystemStatus";
 
     public static final String TIMESTAMP = "RutebankenTimeStamp";
     public static final String LOOP_COUNTER = "RutebankenLoopCounter";

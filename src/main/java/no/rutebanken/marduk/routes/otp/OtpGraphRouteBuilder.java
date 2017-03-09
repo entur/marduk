@@ -54,7 +54,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 		singletonFrom("activemq:queue:OtpGraphQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{otp.graph.build.autoStartup:true}}")
 				.transacted()
 				.setProperty(PROP_MESSAGES, simple("${body}"))
-				.process(e -> SystemStatus.builder(e).start(SystemStatus.Action.BUILD).entity(SystemStatus.Entity.GRAPH).build()).to("direct:updateSystemStatus")
+				.process(e -> SystemStatus.builder(e).start("BUILD_GRAPH").action(SystemStatus.Action.BUILD).entity(SystemStatus.Entity.GRAPH).build()).to("direct:updateSystemStatus")
 				.to("direct:sendStatusStartedForJobs")
 				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
 				.bean(graphStatusService, "setBuilding")

@@ -34,6 +34,9 @@ public class SystemStatus {
 	@JsonProperty("state")
 	private SystemStatus.State state;
 
+	@JsonProperty("jobType")
+	private String jobType;
+
 	@JsonProperty("entity")
 	private String entity;
 
@@ -62,6 +65,16 @@ public class SystemStatus {
 		}
 	}
 
+
+	public static SystemStatus fromString(String string) {
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			return mapper.readValue(string, SystemStatus.class);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public String getCorrelationId() {
 		return correlationId;
 	}
@@ -80,6 +93,18 @@ public class SystemStatus {
 
 	public Date getDate() {
 		return date;
+	}
+
+	public String getJobType() {
+		return jobType;
+	}
+
+	public String getSource() {
+		return source;
+	}
+
+	public String getTarget() {
+		return target;
 	}
 
 	public static SystemStatus.Builder builder() {
@@ -107,10 +132,20 @@ public class SystemStatus {
 			return this;
 		}
 
-		public SystemStatus.Builder start(Action action) {
+		public SystemStatus.Builder start(Enum jobType) {
 			systemStatus.correlationId = UUID.randomUUID().toString();
-			systemStatus.action = action;
 			systemStatus.state = State.STARTED;
+			return jobType(jobType.name());
+		}
+
+		public SystemStatus.Builder start(String jobType) {
+			systemStatus.correlationId = UUID.randomUUID().toString();
+			systemStatus.state = State.STARTED;
+			return jobType(jobType);
+		}
+
+		public SystemStatus.Builder jobType(String jobType) {
+			systemStatus.jobType = jobType;
 			return this;
 		}
 
@@ -135,12 +170,12 @@ public class SystemStatus {
 		}
 
 		public SystemStatus build() {
-			if (systemStatus.correlationId == null) {
-				throw new IllegalArgumentException("No correlation id");
+			if (systemStatus.jobType == null) {
+				throw new IllegalArgumentException("No jobType");
 			}
 
-			if (systemStatus.action == null) {
-				throw new IllegalArgumentException("No action");
+			if (systemStatus.correlationId == null) {
+				throw new IllegalArgumentException("No correlation id");
 			}
 
 			if (systemStatus.state == null) {
@@ -159,14 +194,19 @@ public class SystemStatus {
 		private ExchangeBuilder(Exchange exchange) {
 			super();
 			this.exchange = exchange;
-			systemStatus.correlationId = exchange.getIn().getHeader(SYSTEM_STATUS_CORRELATION_ID, String.class);
-			String actionString = exchange.getIn().getHeader(SYSTEM_STATUS_ACTION, String.class);
-			if (actionString != null) {
-				systemStatus.action = Action.valueOf(actionString);
+
+			String currentStatusString = exchange.getIn().getHeader(SYSTEM_STATUS, String.class);
+
+			if (currentStatusString != null) {
+				SystemStatus currentStatus = SystemStatus.fromString(currentStatusString);
+				systemStatus.correlationId = currentStatus.getCorrelationId();
+				systemStatus.jobType = currentStatus.getJobType();
+				systemStatus.action = currentStatus.getAction();
+				systemStatus.source = currentStatus.getSource();
+				systemStatus.target = currentStatus.getTarget();
+				systemStatus.entity = currentStatus.getEntity();
 			}
-			systemStatus.entity = exchange.getIn().getHeader(SYSTEM_STATUS_ENTITY, String.class);
-			systemStatus.source = exchange.getIn().getHeader(SYSTEM_STATUS_SOURCE, String.class);
-			systemStatus.target = exchange.getIn().getHeader(SYSTEM_STATUS_TARGET, String.class);
+
 		}
 
 
@@ -177,11 +217,7 @@ public class SystemStatus {
 			}
 
 			SystemStatus status = super.build();
-			exchange.getIn().setHeader(SYSTEM_STATUS_CORRELATION_ID, systemStatus.correlationId);
-			exchange.getIn().setHeader(SYSTEM_STATUS_ACTION, systemStatus.action.toString());
-			exchange.getIn().setHeader(SYSTEM_STATUS_ENTITY, systemStatus.entity);
-			exchange.getIn().setHeader(SYSTEM_STATUS_SOURCE, systemStatus.source);
-			exchange.getIn().setHeader(SYSTEM_STATUS_TARGET, systemStatus.target);
+			exchange.getIn().setHeader(SYSTEM_STATUS, status.toString());
 
 			exchange.getOut().setBody(status.toString());
 			exchange.getOut().setHeaders(exchange.getIn().getHeaders());
