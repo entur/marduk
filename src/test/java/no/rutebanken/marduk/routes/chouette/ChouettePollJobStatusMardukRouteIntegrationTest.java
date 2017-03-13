@@ -216,7 +216,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 		context.getRouteDefinition("chouette-list-jobs").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs")
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?addActionParameters=false")
 				.skipSendToOriginalEndpoint()
 				.to("mock:chouetteGetJobsForProvider");
 			}
