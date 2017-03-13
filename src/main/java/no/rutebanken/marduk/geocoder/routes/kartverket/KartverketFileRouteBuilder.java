@@ -40,9 +40,11 @@ public class KartverketFileRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:uploadUpdatedFiles")
 				.setHeader(FILE_PARENT, simple(localDownloadDir + "/${date:now:yyyyMMddHHmmss}"))
+				.doTry()
 				.bean("kartverketService", "downloadFiles")
 				.process(e -> deleteNoLongerActiveFiles(e))
 				.to("direct:kartverketUploadOnlyUpdatedFiles")
+				.doFinally()
 				.to("direct:cleanUpLocalDirectory")
 				.routeId("upload-updated-files");
 

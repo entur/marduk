@@ -12,7 +12,6 @@ import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 import static no.rutebanken.marduk.routes.status.SystemStatus.Action.FILE_TRANSFER;
 import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.ADDRESS;
-import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.ADMINISTRATIVE_UNITS;
 import static no.rutebanken.marduk.routes.status.SystemStatus.System.GC;
 import static no.rutebanken.marduk.routes.status.SystemStatus.System.KARTVERKET;
 

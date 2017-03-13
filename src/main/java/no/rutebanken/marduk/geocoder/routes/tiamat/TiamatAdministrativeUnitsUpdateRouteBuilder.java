@@ -19,12 +19,12 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.List;
 
-import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.*;
-import static no.rutebanken.marduk.routes.status.SystemStatus.System.*;
-import static no.rutebanken.marduk.routes.status.SystemStatus.Action.*;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
+import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.ADMINISTRATIVE_UNITS;
+import static no.rutebanken.marduk.routes.status.SystemStatus.System.GC;
+import static no.rutebanken.marduk.routes.status.SystemStatus.System.TIAMAT;
 
 @Component
 public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilder {
