@@ -91,6 +91,12 @@ idempotent.skip=false
 
 provider.cache.path=files/providercache
 
+tiamat.url=http4://tiamat:1888
+babylon.url=http4://babylon:9030/rest
+
+kartverket.username=
+kartverket.password=
+
 ```
 * Run with maven `mvn spring-boot:run -Dspring.profiles.active=dev`
 
