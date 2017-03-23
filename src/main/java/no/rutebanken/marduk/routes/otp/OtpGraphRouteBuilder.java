@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.routes.otp;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.GtfsFileUtils;
 import no.rutebanken.marduk.routes.status.Status;
@@ -39,6 +40,9 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
 	@Value("${osm.pbf.blobstore.subdirectory:osm}")
 	private String blobStoreSubdirectoryForOsm;
+
+	@Value("${gtfs.norway.merged.file.name:rb_norway-aggregated-gtfs.zip}")
+	private String gtfsNorwayMergedFileName;
 
 	@Autowired
 	GraphStatusService graphStatusService;
@@ -108,6 +112,8 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 				.setBody(simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}/org"))
 				.bean(method(GtfsFileUtils.class, "mergeGtfsFilesInDirectory"))
 				.toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/merged.zip")
+				.setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/"+gtfsNorwayMergedFileName))
+				.to("direct:uploadBlob")
 				.routeId("otp-graph-merge-gtfs");
 
 		from("direct:fetchConfig")
