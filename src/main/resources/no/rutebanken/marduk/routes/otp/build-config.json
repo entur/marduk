@@ -2,6 +2,6 @@
     areaVisibility: true,
     platformEntriesLinking: true,
     osmWayPropertySet: "norway",
-    allowDuplicateStops: true    
+    stopClusterMode: "parentStation"
     
 }
