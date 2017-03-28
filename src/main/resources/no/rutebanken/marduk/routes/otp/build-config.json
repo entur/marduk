@@ -1,5 +1,6 @@
 {
     areaVisibility: true,
+    parentStopLinking: true,
     platformEntriesLinking: true,
     osmWayPropertySet: "norway",
     stopClusterMode: "parentStation"
