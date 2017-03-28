@@ -80,6 +80,7 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
 				.toD("${header.data_url}")
 				.to("direct:addGtfsFeedInfo")
+				.setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
 				.setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
 				.to("direct:uploadBlob")
 				.process(e -> Status.builder(e).action(Action.EXPORT).state(State.OK).build()).to("direct:updateStatus")

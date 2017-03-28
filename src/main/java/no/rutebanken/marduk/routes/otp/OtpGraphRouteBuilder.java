@@ -112,6 +112,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 				.setBody(simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}/org"))
 				.bean(method(GtfsFileUtils.class, "mergeGtfsFilesInDirectory"))
 				.toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/merged.zip")
+				.setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
 				.setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/"+gtfsNorwayMergedFileName))
 				.to("direct:uploadBlob")
 				.routeId("otp-graph-merge-gtfs");
