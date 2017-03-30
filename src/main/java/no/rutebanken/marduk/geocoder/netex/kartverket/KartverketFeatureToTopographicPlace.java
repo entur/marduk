@@ -11,70 +11,76 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class KartverketFeatureToTopographicPlace {
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private String participantRef;
+    private String participantRef;
 
-	private AbstractKartverketGeojsonWrapper feature;
+    private AbstractKartverketGeojsonWrapper feature;
 
-	public KartverketFeatureToTopographicPlace(AbstractKartverketGeojsonWrapper feature, String participantRef) {
-		this.feature = feature;
-		this.participantRef = participantRef;
-	}
-
-
-	public TopographicPlace toTopographicPlace() {
-		return new TopographicPlace()
-				       .withVersion("any").withModification(ModificationEnumeration.NEW)
-				       .withName(multilingualString(feature.getName()))
-				       .withDescriptor(new TopographicPlaceDescriptor_VersionedChildStructure().withName(multilingualString(feature.getName())))
-				       .withTopographicPlaceType(getType())
-				       .withPolygon(getPolygon())
-				       .withIsoCode(feature.getIsoCode())
-				       .withCountryRef(new CountryRef().withRef(getCountryRef()))
-				       .withId(prefix(feature.getId()))
-				       .withParentTopographicPlaceRef(new TopographicPlaceRefStructure()
-						                                      .withRef(prefix(feature.getParentId())));
-	}
+    public KartverketFeatureToTopographicPlace(AbstractKartverketGeojsonWrapper feature, String participantRef) {
+        this.feature = feature;
+        this.participantRef = participantRef;
+    }
 
 
-	protected String prefix(String id) {
-		return participantRef + ":TopographicPlace:" + id;
-	}
+    public TopographicPlace toTopographicPlace() {
+        return new TopographicPlace()
+                       .withVersion("any").withModification(ModificationEnumeration.NEW)
+                       .withName(multilingualString(feature.getName()))
+                       .withDescriptor(new TopographicPlaceDescriptor_VersionedChildStructure().withName(multilingualString(feature.getName())))
+                       .withTopographicPlaceType(getType())
+                       .withPolygon(getPolygon())
+                       .withIsoCode(feature.getIsoCode())
+                       .withCountryRef(new CountryRef().withRef(getCountryRef()))
+                       .withId(prefix(feature.getId()))
+                       .withParentTopographicPlaceRef(toParentRef(feature.getParentId()));
+    }
 
 
-	protected TopographicPlaceTypeEnumeration getType() {
-		switch (feature.getType()) {
+    protected String prefix(String id) {
+        return participantRef + ":TopographicPlace:" + id;
+    }
 
-			case COUNTY:
-				return TopographicPlaceTypeEnumeration.COUNTY;
-			case LOCALITY:
-				return TopographicPlaceTypeEnumeration.TOWN;
-			case BOROUGH:
-				return TopographicPlaceTypeEnumeration.AREA;
-		}
-		return null;
-	}
+    protected TopographicPlaceRefStructure toParentRef(String id) {
+        if (id == null) {
+            return null;
+        }
+        return new TopographicPlaceRefStructure()
+                       .withRef(prefix(feature.getParentId()));
+    }
 
+    protected TopographicPlaceTypeEnumeration getType() {
+        switch (feature.getType()) {
 
-	private PolygonType getPolygon() {
-		Geometry geometry = feature.getDefaultGeometry();
-
-		if (geometry instanceof Polygon) {
-			return NetexGeoUtil.toNetexPolygon((Polygon) geometry).withId(participantRef + "-" + feature.getId());
-		}
-		return null;
-	}
-
-
-	protected IanaCountryTldEnumeration getCountryRef() {
-		return IanaCountryTldEnumeration.NO;
-	}
+            case COUNTY:
+                return TopographicPlaceTypeEnumeration.COUNTY;
+            case LOCALITY:
+                return TopographicPlaceTypeEnumeration.TOWN;
+            case BOROUGH:
+                return TopographicPlaceTypeEnumeration.AREA;
+        }
+        return null;
+    }
 
 
-	protected MultilingualString multilingualString(String val) {
-		return new MultilingualString().withLang("en").withValue(val);
-	}
+    private PolygonType getPolygon() {
+        Geometry geometry = feature.getDefaultGeometry();
+
+        if (geometry instanceof Polygon) {
+            return NetexGeoUtil.toNetexPolygon((Polygon) geometry).withId(participantRef + "-" + feature.getId());
+        }
+        return null;
+    }
+
+
+    protected IanaCountryTldEnumeration getCountryRef() {
+        return IanaCountryTldEnumeration.NO;
+    }
+
+
+    protected MultilingualString multilingualString(String val) {
+        return new MultilingualString().withLang("en").withValue(val);
+    }
 
 }
 
