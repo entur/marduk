@@ -20,10 +20,10 @@ import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
 
 /**
- * Exports files from Chouette
+ * Exports gtfs files from Chouette
  */
 @Component
-public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
+public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder {
 
 	@Value("${chouette.url}")
 	private String chouetteUrl;
@@ -40,7 +40,7 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
 
 		from("activemq:queue:ChouetteExportQueue?transacted=true").streamCaching()
 				.transacted()
-				.log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette export for provider with id ${header." + PROVIDER_ID + "}")
+				.log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette GTFS export for provider with id ${header." + PROVIDER_ID + "}")
 				.process(e -> {
 					// Add correlation id only if missing
 					e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString()));
@@ -65,6 +65,7 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
 				})
 				.setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processExportResult"))
 				.setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(Action.EXPORT.name()))
+				.removeHeader("loopCounter")
 				.to("activemq:queue:ChouettePollStatusQueue")
 				.routeId("chouette-send-export-job");
 
@@ -87,6 +88,7 @@ public class ChouetteExportRouteBuilder extends AbstractChouetteRouteBuilder {
 				.removeHeader(Constants.CHOUETTE_JOB_ID)
 				.setBody(constant(null))
 				.to("activemq:queue:OtpGraphQueue")
+				.to("activemq:queue:ChouetteExportNetexQueue")
 				.process(e -> Status.builder(e).action(Action.BUILD_GRAPH).state(State.PENDING).build())
 				.when(simple("${header.action_report_result} == 'NOK'"))
 				.log(LoggingLevel.WARN, correlation() + "Export failed")

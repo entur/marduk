@@ -51,6 +51,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,constant("direct:processValidationResult"))
 				.process(e -> {e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE,e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL));})
+		        .removeHeader("loopCounter")
 		        .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-validation-job");
 

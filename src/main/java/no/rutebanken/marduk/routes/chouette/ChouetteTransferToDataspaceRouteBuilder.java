@@ -6,7 +6,6 @@ import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.status.Status;
 import no.rutebanken.marduk.routes.status.Status.Action;
 import no.rutebanken.marduk.routes.status.Status.State;
-import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -53,10 +52,9 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,"direct:processTransferExportResult");
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, Action.DATASPACE_TRANSFER.name());
                     })
-				.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.STARTED).build())
-		        .to("direct:updateStatus")
                 .log(LoggingLevel.INFO,correlation()+"Sending transfer export to poll job status")
                 .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
+		        .removeHeader("loopCounter")
                 .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-transfer-job");
 

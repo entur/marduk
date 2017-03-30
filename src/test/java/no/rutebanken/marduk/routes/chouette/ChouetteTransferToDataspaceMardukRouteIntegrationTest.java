@@ -99,7 +99,7 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 
 	
 		pollJobStatus.expectedMessageCount(1);
-		updateStatus.expectedMessageCount(3);
+		updateStatus.expectedMessageCount(2);
 		checkScheduledJobsBeforeTriggeringNextAction.expectedMessageCount(1);
 		
 		

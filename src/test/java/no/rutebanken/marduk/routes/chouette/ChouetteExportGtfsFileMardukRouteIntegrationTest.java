@@ -23,11 +23,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = ChouetteExportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(classes = ChouetteExportGtfsRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles({ "default", "in-memory-blobstore" })
 @UseAdviceWith
-public class ChouetteExportFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
@@ -50,6 +50,8 @@ public class ChouetteExportFileMardukRouteIntegrationTest extends MardukRouteBui
 	@EndpointInject(uri = "mock:OtpGraphQueue")
 	protected MockEndpoint otpGraphQueue;
 
+	@EndpointInject(uri = "mock:ExportNetexQueue")
+	protected MockEndpoint exportNetexQueue;
 
 
 	@Produce(uri = "activemq:queue:ChouetteExportQueue")
@@ -93,6 +95,7 @@ public class ChouetteExportFileMardukRouteIntegrationTest extends MardukRouteBui
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 				.to("mock:updateStatus");
 				interceptSendToEndpoint("activemq:queue:OtpGraphQueue").skipSendToOriginalEndpoint().to("mock:OtpGraphQueue");
+				interceptSendToEndpoint("activemq:queue:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:ExportNetexQueue");
 
 			}
 		});
@@ -102,7 +105,6 @@ public class ChouetteExportFileMardukRouteIntegrationTest extends MardukRouteBui
 			public void configure() throws Exception {
 				interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
 						.skipSendToOriginalEndpoint().to("mock:chouetteGetData");
-				interceptSendToEndpoint("activemq:queue:OtpGraphQueue").skipSendToOriginalEndpoint().to("mock:OtpGraphQueue");
 
 			}
 		});
@@ -141,8 +143,8 @@ public class ChouetteExportFileMardukRouteIntegrationTest extends MardukRouteBui
 		updateStatus.expectedMessageCount(2);
 		
 		otpGraphQueue.expectedMessageCount(1);
-		
-		
+		exportNetexQueue.expectedMessageCount(1);
+
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put(Constants.PROVIDER_ID, "2");
 	
@@ -159,6 +161,7 @@ public class ChouetteExportFileMardukRouteIntegrationTest extends MardukRouteBui
 		chouetteGetData.assertIsSatisfied();
 		updateStatus.assertIsSatisfied();
 		otpGraphQueue.assertIsSatisfied();
+		exportNetexQueue.assertIsSatisfied();
 		
 	}
 
