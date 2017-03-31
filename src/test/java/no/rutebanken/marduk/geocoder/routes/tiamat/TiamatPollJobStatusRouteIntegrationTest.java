@@ -28,8 +28,8 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.apache.camel.builder.Builder.constant;
 
 @RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = TiamatPollJobStatusRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@SpringBootTest(properties = "spring.main.sources=no.rutebanken.marduk.test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @ActiveProfiles({"default", "in-memory-blobstore"})
 @UseAdviceWith
 public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
@@ -64,6 +64,9 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
 
 	@Before
 	public void setUp() {
+		completeEndpointMock.reset();
+		systemStatusQueueMock.reset();
+		tiamatMock.reset();
 		try {
 			context.getRouteDefinition("tiamat-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
 				@Override

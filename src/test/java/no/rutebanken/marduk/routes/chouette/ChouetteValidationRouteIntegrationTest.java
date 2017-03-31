@@ -11,6 +11,7 @@ import org.apache.camel.model.language.SimpleExpression;
 import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,6 +70,18 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 	@Value("${nabu.rest.service.url}")
 	private String nabuUrl;
 
+	@Before
+	public void setUp() throws IOException {
+		super.setUp();
+		chouetteCreateValidation.reset();
+		pollJobStatus.reset();
+		chouetteGetJobs.reset();
+		processValidationResult.reset();
+		chouetteExportQueue.reset();
+		chouetteCheckScheduledJobs.reset();
+		updateStatus.reset();
+	}
+	
 	@Test
 	public void testRunChouetteValidation() throws Exception {
 

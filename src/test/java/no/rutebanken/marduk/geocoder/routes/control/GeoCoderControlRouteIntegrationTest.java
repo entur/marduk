@@ -14,6 +14,7 @@ import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @RunWith(CamelSpringRunner.class)
 @SpringBootTest(classes = GeoCoderControlRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @ActiveProfiles({"default", "in-memory-blobstore"})
 @UseAdviceWith
 public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
@@ -43,6 +44,12 @@ public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderInteg
 
 	@Value("${geocoder.max.retries:3000}")
 	private int maxRetries;
+
+	@Before
+	public void before() {
+		destination.reset();
+		systemStatusQueueMock.reset();
+	}
 
 	@Test
 	public void testMessagesAreMergedAndTaskedOrderAccordingToPhase() throws Exception {
