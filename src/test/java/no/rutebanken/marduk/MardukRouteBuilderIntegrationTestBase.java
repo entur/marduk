@@ -2,16 +2,25 @@ package no.rutebanken.marduk;
 
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
+import org.apache.camel.test.spring.CamelSpringRunner;
+import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
+import org.junit.runner.RunWith;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Collections;
 
 import static org.mockito.Mockito.when;
-
+@RunWith(CamelSpringRunner.class)
+@ActiveProfiles({"default", "in-memory-blobstore"})
+@UseAdviceWith
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class MardukRouteBuilderIntegrationTestBase {
 
     @MockBean

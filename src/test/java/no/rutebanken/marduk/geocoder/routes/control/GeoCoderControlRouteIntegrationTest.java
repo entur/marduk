@@ -23,11 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-@RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = GeoCoderControlRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@ActiveProfiles({"default", "in-memory-blobstore"})
-@UseAdviceWith
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = GeoCoderControlRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired

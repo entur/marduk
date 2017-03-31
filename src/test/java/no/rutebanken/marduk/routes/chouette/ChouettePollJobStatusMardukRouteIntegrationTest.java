@@ -25,11 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = ChouettePollJobStatusRoute.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@ActiveProfiles({ "default", "in-memory-blobstore" })
-@UseAdviceWith
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = ChouettePollJobStatusRoute.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired

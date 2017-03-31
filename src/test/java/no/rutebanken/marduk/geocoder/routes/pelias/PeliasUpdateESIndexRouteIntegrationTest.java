@@ -24,11 +24,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.io.File;
 import java.io.FileInputStream;
 
-@RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = PeliasUpdateEsIndexRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@ActiveProfiles({"default", "in-memory-blobstore"})
-@UseAdviceWith
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = PeliasUpdateEsIndexRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired

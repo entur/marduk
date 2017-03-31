@@ -30,11 +30,7 @@ import java.util.stream.Collectors;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
-@RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = KartverketFileRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@ActiveProfiles({"default", "in-memory-blobstore"})
-@UseAdviceWith
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = KartverketFileRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class KartverketFileRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 	@Autowired
 	private ModelCamelContext context;

@@ -36,7 +36,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.when;
 
 @RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = NRIFtpReceiverRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = NRIFtpReceiverRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @ActiveProfiles({ "default", "in-memory-blobstore" })
 @UseAdviceWith

@@ -23,11 +23,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-@RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = ChouetteTransferToDataspaceRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@ActiveProfiles({ "default", "in-memory-blobstore" })
-@UseAdviceWith
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = ChouetteTransferToDataspaceRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired

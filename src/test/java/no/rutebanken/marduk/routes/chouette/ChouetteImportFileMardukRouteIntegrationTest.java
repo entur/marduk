@@ -30,11 +30,8 @@ import java.util.Map;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 
-@RunWith(CamelSpringRunner.class)
-@SpringBootTest(classes = ChouetteImportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = ChouetteImportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@ActiveProfiles({"default", "in-memory-blobstore"})
-@UseAdviceWith
 public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Autowired
