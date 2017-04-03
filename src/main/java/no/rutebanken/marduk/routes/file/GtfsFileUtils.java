@@ -82,6 +82,9 @@ public class GtfsFileUtils {
 
     private static class IdSeparatorTransformer implements EntityTransformStrategy {
 
+        protected static final String OTP_ID_SEPARATOR = "\\.";
+        protected static final String EXTERNAL_ID_SEPARATOR = "\\:";
+
         @Override
         public void run(TransformContext context, GtfsMutableRelationalDao dao, Object entity) {
             if (entity instanceof ServiceCalendar) {
@@ -114,7 +117,7 @@ public class GtfsFileUtils {
             if (id == null) {
                 return null;
             }
-            return id.replace(":", ".");
+            return id.replaceFirst(EXTERNAL_ID_SEPARATOR, OTP_ID_SEPARATOR).replaceFirst(EXTERNAL_ID_SEPARATOR, OTP_ID_SEPARATOR);
         }
     }
 
