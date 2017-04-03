@@ -68,6 +68,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 				.to("direct:fetchMap")
 				.to("direct:fetchLatestGtfs")
 				.to("direct:mergeGtfs")
+				.to("direct:transformToOTPIds")
 				.to("direct:buildGraph")
 				.bean(graphStatusService, "setIdle")
 				.log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP graph building route.")
@@ -111,11 +112,18 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.DEBUG, getClass().getName(), "Merging gtfs files for all providers.")
 				.setBody(simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}/org"))
 				.bean(method(GtfsFileUtils.class, "mergeGtfsFilesInDirectory"))
-				.toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/merged.zip")
+				.toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/org/merged.zip")
 				.setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
 				.setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/"+gtfsNorwayMergedFileName))
 				.to("direct:uploadBlob")
 				.routeId("otp-graph-merge-gtfs");
+
+		from("direct:transformToOTPIds")
+				.setBody(simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}/org/merged.zip"))
+				.log(LoggingLevel.DEBUG, getClass().getName(), "Replacing id separator in merged GTFS file to suit OTP")
+				.bean(method(GtfsFileUtils.class, "transformIdsToOTPFormat"))
+				.toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/merged.zip")
+				.routeId("otp-graph-transform-ids");
 
 		from("direct:fetchConfig")
 				.log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Fetching config ...")
