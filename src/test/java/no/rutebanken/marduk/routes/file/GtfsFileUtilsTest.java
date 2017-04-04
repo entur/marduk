@@ -46,9 +46,14 @@ public class GtfsFileUtilsTest {
     public void replaceIdSeparatorInFile() throws Exception {
         File out = GtfsFileUtils.transformIdsToOTPFormat(new File(GTFS_FILE_2));
 
-        List<String> lines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()));
+        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()));
 
-        Assert.assertEquals("RUT.StopArea.7600100,Oslo S,59.910200,10.755330,RUT.StopArea.7600207", lines.get(1));
+        Assert.assertEquals("RUT.StopArea.7600100,Oslo S,59.910200,10.755330,RUT.StopArea.7600207", stopLines.get(1));
+
+        List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "feed_info.txt").toByteArray()));
+
+        Assert.assertEquals( "Feed info should be unchanged","RB,Rutebanken,http://www.rutebanken.org,no", feedInfoLines.get(1));
+
 
     }
 

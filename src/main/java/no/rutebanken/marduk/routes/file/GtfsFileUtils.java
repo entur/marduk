@@ -58,6 +58,8 @@ public class GtfsFileUtils {
      */
     public static File transformIdsToOTPFormat(File inputFile) throws Exception {
 
+        ByteArrayOutputStream orgFeedInfo = new ZipFileUtils().extractFileFromZipFile(new FileInputStream(inputFile), FEED_INFO_FILE_NAME);
+
         logger.debug("Replacing id separator in inputfile: " + inputFile.getPath());
         long t1 = System.currentTimeMillis();
 
@@ -66,11 +68,16 @@ public class GtfsFileUtils {
 
         transformer.setGtfsInputDirectories(Arrays.asList(inputFile));
         transformer.setOutputDirectory(outputFile);
-        GtfsEntitySchemaFactory.getEntityClasses().forEach(ec -> transformer.addTransform(createIdSeparatorTransformationStrategy(ec)));
+        GtfsEntitySchemaFactory.getEntityClasses()
+                .forEach(ec -> transformer.addTransform(createIdSeparatorTransformationStrategy(ec)));
         transformer.getReader().setOverwriteDuplicates(true);
         transformer.run();
 
         logger.debug("Replaced id separator in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
+
+        // Must replace feed_info.txt file with original because feed_id is being stripped away by transformation process
+        ZipFileUtils.replaceFileInZipFile(outputFile, FEED_INFO_FILE_NAME, orgFeedInfo);
+
         return outputFile;
     }
 
@@ -123,6 +130,10 @@ public class GtfsFileUtils {
 
     private static void addFeedInfoFromFirstGtfsFile(Collection<File> files, File outputFile) throws IOException {
         ByteArrayOutputStream feedInfoStream = extractFeedInfoFile(files);
+        addFeedInfoToArchive(outputFile, feedInfoStream);
+    }
+
+    private static void addFeedInfoToArchive(File outputFile, ByteArrayOutputStream feedInfoStream) throws IOException {
         if (feedInfoStream != null) {
             File tmp = new File(FEED_INFO_FILE_NAME);
             feedInfoStream.writeTo(new FileOutputStream(tmp));

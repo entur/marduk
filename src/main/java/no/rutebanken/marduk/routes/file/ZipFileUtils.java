@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -156,6 +157,19 @@ public class ZipFileUtils {
 			throw new RuntimeException("Unzipping archive failed: " + ioE.getMessage(), ioE);
 		}
 		return null;
+	}
+
+	public static void replaceFileInZipFile(File zipFile, String replaceFileName, ByteArrayOutputStream replaceFileContent){
+		try (FileSystem fs = FileSystems.newFileSystem(Paths.get(zipFile.getPath()), null)) {
+			Path fileInsideZipPath = fs.getPath(replaceFileName);
+			File tmp = File.createTempFile(replaceFileName, ".tmp");
+			replaceFileContent.writeTo(new FileOutputStream(tmp));
+			Files.delete(fileInsideZipPath);
+			Files.copy(Paths.get(tmp.getPath()), fileInsideZipPath);
+			tmp.delete();
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to replace file in archive: " + e.getMessage(), e);
+		}
 	}
 
 	public static void unzipFile(InputStream inputStream, String targetFolder) {
