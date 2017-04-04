@@ -48,11 +48,6 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 })
                 .process(e -> Status.builder(e).action(Action.EXPORT).state(State.PENDING).build())
                 .to("direct:updateStatus")
-                .choice()
-                .when(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) == null)
-                .log(LoggingLevel.WARN, "Removed export for unknown provider")
-                .stop()
-                .end()
 
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(e -> e.getIn().setHeader(JSON_PART, Parameters.getGtfsExportParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class))))) //Using header to addToExchange json data
