@@ -44,7 +44,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
 				.log(LoggingLevel.INFO, correlation() + "Creating multipart request")
 				.process(e -> toGenericChouetteMultipart(e))
 				.setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
-				.toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/netex") // TODO
+				.toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/netexprofile")
 				.process(e -> {
 					e.getIn().setHeader(CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
 					e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));

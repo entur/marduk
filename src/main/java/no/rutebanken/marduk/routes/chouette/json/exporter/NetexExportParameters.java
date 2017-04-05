@@ -11,7 +11,7 @@ public class NetexExportParameters {
 
 	public static class Parameters {
 
-		@JsonProperty("netex-export")
+		@JsonProperty("netexprofile-export")
 		public NetexExport netexExport;
 
 		public Parameters(NetexExport netexExport) {

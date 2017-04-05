@@ -59,7 +59,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 		context.getRouteDefinition("chouette-start-export-netex").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/netex")
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/netexprofile")
 						.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 						.to("mock:updateStatus");
