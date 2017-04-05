@@ -65,10 +65,6 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files/unknown-file.zip")
 	protected ProducerTemplate getUnknownFileTemplate;
 
-
-	@Value("${nabu.rest.service.url}")
-	private String nabuUrl;
-
 	@Before
 	public void setUpProvider() {
 		when(providerRepository.getReferential(2L)).thenReturn("rut");

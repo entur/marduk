@@ -61,9 +61,6 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 	@Value("${chouette.url}")
 	private String chouetteUrl;
 
-	@Value("${nabu.rest.service.url}")
-	private String nabuUrl;
-
 	@Test
 	public void testPollJobStatus() throws Exception {
 

@@ -64,9 +64,6 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 	@Value("${chouette.url}")
 	private String chouetteUrl;
 
-	@Value("${nabu.rest.service.url}")
-	private String nabuUrl;
-
 	@Before
 	public void setUp() throws IOException {
 		super.setUp();

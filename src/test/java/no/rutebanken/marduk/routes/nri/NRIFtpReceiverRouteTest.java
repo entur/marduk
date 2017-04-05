@@ -50,9 +50,6 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
 
 	@EndpointInject(uri = "mock:buskerud")
 	protected MockEndpoint buskerud;
-	
-    @Value("${nabu.rest.service.url}")
-    private String nabuUrl;
 
 	@Before
 	public void setUpProvider() throws IOException {

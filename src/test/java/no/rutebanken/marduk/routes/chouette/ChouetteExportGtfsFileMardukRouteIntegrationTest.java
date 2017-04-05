@@ -59,10 +59,6 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 	@Value("${chouette.url}")
 	private String chouetteUrl;
 
-	@Value("${nabu.rest.service.url}")
-	private String nabuUrl;
-
-
 	@Test
 	public void testExportDataspace() throws Exception {
 
