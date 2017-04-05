@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.routes.chouette.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.exporter.GtfsExportParameters;
@@ -72,7 +73,8 @@ public class Parameters {
         try {
             ChouetteInfo chouetteInfo = provider.chouetteInfo;
             String projectionType = null;
-            NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport("for journey planning", chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, projectionType);
+            String validCodespaces = Joiner.on(",").join(chouetteInfo.xmlns, chouetteInfo.xmlnsurl);
+            NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport("for journey planning", chouetteInfo.referential, chouetteInfo.organisation, validCodespaces, chouetteInfo.user, projectionType);
             NetexExportParameters.Parameters parameters = new NetexExportParameters.Parameters(netexExport);
             NetexExportParameters exportParameters = new NetexExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
