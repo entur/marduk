@@ -8,6 +8,8 @@
         "referential": "rut",
         "organisation": "Rutebanken",
         "user": "admin@rutebanken.org",
+        "xmlns":"RUT",
+        "xmlnsurl":"http://www.rutebanken.org/ns/ruter",
         "regtoppVersion": null,
         "regtoppCoordinateProjection": "EPSG:32632",
         "regtoppCalendarStrategy": null,
