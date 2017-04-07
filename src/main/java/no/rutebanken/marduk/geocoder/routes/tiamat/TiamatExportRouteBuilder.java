@@ -29,7 +29,8 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 	@Value("${tiamat.url}")
 	private String tiamatUrl;
 
-	private String tiamatExportPath = "/jersey/publication_delivery/";
+	@Value("${tiamat.publication.delivery.path:/jersey/publication_delivery}")
+	private String tiamatPublicationDeliveryPath;
 
 	@Value("${tiamat.export.blobstore.subdirectory:tiamat}")
 	private String blobStoreSubdirectoryForTiamatExport;
@@ -53,10 +54,10 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.INFO, "Start Tiamat export")
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
 				.setBody(constant(null))
-				.to(tiamatUrl + tiamatExportPath + "async")
+				.to(tiamatUrl + tiamatPublicationDeliveryPath + "/async")
 				.convertBodyTo(ExportJob.class)
 				.setHeader(Constants.JOB_ID, simple("${body.id}"))
-				.setHeader(Constants.JOB_STATUS_URL, simple(tiamatExportPath + "${body.jobUrl}"))
+				.setHeader(Constants.JOB_STATUS_URL, simple(tiamatPublicationDeliveryPath + "$/{body.jobUrl}"))
 				.setHeader(Constants.JOB_STATUS_ROUTING_DESTINATION, constant("direct:processTiamatExportResults"))
 				.log(LoggingLevel.INFO, "Started Tiamat export of file: ${body.fileName}")
 				.setProperty(GEOCODER_NEXT_TASK, constant(TIAMAT_EXPORT_POLL))

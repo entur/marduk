@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.util.List;
 
@@ -35,6 +36,12 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 
 	@Value("${tiamat.poi.update.directory:files/tiamat/poi/update}")
 	private String localWorkingDirectory;
+
+	@Value("${tiamat.url}")
+	private String tiamatUrl;
+
+	@Value("${tiamat.publication.delivery.path:/jersey/publication_delivery}")
+	private String tiamatPublicationDeliveryPath;
 
 	/**
 	 * This is the name which the graph file is stored remotely.
@@ -67,10 +74,14 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 				.process(e -> SystemStatus.builder(e).start(GeoCoderTaskType.TIAMAT_POI_UPDATE).action(UPDATE).source(GC)
 						              .target(TIAMAT).entity(POI).build()).to("direct:updateSystemStatus")
 				.setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
+				.doTry()
 				.to("direct:fetchPlaceOfInterest")
 				.to("direct:mapPlaceOfInterestToNetex")
 				.to("direct:updatePlaceOfInterestInTiamat")
+				.to("direct:processTiamatPlaceOfInterestUpdateCompleted")
 				.log(LoggingLevel.INFO, "Started job updating POI information in Tiamat")
+				.doFinally()
+				.to("direct:cleanUpLocalDirectory")
 				.end()
 				.routeId("tiamat-poi-update");
 
@@ -84,14 +95,14 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:mapPlaceOfInterestToNetex")
 				.log(LoggingLevel.DEBUG, getClass().getName(), "Mapping latest place of interest to Netex ...")
-				.process(e -> topographicPlaceConverter.toNetexFile(createTopographicPlaceReader(e), workingDirectory(e) + "/poi-netex.xml")) //TODO
+				.process(e -> topographicPlaceConverter.toNetexFile(createTopographicPlaceReader(e), workingDirectory(e) + "/poi-netex.xml"))
+				.process(e-> e.getIn().setBody(new File(workingDirectory(e)+ "/poi-netex.xml")))
 				.routeId("tiamat-map-poi-osm-to-netex");
 
 		from("direct:updatePlaceOfInterestInTiamat")
-				//.setHeader(Constants.JOB_ID, simple("${body.id}")) TODO import not ready
-				// .setHeader(Constants.JOB_STATUS_URL, simple("${body.jobUrl}"))
-				// clean up local dir now or after import completed
-				.setHeader(Constants.JOB_STATUS_ROUTING_DESTINATION, constant("direct:processTiamatPlaceOfInterestUpdateCompleted"))
+				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
+				.setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_XML))
+//				.to(tiamatUrl + tiamatPublicationDeliveryPath)
 				.routeId("tiamat-poi-update-start");
 
 		from("direct:processTiamatPlaceOfInterestUpdateCompleted")
