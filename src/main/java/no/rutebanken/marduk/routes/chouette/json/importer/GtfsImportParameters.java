@@ -2,10 +2,8 @@ package no.rutebanken.marduk.routes.chouette.json.importer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import no.rutebanken.marduk.routes.chouette.json.AbstractParameters;
-import no.rutebanken.marduk.routes.chouette.json.ChouetteJobParameters;
 
-import javax.xml.bind.annotation.XmlElement;
+import no.rutebanken.marduk.routes.chouette.json.ChouetteJobParameters;
 
 public class GtfsImportParameters extends ChouetteJobParameters {
 
@@ -24,7 +22,11 @@ public class GtfsImportParameters extends ChouetteJobParameters {
         @JsonInclude(JsonInclude.Include.ALWAYS)
         public String objectIdPrefix;
 
-        @JsonProperty("max_distance_for_commercial")
+    	@JsonProperty("split_id_on_dot")
+        @JsonInclude(JsonInclude.Include.ALWAYS)
+    	private String splitIdOnDot = "0";
+
+    	@JsonProperty("max_distance_for_commercial")
         public String maxDistanceForCommercial = "0";
 
         @JsonProperty("ignore_last_word")

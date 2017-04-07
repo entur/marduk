@@ -14,7 +14,7 @@ public class ParametersTest {
 
     final String gtfsReferenceJson =  "{ \"parameters\": { \"gtfs-import\": {\"clean_repository\":\"0\",\"no_save\": \"0\", " +
             "\"user_name\": \"Chouette\", \"name\": \"test\", \"organisation_name\": \"Rutebanken\", \"referential_name\": " +
-            "\"testDS\", \"object_id_prefix\": \"tds\", \"max_distance_for_commercial\": \"0\", " +
+            "\"testDS\", \"object_id_prefix\": \"tds\", \"max_distance_for_commercial\": \"0\", \"split_id_on_dot\": \"0\", " +
             "\"ignore_last_word\": \"0\", \"ignore_end_chars\": \"0\"," +
             "\"route_type_id_scheme\": \"any\"," +
             " \"max_distance_for_connection_link\": \"0\", \"test\": false, \"update_stop_places\": true, \"keep_obsolete_lines\": true } } }";
