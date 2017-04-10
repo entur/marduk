@@ -37,7 +37,7 @@
         <assertj-core.version>3.3.0</assertj-core.version>
         <camel-version>2.18.1</camel-version>
         <postgresql.version>9.4-1201-jdbc41</postgresql.version>
-
+        <keycloak.version>3.0.0.Final</keycloak.version>
         <!-- Docker & Fabric8 Configs -->
         <docker.from>eu.gcr.io/carbon-1287/java-base-image</docker.from>
         <fabric8.dockerUser>carbon-1287/</fabric8.dockerUser>
@@ -50,7 +50,7 @@
         <fabric8.iconRef>camel</fabric8.iconRef>
         <onebusaway.gtfs.modules>1.3.12</onebusaway.gtfs.modules>
         <netex-java-model.version>0.0.9-SNAPSHOT</netex-java-model.version>
-        <keycloak.version>3.0.0.Final</keycloak.version>
+        <rutebanken.helpers.version>0.0.3-SNAPSHOT</rutebanken.helpers.version>
     </properties>
 
 
@@ -91,11 +91,7 @@
     </dependencyManagement>
 
     <dependencies>
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-admin-client</artifactId>
-            <version>${keycloak.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-client</artifactId>
@@ -106,6 +102,28 @@
             <artifactId>resteasy-jackson2-provider</artifactId>
             <version>3.1.1.Final</version>
         </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-spring-security-adapter</artifactId>
+            <version>${keycloak.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-jetty93-adapter</artifactId>
+            <version>${keycloak.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-spring-boot-adapter</artifactId>
+            <version>${keycloak.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-admin-client</artifactId>
+            <version>${keycloak.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>
@@ -146,7 +164,13 @@
 
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-netty4</artifactId>
+            <artifactId>camel-jetty9</artifactId>
+            <version>${camel-version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-jetty-common</artifactId>
             <version>${camel-version}</version>
         </dependency>
 
@@ -218,7 +242,6 @@
             <artifactId>camel-jsonpath</artifactId>
             <version>${camel-version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-swagger-java</artifactId>
@@ -248,8 +271,14 @@
         <dependency>
             <groupId>org.rutebanken.helpers</groupId>
             <artifactId>hazelcast-helper</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
+            <version>${rutebanken.helpers.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.rutebanken.helpers</groupId>
+            <artifactId>organisation</artifactId>
+            <version>${rutebanken.helpers.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-sql</artifactId>

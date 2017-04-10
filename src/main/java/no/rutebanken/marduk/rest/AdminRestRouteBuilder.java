@@ -8,6 +8,8 @@ import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
+import no.rutebanken.marduk.security.AuthorizationClaim;
+import no.rutebanken.marduk.security.AuthorizationService;
 import no.rutebanken.marduk.services.GraphStatusResponse;
 import org.apache.camel.Body;
 import org.apache.camel.Exchange;
@@ -15,7 +17,11 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
+import org.rutebanken.helper.organisation.AuthorizationConstants;
+import org.rutebanken.helper.organisation.NotAuthenticatedException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -41,6 +47,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     @Value("${server.admin.host}")
     public String host;
 
+    @Autowired
+    private AuthorizationService authorizationService;
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -51,12 +60,27 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         restConfiguration().setCorsHeaders(Collections.singletonList(corsAllowedHeaders));
 
+
+        onException(AccessDeniedException.class)
+                .handled(true)
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(403))
+                .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                .transform(exceptionMessage());
+
+        onException(NotAuthenticatedException.class)
+                .handled(true)
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(401))
+                .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                .transform(exceptionMessage());
+
         restConfiguration()
-                .component("netty4-http")
+                .component("jetty")
                 .bindingMode(RestBindingMode.json)
+                .endpointProperty("filtersRef", "keycloakPreAuthActionsFilter,keycloakAuthenticationProcessingFilter")
+                .endpointProperty("sessionSupport", "true")
+                .endpointProperty("matchOnUriPrefix", "true")
                 .enableCORS(true)
                 .dataFormatProperty("prettyPrint", "true")
-                .componentProperty("urlDecodeHeaders", "true")
                 .host(host)
                 .port(port)
                 .apiContextPath("/api-doc")
@@ -64,12 +88,20 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .contextPath("/admin");
 
+        rest("")
+                .description("Wildcard definitions necessary to get Jetty to match authorization filters to endpoints with path params")
+                .get().route().routeId("admin-route-authorize-get").endRest()
+                .post().route().routeId("admin-route-authorize-post").endRest()
+                .put().route().routeId("admin-route-authorize-put").endRest()
+                .delete().route().routeId("admin-route-authorize-delete").endRest();
+
         rest("/application")
                 .post("/filestores/clean")
                 .description("Clean unique filname and digest Idempotent Stores")
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-application-clean-unique-filename-and-digest-idempotent-repos")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .to("direct:cleanIdempotentFileStore")
                 .setBody(constant(null))
                 .endRest()
@@ -78,6 +110,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-application-clean-idempotent-download-repos")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .to("direct:cleanIdempotentDownloadRepo")
                 .setBody(constant(null))
                 .endRest();
@@ -105,6 +138,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .log(LoggingLevel.DEBUG, correlation() + "Get chouette active jobs all providers")
                 .removeHeaders("CamelHttp*")
                 .process(e -> e.getIn().setHeader("status", e.getIn().getHeader("status") != null ? e.getIn().getHeader("status") : Arrays.asList("STARTED", "SCHEDULED")))
@@ -116,6 +150,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("All jobs canceled").endResponseMessage()
                 .responseMessage().code(500).message("Could not cancel all jobs").endResponseMessage()
                 .route()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .log(LoggingLevel.INFO, correlation() + "Cancel all chouette jobs for all providers")
                 .removeHeaders("CamelHttp*")
                 .to("direct:chouetteCancelAllJobsForAllProviders")
@@ -137,6 +172,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .responseMessage().code(500).message("Internal error - check filter").endResponseMessage()
                 .route()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean all dataspaces")
                 .removeHeaders("CamelHttp*")
                 .to("direct:chouetteCleanAllReferentials")
@@ -158,6 +194,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .route()
                 .removeHeaders("CamelHttp*")
                 .setHeader(PROVIDER_ID, header("providerId"))
+                .to("direct:authorizeRequest")
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .split(method(ImportFilesSplitter.class, "splitFiles"))
 
@@ -186,6 +223,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
+                .to("direct:authorizeRequest")
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "blob store get files")
                 .removeHeaders("CamelHttp*")
@@ -202,6 +240,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid fileName").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
+                .to("direct:authorizeRequest")
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
                                                                        + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
@@ -222,6 +261,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
+                .to("direct:authorizeRequest")
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "get stats")
                 .removeHeaders("CamelHttp*")
@@ -252,6 +292,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
+                .to("direct:authorizeRequest")
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "Get chouette jobs status=${header.status} action=${header.action}")
                 .removeHeaders("CamelHttp*")
@@ -267,6 +308,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid jobId").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
+                .to("direct:authorizeRequest")
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "Cancel all chouette jobs")
                 .removeHeaders("CamelHttp*")
@@ -283,6 +325,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid jobId").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
+                .to("direct:authorizeRequest")
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .setHeader(Constants.CHOUETTE_JOB_ID, header("jobId"))
                 .log(LoggingLevel.INFO, correlation() + "Cancel chouette job")
@@ -298,6 +341,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
+                .to("direct:authorizeRequest")
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "Chouette start export")
                 .removeHeaders("CamelHttp*")
@@ -312,6 +356,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
+                .to("direct:authorizeRequest")
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation")
                 .removeHeaders("CamelHttp*")
@@ -357,6 +402,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .log(LoggingLevel.INFO, "OTP build graph")
                 .removeHeaders("CamelHttp*")
                 .setBody(simple(""))
@@ -371,6 +417,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).endResponseMessage()
                 .outType(GraphStatusResponse.class)
                 .route()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .log(LoggingLevel.DEBUG, "OTP get graph status")
                 .removeHeaders("CamelHttp*")
                 .setBody(simple(null))
@@ -385,6 +432,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .log(LoggingLevel.INFO, "OSM update map data")
                 .removeHeaders("CamelHttp*")
                 .to("direct:considerToFetchOsmMapOverNorway")
@@ -420,6 +468,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .route().routeId("admin-administrative-units-download")
                 .removeHeaders("CamelHttp*")
                 .setBody(constant(KARTVERKET_ADMINISTRATIVE_UNITS_DOWNLOAD))
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .inOnly("direct:geoCoderStart")
                 .setBody(constant(null))
                 .endRest()
@@ -428,6 +477,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-administrative-units-tiamat-update")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .removeHeaders("CamelHttp*")
                 .setBody(constant(TIAMAT_ADMINISTRATIVE_UNITS_UPDATE_START))
                 .inOnly("direct:geoCoderStart")
@@ -440,6 +490,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-place-of-interest-tiamat-update")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .removeHeaders("CamelHttp*")
                 .setBody(constant(TIAMAT_PLACES_OF_INTEREST_UPDATE_START))
                 .inOnly("direct:geoCoderStart")
@@ -453,6 +504,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-address-download")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .removeHeaders("CamelHttp*")
                 .setBody(constant(KARTVERKET_ADDRESS_DOWNLOAD))
                 .inOnly("direct:geoCoderStart")
@@ -466,6 +518,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-place-names-download")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .removeHeaders("CamelHttp*")
                 .setBody(constant(KARTVERKET_PLACE_NAMES_DOWNLOAD))
                 .inOnly("direct:geoCoderStart")
@@ -479,6 +532,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-tiamat-export")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .removeHeaders("CamelHttp*")
                 .setBody(constant(TIAMAT_EXPORT_START))
                 .inOnly("direct:geoCoderStart")
@@ -495,6 +549,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).endResponseMessage()
                 .outType(GraphStatusResponse.class)
                 .route()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .log(LoggingLevel.DEBUG, "Pelias update get status")
                 .removeHeaders("CamelHttp*")
                 .setBody(simple(null))
@@ -506,6 +561,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-pelias-update")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .removeHeaders("CamelHttp*")
                 .setBody(constant(PELIAS_UPDATE_START))
                 .inOnly("direct:geoCoderStart")
@@ -516,6 +572,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-pelias-update-abort")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .log(LoggingLevel.INFO, "Signalling abort of Pelias update")
                 .bean("peliasUpdateStatusService", "signalAbort")
                 .setBody(constant(null))
@@ -524,6 +581,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         rest("geocoder")
                 .post("/start")
+
                 .param().name("task")
                 .type(RestParamType.query)
                 .allowableValues(Arrays.asList(GeoCoderTaskType.values()).stream().map(GeoCoderTaskType::name).collect(Collectors.toList()))
@@ -534,12 +592,20 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-geocoder-update")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .validate(header("task").isNotNull())
                 .removeHeaders("CamelHttp*")
                 .process(e -> e.getIn().setBody(geoCoderTaskTypesFromString(e.getIn().getHeader("task", Collection.class))))
                 .inOnly("direct:geoCoderStartBatch")
                 .setBody(constant(null))
                 .endRest();
+
+
+        from("direct:authorizeRequest")
+                .doTry()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
+                        new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT, e.getIn().getHeader(PROVIDER_ID, Long.class))))
+                .routeId("admin-authorize-request");
 
 
     }
