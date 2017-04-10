@@ -28,7 +28,7 @@ public class TopographicPlaceConverterTest {
 		String filteredFilePath = "target/filtered-fylker.geojson";
 		new FeatureJSONFilter("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson", filteredFilePath, "fylkesnr", "area").filter();
 
-		String targetPath = "files/adm-units.xml";
+		String targetPath = "target/adm-units.xml";
 		new TopographicPlaceConverter().toNetexFile(new GeoJsonTopographicPlaceReader
 				                                            (new File(filteredFilePath)
 				                                            ), targetPath);

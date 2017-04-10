@@ -15,7 +15,7 @@ public class FeatureJSONFilterTest {
 
 	@Test
 	public void testFilterFylkeByArea() throws Exception {
-		String targetFile = "files/fylker-filtered.geojson";
+		String targetFile = "target/fylker-filtered.geojson";
 		FeatureJSONFilter featureJSONFilter = new FeatureJSONFilter("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson", targetFile, "fylkesnr", "area");
 
 		featureJSONFilter.filter();
