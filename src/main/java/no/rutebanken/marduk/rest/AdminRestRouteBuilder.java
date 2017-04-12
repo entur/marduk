@@ -417,7 +417,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).endResponseMessage()
                 .outType(GraphStatusResponse.class)
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .log(LoggingLevel.DEBUG, "OTP get graph status")
                 .removeHeaders("CamelHttp*")
                 .setBody(simple(null))
