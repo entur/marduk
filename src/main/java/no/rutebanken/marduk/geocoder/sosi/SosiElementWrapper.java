@@ -24,6 +24,8 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
 
     protected Map<Long, List<Coordinate>> geoRef;
 
+    protected Geometry geometry;
+
     public SosiElementWrapper(SosiElement sosiElement, Map<Long, List<Coordinate>> geoRef) {
         this.sosiElement = sosiElement;
         this.geoRef = geoRef;
@@ -31,6 +33,9 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
 
     @Override
     public Geometry getDefaultGeometry() {
+        if (geometry != null) {
+            return geometry;
+        }
         List<Coordinate> coordinates = new ArrayList<>();
 
         for (SosiValue ref : sosiElement.findSubElement(se -> "REF".equals(se.getName())).get().getValuesAs(SosiValue.class)) {
@@ -64,8 +69,8 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
             return null;
         }
 
-        Polygon polygon = new GeometryFactory().createPolygon(coordinates.toArray(new Coordinate[coordinates.size()]));
-        return polygon;
+        geometry = new GeometryFactory().createPolygon(coordinates.toArray(new Coordinate[coordinates.size()]));
+        return geometry;
     }
 
     @Override
