@@ -6,7 +6,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.*;
 import no.rutebanken.marduk.geocoder.routes.pelias.kartverket.KartverketAddress;
-import no.rutebanken.marduk.geocoder.routes.pelias.mapper.GeometryTransformer;
+import no.rutebanken.marduk.geocoder.routes.pelias.mapper.coordinates.GeometryTransformer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
 import org.slf4j.Logger;

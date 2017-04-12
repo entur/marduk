@@ -6,7 +6,7 @@ import com.vividsolutions.jts.geom.Geometry;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceMapper;
-import no.rutebanken.marduk.geocoder.routes.pelias.mapper.GeometryTransformer;
+import no.rutebanken.marduk.geocoder.routes.pelias.mapper.coordinates.GeometryTransformer;
 import no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket.KartverketCoordinatSystemMapper;
 import no.rutebanken.marduk.geocoder.sosi.SosiElementWrapperFactory;
 import no.vegvesen.nvdb.sosi.Sosi;
@@ -80,8 +80,8 @@ public class SosiTopographicPlaceReader implements TopographicPlaceReader {
      * @throws IOException
      */
     private void readToAdapterMap() throws IOException {
-        if (sosiInputStream==null){
-            sosiInputStream=new FileInputStream(sosiFile);
+        if (sosiInputStream == null) {
+            sosiInputStream = new FileInputStream(sosiFile);
         }
 
         SosiReader reader = Sosi.createReader(sosiInputStream);
@@ -109,7 +109,7 @@ public class SosiTopographicPlaceReader implements TopographicPlaceReader {
 
     /**
      * To avoid duplicates exclaves are discarded.
-     *
+     * <p>
      * Area is added if id does not already exist or if area is greater than existing area for id.
      */
     private boolean shouldAddNewArea(TopographicPlaceAdapter area, TopographicPlaceAdapter existingArea) {
@@ -175,29 +175,15 @@ public class SosiTopographicPlaceReader implements TopographicPlaceReader {
             } else {
                 Double x = sosiNumber.longValue() * unit;
                 try {
-                    coordinates.add(toLatLon(y, x));
+                    Coordinate utmCoord = new Coordinate(x, y);
+                    coordinates.add(GeometryTransformer.fromUTM(utmCoord, utmZone));
                 } catch (Exception e) {
-
-
-                    logger.warn(e.getMessage(), e); // TODO
-//                        throw new RuntimeException("Failed to convert coordinates for object with id=" + id + " :" + e.getMessage(), e);
+                    logger.warn("Failed to convert coordinates from utm to wgs84:" + e.getMessage(), e);
                 }
                 y = null;
             }
         }
         return coordinates;
-    }
-
-    private Coordinate toLatLon(Double y, Double x) throws FactoryException, TransformException {
-        Coordinate utmCoord = new Coordinate(x, y);
-        try {
-            return GeometryTransformer.fromUTM(utmCoord, utmZone);
-        } catch (Exception e) {
-// TODO not working...
-            GeometryTransformer.utmToUtm(utmCoord, utmZone, "36");
-
-        }
-        return null;
     }
 
 

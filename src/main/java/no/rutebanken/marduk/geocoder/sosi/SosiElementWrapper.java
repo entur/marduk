@@ -40,12 +40,14 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
                 Long refId = sosiRefNumber.longValue();
                 List<Coordinate> coordinatesForRef = geoRef.get(refId);
                 if (coordinatesForRef != null) {
+
                     if (!coordinatesForRef.isEmpty()) {
                         if (sosiRefNumber.isReversedOrder()) {
                             coordinates.addAll(Lists.reverse(coordinatesForRef));
                         } else {
                             coordinates.addAll(coordinatesForRef);
                         }
+
                     } else {
                         logger.info("Bad coord sequence for  SosiRef: " + refId + " for: " + getType() + ": " + getId() + ": " + getName());
                     }
