@@ -4,6 +4,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import no.rutebanken.marduk.geocoder.routes.pelias.mapper.coordinates.GeometryTransformer;
 import org.junit.Assert;
 import org.junit.Test;
 

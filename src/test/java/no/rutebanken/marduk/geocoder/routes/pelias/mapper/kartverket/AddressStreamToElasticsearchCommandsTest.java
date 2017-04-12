@@ -8,7 +8,7 @@ import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCo
 import no.rutebanken.marduk.geocoder.routes.pelias.json.AddressParts;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.Parent;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
-import no.rutebanken.marduk.geocoder.routes.pelias.mapper.GeometryTransformer;
+import no.rutebanken.marduk.geocoder.routes.pelias.mapper.coordinates.GeometryTransformer;
 import org.junit.Assert;
 import org.junit.Test;
 
