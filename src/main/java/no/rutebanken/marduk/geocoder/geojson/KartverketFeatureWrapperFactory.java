@@ -1,12 +1,13 @@
 package no.rutebanken.marduk.geocoder.geojson;
 
+import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import org.opengis.feature.Property;
 import org.opengis.feature.simple.SimpleFeature;
 
 
 public class KartverketFeatureWrapperFactory {
 
-	public static AbstractKartverketGeojsonWrapper createWrapper(SimpleFeature feature) {
+	public static TopographicPlaceAdapter createWrapper(SimpleFeature feature) {
 		Property typeProp = feature.getProperty("objtype");
 		if (typeProp != null) {
 			Object type = typeProp.getValue();

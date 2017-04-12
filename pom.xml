@@ -488,6 +488,11 @@
             <artifactId>jskdata</artifactId>
             <version>1.0.4</version>
         </dependency>
+        <dependency>
+            <groupId>no.vegvesen.nvdb</groupId>
+            <artifactId>sosi-reader-impl</artifactId>
+            <version>1.18</version>
+        </dependency>
     </dependencies>
 
     <build>

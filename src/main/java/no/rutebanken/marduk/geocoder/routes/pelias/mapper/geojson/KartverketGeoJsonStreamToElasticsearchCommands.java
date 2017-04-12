@@ -1,8 +1,10 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.mapper.geojson;
 
 import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONCollection;
-import no.rutebanken.marduk.geocoder.geojson.*;
+import no.rutebanken.marduk.geocoder.geojson.KartverketFeatureWrapperFactory;
+import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
+import no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket.*;
 import org.opengis.feature.simple.SimpleFeature;
 import org.springframework.stereotype.Service;
 
@@ -11,28 +13,28 @@ import java.util.Collection;
 
 @Service
 public class KartverketGeoJsonStreamToElasticsearchCommands {
-	public Collection<ElasticsearchCommand> transform(InputStream placeNamesStream) {
-		return new FeatureJSONCollection(placeNamesStream)
-				       .mapToList(f -> ElasticsearchCommand.peliasIndexCommand(createMapper(f).toPeliasDocument()));
-	}
+    public Collection<ElasticsearchCommand> transform(InputStream placeNamesStream) {
+        return new FeatureJSONCollection(placeNamesStream)
+                       .mapToList(f -> ElasticsearchCommand.peliasIndexCommand(createMapper(f).toPeliasDocument()));
+    }
 
-	KartverketFeatureToPeliasDocument createMapper(SimpleFeature feature) {
+    TopographicPlaceAdapterToPeliasDocument createMapper(SimpleFeature feature) {
 
-		AbstractKartverketGeojsonWrapper wrapper = KartverketFeatureWrapperFactory.createWrapper(feature);
+        TopographicPlaceAdapter wrapper = KartverketFeatureWrapperFactory.createWrapper(feature);
 
-		switch (wrapper.getType()) {
+        switch (wrapper.getType()) {
 
-			case COUNTY:
-				return new CountyToPeliasDocument((KartverketCounty) wrapper);
-			case LOCALITY:
-				return new LocalityToPeliasDocument((KartverketLocality) wrapper);
-			case BOROUGH:
-				return new BoroughToPeliasDocument((KartverketBorough) wrapper);
-			case NEIGHBOURHOOD:
-				return new NeighbourhoodToPeliasDocument((KartverketNeighbourhood) wrapper);
-		}
-		return null;
-	}
+            case COUNTY:
+                return new CountyToPeliasDocument(wrapper);
+            case LOCALITY:
+                return new LocalityToPeliasDocument(wrapper);
+            case BOROUGH:
+                return new BoroughToPeliasDocument(wrapper);
+            case NEIGHBOURHOOD:
+                return new NeighbourhoodToPeliasDocument(wrapper);
+        }
+        return null;
+    }
 
 
 }

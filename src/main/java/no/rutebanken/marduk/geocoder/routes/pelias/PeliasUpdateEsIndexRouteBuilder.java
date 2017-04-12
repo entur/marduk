@@ -119,8 +119,8 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.DEBUG, "Start inserting administrative units to ES")
 				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/administrativeUnits"))
 				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/adminUnits"))
-				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromKartverketGeoJson"))
-				.setHeader(FILE_EXTENSION, constant("geojson"))
+				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromKartverketSOSI"))
+				.setHeader(FILE_EXTENSION, constant("sos"))
 				.to("direct:haltIfContentIsMissing")
 				.log(LoggingLevel.DEBUG, "Finished inserting administrative units to ES")
 				.routeId("pelias-insert-admin-units");
@@ -171,6 +171,10 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 				.process(e -> deleteDirectory(new File(e.getIn().getHeader(WORKING_DIRECTORY, String.class))))
 				.routeId("pelias-insert-from-zip");
 
+
+		from("direct:convertToPeliasCommandsFromKartverketSOSI")
+				.bean("kartverketSosiStreamToElasticsearchCommands", "transform")
+				.routeId("pelias-convert-commands-kartverket-sosi");
 
 		from("direct:convertToPeliasCommandsFromKartverketGeoJson")
 				.bean("kartverketGeoJsonStreamToElasticsearchCommands", "transform")

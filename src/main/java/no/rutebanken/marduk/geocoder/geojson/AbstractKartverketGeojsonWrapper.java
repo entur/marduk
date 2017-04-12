@@ -2,21 +2,18 @@ package no.rutebanken.marduk.geocoder.geojson;
 
 
 import com.vividsolutions.jts.geom.Geometry;
+import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import org.apache.commons.lang3.StringUtils;
 import org.opengis.feature.Property;
 import org.opengis.feature.simple.SimpleFeature;
 
-public abstract class AbstractKartverketGeojsonWrapper {
-
-	public enum Type {COUNTY, LOCALITY, BOROUGH, NEIGHBOURHOOD}
+public abstract class AbstractKartverketGeojsonWrapper implements TopographicPlaceAdapter {
 
 	protected SimpleFeature feature;
 
 	public AbstractKartverketGeojsonWrapper(SimpleFeature feature) {
 		this.feature = feature;
 	}
-
-	public abstract String getId();
 
 	public String getIsoCode() {
 		return null;
@@ -30,7 +27,6 @@ public abstract class AbstractKartverketGeojsonWrapper {
 		return getProperty("navn");
 	}
 
-	public abstract Type getType();
 
 	public Geometry getDefaultGeometry() {
 		if (feature.getDefaultGeometryProperty() != null) {

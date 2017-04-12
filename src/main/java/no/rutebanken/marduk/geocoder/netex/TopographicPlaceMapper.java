@@ -1,24 +1,24 @@
-package no.rutebanken.marduk.geocoder.netex.kartverket;
+package no.rutebanken.marduk.geocoder.netex;
 
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Polygon;
 import net.opengis.gml._3.PolygonType;
-import no.rutebanken.marduk.geocoder.geojson.AbstractKartverketGeojsonWrapper;
 import no.rutebanken.marduk.geocoder.netex.NetexGeoUtil;
+import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import org.rutebanken.netex.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class KartverketFeatureToTopographicPlace {
+public class TopographicPlaceMapper {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private String participantRef;
 
-    private AbstractKartverketGeojsonWrapper feature;
+    private TopographicPlaceAdapter feature;
 
-    public KartverketFeatureToTopographicPlace(AbstractKartverketGeojsonWrapper feature, String participantRef) {
-        this.feature = feature;
+    public TopographicPlaceMapper(TopographicPlaceAdapter adapter, String participantRef) {
+        this.feature = adapter;
         this.participantRef = participantRef;
     }
 

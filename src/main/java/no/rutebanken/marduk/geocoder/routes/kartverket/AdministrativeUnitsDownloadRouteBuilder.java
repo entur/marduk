@@ -27,8 +27,7 @@ public class AdministrativeUnitsDownloadRouteBuilder extends BaseRouteBuilder {
 	@Value("${kartverket.blobstore.subdirectory:kartverket}")
 	private String blobStoreSubdirectoryForKartverket;
 
-
-	@Value("${kartverket.administrative.units.dataSetId:administrative-enheter-norge-wgs-84-hele-landet-geojson}")
+	@Value("${kartverket.administrative.units.dataSetId:administrative-enheter-norge-utm-33-hele-landet}")
 	private String administrativeUnitsDataSetId;
 
 

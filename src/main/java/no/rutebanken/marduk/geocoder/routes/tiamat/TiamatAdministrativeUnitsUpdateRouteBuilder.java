@@ -1,9 +1,8 @@
 package no.rutebanken.marduk.geocoder.routes.tiamat;
 
 
-import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONFilter;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceConverter;
-import no.rutebanken.marduk.geocoder.netex.kartverket.GeoJsonTopographicPlaceReader;
+import no.rutebanken.marduk.geocoder.netex.sosi.SosiTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.io.InputStream;
-import java.util.List;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
@@ -40,14 +38,14 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
     @Value("${tiamat.publication.delivery.path:/jersey/publication_delivery}")
     private String tiamatPublicationDeliveryPath;
 
-    @Value("${kartverket.download.directory:files/kartverket}")
+    @Value("${tiamat.administrative.units.update.directory:files/tiamat/adminUnits}")
     private String localWorkingDirectory;
 
-    @Value("${kartverket.admin.units.archive.filename:Grensedata_Norge_WGS84_Adm_enheter_geoJSON.zip}")
+    @Value("${kartverket.admin.units.archive.filename:Grensedata_Norge_UTM33_Adm_enheter_SOSI.zip}")
     private String adminUnitsArchiveFileName;
 
-    @Value("#{'${kartverket.admin.units.geojson.filenames:fylker.geojson,kommuner.geojson}'.split(',')}")
-    private List<String> adminUnitsFileNames;
+    @Value("${kartverket.admin.units.filename:ADM_enheter_Norge.sos}")
+    private String adminUnitsFileName;
 
     @Autowired
     private TopographicPlaceConverter topographicPlaceConverter;
@@ -72,7 +70,6 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
                 .doTry()
                 .to("direct:cleanUpLocalDirectory")
                 .to("direct:fetchAdministrativeUnits")
-                .to("direct:filterAdministrativeUnitsExclaves")
                 .to("direct:mapAdministrativeUnitsToNetex")
                 .to("direct:updateAdministrativeUnitsInTiamat")
                 .to("direct:processTiamatAdministrativeUnitsUpdateCompleted")
@@ -88,23 +85,15 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForKartverket + "/administrativeUnits/" + adminUnitsArchiveFileName))
                 .to("direct:getBlob")
                 .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), localWorkingDirectory))
-                .routeId("tiamat-fetch-admin-units-geojson");
-
-        from("direct:filterAdministrativeUnitsExclaves")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Removing exclaves from administrative units ...")
-                .process(e -> new FeatureJSONFilter(localWorkingDirectory + "/abas/fylker.geojson", localWorkingDirectory + "/fylker.geojson", "fylkesnr", "area").filter())
-                .process(e -> new FeatureJSONFilter(localWorkingDirectory + "/abas/kommuner.geojson", localWorkingDirectory + "/kommuner.geojson", "komm", "area").filter())
-                .process(e -> new FeatureJSONFilter(localWorkingDirectory + "/abas/grunnkretser.geojson", localWorkingDirectory + "/grunnkretser.geojson", "grunnkrets", "area").filter())
-                .routeId("tiamat-filter-geojson-exclaves");
-
+                .routeId("tiamat-fetch-admin-units-sosi");
 
         from("direct:mapAdministrativeUnitsToNetex")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Mapping latest administrative units to Netex ...")
                 .process(e -> topographicPlaceConverter.toNetexFile(
-                        new GeoJsonTopographicPlaceReader(geoJsonFiles(e)),
+                        new SosiTopographicPlaceReader(new File(localWorkingDirectory + "/" + adminUnitsFileName)),
                         localWorkingDirectory + "/admin-units-netex.xml"))
                 .process(e -> e.getIn().setBody(new File(localWorkingDirectory + "/admin-units-netex.xml")))
-                .routeId("tiamat-map-admin-units-geojson-to-netex");
+                .routeId("tiamat-map-admin-units-sosi-to-netex");
 
         from("direct:updateAdministrativeUnitsInTiamat")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
@@ -119,9 +108,5 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
                 .routeId("tiamat-admin-units-update-completed");
     }
 
-
-    private File[] geoJsonFiles(Exchange e) {
-        return adminUnitsFileNames.stream().map(f -> new File(localWorkingDirectory + "/" + f)).toArray(File[]::new);
-    }
 
 }

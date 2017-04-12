@@ -1,13 +1,13 @@
-package no.rutebanken.marduk.geocoder.routes.pelias.mapper.geojson;
+package no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket;
 
 
-import no.rutebanken.marduk.geocoder.geojson.KartverketLocality;
+import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.Parent;
 
-public class LocalityToPeliasDocument extends KartverketFeatureToPeliasDocument {
+public class LocalityToPeliasDocument extends TopographicPlaceAdapterToPeliasDocument {
 
 
-	public LocalityToPeliasDocument(KartverketLocality feature) {
+	public LocalityToPeliasDocument(TopographicPlaceAdapter feature) {
 		super(feature);
 	}
 

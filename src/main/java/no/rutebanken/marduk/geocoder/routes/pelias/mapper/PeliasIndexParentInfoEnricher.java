@@ -5,6 +5,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import no.rutebanken.marduk.geocoder.GeoCoderConstants;
 import no.rutebanken.marduk.geocoder.geojson.KartverketLocality;
+import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.Parent;
@@ -59,7 +60,7 @@ public class PeliasIndexParentInfoEnricher {
 		GeoPoint centerPoint = peliasDocument.getCenterPoint();
 		if (isLocalityMissing(parent) && centerPoint != null) {
 			Point point = geometryFactory.createPoint(new Coordinate(centerPoint.getLon(), centerPoint.getLat()));
-			KartverketLocality locality = adminUnitRepository.getLocality(point);
+			TopographicPlaceAdapter locality = adminUnitRepository.getLocality(point);
 			if (locality != null) {
 				if (parent == null) {
 					parent = new Parent();

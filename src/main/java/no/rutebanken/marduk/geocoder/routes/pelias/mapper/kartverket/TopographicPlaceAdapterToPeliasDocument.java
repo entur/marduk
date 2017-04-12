@@ -1,9 +1,10 @@
-package no.rutebanken.marduk.geocoder.routes.pelias.mapper.geojson;
+package no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket;
 
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Point;
 import no.rutebanken.marduk.geocoder.geojson.AbstractKartverketGeojsonWrapper;
+import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.Parent;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
@@ -17,15 +18,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public abstract class KartverketFeatureToPeliasDocument {
+public abstract class TopographicPlaceAdapterToPeliasDocument {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static final String SOURCE = "kartverket";
 
-	protected AbstractKartverketGeojsonWrapper feature;
+	protected TopographicPlaceAdapter feature;
 
-	public KartverketFeatureToPeliasDocument(AbstractKartverketGeojsonWrapper feature) {
+	public TopographicPlaceAdapterToPeliasDocument(TopographicPlaceAdapter feature) {
 		this.feature = feature;
 	}
 

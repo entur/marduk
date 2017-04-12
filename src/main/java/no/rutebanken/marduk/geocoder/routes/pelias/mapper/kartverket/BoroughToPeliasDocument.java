@@ -1,14 +1,13 @@
-package no.rutebanken.marduk.geocoder.routes.pelias.mapper.geojson;
+package no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket;
 
-import no.rutebanken.marduk.geocoder.geojson.KartverketBorough;
+import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import org.apache.commons.lang3.StringUtils;
-import org.opengis.feature.simple.SimpleFeature;
 
 
-public class BoroughToPeliasDocument extends KartverketFeatureToPeliasDocument {
+public class BoroughToPeliasDocument extends TopographicPlaceAdapterToPeliasDocument {
 
 
-	public BoroughToPeliasDocument(KartverketBorough feature) {
+	public BoroughToPeliasDocument(TopographicPlaceAdapter feature) {
 		super(feature);
 	}
 
