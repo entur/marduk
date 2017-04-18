@@ -45,7 +45,7 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
                 })
                     .log(LoggingLevel.WARN, correlation() + "got 404 from Tiamat. Something is wrong... giving up")
                     .setHeader("current_status", constant(JobStatus.FAILED.toString()))
-                .endDoTry()
+                .end()
                 .choice()
                 .when(simple("${header.current_status} != '" + JobStatus.PROCESSING + "'"))
                 .to("direct:tiamatJobStatusDone")
