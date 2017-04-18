@@ -15,11 +15,10 @@ import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.*;
-import static no.rutebanken.marduk.routes.status.SystemStatus.System.*;
-import static no.rutebanken.marduk.routes.status.SystemStatus.Action.*;
+
 import static no.rutebanken.marduk.Constants.JOB_STATUS_ROUTING_DESTINATION;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
+import static no.rutebanken.marduk.routes.status.SystemStatus.System.PELIAS;
 
 @Component
 public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
