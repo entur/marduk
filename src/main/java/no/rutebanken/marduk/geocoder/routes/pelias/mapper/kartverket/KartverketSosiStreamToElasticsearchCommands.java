@@ -3,6 +3,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.netex.sosi.SosiTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
+import no.rutebanken.marduk.geocoder.sosi.SosiTopographicPlaceAdapterReader;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -12,7 +13,7 @@ import java.util.stream.Collectors;
 @Service
 public class KartverketSosiStreamToElasticsearchCommands {
     public Collection<ElasticsearchCommand> transform(InputStream placeNamesStream) {
-        return new SosiTopographicPlaceReader(placeNamesStream).read().stream()
+        return new SosiTopographicPlaceAdapterReader(placeNamesStream).read().stream()
                        .map(w -> ElasticsearchCommand.peliasIndexCommand(createMapper(w).toPeliasDocument())).collect(Collectors.toList());
     }
 

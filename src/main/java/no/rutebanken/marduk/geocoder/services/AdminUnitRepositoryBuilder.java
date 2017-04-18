@@ -8,6 +8,7 @@ import com.vividsolutions.jts.geom.Point;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.netex.sosi.SosiTopographicPlaceReader;
+import no.rutebanken.marduk.geocoder.sosi.SosiTopographicPlaceAdapterReader;
 import no.rutebanken.marduk.repository.BlobStoreRepository;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.FileUtils;
@@ -100,7 +101,7 @@ public class AdminUnitRepositoryBuilder {
                 if (blob.getName().endsWith(".zip")) {
                     ZipFileUtils.unzipFile(repository.getBlob(blob.getName()), localWorkingDirectory);
 
-                    FileUtils.listFiles(new File(localWorkingDirectory), new String[]{"sos"}, true).stream().forEach(f -> new SosiTopographicPlaceReader(f).read().forEach(au -> addAdminUnit(au)));
+                    FileUtils.listFiles(new File(localWorkingDirectory), new String[]{"sos"}, true).stream().forEach(f -> new SosiTopographicPlaceAdapterReader(f).read().forEach(au -> addAdminUnit(au)));
                     new File(localWorkingDirectory).delete();
                 }
             }
