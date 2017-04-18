@@ -459,6 +459,22 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .endRest();
 
 
+        rest("/services/organisationRegistry/administrativeZones")
+                .post("/import")
+                .description("Import administrative zones to the organisation registry")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Command accepted").endResponseMessage()
+                .route()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ORGANISATION_EDIT)))
+                .removeHeaders("CamelHttp*")
+                .to("direct:updateAdminUnitsInOrgReg")
+                .setBody(simple("done"))
+                .routeId("admin-org-reg-import-admin-zones")
+                .endRest();
+
+
+
         rest("geocoder/administrativeUnits")
                 .post("/download")
                 .description("Trigger download of administrative units from Norwegian mapping authority")
