@@ -24,15 +24,6 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        onException(HttpOperationFailedException.class)
-                .onWhen(exchange -> {
-                    HttpOperationFailedException ex = exchange.getProperty(
-                            Exchange.EXCEPTION_CAUGHT,
-                            HttpOperationFailedException.class);
-                    return (ex.getStatusCode() == 404);
-                }).handled(true).log(LoggingLevel.WARN, correlation() + "got 404 from Tiamat. Something is wrong... giving up")
-                .setHeader("current_status", constant(JobStatus.FAILED.toString())).to("direct:tiamatJobStatusDone");
-
         from(TIAMAT_EXPORT_POLL.getEndpoint())
                 .validate(header(Constants.JOB_ID).isNotNull())
                 .validate(header(Constants.JOB_STATUS_URL).isNotNull())
@@ -44,9 +35,17 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders("Camel*")
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                .doTry()
                 .toD(tiamatUrl + "/${header." + Constants.JOB_STATUS_URL + "}")
                 .convertBodyTo(ExportJob.class)
                 .setHeader("current_status", simple("${body.status}"))
+                .doCatch(HttpOperationFailedException.class).onWhen(exchange -> {
+                    HttpOperationFailedException ex = exchange.getException(HttpOperationFailedException.class);
+                    return (ex.getStatusCode() == 404);
+                })
+                    .log(LoggingLevel.WARN, correlation() + "got 404 from Tiamat. Something is wrong... giving up")
+                    .setHeader("current_status", constant(JobStatus.FAILED.toString()))
+                .endDoTry()
                 .choice()
                 .when(simple("${header.current_status} != '" + JobStatus.PROCESSING + "'"))
                 .to("direct:tiamatJobStatusDone")
