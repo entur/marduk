@@ -5,6 +5,7 @@ import no.rutebanken.marduk.repository.ProviderRepository;
 import org.rutebanken.helper.organisation.RoleAssignment;
 import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,7 +23,14 @@ public class AuthorizationService {
     private RoleAssignmentExtractor roleAssignmentExtractor;
 
 
+    @Value("${authorization.enabled:true}")
+    protected boolean authorizationEnabled;
+
     public void verifyAtLeastOne(AuthorizationClaim... claims) {
+        if (!authorizationEnabled){
+            return;
+        }
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         List<RoleAssignment> roleAssignments = roleAssignmentExtractor.getRoleAssignmentsForUser(authentication);
 
