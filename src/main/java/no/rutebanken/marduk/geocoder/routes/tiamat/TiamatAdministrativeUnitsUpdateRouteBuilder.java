@@ -98,7 +98,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
         from("direct:updateAdministrativeUnitsInTiamat")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
                 .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_XML))
-//                .to(tiamatUrl + tiamatPublicationDeliveryPath)
+                .to(tiamatUrl + tiamatPublicationDeliveryPath)
                 .routeId("tiamat-admin-units-update-start");
 
 
