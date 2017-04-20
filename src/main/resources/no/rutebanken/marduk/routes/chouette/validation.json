@@ -97,25 +97,25 @@
     },
     "mode_local_train": {
         "allowed_transport": "1",
-        "inter_stop_area_distance_min": "2000",
+        "inter_stop_area_distance_min": "1000",
         "inter_stop_area_distance_max": "500000",
-        "speed_max": "300",
+        "speed_max": "150",
         "speed_min": "1",
         "inter_stop_duration_variation_max": "600"
     },
     "mode_train": {
         "allowed_transport": "1",
-        "inter_stop_area_distance_min": "2000",
+        "inter_stop_area_distance_min": "1000",
         "inter_stop_area_distance_max": "500000",
-        "speed_max": "300",
+        "speed_max": "210",
         "speed_min": "1",
         "inter_stop_duration_variation_max": "600"
     },
     "mode_long_distance_train": {
         "allowed_transport": "1",
-        "inter_stop_area_distance_min": "2000",
+        "inter_stop_area_distance_min": "1000",
         "inter_stop_area_distance_max": "500000",
-        "speed_max": "300",
+        "speed_max": "210",
         "speed_min": "1",
         "inter_stop_duration_variation_max": "60"
     },
