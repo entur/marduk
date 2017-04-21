@@ -49,7 +49,7 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
 				if (siteFrame.getStopPlaces() != null) {
 					commands.addAll(addCommands(siteFrame.getStopPlaces().getStopPlace(), new StopPlaceToPeliasMapper(deliveryStructure.getParticipantRef(), defaultPopularity)));
 				}
-				if (siteFrame.getStopPlaces() != null) {
+				if (siteFrame.getTopographicPlaces() != null) {
 					commands.addAll(addCommands(siteFrame.getTopographicPlaces().getTopographicPlace(), new TopographicPlaceToPeliasMapper(deliveryStructure.getParticipantRef())));
 				}
 			}

@@ -4,38 +4,47 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import org.rutebanken.netex.model.TopographicPlace;
 
+import java.util.Arrays;
 import java.util.Locale;
+
+import static org.rutebanken.netex.model.TopographicPlaceTypeEnumeration.PLACE_OF_INTEREST;
 
 public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentMapper<TopographicPlace> {
 
 
-	public TopographicPlaceToPeliasMapper(String participantRef) {
-		super(participantRef);
-	}
+    public TopographicPlaceToPeliasMapper(String participantRef) {
+        super(participantRef);
+    }
 
-	@Override
-	protected void populateDocument(TopographicPlace place, PeliasDocument document) {
-		document.setAlpha3(new Locale("en", place.getCountryRef().getRef().value()).getISO3Country());
-	}
+    @Override
+    protected void populateDocument(TopographicPlace place, PeliasDocument document) {
+        document.setAlpha3(new Locale("en", place.getCountryRef().getRef().value()).getISO3Country());
 
-	@Override
-	protected String getLayer(TopographicPlace place) {
-		switch (place.getTopographicPlaceType()){
+        if (PLACE_OF_INTEREST.equals(place.getTopographicPlaceType())) {
+            document.setCategory(Arrays.asList("poi"));
+        }
+    }
 
-			case TOWN:
-				return "locality";
+    @Override
+    protected String getLayer(TopographicPlace place) {
+        switch (place.getTopographicPlaceType()) {
 
-			case COUNTY:
-				return "county";
+            case TOWN:
+                return "locality";
 
-			case AREA:
-				return "borough";
+            case COUNTY:
+                return "county";
 
-			case PLACE_OF_INTEREST:
-				return "venue"; // TODO add custom layer?
-		}
+            case AREA:
+                return "borough";
 
-		return "macrohood"; // TODO what should be default?
+            case PLACE_OF_INTEREST:
+                return "venue"; // TODO add custom layer?
+        }
 
-	}
+        return "macrohood"; // TODO what should be default?
+
+    }
+
+
 }

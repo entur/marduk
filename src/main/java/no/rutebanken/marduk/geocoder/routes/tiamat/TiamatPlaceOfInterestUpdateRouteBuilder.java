@@ -90,8 +90,6 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching latest osm poi data ...")
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm + "/" + osmFileName))
                 .to("direct:getBlob")
-                .process(e ->
-                                 toString())
                 .setHeader(Exchange.FILE_NAME, constant(osmFileName))
                 .to("file:" + localWorkingDirectory)
                 .routeId("tiamat-fetch-poi-osm");
@@ -105,7 +103,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
         from("direct:updatePlaceOfInterestInTiamat")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
                 .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_XML))
-//				.to(tiamatUrl + tiamatPublicationDeliveryPath)
+                .to(tiamatUrl + tiamatPublicationDeliveryPath)
                 .routeId("tiamat-poi-update-start");
 
         from("direct:processTiamatPlaceOfInterestUpdateCompleted")
