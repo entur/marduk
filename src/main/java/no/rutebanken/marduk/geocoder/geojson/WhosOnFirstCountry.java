@@ -32,7 +32,7 @@ public class WhosOnFirstCountry extends AbstractGeojsonAdapter implements Topogr
 
     @Override
     public String getName() {
-        List<String> names = getProperty("name:eng_x_preferred");
+        List<String> names = getProperty("name:nno_x_preferred");
         return names.get(0);
     }
 
