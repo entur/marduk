@@ -23,6 +23,9 @@ public class GeoCoderConstants {
 	public static final GeoCoderTask TIAMAT_ADMINISTRATIVE_UNITS_UPDATE_START
 			= new GeoCoderTask(GeoCoderTask.Phase.TIAMAT_UPDATE, "direct:tiamatAdministrativeUnitsUpdate");
 
+	public static final GeoCoderTask TIAMAT_NEIGHBOURING_COUNTRIES_UPDATE_START
+			= new GeoCoderTask(GeoCoderTask.Phase.TIAMAT_UPDATE, "direct:tiamatNeighbouringCountriesUpdateStart");
+
 	public static final GeoCoderTask TIAMAT_PLACES_OF_INTEREST_UPDATE_START
 			= new GeoCoderTask(GeoCoderTask.Phase.TIAMAT_UPDATE, "direct:tiamatPlacesOfInterestUpdate");
 

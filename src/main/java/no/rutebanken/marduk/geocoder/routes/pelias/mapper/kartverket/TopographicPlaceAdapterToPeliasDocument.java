@@ -3,7 +3,6 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Point;
-import no.rutebanken.marduk.geocoder.geojson.AbstractKartverketGeojsonWrapper;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.Parent;

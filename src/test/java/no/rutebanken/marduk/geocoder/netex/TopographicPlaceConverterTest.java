@@ -1,9 +1,10 @@
 package no.rutebanken.marduk.geocoder.netex;
 
 
-import no.rutebanken.marduk.geocoder.netex.kartverket.GeoJsonTopographicPlaceReader;
-import no.rutebanken.marduk.geocoder.netex.pbf.PbfTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONFilter;
+import no.rutebanken.marduk.geocoder.geojson.GeoJsonSingleTopographicPlaceReader;
+import no.rutebanken.marduk.geocoder.netex.geojson.GeoJsonCollectionTopographicPlaceReader;
+import no.rutebanken.marduk.geocoder.netex.pbf.PbfTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.netex.sosi.SosiTopographicPlaceReader;
 import org.junit.Test;
 import org.rutebanken.netex.model.IanaCountryTldEnumeration;
@@ -30,7 +31,7 @@ public class TopographicPlaceConverterTest {
         new FeatureJSONFilter("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson", filteredFilePath, "fylkesnr", "area").filter();
 
         String targetPath = "target/adm-units-from-geojson.xml";
-        new TopographicPlaceConverter().toNetexFile(new GeoJsonTopographicPlaceReader
+        new TopographicPlaceConverter().toNetexFile(new GeoJsonCollectionTopographicPlaceReader
                                                             (new File(filteredFilePath)
                                                             ), targetPath);
         validateNetexFile(targetPath);
@@ -59,6 +60,16 @@ public class TopographicPlaceConverterTest {
         validateNetexFile(targetPath);
     }
 
+
+    @Test
+    public void testConvertNeighbouringCountriesFromGeoJson() throws Exception {
+        TopographicPlaceReader reader = new GeoJsonSingleTopographicPlaceReader(new File("src/test/resources/no/rutebanken/marduk/geocoder/geojson/finland.geojson"));
+        String targetPath = "target/neighbouring-countries_from_geosjon.xml";
+        new TopographicPlaceConverter().toNetexFile(reader,
+                targetPath);
+
+        validateNetexFile(targetPath);
+    }
 
 //    @Test // File is to big for source control
 //    public void testConvertAdminUnitsFromSosiRealKartverketData() throws Exception {

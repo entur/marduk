@@ -3,7 +3,7 @@ package no.rutebanken.marduk.geocoder.geojson;
 
 import org.opengis.feature.simple.SimpleFeature;
 
-public class KartverketCounty extends AbstractKartverketGeojsonWrapper {
+public class KartverketCounty extends AbstractKartverketGeojsonAdapter {
 
 	public static final String OBJECT_TYPE="Fylke";
 
@@ -22,7 +22,7 @@ public class KartverketCounty extends AbstractKartverketGeojsonWrapper {
 	}
 
 	@Override
-	public AbstractKartverketGeojsonWrapper.Type getType() {
+	public AbstractKartverketGeojsonAdapter.Type getType() {
 		return Type.COUNTY;
 	}
 

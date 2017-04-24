@@ -54,7 +54,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("quartz2://marduk/tiamatTAdministrativeUnitsUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+        singletonFrom("quartz2://marduk/tiamatAdministrativeUnitsUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{tiamat.administrative.units.update.autoStartup:false}}")
                 .log(LoggingLevel.INFO, "Quartz triggers Tiamat update of administrative units.")
                 .setBody(constant(TIAMAT_ADMINISTRATIVE_UNITS_UPDATE_START))

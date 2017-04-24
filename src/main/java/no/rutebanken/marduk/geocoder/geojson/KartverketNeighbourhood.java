@@ -4,7 +4,7 @@ package no.rutebanken.marduk.geocoder.geojson;
 import org.apache.commons.lang3.StringUtils;
 import org.opengis.feature.simple.SimpleFeature;
 
-public class KartverketNeighbourhood extends AbstractKartverketGeojsonWrapper {
+public class KartverketNeighbourhood extends AbstractKartverketGeojsonAdapter {
 
 	public KartverketNeighbourhood(SimpleFeature feature) {
 		super(feature);
@@ -26,7 +26,7 @@ public class KartverketNeighbourhood extends AbstractKartverketGeojsonWrapper {
 	}
 
 	@Override
-	public AbstractKartverketGeojsonWrapper.Type getType() {
+	public AbstractKartverketGeojsonAdapter.Type getType() {
 		return Type.NEIGHBOURHOOD;
 	}
 

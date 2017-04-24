@@ -1,14 +1,17 @@
 package no.rutebanken.marduk.geocoder.netex;
 
 
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.*;
 import net.opengis.gml._3.PolygonType;
 import no.rutebanken.marduk.geocoder.netex.NetexGeoUtil;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import org.rutebanken.netex.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class TopographicPlaceMapper {
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -51,7 +54,8 @@ public class TopographicPlaceMapper {
 
     protected TopographicPlaceTypeEnumeration getType() {
         switch (feature.getType()) {
-
+            case COUNTRY:
+                return TopographicPlaceTypeEnumeration.STATE;
             case COUNTY:
                 return TopographicPlaceTypeEnumeration.COUNTY;
             case LOCALITY:
@@ -65,6 +69,12 @@ public class TopographicPlaceMapper {
 
     private PolygonType getPolygon() {
         Geometry geometry = feature.getDefaultGeometry();
+
+        if (geometry instanceof MultiPolygon) {
+            CoordinateList coordinateList = new CoordinateList(geometry.getBoundary().getCoordinates());
+            coordinateList.closeRing();
+            geometry = geometry.getFactory().createPolygon(coordinateList.toCoordinateArray());
+        }
 
         if (geometry instanceof Polygon) {
             return NetexGeoUtil.toNetexPolygon((Polygon) geometry).withId(participantRef + "-" + feature.getId());

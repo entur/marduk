@@ -1,7 +1,7 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.mapper.geojson;
 
 import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONCollection;
-import no.rutebanken.marduk.geocoder.geojson.KartverketFeatureWrapperFactory;
+import no.rutebanken.marduk.geocoder.geojson.GeojsonFeatureWrapperFactory;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
 import no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket.*;
@@ -20,7 +20,7 @@ public class KartverketGeoJsonStreamToElasticsearchCommands {
 
     TopographicPlaceAdapterToPeliasDocument createMapper(SimpleFeature feature) {
 
-        TopographicPlaceAdapter wrapper = KartverketFeatureWrapperFactory.createWrapper(feature);
+        TopographicPlaceAdapter wrapper = GeojsonFeatureWrapperFactory.createWrapper(feature);
 
         switch (wrapper.getType()) {
 

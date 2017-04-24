@@ -1,20 +1,25 @@
-package no.rutebanken.marduk.geocoder.netex.kartverket;
+package no.rutebanken.marduk.geocoder.netex.geojson;
 
-import no.rutebanken.marduk.geocoder.geojson.KartverketFeatureWrapperFactory;
+import no.rutebanken.marduk.geocoder.geojson.GeojsonFeatureWrapperFactory;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceMapper;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceReader;
 import org.apache.commons.io.FileUtils;
 import org.geotools.feature.FeatureIterator;
+import org.geotools.feature.simple.SimpleFeatureImpl;
 import org.geotools.geojson.feature.FeatureJSON;
 import org.rutebanken.netex.model.MultilingualString;
+import org.rutebanken.netex.model.SimpleFeature;
 import org.rutebanken.netex.model.TopographicPlace;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 
-public class GeoJsonTopographicPlaceReader implements TopographicPlaceReader {
+/**
+ * For reading collections of features from geojson files.
+ */
+public class GeoJsonCollectionTopographicPlaceReader implements TopographicPlaceReader {
 
 	private File[] files;
 
@@ -23,9 +28,8 @@ public class GeoJsonTopographicPlaceReader implements TopographicPlaceReader {
 	private static final String PARTICIPANT_REF = "KVE";
 
 
-	public GeoJsonTopographicPlaceReader(File... files) {
+	public GeoJsonCollectionTopographicPlaceReader(File... files) {
 		this.files = files;
-
 	}
 
 	public void addToQueue(BlockingQueue<TopographicPlace> queue) throws IOException, InterruptedException {
@@ -34,7 +38,7 @@ public class GeoJsonTopographicPlaceReader implements TopographicPlaceReader {
 			FeatureIterator<org.opengis.feature.simple.SimpleFeature> itr = fJson.streamFeatureCollection(FileUtils.openInputStream(file));
 
 			while (itr.hasNext()) {
-				TopographicPlaceAdapter adapter = KartverketFeatureWrapperFactory.createWrapper(itr.next());
+				TopographicPlaceAdapter adapter = GeojsonFeatureWrapperFactory.createWrapper(itr.next());
 				TopographicPlace topographicPlace = new TopographicPlaceMapper(adapter, PARTICIPANT_REF).toTopographicPlace();
 
 				if (topographicPlace != null) {
