@@ -1,5 +1,6 @@
-package no.rutebanken.marduk.geocoder.geojson;
+package no.rutebanken.marduk.geocoder.netex.geojson;
 
+import no.rutebanken.marduk.geocoder.geojson.GeojsonFeatureWrapperFactory;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceMapper;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceReader;

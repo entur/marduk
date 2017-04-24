@@ -1,6 +1,6 @@
 package no.rutebanken.marduk.geocoder.routes.tiamat;
 
-import no.rutebanken.marduk.geocoder.geojson.GeoJsonSingleTopographicPlaceReader;
+import no.rutebanken.marduk.geocoder.netex.geojson.GeoJsonSingleTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceConverter;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.services.BlobStoreService;

@@ -2,7 +2,7 @@ package no.rutebanken.marduk.geocoder.netex;
 
 
 import no.rutebanken.marduk.geocoder.featurejson.FeatureJSONFilter;
-import no.rutebanken.marduk.geocoder.geojson.GeoJsonSingleTopographicPlaceReader;
+import no.rutebanken.marduk.geocoder.netex.geojson.GeoJsonSingleTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.netex.geojson.GeoJsonCollectionTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.netex.pbf.PbfTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.netex.sosi.SosiTopographicPlaceReader;
