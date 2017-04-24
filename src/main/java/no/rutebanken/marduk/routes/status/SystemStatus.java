@@ -133,12 +133,11 @@ public class SystemStatus {
 		}
 
 		public SystemStatus.Builder start(Enum jobType) {
-			systemStatus.correlationId = UUID.randomUUID().toString();
-			systemStatus.state = State.STARTED;
-			return jobType(jobType.name());
+			return start(jobType.name());
 		}
 
 		public SystemStatus.Builder start(String jobType) {
+			systemStatus = new SystemStatus();
 			systemStatus.correlationId = UUID.randomUUID().toString();
 			systemStatus.state = State.STARTED;
 			return jobType(jobType);
