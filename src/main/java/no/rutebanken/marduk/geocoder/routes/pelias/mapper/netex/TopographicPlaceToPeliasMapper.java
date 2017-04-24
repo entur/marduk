@@ -2,6 +2,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 
 
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
+import org.rutebanken.netex.model.MultilingualString;
 import org.rutebanken.netex.model.TopographicPlace;
 
 import java.util.Arrays;
@@ -23,26 +24,38 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
         if (PLACE_OF_INTEREST.equals(place.getTopographicPlaceType())) {
             document.setCategory(Arrays.asList("poi"));
         }
+
+        // Use descriptor.name if name is not set
+        if (document.getDefaultName() == null && place.getDescriptor() != null) {
+            MultilingualString descriptorName = place.getDescriptor().getName();
+            document.setDefaultName(descriptorName.getValue());
+            if (descriptorName.getLang() != null) {
+                document.addName(descriptorName.getLang(), descriptorName.getValue());
+            }
+        }
     }
 
     @Override
     protected String getLayer(TopographicPlace place) {
         switch (place.getTopographicPlaceType()) {
 
-            case TOWN:
-                return "locality";
-
-            case COUNTY:
-                return "county";
-
-            case AREA:
-                return "borough";
-
             case PLACE_OF_INTEREST:
-                return "venue"; // TODO add custom layer?
+                return "venue";
+
+                // Still using adm units directly from kartverket. Change if tiamat IDs are needed.
+//            case TOWN:
+//                return "locality";
+//
+//            case COUNTY:
+//                return "county";
+//
+//            case AREA:
+//                return "borough";
+
+
         }
 
-        return "macrohood"; // TODO what should be default?
+        return null;
 
     }
 

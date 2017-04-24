@@ -16,70 +16,77 @@ import java.util.List;
 
 public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_VersionStructure> {
 
-	private String participantRef;
+    private String participantRef;
 
-	public AbstractNetexPlaceToPeliasDocumentMapper(String participantRef) {
-		this.participantRef = participantRef;
-	}
+    public AbstractNetexPlaceToPeliasDocumentMapper(String participantRef) {
+        this.participantRef = participantRef;
+    }
 
-	public PeliasDocument toPeliasDocument(T place) {
-		PeliasDocument document = new PeliasDocument(getLayer(place), participantRef, place.getId());
-		MultilingualString name = place.getName();
-		if (name != null) {
-			document.setDefaultName(name.getValue());
-			if (name.getLang() != null) {
-				document.addName(name.getLang(), name.getValue());
-			}
-		}
+    public PeliasDocument toPeliasDocument(T place) {
+        String layer = getLayer(place);
 
-		if (place.getCentroid() != null) {
-			LocationStructure loc = place.getCentroid().getLocation();
-			document.setCenterPoint(new GeoPoint(loc.getLatitude().doubleValue(), loc.getLongitude().doubleValue()));
-		}
+        if (layer == null) {
+            return null;
+        }
 
-		if (place.getPolygon() != null) {
-			// TODO issues with shape validation in elasticsearch. duplicate coords + intersections cause document to be discarded. is shape even used by pelias?
-			document.setShape(toPolygon(place.getPolygon().getExterior().getAbstractRing().getValue()));
-		}
+        PeliasDocument document = new PeliasDocument(layer, participantRef, place.getId());
 
-		populateDocument(place, document);
+        MultilingualString name = place.getName();
+        if (name != null) {
+            document.setDefaultName(name.getValue());
+            if (name.getLang() != null) {
+                document.addName(name.getLang(), name.getValue());
+            }
+        }
 
-		return document;
-	}
+        if (place.getCentroid() != null) {
+            LocationStructure loc = place.getCentroid().getLocation();
+            document.setCenterPoint(new GeoPoint(loc.getLatitude().doubleValue(), loc.getLongitude().doubleValue()));
+        }
 
-	private Polygon toPolygon(AbstractRingType ring) {
+        if (place.getPolygon() != null) {
+            // TODO issues with shape validation in elasticsearch. duplicate coords + intersections cause document to be discarded. is shape even used by pelias?
+            document.setShape(toPolygon(place.getPolygon().getExterior().getAbstractRing().getValue()));
+        }
 
-		if (ring instanceof LinearRingType) {
-			LinearRingType linearRing = (LinearRingType) ring;
+        populateDocument(place, document);
 
-			List<LngLatAlt> coordinates = new ArrayList<>();
-			LngLatAlt coordinate = null;
-			LngLatAlt prevCoordinate = null;
-			for (Double val : linearRing.getPosList().getValue()) {
-				if (coordinate == null) {
-					coordinate = new LngLatAlt();
-					coordinate.setLatitude(val);
-				} else {
-					coordinate.setLongitude(val);
-					if (prevCoordinate == null || !equals(coordinate, prevCoordinate)) {
-						coordinates.add(coordinate);
-					}
-					prevCoordinate = coordinate;
-					coordinate = null;
-				}
-			}
-			return new Polygon(coordinates);
+        return document;
+    }
 
-		}
-		return null;
-	}
+    private Polygon toPolygon(AbstractRingType ring) {
 
-	private boolean equals(LngLatAlt coordinate, LngLatAlt other) {
-		return other.getLatitude() == coordinate.getLatitude() && other.getLongitude() == coordinate.getLongitude();
-	}
+        if (ring instanceof LinearRingType) {
+            LinearRingType linearRing = (LinearRingType) ring;
 
-	protected abstract void populateDocument(T place, PeliasDocument document);
+            List<LngLatAlt> coordinates = new ArrayList<>();
+            LngLatAlt coordinate = null;
+            LngLatAlt prevCoordinate = null;
+            for (Double val : linearRing.getPosList().getValue()) {
+                if (coordinate == null) {
+                    coordinate = new LngLatAlt();
+                    coordinate.setLatitude(val);
+                } else {
+                    coordinate.setLongitude(val);
+                    if (prevCoordinate == null || !equals(coordinate, prevCoordinate)) {
+                        coordinates.add(coordinate);
+                    }
+                    prevCoordinate = coordinate;
+                    coordinate = null;
+                }
+            }
+            return new Polygon(coordinates);
 
-	protected abstract String getLayer(T place);
+        }
+        return null;
+    }
+
+    private boolean equals(LngLatAlt coordinate, LngLatAlt other) {
+        return other.getLatitude() == coordinate.getLatitude() && other.getLongitude() == coordinate.getLongitude();
+    }
+
+    protected abstract void populateDocument(T place, PeliasDocument document);
+
+    protected abstract String getLayer(T place);
 
 }

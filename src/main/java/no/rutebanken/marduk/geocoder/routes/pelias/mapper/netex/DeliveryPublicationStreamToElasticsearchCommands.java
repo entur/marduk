@@ -25,50 +25,50 @@ import static javax.xml.bind.JAXBContext.newInstance;
 @Service
 public class DeliveryPublicationStreamToElasticsearchCommands {
 
-	@Value("${pelias.stop.place.default.popularity:1000}")
-	private long defaultPopularity;
+    @Value("${pelias.stop.place.default.popularity:1000}")
+    private long defaultPopularity;
 
-	public Collection<ElasticsearchCommand> transform(InputStream publicationDeliveryStream) {
-		try {
-			PublicationDeliveryStructure deliveryStructure = unmarshall(publicationDeliveryStream);
-			return fromDeliveryPublicationStructure(deliveryStructure);
-		} catch (Exception e) {
-			throw new FileValidationException("Parsing of DeliveryPublications failed: " + e.getMessage(), e);
-		}
-	}
+    public Collection<ElasticsearchCommand> transform(InputStream publicationDeliveryStream) {
+        try {
+            PublicationDeliveryStructure deliveryStructure = unmarshall(publicationDeliveryStream);
+            return fromDeliveryPublicationStructure(deliveryStructure);
+        } catch (Exception e) {
+            throw new FileValidationException("Parsing of DeliveryPublications failed: " + e.getMessage(), e);
+        }
+    }
 
 
-	Collection<ElasticsearchCommand> fromDeliveryPublicationStructure(PublicationDeliveryStructure deliveryStructure) {
-		List<ElasticsearchCommand> commands = new ArrayList<>();
+    Collection<ElasticsearchCommand> fromDeliveryPublicationStructure(PublicationDeliveryStructure deliveryStructure) {
+        List<ElasticsearchCommand> commands = new ArrayList<>();
 
-		for (JAXBElement<? extends Common_VersionFrameStructure> frameStructureElmt : deliveryStructure.getDataObjects().getCompositeFrameOrCommonFrame()) {
-			Common_VersionFrameStructure frameStructure = frameStructureElmt.getValue();
-			if (frameStructure instanceof Site_VersionFrameStructure) {
-				Site_VersionFrameStructure siteFrame = (Site_VersionFrameStructure) frameStructure;
+        for (JAXBElement<? extends Common_VersionFrameStructure> frameStructureElmt : deliveryStructure.getDataObjects().getCompositeFrameOrCommonFrame()) {
+            Common_VersionFrameStructure frameStructure = frameStructureElmt.getValue();
+            if (frameStructure instanceof Site_VersionFrameStructure) {
+                Site_VersionFrameStructure siteFrame = (Site_VersionFrameStructure) frameStructure;
 
-				if (siteFrame.getStopPlaces() != null) {
-					commands.addAll(addCommands(siteFrame.getStopPlaces().getStopPlace(), new StopPlaceToPeliasMapper(deliveryStructure.getParticipantRef(), defaultPopularity)));
-				}
-				if (siteFrame.getTopographicPlaces() != null) {
-					commands.addAll(addCommands(siteFrame.getTopographicPlaces().getTopographicPlace(), new TopographicPlaceToPeliasMapper(deliveryStructure.getParticipantRef())));
-				}
-			}
-		}
+                if (siteFrame.getStopPlaces() != null) {
+                    commands.addAll(addCommands(siteFrame.getStopPlaces().getStopPlace(), new StopPlaceToPeliasMapper(deliveryStructure.getParticipantRef(), defaultPopularity)));
+                }
+                if (siteFrame.getTopographicPlaces() != null) {
+                    commands.addAll(addCommands(siteFrame.getTopographicPlaces().getTopographicPlace(), new TopographicPlaceToPeliasMapper(deliveryStructure.getParticipantRef())));
+                }
+            }
+        }
 
-		return commands;
-	}
+        return commands;
+    }
 
-	private <P extends Place_VersionStructure> List<ElasticsearchCommand> addCommands(List<P> places, AbstractNetexPlaceToPeliasDocumentMapper<P> mapper) {
-		if (!CollectionUtils.isEmpty(places)) {
-			return places.stream().map(p -> ElasticsearchCommand.peliasIndexCommand(mapper.toPeliasDocument(p))).collect(Collectors.toList());
-		}
-		return new ArrayList<>();
-	}
+    private <P extends Place_VersionStructure> List<ElasticsearchCommand> addCommands(List<P> places, AbstractNetexPlaceToPeliasDocumentMapper<P> mapper) {
+        if (!CollectionUtils.isEmpty(places)) {
+            return places.stream().map(p -> mapper.toPeliasDocument(p)).filter(d -> d != null).map(p -> ElasticsearchCommand.peliasIndexCommand(p)).collect(Collectors.toList());
+        }
+        return new ArrayList<>();
+    }
 
-	private PublicationDeliveryStructure unmarshall(InputStream in) throws Exception {
-		JAXBContext publicationDeliveryContext = newInstance(PublicationDeliveryStructure.class);
-		Unmarshaller unmarshaller = publicationDeliveryContext.createUnmarshaller();
-		JAXBElement<PublicationDeliveryStructure> jaxbElement = unmarshaller.unmarshal(new StreamSource(in), PublicationDeliveryStructure.class);
-		return jaxbElement.getValue();
-	}
+    private PublicationDeliveryStructure unmarshall(InputStream in) throws Exception {
+        JAXBContext publicationDeliveryContext = newInstance(PublicationDeliveryStructure.class);
+        Unmarshaller unmarshaller = publicationDeliveryContext.createUnmarshaller();
+        JAXBElement<PublicationDeliveryStructure> jaxbElement = unmarshaller.unmarshal(new StreamSource(in), PublicationDeliveryStructure.class);
+        return jaxbElement.getValue();
+    }
 }

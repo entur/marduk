@@ -45,7 +45,7 @@ public class PeliasIndexValidCommandFilter {
 			return false;
 		}
 
-		if (doc.getCenterPoint() == null && doc.getShape()==null) {
+		if (doc.getCenterPoint() == null) {
 			logger.debug("Removing invalid command where geometry is missing:" + command);
 			return false;
 		}
