@@ -22,7 +22,7 @@ import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 @Component
 public class TiamatCountryUpdateRouteBuilder extends BaseRouteBuilder {
 
-    @Value("${tiamat.countries.geojson.blobstore.subdirectory:tiamat/countries}")
+    @Value("${tiamat.countries.geojson.blobstore.subdirectory:geojson/countries}")
     private String blobStoreSubdirectory;
 
     @Value("${tiamat.url}")
