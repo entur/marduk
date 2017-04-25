@@ -3,8 +3,11 @@ package no.rutebanken.marduk.geocoder.geojson;
 import com.google.common.collect.Sets;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import org.opengis.feature.simple.SimpleFeature;
+import org.springframework.util.CollectionUtils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class WhosOnFirstCountry extends AbstractGeojsonAdapter implements TopographicPlaceAdapter {
@@ -32,8 +35,7 @@ public class WhosOnFirstCountry extends AbstractGeojsonAdapter implements Topogr
 
     @Override
     public String getName() {
-        List<String> names = getProperty("name:nno_x_preferred");
-        return names.get(0);
+        return getName("nno");
     }
 
     @Override
@@ -41,4 +43,22 @@ public class WhosOnFirstCountry extends AbstractGeojsonAdapter implements Topogr
         return Type.COUNTRY;
     }
 
+
+    @Override
+    public Map<String, String> getAlternativeNames() {
+        Map<String, String> alternativeNames = new HashMap<>();
+
+        alternativeNames.put("en",getName("eng"));
+
+        return alternativeNames;
+    }
+
+
+    private String getName(String lang) {
+        List<String> names = getProperty("name:" + lang + "_x_preferred");
+        if (CollectionUtils.isEmpty(names)) {
+            return null;
+        }
+        return names.get(0);
+    }
 }

@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -96,6 +97,11 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
             return subElement.getValueAs(SosiValue.class).getString();
         }
         return null;
+    }
+
+    @Override
+    public Map<String, String> getAlternativeNames() {
+        return new HashMap<>();
     }
 
     protected String pad(String val, int length) {

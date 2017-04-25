@@ -2,6 +2,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 
 
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
+import org.apache.commons.collections.CollectionUtils;
 import org.rutebanken.netex.model.MultilingualString;
 import org.rutebanken.netex.model.TopographicPlace;
 
@@ -20,6 +21,11 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
     @Override
     protected void populateDocument(TopographicPlace place, PeliasDocument document) {
         document.setAlpha3(new Locale("en", place.getCountryRef().getRef().value()).getISO3Country());
+
+
+        if (place.getAlternativeDescriptors() != null && !CollectionUtils.isEmpty(place.getAlternativeDescriptors().getTopographicPlaceDescriptor())) {
+            place.getAlternativeDescriptors().getTopographicPlaceDescriptor().stream().filter(an -> an.getName() != null && an.getName().getLang() != null).forEach(n -> document.addName(n.getName().getLang(), n.getName().getValue()));
+        }
 
         if (PLACE_OF_INTEREST.equals(place.getTopographicPlaceType())) {
             document.setCategory(Arrays.asList("poi"));

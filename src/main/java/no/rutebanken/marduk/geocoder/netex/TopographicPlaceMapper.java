@@ -1,16 +1,17 @@
 package no.rutebanken.marduk.geocoder.netex;
 
 
-import com.vividsolutions.jts.geom.*;
+import com.vividsolutions.jts.geom.CoordinateList;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Polygon;
 import net.opengis.gml._3.PolygonType;
-import no.rutebanken.marduk.geocoder.netex.NetexGeoUtil;
-import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import org.rutebanken.netex.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class TopographicPlaceMapper {
@@ -30,6 +31,7 @@ public class TopographicPlaceMapper {
         return new TopographicPlace()
                        .withVersion("any").withModification(ModificationEnumeration.NEW)
                        .withName(multilingualString(feature.getName()))
+                       .withAlternativeDescriptors(getAlternativeDescriptors())
                        .withDescriptor(new TopographicPlaceDescriptor_VersionedChildStructure().withName(multilingualString(feature.getName())))
                        .withTopographicPlaceType(getType())
                        .withPolygon(getPolygon())
@@ -39,6 +41,18 @@ public class TopographicPlaceMapper {
                        .withParentTopographicPlaceRef(toParentRef(feature.getParentId()));
     }
 
+
+    protected TopographicPlace_VersionStructure.AlternativeDescriptors getAlternativeDescriptors() {
+        List<TopographicPlaceDescriptor_VersionedChildStructure> alternativeNames = new ArrayList<>();
+        feature.getAlternativeNames().forEach((k, v) -> alternativeNames.add(
+                new TopographicPlaceDescriptor_VersionedChildStructure().withName(new MultilingualString().withLang(k).withValue(v))));
+
+        if (CollectionUtils.isEmpty(alternativeNames)) {
+            return null;
+        }
+
+        return new TopographicPlace_VersionStructure.AlternativeDescriptors().withTopographicPlaceDescriptor(alternativeNames);
+    }
 
     protected String prefix(String id) {
         return participantRef + ":TopographicPlace:" + id;
