@@ -104,7 +104,14 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
         return new HashMap<>();
     }
 
+    @Override
+    public String getCountryRef() {
+        return "no";
+    }
+
     protected String pad(String val, int length) {
         return StringUtils.leftPad(val, length, "0");
     }
+
+
 }

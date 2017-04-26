@@ -48,11 +48,15 @@ public class WhosOnFirstCountry extends AbstractGeojsonAdapter implements Topogr
     public Map<String, String> getAlternativeNames() {
         Map<String, String> alternativeNames = new HashMap<>();
 
-        alternativeNames.put("en",getName("eng"));
+        alternativeNames.put("en", getName("eng"));
 
         return alternativeNames;
     }
 
+    @Override
+    public String getCountryRef() {
+        return getProperty("ne:iso_a2");
+    }
 
     private String getName(String lang) {
         List<String> names = getProperty("name:" + lang + "_x_preferred");

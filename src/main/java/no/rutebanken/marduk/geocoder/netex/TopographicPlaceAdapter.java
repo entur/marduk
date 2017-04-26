@@ -23,4 +23,9 @@ public interface TopographicPlaceAdapter {
      * Returns map of languages as keys and corresponding name as value.
      */
     Map<String,String> getAlternativeNames();
+
+    /**
+     * Returns two letter country code.
+     */
+    String getCountryRef();
 }

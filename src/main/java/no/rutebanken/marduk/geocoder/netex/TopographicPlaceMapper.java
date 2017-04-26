@@ -36,7 +36,7 @@ public class TopographicPlaceMapper {
                        .withTopographicPlaceType(getType())
                        .withPolygon(getPolygon())
                        .withIsoCode(feature.getIsoCode())
-                       .withCountryRef(new CountryRef().withRef(getCountryRef()))
+                       .withCountryRef(new CountryRef().withRef(mapCountryRef(feature.getCountryRef())))
                        .withId(prefix(feature.getId()))
                        .withParentTopographicPlaceRef(toParentRef(feature.getParentId()));
     }
@@ -97,8 +97,11 @@ public class TopographicPlaceMapper {
     }
 
 
-    protected IanaCountryTldEnumeration getCountryRef() {
-        return IanaCountryTldEnumeration.NO;
+    protected IanaCountryTldEnumeration mapCountryRef(String countryRef) {
+        if (countryRef == null) {
+            return null;
+        }
+        return IanaCountryTldEnumeration.fromValue(countryRef.toLowerCase());
     }
 
 

@@ -35,4 +35,9 @@ public abstract class AbstractKartverketGeojsonAdapter extends AbstractGeojsonAd
 	public Map<String, String> getAlternativeNames() {
 		return new HashMap<>();
 	}
+
+	@Override
+	public String getCountryRef() {
+		return "no";
+	}
 }
