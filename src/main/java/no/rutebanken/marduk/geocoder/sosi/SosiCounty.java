@@ -25,12 +25,12 @@ public class SosiCounty extends SosiElementWrapper {
     }
 
     @Override
-    public String getName() {
-        return getProperty("FYLKESNAVN", "NAVN");
+    public String getIsoCode() {
+        return "NO-" + getId();
     }
 
     @Override
-    public String getIsoCode() {
-        return "NO-" + getId();
+    protected String getNamePropertyName() {
+        return "FYLKESNAVN";
     }
 }

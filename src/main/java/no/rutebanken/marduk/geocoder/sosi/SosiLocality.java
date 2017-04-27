@@ -25,8 +25,8 @@ public class SosiLocality extends SosiElementWrapper {
     }
 
     @Override
-    public String getName() {
-        return getProperty("KOMMUNENAVN", "NAVN");
+    protected String getNamePropertyName() {
+        return "KOMMUNENAVN";
     }
 
     @Override

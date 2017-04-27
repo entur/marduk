@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -26,10 +27,14 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
 
     protected Geometry geometry;
 
+    protected Map<String, String> names;
+
     public SosiElementWrapper(SosiElement sosiElement, Map<Long, List<Coordinate>> geoRef) {
         this.sosiElement = sosiElement;
         this.geoRef = geoRef;
     }
+
+    protected abstract String getNamePropertyName();
 
     @Override
     public Geometry getDefaultGeometry() {
@@ -99,9 +104,30 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
         return null;
     }
 
+
+    @Override
+    public String getName() {
+        return getNames().get("nor");
+    }
+
+    protected Map<String, String> getNames() {
+        if (names == null) {
+            names = new HashMap<>();
+            for (SosiElement nameElement : sosiElement.findSubElements(se -> getNamePropertyName().equals(se.getName())).collect(Collectors.toList())) {
+                String lang = nameElement.findSubElement(se -> "SPRÅK".equals(se.getName())).get().getValueAs(SosiValue.class).toString();
+                String name = nameElement.findSubElement(se -> "NAVN".equals(se.getName())).get().getValueAs(SosiValue.class).toString();
+                names.put(lang, name);
+            }
+        }
+        return names;
+    }
+
+
     @Override
     public Map<String, String> getAlternativeNames() {
-        return new HashMap<>();
+        Map<String, String> alternativeNames = new HashMap<>(getNames());
+        alternativeNames.remove("nor");
+        return alternativeNames;
     }
 
     @Override
