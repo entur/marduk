@@ -30,7 +30,10 @@ public class NetexExportParameters {
         @JsonProperty("add_extension")
         private boolean addExtension = false;
 
-        public NetexExport(String name, String referentialName, String organisationName, String validCodespaces, String userName, String projectionType) {
+        @JsonProperty("export_stops")
+        public boolean exportStops = false;
+
+        public NetexExport(String name, String referentialName, String organisationName, String validCodespaces, String userName, String projectionType, boolean exportStops) {
             this.name = name;
             this.projectionType = projectionType;
             this.referentialName = referentialName;
@@ -38,6 +41,7 @@ public class NetexExportParameters {
             this.userName = userName;
             this.validCodespaces = validCodespaces;
             this.startDate = DateUtils.startDateFor(2L);
+            this.exportStops = exportStops;
         }
 
     }

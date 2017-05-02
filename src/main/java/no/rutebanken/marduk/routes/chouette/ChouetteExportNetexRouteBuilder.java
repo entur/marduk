@@ -24,6 +24,9 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
 	@Value("${chouette.export.days.back:365}")
 	private int daysBack;
 
+	@Value("${chouette.netex.export.stops:false}")
+	private boolean exportStops;
+
 	@Override
 	public void configure() throws Exception {
 		super.configure();
@@ -40,7 +43,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
 				.to("direct:updateStatus")
 
 				.process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-				.process(e -> e.getIn().setHeader(JSON_PART, Parameters.getNetexExportProvider(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class))))) //Using header to addToExchange json data
+				.process(e -> e.getIn().setHeader(JSON_PART, Parameters.getNetexExportProvider(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)),exportStops))) //Using header to addToExchange json data
 				.log(LoggingLevel.INFO, correlation() + "Creating multipart request")
 				.process(e -> toGenericChouetteMultipart(e))
 				.setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
