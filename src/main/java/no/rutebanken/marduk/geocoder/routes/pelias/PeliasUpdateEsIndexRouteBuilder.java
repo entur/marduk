@@ -4,222 +4,284 @@ import com.google.common.collect.Lists;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.geocoder.GeoCoderConstants;
+import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchResults;
+import no.rutebanken.marduk.geocoder.routes.pelias.kartverket.KartverketAddressReader;
 import no.rutebanken.marduk.geocoder.routes.util.AbortRouteException;
 import no.rutebanken.marduk.geocoder.routes.util.MarkContentChangedAggregationStrategy;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.Message;
+import org.apache.camel.model.dataformat.JsonLibrary;
+import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.apache.camel.processor.aggregate.UseOriginalAggregationStrategy;
 import org.apache.camel.processor.validation.PredicateValidationException;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.CONTENT_CHANGED;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 @Component
 public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 
-	@Value("${elasticsearch.scratch.url:http4://es-scratch:9200}")
-	private String elasticsearchScratchUrl;
+    @Value("${elasticsearch.scratch.url:http4://es-scratch:9200}")
+    private String elasticsearchScratchUrl;
 
-	@Value("${tiamat.export.blobstore.subdirectory:tiamat}")
-	private String blobStoreSubdirectoryForTiamatExport;
+    @Value("${tiamat.export.blobstore.subdirectory:tiamat}")
+    private String blobStoreSubdirectoryForTiamatExport;
 
-	@Value("${kartverket.blobstore.subdirectory:kartverket}")
-	private String blobStoreSubdirectoryForKartverket;
-
-
-	@Value("${pelias.download.directory:files/pelias}")
-	private String localWorkingDirectory;
-
-	@Value("${pelias.insert.batch.size:10000}")
-	private int insertBatchSize;
-
-	@Autowired
-	private PeliasUpdateStatusService updateStatusService;
-
-	private static final String FILE_EXTENSION = "RutebankenFileExtension";
-	private static final String CONVERSION_ROUTE = "RutebankenConversionRoute";
-	private static final String WORKING_DIRECTORY = "RutebankenWorkingDirectory";
-
-	@Override
-	public void configure() throws Exception {
-		super.configure();
-
-		from("direct:insertElasticsearchIndexData")
-				.bean(updateStatusService, "setBuilding")
-				.setHeader(CONTENT_CHANGED, constant(false))
-				.setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
-				.to("direct:cleanUpLocalDirectory")
-				.bean("adminUnitRepositoryBuilder", "build")
-				.setProperty(GeoCoderConstants.GEOCODER_ADMIN_UNIT_REPO, simple("body"))
-				.doTry()
-				.multicast(new UseOriginalAggregationStrategy())
-				.parallelProcessing()
-				.stopOnException()
-				.to("direct:insertAdministrativeUnits", "direct:insertAddresses", "direct:insertPlaceNames", "direct:insertTiamatData")
-				.end()
-				.endDoTry()
-				.doCatch(AbortRouteException.class)
-				.doFinally()
-				.setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
-				.to("direct:cleanUpLocalDirectory")
-				.end()
-				.choice()
-				.when(e -> updateStatusService.getStatus() != PeliasUpdateStatusService.Status.ABORT)
-				.to("direct:insertElasticsearchIndexDataCompleted")
-				.otherwise()
-				.log(LoggingLevel.INFO, "Pelias update aborted")
-				.to("direct:insertElasticsearchIndexDataFailed")
-				.end()
-
-				.routeId("pelias-insert-index-data");
-
-		from("direct:insertAddresses")
-				.log(LoggingLevel.DEBUG, "Start inserting addresses to ES")
-				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/addresses"))
-				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/addresses"))
-				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromAddresses"))
-				.setHeader(FILE_EXTENSION, constant("csv"))
-				.to("direct:haltIfContentIsMissing")
-				.log(LoggingLevel.DEBUG, "Finished inserting addresses to ES")
-				.routeId("pelias-insert-addresses");
-
-		from("direct:insertTiamatData")
-				.log(LoggingLevel.DEBUG, "Start inserting Tiamat data to ES")
-				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForTiamatExport))
-				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/tiamat"))
-				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromTiamat"))
-				.setHeader(FILE_EXTENSION, constant("xml"))
-				.to("direct:haltIfContentIsMissing")
-				.log(LoggingLevel.DEBUG, "Finished inserting Tiamat data to ES")
-				.routeId("pelias-insert-tiamat-data");
-
-		from("direct:insertPlaceNames")
-				.log(LoggingLevel.DEBUG, "Start inserting place names to ES")
-				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/placeNames"))
-				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/placeNames"))
-				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromKartverketGeoJson"))
-				.setHeader(FILE_EXTENSION, constant("geojson"))
-				.to("direct:haltIfContentIsMissing")
-				.log(LoggingLevel.DEBUG, "Finished inserting place names to ES")
-				.routeId("pelias-insert-place-names");
-
-		from("direct:insertAdministrativeUnits")
-				.log(LoggingLevel.DEBUG, "Start inserting administrative units to ES")
-				.setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/administrativeUnits"))
-				.setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/adminUnits"))
-				.setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromKartverketSOSI"))
-				.setHeader(FILE_EXTENSION, constant("sos"))
-				.to("direct:haltIfContentIsMissing")
-				.log(LoggingLevel.DEBUG, "Finished inserting administrative units to ES")
-				.routeId("pelias-insert-admin-units");
+    @Value("${kartverket.blobstore.subdirectory:kartverket}")
+    private String blobStoreSubdirectoryForKartverket;
 
 
-		from("direct:haltIfContentIsMissing")
-				.doTry()
-				.to("direct:insertToPeliasFromFilesInFolder")
-				.choice()
-				.when(e -> updateStatusService.getStatus() != PeliasUpdateStatusService.Status.ABORT)
-				.validate(header(Constants.CONTENT_CHANGED).isEqualTo(Boolean.TRUE))
-				.end()
+    @Value("${pelias.download.directory:files/pelias}")
+    private String localWorkingDirectory;
 
-				.endDoTry()
-				.doCatch(PredicateValidationException.class, MardukException.class)
-				.bean(updateStatusService, "signalAbort")
-				.log(LoggingLevel.ERROR, "Elasticsearch scratch index build failed for ${header." + WORKING_DIRECTORY + "}: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
-				.end()
-				.routeId("pelias-insert-halt-if-content-missing");
+    @Value("${pelias.insert.batch.size:10000}")
+    private int insertBatchSize;
 
-		from("direct:insertToPeliasFromFilesInFolder")
-				.bean("blobStoreService", "listBlobsInFolder")
-				.split(simple("${body.files}")).stopOnException()
-				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
-				.to("direct:haltIfAborted")
-				.setHeader(FILE_HANDLE, simple("${body.name}"))
-				.to("direct:getBlob")
-				.choice()
-				.when(header(FILE_HANDLE).endsWith(".zip"))
-				.to("direct:insertToPeliasFromZipArchive")
-				.otherwise()
-				.log(LoggingLevel.INFO, "Updating indexes in elasticsearch from file: ${header." + FILE_HANDLE + "}")
-				.toD("${header." + CONVERSION_ROUTE + "}")
-				.to("direct:invokePeliasBulkCommand")
-				.end()
-				.routeId("pelias-insert-from-folder");
+    @Autowired
+    private PeliasUpdateStatusService updateStatusService;
+
+    private static final String FILE_EXTENSION = "RutebankenFileExtension";
+    private static final String CONVERSION_ROUTE = "RutebankenConversionRoute";
+    private static final String WORKING_DIRECTORY = "RutebankenWorkingDirectory";
+
+    @Override
+    public void configure() throws Exception {
+        super.configure();
+
+        from("direct:insertElasticsearchIndexData")
+                .bean(updateStatusService, "setBuilding")
+                .setHeader(CONTENT_CHANGED, constant(false))
+                .setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
+                .to("direct:cleanUpLocalDirectory")
+                .bean("adminUnitRepositoryBuilder", "build")
+                .setProperty(GeoCoderConstants.GEOCODER_ADMIN_UNIT_REPO, simple("body"))
+                .doTry()
+                .multicast(new UseOriginalAggregationStrategy())
+                .parallelProcessing()
+                .stopOnException()
+                .to("direct:insertAdministrativeUnits", "direct:insertAddresses", "direct:insertPlaceNames", "direct:insertTiamatData")
+                .to("direct:insertStreetNamesFromAddresses")
+                .end()
+                .endDoTry()
+                .doCatch(AbortRouteException.class)
+                .doFinally()
+                .setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
+                .to("direct:cleanUpLocalDirectory")
+                .end()
+                .choice()
+                .when(e -> updateStatusService.getStatus() != PeliasUpdateStatusService.Status.ABORT)
+                .to("direct:insertElasticsearchIndexDataCompleted")
+                .otherwise()
+                .log(LoggingLevel.INFO, "Pelias update aborted")
+                .to("direct:insertElasticsearchIndexDataFailed")
+                .end()
+
+                .routeId("pelias-insert-index-data");
+
+        from("direct:insertAddresses")
+                .log(LoggingLevel.DEBUG, "Start inserting addresses to ES")
+                .setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/addresses"))
+                .setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/addresses"))
+                .setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromAddresses"))
+                .setHeader(FILE_EXTENSION, constant("csv"))
+                .to("direct:haltIfContentIsMissing")
+                .log(LoggingLevel.DEBUG, "Finished inserting addresses to ES")
+                .routeId("pelias-insert-addresses");
+
+        from("direct:insertStreetNamesFromAddresses")
+                .log(LoggingLevel.DEBUG, "Start inserting street names from addresses to ES")
+                .setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/addresses"))
+                .setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/addresses"))
+                .setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsForStreetNamesFromAddresses"))
+                .setHeader(FILE_EXTENSION, constant("csv"))
+                .to("direct:haltIfContentIsMissing")
+                .log(LoggingLevel.DEBUG, "Finished street names from addresses to ES")
+                .routeId("pelias-insert-street-names-from-addresses");
+
+        from("direct:insertTiamatData")
+                .log(LoggingLevel.DEBUG, "Start inserting Tiamat data to ES")
+                .setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForTiamatExport))
+                .setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/tiamat"))
+                .setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromTiamat"))
+                .setHeader(FILE_EXTENSION, constant("xml"))
+                .to("direct:haltIfContentIsMissing")
+                .log(LoggingLevel.DEBUG, "Finished inserting Tiamat data to ES")
+                .routeId("pelias-insert-tiamat-data");
+
+        from("direct:insertPlaceNames")
+                .log(LoggingLevel.DEBUG, "Start inserting place names to ES")
+                .setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/placeNames"))
+                .setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/placeNames"))
+                .setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromKartverketGeoJson"))
+                .setHeader(FILE_EXTENSION, constant("geojson"))
+                .to("direct:haltIfContentIsMissing")
+                .log(LoggingLevel.DEBUG, "Finished inserting place names to ES")
+                .routeId("pelias-insert-place-names");
+
+        from("direct:insertAdministrativeUnits")
+                .log(LoggingLevel.DEBUG, "Start inserting administrative units to ES")
+                .setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/administrativeUnits"))
+                .setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/adminUnits"))
+                .setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromKartverketSOSI"))
+                .setHeader(FILE_EXTENSION, constant("sos"))
+                .to("direct:haltIfContentIsMissing")
+                .log(LoggingLevel.DEBUG, "Finished inserting administrative units to ES")
+                .routeId("pelias-insert-admin-units");
 
 
-		from("direct:insertToPeliasFromZipArchive")
-				.process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getIn().getHeader(WORKING_DIRECTORY, String.class)))
-				.split().exchange(e -> listFiles(e)).stopOnException()
-				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
-				.to("direct:haltIfAborted")
-				.log(LoggingLevel.INFO, "Updating indexes in elasticsearch from file: ${body.name}")
-				.toD("${header." + CONVERSION_ROUTE + "}")
-				.to("direct:invokePeliasBulkCommand")
-				.end()
-				.process(e -> deleteDirectory(new File(e.getIn().getHeader(WORKING_DIRECTORY, String.class))))
-				.routeId("pelias-insert-from-zip");
+        from("direct:haltIfContentIsMissing")
+                .doTry()
+                .to("direct:insertToPeliasFromFilesInFolder")
+                .choice()
+                .when(e -> updateStatusService.getStatus() != PeliasUpdateStatusService.Status.ABORT)
+                .validate(header(Constants.CONTENT_CHANGED).isEqualTo(Boolean.TRUE))
+                .end()
+
+                .endDoTry()
+                .doCatch(PredicateValidationException.class, MardukException.class)
+                .bean(updateStatusService, "signalAbort")
+                .log(LoggingLevel.ERROR, "Elasticsearch scratch index build failed for ${header." + WORKING_DIRECTORY + "}: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
+                .end()
+                .routeId("pelias-insert-halt-if-content-missing");
+
+        from("direct:insertToPeliasFromFilesInFolder")
+                .bean("blobStoreService", "listBlobsInFolder")
+                .split(simple("${body.files}")).stopOnException()
+                .aggregationStrategy(new MarkContentChangedAggregationStrategy())
+                .to("direct:haltIfAborted")
+                .setHeader(FILE_HANDLE, simple("${body.name}"))
+                .to("direct:getBlob")
+                .choice()
+                .when(header(FILE_HANDLE).endsWith(".zip"))
+                .to("direct:insertToPeliasFromZipArchive")
+                .otherwise()
+                .log(LoggingLevel.INFO, "Updating indexes in elasticsearch from file: ${header." + FILE_HANDLE + "}")
+                .toD("${header." + CONVERSION_ROUTE + "}")
+                .to("direct:invokePeliasBulkCommand")
+                .end()
+                .routeId("pelias-insert-from-folder");
 
 
-		from("direct:convertToPeliasCommandsFromKartverketSOSI")
-				.bean("kartverketSosiStreamToElasticsearchCommands", "transform")
-				.routeId("pelias-convert-commands-kartverket-sosi");
-
-		from("direct:convertToPeliasCommandsFromKartverketGeoJson")
-				.bean("kartverketGeoJsonStreamToElasticsearchCommands", "transform")
-				.routeId("pelias-convert-commands-kartverket-geojson");
-
-		from("direct:convertToPeliasCommandsFromAddresses")
-				.bean("addressStreamToElasticSearchCommands", "transform")
-				.routeId("pelias-convert-commands-from-addresses");
-
-		from("direct:convertToPeliasCommandsFromTiamat")
-				.bean("deliveryPublicationStreamToElasticsearchCommands", "transform")
-				.routeId("pelias-convert-commands-from-tiamat");
+        from("direct:insertToPeliasFromZipArchive")
+                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getIn().getHeader(WORKING_DIRECTORY, String.class)))
+                .split().exchange(e -> listFiles(e)).stopOnException()
+                .aggregationStrategy(new MarkContentChangedAggregationStrategy())
+                .to("direct:haltIfAborted")
+                .log(LoggingLevel.INFO, "Updating indexes in elasticsearch from file: ${body.name}")
+                .toD("${header." + CONVERSION_ROUTE + "}")
+                .to("direct:invokePeliasBulkCommand")
+                .end()
+                .process(e -> deleteDirectory(new File(e.getIn().getHeader(WORKING_DIRECTORY, String.class))))
+                .routeId("pelias-insert-from-zip");
 
 
-		from("direct:invokePeliasBulkCommand")
-				.bean("peliasIndexValidCommandFilter")
-				.bean("peliasIndexParentInfoEnricher")
-				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
-				.setHeader(Exchange.CONTENT_TYPE, constant("application/json; charset=utf-8"))
-				.split().exchange(e ->
-						                  Lists.partition(e.getIn().getBody(List.class), insertBatchSize)).stopOnException()
-				.aggregationStrategy(new MarkContentChangedAggregationStrategy())
-				.to("direct:haltIfAborted")
-				.bean("elasticsearchCommandWriterService")
-				.log(LoggingLevel.INFO, "Adding batch of indexes to elasticsearch for ${header." + FILE_HANDLE + "}")
-				.toD(elasticsearchScratchUrl + "/_bulk")
-				.setHeader(CONTENT_CHANGED, constant(true))                // TODO parse response?
-				.log(LoggingLevel.INFO, "Finished adding batch of indexes to elasticsearch for ${header." + FILE_HANDLE + "}")
+        from("direct:convertToPeliasCommandsFromKartverketSOSI")
+                .bean("kartverketSosiStreamToElasticsearchCommands", "transform")
+                .routeId("pelias-convert-commands-kartverket-sosi");
 
-				.routeId("pelias-invoke-bulk-command");
+        from("direct:convertToPeliasCommandsFromKartverketGeoJson")
+                .bean("kartverketGeoJsonStreamToElasticsearchCommands", "transform")
+                .routeId("pelias-convert-commands-kartverket-geojson");
 
-		from("direct:haltIfAborted")
-				.choice()
-				.when(e -> updateStatusService.getStatus() == PeliasUpdateStatusService.Status.ABORT)
-				.log(LoggingLevel.DEBUG, "Stopping route because status is ABORT")
-				.throwException(new AbortRouteException("Route has been aborted"))
-				.end()
-				.routeId("pelias-halt-if-aborted");
-	}
+        from("direct:convertToPeliasCommandsFromAddresses")
+                .bean("addressStreamToElasticSearchCommands", "transform")
+                .routeId("pelias-convert-commands-from-addresses");
 
 
-	private Collection<File> listFiles(Exchange e) {
-		String fileExtension = e.getIn().getHeader(FILE_EXTENSION, String.class);
-		String directory = e.getIn().getHeader(WORKING_DIRECTORY, String.class);
-		return FileUtils.listFiles(new File(directory), new String[]{fileExtension}, true);
-	}
+        // After insert of addressed: For each unique street name in address file: find all addresses in street and create "street" document on a "median" location
+        from("direct:convertToPeliasCommandsForStreetNamesFromAddresses")
+                .process(e -> e.getIn().setBody(new KartverketAddressReader().read(
+                        e.getIn().getBody(InputStream.class)).stream().map(a -> a.getAddressenavn())
+                                                        .filter(streetName -> !StringUtils.isEmpty(streetName)).collect(Collectors.toSet())))
+                .split().body().aggregationStrategy(new GroupedMessageAggregationStrategy())
+                .to("direct:createStreetFromAddresses")
+                .end()
+                .process(e -> {
+                    List<Message> aggregatedMessages = e.getIn().getBody(List.class);
+                    e.getIn().setBody(aggregatedMessages.stream().map(m -> m.getBody()).filter(b -> b != null).collect(Collectors.toList()));
+                    e.getIn().setHeaders(aggregatedMessages.get(0).getHeaders());
+                })
+                .routeId("pelias-convert-commands-streetnames-from-addresses");
+
+        from("direct:convertToPeliasCommandsFromTiamat")
+                .bean("deliveryPublicationStreamToElasticsearchCommands", "transform")
+                .routeId("pelias-convert-commands-from-tiamat");
+
+
+        from("direct:createStreetFromAddresses")
+                .removeHeaders("CamelHttp*")
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
+                .setHeader(Exchange.CONTENT_TYPE, constant("application/json; charset=utf-8"))
+                .setProperty("streetName", simple("${body}"))
+                .setBody(simple("{\n" +
+                                        "  \"query\": {\n" +
+                                        "    \"simple_query_string\": {\n" +
+                                        "      \"query\": \"${body}\",\n" +
+                                        "      \"fields\": [\"address_parts.street\"],\n" +
+                                        "     \"flags\":\"NONE\"\n" +
+                                        "    }\n" +
+                                        "  }\n" +
+                                        "}"))
+                .toD(elasticsearchScratchUrl + "/pelias/address/_search")
+                .unmarshal().json(JsonLibrary.Jackson, ElasticsearchResults.class)
+                .choice()
+                .when(simple("${body.hits} && ${body.hits.total} > 0"))
+                .bean("peliasStreetDocumentMapper", "createStreetFromAddressDocuments")
+                .otherwise()
+                .log(LoggingLevel.INFO, "No address found for street name: ${exchangeProperty.streetName}")
+                .setBody(constant(null))
+                .end()
+
+                .routeId("pelias-create-street-from-addresses");
+
+
+        from("direct:invokePeliasBulkCommand")
+                .bean("peliasIndexValidCommandFilter")
+                .bean("peliasIndexParentInfoEnricher")
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
+                .setHeader(Exchange.CONTENT_TYPE, constant("application/json; charset=utf-8"))
+                .split().exchange(e ->
+                                          Lists.partition(e.getIn().getBody(List.class), insertBatchSize)).stopOnException()
+                .aggregationStrategy(new MarkContentChangedAggregationStrategy())
+                .to("direct:haltIfAborted")
+                .bean("elasticsearchCommandWriterService")
+                .log(LoggingLevel.INFO, "Adding batch of indexes to elasticsearch for ${header." + FILE_HANDLE + "}")
+                .toD(elasticsearchScratchUrl + "/_bulk")
+                .setHeader(CONTENT_CHANGED, constant(true))                // TODO parse response?
+                .log(LoggingLevel.INFO, "Finished adding batch of indexes to elasticsearch for ${header." + FILE_HANDLE + "}")
+
+                .routeId("pelias-invoke-bulk-command");
+
+        from("direct:haltIfAborted")
+                .choice()
+                .when(e -> updateStatusService.getStatus() == PeliasUpdateStatusService.Status.ABORT)
+                .log(LoggingLevel.DEBUG, "Stopping route because status is ABORT")
+                .throwException(new AbortRouteException("Route has been aborted"))
+                .end()
+                .routeId("pelias-halt-if-aborted");
+    }
+
+
+    private Collection<File> listFiles(Exchange e) {
+        String fileExtension = e.getIn().getHeader(FILE_EXTENSION, String.class);
+        String directory = e.getIn().getHeader(WORKING_DIRECTORY, String.class);
+        return FileUtils.listFiles(new File(directory), new String[]{fileExtension}, true);
+    }
 
 }
