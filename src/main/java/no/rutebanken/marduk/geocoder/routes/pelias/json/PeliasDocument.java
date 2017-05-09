@@ -17,7 +17,7 @@ import java.util.Map;
 public class PeliasDocument {
 
 
-    public static final String DEFAULT_SOURCE = "wof";
+    public static final String DEFAULT_SOURCE = "whosonfirst";
 
     // Valid sources for querying: "osm,oa,gn,wof,openstreetmap,openaddresses,geonames,whosonfirst"
     @JsonProperty("source")
