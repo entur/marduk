@@ -474,7 +474,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .endRest();
 
 
-
         rest("geocoder/administrativeUnits")
                 .post("/download")
                 .description("Trigger download of administrative units from Norwegian mapping authority")
@@ -612,6 +611,20 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders("CamelHttp*")
                 .process(e -> e.getIn().setBody(geoCoderTaskTypesFromString(e.getIn().getHeader("task", Collection.class))))
                 .inOnly("direct:geoCoderStartBatch")
+                .setBody(constant(null))
+                .endRest();
+
+
+// TODO
+        rest("test")
+                .post("/start")
+
+                .description("TODO test")
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Internal error").endResponseMessage()
+                .route().routeId("admin-test-start")
+                .removeHeaders("CamelHttp*")
+                .inOnly("direct:insertElasticsearchIndexData")
                 .setBody(constant(null))
                 .endRest();
 

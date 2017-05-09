@@ -21,8 +21,6 @@ public abstract class TopographicPlaceAdapterToPeliasDocument {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public static final String SOURCE = "kartverket";
-
 	protected TopographicPlaceAdapter feature;
 
 	public TopographicPlaceAdapterToPeliasDocument(TopographicPlaceAdapter feature) {
@@ -31,7 +29,7 @@ public abstract class TopographicPlaceAdapterToPeliasDocument {
 
 
 	public PeliasDocument toPeliasDocument() {
-		PeliasDocument document = new PeliasDocument(getLayer(), SOURCE, feature.getId());
+		PeliasDocument document = new PeliasDocument(getLayer(), feature.getId());
 
 		document.setDefaultName(feature.getName());
 		document.setCenterPoint(mapCenterPoint());

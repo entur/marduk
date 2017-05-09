@@ -16,210 +16,220 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PeliasDocument {
 
-	@JsonProperty("source")
-	private String source;
 
-	@JsonProperty("layer")
-	private String layer;
+    public static final String DEFAULT_SOURCE = "wof";
 
-	@JsonProperty("source_id")
-	private String sourceId;
+    // Valid sources for querying: "osm,oa,gn,wof,openstreetmap,openaddresses,geonames,whosonfirst"
+    @JsonProperty("source")
+    private String source = DEFAULT_SOURCE;
 
-	@JsonProperty("alpha3")
-	private String alpha3;
+    @JsonProperty("layer")
+    private String layer;
 
-	@JsonProperty("name")
-	private Map<String, String> nameMap;
+    @JsonProperty("source_id")
+    private String sourceId;
 
-	@JsonProperty("phrase")
-	private Map<String, String> phraseMap;
+    @JsonProperty("alpha3")
+    private String alpha3;
 
-	@JsonProperty("center_point")
-	private GeoPoint centerPoint;
+    @JsonProperty("name")
+    private Map<String, String> nameMap;
 
-	@JsonProperty("shape")
-	private Polygon shape;
+    @JsonProperty("phrase")
+    private Map<String, String> phraseMap;
 
-	@JsonProperty("boudning_box")
-	private String boundingBox;
+    @JsonProperty("center_point")
+    private GeoPoint centerPoint;
 
-	@JsonProperty("address_parts")
-	private AddressParts addressParts;
+    @JsonProperty("shape")
+    private Polygon shape;
 
-	@JsonProperty("parent")
-	private Parent parent;
+    @JsonProperty("boudning_box")
+    private String boundingBox;
 
-	@JsonProperty("population")
-	private Long population;
+    @JsonProperty("address_parts")
+    private AddressParts addressParts;
 
-	@JsonProperty("popularity")
-	private Long popularity;
+    @JsonProperty("parent")
+    private Parent parent;
 
-	@JsonProperty("category")
-	private List<String> category;
+    @JsonProperty("population")
+    private Long population;
 
-	private PeliasDocument() {
-	}
+    @JsonProperty("popularity")
+    private Long popularity;
 
-	public PeliasDocument(String layer, String source, String sourceId) {
-		this.source = source;
-		this.layer = layer;
-		this.sourceId = sourceId;
-	}
+    @JsonProperty("category")
+    private List<String> category;
 
-	public String getAlpha3() {
-		return alpha3;
-	}
+    private PeliasDocument() {
+    }
+
+    public PeliasDocument(String layer, String sourceId) {
+        this.layer = layer;
+        this.sourceId = sourceId;
+    }
 
 
-	public void setAlpha3(String alpha3) {
-		this.alpha3 = alpha3;
-	}
+    public PeliasDocument(String layer, String source, String sourceId) {
+        this.source = source;
+        this.layer = layer;
+        this.sourceId = sourceId;
+    }
 
-	public String getSource() {
-		return source;
-	}
+    public String getAlpha3() {
+        return alpha3;
+    }
 
-	public void setSource(String source) {
-		this.source = source;
-	}
 
-	public String getLayer() {
-		return layer;
-	}
+    public void setAlpha3(String alpha3) {
+        this.alpha3 = alpha3;
+    }
 
-	public void setLayer(String layer) {
-		this.layer = layer;
-	}
+    public String getSource() {
+        return source;
+    }
 
-	public Map<String, String> getNameMap() {
-		return nameMap;
-	}
+    public void setSource(String source) {
+        this.source = source;
+    }
 
-	public void setNameMap(Map<String, String> nameMap) {
-		this.nameMap = nameMap;
-	}
+    public String getLayer() {
+        return layer;
+    }
 
-	public void setDefaultName(String name) {
-		addName("default", name);
-	}
+    public void setLayer(String layer) {
+        this.layer = layer;
+    }
 
-	public String getDefaultName() {
-		if (nameMap != null) {
-			return nameMap.get("default");
-		}
-		return null;
-	}
+    public Map<String, String> getNameMap() {
+        return nameMap;
+    }
 
-	public void addName(String language, String name) {
-		if (nameMap == null) {
-			nameMap = new HashMap<>();
-		}
-		nameMap.put(language, name);
-	}
+    public void setNameMap(Map<String, String> nameMap) {
+        this.nameMap = nameMap;
+    }
 
-	public void setDefaultPhrase(String phrase) {
-		addPhrase("default", phrase);
-	}
+    public void setDefaultName(String name) {
+        addName("default", name);
+    }
 
-	public String getDefaultPhrase() {
-		if (phraseMap != null) {
-			return phraseMap.get("default");
-		}
-		return null;
-	}
+    public String getDefaultName() {
+        if (nameMap != null) {
+            return nameMap.get("default");
+        }
+        return null;
+    }
 
-	public void addPhrase(String language, String phrase) {
-		if (phraseMap == null) {
-			phraseMap = new HashMap<>();
-		}
-		phraseMap.put(language, phrase);
-	}
+    public void addName(String language, String name) {
+        if (nameMap == null) {
+            nameMap = new HashMap<>();
+        }
+        nameMap.put(language, name);
+    }
 
-	public Map<String, String> getPhraseMap() {
-		return phraseMap;
-	}
+    public void setDefaultPhrase(String phrase) {
+        addPhrase("default", phrase);
+    }
 
-	public void setPhraseMap(Map<String, String> phraseMap) {
-		this.phraseMap = phraseMap;
-	}
+    public String getDefaultPhrase() {
+        if (phraseMap != null) {
+            return phraseMap.get("default");
+        }
+        return null;
+    }
 
-	public Polygon getShape() {
-		return shape;
-	}
+    public void addPhrase(String language, String phrase) {
+        if (phraseMap == null) {
+            phraseMap = new HashMap<>();
+        }
+        phraseMap.put(language, phrase);
+    }
 
-	public void setShape(Polygon shape) {
-		this.shape = shape;
-	}
+    public Map<String, String> getPhraseMap() {
+        return phraseMap;
+    }
 
-	public String getBoundingBox() {
-		return boundingBox;
-	}
+    public void setPhraseMap(Map<String, String> phraseMap) {
+        this.phraseMap = phraseMap;
+    }
 
-	public void setBoundingBox(String boundingBox) {
-		this.boundingBox = boundingBox;
-	}
+    public Polygon getShape() {
+        return shape;
+    }
 
-	public AddressParts getAddressParts() {
-		return addressParts;
-	}
+    public void setShape(Polygon shape) {
+        this.shape = shape;
+    }
 
-	public void setAddressParts(AddressParts addressParts) {
-		this.addressParts = addressParts;
-	}
+    public String getBoundingBox() {
+        return boundingBox;
+    }
 
-	public Parent getParent() {
-		return parent;
-	}
+    public void setBoundingBox(String boundingBox) {
+        this.boundingBox = boundingBox;
+    }
 
-	public void setParent(Parent parent) {
-		this.parent = parent;
-	}
+    public AddressParts getAddressParts() {
+        return addressParts;
+    }
 
-	public Long getPopulation() {
-		return population;
-	}
+    public void setAddressParts(AddressParts addressParts) {
+        this.addressParts = addressParts;
+    }
 
-	public void setPopulation(Long population) {
-		this.population = population;
-	}
+    public Parent getParent() {
+        return parent;
+    }
 
-	public Long getPopularity() {
-		return popularity;
-	}
+    public void setParent(Parent parent) {
+        this.parent = parent;
+    }
 
-	public void setPopularity(Long popularity) {
-		this.popularity = popularity;
-	}
+    public Long getPopulation() {
+        return population;
+    }
 
-	public String getSourceId() {
-		return sourceId;
-	}
+    public void setPopulation(Long population) {
+        this.population = population;
+    }
 
-	public void setSourceId(String sourceId) {
-		this.sourceId = sourceId;
-	}
+    public Long getPopularity() {
+        return popularity;
+    }
 
-	public List<String> getCategory() {
-		return category;
-	}
+    public void setPopularity(Long popularity) {
+        this.popularity = popularity;
+    }
 
-	public void setCategory(List<String> category) {
-		this.category = category;
-	}
+    public String getSourceId() {
+        return sourceId;
+    }
 
-	public GeoPoint getCenterPoint() {
-		return centerPoint;
-	}
+    public void setSourceId(String sourceId) {
+        this.sourceId = sourceId;
+    }
 
-	public void setCenterPoint(GeoPoint centerPoint) {
-		this.centerPoint = centerPoint;
-	}
+    public List<String> getCategory() {
+        return category;
+    }
 
-	@JsonIgnore
-	public boolean isValid() {
-		return source != null && sourceId != null && layer != null;
-	}
+    public void setCategory(List<String> category) {
+        this.category = category;
+    }
+
+    public GeoPoint getCenterPoint() {
+        return centerPoint;
+    }
+
+    public void setCenterPoint(GeoPoint centerPoint) {
+        this.centerPoint = centerPoint;
+    }
+
+    @JsonIgnore
+    public boolean isValid() {
+        return source != null && sourceId != null && layer != null;
+    }
 
 
 }

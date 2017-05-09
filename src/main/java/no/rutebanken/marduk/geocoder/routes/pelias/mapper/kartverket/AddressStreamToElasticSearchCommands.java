@@ -1,27 +1,35 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket;
 
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
+import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import no.rutebanken.marduk.geocoder.routes.pelias.kartverket.KartverketAddress;
 import no.rutebanken.marduk.geocoder.routes.pelias.kartverket.KartverketAddressReader;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class AddressStreamToElasticSearchCommands {
 
-	private AddressToPeliasMapper mapper = new AddressToPeliasMapper();
+    private AddressToPeliasMapper addressMapper = new AddressToPeliasMapper();
 
-	public Collection<ElasticsearchCommand> transform(InputStream addressStream) {
-		return new KartverketAddressReader().read(addressStream).stream().map(a -> toCommand(a)).collect(Collectors.toList());
-	}
+    private AddressToStreetMapper addressToStreetMapper = new AddressToStreetMapper();
 
+    public Collection<ElasticsearchCommand> transform(InputStream addressStream) {
+        Collection<KartverketAddress> addresses = new KartverketAddressReader().read(addressStream);
 
-	private ElasticsearchCommand toCommand(KartverketAddress address) {
-		return ElasticsearchCommand.peliasIndexCommand(mapper.toPeliasDocument(address));
-	}
+        // Create documents for all individual addresses
+        List<PeliasDocument> peliasDocuments = addresses.stream().map(a -> addressMapper.toPeliasDocument(a)).collect(Collectors.toList());
+
+        // Create separate document per unique street
+        peliasDocuments.addAll(addressToStreetMapper.createStreetPeliasDocumentsFromAddresses(peliasDocuments));
+
+        // Create elastic search commands for documents
+        return peliasDocuments.stream().map(d -> ElasticsearchCommand.peliasIndexCommand(d)).collect(Collectors.toList());
+    }
 
 
 }

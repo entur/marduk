@@ -89,7 +89,7 @@ public class PeliasIndexValidCommandFilterTest {
 	}
 
 	private PeliasDocument validDoc() {
-		PeliasDocument valid = new PeliasDocument("layer", "source", "sourceId");
+		PeliasDocument valid = new PeliasDocument("layer", "sourceId");
 		valid.setCenterPoint(new GeoPoint(1.0, 2.0));
 		return valid;
 	}

@@ -29,7 +29,7 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
             return null;
         }
 
-        PeliasDocument document = new PeliasDocument(layer, participantRef, place.getId());
+        PeliasDocument document = new PeliasDocument(layer, place.getId());
 
         MultilingualString name = place.getName();
         if (name != null) {

@@ -16,7 +16,8 @@ import java.util.Arrays;
 
 public class AddressToPeliasMapper {
 
-	private static final String SOURCE = "kartverket";
+	// Use unique source for addresses to allow for filtering them out from pelias autocomplete
+	private static final String SOURCE = "openaddresses";
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
