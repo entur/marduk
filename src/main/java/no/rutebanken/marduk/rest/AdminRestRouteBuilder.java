@@ -614,21 +614,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(null))
                 .endRest();
 
-
-// TODO
-        rest("test")
-                .post("/start")
-
-                .description("TODO test")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-test-start")
-                .removeHeaders("CamelHttp*")
-                .inOnly("direct:insertElasticsearchIndexData")
-                .setBody(constant(null))
-                .endRest();
-
-
         from("direct:authorizeRequest")
                 .doTry()
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
