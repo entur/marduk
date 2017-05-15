@@ -3,9 +3,9 @@ package no.rutebanken.marduk.routes.chouette;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
-import no.rutebanken.marduk.routes.status.Status;
-import no.rutebanken.marduk.routes.status.Status.Action;
-import no.rutebanken.marduk.routes.status.Status.State;
+import no.rutebanken.marduk.routes.status.JobEvent;
+import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
+import no.rutebanken.marduk.routes.status.JobEvent.State;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -41,7 +41,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 	e.getIn().setHeader(JSON_PART, Parameters.getTransferExportParameters(provider,destProvider));
 	                e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
                 })
-				.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.PENDING).build())
+				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.DATASPACE_TRANSFER).state(State.PENDING).build())
 		        .to("direct:updateStatus")
                 .log(LoggingLevel.INFO,correlation()+"Creating multipart request")
                 .process(e -> toGenericChouetteMultipart(e))
@@ -50,7 +50,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
 	                e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,"direct:processTransferExportResult");
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, Action.DATASPACE_TRANSFER.name());
+                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, JobEvent.TimetableAction.DATASPACE_TRANSFER.name());
                     })
                 .log(LoggingLevel.INFO,correlation()+"Sending transfer export to poll job status")
                 .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
@@ -64,9 +64,9 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  		        .choice()
 // 				.when(PredicateBuilder.and(constant("false").isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
 // 		            .to("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation")
-// 		            .process(e -> Status.addStatus(e, Action.DATASPACE_TRANSFER, State.OK))
+// 		            .process(e -> Status.addStatus(e, TimetableAction.DATASPACE_TRANSFER, State.OK))
  		        .when(simple("${header.action_report_result} == 'OK'"))
-				 	.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.OK).build())
+				 	.process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.DATASPACE_TRANSFER).state(State.OK).build())
 	 		        .to("direct:updateStatus")
 	                .process(e -> {
 	                	// Update provider, now context switches to next provider level
@@ -77,18 +77,18 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  		            .to("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation")
  		        .when(simple("${header.action_report_result} == 'NOK'"))
  		        	.log(LoggingLevel.INFO,correlation()+"Transfer failed")
-				 	.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.FAILED).build())
+				 	.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.DATASPACE_TRANSFER).state(State.FAILED).build())
  	 		        .to("direct:updateStatus")
  		        .otherwise()
  		            .log(LoggingLevel.ERROR,correlation()+"Something went wrong on transfer")
-				 	.process(e -> Status.builder(e).action(Action.DATASPACE_TRANSFER).state(State.FAILED).build())
+				 	.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.DATASPACE_TRANSFER).state(State.FAILED).build())
  	 		        .to("direct:updateStatus")
  		        .end()
  		        .routeId("chouette-process-transfer-status");
  	
  		 // Check that no other import jobs in status SCHEDULED exists for this referential. If so, do not trigger export
  		from("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation")
- 			.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?action=importer&status=SCHEDULED&status=STARTED")) // TODO: check on validator as well?
+ 			.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?timetableAction=importer&status=SCHEDULED&status=STARTED")) // TODO: check on validator as well?
  			.toD("${exchangeProperty.job_status_url}")
  			.choice()
  			.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
@@ -98,7 +98,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  		        .setBody(constant(""))
  		        
  		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-				.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(Status.Action.VALIDATION_LEVEL_2.name()))
+				.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
 				.to("activemq:queue:ChouetteValidationQueue")
              .end()
              .routeId("chouette-process-job-list-after-transfer");

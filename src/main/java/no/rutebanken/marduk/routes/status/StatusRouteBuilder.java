@@ -11,13 +11,8 @@ public class StatusRouteBuilder extends RouteBuilder {
 	public void configure() throws Exception {
 		from("direct:updateStatus")
 				.log(LoggingLevel.INFO, getClass().getName(), "Sending off job status event: ${body}")
-				.to("activemq:queue:ExternalProviderStatus")
+				.to("activemq:queue:JobEventQueue")
 				.routeId("update-status").startupOrder(1);
-
-		from("direct:updateSystemStatus")
-				.log(LoggingLevel.INFO, getClass().getName(), "Sending off system status event: ${body}")
-				.to("activemq:queue:MardukSystemStatusQueue")
-				.routeId("send-status-event").startupOrder(2);
 	}
 
 

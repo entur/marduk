@@ -2,7 +2,7 @@ package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.domain.FileNameAndDigest;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.Status;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.spi.IdempotentRepository;
@@ -47,7 +47,7 @@ public class IdempotentFileFilterRoute extends BaseRouteBuilder {
 
 		from("direct:updateStatusForDuplicateFile")
 				.choice().when(not(simple("${header." + FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES + "}")))
-				.process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.DUPLICATE).build()).to("direct:updateStatus").endChoice();
+				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.DUPLICATE).build()).to("direct:updateStatus").endChoice();
 
 	}
 }

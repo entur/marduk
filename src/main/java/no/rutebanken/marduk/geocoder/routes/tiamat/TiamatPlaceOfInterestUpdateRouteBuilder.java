@@ -5,7 +5,7 @@ import no.rutebanken.marduk.geocoder.netex.TopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.netex.pbf.PbfTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.SystemStatus;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.rutebanken.netex.model.IanaCountryTldEnumeration;
@@ -19,10 +19,6 @@ import java.util.List;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
-import static no.rutebanken.marduk.routes.status.SystemStatus.Action.UPDATE;
-import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.POI;
-import static no.rutebanken.marduk.routes.status.SystemStatus.System.GC;
-import static no.rutebanken.marduk.routes.status.SystemStatus.System.TIAMAT;
 
 // TODO specific per source?
 @Component
@@ -70,8 +66,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 
         from(TIAMAT_PLACES_OF_INTEREST_UPDATE_START.getEndpoint())
                 .log(LoggingLevel.INFO, "Start updating POI information in Tiamat")
-                .process(e -> SystemStatus.builder(e).start(GeoCoderTaskType.TIAMAT_POI_UPDATE).action(UPDATE).source(GC)
-                                      .target(TIAMAT).entity(POI).build()).to("direct:updateSystemStatus")
+                .process(e -> JobEvent.systemJobBuilder(e).startGeocoder(GeoCoderTaskType.TIAMAT_POI_UPDATE).build()).to("direct:updateStatus")
                 .setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
                 .doTry()
                 .to("direct:cleanUpLocalDirectory")
@@ -108,7 +103,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 
         from("direct:processTiamatPlaceOfInterestUpdateCompleted")
                 .setProperty(GEOCODER_NEXT_TASK, constant(TIAMAT_EXPORT_START))
-                .process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
+                .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .routeId("tiamat-poi-update-completed");
 
     }

@@ -5,15 +5,12 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.geocoder.routes.tiamat.xml.ExportJob;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.SystemStatus;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.*;
-import static no.rutebanken.marduk.routes.status.SystemStatus.System.*;
-import static no.rutebanken.marduk.routes.status.SystemStatus.Action.*;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 
@@ -49,8 +46,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 				.routeId("tiamat-export-quartz");
 
 		from(TIAMAT_EXPORT_START.getEndpoint())
-				.process(e -> SystemStatus.builder(e).start(GeoCoderTaskType.TIAMAT_EXPORT).action(EXPORT).source(TIAMAT)
-						              .target(GC).entity(DELIVERY_PUBLICATION).build()).to("direct:updateSystemStatus")
+				.process(e -> JobEvent.systemJobBuilder(e).startGeocoder(GeoCoderTaskType.TIAMAT_EXPORT).build()).to("direct:updateStatus")
 				.log(LoggingLevel.INFO, "Start Tiamat export")
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
 				.setBody(constant(null))
@@ -67,7 +63,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:processTiamatExportResults")
 				.to("direct:tiamatExportMoveFileToMardukBlobStore")
-				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
+				.process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
 				.setProperty(GEOCODER_NEXT_TASK, constant(PELIAS_UPDATE_START))
 				.routeId("tiamat-export-results");
 

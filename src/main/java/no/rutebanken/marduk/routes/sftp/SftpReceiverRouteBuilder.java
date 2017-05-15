@@ -3,7 +3,7 @@ package no.rutebanken.marduk.routes.sftp;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.Status;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -74,7 +74,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
                     .log(LoggingLevel.INFO, correlation()+"File handle is: ${header." + FILE_HANDLE + "}")
                     .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                     .to("direct:uploadBlob")
-                    .process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.STARTED).build())
+                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build())
                     .to("direct:updateStatus")
                     .log(LoggingLevel.INFO, correlation()+"Putting handle ${header." + FILE_HANDLE + "} on queue...")
                     .to("activemq:queue:ProcessFileQueue")

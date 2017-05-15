@@ -3,17 +3,13 @@ package no.rutebanken.marduk.geocoder.routes.kartverket;
 
 import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.SystemStatus;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
-import static no.rutebanken.marduk.routes.status.SystemStatus.Action.FILE_TRANSFER;
-import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.ADDRESS;
-import static no.rutebanken.marduk.routes.status.SystemStatus.System.GC;
-import static no.rutebanken.marduk.routes.status.SystemStatus.System.KARTVERKET;
 
 @Component
 public class AddressDownloadRouteBuilder extends BaseRouteBuilder {
@@ -43,8 +39,7 @@ public class AddressDownloadRouteBuilder extends BaseRouteBuilder {
 
 		from(KARTVERKET_ADDRESS_DOWNLOAD.getEndpoint())
 				.log(LoggingLevel.INFO, "Start downloading address information from mapping authority")
-				.process(e -> SystemStatus.builder(e).start(GeoCoderTaskType.ADDRESS_DOWNLOAD).action(FILE_TRANSFER).source(KARTVERKET)
-						              .target(GC).entity(ADDRESS).build()).to("direct:updateSystemStatus")
+				.process(e -> JobEvent.systemJobBuilder(e).startGeocoder(GeoCoderTaskType.ADDRESS_DOWNLOAD).build()).to("direct:updateStatus")
 				.setHeader(KARTVERKET_DATASETID, constant(addressesDataSetId))
 				.setHeader(FOLDER_NAME, constant(blobStoreSubdirectoryForKartverket + "/addresses"))
 				.to("direct:uploadUpdatedFiles")
@@ -56,7 +51,7 @@ public class AddressDownloadRouteBuilder extends BaseRouteBuilder {
 				.otherwise()
 				.log(LoggingLevel.INFO, "Finished downloading address information from mapping authority with no changes")
 				.end()
-				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
+				.process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
 				.routeId("address-download");
 	}
 

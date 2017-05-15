@@ -2,7 +2,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
-import no.rutebanken.marduk.routes.status.Status;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,7 +39,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
 					e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString()));
 					e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
 				})
-				.process(e -> Status.builder(e).action(Status.Action.EXPORT_NETEX).state(Status.State.PENDING).build())
+				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.PENDING).build())
 				.to("direct:updateStatus")
 
 				.process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
@@ -53,7 +53,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
 					e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
 				})
 				.setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processNetexExportResult"))
-				.setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(Status.Action.EXPORT_NETEX.name()))
+				.setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT_NETEX.name()))
 				.removeHeader("loopCounter")
 				.to("activemq:queue:ChouettePollStatusQueue")
 				.routeId("chouette-start-export-netex");
@@ -72,14 +72,14 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
 				.setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
 				.setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
 				.to("direct:uploadBlob")
-				.process(e -> Status.builder(e).action(Status.Action.EXPORT_NETEX).state(Status.State.OK).build())
+				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.OK).build())
 				.endChoice()
 				.when(simple("${header.action_report_result} == 'NOK'"))
 				.log(LoggingLevel.WARN, correlation() + "Netex export failed")
-				.process(e -> Status.builder(e).action(Status.Action.EXPORT_NETEX).state(Status.State.FAILED).build())
+				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.FAILED).build())
 				.otherwise()
 				.log(LoggingLevel.ERROR, correlation() + "Something went wrong on Netex export")
-				.process(e -> Status.builder(e).action(Status.Action.EXPORT_NETEX).state(Status.State.FAILED).build())
+				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.FAILED).build())
 				.end()
 				.to("direct:updateStatus")
 				.removeHeader(Constants.CHOUETTE_JOB_ID)

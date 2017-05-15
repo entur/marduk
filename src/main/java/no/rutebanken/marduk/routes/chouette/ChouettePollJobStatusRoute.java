@@ -5,9 +5,9 @@ import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.JobResponseWithLinks;
 import no.rutebanken.marduk.routes.chouette.mapping.ProviderAndJobsMapper;
-import no.rutebanken.marduk.routes.status.Status;
-import no.rutebanken.marduk.routes.status.Status.Action;
-import no.rutebanken.marduk.routes.status.Status.State;
+import no.rutebanken.marduk.routes.status.JobEvent;
+import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
+import no.rutebanken.marduk.routes.status.JobEvent.State;
 import org.apache.activemq.ScheduledMessage;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -57,7 +57,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
 //        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
 //                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
-//                .process(e -> Status.addStatus(e, Action.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.FAILED))
+//                .process(e -> Status.addStatus(e, TimetableAction.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.FAILED))
 //                .to("direct:updateStatus")
 //                .log(LoggingLevel.ERROR,correlation()+"Failed while polling chouette.")
 //                .handled(true);
@@ -77,8 +77,8 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 					String url = (String) e.getProperty("chouette_url");
 
 					URIBuilder b = new URIBuilder(url);
-					if (e.getIn().getHeader("action") != null) {
-						b.addParameter("action", (String) e.getIn().getHeader("action"));
+					if (e.getIn().getHeader("timetableAction") != null) {
+						b.addParameter("timetableAction", (String) e.getIn().getHeader("timetableAction"));
 					}
 					if (e.getIn().getHeader("status") != null) {
 
@@ -173,7 +173,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 				// Update status
 				.choice()
 				.when(simple("${exchangeProperty.current_status} == '" + STARTED + "' && ${header.loopCounter} == 1"))
-				.process(e -> Status.builder(e).action(Action.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.STARTED).jobId(e.getIn().getHeader(Constants.CHOUETTE_JOB_ID, Long.class)).build())
+				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.STARTED).jobId(e.getIn().getHeader(Constants.CHOUETTE_JOB_ID, Long.class)).build())
 				.to("direct:updateStatus")
 				.end()
 				.setHeader(ScheduledMessage.AMQ_SCHEDULED_DELAY, constant(retryDelay))
@@ -192,27 +192,27 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 				.choice()
 				.when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "'"))
 				.log(LoggingLevel.WARN, correlation() + "Job timed out with state ${header.current_status}. Config should probably be tweaked. Stopping route.")
-				.process(e -> Status.builder(e).action(Action.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.TIMEOUT).build())
+				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.TIMEOUT).build())
 				.to("direct:updateStatus")
 				.stop()
 				.when(simple("${header.current_status} == '" + ABORTED + "' || ${header.current_status} == '" + CANCELED + "'"))
 				.log(LoggingLevel.WARN, correlation() + "Job ended in state ${header.current_status}. Stopping route.")
-				.process(e -> Status.builder(e).action(Action.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.FAILED).build())
+				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.FAILED).build())
 				.to("direct:updateStatus")
 				.stop()
 				.end()
 				.process(e -> {
 					JobResponseWithLinks response = e.getIn().getBody(JobResponseWithLinks.class);
 					Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "action_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
-					e.getIn().setHeader("action_report_url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
+					e.getIn().setHeader("action_report_url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for timetableAction report.")));
 					Optional<String> validationReportUrlOptional = response.links.stream().filter(li -> "validation_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
 					e.getIn().setHeader("validation_report_url", validationReportUrlOptional.orElse(null));
 					Optional<String> dataUrlOptional = response.links.stream().filter(li -> "data".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
 					e.getIn().setHeader("data_url", dataUrlOptional.orElse(null));
 				})
-				// Fetch and parse action report
+				// Fetch and parse timetableAction report
 				.to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-				.log(LoggingLevel.DEBUG, getClass().getName(), "Calling action report url ${header.action_report_url}")
+				.log(LoggingLevel.DEBUG, getClass().getName(), "Calling timetableAction report url ${header.action_report_url}")
 				.removeHeaders("Camel*")
 				.setBody(simple(""))
 				.setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))

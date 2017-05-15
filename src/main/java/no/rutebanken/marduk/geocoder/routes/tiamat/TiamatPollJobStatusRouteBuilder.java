@@ -4,7 +4,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.geocoder.routes.tiamat.xml.ExportJob;
 import no.rutebanken.marduk.geocoder.routes.tiamat.xml.JobStatus;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.SystemStatus;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.http.common.HttpOperationFailedException;
@@ -60,7 +60,7 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
                 .choice()
                 .when(simple("${header.current_status} == '" + JobStatus.FAILED + "'"))
                 .log(LoggingLevel.WARN, correlation() + " ended in state ${header.current_status}. Not rescheduling.")
-                .process(e -> SystemStatus.builder(e).state(SystemStatus.State.FAILED).build()).to("direct:updateSystemStatus")
+                .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.FAILED).build()).to("direct:updateStatus")
                 .otherwise()
                 .toD("${header." + Constants.JOB_STATUS_ROUTING_DESTINATION + "}")
                 .end()

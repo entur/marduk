@@ -1,7 +1,7 @@
 package no.rutebanken.marduk.geocoder.routes.control;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.SystemStatus;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.activemq.command.ActiveMQTextMessage;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -104,7 +104,7 @@ public class GeoCoderControlRouteBuilder extends BaseRouteBuilder {
 				.choice()
 				.when(simple("${header." + LOOP_COUNTER + "} > " + maxRetries))
 				.log(LoggingLevel.WARN, getClass().getName(), "${header." + GEOCODER_CURRENT_TASK + "} timed out. Config should probably be tweaked. Not rescheduling.")
-				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.TIMEOUT).build()).to("direct:updateSystemStatus")
+				.process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.TIMEOUT).build()).to("direct:updateStatus")
 				.otherwise()
 				.setProperty(GEOCODER_NEXT_TASK, simple("${header." + GEOCODER_CURRENT_TASK + "}"))
 				.end()

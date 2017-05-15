@@ -6,7 +6,7 @@ import no.rutebanken.marduk.geocoder.netex.sosi.SosiTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
-import no.rutebanken.marduk.routes.status.SystemStatus;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,9 +19,6 @@ import java.io.InputStream;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
-import static no.rutebanken.marduk.routes.status.SystemStatus.Entity.ADMINISTRATIVE_UNITS;
-import static no.rutebanken.marduk.routes.status.SystemStatus.System.GC;
-import static no.rutebanken.marduk.routes.status.SystemStatus.System.TIAMAT;
 
 @Component
 public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilder {
@@ -63,9 +60,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 
         from(TIAMAT_ADMINISTRATIVE_UNITS_UPDATE_START.getEndpoint())
                 .log(LoggingLevel.INFO, "Starting update of administrative units in Tiamat")
-                .process(e -> SystemStatus.builder(e).start(GeoCoderTaskType.TIAMAT_ADMINISTRATIVE_UNITS_UPDATE)
-                                      .action(SystemStatus.Action.UPDATE).source(GC).target(TIAMAT)
-                                      .entity(ADMINISTRATIVE_UNITS).build()).to("direct:updateSystemStatus")
+                .process(e -> JobEvent.systemJobBuilder(e).startGeocoder(GeoCoderTaskType.TIAMAT_ADMINISTRATIVE_UNITS_UPDATE).build()).to("direct:updateStatus")
                 .setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
                 .doTry()
                 .to("direct:cleanUpLocalDirectory")
@@ -104,7 +99,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 
         from("direct:processTiamatAdministrativeUnitsUpdateCompleted")
                 .setProperty(GEOCODER_NEXT_TASK, constant(TIAMAT_EXPORT_START))
-                .process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
+                .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .routeId("tiamat-admin-units-update-completed");
     }
 

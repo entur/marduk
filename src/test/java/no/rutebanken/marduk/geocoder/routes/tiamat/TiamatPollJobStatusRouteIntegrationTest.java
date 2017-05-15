@@ -3,9 +3,10 @@ package no.rutebanken.marduk.geocoder.routes.tiamat;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.geocoder.GeoCoderConstants;
+import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.geocoder.routes.tiamat.xml.ExportJob;
 import no.rutebanken.marduk.geocoder.routes.tiamat.xml.JobStatus;
-import no.rutebanken.marduk.routes.status.SystemStatus;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
@@ -13,21 +14,16 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
-import org.apache.camel.test.spring.CamelSpringRunner;
-import org.apache.camel.test.spring.UseAdviceWith;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
 import static org.apache.camel.builder.Builder.constant;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TiamatPollJobStatusRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TiamatPollJobStatusRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Autowired
@@ -43,8 +39,8 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
     @EndpointInject(uri = "mock:complete")
     protected MockEndpoint completeEndpointMock;
 
-    @EndpointInject(uri = "mock:systemStatus")
-    protected MockEndpoint systemStatusQueueMock;
+    @EndpointInject(uri = "mock:statusQueue")
+    protected MockEndpoint statusQueueMock;
 
 
     @Produce(uri = "direct:checkTiamatJobStatus")
@@ -61,7 +57,7 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
     @Before
     public void setUp() {
         completeEndpointMock.reset();
-        systemStatusQueueMock.reset();
+        statusQueueMock.reset();
         tiamatMock.reset();
         try {
             context.getRouteDefinition("tiamat-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
@@ -74,8 +70,8 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
             context.getRouteDefinition("tiamat-process-job-status-done").adviceWith(context, new AdviceWithRouteBuilder() {
                 @Override
                 public void configure() throws Exception {
-                    interceptSendToEndpoint("direct:updateSystemStatus")
-                            .skipSendToOriginalEndpoint().to("mock:systemStatus");
+                    interceptSendToEndpoint("direct:updateStatus")
+                            .skipSendToOriginalEndpoint().to("mock:statusQueue");
                 }
             });
 
@@ -93,7 +89,7 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
         Exchange e = checkStatus();
 
         tiamatMock.assertIsSatisfied();
-        systemStatusQueueMock.assertIsSatisfied();
+        statusQueueMock.assertIsSatisfied();
         completeEndpointMock.assertIsSatisfied();
         Assert.assertTrue(e.getProperty(GeoCoderConstants.GEOCODER_RESCHEDULE_TASK, Boolean.class));
     }
@@ -118,8 +114,8 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
     @Test
     public void testFailed() throws Exception {
         tiamatMock.expectedMessageCount(1);
-        systemStatusQueueMock
-                .whenExchangeReceived(1, e -> Assert.assertTrue(e.getIn().getBody(String.class).contains(SystemStatus.State.FAILED.toString())));
+        statusQueueMock
+                .whenExchangeReceived(1, e -> Assert.assertTrue(e.getIn().getBody(String.class).contains(JobEvent.State.FAILED.toString())));
         tiamatMock.returnReplyBody(constant(new ExportJob(JobStatus.FAILED)));
 
         context.start();
@@ -128,7 +124,7 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
 
         tiamatMock.assertIsSatisfied();
         completeEndpointMock.assertIsSatisfied();
-        systemStatusQueueMock.assertIsSatisfied();
+        statusQueueMock.assertIsSatisfied();
         Assert.assertNull(e.getProperty(GeoCoderConstants.GEOCODER_RESCHEDULE_TASK));
         Assert.assertNull(e.getException());
     }
@@ -139,16 +135,16 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
             e.getIn().setHeader(Constants.JOB_STATUS_URL, JOB_STATUS_URL);
             e.getIn().setHeader(Constants.JOB_ID, "1");
             e.getIn().setHeader(Constants.JOB_STATUS_ROUTING_DESTINATION, "mock:complete");
-            SystemStatus systemStatus = status(SystemStatus.State.STARTED);
+            JobEvent jobEventEvent = status(e, JobEvent.State.STARTED);
 
-            e.getIn().setHeader(Constants.SYSTEM_STATUS, systemStatus.toString());
+            e.getIn().setHeader(Constants.SYSTEM_STATUS, jobEventEvent.toString());
 
             e.getIn().setHeader(GeoCoderConstants.GEOCODER_CURRENT_TASK, GeoCoderConstants.TIAMAT_EXPORT_POLL);
         });
         return exchange;
     }
 
-    private SystemStatus status(SystemStatus.State state) {
-        return SystemStatus.builder().jobType("JOB").action(SystemStatus.Action.EXPORT).correlationId("corrId").entity(SystemStatus.Entity.POI).action(SystemStatus.Action.EXPORT).state(state).build();
+    private JobEvent status(Exchange e, JobEvent.State state) {
+        return JobEvent.systemJobBuilder(e).startGeocoder(GeoCoderTaskType.TIAMAT_ADMINISTRATIVE_UNITS_UPDATE).correlationId("corrId").state(state).build();
     }
 }

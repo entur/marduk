@@ -2,9 +2,9 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
-import no.rutebanken.marduk.routes.status.Status;
-import no.rutebanken.marduk.routes.status.Status.Action;
-import no.rutebanken.marduk.routes.status.Status.State;
+import no.rutebanken.marduk.routes.status.JobEvent;
+import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
+import no.rutebanken.marduk.routes.status.JobEvent.State;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,7 +36,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
 	                e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
                 })
-				.process(e -> Status.builder(e).action(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,Status.Action.class)).state(State.PENDING).build())
+				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,JobEvent.TimetableAction.class)).state(State.PENDING).build())
 		        .to("direct:updateStatus")
 
 	            .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
@@ -62,20 +62,20 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 		        .choice()
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'OK'"))
 		            .to("direct:checkScheduledJobsBeforeTriggeringExport")
-				 	.process(e -> Status.builder(e).action(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,Status.Action.class)).state(State.OK).build())
+				 	.process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,TimetableAction.class)).state(State.OK).build())
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'NOK'"))
 		        	.log(LoggingLevel.INFO,correlation()+"Validation failed (processed ok, but timetable data is faulty)")
-				 	.process(e -> Status.builder(e).action(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,Status.Action.class)).state(State.FAILED).build())
+				 	.process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,TimetableAction.class)).state(State.FAILED).build())
 		        .otherwise()
 		            .log(LoggingLevel.ERROR,correlation()+"Validation went wrong")
-					.process(e -> Status.builder(e).action(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,Status.Action.class)).state(State.FAILED).build())
+					.process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,TimetableAction.class)).state(State.FAILED).build())
 		        .end()
 		        .to("direct:updateStatus")
 		        .routeId("chouette-process-validation-status");
 
 	 // Check that no other import jobs in status SCHEDULED exists for this referential. If so, do not trigger export
 		from("direct:checkScheduledJobsBeforeTriggeringExport")
-				.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?action=importer&status=SCHEDULED&status=STARTED"))
+				.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?timetableAction=importer&status=SCHEDULED&status=STARTED"))
 				.toD("${exchangeProperty.job_status_url}")
 				.choice()
 				.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")

@@ -7,7 +7,7 @@ import no.rutebanken.marduk.geocoder.routes.pelias.babylon.DeploymentStatus;
 import no.rutebanken.marduk.geocoder.routes.pelias.babylon.ScalingOrder;
 import no.rutebanken.marduk.geocoder.routes.pelias.babylon.StartFile;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.SystemStatus;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.JOB_STATUS_ROUTING_DESTINATION;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
-import static no.rutebanken.marduk.routes.status.SystemStatus.System.PELIAS;
 
 @Component
 public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
@@ -66,8 +65,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 		from(PELIAS_UPDATE_START.getEndpoint())
 				.log(LoggingLevel.INFO, "Start updating Pelias")
 				.bean(updateStatusService, "setBuilding")
-				.process(e -> SystemStatus.builder(e).start(GeoCoderTaskType.PELIAS_UPDATE).action(SystemStatus.Action.UPDATE)
-						              .target(PELIAS).build()).to("direct:updateSystemStatus")
+				.process(e -> JobEvent.systemJobBuilder(e).startGeocoder(GeoCoderTaskType.PELIAS_UPDATE).build()).to("direct:updateStatus")
 				.to("direct:startElasticsearchScratchInstance")
 				.routeId("pelias-upload");
 
@@ -97,7 +95,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:insertElasticsearchIndexDataFailed")
 				.bean(updateStatusService, "setIdle")
-				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.FAILED).build()).to("direct:updateSystemStatus")
+				.process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.FAILED).build()).to("direct:updateStatus")
 				.routeId("pelias-es-index-failed");
 
 		from("direct:shutdownElasticsearchScratchInstance")
@@ -146,7 +144,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
 
 		from("direct:processPeliasDeployCompleted")
 				.log(LoggingLevel.INFO, "Finished updating pelias")
-				.process(e -> SystemStatus.builder(e).state(SystemStatus.State.OK).build()).to("direct:updateSystemStatus")
+				.process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
 				.bean(updateStatusService, "setIdle")
 				.routeId("pelias-deploy-completed");
 

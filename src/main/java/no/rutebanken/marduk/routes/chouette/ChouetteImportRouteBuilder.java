@@ -3,9 +3,9 @@ package no.rutebanken.marduk.routes.chouette;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
-import no.rutebanken.marduk.routes.status.Status;
-import no.rutebanken.marduk.routes.status.Status.Action;
-import no.rutebanken.marduk.routes.status.Status.State;
+import no.rutebanken.marduk.routes.status.JobEvent;
+import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
+import no.rutebanken.marduk.routes.status.JobEvent.State;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
@@ -44,7 +44,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
 //        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
 //                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
-//                .process(e -> Status.addStatus(e, Action.IMPORT, State.FAILED))
+//                .process(e -> Status.addStatus(e, TimetableAction.IMPORT, State.FAILED))
 //                .to("direct:updateStatus")
 //                .log(LoggingLevel.ERROR,correlation()+ "Failed while importing to Chouette")
 //                .to("log:" + getClass().getName() + "?level=ERROR&showAll=true&multiline=true")
@@ -89,7 +89,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 				.transacted()
                 .log(LoggingLevel.INFO,correlation()+ "Starting Chouette import")
 				.removeHeader(Constants.CHOUETTE_JOB_ID)
-                .process(e -> Status.builder(e).action(Action.IMPORT).state(State.PENDING).build())
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.PENDING).build())
                 .to("direct:updateStatus")
                 .to("direct:getBlob")
     	        .setHeader(Constants.CLEAN_REPOSITORY, constant(false))
@@ -130,7 +130,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 					e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,constant("direct:processImportResult"))
-        		.setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(Action.IMPORT.name()))
+        		.setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.IMPORT.name()))
 		        .removeHeader("loopCounter")
                 .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-import-job");
@@ -145,32 +145,32 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 		        .choice()
 				.when(PredicateBuilder.and(constant("false").isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
 		            .to("direct:checkScheduledJobsBeforeTriggeringNextAction")
-				 .process(e -> Status.builder(e).action(Action.IMPORT).state(State.OK).build())
+				 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.IMPORT).state(State.OK).build())
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'OK'"))
 		            .to("direct:checkScheduledJobsBeforeTriggeringNextAction")
-				 .process(e -> Status.builder(e).action(Action.IMPORT).state(State.OK).build())
+				 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.OK).build())
 		        .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'NOK'"))
 		        	.log(LoggingLevel.INFO,correlation()+"Import ok but validation failed")
-				 .process(e -> Status.builder(e).action(Action.IMPORT).state(State.FAILED).build())
+				 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.IMPORT).state(State.FAILED).build())
 		        .when(simple("${header.action_report_result} == 'NOK'"))
 		        	.choice()
 		    		.when(simple("${header.action_report_result} == 'NOK' && ${header."+Constants.CLEAN_REPOSITORY+"} == true"))
 		        		.log(LoggingLevel.INFO,correlation()+"Clean ok")
-				 		.process(e -> Status.builder(e).action(Action.IMPORT).state(State.OK).build())
+				 		.process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.OK).build())
 		    		.when(simple("${header.action_report_result} == 'NOK'"))
 		        		.log(LoggingLevel.WARN,correlation()+"Import not ok")
-				 		.process(e -> Status.builder(e).action(Action.IMPORT).state(State.FAILED).build())
+				 		.process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.FAILED).build())
 		        	.endChoice()
 		        .otherwise()
 		            .log(LoggingLevel.ERROR,correlation()+"Something went wrong on import")
-				 	.process(e -> Status.builder(e).action(Action.IMPORT).state(State.FAILED).build())
+				 	.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.IMPORT).state(State.FAILED).build())
 		        .end()
 		        .to("direct:updateStatus")
 		        .routeId("chouette-process-import-status");
 	
 		 // Check that no other import jobs in status SCHEDULED exists for this referential. If so, do not trigger export
 		from("direct:checkScheduledJobsBeforeTriggeringNextAction")
-			.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?action=importer&status=SCHEDULED&status=STARTED"))
+			.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?timetableAction=importer&status=SCHEDULED&status=STARTED"))
 			.toD("${exchangeProperty.job_status_url}")
 			.choice()
 			.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
@@ -182,7 +182,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 				.choice()
 					.when(constant("true").isEqualTo(header(Constants.ENABLE_VALIDATION)))
 						.log(LoggingLevel.INFO,correlation()+"Import ok, triggering validation")
-						.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(Status.Action.VALIDATION_LEVEL_1.name()))
+						.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
 						.to("activemq:queue:ChouetteValidationQueue")
 					.when(method(getClass(),"shouldTransferData").isEqualTo(true))
 						.log(LoggingLevel.INFO,correlation()+"Import ok, transfering data to next dataspace")

@@ -3,25 +3,19 @@ package no.rutebanken.marduk.geocoder.routes.control;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.geocoder.GeoCoderConstants;
-import no.rutebanken.marduk.routes.status.SystemStatus;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
-import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
-import org.apache.camel.test.spring.CamelSpringRunner;
-import org.apache.camel.test.spring.UseAdviceWith;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = GeoCoderControlRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
@@ -35,8 +29,8 @@ public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderInteg
 	@Produce(uri = "activemq:queue:GeoCoderQueue")
 	protected ProducerTemplate geoCoderQueueTemplate;
 
-	@EndpointInject(uri = "mock:systemStatus")
-	protected MockEndpoint systemStatusQueueMock;
+	@EndpointInject(uri = "mock:statusQueue")
+	protected MockEndpoint statusQueueMock;
 
 	@Value("${geocoder.max.retries:3000}")
 	private int maxRetries;
@@ -44,7 +38,7 @@ public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderInteg
 	@Before
 	public void before() {
 		destination.reset();
-		systemStatusQueueMock.reset();
+		statusQueueMock.reset();
 	}
 
 	@Test
@@ -116,13 +110,13 @@ public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderInteg
 		context.getRouteDefinition("geocoder-reschedule-task").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				interceptSendToEndpoint("direct:updateSystemStatus")
-						.skipSendToOriginalEndpoint().to("mock:systemStatus");
+				interceptSendToEndpoint("direct:updateStatus")
+						.skipSendToOriginalEndpoint().to("mock:statusQueue");
 			}
 		});
-		systemStatusQueueMock
-				.whenExchangeReceived(1, e -> Assert.assertTrue(e.getIn().getBody(String.class).contains(SystemStatus.State.TIMEOUT.toString())));
-		systemStatusQueueMock.expectedMessageCount(1);
+		statusQueueMock
+				.whenExchangeReceived(1, e -> Assert.assertTrue(e.getIn().getBody(String.class).contains(JobEvent.State.TIMEOUT.toString())));
+		statusQueueMock.expectedMessageCount(1);
 		destination.whenExchangeReceived(1, e ->
 			e.setProperty(GeoCoderConstants.GEOCODER_RESCHEDULE_TASK, true)
 		);
@@ -130,13 +124,12 @@ public class GeoCoderControlRouteIntegrationTest extends MardukRouteBuilderInteg
 		context.start();
 		GeoCoderTask task = task(GeoCoderTask.Phase.DOWNLOAD_SOURCE_DATA);
 		task.getHeaders().put(Constants.LOOP_COUNTER, maxRetries);
-		task.getHeaders().put(Constants.SYSTEM_STATUS, SystemStatus.builder().start(SystemStatus.Action.FILE_TRANSFER)
-				                                               .correlationId("corrId").jobType("job").build().toString());
+		task.getHeaders().put(Constants.SYSTEM_STATUS, JobEvent.builder().startGeocoder(GeoCoderTaskType.ADDRESS_DOWNLOAD).build().toString());
 
 		geoCoderQueueTemplate.sendBody(new GeoCoderTaskMessage(task).toString());
 
 		destination.assertIsSatisfied();
-		systemStatusQueueMock.assertIsSatisfied();
+		statusQueueMock.assertIsSatisfied();
 	}
 
 	private GeoCoderTask task(GeoCoderTask.Phase phase) {

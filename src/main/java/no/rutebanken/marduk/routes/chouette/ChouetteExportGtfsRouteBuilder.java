@@ -3,9 +3,9 @@ package no.rutebanken.marduk.routes.chouette;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
-import no.rutebanken.marduk.routes.status.Status;
-import no.rutebanken.marduk.routes.status.Status.Action;
-import no.rutebanken.marduk.routes.status.Status.State;
+import no.rutebanken.marduk.routes.status.JobEvent;
+import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
+import no.rutebanken.marduk.routes.status.JobEvent.State;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,7 +46,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                     e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString()));
                     e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
                 })
-                .process(e -> Status.builder(e).action(Action.EXPORT).state(State.PENDING).build())
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.EXPORT).state(State.PENDING).build())
                 .to("direct:updateStatus")
 
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
@@ -64,7 +64,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processExportResult"))
-                .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(Action.EXPORT.name()))
+                .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT.name()))
                 .removeHeader("loopCounter")
                 .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-export-job");
@@ -84,18 +84,18 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
                 .to("direct:uploadBlob")
-                .process(e -> Status.builder(e).action(Action.EXPORT).state(State.OK).build()).to("direct:updateStatus")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.EXPORT).state(State.OK).build()).to("direct:updateStatus")
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .setBody(constant(null))
                 .to("activemq:queue:OtpGraphQueue")
                 .to("activemq:queue:ChouetteExportNetexQueue")
-                .process(e -> Status.builder(e).action(Action.BUILD_GRAPH).state(State.PENDING).build())
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.BUILD_GRAPH).state(State.PENDING).build())
                 .when(simple("${header.action_report_result} == 'NOK'"))
                 .log(LoggingLevel.WARN, correlation() + "Export failed")
-                .process(e -> Status.builder(e).action(Action.EXPORT).state(State.FAILED).build())
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.EXPORT).state(State.FAILED).build())
                 .otherwise()
                 .log(LoggingLevel.ERROR, correlation() + "Something went wrong on export")
-                .process(e -> Status.builder(e).action(Action.EXPORT).state(State.FAILED).build())
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.EXPORT).state(State.FAILED).build())
                 .end()
                 .to("direct:updateStatus")
                 .routeId("chouette-process-export-status");

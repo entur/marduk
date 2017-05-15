@@ -2,7 +2,7 @@ package no.rutebanken.marduk.routes.jms;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.Status;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
@@ -31,7 +31,7 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
             .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
             .to("direct:uploadBlob")
             .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-            .process(e -> Status.builder(e).action(Status.Action.FILE_TRANSFER).state(Status.State.STARTED).build())
+            .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build())
             .to("direct:updateStatus")
             .choice()
                 .when(simple("{{blobstore.delete.external.blobs:true}}"))
