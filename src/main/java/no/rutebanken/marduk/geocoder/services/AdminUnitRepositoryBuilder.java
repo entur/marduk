@@ -77,7 +77,7 @@ public class AdminUnitRepositoryBuilder {
             for (TopographicPlaceAdapter locality : localities) {
                 Geometry geometry = locality.getDefaultGeometry();
 
-                if (geometry != null && geometry.contains(point)) {
+                if (geometry != null && geometry.covers(point)) {
                     return locality;
                 }
             }
