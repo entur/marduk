@@ -83,7 +83,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .process(e -> {
                     JobEvent.State state = e.getIn().getHeader(HEADER_STATUS, JobEvent.State.class);
                     e.getIn().setHeaders(((ActiveMQMessage) e.getIn().getBody()).getProperties());
-                    JobEvent.systemJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(state).build();
+                    JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(state).build();
                 })
                 .to("direct:updateStatus");
 
