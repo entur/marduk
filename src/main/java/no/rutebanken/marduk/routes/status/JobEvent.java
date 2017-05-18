@@ -157,7 +157,7 @@ public class JobEvent {
             }
 
             if (jobEvent.action == null) {
-                throw new IllegalArgumentException("No timetableAction");
+                throw new IllegalArgumentException("No action");
             }
 
             if (jobEvent.state == null) {

@@ -67,7 +67,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:fetchLatestGtfs")
                 .to("direct:mergeGtfs")
                 .to("direct:transformToOTPIds")
-                .to("direct:buildGraph")
+                .to("direct:buildGraphAndSendStatus")
                 .bean(graphStatusService, "setIdle")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP graph building route.")
                 .routeId("otp-graph-build");
@@ -85,7 +85,8 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeaders(((ActiveMQMessage) e.getIn().getBody()).getProperties());
                     JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(state).build();
                 })
-                .to("direct:updateStatus");
+                .to("direct:updateStatus")
+                .routeId("otp-graph-send-status-for-timetable-jobs");
 
         from("direct:fetchLatestGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs files for all providers.")
@@ -140,14 +141,10 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-graph-fetch-map");
 
 
-        from("direct:buildGraph")
+        from("direct:buildGraphAndSendStatus")
                 .log(LoggingLevel.INFO, correlation() + "Building OTP graph...")
                 .doTry()
-                .process(new GraphBuilderProcessor())
-                .setBody(constant(""))
-                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + GRAPH_OBJ + ".done")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .log(LoggingLevel.INFO, correlation() + "Done building new OTP graph.")
+                .to("direct:buildGraph")
                 .setHeader(HEADER_STATUS, constant(JobEvent.State.OK))
                 .to("direct:sendStatusForJobs")
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
@@ -157,6 +154,14 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .setHeader(HEADER_STATUS, constant(JobEvent.State.FAILED))
                 .to("direct:sendStatusForJobs")
                 .end()
+                .routeId("otp-graph-build-and-send-status");
+
+        from("direct:buildGraph")
+                .process(new GraphBuilderProcessor())
+                .setBody(constant(""))
+                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + GRAPH_OBJ + ".done")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .log(LoggingLevel.INFO, correlation() + "Done building new OTP graph.")
                 .routeId("otp-graph-build-otp");
 
     }
