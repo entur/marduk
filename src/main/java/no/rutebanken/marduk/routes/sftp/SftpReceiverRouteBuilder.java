@@ -53,9 +53,8 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
         singletonFrom("sftp://" + sftpUser + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&knownHostsFile=" + knownHostsFile + "&recursive=true&sorter=#caseIdSftpSorter&delay={{sftp.delay}}&delete={{idempotent.skip:false}}&localWorkDirectory=files/tmp&connectTimeout=1000")
                 .autoStartup("{{sftp.autoStartup:true}}")
                 .filter(simple("${header." + Exchange.FILE_NAME + "} contains '" + timetablePath + "'"))
-                .process(e -> setProviderHeadersFromFileName(e))
+                .process(e -> setHeadersFromFileName(e))
                 .filter(simple("${header." + PROVIDER_ID + "} != null"))
-                .setHeader(Constants.FILE_NAME, header(Exchange.FILE_NAME))
                 .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
                 .to("direct:filterDuplicateFile")
                 .log(LoggingLevel.INFO, correlation() + "Received new file on sftp route. Storing file ${header." + Exchange.FILE_NAME + "}'")
@@ -73,17 +72,20 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
 
     }
 
-    private void setProviderHeadersFromFileName(Exchange e) {
-        String fileName = e.getIn().getHeader(Exchange.FILE_NAME, String.class);
-        String providerSftpAccount = fileName.split(timetablePath)[0];
+    private void setHeadersFromFileName(Exchange e) {
+        String fullFilePath = e.getIn().getHeader(Exchange.FILE_NAME, String.class);
+        String[] parts = fullFilePath.split(timetablePath);
+        String providerSftpAccount = parts[0];
+        String fileName = parts[1];
 
         Provider provider = providerRepository.getProviders().stream().filter(candidate -> providerSftpAccount.equals(candidate.sftpAccount)).findFirst().get();
 
         if (provider != null) {
             e.getIn().setHeader(PROVIDER_ID, provider.getId());
+            e.getIn().setHeader(Constants.FILE_NAME, fileName);
             e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.getChouetteInfo().referential);
         } else {
-            logger.warn("Found timetable file for unknown provider: " + fileName);
+            logger.warn("Found timetable file for unknown provider: " + fullFilePath);
         }
     }
 
