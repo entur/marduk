@@ -36,20 +36,20 @@ public class Parameters {
         }
         RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.xmlns,
                 chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion,
-                chouetteInfo.regtoppCoordinateProjection, chouetteInfo.regtoppCalendarStrategy, cleanRepository, chouetteInfo.enableValidation, false, true);
+                chouetteInfo.regtoppCoordinateProjection, chouetteInfo.regtoppCalendarStrategy, cleanRepository, chouetteInfo.enableValidation, chouetteInfo.enableStopPlaceUpdate,false, true);
         return regtoppImportParameters.toJsonString();
     }
 
     static String getGtfsImportParameters(String importName, Provider provider, boolean cleanRepository) {
         ChouetteInfo chouetteInfo = provider.chouetteInfo;
         GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.xmlns,
-                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, cleanRepository, chouetteInfo.enableValidation);
+                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, cleanRepository, chouetteInfo.enableValidation, chouetteInfo.enableStopPlaceUpdate);
         return gtfsImportParameters.toJsonString();
     }
 
     static String getNetexImportParameters(String importName, Provider provider, boolean cleanRepository) {
         NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.name,
-                provider.chouetteInfo.organisation, provider.chouetteInfo.user, cleanRepository, provider.chouetteInfo.enableValidation, provider.chouetteInfo.xmlns, provider.chouetteInfo.xmlnsurl);
+                provider.chouetteInfo.organisation, provider.chouetteInfo.user, cleanRepository, provider.chouetteInfo.enableValidation, provider.chouetteInfo.enableStopPlaceUpdate, provider.chouetteInfo.xmlns, provider.chouetteInfo.xmlnsurl);
         return netexImportParameters.toJsonString();
     }
 

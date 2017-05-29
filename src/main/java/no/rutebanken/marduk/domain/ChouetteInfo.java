@@ -16,6 +16,7 @@ public class ChouetteInfo {
     public String regtoppCalendarStrategy;
     public String dataFormat;
     public boolean enableValidation = false;
+    public boolean enableStopPlaceUpdate = false;
 	public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
 
     public Long getMigrateDataToProvider() {
@@ -36,6 +37,7 @@ public class ChouetteInfo {
                 ", regtoppCalendarStrategy='" + regtoppCalendarStrategy + '\'' +
                 ", dataFormat='" + dataFormat + '\'' +
                 ", enableValidation='" + enableValidation + '\'' +
+                ", enableStopPlaceUpdate='" + enableStopPlaceUpdate + '\'' +
                 ", migrateDataToProvider='" + migrateDataToProvider + '\'' +
                 '}';
     }

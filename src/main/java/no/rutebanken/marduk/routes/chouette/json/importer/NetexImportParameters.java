@@ -23,7 +23,7 @@ public class NetexImportParameters extends ChouetteJobParameters {
     }
 
 
-    public static NetexImportParameters create(String name, String referentialName, String organisationName, String userName, boolean cleanRepository, boolean enableValidation, String xmlns, String xmlnsurl) {
+    public static NetexImportParameters create(String name, String referentialName, String organisationName, String userName, boolean cleanRepository, boolean enableValidation, boolean enableStopPlaceUpdate, String xmlns, String xmlnsurl) {
         Netex netexImport = new Netex();
         netexImport.name = name;
         netexImport.referentialName = referentialName;
@@ -31,6 +31,7 @@ public class NetexImportParameters extends ChouetteJobParameters {
         netexImport.userName = userName;
         netexImport.cleanRepository = cleanRepository ? "1":"0";
         netexImport.validCodespaces = StringUtils.join(new String[] {xmlns,xmlnsurl},",");
+        netexImport.updateStopPlaces = enableStopPlaceUpdate;
         Parameters parameters = new Parameters();
         parameters.netexImport = netexImport;
         NetexImportParameters netexImportParameters = new NetexImportParameters();

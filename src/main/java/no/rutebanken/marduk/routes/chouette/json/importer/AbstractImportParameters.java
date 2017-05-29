@@ -12,7 +12,7 @@ public class AbstractImportParameters extends AbstractParameters {
     public String noSave = "0";
 
     @JsonProperty("update_stop_places")
-    public boolean updateStopPlaces = true;
+    public boolean updateStopPlaces = false;
     
     @JsonProperty("keep_obsolete_lines")
     public boolean keepObsoleteLines = true;

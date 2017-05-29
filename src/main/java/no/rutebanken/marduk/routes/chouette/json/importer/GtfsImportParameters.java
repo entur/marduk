@@ -45,7 +45,7 @@ public class GtfsImportParameters extends ChouetteJobParameters {
 
     }
 
-    public static GtfsImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository,boolean enableValidation) {
+    public static GtfsImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository,boolean enableValidation,boolean enableStopPlaceUpdate) {
         Gtfs gtfsImport = new Gtfs();
         gtfsImport.name = name;
         gtfsImport.objectIdPrefix = objectIdPrefix;
@@ -53,11 +53,13 @@ public class GtfsImportParameters extends ChouetteJobParameters {
         gtfsImport.organisationName = organisationName;
         gtfsImport.userName = userName;
         gtfsImport.cleanRepository = cleanRepository ? "1":"0";
+        gtfsImport.updateStopPlaces = enableStopPlaceUpdate;
         Parameters parameters = new Parameters();
         parameters.gtfsImport = gtfsImport;
         GtfsImportParameters gtfsImportParameters = new GtfsImportParameters();
         gtfsImportParameters.parameters = parameters;
         gtfsImportParameters.enableValidation = enableValidation;
+
         return gtfsImportParameters;
     }
 
