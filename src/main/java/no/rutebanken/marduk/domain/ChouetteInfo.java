@@ -17,6 +17,7 @@ public class ChouetteInfo {
     public String dataFormat;
     public boolean enableValidation = false;
     public boolean enableStopPlaceUpdate = false;
+    public boolean enableCleanImport = false;
 	public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
 
     public Long getMigrateDataToProvider() {
@@ -38,6 +39,7 @@ public class ChouetteInfo {
                 ", dataFormat='" + dataFormat + '\'' +
                 ", enableValidation='" + enableValidation + '\'' +
                 ", enableStopPlaceUpdate='" + enableStopPlaceUpdate + '\'' +
+                ", enableCleanImport='" + enableCleanImport + '\'' +
                 ", migrateDataToProvider='" + migrateDataToProvider + '\'' +
                 '}';
     }

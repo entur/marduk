@@ -156,7 +156,6 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 				.process(e -> {
 					e.getIn().setHeader("loopCounter", (Integer) e.getIn().getHeader("loopCounter", 0) + 1);
 				})
-				.setProperty(Constants.CLEAN_REPOSITORY, header(Constants.CLEAN_REPOSITORY))
 				.setProperty(Constants.CHOUETTE_REFERENTIAL, header(Constants.CHOUETTE_REFERENTIAL))
 				.setProperty("url", header(Constants.CHOUETTE_JOB_STATUS_URL))
 				.removeHeaders("Camel*")

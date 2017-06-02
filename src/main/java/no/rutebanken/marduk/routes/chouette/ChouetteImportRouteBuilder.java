@@ -95,7 +95,6 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .log(LoggingLevel.WARN, correlation() + "Import failed because blob could not be found")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.IMPORT).state(State.FAILED).build())
                 .otherwise()
-                .setHeader(Constants.CLEAN_REPOSITORY, constant(false))
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
@@ -111,8 +110,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                     String fileName = e.getIn().getHeader(FILE_NAME, String.class);
                     String fileType = e.getIn().getHeader(Constants.FILE_TYPE, String.class);
                     Long providerId = e.getIn().getHeader(PROVIDER_ID, Long.class);
-                    boolean cleanRepository = (boolean) e.getIn().getHeader(Constants.CLEAN_REPOSITORY);
-                    e.getIn().setHeader(JSON_PART, getImportParameters(fileName, fileType, providerId, cleanRepository));
+                    e.getIn().setHeader(JSON_PART, getImportParameters(fileName, fileType, providerId));
                 }) //Using header to addToExchange json data
                 .log(LoggingLevel.DEBUG, correlation() + "import parameters: " + header(JSON_PART))
                 .to("direct:sendImportJobRequest")
@@ -158,9 +156,6 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.IMPORT).state(State.FAILED).build())
                 .when(simple("${header.action_report_result} == 'NOK'"))
                 .choice()
-                .when(simple("${header.action_report_result} == 'NOK' && ${header." + Constants.CLEAN_REPOSITORY + "} == true"))
-                .log(LoggingLevel.INFO, correlation() + "Clean ok")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.OK).build())
                 .when(simple("${header.action_report_result} == 'NOK'"))
                 .log(LoggingLevel.WARN, correlation() + "Import not ok")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.FAILED).build())
@@ -200,9 +195,9 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
     }
 
-    private String getImportParameters(String fileName, String fileType, Long providerId, boolean cleanRepository) {
+    private String getImportParameters(String fileName, String fileType, Long providerId) {
         Provider provider = getProviderRepository().getProvider(providerId);
-        return Parameters.createImportParameters(fileName, fileType, cleanRepository, provider);
+        return Parameters.createImportParameters(fileName, fileType, provider);
     }
 
 }

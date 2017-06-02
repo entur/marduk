@@ -20,7 +20,6 @@ public class Constants {
     public static final String METADATA_FILE = "MetadataFile";
 
     public static final String FILE_TARGET_MD5 = "RutebankenMd5SumRecordedForTargetFile";
-    public static final String CLEAN_REPOSITORY = "RutebankenCleanRepository";
     public static final String ENABLE_VALIDATION = "RutebankenEnableValidation";
     public static final String FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES = "RutebankenSkipStatusUpdateForDuplicateFiles";
 

@@ -17,39 +17,40 @@ import java.io.StringWriter;
 
 public class Parameters {
 
-    public static String createImportParameters(String fileName, String fileType, boolean cleanRepository, Provider provider) {
+    public static String createImportParameters(String fileName, String fileType, Provider provider) {
         if (FileType.REGTOPP.name().equals(fileType)) {
-            return getRegtoppImportParameters(fileName, provider, cleanRepository);
+            return getRegtoppImportParameters(fileName, provider);
         } else if (FileType.GTFS.name().equals(fileType)) {
-            return getGtfsImportParameters(fileName, provider, cleanRepository);
+            return getGtfsImportParameters(fileName, provider);
         } else if (FileType.NETEXPROFILE.name().equals(fileType)) {
-            return getNetexImportParameters(fileName, provider, cleanRepository);
+            return getNetexImportParameters(fileName, provider);
         } else {
             throw new IllegalArgumentException("Cannot create import parameters from file type '" + fileType + "'");
         }
     }
 
-    static String getRegtoppImportParameters(String importName, Provider provider, boolean cleanRepository) {
+    static String getRegtoppImportParameters(String importName, Provider provider) {
         ChouetteInfo chouetteInfo = provider.chouetteInfo;
         if (!chouetteInfo.usesRegtopp()) {
             throw new IllegalArgumentException("Could not get regtopp information about provider '" + provider.id + "'.");
         }
         RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.xmlns,
                 chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion,
-                chouetteInfo.regtoppCoordinateProjection, chouetteInfo.regtoppCalendarStrategy, cleanRepository, chouetteInfo.enableValidation, chouetteInfo.enableStopPlaceUpdate,false, true);
+                chouetteInfo.regtoppCoordinateProjection, chouetteInfo.regtoppCalendarStrategy, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation, chouetteInfo.enableStopPlaceUpdate,false, true);
         return regtoppImportParameters.toJsonString();
     }
 
-    static String getGtfsImportParameters(String importName, Provider provider, boolean cleanRepository) {
+    static String getGtfsImportParameters(String importName, Provider provider) {
         ChouetteInfo chouetteInfo = provider.chouetteInfo;
         GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.xmlns,
-                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, cleanRepository, chouetteInfo.enableValidation, chouetteInfo.enableStopPlaceUpdate);
+                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation, chouetteInfo.enableStopPlaceUpdate);
         return gtfsImportParameters.toJsonString();
     }
 
-    static String getNetexImportParameters(String importName, Provider provider, boolean cleanRepository) {
+    static String getNetexImportParameters(String importName, Provider provider) {
+        ChouetteInfo chouetteInfo = provider.chouetteInfo;
         NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.name,
-                provider.chouetteInfo.organisation, provider.chouetteInfo.user, cleanRepository, provider.chouetteInfo.enableValidation, provider.chouetteInfo.enableStopPlaceUpdate, provider.chouetteInfo.xmlns, provider.chouetteInfo.xmlnsurl);
+                chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation, chouetteInfo.enableStopPlaceUpdate, chouetteInfo.xmlns, chouetteInfo.xmlnsurl);
         return netexImportParameters.toJsonString();
     }
 
