@@ -11,6 +11,7 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 
@@ -72,6 +73,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.DEBUG, getClass().getName(), "Fetching tiamat export file ...")
 				.toD(tiamatUrl + "/${header." + Constants.JOB_STATUS_URL + "}/content")
 				.setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForTiamatExport + "/" + TIAMAT_EXPORT_LATEST_FILE_NAME))
+				.setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
 				.to("direct:uploadBlob")
 				.routeId("tiamat-export-move-file");
 
