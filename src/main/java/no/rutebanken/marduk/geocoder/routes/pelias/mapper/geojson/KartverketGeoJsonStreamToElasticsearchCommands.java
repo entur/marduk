@@ -10,12 +10,14 @@ import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 @Service
 public class KartverketGeoJsonStreamToElasticsearchCommands {
     public Collection<ElasticsearchCommand> transform(InputStream placeNamesStream) {
         return new FeatureJSONCollection(placeNamesStream)
-                       .mapToList(f -> ElasticsearchCommand.peliasIndexCommand(createMapper(f).toPeliasDocument()));
+                       .mapToList(f -> createMapper(f).toPeliasDocument()).stream()
+                       .filter(peliasDocument -> peliasDocument != null).map(pd -> ElasticsearchCommand.peliasIndexCommand(pd)).collect(Collectors.toList());
     }
 
     TopographicPlaceAdapterToPeliasDocument createMapper(SimpleFeature feature) {

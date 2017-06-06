@@ -58,6 +58,35 @@
           58.088692
         ]
       }
-    }
+    } ,
+    {
+          "type": "Feature",
+          "properties": {
+            "skr_snskrstat": "H",
+            "enh_ssr_id": 1783,
+            "for_kartid": "",
+            "for_regdato": 20000828,
+            "skr_sndato": 19590101,
+            "enh_snmynd": "SK",
+            "for_sist_endret_dt": 20140106,
+            "enh_snspraak": "NO",
+            "nty_gruppenr": 5,
+            "enh_snavn": "Gammelt, utdatert sted",
+            "enh_komm": 1002,
+            "enh_ssrobj_id": 1785,
+            "enh_sntystat": "H",
+            "enh_navntype": 108,
+            "for_snavn": "Kalland",
+            "kom_fylkesnr": 10,
+            "kpr_tekst": "N50 Kartdata"
+          },
+          "geometry": {
+            "type": "Point",
+            "coordinates": [
+              7.508508,
+              58.088692
+            ]
+          }
+        }
   ]
 }

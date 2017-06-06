@@ -28,6 +28,9 @@ public class TopographicPlaceMapper {
 
 
     public TopographicPlace toTopographicPlace() {
+        if (!feature.isValid()) {
+            return null;
+        }
         return new TopographicPlace()
                        .withVersion("any").withModification(ModificationEnumeration.NEW)
                        .withName(multilingualString(feature.getName()))

@@ -40,4 +40,9 @@ public abstract class AbstractKartverketGeojsonAdapter extends AbstractGeojsonAd
 	public String getCountryRef() {
 		return "no";
 	}
+
+	@Override
+	public boolean isValid() {
+		return true;
+	}
 }

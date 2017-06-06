@@ -104,6 +104,10 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
         return null;
     }
 
+    @Override
+    public boolean isValid() {
+        return true;
+    }
 
     @Override
     public String getName() {

@@ -65,4 +65,9 @@ public class WhosOnFirstCountry extends AbstractGeojsonAdapter implements Topogr
         }
         return names.get(0);
     }
+
+    @Override
+    public boolean isValid() {
+        return true;
+    }
 }

@@ -28,4 +28,6 @@ public interface TopographicPlaceAdapter {
      * Returns two letter country code.
      */
     String getCountryRef();
+
+    boolean isValid();
 }
