@@ -33,7 +33,7 @@
         <spring-boot-plugin.version>1.4.2.RELEASE</spring-boot-plugin.version>
         <spring-boot.version>1.4.2.RELEASE</spring-boot.version>
         <httpcomponents.version>4.5.1</httpcomponents.version>
-        <otp.version>1.1.0.RB-SNAPSHOT</otp.version>
+        <otp.version>1.2.0.RB-SNAPSHOT</otp.version>
         <assertj-core.version>3.3.0</assertj-core.version>
         <camel-version>2.18.1</camel-version>
         <postgresql.version>9.4-1201-jdbc41</postgresql.version>
