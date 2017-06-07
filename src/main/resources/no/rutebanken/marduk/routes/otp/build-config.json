@@ -3,6 +3,8 @@
     parentStopLinking: true,
     platformEntriesLinking: true,
     osmWayPropertySet: "norway",
-    stopClusterMode: "parentStation"
+    stopClusterMode: "parentStation",
+    islandWithoutStopsMaxSize: 5,
+    islandWithStopsMaxSize: 5
     
 }
