@@ -113,7 +113,7 @@
 
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-jetty93-adapter</artifactId>
+            <artifactId>keycloak-jetty94-adapter</artifactId>
             <version>${keycloak.version}</version>
         </dependency>
         <dependency>
