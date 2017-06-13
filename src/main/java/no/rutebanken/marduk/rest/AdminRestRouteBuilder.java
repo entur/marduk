@@ -179,6 +179,20 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:chouetteCleanAllReferentials")
                 .setBody(constant(null))
                 .routeId("admin-chouette-clean-all")
+                .endRest()
+                .post("/stop_places/clean/")
+                .description("Triggers the cleaning of ALL stop places in Chouette")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Command accepted").endResponseMessage()
+                .responseMessage().code(500).message("Internal error - check filter").endResponseMessage()
+                .route()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .log(LoggingLevel.INFO, correlation() + "Chouette clean all stop places")
+                .removeHeaders("CamelHttp*")
+                .to("direct:chouetteCleanStopPlaces")
+                .setBody(constant(null))
+                .routeId("admin-chouette-clean-stop-places")
                 .endRest();
 
 

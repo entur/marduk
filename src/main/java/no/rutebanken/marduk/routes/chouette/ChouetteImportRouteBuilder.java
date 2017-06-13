@@ -48,6 +48,14 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 //                .to("log:" + getClass().getName() + "?level=ERROR&showAll=true&multiline=true")
 //                .handled(true);
 
+        from("direct:chouetteCleanStopPlaces")
+                .log(LoggingLevel.INFO, correlation() + "Starting Chouette stop place clean")
+                .removeHeaders("Camel*")
+                .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
+                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/clean/stop_places"))
+                .toD("${property.chouette_url}")
+                .routeId("chouette-clean-stop-places");
+
         from("direct:chouetteCleanAllReferentials")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorService(allProvidersExecutorService)
