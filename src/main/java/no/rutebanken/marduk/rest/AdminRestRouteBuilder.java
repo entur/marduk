@@ -180,7 +180,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(null))
                 .routeId("admin-chouette-clean-all")
                 .endRest()
-                .post("/stop_places/clean/")
+                .post("/stop_places/clean")
                 .description("Triggers the cleaning of ALL stop places in Chouette")
                 .consumes(PLAIN)
                 .produces(PLAIN)
