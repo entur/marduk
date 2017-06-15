@@ -56,7 +56,10 @@ public class RegtoppImportParameters extends ChouetteJobParameters {
 		regtoppImport.cleanRepository = cleanRepository ? "1" : "0";
 		regtoppImport.keepObsoleteLines = keepObsoleteLines;
 		regtoppImport.batchParse = batchParse;
-		regtoppImport.updateStopPlaces= enableStopPlaceUpdate;
+		regtoppImport.updateExternalStopAreaRegistry = enableStopPlaceUpdate;
+		if (enableStopPlaceUpdate) {
+			regtoppImport.stopAreaImportMode = AbstractImportParameters.StopAreaImportMode.CREATE_NEW;
+		}
 		
 		Parameters parameters = new Parameters();
 		parameters.regtoppImport = regtoppImport;

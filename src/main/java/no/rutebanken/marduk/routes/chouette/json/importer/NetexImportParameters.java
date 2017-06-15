@@ -21,7 +21,10 @@ public class NetexImportParameters extends ChouetteJobParameters {
         netexImport.organisationName = organisationName;
         netexImport.userName = userName;
         netexImport.cleanRepository = cleanRepository ? "1":"0";
-        netexImport.updateStopPlaces = enableStopPlaceUpdate;
+        netexImport.updateExternalStopAreaRegistry = enableStopPlaceUpdate;
+        if (enableStopPlaceUpdate) {
+            netexImport.stopAreaImportMode = AbstractImportParameters.StopAreaImportMode.CREATE_NEW;
+        }
         Parameters parameters = new Parameters();
         parameters.netexImport = netexImport;
         NetexImportParameters netexImportParameters = new NetexImportParameters();

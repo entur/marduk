@@ -2,7 +2,6 @@ package no.rutebanken.marduk.routes.chouette.json;
 
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.chouette.json.importer.GtfsImportParameters;
 import no.rutebanken.marduk.routes.chouette.json.importer.RegtoppImportParameters;
 import org.junit.Test;
@@ -17,16 +16,16 @@ public class ParametersTest {
             "\"testDS\", \"object_id_prefix\": \"tds\", \"max_distance_for_commercial\": \"0\", \"split_id_on_dot\": \"0\", " +
             "\"ignore_last_word\": \"0\", \"ignore_end_chars\": \"0\"," +
             "\"route_type_id_scheme\": \"any\"," +
-            " \"max_distance_for_connection_link\": \"0\", \"test\": false, \"update_stop_places\": false, \"import_stop_places\": false, \"keep_obsolete_lines\": true } } }";
+            " \"max_distance_for_connection_link\": \"0\", \"test\": false, \"update_external_stop_area_registry\": true, \"stop_area_import_mode\": \"CREATE_NEW\", \"keep_obsolete_lines\": true } } }";
 
     final String regtoppReferenceJson =  "{\"parameters\":{\"regtopp-import\":{\"name\":\"test\",\"clean_repository\":\"0\",\"no_save\":\"0\"," +
             "\"user_name\":\"Chouette\",\"organisation_name\":\"Rutebanken\",\"referential_name\":\"testDS\",\"object_id_prefix\":\"tds\"," +
 
-            "\"references_type\":\"\",\"version\":\"R12\",\"coordinate_projection\":\"EPSG:32632\",\"calendar_strategy\":\"ADD\", \"test\": false, \"update_stop_places\": false, \"import_stop_places\": false, \"keep_obsolete_lines\": false, \"batch_parse\": true}}}";
+            "\"references_type\":\"\",\"version\":\"R12\",\"coordinate_projection\":\"EPSG:32632\",\"calendar_strategy\":\"ADD\", \"test\": false, \"update_external_stop_area_registry\": false, \"stop_area_import_mode\": \"READ_ONLY\", \"keep_obsolete_lines\": false, \"batch_parse\": true}}}";
 
     @Test
     public void createGtfsImportParameters() throws Exception {
-        GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette",false,false,false);
+        GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette",false,false,true);
         assertJsonEquals(gtfsReferenceJson, importParameters.toJsonString());
     }
 

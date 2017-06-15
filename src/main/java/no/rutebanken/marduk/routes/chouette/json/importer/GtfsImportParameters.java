@@ -53,7 +53,10 @@ public class GtfsImportParameters extends ChouetteJobParameters {
         gtfsImport.organisationName = organisationName;
         gtfsImport.userName = userName;
         gtfsImport.cleanRepository = cleanRepository ? "1":"0";
-        gtfsImport.updateStopPlaces = enableStopPlaceUpdate;
+        gtfsImport.updateExternalStopAreaRegistry = enableStopPlaceUpdate;
+        if (enableStopPlaceUpdate) {
+            gtfsImport.stopAreaImportMode = AbstractImportParameters.StopAreaImportMode.CREATE_NEW;
+        }
         Parameters parameters = new Parameters();
         parameters.gtfsImport = gtfsImport;
         GtfsImportParameters gtfsImportParameters = new GtfsImportParameters();
