@@ -35,7 +35,7 @@ public class OtpGraphRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     public void testStatusEventReporting() throws Exception {
 
-        replaceEndpoint("otp-graph-build", "direct:updateStatus", "mock:updateStatus");
+        replaceEndpoint("otp-graph-send-started-events", "direct:updateStatus", "mock:updateStatus");
         replaceEndpoint("otp-graph-send-status-for-timetable-jobs", "direct:updateStatus", "mock:updateStatus");
         replaceEndpoint("otp-graph-build-and-send-status", "direct:updateStatus", "mock:updateStatus");
 

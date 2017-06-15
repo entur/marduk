@@ -55,9 +55,9 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("activemq:queue:OtpGraphQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{otp.graph.build.autoStartup:true}}")
                 .transacted()
+                .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
                 .setProperty(PROP_MESSAGES, simple("${body}"))
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.STARTED).newCorrelationId().build()).to("direct:updateStatus")
-                .to("direct:sendStatusStartedForJobs")
+                .to("direct:sendStartedEventsInNewTransaction")
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
                 .bean(graphStatusService, "setBuilding")
                 .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
@@ -72,12 +72,15 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP graph building route.")
                 .routeId("otp-graph-build");
 
-        from("direct:sendStatusStartedForJobs")
+        from("direct:sendStartedEventsInNewTransaction")
                 .transacted("PROPAGATION_REQUIRES_NEW")
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.STARTED).newCorrelationId().build()).to("direct:updateStatus")
                 .setHeader(HEADER_STATUS, constant(JobEvent.State.STARTED))
-                .to("direct:sendStatusForJobs");
+                .to("direct:sendStatusForJobs")
+                .routeId("otp-graph-send-started-events");
 
         from("direct:sendStatusForJobs")
+                .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
                 .split().exchangeProperty(PROP_MESSAGES)
                 .filter(simple("${body.properties[" + CHOUETTE_REFERENTIAL + "]}"))
                 .process(e -> {
