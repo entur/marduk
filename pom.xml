@@ -282,7 +282,11 @@
             <artifactId>organisation</artifactId>
             <version>${rutebanken.helpers.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.rutebanken.helpers</groupId>
+            <artifactId>jms-batch</artifactId>
+            <version>${rutebanken.helpers.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-sql</artifactId>
