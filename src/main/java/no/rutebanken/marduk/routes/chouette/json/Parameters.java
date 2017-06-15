@@ -1,7 +1,6 @@
 package no.rutebanken.marduk.routes.chouette.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.exporter.GtfsExportParameters;
@@ -50,7 +49,7 @@ public class Parameters {
     static String getNetexImportParameters(String importName, Provider provider) {
         ChouetteInfo chouetteInfo = provider.chouetteInfo;
         NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.name,
-                chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation, chouetteInfo.enableStopPlaceUpdate, chouetteInfo.xmlns, chouetteInfo.xmlnsurl);
+                chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation, chouetteInfo.enableStopPlaceUpdate);
         return netexImportParameters.toJsonString();
     }
 
@@ -74,8 +73,7 @@ public class Parameters {
         try {
             ChouetteInfo chouetteInfo = provider.chouetteInfo;
             String projectionType = null;
-            String validCodespaces = Joiner.on(",").join(chouetteInfo.xmlns, chouetteInfo.xmlnsurl);
-            NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport("for journey planning", chouetteInfo.referential, chouetteInfo.organisation, validCodespaces, chouetteInfo.user, projectionType, exportStops);
+            NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport("for journey planning", chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, projectionType, exportStops);
             NetexExportParameters.Parameters parameters = new NetexExportParameters.Parameters(netexExport);
             NetexExportParameters exportParameters = new NetexExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
