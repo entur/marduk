@@ -3,10 +3,8 @@ package no.rutebanken.marduk.routes.otp;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.GtfsFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import no.rutebanken.marduk.services.GraphStatusService;
 import org.apache.activemq.command.ActiveMQMessage;
 import org.apache.camel.LoggingLevel;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -42,9 +40,6 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${gtfs.norway.merged.file.name:rb_norway-aggregated-gtfs.zip}")
     private String gtfsNorwayMergedFileName;
 
-    @Autowired
-    GraphStatusService graphStatusService;
-
     private static final String PROP_MESSAGES = "RutebankenPropMessages";
 
     private static final String HEADER_STATUS = "RutebankenGraphBuildStatus";
@@ -59,7 +54,6 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(PROP_MESSAGES, simple("${body}"))
                 .to("direct:sendStartedEventsInNewTransaction")
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
-                .bean(graphStatusService, "setBuilding")
                 .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:fetchConfig")
@@ -68,7 +62,6 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:mergeGtfs")
                 .to("direct:transformToOTPIds")
                 .to("direct:buildGraphAndSendStatus")
-                .bean(graphStatusService, "setIdle")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP graph building route.")
                 .routeId("otp-graph-build");
 

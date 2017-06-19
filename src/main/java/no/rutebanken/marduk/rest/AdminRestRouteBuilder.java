@@ -11,7 +11,7 @@ import no.rutebanken.marduk.routes.chouette.json.Status;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.security.AuthorizationClaim;
 import no.rutebanken.marduk.security.AuthorizationService;
-import no.rutebanken.marduk.services.GraphStatusResponse;
+
 import org.apache.camel.Body;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -423,20 +423,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple(""))
                 .inOnly("activemq:queue:OtpGraphQueue")
                 .routeId("admin-build-graph")
-                .endRest()
-                .get("/status")
-                .description("Query status of OTP graph building")
-                .consumes(PLAIN)
-                .produces(JSON)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).endResponseMessage()
-                .outType(GraphStatusResponse.class)
-                .route()
-                .log(LoggingLevel.DEBUG, "OTP get graph status")
-                .removeHeaders("CamelHttp*")
-                .setBody(simple(null))
-                .bean("graphStatusService", "getStatus")
-                .routeId("admin-build-graph-status")
                 .endRest();
 
         rest("/services/fetch")
@@ -570,21 +556,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 
         rest("geocoder/pelias")
-                .get("/status")
-                .description("Query status of Pelias index build")
-                .consumes(PLAIN)
-                .produces(JSON)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).endResponseMessage()
-                .outType(GraphStatusResponse.class)
-                .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .log(LoggingLevel.DEBUG, "Pelias update get status")
-                .removeHeaders("CamelHttp*")
-                .setBody(simple(null))
-                .bean("peliasUpdateStatusService", "getStatus")
-                .routeId("admin-pelias-update-status")
-                .endRest()
                 .post("/update")
                 .description("Trigger update of Pelias")
                 .responseMessage().code(200).endResponseMessage()
