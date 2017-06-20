@@ -10,16 +10,11 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
-import org.apache.camel.test.spring.CamelSpringRunner;
-import org.apache.camel.test.spring.UseAdviceWith;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,6 +37,10 @@ public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderI
 	@EndpointInject(uri = "mock:es-scratch")
 	protected MockEndpoint esScratchMock;
 
+	@EndpointInject(uri = "mock:es-scratch-admin-index")
+	protected MockEndpoint esScratchAdminIndexMock;
+
+
 	@Produce(uri = "direct:insertElasticsearchIndexData")
 	protected ProducerTemplate insertESDataTemplate;
 	@Autowired
@@ -52,6 +51,21 @@ public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderI
 	public void testInsertElasticsearchIndexDataSuccess() throws Exception {
 
 		// Stub for elastic search scratch instance
+		context.getRouteDefinition("pelias-delete-index-if-exists").adviceWith(context, new AdviceWithRouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				interceptSendToEndpoint(elasticsearchScratchUrl + "/pelias")
+						.skipSendToOriginalEndpoint().to("mock:es-scratch-admin-index");
+			}
+		});
+		context.getRouteDefinition("pelias-create-index").adviceWith(context, new AdviceWithRouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				interceptSendToEndpoint(elasticsearchScratchUrl + "/pelias")
+						.skipSendToOriginalEndpoint().to("mock:es-scratch-admin-index");
+			}
+		});
+
 		context.getRouteDefinition("pelias-invoke-bulk-command").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
@@ -70,15 +84,16 @@ public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderI
 				new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/netex/tiamat-export.xml")), false);
 
 
-
+		esScratchAdminIndexMock.expectedMessageCount(2);
 		esScratchMock.expectedMessageCount(4);
-
 		context.start();
 
 		Exchange e = insertESDataTemplate.request("direct:insertElasticsearchIndexData", ex -> {
 		});
 
 		Assert.assertEquals(GeoCoderConstants.PELIAS_ES_SCRATCH_STOP, e.getProperty(GeoCoderConstants.GEOCODER_NEXT_TASK));
+		esScratchAdminIndexMock.assertIsSatisfied();
 		esScratchMock.assertIsSatisfied();
+
 	}
 }
