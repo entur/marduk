@@ -2,12 +2,13 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 
 import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
+import no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex.boost.StopPlaceBoostConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.rutebanken.netex.model.Common_VersionFrameStructure;
 import org.rutebanken.netex.model.Place_VersionStructure;
 import org.rutebanken.netex.model.PublicationDeliveryStructure;
 import org.rutebanken.netex.model.Site_VersionFrameStructure;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.xml.bind.JAXBContext;
@@ -25,8 +26,13 @@ import static javax.xml.bind.JAXBContext.newInstance;
 @Service
 public class DeliveryPublicationStreamToElasticsearchCommands {
 
-    @Value("${pelias.stop.place.default.popularity:1000}")
-    private long defaultPopularity;
+
+    private StopPlaceBoostConfiguration stopPlaceBoostConfiguration;
+
+    @Autowired
+    public DeliveryPublicationStreamToElasticsearchCommands(StopPlaceBoostConfiguration stopPlaceBoostConfiguration) {
+        this.stopPlaceBoostConfiguration = stopPlaceBoostConfiguration;
+    }
 
     public Collection<ElasticsearchCommand> transform(InputStream publicationDeliveryStream) {
         try {
@@ -47,7 +53,7 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
                 Site_VersionFrameStructure siteFrame = (Site_VersionFrameStructure) frameStructure;
 
                 if (siteFrame.getStopPlaces() != null) {
-                    commands.addAll(addCommands(siteFrame.getStopPlaces().getStopPlace(), new StopPlaceToPeliasMapper(deliveryStructure.getParticipantRef(), defaultPopularity)));
+                    commands.addAll(addCommands(siteFrame.getStopPlaces().getStopPlace(), new StopPlaceToPeliasMapper(deliveryStructure.getParticipantRef(), stopPlaceBoostConfiguration)));
                 }
                 if (siteFrame.getTopographicPlaces() != null) {
                     commands.addAll(addCommands(siteFrame.getTopographicPlaces().getTopographicPlace(), new TopographicPlaceToPeliasMapper(deliveryStructure.getParticipantRef())));
