@@ -34,7 +34,7 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
         // Use descriptor.name if name is not set
         if (document.getDefaultName() == null && place.getDescriptor() != null) {
             MultilingualString descriptorName = place.getDescriptor().getName();
-            document.setDefaultName(descriptorName.getValue());
+            document.setDefaultNameAndPhrase(descriptorName.getValue());
             if (descriptorName.getLang() != null) {
                 document.addName(descriptorName.getLang(), descriptorName.getValue());
             }

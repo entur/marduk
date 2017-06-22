@@ -35,7 +35,7 @@ public class ElasticsearchBulkCommandWriterTest {
 	private PeliasDocument doc(String name) {
 		PeliasDocument peliasDocument = new PeliasDocument("layer","sourceId");
 		peliasDocument.setAlpha3("nor");
-		peliasDocument.setDefaultName(name);
+		peliasDocument.setDefaultNameAndPhrase(name);
 		peliasDocument.setCenterPoint(new GeoPoint(51.7651177, -0.2336668));
 
 		peliasDocument.setParent(Parent.builder().withBorough("bor").withCountryId("NOR").build());

@@ -29,7 +29,7 @@ public class AddressToPeliasMapper {
 		document.setCenterPoint(toCenterPoint(address));
 		document.setParent(toParent(address));
 
-		document.setDefaultName(toName(address));
+		document.setDefaultNameAndPhrase(toName(address));
 		document.setAlpha3("NOR");
 		document.setCategory(Arrays.asList(address.getType()));
 		return document;

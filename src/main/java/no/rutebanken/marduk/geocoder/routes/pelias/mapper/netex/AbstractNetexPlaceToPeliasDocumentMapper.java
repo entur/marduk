@@ -33,7 +33,7 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
 
         MultilingualString name = place.getName();
         if (name != null) {
-            document.setDefaultName(name.getValue());
+            document.setDefaultNameAndPhrase(name.getValue());
             if (name.getLang() != null) {
                 document.addName(name.getLang(), name.getValue());
             }

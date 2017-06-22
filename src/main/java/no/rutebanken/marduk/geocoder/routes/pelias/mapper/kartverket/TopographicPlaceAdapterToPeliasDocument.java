@@ -34,7 +34,7 @@ public abstract class TopographicPlaceAdapterToPeliasDocument {
         }
         PeliasDocument document = new PeliasDocument(getLayer(), feature.getId());
 
-        document.setDefaultName(feature.getName());
+        document.setDefaultNameAndPhrase(feature.getName());
         document.setCenterPoint(mapCenterPoint());
         document.setShape(mapShape());
 

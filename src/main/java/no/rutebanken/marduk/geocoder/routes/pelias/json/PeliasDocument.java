@@ -110,10 +110,12 @@ public class PeliasDocument {
         this.nameMap = nameMap;
     }
 
-    public void setDefaultName(String name) {
+    public void setDefaultNameAndPhrase(String name) {
         addName("default", name);
+        addPhrase("default", name);
     }
 
+    @JsonIgnore
     public String getDefaultName() {
         if (nameMap != null) {
             return nameMap.get("default");
@@ -128,10 +130,8 @@ public class PeliasDocument {
         nameMap.put(language, name);
     }
 
-    public void setDefaultPhrase(String phrase) {
-        addPhrase("default", phrase);
-    }
 
+    @JsonIgnore
     public String getDefaultPhrase() {
         if (phraseMap != null) {
             return phraseMap.get("default");
