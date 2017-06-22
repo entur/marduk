@@ -51,7 +51,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 				.log(LoggingLevel.INFO, "Start Tiamat export")
 				.setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
 				.setBody(constant(null))
-				.to(tiamatUrl + tiamatPublicationDeliveryPath + "/async")
+				.to(tiamatUrl + tiamatPublicationDeliveryPath + "/async?allVersions=true")
 				.convertBodyTo(ExportJob.class)
 				.setHeader(Constants.JOB_ID, simple("${body.id}"))
 				.setHeader(Constants.JOB_STATUS_URL, simple(tiamatPublicationDeliveryPath + "/${body.jobUrl}"))
