@@ -21,59 +21,64 @@ import java.util.Iterator;
 @Scope("prototype")
 public class GcsBlobStoreRepository implements BlobStoreRepository {
 
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private Storage storage;
+    private Storage storage;
 
-	private String containerName;
+    private String containerName;
 
-	@Override
-	public void setStorage(Storage storage) {
-		this.storage = storage;
-	}
+    @Override
+    public void setStorage(Storage storage) {
+        this.storage = storage;
+    }
 
-	@Override
-	public void setContainerName(String containerName) {
-		this.containerName = containerName;
-	}
+    @Override
+    public void setContainerName(String containerName) {
+        this.containerName = containerName;
+    }
 
-	@Override
-	public BlobStoreFiles listBlobs(String prefix) {
-		Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage, containerName, prefix);
-		BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
-		while (blobIterator.hasNext()) {
-			Blob blob = blobIterator.next();
-			blobStoreFiles.add(new BlobStoreFiles.File(blob.getName(), new Date(blob.getUpdateTime()), blob.getSize()));
-		}
-		return blobStoreFiles;
-	}
+    @Override
+    public BlobStoreFiles listBlobs(String prefix) {
+        Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage, containerName, prefix);
+        BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
+        while (blobIterator.hasNext()) {
+            Blob blob = blobIterator.next();
+            blobStoreFiles.add(new BlobStoreFiles.File(blob.getName(), new Date(blob.getUpdateTime()), blob.getSize()));
+        }
+        return blobStoreFiles;
+    }
 
-	@Override
-	public BlobStoreFiles listBlobsFlat(String prefix) {
-		Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage, containerName, prefix);
-		BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
-		while (blobIterator.hasNext()) {
-			Blob blob = blobIterator.next();
-			String fileName = blob.getName().replace(prefix, "");
-			if (!StringUtils.isEmpty(fileName)) {
-				blobStoreFiles.add(new BlobStoreFiles.File(fileName, new Date(blob.getUpdateTime()), blob.getSize()));
-			}
-		}
-		return blobStoreFiles;
-	}
+    @Override
+    public BlobStoreFiles listBlobsFlat(String prefix) {
+        Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage, containerName, prefix);
+        BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
+        while (blobIterator.hasNext()) {
+            Blob blob = blobIterator.next();
+            String fileName = blob.getName().replace(prefix, "");
+            if (!StringUtils.isEmpty(fileName)) {
+                blobStoreFiles.add(new BlobStoreFiles.File(fileName, new Date(blob.getUpdateTime()), blob.getSize()));
+            }
+        }
+        return blobStoreFiles;
+    }
 
-	@Override
-	public InputStream getBlob(String name) {
-		return BlobStoreHelper.getBlob(storage, containerName, name);
-	}
+    @Override
+    public InputStream getBlob(String name) {
+        return BlobStoreHelper.getBlob(storage, containerName, name);
+    }
 
-	@Override
-	public void uploadBlob(String name, InputStream inputStream, boolean makePublic) {
-		BlobStoreHelper.uploadBlob(storage, containerName, name, inputStream, makePublic);
-	}
+    @Override
+    public void uploadBlob(String name, InputStream inputStream, boolean makePublic) {
+        BlobStoreHelper.uploadBlob(storage, containerName, name, inputStream, makePublic);
+    }
 
-	@Override
-	public boolean delete(String objectName) {
-		return BlobStoreHelper.delete(storage, BlobId.of(containerName, objectName));
-	}
+    @Override
+    public boolean delete(String objectName) {
+        return BlobStoreHelper.delete(storage, BlobId.of(containerName, objectName));
+    }
+
+    @Override
+    public boolean deleteAllFilesInFolder(String folder) {
+        return BlobStoreHelper.deleteBlobsByPrefix(storage, containerName, folder);
+    }
 }

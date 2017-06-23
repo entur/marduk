@@ -22,65 +22,70 @@ import java.util.stream.Collectors;
 @Profile("in-memory-blobstore")
 public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private Map<String, byte[]> blobs = new HashMap<>();
+    private Map<String, byte[]> blobs = new HashMap<>();
 
-	@Override
-	public BlobStoreFiles listBlobs(String prefix) {
-		logger.debug("list blobs called in in-memory blob store");
-		List<BlobStoreFiles.File> files = blobs.keySet().stream()
-				                                  .filter(k -> k.startsWith(prefix))
-				                                  .map(k -> new BlobStoreFiles.File(k, new Date(), 1234L))    //TODO Add real details?
-				                                  .collect(Collectors.toList());
-		BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
-		blobStoreFiles.add(files);
-		return blobStoreFiles;
-	}
+    @Override
+    public BlobStoreFiles listBlobs(String prefix) {
+        logger.debug("list blobs called in in-memory blob store");
+        List<BlobStoreFiles.File> files = blobs.keySet().stream()
+                                                  .filter(k -> k.startsWith(prefix))
+                                                  .map(k -> new BlobStoreFiles.File(k, new Date(), 1234L))    //TODO Add real details?
+                                                  .collect(Collectors.toList());
+        BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
+        blobStoreFiles.add(files);
+        return blobStoreFiles;
+    }
 
-	@Override
-	public BlobStoreFiles listBlobsFlat(String prefix) {
-		List<BlobStoreFiles.File> files = listBlobs(prefix).getFiles();
-		List<BlobStoreFiles.File> result = files.stream().map(k -> new BlobStoreFiles.File(k.getName().replaceFirst(prefix + "/", ""), new Date(), 1234L)).collect(Collectors.toList());
-		BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
-		blobStoreFiles.add(result);
-		return blobStoreFiles;
-	}
+    @Override
+    public BlobStoreFiles listBlobsFlat(String prefix) {
+        List<BlobStoreFiles.File> files = listBlobs(prefix).getFiles();
+        List<BlobStoreFiles.File> result = files.stream().map(k -> new BlobStoreFiles.File(k.getName().replaceFirst(prefix + "/", ""), new Date(), 1234L)).collect(Collectors.toList());
+        BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
+        blobStoreFiles.add(result);
+        return blobStoreFiles;
+    }
 
-	@Override
-	public InputStream getBlob(String objectName) {
-		logger.debug("get blob called in in-memory blob store");
-		byte[] data = blobs.get(objectName);
-		return (data == null) ? null : new ByteArrayInputStream(data);
-	}
+    @Override
+    public InputStream getBlob(String objectName) {
+        logger.debug("get blob called in in-memory blob store");
+        byte[] data = blobs.get(objectName);
+        return (data == null) ? null : new ByteArrayInputStream(data);
+    }
 
-	@Override
-	public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
-		try {
-			logger.debug("upload blob called in in-memory blob store");
-			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-			IOUtils.copy(inputStream, byteArrayOutputStream);
-			byte[] data = byteArrayOutputStream.toByteArray();
-			blobs.put(objectName, data);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+    @Override
+    public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
+        try {
+            logger.debug("upload blob called in in-memory blob store");
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            IOUtils.copy(inputStream, byteArrayOutputStream);
+            byte[] data = byteArrayOutputStream.toByteArray();
+            blobs.put(objectName, data);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	@Override
-	public boolean delete(String objectName) {
-		blobs.remove(objectName);
-		return true;
-	}
+    @Override
+    public boolean delete(String objectName) {
+        blobs.remove(objectName);
+        return true;
+    }
 
-	@Override
-	public void setStorage(Storage storage) {
+    @Override
+    public void setStorage(Storage storage) {
 
-	}
+    }
 
-	@Override
-	public void setContainerName(String containerName) {
+    @Override
+    public void setContainerName(String containerName) {
 
-	}
+    }
 
+    @Override
+    public boolean deleteAllFilesInFolder(String folder) {
+        listBlobs(folder).getFiles().forEach(file -> delete(file.getName()));
+        return true;
+    }
 }

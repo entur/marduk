@@ -21,4 +21,6 @@ public interface BlobStoreRepository {
 
     boolean delete(String objectName);
 
+    boolean deleteAllFilesInFolder(String folder);
+
 }

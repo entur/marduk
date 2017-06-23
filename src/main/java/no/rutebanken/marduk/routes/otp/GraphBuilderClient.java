@@ -8,10 +8,11 @@ import java.io.File;
 public class GraphBuilderClient {
 
     public void buildGraph(File directory) {
-        if (directory == null || !directory.exists() || !directory.isDirectory()){
+        if (directory == null || !directory.exists() || !directory.isDirectory()) {
             throw new IllegalArgumentException(directory + " is not a directory.");
         }
         CommandLineParameters commandLineParameters = new CommandLineParameters();
+        commandLineParameters.build = directory;
         GraphBuilder graphBuilder = GraphBuilder.forDirectory(commandLineParameters, directory);
         graphBuilder.run();
     }

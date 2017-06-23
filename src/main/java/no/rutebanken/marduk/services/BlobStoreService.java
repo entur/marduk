@@ -65,6 +65,11 @@ public class BlobStoreService {
 		return repository.delete(name);
 	}
 
+	public boolean deleteAllBlobsInFolder(String folder, Exchange exchange) {
+		ExchangeUtils.addHeadersAndAttachments(exchange);
+		return repository.deleteAllFilesInFolder(folder);
+	}
+
 	public void uploadBlob(String name, boolean makePublic, InputStream inputStream) {
 		repository.uploadBlob(name, inputStream, makePublic);
 	}
