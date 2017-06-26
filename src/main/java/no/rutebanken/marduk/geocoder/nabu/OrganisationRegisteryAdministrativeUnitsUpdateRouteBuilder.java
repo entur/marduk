@@ -92,7 +92,7 @@ public class OrganisationRegisteryAdministrativeUnitsUpdateRouteBuilder extends 
                 .split().exchange(e ->
                                           new SosiTopographicPlaceAdapterReader(new File(localWorkingDirectory + "/" + adminUnitsFileName)).read().stream().map(tpa -> toAdministrativeZone(tpa)).collect(Collectors.toList())
         )
-                .setHeader("privateCode",simple("${body.privateCode}"))
+                .setHeader("privateCode", simple("${body.privateCode}"))
                 .marshal().json(JsonLibrary.Jackson)
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
                 .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_JSON))
@@ -102,11 +102,11 @@ public class OrganisationRegisteryAdministrativeUnitsUpdateRouteBuilder extends 
                 .toD(getOrganisationRegistryUrl() + "administrative_zones")
 
                 .doCatch(HttpOperationFailedException.class).onWhen(exchange -> {
-                    HttpOperationFailedException ex = exchange.getException(HttpOperationFailedException.class);
-                    return (ex.getStatusCode() == HttpStatus.CONFLICT.value());
-                })  // Update if zone already exists
-                    .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.PUT))
-                    .toD(getOrganisationRegistryUrl() + "administrative_zones/" + adminZoneCodeSpaceXmlns + ":AdministrativeZone:${header.privateCode}")
+            HttpOperationFailedException ex = exchange.getException(HttpOperationFailedException.class);
+            return (ex.getStatusCode() == HttpStatus.CONFLICT.value());
+        })  // Update if zone already exists
+                .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.PUT))
+                .toD(getOrganisationRegistryUrl() + "administrative_zones/" + adminZoneCodeSpaceXmlns + ":AdministrativeZone:${header.privateCode}")
                 .end()
 
                 .routeId("organisation-registry-map-to-admin-zones");
@@ -120,7 +120,21 @@ public class OrganisationRegisteryAdministrativeUnitsUpdateRouteBuilder extends 
 
     private AdministrativeZone toAdministrativeZone(TopographicPlaceAdapter topographicPlaceAdapter) {
         Polygon geoJsonPolygon = (Polygon) geoJSONWriter.write(topographicPlaceAdapter.getDefaultGeometry());
-        AdministrativeZone administrativeZone = new AdministrativeZone(adminZoneCodeSpaceId, topographicPlaceAdapter.getId(), topographicPlaceAdapter.getName(), geoJsonPolygon);
+        AdministrativeZone administrativeZone = new AdministrativeZone(adminZoneCodeSpaceId, topographicPlaceAdapter.getId(), topographicPlaceAdapter.getName(), geoJsonPolygon, toType(topographicPlaceAdapter.getType()));
         return administrativeZone;
+    }
+
+
+    private AdministrativeZone.AdministrativeZoneType toType(TopographicPlaceAdapter.Type type) {
+        switch (type) {
+            case COUNTRY:
+                return AdministrativeZone.AdministrativeZoneType.COUNTRY;
+            case COUNTY:
+                return AdministrativeZone.AdministrativeZoneType.COUNTY;
+            case LOCALITY:
+                return AdministrativeZone.AdministrativeZoneType.LOCALITY;
+        }
+
+        return AdministrativeZone.AdministrativeZoneType.CUSTOM;
     }
 }
