@@ -19,14 +19,14 @@ public class OtpReportBlobStoreService {
     private BlobStoreRepository repository;
 
     @Autowired
-    private Storage exchangeStorage;
+    private Storage otpReportStorage;
 
     @Value("${blobstore.gcs.otpreport.container.name}")
     private String containerName;
 
     @PostConstruct
     public void init() {
-        repository.setStorage(exchangeStorage);
+        repository.setStorage(otpReportStorage);
         repository.setContainerName(containerName);
     }
 
