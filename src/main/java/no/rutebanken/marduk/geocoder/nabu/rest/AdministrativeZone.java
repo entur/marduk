@@ -6,6 +6,8 @@ import org.wololo.geojson.Polygon;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AdministrativeZone {
 
+    public enum AdministrativeZoneType {COUNTRY, COUNTY, LOCALITY, CUSTOM}
+
     public String codeSpace;
 
     public String privateCode;
@@ -14,11 +16,14 @@ public class AdministrativeZone {
 
     public Polygon polygon;
 
-    public AdministrativeZone(String codeSpace, String privateCode, String name, Polygon polygon) {
+    public AdministrativeZoneType type;
+
+    public AdministrativeZone(String codeSpace, String privateCode, String name, Polygon polygon, AdministrativeZoneType type) {
         this.codeSpace = codeSpace;
         this.privateCode = privateCode;
         this.name = name;
         this.polygon = polygon;
+        this.type = type;
     }
 
     public String getCodeSpace() {
@@ -35,5 +40,9 @@ public class AdministrativeZone {
 
     public Polygon getPolygon() {
         return polygon;
+    }
+
+    public AdministrativeZoneType getType() {
+        return type;
     }
 }
