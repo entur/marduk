@@ -73,6 +73,11 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
+    public void uploadBlob(String name, InputStream inputStream, boolean makePublic, String contentType) {
+        BlobStoreHelper.uploadBlob(storage, containerName, name, inputStream, makePublic, contentType);
+    }
+
+    @Override
     public boolean delete(String objectName) {
         return BlobStoreHelper.delete(storage, BlobId.of(containerName, objectName));
     }

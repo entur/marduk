@@ -1,18 +1,20 @@
 package no.rutebanken.marduk.routes.otp;
 
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.Utils;
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.services.BlobStoreService;
+import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.Date;
@@ -39,8 +41,14 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.blobstore.public.report.folder:report}")
     private String blobStorePublicReportFolder;
 
+    @Value("${blobstore.gcs.otpreport.container.name}")
+    String otpReportContainerName;
+
     @Autowired
-    private BlobStoreService blobStoreService;
+    private OtpReportBlobStoreService otpReportBlobStoreService;
+
+
+    private static final String GRAPH_VERSION = "RutebankenGraphVersion";
 
     @Override
     public void configure() throws Exception {
@@ -50,14 +58,16 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Starting graph publishing.")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .convertBodyTo(InputStream.class)
-                .process(
-                        e -> e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"))
+                .process(e -> {
+                            e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"));
+                            e.setProperty(GRAPH_VERSION, Utils.getOtpVersion() + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-").replace(GRAPH_OBJ, blobStorePublicReportFolder));
+                        }
                 )
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, correlation() + "Done uploading new OTP graph.")
                 .to("direct:uploadVersionedGraphBuildReport")
-                .to("direct:uploadPublicGraphBuildReport")
+                .to("direct:updateCurrentGraphReportVersion")
                 .log(LoggingLevel.INFO, correlation() + "Done uploading OTP graph build reports.")
                 .setProperty(Exchange.FILE_PARENT, header(Exchange.FILE_PARENT))
                 .to("direct:notify")
@@ -69,24 +79,16 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .split().exchange(e -> listReportFiles(e))
                 .process(e ->
                         {
-                            String folderName = e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-").replace(GRAPH_OBJ, blobStorePublicReportFolder) + "/";
                             String fileName = e.getIn().getBody(File.class).getName();
-                            e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + folderName + fileName);
+                            otpReportBlobStoreService.uploadBlob(e.getProperty(GRAPH_VERSION) + "/" + fileName, e.getIn().getBody(InputStream.class), true);
                         }
                 )
-                .convertBodyTo(InputStream.class)
-                .to("direct:uploadBlob")
                 .routeId("otp-graph-build-report-versioned-upload");
 
-        from("direct:uploadPublicGraphBuildReport")
-                .process(e -> blobStoreService.deleteAllBlobsInFolder(blobStoreSubdirectory + "/" + blobStorePublicReportFolder, e))
-                .split().exchange(e -> listReportFiles(e))
+        from("direct:updateCurrentGraphReportVersion")
                 .process(e ->
-                                 e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + blobStorePublicReportFolder + "/" + e.getIn().getBody(File.class).getName().toString()))
-                .convertBodyTo(InputStream.class)
-                .setHeader(Constants.BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
-                .to("direct:uploadBlob")
-                .routeId("otp-graph-build-report-public-upload");
+                                 otpReportBlobStoreService.uploadBlob("index.html", createRedirectPage(e.getProperty(GRAPH_VERSION, String.class)), true))
+                .routeId("otp-graph-report-update-current");
 
         from("direct:notify")
                 .setProperty("notificationUrl", constant(otpGraphDeploymentNotificationUrl))
@@ -137,5 +139,20 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
     private Collection<File> listReportFiles(Exchange e) {
         String directory = e.getIn().getHeader(FILE_PARENT, String.class) + "/report";
         return FileUtils.listFiles(new File(directory), null, true);
+    }
+
+    private InputStream createRedirectPage(String version) {
+        try {
+            String url = "http://" + otpReportContainerName + "/" + version + "/index.html";
+            String html = "<html>\n" +
+                                  "<head>\n" +
+                                  "    <meta http-equiv=\"refresh\" content=\"0; url=" + url + "\" />\n" +
+                                  "</head>\n" +
+                                  "</html>";
+
+            return IOUtils.toInputStream(html, "UTF-8");
+        } catch (IOException ioE) {
+            throw new MardukException("Failed to create input stream for redirect page: " + ioE.getMessage(), ioE);
+        }
     }
 }

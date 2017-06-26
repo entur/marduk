@@ -17,6 +17,9 @@ public class GcsStorageConfig {
     @Value("${blobstore.gcs.exchange.credential.path}")
     private String exchangeCredentialPath;
 
+    @Value("${blobstore.gcs.otpreport.credential.path}")
+    private String otpCredentialPath;
+
     @Value("${blobstore.gcs.project.id}")
     private String projectId;
 
@@ -28,6 +31,11 @@ public class GcsStorageConfig {
     @Bean
     public Storage exchangeStorage() {
         return BlobStoreHelper.getStorage(exchangeCredentialPath, projectId);
+    }
+
+    @Bean
+    public Storage otpReportStorage() {
+        return BlobStoreHelper.getStorage(otpCredentialPath, projectId);
     }
 
 }
