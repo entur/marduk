@@ -65,7 +65,7 @@ public class TiamatPublishExportsRouteBuilder extends BaseRouteBuilder {
                 .otherwise()
                 .setBody(constant(new TiamatExportTasks(exportTasks).toString()))
                 .log(LoggingLevel.INFO, "Starting Tiamat exports: ${body}")
-                .to("activemq:queue:TiamatExportQueue")
+                .inOnly("activemq:queue:TiamatExportQueue")
                 .end()
                 .routeId("tiamat-publish-export-start-full");
 
