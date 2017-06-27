@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.geocoder.GeoCoderConstants;
-import no.rutebanken.marduk.geocoder.routes.tiamat.xml.JobStatus;
 import no.rutebanken.marduk.geocoder.routes.util.AbortRouteException;
 import no.rutebanken.marduk.geocoder.routes.util.MarkContentChangedAggregationStrategy;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -36,8 +35,8 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
     @Value("${elasticsearch.scratch.url:http4://es-scratch:9200}")
     private String elasticsearchScratchUrl;
 
-    @Value("${tiamat.export.blobstore.subdirectory:tiamat}")
-    private String blobStoreSubdirectoryForTiamatExport;
+    @Value("${tiamat.export.blobstore.subdirectory:tiamat/geocoder}")
+    private String blobStoreSubdirectoryForTiamatGeoCoderExport;
 
     @Value("${kartverket.blobstore.subdirectory:kartverket}")
     private String blobStoreSubdirectoryForKartverket;
@@ -128,7 +127,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
 
         from("direct:insertTiamatData")
                 .log(LoggingLevel.DEBUG, "Start inserting Tiamat data to ES")
-                .setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForTiamatExport))
+                .setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForTiamatGeoCoderExport))
                 .setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/tiamat"))
                 .setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromTiamat"))
                 .setHeader(FILE_EXTENSION, constant("xml"))

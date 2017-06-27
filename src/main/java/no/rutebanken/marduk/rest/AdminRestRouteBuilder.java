@@ -475,6 +475,22 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .endRest();
 
 
+        rest("/services/tiamat/export")
+                .post("/full")
+                .description("Trigger full export from Tiamat for all configurations")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Command accepted").endResponseMessage()
+                .route()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .removeHeaders("CamelHttp*")
+                .to("direct:startFullTiamatPublishExport")
+                .setBody(simple("done"))
+                .routeId("admin-tiamat-publish-export-full")
+                .endRest();
+
+
+
         rest("geocoder/administrativeUnits")
                 .post("/download")
                 .description("Trigger download of administrative units from Norwegian mapping authority")

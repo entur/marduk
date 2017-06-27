@@ -28,8 +28,8 @@ public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderI
 	@Value("${elasticsearch.scratch.url:http4://es-scratch:9200}")
 	private String elasticsearchScratchUrl;
 
-	@Value("${tiamat.export.blobstore.subdirectory:tiamat}")
-	private String blobStoreSubdirectoryForTiamatExport;
+	@Value("${tiamat.export.blobstore.subdirectory:tiamat/geocoder}")
+	private String blobStoreSubdirectoryForTiamatGeoCoderExport;
 
 	@Value("${kartverket.blobstore.subdirectory:kartverket}")
 	private String blobStoreSubdirectoryForKartverket;
@@ -80,7 +80,7 @@ public class PeliasUpdateESIndexRouteIntegrationTest extends MardukRouteBuilderI
 				new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson")), false);
 		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForKartverket + "/addresses/addresses.csv",
 				new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/csv/addresses.csv")), false);
-		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForTiamatExport + "/tiamat/tiamat-export-latest.xml",
+		inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForTiamatGeoCoderExport + "/tiamat/tiamat-export-latest.xml",
 				new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/netex/tiamat-export.xml")), false);
 
 

@@ -46,13 +46,7 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
     @Produce(uri = "direct:checkTiamatJobStatus")
     protected ProducerTemplate checkTiamatJobStatusTemplate;
 
-    @Value("${tiamat.max.retries:3000}")
-    private int maxRetries;
-
-    @Value("${tiamat.retry.delay:15000}")
-    private long retryDelay;
-
-    private static String JOB_STATUS_URL = "job/status/url";
+    private static String JOB_STATUS_URL = "/job/status/url";
 
     @Before
     public void setUp() {
@@ -63,7 +57,7 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
             context.getRouteDefinition("tiamat-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
                 @Override
                 public void configure() throws Exception {
-                    interceptSendToEndpoint(tiamatUrl + "/" + JOB_STATUS_URL)
+                    interceptSendToEndpoint(tiamatUrl + JOB_STATUS_URL)
                             .skipSendToOriginalEndpoint().to("mock:tiamat");
                 }
             });

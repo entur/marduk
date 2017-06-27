@@ -36,7 +36,7 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .doTry()
-                .toD(tiamatUrl + "/${header." + Constants.JOB_STATUS_URL + "}")
+                .toD(tiamatUrl + "${header." + Constants.JOB_STATUS_URL + "}")
                 .convertBodyTo(ExportJob.class)
                 .setHeader("current_status", simple("${body.status}"))
                 .doCatch(HttpOperationFailedException.class).onWhen(exchange -> {

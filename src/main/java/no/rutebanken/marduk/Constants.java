@@ -49,5 +49,7 @@ public class Constants {
 
     public static final String TIMESTAMP = "RutebankenTimeStamp";
     public static final String LOOP_COUNTER = "RutebankenLoopCounter";
+
+    public static final String QUERY_STRING = "RutebankenQueryString";
 }
 

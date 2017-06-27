@@ -30,7 +30,7 @@ public class GeoCoderConstants {
 			= new GeoCoderTask(GeoCoderTask.Phase.TIAMAT_UPDATE, "direct:tiamatPlacesOfInterestUpdate");
 
 	public static final GeoCoderTask TIAMAT_EXPORT_START
-			= new GeoCoderTask(GeoCoderTask.Phase.TIAMAT_EXPORT, "direct:tiamatExport");
+			= new GeoCoderTask(GeoCoderTask.Phase.TIAMAT_EXPORT, "direct:tiamatGeoCoderExport");
 
 	public static final GeoCoderTask TIAMAT_EXPORT_POLL
 			= new GeoCoderTask(GeoCoderTask.Phase.TIAMAT_EXPORT, 1, "direct:tiamatPollJobStatus");
