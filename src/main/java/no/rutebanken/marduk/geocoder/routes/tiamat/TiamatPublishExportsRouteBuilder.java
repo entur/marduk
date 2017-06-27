@@ -110,6 +110,8 @@ public class TiamatPublishExportsRouteBuilder extends BaseRouteBuilder {
                 .choice()
                 .when(simple("${header." + LOOP_COUNTER + "} <= " + maxRetries))
                 .setHeader(ScheduledMessage.AMQ_SCHEDULED_DELAY, constant(retryDelay))
+                // Remove or ActiveMQ will think message is overdue and resend immediately
+                .removeHeader("scheduledJobId")
                 .otherwise()
                 .log(LoggingLevel.WARN, getClass().getName(), "${exchangeProperty." + EXPORT_TASKS + ".currentTask.name} timed out. Config should probably be tweaked. Not rescheduling.")
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.TIMEOUT).build()).to("direct:updateStatus")
