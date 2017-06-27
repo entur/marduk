@@ -484,6 +484,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .route()
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .removeHeaders("CamelHttp*")
+                .removeHeaders("Authorization")
                 .to("direct:startFullTiamatPublishExport")
                 .setBody(simple("done"))
                 .routeId("admin-tiamat-publish-export-full")
