@@ -70,6 +70,6 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 
     @Override
     protected String correlation() {
-        return "Job [id:${header." + Constants.JOB_ID + "}] ";
+        return "TiamatExport [id:${header." + Constants.JOB_ID + "}] ";
     }
 }
