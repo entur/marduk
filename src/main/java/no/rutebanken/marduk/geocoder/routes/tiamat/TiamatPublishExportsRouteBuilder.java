@@ -123,8 +123,12 @@ public class TiamatPublishExportsRouteBuilder extends BaseRouteBuilder {
                 .routeId("tiamat-publish-export-poll-status");
 
         from("direct:processTiamatPublishExportResults")
+                // Upload versioned file and _latest
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForTiamatExport + "/${exchangeProperty." + EXPORT_TASKS + ".currentTask.name}_${header." + JOB_ID + "}_${date:now:yyyyMMddHHmmss}.zip"))
                 .to("direct:tiamatExportMoveFileToMardukBlobStore")
+                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForTiamatExport + "/${exchangeProperty." + EXPORT_TASKS + ".currentTask.name}_latest.zip"))
+                .to("direct:tiamatExportMoveFileToMardukBlobStore")
+
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .log(LoggingLevel.INFO, "Finished Tiamat publish export: ${exchangeProperty." + EXPORT_TASKS + ".currentTask.name}")
                 .routeId("tiamat-publish-export-results");
