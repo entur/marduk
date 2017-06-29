@@ -33,7 +33,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("direct:tiamatExport")
-                .log(LoggingLevel.INFO, "Start Tiamat export")
+                .log(LoggingLevel.DEBUG, "Start Tiamat export")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .setBody(constant(null))
                 .toD(tiamatUrl + tiamatPublicationDeliveryPath + "/async/${header." + Constants.QUERY_STRING + "}")
