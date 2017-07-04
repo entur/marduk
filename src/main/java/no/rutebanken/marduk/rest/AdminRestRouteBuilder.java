@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
+import java.net.URLDecoder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -257,9 +258,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeRequest")
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .process(e -> e.getIn().setHeader("fileName", URLDecoder.decode(e.getIn().getHeader("fileName", String.class), "utf-8")))
                 .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
                                                                        + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
-                                                                       + "/" + e.getIn().getHeader("fileName")))
+                                                                       + "/" + e.getIn().getHeader("fileName", String.class)))
                 .log(LoggingLevel.INFO, correlation() + "blob store download file by name")
                 .removeHeaders("CamelHttp*")
                 .to("direct:getBlob")
