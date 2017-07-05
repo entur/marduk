@@ -114,12 +114,13 @@ public class OrganisationRegisteryAdministrativeUnitsUpdateRouteBuilder extends 
 
         from("direct:updateNeighbouringCountriesInOrgReg")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Mapping latest neighbouring countries to org reg format ...")
-                .process(e -> e.getIn().setBody(new GeoJsonSingleTopographicPlaceReader(getGeojsonCountryFiles()).read().stream().map(tpa -> toAdministrativeZone(tpa)).collect(Collectors.toList())))
+                .process(e -> e.getIn().setBody(new GeoJsonSingleTopographicPlaceReader(getGeojsonCountryFiles()).read().stream().map(tpa -> toAdministrativeZone(tpa,"WOF")).collect(Collectors.toList())))
                 .to("direct:updateAdministrativeZonesInOrgReg")
                 .routeId("organisation-registry-update-neighbouring-countries");
 
         from("direct:updateAdministrativeUnitsInOrgReg")
-                .process(e -> e.getIn().setBody(new SosiTopographicPlaceAdapterReader(new File(localWorkingDirectory + "/" + adminUnitsFileName)).read().stream().map(tpa -> toAdministrativeZone(tpa)).collect(Collectors.toList())))
+                .process(e -> e.getIn().setBody(new SosiTopographicPlaceAdapterReader(new File(localWorkingDirectory + "/" + adminUnitsFileName)).read().stream().map(tpa -> toAdministrativeZone(tpa, "KVE"))
+                                                        .collect(Collectors.toList())))
                 .to("direct:updateAdministrativeZonesInOrgReg")
                 .routeId("organisation-registry-update-admin-units");
 
@@ -157,7 +158,7 @@ public class OrganisationRegisteryAdministrativeUnitsUpdateRouteBuilder extends 
         return FileUtils.listFiles(new File(localWorkingDirectory), new String[]{"geojson"}, false).stream().toArray(File[]::new);
     }
 
-    private AdministrativeZone toAdministrativeZone(TopographicPlaceAdapter topographicPlaceAdapter) {
+    private AdministrativeZone toAdministrativeZone(TopographicPlaceAdapter topographicPlaceAdapter, String source) {
 
         com.vividsolutions.jts.geom.Geometry geometry = topographicPlaceAdapter.getDefaultGeometry();
 
@@ -168,7 +169,8 @@ public class OrganisationRegisteryAdministrativeUnitsUpdateRouteBuilder extends 
         }
 
         Polygon geoJsonPolygon = (Polygon) geoJSONWriter.write(geometry);
-        AdministrativeZone administrativeZone = new AdministrativeZone(adminZoneCodeSpaceId, topographicPlaceAdapter.getId(), topographicPlaceAdapter.getName(), geoJsonPolygon, toType(topographicPlaceAdapter.getType()));
+        AdministrativeZone administrativeZone = new AdministrativeZone(adminZoneCodeSpaceId, topographicPlaceAdapter.getId(),
+                                                                              topographicPlaceAdapter.getName(), geoJsonPolygon, toType(topographicPlaceAdapter.getType()), source);
         return administrativeZone;
     }
 

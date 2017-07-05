@@ -14,16 +14,19 @@ public class AdministrativeZone {
 
     public String name;
 
+    public String source;
+
     public Polygon polygon;
 
     public AdministrativeZoneType type;
 
-    public AdministrativeZone(String codeSpace, String privateCode, String name, Polygon polygon, AdministrativeZoneType type) {
+    public AdministrativeZone(String codeSpace, String privateCode, String name, Polygon polygon, AdministrativeZoneType type, String source) {
         this.codeSpace = codeSpace;
         this.privateCode = privateCode;
         this.name = name;
         this.polygon = polygon;
         this.type = type;
+        this.source = source;
     }
 
     public String getCodeSpace() {
@@ -44,5 +47,9 @@ public class AdministrativeZone {
 
     public AdministrativeZoneType getType() {
         return type;
+    }
+
+    public String getSource() {
+        return source;
     }
 }
