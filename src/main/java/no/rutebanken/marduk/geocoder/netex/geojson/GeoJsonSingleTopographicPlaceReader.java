@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.geocoder.netex.geojson;
 
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.geocoder.geojson.GeojsonFeatureWrapperFactory;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceMapper;
@@ -13,6 +14,8 @@ import org.rutebanken.netex.model.TopographicPlace;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 /**
@@ -30,6 +33,29 @@ public class GeoJsonSingleTopographicPlaceReader implements TopographicPlaceRead
     public GeoJsonSingleTopographicPlaceReader(File... files) {
         this.files = files;
     }
+
+
+    public List<TopographicPlaceAdapter> read() {
+        List<TopographicPlaceAdapter> adapters = new ArrayList<>();
+        try {
+            for (File file : files) {
+                FeatureJSON fJson = new FeatureJSON();
+                InputStream inputStream = FileUtils.openInputStream(file);
+                SimpleFeature simpleFeature = fJson.readFeature(inputStream);
+
+                TopographicPlaceAdapter adapter = GeojsonFeatureWrapperFactory.createWrapper(simpleFeature);
+                if (adapter != null) {
+                    adapters.add(adapter);
+                }
+                inputStream.close();
+            }
+
+        } catch (IOException ioE) {
+            throw new MardukException("Failed to parse geojson file: " + ioE.getMessage(), ioE);
+        }
+        return adapters;
+    }
+
 
     public void addToQueue(BlockingQueue<TopographicPlace> queue) throws IOException, InterruptedException {
         for (File file : files) {
