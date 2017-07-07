@@ -50,6 +50,9 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
     @Value("#{'${osm.poi.filter:}'.split(',')}")
     private List<String> poiFilter;
 
+    @Value("${tiamat.poi.update.enabled:true}")
+    private boolean routeEnabled;
+
     @Autowired
     private TopographicPlaceConverter topographicPlaceConverter;
 
@@ -65,6 +68,8 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
                 .routeId("tiamat-poi-update-quartz");
 
         from(TIAMAT_PLACES_OF_INTEREST_UPDATE_START.getEndpoint())
+                .choice()
+                .when(constant(routeEnabled))
                 .log(LoggingLevel.INFO, "Start updating POI information in Tiamat")
                 .process(e -> JobEvent.systemJobBuilder(e).startGeocoder(GeoCoderTaskType.TIAMAT_POI_UPDATE).build()).to("direct:updateStatus")
                 .setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
@@ -77,6 +82,9 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "Started job updating POI information in Tiamat")
                 .doFinally()
                 .to("direct:cleanUpLocalDirectory")
+                .endChoice()
+                .otherwise()
+                .log(LoggingLevel.WARN, "Tiamat PlaceOfInterest update route has been DISABLED. Will not update POIs or proceed with geocoder route.")
                 .end()
                 .routeId("tiamat-poi-update");
 
