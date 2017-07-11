@@ -60,7 +60,7 @@ public class FileClassifierPredicates {
     public static boolean validateZipContent(InputStream inputStream, Predicate<InputStream> predicate) {
         try (ZipInputStream stream = new ZipInputStream(inputStream)) {
             ZipEntry entry;
-            while ( ( entry = stream.getNextEntry()) != null) {
+            while ( ( entry = stream.getNextEntry()) != null && !entry.isDirectory()) {
                 if (testPredicate(predicate, stream, entry)) return false;
             }
             return true;
