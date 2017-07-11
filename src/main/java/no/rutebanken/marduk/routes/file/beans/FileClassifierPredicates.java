@@ -87,13 +87,17 @@ public class FileClassifierPredicates {
     }
 
     private static boolean testPredicate(Predicate<InputStream> predicate, ZipInputStream stream, ZipEntry entry) {
-        if (!predicate.test(new CloseIgnoringInputStream(stream))) {
-            String s = String.format("Entry %s with size %d is invalid.",
-                    entry.getName(), entry.getSize(),
-                    new Date(entry.getTime()));
-            logger.info(s);
-            return true;
-        }
+    	try {
+			if (!predicate.test(new CloseIgnoringInputStream(stream))) {
+			    String s = String.format("Entry %s with size %d is invalid.",
+			            entry.getName(), entry.getSize(),
+			            new Date(entry.getTime()));
+			    logger.info(s);
+			    return true;
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("Exception while trying to classify file "+entry.getName()+" in zip file", e);
+		}
         return false;
     }
 }

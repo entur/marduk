@@ -42,6 +42,11 @@ public class FileTypeClassifierBeanTest {
         assertFileType("netex.zip", NETEXPROFILE);
     }
 
+    @Test(expected = RuntimeException.class)
+    public void classifyNetexFileFromRuter() throws Exception {
+        assertFileType("AOR.zip", NETEXPROFILE);
+    }
+
     @Test
     public void classifyNetexWithNeptuneFileNameInside() throws Exception {
         assertFileType("netex_with_neptune_file_name_inside.zip", NETEXPROFILE);

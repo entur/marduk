@@ -40,7 +40,7 @@ public class FileTypeClassifierBean {
 			exchange.getIn().setHeader(FILE_TYPE, fileType.name());
 			return true;
 		} catch (RuntimeException e) {
-			logger.warn("Failed while trying to classify file '" + relativePath + "'.");
+			logger.warn("Exception while trying to classify file '" + relativePath + "'",e);
 			return false;
 		}
 	}
@@ -59,7 +59,7 @@ public class FileTypeClassifierBean {
 			} else if (ZipFileUtils.zipFileContainsSingleFolder(data)) {
 				return ZIP_WITH_SINGLE_FOLDER;
 			}
-			throw new FileValidationException("Could not classify file '" + relativePath + "'.");
+			throw new FileValidationException("Could not classify zip file '" + relativePath + "'.");
 		} else if (relativePath.toUpperCase().endsWith(".RAR")) {
 			return RAR;
 		}
