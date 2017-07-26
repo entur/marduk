@@ -1,5 +1,7 @@
 package no.rutebanken.marduk.routes.chouette.json.exporter;
 
+
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -31,9 +33,6 @@ public class GtfsExportParameters {
         @JsonInclude(JsonInclude.Include.ALWAYS)
         public String referencesType = "";
 
-        @JsonProperty("add_metadata")
-        public boolean addMetadata;
-
         @JsonProperty("time_zone")
         public String timeZone = "Europe/Oslo";
 
@@ -52,6 +51,7 @@ public class GtfsExportParameters {
             this.organisationName = organisationName;
             this.userName = userName;
             this.startDate = DateUtils.startDateFor(2L);
+            this.endDate = DateUtils.endDateFor(365);
             this.keepOriginalId = keepOriginalId;
         }
 

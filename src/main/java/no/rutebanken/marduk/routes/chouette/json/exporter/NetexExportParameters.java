@@ -38,6 +38,7 @@ public class NetexExportParameters {
             this.organisationName = organisationName;
             this.userName = userName;
             this.startDate = DateUtils.startDateFor(2L);
+			this.endDate = DateUtils.endDateFor(365L);
             this.exportStops = exportStops;
         }
 
