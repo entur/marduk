@@ -23,7 +23,7 @@ public class BackupDatabaseRouteBuilder extends BaseRouteBuilder {
     @Value("${database.backup.job:database-backup-pod.yaml}")
     private String databaseBackupFilename;
 
-    @Value("${fetch.osm.cron.schedule:2+3+3+*+*+*+?}")
+    @Value("${fetch.osm.cron.schedule:0+*+3+?+*+*}")
     private String cronSchedule;
 
     @Override
