@@ -26,10 +26,10 @@ public class AbstractImportParameters extends AbstractParameters {
     @JsonProperty("no_save")
     public String noSave = "0";
     /**
-     * Whether or not stop places from import files should be used to update remote stop area repository (NSR).
+     * Whether or not stop area ids from import files should be mapped against remote stop area registry (ie NSR).
      */
-    @JsonProperty("update_external_stop_area_registry")
-    public boolean updateExternalStopAreaRegistry = false;
+    @JsonProperty("stop_area_remote_id_mapping")
+    public boolean stopAreaRemoteIdMapping = false;
 
     /**
      * How stop areas in import file should be treated by chouette.

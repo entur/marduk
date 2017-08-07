@@ -14,15 +14,15 @@ public class NetexImportParameters extends ChouetteJobParameters {
 
     static class Netex extends AbstractImportParameters {}
 
-    public static NetexImportParameters create(String name, String referentialName, String organisationName, String userName, boolean cleanRepository, boolean enableValidation, boolean enableStopPlaceUpdate) {
+    public static NetexImportParameters create(String name, String referentialName, String organisationName, String userName, boolean cleanRepository, boolean enableValidation, boolean allowCreateMissingStopPlace, boolean enableStopPlaceIdMapping) {
         Netex netexImport = new Netex();
         netexImport.name = name;
         netexImport.referentialName = referentialName;
         netexImport.organisationName = organisationName;
         netexImport.userName = userName;
         netexImport.cleanRepository = cleanRepository ? "1":"0";
-        netexImport.updateExternalStopAreaRegistry = enableStopPlaceUpdate;
-        if (enableStopPlaceUpdate) {
+        netexImport.stopAreaRemoteIdMapping = enableStopPlaceIdMapping;
+        if (allowCreateMissingStopPlace) {
             netexImport.stopAreaImportMode = AbstractImportParameters.StopAreaImportMode.CREATE_NEW;
         }
         Parameters parameters = new Parameters();
