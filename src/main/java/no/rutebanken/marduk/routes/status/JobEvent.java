@@ -21,7 +21,7 @@ public class JobEvent {
 
     public enum TimetableAction {FILE_TRANSFER, FILE_CLASSIFICATION, IMPORT, EXPORT, VALIDATION_LEVEL_1, VALIDATION_LEVEL_2, CLEAN, DATASPACE_TRANSFER, BUILD_GRAPH, EXPORT_NETEX}
 
-    public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK, DUPLICATE}
+    public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK, DUPLICATE, CANCELLED}
 
     public String name;
 
@@ -198,6 +198,8 @@ public class JobEvent {
                 jobEvent.correlationId = currentJobEvent.correlationId;
                 jobEvent.domain = currentJobEvent.domain;
                 jobEvent.action = currentJobEvent.action;
+                jobEvent.name = currentJobEvent.name;
+                jobEvent.externalId = currentJobEvent.externalId;
             }
             return this;
         }
