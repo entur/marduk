@@ -61,7 +61,9 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .convertBodyTo(InputStream.class)
                 .process(e -> {
                             e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"));
-                            e.setProperty(GRAPH_VERSION, Utils.getOtpVersion() + "/" + getBuildNumber(e)+"-report");
+                            String timestamp = getBuildTimestamp(e);
+                            e.setProperty(TIMESTAMP, timestamp);
+                            e.setProperty(GRAPH_VERSION, Utils.getOtpVersion() + "/" + timestamp + "-report");
                         }
                 )
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
@@ -73,7 +75,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .setProperty(Exchange.FILE_PARENT, header(Exchange.FILE_PARENT))
                 .to("direct:notify")
                 .to("direct:notifyEtcd")
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.OK).correlationId(getBuildNumber(e )).build()).to("direct:updateStatus")
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
                 .to("direct:cleanUp")
                 .routeId("otp-graph-upload");
 
@@ -138,7 +140,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-graph-cleanup");
     }
 
-    private String getBuildNumber(Exchange e) {
+    private String getBuildTimestamp(Exchange e) {
         return e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-").replace("-" + GRAPH_OBJ, "");
     }
 
