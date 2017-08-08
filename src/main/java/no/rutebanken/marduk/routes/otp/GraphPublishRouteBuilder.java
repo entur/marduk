@@ -3,6 +3,7 @@ package no.rutebanken.marduk.routes.otp;
 import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -60,7 +61,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .convertBodyTo(InputStream.class)
                 .process(e -> {
                             e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"));
-                            e.setProperty(GRAPH_VERSION, Utils.getOtpVersion() + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-").replace(GRAPH_OBJ, blobStorePublicReportFolder));
+                            e.setProperty(GRAPH_VERSION, Utils.getOtpVersion() + "/" + getBuildNumber(e)+"-report");
                         }
                 )
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
@@ -72,6 +73,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .setProperty(Exchange.FILE_PARENT, header(Exchange.FILE_PARENT))
                 .to("direct:notify")
                 .to("direct:notifyEtcd")
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.OK).correlationId(getBuildNumber(e )).build()).to("direct:updateStatus")
                 .to("direct:cleanUp")
                 .routeId("otp-graph-upload");
 
@@ -134,6 +136,10 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .process(e -> deleteDirectory(new File(e.getIn().getExchange().getProperty(Exchange.FILE_PARENT, String.class))))
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Build folder ${property." + Exchange.FILE_PARENT + "} cleanup done.")
                 .routeId("otp-graph-cleanup");
+    }
+
+    private String getBuildNumber(Exchange e) {
+        return e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-").replace("-" + GRAPH_OBJ, "");
     }
 
     private Collection<File> listReportFiles(Exchange e) {
