@@ -194,6 +194,27 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:chouetteCleanStopPlaces")
                 .setBody(constant(null))
                 .routeId("admin-chouette-clean-stop-places")
+                .endRest()
+
+                .get("/lineStats")
+                .description("List stats about data in chouette for multiple providers")
+                .param().name("providerId")
+                .type(RestParamType.query).dataType("long")
+                .required(Boolean.FALSE)
+                .description("Providers to fetch line stats for")
+                .endParam()
+                .bindingMode(RestBindingMode.off)
+                .consumes(PLAIN)
+                .produces(JSON)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Internal error").endResponseMessage()
+                .route()
+                .to("direct:authorizeRequest")
+                .log(LoggingLevel.INFO, correlation() + "get stats for multiple providers")
+                .removeHeaders("CamelHttp*")
+                .setHeader(PROVIDER_IDS, header("providerId"))
+                .to("direct:chouetteGetStats")
+                .routeId("admin-chouette-stats-multiple-providers")
                 .endRest();
 
 
@@ -282,7 +303,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "get stats")
                 .removeHeaders("CamelHttp*")
-                .to("direct:chouetteGetStats")
+                .to("direct:chouetteGetStatsSingleProvider")
                 .routeId("admin-chouette-stats")
                 .endRest()
                 .get("/jobs")
@@ -491,7 +512,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple("done"))
                 .routeId("admin-tiamat-publish-export-full")
                 .endRest();
-
 
 
         rest("geocoder/administrativeUnits")
