@@ -1,12 +1,15 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.mapper.geojson;
 
+import no.rutebanken.marduk.geocoder.geojson.GeojsonFeatureWrapperFactory;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.FileInputStream;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class PlaceNamesStreamToElasticsearchCommandTest {
@@ -14,7 +17,8 @@ public class PlaceNamesStreamToElasticsearchCommandTest {
 
 	@Test
 	public void testTransform() throws Exception {
-		KartverketGeoJsonStreamToElasticsearchCommands transformer = new KartverketGeoJsonStreamToElasticsearchCommands();
+		List<String> blackList= Arrays.asList("140");
+		KartverketGeoJsonStreamToElasticsearchCommands transformer = new KartverketGeoJsonStreamToElasticsearchCommands(new GeojsonFeatureWrapperFactory(blackList));
 		Collection<ElasticsearchCommand> commands = transformer
 				                                            .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/geojson/stedsnavn.geojson"));
 

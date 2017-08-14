@@ -6,6 +6,7 @@ import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
 import no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket.*;
 import org.opengis.feature.simple.SimpleFeature;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -14,6 +15,13 @@ import java.util.stream.Collectors;
 
 @Service
 public class KartverketGeoJsonStreamToElasticsearchCommands {
+
+    private final GeojsonFeatureWrapperFactory wrapperFactory;
+
+    public KartverketGeoJsonStreamToElasticsearchCommands(@Autowired GeojsonFeatureWrapperFactory wrapperFactory) {
+        this.wrapperFactory = wrapperFactory;
+    }
+
     public Collection<ElasticsearchCommand> transform(InputStream placeNamesStream) {
         return new FeatureJSONCollection(placeNamesStream)
                        .mapToList(f -> createMapper(f).toPeliasDocument()).stream()
@@ -22,7 +30,7 @@ public class KartverketGeoJsonStreamToElasticsearchCommands {
 
     TopographicPlaceAdapterToPeliasDocument createMapper(SimpleFeature feature) {
 
-        TopographicPlaceAdapter wrapper = GeojsonFeatureWrapperFactory.createWrapper(feature);
+        TopographicPlaceAdapter wrapper = wrapperFactory.createWrapper(feature);
 
         switch (wrapper.getType()) {
 
