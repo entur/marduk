@@ -47,15 +47,18 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .process(e -> e.getIn().setHeader("refParam", getReferentialsAsParam(e)))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Calling chouette with referentials prop: ${header.refParam}")
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/statistics/line?days=" + days + "&" + getValidityCategories() + "${header.refParam}"))
-                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Calling chouette with ${property.chouette_url}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Calling chouette with ${property.chouette_url}")
                 .toD("${exchangeProperty.chouette_url}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Got chouette line stats rsp: ${body}")
                 .unmarshal().json(JsonLibrary.Jackson, Map.class)
                 .process(e -> e.getIn().setBody(mapReferentialToProviderId(e.getIn().getBody(Map.class))))
                 .marshal().json(JsonLibrary.Jackson);
     }
 
     private Map<Long, Object> mapReferentialToProviderId(Map<String, Object> statsPerReferential) {
+
         return getProviderRepository().getProviders().stream().filter(provider -> statsPerReferential.containsKey(provider.chouetteInfo.referential))
                        .collect(Collectors.toMap(Provider::getId, provider -> statsPerReferential.get(provider.chouetteInfo.referential)));
     }
