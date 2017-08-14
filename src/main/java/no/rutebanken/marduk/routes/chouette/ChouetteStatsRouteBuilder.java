@@ -8,6 +8,7 @@ import org.apache.camel.component.http4.HttpMethods;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,9 +49,8 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .process(e -> e.getIn().setHeader("refParam", getReferentialsAsParam(e)))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Calling chouette with referentials prop: ${header.refParam}")
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/statistics/line?days=" + days + "&" + getValidityCategories() + "${header.refParam}"))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Calling chouette with ${property.chouette_url}")
+                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Calling chouette with ${property.chouette_url}")
                 .toD("${exchangeProperty.chouette_url}")
                 .unmarshal().json(JsonLibrary.Jackson, Map.class)
                 .process(e -> e.getIn().setBody(mapReferentialToProviderId(e.getIn().getBody(Map.class))))
@@ -58,7 +58,6 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     }
 
     private Map<Long, Object> mapReferentialToProviderId(Map<String, Object> statsPerReferential) {
-        log.info("Chouette line stats returned response: " + statsPerReferential);
         return getProviderRepository().getProviders().stream().filter(provider -> statsPerReferential.containsKey(provider.chouetteInfo.referential))
                        .collect(Collectors.toMap(Provider::getId, provider -> statsPerReferential.get(provider.chouetteInfo.referential)));
     }
@@ -67,7 +66,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
         List<String> providerIds = e.getIn().getHeader(PROVIDER_IDS, List.class);
 
         Collection<Provider> providers;
-        if (providerIds == null) {
+        if (CollectionUtils.isEmpty(providerIds)) {
             providers = getProviderRepository().getProviders();
         } else {
             providers = providerIds.stream().map(providerId -> getProviderRepository().getProvider(Long.valueOf(providerId))).collect(Collectors.toList());
