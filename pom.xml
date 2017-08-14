@@ -27,9 +27,7 @@
 
         <gcp-storage.version>0.0.3-SNAPSHOT</gcp-storage.version>
 
-        <!-- versions for use in mvn plugins as we cannot inherit them from a BOM -->
-        <fabric8.version>2.3.4</fabric8.version>
-        <docker.maven.plugin.version>0.13.9</docker.maven.plugin.version>
+        <docker.maven.plugin.version>0.21.0</docker.maven.plugin.version>
         <spring-boot-plugin.version>1.5.6.RELEASE</spring-boot-plugin.version>
         <spring-boot.version>1.5.6.RELEASE</spring-boot.version>
         <httpcomponents.version>4.5.1</httpcomponents.version>
@@ -56,6 +54,7 @@
         <activemq.version>5.13.4</activemq.version>
         <netex-java-model.version>0.0.9-SNAPSHOT</netex-java-model.version>
         <rutebanken.helpers.version>0.0.3-SNAPSHOT</rutebanken.helpers.version>
+        <fabric8.version>2.3.4</fabric8.version>
     </properties>
 
 
@@ -567,7 +566,7 @@
             </plugin>
 
             <plugin>
-                <groupId>org.jolokia</groupId>
+                <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
                 <version>${docker.maven.plugin.version}</version>
                 <configuration>
@@ -576,6 +575,7 @@
                             <name>${docker.image}</name>
                             <build>
                                 <from>${docker.from}</from>
+                                <cleanup>${docker.cleanup}</cleanup>
                                 <assembly>
                                     <basedir>/deployments</basedir>
                                     <descriptorRef>artifact</descriptorRef>
