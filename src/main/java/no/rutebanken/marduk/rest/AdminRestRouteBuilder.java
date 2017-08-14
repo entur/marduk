@@ -92,10 +92,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         rest("")
                 .description("Wildcard definitions necessary to get Jetty to match authorization filters to endpoints with path params")
-                .get().route().routeId("admin-route-authorize-get").endRest()
-                .post().route().routeId("admin-route-authorize-post").endRest()
-                .put().route().routeId("admin-route-authorize-put").endRest()
-                .delete().route().routeId("admin-route-authorize-delete").endRest();
+                .get().route().routeId("admin-route-authorize-get").log("processorRequired").endRest()
+                .post().route().routeId("admin-route-authorize-post").log("processorRequired").endRest()
+                .put().route().routeId("admin-route-authorize-put").log("processorRequired").endRest()
+                .delete().route().routeId("admin-route-authorize-delete").log("processorRequired").endRest();
 
         rest("/application")
                 .post("/filestores/clean")

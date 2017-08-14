@@ -10,11 +10,12 @@ import no.rutebanken.marduk.config.GcsStorageConfig;
 import no.rutebanken.marduk.config.IdempotentRepositoryConfig;
 import no.rutebanken.marduk.config.TransactionManagerConfig;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
-import org.apache.camel.spring.boot.FatJarRouter;
+import org.apache.camel.builder.RouteBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -28,7 +29,7 @@ import java.util.Set;
 @SpringBootApplication
 @EnableScheduling
 @Import({GcsStorageConfig.class, TransactionManagerConfig.class, IdempotentRepositoryConfig.class})
-public class App extends FatJarRouter {
+public class App extends RouteBuilder {
 
 	@Value("${marduk.shutdown.timeout:300}")
 	private Long shutdownTimeout;
@@ -47,13 +48,11 @@ public class App extends FatJarRouter {
         
         configureJsonPath();
 
-        FatJarRouter.main(args);
+	    SpringApplication.run(App.class,args);
     }
 
 	@Override
 	public void configure() throws Exception {
-    	super.configure();
-
 		waitForProviderRepository();
 
 		getContext().getShutdownStrategy().setTimeout(shutdownTimeout);
