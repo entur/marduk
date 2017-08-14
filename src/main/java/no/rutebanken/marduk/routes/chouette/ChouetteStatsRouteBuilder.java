@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.routes.chouette;
 
+import com.google.common.base.Joiner;
 import no.rutebanken.marduk.domain.Provider;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -72,10 +73,8 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
             providers = providerIds.stream().map(providerId -> getProviderRepository().getProvider(Long.valueOf(providerId))).collect(Collectors.toList());
         }
 
-        StringBuilder sb = new StringBuilder();
-        providers.stream().map(provider -> provider.chouetteInfo.referential).forEach(referential -> sb.append("&referential=").append(referential));
-
-        return sb.toString();
+        List<String> referentials = providers.stream().map(provider -> provider.chouetteInfo.referential).collect(Collectors.toList());
+        return "&referentials=" + Joiner.on(",").join(referentials);
     }
 
     private String getValidityCategories() {
