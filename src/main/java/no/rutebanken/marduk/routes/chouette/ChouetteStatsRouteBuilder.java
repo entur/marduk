@@ -51,14 +51,13 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/statistics/line?days=" + days + "&" + getValidityCategories() + "${header.refParam}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Calling chouette with ${property.chouette_url}")
                 .toD("${exchangeProperty.chouette_url}")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Got chouette line stats rsp: ${body}")
                 .unmarshal().json(JsonLibrary.Jackson, Map.class)
                 .process(e -> e.getIn().setBody(mapReferentialToProviderId(e.getIn().getBody(Map.class))))
                 .marshal().json(JsonLibrary.Jackson);
     }
 
     private Map<Long, Object> mapReferentialToProviderId(Map<String, Object> statsPerReferential) {
-
+        log.info("Chouette line stats returned response: " + statsPerReferential);
         return getProviderRepository().getProviders().stream().filter(provider -> statsPerReferential.containsKey(provider.chouetteInfo.referential))
                        .collect(Collectors.toMap(Provider::getId, provider -> statsPerReferential.get(provider.chouetteInfo.referential)));
     }
