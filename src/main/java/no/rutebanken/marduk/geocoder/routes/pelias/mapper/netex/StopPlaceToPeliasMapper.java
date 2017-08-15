@@ -31,8 +31,8 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
         }
 
         // Make stop place rank highest in autocomplete by setting popularity
-        long population = boostConfiguration.getPopularity(place.getStopPlaceType(), getStopSubMode(place), place.getWeighting());
-        document.setPopularity(population);
+        long popularity = boostConfiguration.getPopularity(place.getStopPlaceType(), getStopSubMode(place), place.getWeighting());
+        document.setPopularity(popularity);
     }
 
     @Override

@@ -2,6 +2,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 
 import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
+import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex.boost.StopPlaceBoostConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.rutebanken.netex.model.Common_VersionFrameStructure;
@@ -18,6 +19,7 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -66,15 +68,26 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
 
     private <P extends Place_VersionStructure> List<ElasticsearchCommand> addCommands(List<P> places, AbstractNetexPlaceToPeliasDocumentMapper<P> mapper) {
         if (!CollectionUtils.isEmpty(places)) {
-            return places.stream().map(p -> mapper.toPeliasDocument(p)).filter(d -> d != null).map(p -> ElasticsearchCommand.peliasIndexCommand(p)).collect(Collectors.toList());
+            return places.stream().map(p -> mapper.toPeliasDocument(p)).sorted(new PeliasDocumentPopularityComparator()).filter(d -> d != null).map(p -> ElasticsearchCommand.peliasIndexCommand(p)).collect(Collectors.toList());
         }
         return new ArrayList<>();
     }
+
 
     private PublicationDeliveryStructure unmarshall(InputStream in) throws Exception {
         JAXBContext publicationDeliveryContext = newInstance(PublicationDeliveryStructure.class);
         Unmarshaller unmarshaller = publicationDeliveryContext.createUnmarshaller();
         JAXBElement<PublicationDeliveryStructure> jaxbElement = unmarshaller.unmarshal(new StreamSource(in), PublicationDeliveryStructure.class);
         return jaxbElement.getValue();
+    }
+
+    private class PeliasDocumentPopularityComparator implements Comparator<PeliasDocument> {
+
+        @Override
+        public int compare(PeliasDocument o1, PeliasDocument o2) {
+            Long p1 = o1 == null || o1.getPopularity() == null ? 1l : o1.getPopularity();
+            Long p2 = o2 == null || o2.getPopularity() == null ? 1l : o2.getPopularity();
+            return -p1.compareTo(p2);
+        }
     }
 }
