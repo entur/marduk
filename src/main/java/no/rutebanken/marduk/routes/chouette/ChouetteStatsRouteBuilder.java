@@ -9,9 +9,9 @@ import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -64,16 +64,29 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
 
     private String getReferentialsAsParam(Exchange e) {
         List<String> providerIds = e.getIn().getHeader(PROVIDER_IDS, List.class);
+        String filter = e.getIn().getHeader("filter", String.class);
 
-        Collection<Provider> providers;
-        if (CollectionUtils.isEmpty(providerIds)) {
-            providers = getProviderRepository().getProviders();
-        } else {
-            providers = providerIds.stream().map(providerId -> getProviderRepository().getProvider(Long.valueOf(providerId))).collect(Collectors.toList());
+        List<String> referentials = getProviderRepository().getProviders().stream().filter(provider -> isMatch(provider, filter, providerIds)).
+                                                                                                                                                      map(provider -> provider.chouetteInfo.referential).collect(Collectors.toList());
+        return "&referentials=" + Joiner.on(",").join(referentials);
+    }
+
+    boolean isMatch(Provider provider, String filter, List<String> whiteListedProviderIds) {
+        boolean match = true;
+        if (StringUtils.hasLength(filter) && !"all".equalsIgnoreCase(filter)) {
+            if ("level1".equalsIgnoreCase(filter)) {
+                match &= provider.getChouetteInfo().migrateDataToProvider != null;
+            } else if ("level2".equalsIgnoreCase(filter)) {
+                match &= provider.getChouetteInfo().migrateDataToProvider == null;
+            } else {
+                match = false;
+            }
         }
 
-        List<String> referentials = providers.stream().map(provider -> provider.chouetteInfo.referential).collect(Collectors.toList());
-        return "&referentials=" + Joiner.on(",").join(referentials);
+        if (!CollectionUtils.isEmpty(whiteListedProviderIds)) {
+            match &= whiteListedProviderIds.contains(provider.id.toString());
+        }
+        return match;
     }
 
     private String getValidityCategories() {
