@@ -14,7 +14,8 @@ public class GeojsonFeatureWrapperFactory {
     // See relevant code values in http://www.kartverket.no/globalassets/standard/sosi-standarden-del-1-og-2/sosi-standarden/stedsnavn.pdf
     private final List<String> neighbourhoodTypeBlackList;
 
-    public GeojsonFeatureWrapperFactory(@Value("#{'${geocoder.neighbourhood.type.blacklist:140}'.split(',')}") List<String> neighbourhoodTypeBlackList) {
+    // 140=street/road, 161-164 = stop place types
+    public GeojsonFeatureWrapperFactory(@Value("#{'${geocoder.neighbourhood.type.blacklist:140,161,162,163,164}'.split(',')}") List<String> neighbourhoodTypeBlackList) {
         this.neighbourhoodTypeBlackList = neighbourhoodTypeBlackList;
     }
 
