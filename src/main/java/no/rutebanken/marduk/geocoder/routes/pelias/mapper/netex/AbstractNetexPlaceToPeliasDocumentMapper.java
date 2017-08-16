@@ -3,6 +3,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 
 import net.opengis.gml._3.AbstractRingType;
 import net.opengis.gml._3.LinearRingType;
+import no.rutebanken.marduk.geocoder.routes.pelias.json.AddressParts;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import org.geojson.LngLatAlt;
@@ -49,9 +50,22 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
             document.setShape(toPolygon(place.getPolygon().getExterior().getAbstractRing().getValue()));
         }
 
+        addIdToStreetNameToAvoidFalseDuplicates(place, document);
+
         populateDocument(place, document);
 
         return document;
+    }
+
+    /**
+     * The Pelias APIs deduper will throw away results with identical name, layer, parent and address. Setting unique ID in street part of address to avoid unique
+     * topographic places with identical names being deduped.
+     */
+    private void addIdToStreetNameToAvoidFalseDuplicates(T place, PeliasDocument document) {
+        if (document.getAddressParts() == null) {
+            document.setAddressParts(new AddressParts());
+        }
+        document.getAddressParts().setStreet("NOT_AN_ADDRESS-" + place.getId());
     }
 
     private Polygon toPolygon(AbstractRingType ring) {
