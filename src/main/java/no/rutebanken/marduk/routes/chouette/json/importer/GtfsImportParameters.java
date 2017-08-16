@@ -43,6 +43,10 @@ public class GtfsImportParameters extends ChouetteJobParameters {
         @JsonInclude(JsonInclude.Include.ALWAYS)
         public String routeTypeIdScheme = "any";
 
+        @JsonProperty("parse_connection_links")
+        @JsonInclude(JsonInclude.Include.ALWAYS)
+        public Boolean parseConnectionLinks = false;
+
     }
 
     public static GtfsImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName,
