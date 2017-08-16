@@ -35,21 +35,25 @@ public class Parameters {
         }
         RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.xmlns,
                 chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion,
-                chouetteInfo.regtoppCoordinateProjection, chouetteInfo.regtoppCalendarStrategy, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation, chouetteInfo.enableStopPlaceUpdate,false, true);
+                chouetteInfo.regtoppCoordinateProjection, chouetteInfo.regtoppCalendarStrategy, chouetteInfo.enableCleanImport,
+                chouetteInfo.enableValidation, chouetteInfo.allowCreateMissingStopPlace,
+                chouetteInfo.enableStopPlaceIdMapping,false, true);
         return regtoppImportParameters.toJsonString();
     }
 
     static String getGtfsImportParameters(String importName, Provider provider) {
         ChouetteInfo chouetteInfo = provider.chouetteInfo;
         GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.xmlns,
-                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation, chouetteInfo.enableStopPlaceUpdate);
+                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport,
+                chouetteInfo.enableValidation, chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping);
         return gtfsImportParameters.toJsonString();
     }
 
     static String getNetexImportParameters(String importName, Provider provider) {
         ChouetteInfo chouetteInfo = provider.chouetteInfo;
         NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.name,
-                chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation, chouetteInfo.enableStopPlaceUpdate);
+                chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation,
+                chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping);
         return netexImportParameters.toJsonString();
     }
 

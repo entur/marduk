@@ -1,7 +1,8 @@
 package no.rutebanken.marduk.geocoder.routes.tiamat;
 
-import no.rutebanken.marduk.geocoder.netex.geojson.GeoJsonSingleTopographicPlaceReader;
+import no.rutebanken.marduk.geocoder.geojson.GeojsonFeatureWrapperFactory;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceConverter;
+import no.rutebanken.marduk.geocoder.netex.geojson.GeoJsonSingleTopographicPlaceReader;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.services.BlobStoreService;
 import org.apache.camel.Exchange;
@@ -40,6 +41,8 @@ public class TiamatCountryUpdateRouteBuilder extends BaseRouteBuilder {
     @Autowired
     private BlobStoreService blobStoreService;
 
+    @Autowired
+    private GeojsonFeatureWrapperFactory wrapperFactory;
 
     @Override
     public void configure() throws Exception {
@@ -76,7 +79,7 @@ public class TiamatCountryUpdateRouteBuilder extends BaseRouteBuilder {
         from("direct:mapNeighbouringCountriesToNetex")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Mapping latest neighbouring countries to Netex ...")
                 .process(e -> topographicPlaceConverter.toNetexFile(
-                        new GeoJsonSingleTopographicPlaceReader(getGeojsonCountryFiles()),
+                        new GeoJsonSingleTopographicPlaceReader(wrapperFactory, getGeojsonCountryFiles()),
                         localWorkingDirectory + "/neighbouring-countries-netex.xml"))
                 .process(e -> e.getIn().setBody(new File(localWorkingDirectory + "/neighbouring-countries-netex.xml")))
                 .routeId("tiamat-map-neighbouring-countries-to-netex");

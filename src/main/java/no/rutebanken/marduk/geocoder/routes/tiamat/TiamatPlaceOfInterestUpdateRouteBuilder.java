@@ -6,6 +6,7 @@ import no.rutebanken.marduk.geocoder.netex.pbf.PbfTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import no.rutebanken.marduk.security.TokenService;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.rutebanken.netex.model.IanaCountryTldEnumeration;
@@ -55,6 +56,9 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 
     @Autowired
     private TopographicPlaceConverter topographicPlaceConverter;
+
+    @Autowired
+    private TokenService tokenService;
 
     @Override
     public void configure() throws Exception {
@@ -106,6 +110,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
         from("direct:updatePlaceOfInterestInTiamat")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
                 .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_XML))
+                .process(e -> e.getIn().setHeader("Authorization", "Bearer " + tokenService.getToken()))
                 .to(tiamatUrl + tiamatPublicationDeliveryPath)
                 .routeId("tiamat-poi-update-start");
 

@@ -16,7 +16,8 @@ public class ChouetteInfo {
     public String regtoppCalendarStrategy;
     public String dataFormat;
     public boolean enableValidation = false;
-    public boolean enableStopPlaceUpdate = false;
+    public boolean allowCreateMissingStopPlace = false;
+    public boolean enableStopPlaceIdMapping = false;
     public boolean enableCleanImport = false;
 	public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
 
@@ -38,7 +39,8 @@ public class ChouetteInfo {
                 ", regtoppCalendarStrategy='" + regtoppCalendarStrategy + '\'' +
                 ", dataFormat='" + dataFormat + '\'' +
                 ", enableValidation='" + enableValidation + '\'' +
-                ", enableStopPlaceUpdate='" + enableStopPlaceUpdate + '\'' +
+                ", allowCreateMissingStopPlace='" + allowCreateMissingStopPlace + '\'' +
+                ", enableStopPlaceIdMapping='" + enableStopPlaceIdMapping + '\'' +
                 ", enableCleanImport='" + enableCleanImport + '\'' +
                 ", migrateDataToProvider='" + migrateDataToProvider + '\'' +
                 '}';

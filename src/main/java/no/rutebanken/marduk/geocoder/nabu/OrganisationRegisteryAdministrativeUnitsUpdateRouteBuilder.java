@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.geocoder.nabu;
 
 import com.vividsolutions.jts.geom.CoordinateList;
+import no.rutebanken.marduk.geocoder.geojson.GeojsonFeatureWrapperFactory;
 import no.rutebanken.marduk.geocoder.nabu.rest.AdministrativeZone;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.netex.geojson.GeoJsonSingleTopographicPlaceReader;
@@ -70,6 +71,9 @@ public class OrganisationRegisteryAdministrativeUnitsUpdateRouteBuilder extends 
     @Autowired
     private BlobStoreService blobStoreService;
 
+    @Autowired
+    private GeojsonFeatureWrapperFactory wrapperFactory;
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -114,7 +118,7 @@ public class OrganisationRegisteryAdministrativeUnitsUpdateRouteBuilder extends 
 
         from("direct:updateNeighbouringCountriesInOrgReg")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Mapping latest neighbouring countries to org reg format ...")
-                .process(e -> e.getIn().setBody(new GeoJsonSingleTopographicPlaceReader(getGeojsonCountryFiles()).read().stream().map(tpa -> toAdministrativeZone(tpa,"WOF")).collect(Collectors.toList())))
+                .process(e -> e.getIn().setBody(new GeoJsonSingleTopographicPlaceReader(wrapperFactory, getGeojsonCountryFiles()).read().stream().map(tpa -> toAdministrativeZone(tpa, "WOF")).collect(Collectors.toList())))
                 .to("direct:updateAdministrativeZonesInOrgReg")
                 .routeId("organisation-registry-update-neighbouring-countries");
 

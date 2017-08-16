@@ -29,9 +29,11 @@ public class GeoJsonSingleTopographicPlaceReader implements TopographicPlaceRead
 
     private static final String PARTICIPANT_REF = "WOF";
 
+    private GeojsonFeatureWrapperFactory wrapperFactory;
 
-    public GeoJsonSingleTopographicPlaceReader(File... files) {
+    public GeoJsonSingleTopographicPlaceReader(GeojsonFeatureWrapperFactory wrapperFactory, File... files) {
         this.files = files;
+        this.wrapperFactory = wrapperFactory;
     }
 
 
@@ -43,7 +45,7 @@ public class GeoJsonSingleTopographicPlaceReader implements TopographicPlaceRead
                 InputStream inputStream = FileUtils.openInputStream(file);
                 SimpleFeature simpleFeature = fJson.readFeature(inputStream);
 
-                TopographicPlaceAdapter adapter = GeojsonFeatureWrapperFactory.createWrapper(simpleFeature);
+                TopographicPlaceAdapter adapter = wrapperFactory.createWrapper(simpleFeature);
                 if (adapter != null) {
                     adapters.add(adapter);
                 }
@@ -63,7 +65,7 @@ public class GeoJsonSingleTopographicPlaceReader implements TopographicPlaceRead
             InputStream inputStream = FileUtils.openInputStream(file);
             SimpleFeature simpleFeature = fJson.readFeature(inputStream);
 
-            TopographicPlaceAdapter adapter = GeojsonFeatureWrapperFactory.createWrapper(simpleFeature);
+            TopographicPlaceAdapter adapter = wrapperFactory.createWrapper(simpleFeature);
             TopographicPlace topographicPlace = new TopographicPlaceMapper(adapter, PARTICIPANT_REF).toTopographicPlace();
 
             if (topographicPlace != null) {

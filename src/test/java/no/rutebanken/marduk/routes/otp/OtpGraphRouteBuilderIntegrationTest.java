@@ -52,7 +52,7 @@ public class OtpGraphRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         context.start();
 
-        updateStatus.expectedMessageCount(4);
+        updateStatus.expectedMessageCount(3);
 
         updateStatus.assertIsSatisfied();
 
@@ -60,7 +60,6 @@ public class OtpGraphRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         Assert.assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
         Assert.assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.STARTED.equals(je.state) && 2 == je.providerId));
-        Assert.assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
         Assert.assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.OK.equals(je.state) && 2 == je.providerId));
     }
 

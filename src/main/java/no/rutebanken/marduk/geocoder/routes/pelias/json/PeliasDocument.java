@@ -128,6 +128,8 @@ public class PeliasDocument {
             nameMap = new HashMap<>();
         }
         nameMap.put(language, name);
+
+        addPhrase(language,name);
     }
 
 

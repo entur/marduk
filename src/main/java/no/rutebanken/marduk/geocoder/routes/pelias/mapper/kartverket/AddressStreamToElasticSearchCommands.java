@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,7 +23,8 @@ public class AddressStreamToElasticSearchCommands {
         Collection<KartverketAddress> addresses = new KartverketAddressReader().read(addressStream);
 
         // Create documents for all individual addresses
-        List<PeliasDocument> peliasDocuments = addresses.stream().map(a -> addressMapper.toPeliasDocument(a)).collect(Collectors.toList());
+        List<PeliasDocument> peliasDocuments = addresses.stream().map(a -> addressMapper.toPeliasDocument(a))
+                                                       .sorted(Comparator.comparing(PeliasDocument::getDefaultName)).collect(Collectors.toList());
 
         // Create separate document per unique street
         peliasDocuments.addAll(addressToStreetMapper.createStreetPeliasDocumentsFromAddresses(peliasDocuments));

@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.mapper.geojson;
 
 
+import no.rutebanken.marduk.geocoder.geojson.GeojsonFeatureWrapperFactory;
 import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCommand;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import org.junit.Assert;
@@ -14,7 +15,7 @@ public class FylkeToElasticsearchCommandTest {
 
 	@Test
 	public void testTransform() throws Exception {
-		KartverketGeoJsonStreamToElasticsearchCommands transformer = new KartverketGeoJsonStreamToElasticsearchCommands();
+		KartverketGeoJsonStreamToElasticsearchCommands transformer = new KartverketGeoJsonStreamToElasticsearchCommands(new GeojsonFeatureWrapperFactory(null));
 		Collection<ElasticsearchCommand> commands = transformer
 				                                            .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson"));
 

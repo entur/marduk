@@ -27,21 +27,21 @@
 
         <gcp-storage.version>0.0.3-SNAPSHOT</gcp-storage.version>
 
-        <!-- versions for use in mvn plugins as we cannot inherit them from a BOM -->
-        <fabric8.version>2.2.84</fabric8.version>
-        <docker.maven.plugin.version>0.13.9</docker.maven.plugin.version>
-        <spring-boot-plugin.version>1.5.3.RELEASE</spring-boot-plugin.version>
-        <spring-boot.version>1.5.3.RELEASE</spring-boot.version>
+        <docker.maven.plugin.version>0.21.0</docker.maven.plugin.version>
+        <spring-boot-plugin.version>1.5.6.RELEASE</spring-boot-plugin.version>
+        <spring-boot.version>1.5.6.RELEASE</spring-boot.version>
         <httpcomponents.version>4.5.1</httpcomponents.version>
         <otp.version>1.2.0.RB-SNAPSHOT</otp.version>
         <assertj-core.version>3.3.0</assertj-core.version>
-        <camel-version>2.18.1</camel-version>
+        <camel-version>2.19.2</camel-version>
         <postgresql.version>9.4-1201-jdbc41</postgresql.version>
-        <keycloak.version>3.0.0.Final</keycloak.version>
+        <keycloak.version>3.2.1.Final</keycloak.version>
+        <spring.security.version>4.2.3.RELEASE</spring.security.version>
         <!-- Docker & Fabric8 Configs -->
         <docker.from>eu.gcr.io/carbon-1287/java-base-image</docker.from>
         <fabric8.dockerUser>carbon-1287/</fabric8.dockerUser>
         <docker.image>eu.gcr.io/${fabric8.dockerUser}${project.artifactId}:${project.version}</docker.image>
+        <docker.cleanup>none</docker.cleanup>
 
         <!-- fabric8.env.AB_JOLOKIA_AUTH_OPENSHIFT>true</fabric8.env.AB_JOLOKIA_AUTH_OPENSHIFT -->
         <fabric8.label.component>${project.artifactId}</fabric8.label.component>
@@ -54,6 +54,7 @@
         <activemq.version>5.13.4</activemq.version>
         <netex-java-model.version>0.0.9-SNAPSHOT</netex-java-model.version>
         <rutebanken.helpers.version>0.0.3-SNAPSHOT</rutebanken.helpers.version>
+        <fabric8.version>2.3.4</fabric8.version>
     </properties>
 
 
@@ -98,12 +99,12 @@
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-client</artifactId>
-            <version>3.1.1.Final</version>
+            <version>3.1.4.Final</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-jackson2-provider</artifactId>
-            <version>3.1.1.Final</version>
+            <version>3.1.4.Final</version>
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
@@ -126,17 +127,26 @@
             <artifactId>keycloak-admin-client</artifactId>
             <version>${keycloak.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+            <version>${spring.security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>${spring.security.version}</version>
+        </dependency>
         <dependency>
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>
-            <version>4.7</version>
+            <version>4.11</version>
         </dependency>
 
         <dependency>
             <groupId>org.codehaus.janino</groupId>
             <artifactId>janino</artifactId>
-            <version>2.7.8</version>
+            <version>3.0.7</version>
         </dependency>
 
         <dependency>
@@ -270,7 +280,7 @@
         <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>kubernetes-client</artifactId>
-            <version>2.2.0</version>
+            <version>2.6.1</version>
         </dependency>
         <dependency>
             <groupId>org.rutebanken.helpers</groupId>
@@ -366,7 +376,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
-            <version>1.10</version>
+            <version>1.14</version>
         </dependency>
 
         <dependency>
@@ -392,7 +402,7 @@
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>el-api</artifactId>
-            <version>6.0.45</version>
+            <version>6.0.53</version>
         </dependency>
 
         <dependency>
@@ -556,7 +566,7 @@
             </plugin>
 
             <plugin>
-                <groupId>org.jolokia</groupId>
+                <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
                 <version>${docker.maven.plugin.version}</version>
                 <configuration>
@@ -565,6 +575,7 @@
                             <name>${docker.image}</name>
                             <build>
                                 <from>${docker.from}</from>
+                                <cleanup>${docker.cleanup}</cleanup>
                                 <assembly>
                                     <basedir>/deployments</basedir>
                                     <descriptorRef>artifact</descriptorRef>

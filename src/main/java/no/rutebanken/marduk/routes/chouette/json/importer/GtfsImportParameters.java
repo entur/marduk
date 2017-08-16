@@ -49,16 +49,17 @@ public class GtfsImportParameters extends ChouetteJobParameters {
 
     }
 
-    public static GtfsImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean cleanRepository,boolean enableValidation,boolean enableStopPlaceUpdate) {
+    public static GtfsImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName,
+                                                     String userName, boolean cleanRepository, boolean enableValidation, boolean allowCreateMissingStopPlace, boolean enableStopPlaceIdMapping) {
         Gtfs gtfsImport = new Gtfs();
         gtfsImport.name = name;
         gtfsImport.objectIdPrefix = objectIdPrefix;
         gtfsImport.referentialName = referentialName;
         gtfsImport.organisationName = organisationName;
         gtfsImport.userName = userName;
-        gtfsImport.cleanRepository = cleanRepository ? "1":"0";
-        gtfsImport.updateExternalStopAreaRegistry = enableStopPlaceUpdate;
-        if (enableStopPlaceUpdate) {
+        gtfsImport.cleanRepository = cleanRepository ? "1" : "0";
+        gtfsImport.stopAreaRemoteIdMapping = enableStopPlaceIdMapping;
+        if (allowCreateMissingStopPlace) {
             gtfsImport.stopAreaImportMode = AbstractImportParameters.StopAreaImportMode.CREATE_NEW;
         }
         Parameters parameters = new Parameters();

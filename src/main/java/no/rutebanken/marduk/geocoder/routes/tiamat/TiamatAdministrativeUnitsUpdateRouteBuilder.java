@@ -7,6 +7,7 @@ import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import no.rutebanken.marduk.security.TokenService;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,9 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 
     @Autowired
     private TopographicPlaceConverter topographicPlaceConverter;
+
+    @Autowired
+    private TokenService tokenService;
 
     @Override
     public void configure() throws Exception {
@@ -93,6 +97,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
         from("direct:updateAdministrativeUnitsInTiamat")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
                 .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_XML))
+                .process(e -> e.getIn().setHeader("Authorization", "Bearer " + tokenService.getToken()))
                 .to(tiamatUrl + tiamatPublicationDeliveryPath)
                 .routeId("tiamat-admin-units-update-start");
 

@@ -52,8 +52,8 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .transacted()
                 .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
                 .setProperty(PROP_MESSAGES, simple("${body}"))
-                .to("direct:sendStartedEventsInNewTransaction")
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
+                .to("direct:sendStartedEventsInNewTransaction")
                 .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:fetchConfig")
@@ -67,7 +67,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:sendStartedEventsInNewTransaction")
                 .transacted("PROPAGATION_REQUIRES_NEW")
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.STARTED).newCorrelationId().build()).to("direct:updateStatus")
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.STARTED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
                 .setHeader(HEADER_STATUS, constant(JobEvent.State.STARTED))
                 .to("direct:sendStatusForJobs")
                 .routeId("otp-graph-send-started-events");
@@ -143,7 +143,6 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:buildGraph")
                 .setHeader(HEADER_STATUS, constant(JobEvent.State.OK))
                 .to("direct:sendStatusForJobs")
-                .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .doCatch(Exception.class)
                 .log(LoggingLevel.ERROR, correlation() + "Graph building failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.FAILED).build()).to("direct:updateStatus")

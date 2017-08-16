@@ -92,10 +92,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         rest("")
                 .description("Wildcard definitions necessary to get Jetty to match authorization filters to endpoints with path params")
-                .get().route().routeId("admin-route-authorize-get").endRest()
-                .post().route().routeId("admin-route-authorize-post").endRest()
-                .put().route().routeId("admin-route-authorize-put").endRest()
-                .delete().route().routeId("admin-route-authorize-delete").endRest();
+                .get().route().routeId("admin-route-authorize-get").log("processorRequired").endRest()
+                .post().route().routeId("admin-route-authorize-post").log("processorRequired").endRest()
+                .put().route().routeId("admin-route-authorize-put").log("processorRequired").endRest()
+                .delete().route().routeId("admin-route-authorize-delete").log("processorRequired").endRest();
 
         rest("/application")
                 .post("/filestores/clean")
@@ -194,6 +194,37 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:chouetteCleanStopPlaces")
                 .setBody(constant(null))
                 .routeId("admin-chouette-clean-stop-places")
+                .endRest()
+
+                .get("/lineStats/{filter}")
+                .description("List stats about data in chouette for multiple providers")
+                .param().name("providerIds")
+                .type(RestParamType.query).dataType("long")
+                .required(Boolean.FALSE)
+                .description("Comma separated list of id for providers to fetch line stats for")
+                .endParam()
+                .param()
+                .name("filter")
+                .required(Boolean.TRUE)
+                .type(RestParamType.path)
+                .description("Filter to fetch statistics for only level 1, level 2 or all spaces")
+                .allowableValues("all", "level1", "level2")
+                .endParam()
+                .bindingMode(RestBindingMode.off)
+                .consumes(PLAIN)
+                .produces(JSON)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Internal error").endResponseMessage()
+                .route()
+                .to("direct:authorizeRequest")
+                .log(LoggingLevel.INFO, correlation() + "get stats for multiple providers")
+                .removeHeaders("CamelHttp*")
+                .choice()
+                .when(simple("${header.providerIds}"))
+                .process(e -> e.getIn().setHeader(PROVIDER_IDS,e.getIn().getHeader("providerIds","",String.class).split(",")))
+                .end()
+                .to("direct:chouetteGetStats")
+                .routeId("admin-chouette-stats-multiple-providers")
                 .endRest();
 
 
@@ -282,7 +313,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "get stats")
                 .removeHeaders("CamelHttp*")
-                .to("direct:chouetteGetStats")
+                .to("direct:chouetteGetStatsSingleProvider")
                 .routeId("admin-chouette-stats")
                 .endRest()
                 .get("/jobs")
@@ -491,7 +522,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple("done"))
                 .routeId("admin-tiamat-publish-export-full")
                 .endRest();
-
 
 
         rest("geocoder/administrativeUnits")

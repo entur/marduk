@@ -44,8 +44,9 @@
             "removeAllZeroNumericPrefix",
             "surround_single_characters_with_word_markers",
             "house_number_word_delimiter",
-            "remove_single_characters",
+
             "surround_house_numbers_with_word_markers",
+             "remove_single_characters",  // Moved below surround_house_numbers_with_word_markers to allow single digit house numbers no survive letter stripping. Autocomplete input "Street 1" should match "Street 1A" for input "Street 1" (DK-397)
             "peliasOneEdgeGramFilter",
             "eliminate_tokens_starting_with_word_marker",
             "remove_encapsulating_word_markers",
