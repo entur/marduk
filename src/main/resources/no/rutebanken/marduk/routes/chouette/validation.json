@@ -31,7 +31,7 @@
         "speed_min": "200",
         "inter_stop_duration_variation_max": "60"
     },
-    "mode_waterborne": {
+    "mode_water": {
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "200",
         "inter_stop_area_distance_max": "10000",
@@ -71,22 +71,31 @@
         "speed_min": "20",
         "inter_stop_duration_variation_max": "300"
     },
-    "mode_shuttle": {
+    "mode_cableway": {
         "allowed_transport": "1",
-        "inter_stop_area_distance_min": "500",
-        "inter_stop_area_distance_max": "10000",
-        "speed_max": "80",
-        "speed_min": "1",
-        "inter_stop_duration_variation_max": "10"
-    },
-    "mode_rapid_transit": {
-        "allowed_transport": "1",
-        "inter_stop_area_distance_min": "2000",
-        "inter_stop_area_distance_max": "500000",
-        "speed_max": "300",
+        "inter_stop_area_distance_min": "300",
+        "inter_stop_area_distance_max": "2000",
+        "speed_max": "50",
         "speed_min": "20",
-        "inter_stop_duration_variation_max": "60"
+        "inter_stop_duration_variation_max": "300"
     },
+    "mode_funicular": {
+        "allowed_transport": "1",
+        "inter_stop_area_distance_min": "300",
+        "inter_stop_area_distance_max": "2000",
+        "speed_max": "50",
+        "speed_min": "20",
+        "inter_stop_duration_variation_max": "300"
+    },
+    "mode_lift": {
+        "allowed_transport": "1",
+        "inter_stop_area_distance_min": "300",
+        "inter_stop_area_distance_max": "2000",
+        "speed_max": "50",
+        "speed_min": "20",
+        "inter_stop_duration_variation_max": "300"
+    },
+ 
     "mode_taxi": {
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "500",
@@ -95,15 +104,8 @@
         "speed_min": "1",
         "inter_stop_duration_variation_max": "60"
     },
-    "mode_local_train": {
-        "allowed_transport": "1",
-        "inter_stop_area_distance_min": "1000",
-        "inter_stop_area_distance_max": "500000",
-        "speed_max": "150",
-        "speed_min": "1",
-        "inter_stop_duration_variation_max": "600"
-    },
-    "mode_train": {
+ 
+    "mode_rail": {
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "1000",
         "inter_stop_area_distance_max": "500000",
@@ -111,15 +113,8 @@
         "speed_min": "1",
         "inter_stop_duration_variation_max": "600"
     },
-    "mode_long_distance_train": {
-        "allowed_transport": "1",
-        "inter_stop_area_distance_min": "1000",
-        "inter_stop_area_distance_max": "500000",
-        "speed_max": "210",
-        "speed_min": "1",
-        "inter_stop_duration_variation_max": "60"
-    },
-    "mode_tramway": {
+ 
+    "mode_tram": {
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "300",
         "inter_stop_area_distance_max": "2000",
