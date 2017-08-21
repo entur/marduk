@@ -43,6 +43,9 @@ public class GtfsExportParameters {
         @JsonProperty("keep_original_id")
         public boolean keepOriginalId = false;
 
+        @JsonProperty("use_tpeg_hvt")
+        public boolean useTpegHvt = true;
+
 
         public GtfsExport(String name, String objectIdPrefix, String referentialName, String organisationName, String userName, boolean keepOriginalId) {
             this.name = name;

@@ -17,6 +17,8 @@ public class ParametersTest {
             "\"ignore_last_word\": \"0\", \"ignore_end_chars\": \"0\"," +
             "\"route_type_id_scheme\": \"any\"," +
             "\"parse_connection_links\": false," +
+            "\"use_tpeg_hvt\": true," +
+                
                 " \"max_distance_for_connection_link\": \"0\", \"test\": false, \"stop_area_remote_id_mapping\": true, \"stop_area_import_mode\": \"CREATE_NEW\", \"keep_obsolete_lines\": true } } }";
 
     final String regtoppReferenceJson =  "{\"parameters\":{\"regtopp-import\":{\"name\":\"test\",\"clean_repository\":\"0\",\"no_save\":\"0\"," +
