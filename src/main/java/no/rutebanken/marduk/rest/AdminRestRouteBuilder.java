@@ -480,27 +480,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-fetch-osm")
                 .endRest();
 
-        rest("/services/marduk")
-                .post("/file")
-                .description("Adjust the marduk file in hubot and etcd")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .route()
-                .convertBodyTo(String.class)
-                // Does not work - expecting json for some reason: .process(p -> p.getOut().setHeader(FILE_HANDLE, p.getIn().getBody()))
-                .setHeader(FILE_HANDLE, simple("static"))
-                .process(p -> {
-                    throw new MardukException("This an endpoint for development purposes ONLY. ");
-                })
-                .log(LoggingLevel.INFO, "Want to set ${header." + FILE_HANDLE + "}")
-                .to("direct:notify")
-                .to("direct:notifyEtcd")
-                .setBody(simple("done"))
-                .routeId("admin-marduk-file")
-                .endRest();
-
-
         rest("/services/organisationRegistry/administrativeZones")
                 .post("/import")
                 .description("Import administrative zones to the organisation registry")
@@ -529,110 +508,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:startFullTiamatPublishExport")
                 .setBody(simple("done"))
                 .routeId("admin-tiamat-publish-export-full")
-                .endRest();
-
-
-        rest("geocoder/administrativeUnits")
-                .post("/download")
-                .description("Trigger download of administrative units from Norwegian mapping authority")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-administrative-units-download")
-                .removeHeaders("CamelHttp*")
-                .setBody(constant(KARTVERKET_ADMINISTRATIVE_UNITS_DOWNLOAD))
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .inOnly("direct:geoCoderStart")
-                .setBody(constant(null))
-                .endRest()
-                .post("/update")
-                .description("Trigger import of administrative units to Tiamat")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-administrative-units-tiamat-update")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .removeHeaders("CamelHttp*")
-                .setBody(constant(TIAMAT_ADMINISTRATIVE_UNITS_UPDATE_START))
-                .inOnly("direct:geoCoderStart")
-                .setBody(constant(null))
-                .endRest();
-
-        rest("geocoder/poi")
-                .post("/update")
-                .description("Trigger import of place of interest info to Tiamat")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-place-of-interest-tiamat-update")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .removeHeaders("CamelHttp*")
-                .setBody(constant(TIAMAT_PLACES_OF_INTEREST_UPDATE_START))
-                .inOnly("direct:geoCoderStart")
-                .setBody(constant(null))
-                .endRest();
-
-
-        rest("geocoder/address")
-                .post("/download")
-                .description("Trigger download of address info from Norwegian mapping authority")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-address-download")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .removeHeaders("CamelHttp*")
-                .setBody(constant(KARTVERKET_ADDRESS_DOWNLOAD))
-                .inOnly("direct:geoCoderStart")
-                .setBody(constant(null))
-                .endRest();
-
-
-        rest("geocoder/placeNames")
-                .post("/download")
-                .description("Trigger download of place names from Norwegian mapping authority")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-place-names-download")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .removeHeaders("CamelHttp*")
-                .setBody(constant(KARTVERKET_PLACE_NAMES_DOWNLOAD))
-                .inOnly("direct:geoCoderStart")
-                .setBody(constant(null))
-                .endRest();
-
-
-        rest("geocoder/tiamat")
-                .post("/export")
-                .description("Trigger export from Tiamat")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-tiamat-export")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .removeHeaders("CamelHttp*")
-                .setBody(constant(TIAMAT_EXPORT_START))
-                .inOnly("direct:geoCoderStart")
-                .setBody(constant(null))
-                .endRest();
-
-
-        rest("geocoder/pelias")
-                .post("/update")
-                .description("Trigger update of Pelias")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-pelias-update")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .removeHeaders("CamelHttp*")
-                .setBody(constant(PELIAS_UPDATE_START))
-                .inOnly("direct:geoCoderStart")
-                .setBody(constant(null))
-                .endRest()
-                .post("/abort")
-                .description("Abort update of Pelias")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-pelias-update-abort")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .log(LoggingLevel.INFO, "Signalling abort of Pelias update")
-                .bean("peliasUpdateStatusService", "signalAbort")
-                .setBody(constant(null))
                 .endRest();
 
 
