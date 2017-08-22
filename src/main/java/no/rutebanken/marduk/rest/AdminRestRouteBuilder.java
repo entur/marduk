@@ -3,7 +3,6 @@ package no.rutebanken.marduk.rest;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
-import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
@@ -11,7 +10,6 @@ import no.rutebanken.marduk.routes.chouette.json.Status;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.security.AuthorizationClaim;
 import no.rutebanken.marduk.security.AuthorizationService;
-
 import org.apache.camel.Body;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -27,11 +25,15 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.net.URLDecoder;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
-import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 
 /**
  * REST interface for backdoor triggering of messages
@@ -168,7 +170,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(null))
                 .endRest()
                 .post("/clean/{filter}")
-                .description("Triggers the clean ALL dataspace process in Chouette. Only timetable data are deleted, not job data (imports, exports, validations)")
+                .description("Triggers the clean ALL dataspace process in Chouette. Only timetable data are deleted, not job data (imports, exports, validations) or stop places")
                 .param()
                 .required(Boolean.TRUE)
                 .name("filter")
@@ -480,9 +482,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-fetch-osm")
                 .endRest();
 
-        rest("/services/organisationRegistry/administrativeZones")
-                .post("/import")
-                .description("Import administrative zones to the organisation registry")
+        rest("/services/organisation_admin/administrative_zones")
+                .post("/update")
+                .description("Update administrative zones in the organisation registry")
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
@@ -495,9 +497,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .endRest();
 
 
-        rest("/services/tiamat/export")
+        rest("/services/export/stop_places")
                 .post("/full")
-                .description("Trigger full export from Tiamat for all configurations")
+                .description("Trigger export from Stop Place Registry (NSR) for all existing configurations")
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
