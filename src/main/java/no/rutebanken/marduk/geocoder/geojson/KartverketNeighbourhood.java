@@ -9,11 +9,11 @@ import java.util.Objects;
 
 public class KartverketNeighbourhood extends AbstractKartverketGeojsonAdapter {
 
-    private List<String> neighbourhoodTypeBlackList;
+    private List<String> neighbourhoodTypeWhiteList;
 
-    public KartverketNeighbourhood(SimpleFeature feature, List<String> neighbourhoodTypeBlackList) {
+    public KartverketNeighbourhood(SimpleFeature feature, List<String> neighbourhoodTypeWhiteList) {
         super(feature);
-        this.neighbourhoodTypeBlackList = neighbourhoodTypeBlackList;
+        this.neighbourhoodTypeWhiteList = neighbourhoodTypeWhiteList;
     }
 
     @Override
@@ -45,9 +45,9 @@ public class KartverketNeighbourhood extends AbstractKartverketGeojsonAdapter {
     }
 
     private boolean isValidType(Long type) {
-        if (neighbourhoodTypeBlackList == null) {
+        if (neighbourhoodTypeWhiteList == null) {
             return true;
         }
-        return !neighbourhoodTypeBlackList.contains(Objects.toString(type));
+        return neighbourhoodTypeWhiteList.contains(Objects.toString(type));
     }
 }

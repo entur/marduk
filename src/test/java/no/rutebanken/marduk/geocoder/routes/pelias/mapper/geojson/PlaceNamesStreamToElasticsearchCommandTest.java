@@ -15,34 +15,34 @@ import java.util.stream.Collectors;
 public class PlaceNamesStreamToElasticsearchCommandTest {
 
 
-	@Test
-	public void testTransform() throws Exception {
-		List<String> blackList= Arrays.asList("140");
-		KartverketGeoJsonStreamToElasticsearchCommands transformer = new KartverketGeoJsonStreamToElasticsearchCommands(new GeojsonFeatureWrapperFactory(blackList));
-		Collection<ElasticsearchCommand> commands = transformer
-				                                            .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/geojson/stedsnavn.geojson"));
+    @Test
+    public void testTransform() throws Exception {
+        List<String> whiteList = Arrays.asList("106", "107");
+        KartverketGeoJsonStreamToElasticsearchCommands transformer = new KartverketGeoJsonStreamToElasticsearchCommands(new GeojsonFeatureWrapperFactory(whiteList));
+        Collection<ElasticsearchCommand> commands = transformer
+                                                            .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/geojson/stedsnavn.geojson"));
 
-		Assert.assertEquals(2, commands.size());
+        Assert.assertEquals(2, commands.size());
 
-		commands.forEach(c -> assertCommand(c));
+        commands.forEach(c -> assertCommand(c));
 
-		PeliasDocument kalland = commands.stream().map(c -> (PeliasDocument) c.getSource()).filter(d -> "Kalland".equals(d.getDefaultName())).collect(Collectors.toList()).get(0);
-		assertKalland(kalland);
-	}
+        PeliasDocument kalland = commands.stream().map(c -> (PeliasDocument) c.getSource()).filter(d -> "Kalland".equals(d.getDefaultName())).collect(Collectors.toList()).get(0);
+        assertKalland(kalland);
+    }
 
-	private void assertKalland(PeliasDocument kalland) {
-		Assert.assertEquals(Double.valueOf(58.088692), kalland.getCenterPoint().getLat());
-		Assert.assertEquals(Double.valueOf(7.508508), kalland.getCenterPoint().getLon());
+    private void assertKalland(PeliasDocument kalland) {
+        Assert.assertEquals(Double.valueOf(58.088692), kalland.getCenterPoint().getLat());
+        Assert.assertEquals(Double.valueOf(7.508508), kalland.getCenterPoint().getLon());
 
-		Assert.assertEquals("NOR", kalland.getParent().getCountryId());
-		Assert.assertEquals("10", kalland.getParent().getCountyId());
-		Assert.assertEquals("1002", kalland.getParent().getLocalityId());
-	}
+        Assert.assertEquals("NOR", kalland.getParent().getCountryId());
+        Assert.assertEquals("10", kalland.getParent().getCountyId());
+        Assert.assertEquals("1002", kalland.getParent().getLocalityId());
+    }
 
-	private void assertCommand(ElasticsearchCommand command) {
-		Assert.assertNotNull(command.getIndex());
-		Assert.assertEquals("pelias", command.getIndex().getIndex());
-		Assert.assertEquals("neighbourhood", command.getIndex().getType());
-	}
+    private void assertCommand(ElasticsearchCommand command) {
+        Assert.assertNotNull(command.getIndex());
+        Assert.assertEquals("pelias", command.getIndex().getIndex());
+        Assert.assertEquals("neighbourhood", command.getIndex().getType());
+    }
 
 }
