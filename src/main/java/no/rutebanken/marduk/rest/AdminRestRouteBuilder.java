@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import java.net.URLDecoder;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -75,6 +76,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
                 .transform(exceptionMessage());
 
+        onException(NotFoundException.class)
+                .handled(true)
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404))
+                .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                .transform(exceptionMessage());
+
         restConfiguration()
                 .component("jetty")
                 .bindingMode(RestBindingMode.json)
@@ -91,15 +98,16 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .contextPath("/admin");
 
         rest("")
+                .apiDocs(false)
                 .description("Wildcard definitions necessary to get Jetty to match authorization filters to endpoints with path params")
-                .get().route().routeId("admin-route-authorize-get").log("processorRequired").endRest()
-                .post().route().routeId("admin-route-authorize-post").log("processorRequired").endRest()
-                .put().route().routeId("admin-route-authorize-put").log("processorRequired").endRest()
-                .delete().route().routeId("admin-route-authorize-delete").log("processorRequired").endRest();
+                .get().route().routeId("admin-route-authorize-get").throwException(new NotFoundException()).endRest()
+                .post().route().routeId("admin-route-authorize-post").throwException(new NotFoundException()).endRest()
+                .put().route().routeId("admin-route-authorize-put").throwException(new NotFoundException()).endRest()
+                .delete().route().routeId("admin-route-authorize-delete").throwException(new NotFoundException()).endRest();
 
         rest("/application")
                 .post("/filestores/clean")
-                .description("Clean unique filname and digest Idempotent Stores")
+                .description("Clean unique filename and digest Idempotent Stores")
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-application-clean-unique-filename-and-digest-idempotent-repos")
