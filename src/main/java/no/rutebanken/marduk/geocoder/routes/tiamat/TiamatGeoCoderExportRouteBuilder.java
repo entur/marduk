@@ -23,6 +23,9 @@ public class TiamatGeoCoderExportRouteBuilder extends BaseRouteBuilder {
     @Value("${tiamat.geocoder.export.blobstore.subdirectory:tiamat/geocoder}")
     private String blobStoreSubdirectoryForTiamatGeoCoderExport;
 
+    @Value("${tiamat.geocoder.export.query:?topographicPlaceExportMode=ALL}")
+    private String tiamatExportQuery;
+
     private String TIAMAT_EXPORT_LATEST_FILE_NAME = "tiamat_export_geocoder_latest.zip";
 
     @Override
@@ -39,7 +42,7 @@ public class TiamatGeoCoderExportRouteBuilder extends BaseRouteBuilder {
         from(TIAMAT_EXPORT_START.getEndpoint())
                 .process(e -> JobEvent.systemJobBuilder(e).startGeocoder(GeoCoderTaskType.TIAMAT_EXPORT).build()).to("direct:updateStatus")
                 .setHeader(Constants.JOB_STATUS_ROUTING_DESTINATION, constant("direct:processTiamatGeoCoderExportResults"))
-                .setHeader(Constants.QUERY_STRING, constant(""))
+                .setHeader(Constants.QUERY_STRING, constant(tiamatExportQuery))
                 .log(LoggingLevel.INFO, "Start Tiamat geocoder export")
                 .to("direct:tiamatExport")
                 .end()
