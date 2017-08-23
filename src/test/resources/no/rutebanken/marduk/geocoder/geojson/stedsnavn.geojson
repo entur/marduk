@@ -17,7 +17,7 @@
         "enh_komm": 938,
         "enh_ssrobj_id": 11878,
         "enh_sntystat": "H",
-        "enh_navntype": 6,
+        "enh_navntype": 106,
         "for_snavn": "Ørni",
         "kom_fylkesnr": 9,
         "kpr_tekst": "Norge 1:50 000"
@@ -46,7 +46,7 @@
         "enh_komm": 1002,
         "enh_ssrobj_id": 1785,
         "enh_sntystat": "H",
-        "enh_navntype": 108,
+        "enh_navntype": 107,
         "for_snavn": "Kalland",
         "kom_fylkesnr": 10,
         "kpr_tekst": "N50 Kartdata"
