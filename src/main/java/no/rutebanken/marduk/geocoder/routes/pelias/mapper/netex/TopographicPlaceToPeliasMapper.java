@@ -46,7 +46,7 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
         switch (place.getTopographicPlaceType()) {
 
             case PLACE_OF_INTEREST:
-                return "venue";
+                return "building";
 
                 // Still using adm units directly from kartverket. Change if tiamat IDs are needed.
 //            case TOWN:

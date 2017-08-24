@@ -52,7 +52,7 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
     private void assertKnownPoi(PeliasDocument known) throws Exception {
         Assert.assertEquals("Stranda kyrkje", known.getDefaultName());
         Assert.assertEquals("Stranda kyrkje", known.getNameMap().get("no"));
-        Assert.assertEquals("venue", known.getLayer());
+        Assert.assertEquals("building", known.getLayer());
         Assert.assertEquals(Arrays.asList("poi"), known.getCategory());
         Assert.assertEquals(62.308413, known.getCenterPoint().getLat(), 0.0001);
         Assert.assertEquals(6.947573, known.getCenterPoint().getLon(), 0.0001);
