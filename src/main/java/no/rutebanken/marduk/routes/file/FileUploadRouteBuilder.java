@@ -7,6 +7,8 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.CloseShieldInputStream;
+import org.apache.tomcat.util.http.fileupload.FileItem;
 import org.apache.tomcat.util.http.fileupload.FileItemFactory;
 import org.apache.tomcat.util.http.fileupload.UploadContext;
 import org.apache.tomcat.util.http.fileupload.disk.DiskFileItemFactory;
@@ -41,7 +43,7 @@ public class FileUploadRouteBuilder extends BaseRouteBuilder {
                 .process(e -> e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString())))
                 .setHeader(FILE_NAME, simple("${body.name}"))
                 .setHeader(FILE_HANDLE, simple("inbound/received/${header." + CHOUETTE_REFERENTIAL + "}/${header." + FILE_NAME + "}"))
-                .setHeader(FILE_CONTENT_HEADER, simple("${body.inputStream}"))
+                .process(e -> e.getIn().setHeader(FILE_CONTENT_HEADER, new CloseShieldInputStream(e.getIn().getBody(FileItem.class).getInputStream())))
                 .to("direct:uploadFileAndStartImport")
                 .routeId("files-upload");
 
