@@ -87,7 +87,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         restConfiguration()
                 .component("jetty")
-
+                .bindingMode(RestBindingMode.json)
                 .endpointProperty("filtersRef", "keycloakPreAuthActionsFilter,keycloakAuthenticationProcessingFilter")
                 .endpointProperty("sessionSupport", "true")
                 .endpointProperty("matchOnUriPrefix", "true")
@@ -248,7 +248,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .outType(String.class)
                 .consumes(JSON)
                 .produces(PLAIN)
-                .bindingMode(RestBindingMode.json)
                 .responseMessage().code(200).message("Job accepted").endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
@@ -279,7 +278,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .outType(BlobStoreFiles.class)
                 .consumes(PLAIN)
                 .produces(JSON)
-                .bindingMode(RestBindingMode.json)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
@@ -296,6 +294,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
                 .consumes(MULTIPART_FORM_DATA)
                 .produces(PLAIN)
+                .bindingMode(RestBindingMode.off)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
