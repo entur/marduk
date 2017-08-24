@@ -1,11 +1,10 @@
 {
-    areaVisibility: true,
-    parentStopLinking: true,
-    platformEntriesLinking: true,
-    osmWayPropertySet: "norway",
-    stopClusterMode: "parentStation",
-    islandWithoutStopsMaxSize: 5,
-    islandWithStopsMaxSize: 5,
-    htmlAnnotations: true
+    "areaVisibility": true,
+    "parentStopLinking": true,
+    "platformEntriesLinking": true,
+    "osmWayPropertySet": "norway",
+    "islandWithoutStopsMaxSize": 5,
+    "islandWithStopsMaxSize": 5,
+    "htmlAnnotations": true
     
 }
