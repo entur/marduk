@@ -12,6 +12,12 @@ public class ExternalBlobStoreRoute extends BaseRouteBuilder {
 
     @Override
     public void configure() throws Exception {
+
+        from("direct:uploadExternalBlob")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .bean("exchangeBlobStoreService","uploadBlob")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true");
+
         from("direct:fetchExternalBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .bean("exchangeBlobStoreService","getBlob")

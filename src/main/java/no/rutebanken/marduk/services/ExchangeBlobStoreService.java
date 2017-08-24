@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.services;
 
 import com.google.cloud.storage.Storage;
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.repository.BlobStoreRepository;
 import org.apache.camel.Exchange;
 import org.apache.camel.Header;
@@ -29,6 +30,11 @@ public class ExchangeBlobStoreService {
     public void init(){
         repository.setStorage(exchangeStorage);
         repository.setContainerName(containerName);
+    }
+
+    public void uploadBlob(@Header(value = Constants.FILE_HANDLE) String name, InputStream inputStream, Exchange exchange) {
+        ExchangeUtils.addHeadersAndAttachments(exchange);
+        repository.uploadBlob(name, inputStream, false);
     }
 
     public InputStream getBlob(@Header(value = FILE_HANDLE) String name, Exchange exchange) {

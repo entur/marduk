@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static no.rutebanken.marduk.Constants.*;
 
 /**
@@ -86,10 +87,11 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         restConfiguration()
                 .component("jetty")
-                .bindingMode(RestBindingMode.json)
+
                 .endpointProperty("filtersRef", "keycloakPreAuthActionsFilter,keycloakAuthenticationProcessingFilter")
                 .endpointProperty("sessionSupport", "true")
                 .endpointProperty("matchOnUriPrefix", "true")
+                .endpointProperty("enablemulti-partFilter","true")
                 .enableCORS(true)
                 .dataFormatProperty("prettyPrint", "true")
                 .host(host)
@@ -231,7 +233,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders("CamelHttp*")
                 .choice()
                 .when(simple("${header.providerIds}"))
-                .process(e -> e.getIn().setHeader(PROVIDER_IDS,e.getIn().getHeader("providerIds","",String.class).split(",")))
+                .process(e -> e.getIn().setHeader(PROVIDER_IDS, e.getIn().getHeader("providerIds", "", String.class).split(",")))
                 .end()
                 .to("direct:chouetteGetStats")
                 .routeId("admin-chouette-stats-multiple-providers")
@@ -246,6 +248,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .outType(String.class)
                 .consumes(JSON)
                 .produces(PLAIN)
+                .bindingMode(RestBindingMode.json)
                 .responseMessage().code(200).message("Job accepted").endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
@@ -276,6 +279,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .outType(BlobStoreFiles.class)
                 .consumes(PLAIN)
                 .produces(JSON)
+                .bindingMode(RestBindingMode.json)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
@@ -287,6 +291,25 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:listBlobsFlat")
                 .routeId("admin-chouette-import-list")
                 .endRest()
+                .post("/files")
+                .description("Upload file for import into Chouette")
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
+                .consumes(MULTIPART_FORM_DATA)
+                .produces(PLAIN)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
+                .route()
+                .streamCaching()
+                .setHeader(PROVIDER_ID, header("providerId"))
+                .to("direct:authorizeRequest")
+                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL,getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))))
+                .log(LoggingLevel.INFO, correlation() + "upload files and start import pipeline")
+                .removeHeaders("CamelHttp*")
+                .to("direct:uploadFilesAndStartImport")
+                .routeId("admin-chouette-upload-file")
+                .endRest()
+
                 .get("/files/{fileName}")
                 .description("Download file for reimport into Chouette")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
