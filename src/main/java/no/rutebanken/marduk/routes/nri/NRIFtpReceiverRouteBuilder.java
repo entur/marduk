@@ -84,8 +84,8 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
                 return 13l;
             case "Nordland fylkeskommune (Nordland fylke)":
                 return 14l;
-            case "Ruter (Akershus- og Oslo fylke)":
-                return 2l;
+//            case "Ruter (Akershus- og Oslo fylke)":
+//                return 2l;
             case "Snelandia (Finnmark fylke)":
                 return 16l;
             case "Sogn og Fjordane fylkeskommune (Sogn og Fjordane fylke)":
