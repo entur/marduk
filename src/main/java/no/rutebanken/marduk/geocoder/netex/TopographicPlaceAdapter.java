@@ -2,10 +2,11 @@ package no.rutebanken.marduk.geocoder.netex;
 
 import com.vividsolutions.jts.geom.Geometry;
 
+import java.util.List;
 import java.util.Map;
 
 public interface TopographicPlaceAdapter {
-    enum Type {COUNTRY, COUNTY, LOCALITY, BOROUGH, NEIGHBOURHOOD}
+    enum Type {COUNTRY, COUNTY, LOCALITY, BOROUGH, PLACE}
 
     String getId();
 
@@ -28,6 +29,8 @@ public interface TopographicPlaceAdapter {
      * Returns two letter country code.
      */
     String getCountryRef();
+
+    List<String> getCategories();
 
     boolean isValid();
 }

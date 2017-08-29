@@ -4,16 +4,17 @@ package no.rutebanken.marduk.geocoder.geojson;
 import org.apache.commons.lang3.StringUtils;
 import org.opengis.feature.simple.SimpleFeature;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class KartverketNeighbourhood extends AbstractKartverketGeojsonAdapter {
+public class KartverketPlace extends AbstractKartverketGeojsonAdapter {
 
-    private List<String> neighbourhoodTypeWhiteList;
+    private List<String> placeTypeWhiteList;
 
-    public KartverketNeighbourhood(SimpleFeature feature, List<String> neighbourhoodTypeWhiteList) {
+    public KartverketPlace(SimpleFeature feature, List<String> placeTypeWhiteList) {
         super(feature);
-        this.neighbourhoodTypeWhiteList = neighbourhoodTypeWhiteList;
+        this.placeTypeWhiteList = placeTypeWhiteList;
     }
 
     @Override
@@ -33,7 +34,7 @@ public class KartverketNeighbourhood extends AbstractKartverketGeojsonAdapter {
 
     @Override
     public AbstractKartverketGeojsonAdapter.Type getType() {
-        return Type.NEIGHBOURHOOD;
+        return Type.PLACE;
     }
 
     @Override
@@ -45,9 +46,14 @@ public class KartverketNeighbourhood extends AbstractKartverketGeojsonAdapter {
     }
 
     private boolean isValidType(Long type) {
-        if (neighbourhoodTypeWhiteList == null) {
+        if (placeTypeWhiteList == null) {
             return true;
         }
-        return neighbourhoodTypeWhiteList.contains(Objects.toString(type));
+        return placeTypeWhiteList.contains(Objects.toString(type));
+    }
+
+    @Override
+    public List<String> getCategories() {
+        return Arrays.asList("" + getProperty("enh_navntype"));
     }
 }

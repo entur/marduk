@@ -13,6 +13,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 
@@ -38,15 +40,23 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public BlobStoreFiles listBlobs(String prefix) {
-        Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage, containerName, prefix);
+    public BlobStoreFiles listBlobs(Collection<String> prefixes) {
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
-        while (blobIterator.hasNext()) {
-            Blob blob = blobIterator.next();
-            blobStoreFiles.add(new BlobStoreFiles.File(blob.getName(), new Date(blob.getUpdateTime()), blob.getSize()));
+
+
+        for (String prefix:prefixes) {
+            Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage, containerName, prefix);
+            blobIterator.forEachRemaining(blob -> blobStoreFiles.add(new BlobStoreFiles.File(blob.getName(), new Date(blob.getCreateTime()), new Date(blob.getUpdateTime()), blob.getSize())));
         }
+
         return blobStoreFiles;
     }
+
+    @Override
+    public BlobStoreFiles listBlobs(String prefix) {
+        return listBlobs(Arrays.asList(prefix));
+    }
+
 
     @Override
     public BlobStoreFiles listBlobsFlat(String prefix) {
@@ -56,7 +66,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
             Blob blob = blobIterator.next();
             String fileName = blob.getName().replace(prefix, "");
             if (!StringUtils.isEmpty(fileName)) {
-                blobStoreFiles.add(new BlobStoreFiles.File(fileName, new Date(blob.getUpdateTime()), blob.getSize()));
+                blobStoreFiles.add(new BlobStoreFiles.File(fileName, new Date(blob.getCreateTime()), new Date(blob.getUpdateTime()), blob.getSize()));
             }
         }
         return blobStoreFiles;

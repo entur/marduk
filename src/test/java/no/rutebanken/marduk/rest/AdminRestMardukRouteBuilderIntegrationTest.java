@@ -35,175 +35,209 @@ import static no.rutebanken.marduk.Constants.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
-	@Autowired
-	ModelCamelContext camelContext;
+    @Autowired
+    ModelCamelContext camelContext;
 
-	@Autowired
-	private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
+    @Autowired
+    private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
-	@EndpointInject(uri = "mock:chouetteImportQueue")
-	protected MockEndpoint importQueue;
+    @EndpointInject(uri = "mock:chouetteImportQueue")
+    protected MockEndpoint importQueue;
 
-	@EndpointInject(uri = "mock:chouetteExportQueue")
-	protected MockEndpoint exportQueue;
+    @EndpointInject(uri = "mock:chouetteExportQueue")
+    protected MockEndpoint exportQueue;
 
-	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/import")
-	protected ProducerTemplate importTemplate;
+    @Produce(uri = "http4:localhost:28080/admin/services/chouette/2/import")
+    protected ProducerTemplate importTemplate;
 
-	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/export")
-	protected ProducerTemplate exportTemplate;
+    @Produce(uri = "http4:localhost:28080/admin/services/chouette/2/export")
+    protected ProducerTemplate exportTemplate;
 
-	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files")
-	protected ProducerTemplate listFilesTemplate;
+    @Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files")
+    protected ProducerTemplate listFilesTemplate;
 
-	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files/existing_regtopp-file.zip")
-	protected ProducerTemplate getFileTemplate;
+    @Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files/existing_regtopp-file.zip")
+    protected ProducerTemplate getFileTemplate;
 
-	@Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files/unknown-file.zip")
-	protected ProducerTemplate getUnknownFileTemplate;
-
-	@Before
-	public void setUpProvider() {
-		when(providerRepository.getReferential(2L)).thenReturn("rut");
-	}
-
-	@Test
-	public void runImport() throws Exception {
-
-		camelContext.getRouteDefinition("admin-chouette-import").adviceWith(camelContext, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() throws Exception {
-				interceptSendToEndpoint("activemq:queue:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue");
-			}
-		});
+    @Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files/unknown-file.zip")
+    protected ProducerTemplate getUnknownFileTemplate;
 
 
-		// we must manually start when we are done with all the advice with
-		camelContext.start();
+    @Produce(uri = "http4:localhost:28080/admin/services/chouette/export/files")
+    protected ProducerTemplate listExportFilesTemplate;
 
-		BlobStoreFiles d = new BlobStoreFiles();
-		d.add(new BlobStoreFiles.File("file1", null, null));
-		d.add(new BlobStoreFiles.File("file2", null, null));
 
-		ObjectMapper mapper = new ObjectMapper();
-		StringWriter writer = new StringWriter();
-		mapper.writeValue(writer, d);
-		String importJson = writer.toString();
+    @Value("#{'${timetable.export.blob.prefixes:outbound/gtfs/,outbound/netex/}'.split(',')}")
+    private List<String> exportFileStaticPrefixes;
 
-		// Do rest call
 
-		Map<String, Object> headers = new HashMap<String, Object>();
-		headers.put(Exchange.HTTP_METHOD, "POST");
-		importTemplate.sendBodyAndHeaders(importJson, headers);
+    @Before
+    public void setUpProvider() {
+        when(providerRepository.getReferential(2L)).thenReturn("rut");
+    }
 
-		// setup expectations on the mocks
-		importQueue.expectedMessageCount(2);
+    @Test
+    public void runImport() throws Exception {
 
-		// assert that the test was okay
-		importQueue.assertIsSatisfied();
+        camelContext.getRouteDefinition("admin-chouette-import").adviceWith(camelContext, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                interceptSendToEndpoint("activemq:queue:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue");
+            }
+        });
 
-		List<Exchange> exchanges = importQueue.getExchanges();
-		String providerId = (String) exchanges.get(0).getIn().getHeader(PROVIDER_ID);
-		assertEquals("2", providerId);
-		String s3FileHandle = (String) exchanges.get(0).getIn().getHeader(FILE_HANDLE);
-		assertEquals(BLOBSTORE_PATH_INBOUND + "rut/file1", s3FileHandle);
-	}
 
-	@Test
-	public void runExport() throws Exception {
+        // we must manually start when we are done with all the advice with
+        camelContext.start();
 
-		camelContext.getRouteDefinition("admin-chouette-export").adviceWith(camelContext, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() throws Exception {
-				interceptSendToEndpoint("activemq:queue:ChouetteExportQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportQueue");
+        BlobStoreFiles d = new BlobStoreFiles();
+        d.add(new BlobStoreFiles.File("file1", null, null, null));
+        d.add(new BlobStoreFiles.File("file2", null, null, null));
 
-			}
-		});
+        ObjectMapper mapper = new ObjectMapper();
+        StringWriter writer = new StringWriter();
+        mapper.writeValue(writer, d);
+        String importJson = writer.toString();
 
-		// we must manually start when we are done with all the advice with
-		camelContext.start();
+        // Do rest call
 
-		// Do rest call
-		Map<String, Object> headers = new HashMap<String, Object>();
-		headers.put(Exchange.HTTP_METHOD, "POST");
-		exportTemplate.sendBodyAndHeaders(null, headers);
+        Map<String, Object> headers = new HashMap<String, Object>();
+        headers.put(Exchange.HTTP_METHOD, "POST");
+        importTemplate.sendBodyAndHeaders(importJson, headers);
 
-		// setup expectations on the mocks
-		exportQueue.expectedMessageCount(1);
+        // setup expectations on the mocks
+        importQueue.expectedMessageCount(2);
 
-		// assert that the test was okay
-		exportQueue.assertIsSatisfied();
+        // assert that the test was okay
+        importQueue.assertIsSatisfied();
 
-		List<Exchange> exchanges = exportQueue.getExchanges();
-		String providerId = (String) exchanges.get(0).getIn().getHeader(PROVIDER_ID);
-		assertEquals("2", providerId);
-	}
+        List<Exchange> exchanges = importQueue.getExchanges();
+        String providerId = (String) exchanges.get(0).getIn().getHeader(PROVIDER_ID);
+        assertEquals("2", providerId);
+        String s3FileHandle = (String) exchanges.get(0).getIn().getHeader(FILE_HANDLE);
+        assertEquals(BLOBSTORE_PATH_INBOUND + "rut/file1", s3FileHandle);
+    }
 
-	@Test
-	public void getBlobStoreFiles() throws Exception {
+    @Test
+    public void runExport() throws Exception {
 
-		// Preparations
-		String filename = "ruter_fake_data.zip";
-		String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
-		String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
+        camelContext.getRouteDefinition("admin-chouette-export").adviceWith(camelContext, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                interceptSendToEndpoint("activemq:queue:ChouetteExportQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportQueue");
 
-		//populate fake blob repo
-		inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, new FileInputStream(new File(pathname)), false);
+            }
+        });
+
+        // we must manually start when we are done with all the advice with
+        camelContext.start();
+
+        // Do rest call
+        Map<String, Object> headers = new HashMap<String, Object>();
+        headers.put(Exchange.HTTP_METHOD, "POST");
+        exportTemplate.sendBodyAndHeaders(null, headers);
+
+        // setup expectations on the mocks
+        exportQueue.expectedMessageCount(1);
+
+        // assert that the test was okay
+        exportQueue.assertIsSatisfied();
+
+        List<Exchange> exchanges = exportQueue.getExchanges();
+        String providerId = (String) exchanges.get(0).getIn().getHeader(PROVIDER_ID);
+        assertEquals("2", providerId);
+    }
+
+    @Test
+    public void getBlobStoreFiles() throws Exception {
+
+        // Preparations
+        String filename = "ruter_fake_data.zip";
+        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
+        String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
+
+        //populate fake blob repo
+        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, new FileInputStream(new File(pathname)), false);
 //		BlobStoreFiles blobStoreFiles = inMemoryBlobStoreRepository.listBlobs(fileStorePath);
 
-		camelContext.start();
+        camelContext.start();
 
-		// Do rest call
-		Map<String, Object> headers = new HashMap<String, Object>();
-		headers.put(Exchange.HTTP_METHOD, "GET");
-		InputStream response = (InputStream) listFilesTemplate.requestBodyAndHeaders(null, headers);
-		// Parse response
+        // Do rest call
+        Map<String, Object> headers = new HashMap<String, Object>();
+        headers.put(Exchange.HTTP_METHOD, "GET");
+        InputStream response = (InputStream) listFilesTemplate.requestBodyAndHeaders(null, headers);
+        // Parse response
 
-		String s = new String(IOUtils.toByteArray(response));
+        String s = new String(IOUtils.toByteArray(response));
 
-		ObjectMapper mapper = new ObjectMapper();
-		BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
-		Assert.assertEquals(1, rsp.getFiles().size());
-		Assert.assertEquals(fileStorePath + filename, rsp.getFiles().get(0).getName());
+        ObjectMapper mapper = new ObjectMapper();
+        BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
+        Assert.assertEquals(1, rsp.getFiles().size());
+        Assert.assertEquals(fileStorePath + filename, rsp.getFiles().get(0).getName());
 
-	}
-
-
-	@Test
-	public void getBlobStoreFile() throws Exception {
-		// Preparations
-		String filename = "existing_regtopp-file.zip";
-		String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
-		String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
-		FileInputStream testFileStream = new FileInputStream(new File(pathname));
-		//populate fake blob repo
-		inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFileStream, false);
+    }
 
 
-		camelContext.start();
+    @Test
+    public void getBlobStoreFile() throws Exception {
+        // Preparations
+        String filename = "existing_regtopp-file.zip";
+        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
+        String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
+        FileInputStream testFileStream = new FileInputStream(new File(pathname));
+        //populate fake blob repo
+        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFileStream, false);
 
-		// Do rest call
-		Map<String, Object> headers = new HashMap<String, Object>();
-		headers.put(Exchange.HTTP_METHOD, "GET");
-		InputStream response = (InputStream) getFileTemplate.requestBodyAndHeaders(null, headers);
-		// Parse response
+
+        camelContext.start();
+
+        // Do rest call
+        Map<String, Object> headers = new HashMap<String, Object>();
+        headers.put(Exchange.HTTP_METHOD, "GET");
+        InputStream response = (InputStream) getFileTemplate.requestBodyAndHeaders(null, headers);
+        // Parse response
 
 //		Assert.assertTrue(org.apache.commons.io.IOUtils.contentEquals(testFileStream, response));
-	}
+    }
 
 
-	@Test(expected = CamelExecutionException.class)
-	public void getBlobStoreFile_unknownFile() throws Exception {
+    @Test(expected = CamelExecutionException.class)
+    public void getBlobStoreFile_unknownFile() throws Exception {
 
-		camelContext.start();
+        camelContext.start();
 
-		// Do rest call
-		Map<String, Object> headers = new HashMap<String, Object>();
-		headers.put(Exchange.HTTP_METHOD, "GET");
-		getUnknownFileTemplate.requestBodyAndHeaders(null, headers);
-	}
+        // Do rest call
+        Map<String, Object> headers = new HashMap<String, Object>();
+        headers.put(Exchange.HTTP_METHOD, "GET");
+        getUnknownFileTemplate.requestBodyAndHeaders(null, headers);
+    }
+
+
+    @Test
+    public void getBlobStoreExportFiles() throws Exception {
+        String testFileName = "testFile";
+        //populate fake blob repo
+        for (String prefix : exportFileStaticPrefixes) {
+            inMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, new FileInputStream(new File( "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")), false);
+        }
+        camelContext.start();
+
+        // Do rest call
+        Map<String, Object> headers = new HashMap<String, Object>();
+        headers.put(Exchange.HTTP_METHOD, "GET");
+        InputStream response = (InputStream) listExportFilesTemplate.requestBodyAndHeaders(null, headers);
+        // Parse response
+
+        String s = new String(IOUtils.toByteArray(response));
+
+        ObjectMapper mapper = new ObjectMapper();
+        BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
+        Assert.assertEquals(exportFileStaticPrefixes.size(), rsp.getFiles().size());
+        exportFileStaticPrefixes.forEach(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName())));
+    }
+
 
 }

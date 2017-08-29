@@ -114,6 +114,11 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
         return getNames().get("nor");
     }
 
+    @Override
+    public List<String> getCategories() {
+        return null;
+    }
+
     protected Map<String, String> getNames() {
         if (names == null) {
             names = new HashMap<>();

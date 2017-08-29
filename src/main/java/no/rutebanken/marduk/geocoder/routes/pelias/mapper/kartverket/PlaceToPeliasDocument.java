@@ -4,15 +4,15 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import org.apache.commons.lang3.StringUtils;
 
-public class NeighbourhoodToPeliasDocument extends TopographicPlaceAdapterToPeliasDocument {
+public class PlaceToPeliasDocument extends TopographicPlaceAdapterToPeliasDocument {
 
-	public NeighbourhoodToPeliasDocument(TopographicPlaceAdapter simpleFeature) {
+	public PlaceToPeliasDocument(TopographicPlaceAdapter simpleFeature) {
 		super(simpleFeature);
 	}
 
 	@Override
 	protected String getLayer() {
-		return "neighbourhood";
+		return "address";
 	}
 
 	@Override

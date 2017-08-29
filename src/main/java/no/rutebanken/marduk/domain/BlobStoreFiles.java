@@ -53,15 +53,23 @@ public class BlobStoreFiles {
 			return fileSize;
 		}
 
-		public File(String name, Date updated, Long fileSize) {
+		public Date getCreated() {
+			return created;
+		}
+
+		public File(String name, Date created, Date updated, Long fileSize) {
 			super();
 			this.name = name;
+			this.created = created;
 			this.updated = updated;
 			this.fileSize = fileSize;
 		}
 
 		@JsonProperty(required = true)
 		private String name;
+
+		@JsonProperty(required = false)
+		private Date created;
 
 		@JsonProperty(required = false)
 		private Date updated;
@@ -71,7 +79,7 @@ public class BlobStoreFiles {
 
 		@Override
 		public String toString() {
-			return "File [name=" + name + ", updated=" + updated + ", fileSize=" + fileSize + "]";
+			return "File [name=" + name + ", created=" + created + ", updated=" + updated + ", fileSize=" + fileSize + "]";
 		}
 
 }

@@ -37,7 +37,7 @@ public abstract class TopographicPlaceAdapterToPeliasDocument {
         document.setDefaultNameAndPhrase(feature.getName());
         document.setCenterPoint(mapCenterPoint());
         document.setShape(mapShape());
-
+        document.setCategory(feature.getCategories());
         document.setParent(getParent());
         return document;
     }

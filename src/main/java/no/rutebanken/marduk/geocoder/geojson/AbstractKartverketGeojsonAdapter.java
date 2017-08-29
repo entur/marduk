@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opengis.feature.simple.SimpleFeature;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class AbstractKartverketGeojsonAdapter extends AbstractGeojsonAdapter implements TopographicPlaceAdapter {
@@ -39,6 +40,11 @@ public abstract class AbstractKartverketGeojsonAdapter extends AbstractGeojsonAd
 	@Override
 	public String getCountryRef() {
 		return "no";
+	}
+
+	@Override
+	public List<String> getCategories() {
+		return null;
 	}
 
 	@Override
