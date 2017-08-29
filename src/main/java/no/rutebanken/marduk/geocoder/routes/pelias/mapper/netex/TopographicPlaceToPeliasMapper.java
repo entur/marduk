@@ -20,9 +20,6 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
 
     @Override
     protected void populateDocument(TopographicPlace place, PeliasDocument document) {
-        document.setAlpha3(new Locale("en", place.getCountryRef().getRef().value()).getISO3Country());
-
-
         if (place.getAlternativeDescriptors() != null && !CollectionUtils.isEmpty(place.getAlternativeDescriptors().getTopographicPlaceDescriptor())) {
             place.getAlternativeDescriptors().getTopographicPlaceDescriptor().stream().filter(an -> an.getName() != null && an.getName().getLang() != null).forEach(n -> document.addName(n.getName().getLang(), n.getName().getValue()));
         }

@@ -1588,11 +1588,6 @@
           "analyzer": "keyword",
           "store": "yes"
         },
-        "alpha3": {
-          "type": "string",
-          "analyzer": "peliasAdmin",
-          "store": "yes"
-        },
         "name": {
           "type": "object",
           "dynamic": true
@@ -1879,11 +1874,6 @@
         "layer": {
           "type": "string",
           "analyzer": "keyword",
-          "store": "yes"
-        },
-        "alpha3": {
-          "type": "string",
-          "analyzer": "peliasAdmin",
           "store": "yes"
         },
         "name": {
@@ -2174,11 +2164,6 @@
           "analyzer": "keyword",
           "store": "yes"
         },
-        "alpha3": {
-          "type": "string",
-          "analyzer": "peliasAdmin",
-          "store": "yes"
-        },
         "name": {
           "type": "object",
           "dynamic": true
@@ -2465,11 +2450,6 @@
         "layer": {
           "type": "string",
           "analyzer": "keyword",
-          "store": "yes"
-        },
-        "alpha3": {
-          "type": "string",
-          "analyzer": "peliasAdmin",
           "store": "yes"
         },
         "name": {
@@ -2760,11 +2740,6 @@
           "analyzer": "keyword",
           "store": "yes"
         },
-        "alpha3": {
-          "type": "string",
-          "analyzer": "peliasAdmin",
-          "store": "yes"
-        },
         "name": {
           "type": "object",
           "dynamic": true
@@ -3051,11 +3026,6 @@
         "layer": {
           "type": "string",
           "analyzer": "keyword",
-          "store": "yes"
-        },
-        "alpha3": {
-          "type": "string",
-          "analyzer": "peliasAdmin",
           "store": "yes"
         },
         "name": {
@@ -3346,11 +3316,6 @@
           "analyzer": "keyword",
           "store": "yes"
         },
-        "alpha3": {
-          "type": "string",
-          "analyzer": "peliasAdmin",
-          "store": "yes"
-        },
         "name": {
           "type": "object",
           "dynamic": true
@@ -3637,11 +3602,6 @@
         "layer": {
           "type": "string",
           "analyzer": "keyword",
-          "store": "yes"
-        },
-        "alpha3": {
-          "type": "string",
-          "analyzer": "peliasAdmin",
           "store": "yes"
         },
         "name": {
@@ -3932,11 +3892,6 @@
           "analyzer": "keyword",
           "store": "yes"
         },
-        "alpha3": {
-          "type": "string",
-          "analyzer": "peliasAdmin",
-          "store": "yes"
-        },
         "name": {
           "type": "object",
           "dynamic": true
@@ -4223,11 +4178,6 @@
         "layer": {
           "type": "string",
           "analyzer": "keyword",
-          "store": "yes"
-        },
-        "alpha3": {
-          "type": "string",
-          "analyzer": "peliasAdmin",
           "store": "yes"
         },
         "name": {

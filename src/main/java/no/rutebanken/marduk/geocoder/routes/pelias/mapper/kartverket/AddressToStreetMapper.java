@@ -37,7 +37,6 @@ public class AddressToStreetMapper {
         String uniqueId = templateAddress.getParent().getLocalityId() + "-" + streetName;
         PeliasDocument streetDocument = new PeliasDocument("address", uniqueId);
 
-        streetDocument.setAlpha3(templateAddress.getAlpha3());
         streetDocument.setDefaultNameAndPhrase(streetName);
         streetDocument.setParent(templateAddress.getParent());
 

@@ -30,7 +30,6 @@ public class AddressToPeliasMapper {
 		document.setParent(toParent(address));
 
 		document.setDefaultNameAndPhrase(toName(address));
-		document.setAlpha3("NOR");
 		document.setCategory(Arrays.asList(address.getType()));
 		return document;
 	}

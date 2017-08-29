@@ -29,9 +29,6 @@ public class PeliasDocument {
     @JsonProperty("source_id")
     private String sourceId;
 
-    @JsonProperty("alpha3")
-    private String alpha3;
-
     @JsonProperty("name")
     private Map<String, String> nameMap;
 
@@ -75,15 +72,6 @@ public class PeliasDocument {
         this.source = source;
         this.layer = layer;
         this.sourceId = sourceId;
-    }
-
-    public String getAlpha3() {
-        return alpha3;
-    }
-
-
-    public void setAlpha3(String alpha3) {
-        this.alpha3 = alpha3;
     }
 
     public String getSource() {
