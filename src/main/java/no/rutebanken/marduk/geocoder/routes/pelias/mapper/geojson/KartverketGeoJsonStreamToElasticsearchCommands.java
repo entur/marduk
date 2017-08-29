@@ -40,8 +40,8 @@ public class KartverketGeoJsonStreamToElasticsearchCommands {
                 return new LocalityToPeliasDocument(wrapper);
             case BOROUGH:
                 return new BoroughToPeliasDocument(wrapper);
-            case NEIGHBOURHOOD:
-                return new NeighbourhoodToPeliasDocument(wrapper);
+            case PLACE:
+                return new PlaceToPeliasDocument(wrapper);
         }
         return null;
     }
