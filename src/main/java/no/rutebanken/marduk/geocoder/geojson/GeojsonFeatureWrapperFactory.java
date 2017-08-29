@@ -14,8 +14,8 @@ public class GeojsonFeatureWrapperFactory {
     // See relevant code values in http://www.kartverket.no/globalassets/standard/sosi-standarden-del-1-og-2/sosi-standarden/stedsnavn.pdf
     private final List<String> neighbourhoodTypeWhiteList;
 
-    // 101,102,103,104,105,106,107,132,228,266 = Plass/torg,by, bydel, tettsted, tettsteddel, bygd, grend, boligfelt, hyttefelt, borettslag, industriområde (not ordered)
-    public GeojsonFeatureWrapperFactory(@Value("#{'${geocoder.neighbourhood.type.whitelist:101,102,103,104,105,106,107,132,228,266}'.split(',')}") List<String> neighbourhoodTypeWhiteList) {
+    // 101,102,103,104,105,106,107,132,228,266 = Plass/torg,by, bydel, tettsted, tettsteddel, bygd, grend, boligfelt, hyttefelt, industriområde (not ordered)
+    public GeojsonFeatureWrapperFactory(@Value("#{'${geocoder.neighbourhood.type.whitelist:101,102,103,104,105,107,132,228,266}'.split(',')}") List<String> neighbourhoodTypeWhiteList) {
         this.neighbourhoodTypeWhiteList = neighbourhoodTypeWhiteList;
     }
 
