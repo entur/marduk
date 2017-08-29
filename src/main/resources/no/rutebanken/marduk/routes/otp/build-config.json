@@ -5,6 +5,7 @@
     "osmWayPropertySet": "norway",
     "islandWithoutStopsMaxSize": 5,
     "islandWithStopsMaxSize": 5,
-    "htmlAnnotations": true
+    "htmlAnnotations": true,
+    "stopClusterMode": "parentStation"
     
 }
