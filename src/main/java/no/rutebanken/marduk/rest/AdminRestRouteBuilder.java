@@ -237,6 +237,22 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .end()
                 .to("direct:chouetteGetStats")
                 .routeId("admin-chouette-stats-multiple-providers")
+                .endRest()
+
+                .get("/export/files")
+                .description("List files containing exported time table data and graphs")
+                .outType(BlobStoreFiles.class)
+                .consumes(PLAIN)
+                .produces(JSON)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Internal error").endResponseMessage()
+                .route()
+                .to("direct:authorizeRequest")
+                .log(LoggingLevel.INFO, correlation() + "get time table and graph files")
+                .removeHeaders("CamelHttp*")
+                .to("direct:listTimetableExportAndGraphBlobs")
+                .routeId("admin-chouette-timetable-files-get")
+
                 .endRest();
 
 
