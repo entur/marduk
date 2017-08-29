@@ -17,37 +17,45 @@ public class BlobStoreRoute extends BaseRouteBuilder {
         from("direct:uploadBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .choice()
-                    .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
-                    .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))     //defaulting to false if not specified
+                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))     //defaulting to false if not specified
                 .end()
-                .bean("blobStoreService","uploadBlob")
+                .bean("blobStoreService", "uploadBlob")
                 .setBody(simple(""))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .log(LoggingLevel.INFO,correlation()+"Stored file ${header." + FILE_HANDLE + "} in blob store.")
+                .log(LoggingLevel.INFO, correlation() + "Stored file ${header." + FILE_HANDLE + "} in blob store.")
                 .routeId("blobstore-upload");
 
         from("direct:getBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .bean("blobStoreService","getBlob")
+                .bean("blobStoreService", "getBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .log(LoggingLevel.INFO, correlation()+ "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.")
+                .log(LoggingLevel.INFO, correlation() + "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.")
                 .routeId("blobstore-download");
 
         from("direct:listBlobs")
-	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-            .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-            .bean("blobStoreService","listBlobs")
-	        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-	        .log(LoggingLevel.INFO,correlation()+"Returning from fetching file list from blob store.")
-            .routeId("blobstore-list");
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+                .bean("blobStoreService", "listBlobs")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store.")
+                .routeId("blobstore-list");
 
         from("direct:listBlobsFlat")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-                .bean("blobStoreService","listBlobsFlat")
+                .bean("blobStoreService", "listBlobsFlat")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .log(LoggingLevel.INFO,correlation()+"Returning from fetching file list from blob store.")
+                .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store.")
                 .routeId("blobstore-list-flat");
+
+        from("direct:listBlobsInFolders")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .bean("blobStoreService", "listBlobsInFolders")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store for multiple folders.")
+                .routeId("blobstore-list-in-folders");
+
 
     }
 }

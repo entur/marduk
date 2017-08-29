@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.io.InputStream;
+import java.util.Collection;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 
@@ -36,6 +37,11 @@ public class BlobStoreService {
 	public BlobStoreFiles listBlobsInFolder(@Header(value = Exchange.FILE_PARENT) String folder, Exchange exchange) {
 		ExchangeUtils.addHeadersAndAttachments(exchange);
 		return repository.listBlobs(folder + "/");
+	}
+
+	public BlobStoreFiles listBlobsInFolders(@Header(value = Constants.FILE_PARENT_COLLECTION) Collection<String> folders, Exchange exchange) {
+		ExchangeUtils.addHeadersAndAttachments(exchange);
+		return repository.listBlobs(folders);
 	}
 
 
