@@ -16,11 +16,12 @@ import static no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex.StopPlace
 
 public class DeliveryPublicationStreamToElasticsearchCommandsTest {
 
+    private static final Long POI_POPULARITY = 5l;
 
     @Test
     public void testTransform() throws Exception {
         DeliveryPublicationStreamToElasticsearchCommands mapper =
-                new DeliveryPublicationStreamToElasticsearchCommands(new StopPlaceBoostConfiguration("{\"defaultValue\":1000, \"stopTypeFactors\":{\"airport\":{\"*\":3}}}"));
+                new DeliveryPublicationStreamToElasticsearchCommands(new StopPlaceBoostConfiguration("{\"defaultValue\":1000, \"stopTypeFactors\":{\"airport\":{\"*\":3}}}"), POI_POPULARITY);
 
         Collection<ElasticsearchCommand> commands = mapper
                                                             .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/netex/tiamat-export.xml"));
@@ -65,10 +66,11 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
     private void assertKnownPoi(PeliasDocument known) throws Exception {
         Assert.assertEquals("Stranda kyrkje", known.getDefaultName());
         Assert.assertEquals("Stranda kyrkje", known.getNameMap().get("no"));
-        Assert.assertEquals("building", known.getLayer());
+        Assert.assertEquals("address", known.getLayer());
         Assert.assertEquals(Arrays.asList("poi"), known.getCategory());
         Assert.assertEquals(62.308413, known.getCenterPoint().getLat(), 0.0001);
         Assert.assertEquals(6.947573, known.getCenterPoint().getLon(), 0.0001);
+        Assert.assertEquals(POI_POPULARITY, known.getPopularity());
     }
 
 

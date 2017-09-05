@@ -2,6 +2,8 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket;
 
 import no.rutebanken.marduk.geocoder.routes.pelias.json.AddressParts;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.Collection;
@@ -20,7 +22,15 @@ import java.util.stream.Collectors;
  * NB! Streets are stored in the "address" layer in pelias, as this is prioritized
  *
  */
+@Service
 public class AddressToStreetMapper {
+
+
+    private final long popularity;
+
+    public AddressToStreetMapper(@Value("${pelias.address.street.boost:2}") long popularity) {
+        this.popularity = popularity;
+    }
 
     public List<PeliasDocument> createStreetPeliasDocumentsFromAddresses(Collection<PeliasDocument> addresses) {
         Collection<List<PeliasDocument>> addressesPerStreet =
@@ -45,6 +55,8 @@ public class AddressToStreetMapper {
         addressParts.setName(streetName);
         addressParts.setStreet(streetName);
         streetDocument.setAddressParts(addressParts);
+
+        streetDocument.setPopularity(popularity);
 
         return streetDocument;
     }

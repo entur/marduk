@@ -4,6 +4,7 @@ import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCo
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import no.rutebanken.marduk.geocoder.routes.pelias.kartverket.KartverketAddress;
 import no.rutebanken.marduk.geocoder.routes.pelias.kartverket.KartverketAddressReader;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -15,9 +16,15 @@ import java.util.stream.Collectors;
 @Service
 public class AddressStreamToElasticSearchCommands {
 
-    private AddressToPeliasMapper addressMapper = new AddressToPeliasMapper();
+    private AddressToPeliasMapper addressMapper;
 
-    private AddressToStreetMapper addressToStreetMapper = new AddressToStreetMapper();
+    private AddressToStreetMapper addressToStreetMapper;
+
+    @Autowired
+    public AddressStreamToElasticSearchCommands(AddressToPeliasMapper addressMapper, AddressToStreetMapper addressToStreetMapper) {
+        this.addressMapper = addressMapper;
+        this.addressToStreetMapper = addressToStreetMapper;
+    }
 
     public Collection<ElasticsearchCommand> transform(InputStream addressStream) {
         Collection<KartverketAddress> addresses = new KartverketAddressReader().read(addressStream);

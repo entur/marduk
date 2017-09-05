@@ -11,10 +11,19 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
-
+@Service
 public class AddressToPeliasMapper {
+
+
+	private final long popularity;
+
+	public AddressToPeliasMapper(@Value("${pelias.address.boost:2}")long popularity) {
+		this.popularity = popularity;
+	}
 
 	// Use unique source for addresses to allow for filtering them out from pelias autocomplete
 	private static final String SOURCE = "openaddresses";
@@ -31,6 +40,7 @@ public class AddressToPeliasMapper {
 
 		document.setDefaultNameAndPhrase(toName(address));
 		document.setCategory(Arrays.asList(address.getType()));
+		document.setPopularity(popularity);
 		return document;
 	}
 

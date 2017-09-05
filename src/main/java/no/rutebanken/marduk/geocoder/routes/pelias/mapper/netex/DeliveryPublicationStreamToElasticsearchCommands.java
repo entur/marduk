@@ -10,6 +10,7 @@ import org.rutebanken.netex.model.Place_VersionStructure;
 import org.rutebanken.netex.model.PublicationDeliveryStructure;
 import org.rutebanken.netex.model.Site_VersionFrameStructure;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.xml.bind.JAXBContext;
@@ -31,9 +32,11 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
 
     private StopPlaceBoostConfiguration stopPlaceBoostConfiguration;
 
-    @Autowired
-    public DeliveryPublicationStreamToElasticsearchCommands(StopPlaceBoostConfiguration stopPlaceBoostConfiguration) {
+    private final long poiBoost;
+
+    public DeliveryPublicationStreamToElasticsearchCommands(@Autowired StopPlaceBoostConfiguration stopPlaceBoostConfiguration, @Value("${pelias.poi.boost:1}") long poiBoost) {
         this.stopPlaceBoostConfiguration = stopPlaceBoostConfiguration;
+        this.poiBoost = poiBoost;
     }
 
     public Collection<ElasticsearchCommand> transform(InputStream publicationDeliveryStream) {
@@ -58,7 +61,7 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
                     commands.addAll(addCommands(siteFrame.getStopPlaces().getStopPlace(), new StopPlaceToPeliasMapper(deliveryStructure.getParticipantRef(), stopPlaceBoostConfiguration)));
                 }
                 if (siteFrame.getTopographicPlaces() != null) {
-                    commands.addAll(addCommands(siteFrame.getTopographicPlaces().getTopographicPlace(), new TopographicPlaceToPeliasMapper(deliveryStructure.getParticipantRef())));
+                    commands.addAll(addCommands(siteFrame.getTopographicPlaces().getTopographicPlace(), new TopographicPlaceToPeliasMapper(deliveryStructure.getParticipantRef(), poiBoost)));
                 }
             }
         }

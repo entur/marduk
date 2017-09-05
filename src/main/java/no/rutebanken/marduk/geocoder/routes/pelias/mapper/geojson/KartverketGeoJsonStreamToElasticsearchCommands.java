@@ -7,6 +7,7 @@ import no.rutebanken.marduk.geocoder.routes.pelias.elasticsearch.ElasticsearchCo
 import no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket.*;
 import org.opengis.feature.simple.SimpleFeature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -18,8 +19,11 @@ public class KartverketGeoJsonStreamToElasticsearchCommands {
 
     private final GeojsonFeatureWrapperFactory wrapperFactory;
 
-    public KartverketGeoJsonStreamToElasticsearchCommands(@Autowired GeojsonFeatureWrapperFactory wrapperFactory) {
+    private final long placeBoost;
+
+    public KartverketGeoJsonStreamToElasticsearchCommands(@Autowired GeojsonFeatureWrapperFactory wrapperFactory, @Value("${pelias.place.boost:3}") long placeBoost) {
         this.wrapperFactory = wrapperFactory;
+        this.placeBoost = placeBoost;
     }
 
     public Collection<ElasticsearchCommand> transform(InputStream placeNamesStream) {
@@ -41,7 +45,7 @@ public class KartverketGeoJsonStreamToElasticsearchCommands {
             case BOROUGH:
                 return new BoroughToPeliasDocument(wrapper);
             case PLACE:
-                return new PlaceToPeliasDocument(wrapper);
+                return new PlaceToPeliasDocument(wrapper, placeBoost);
         }
         return null;
     }

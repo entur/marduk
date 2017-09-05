@@ -15,10 +15,13 @@ import java.util.stream.Collectors;
 public class PlaceNamesStreamToElasticsearchCommandTest {
 
 
+    private static final Long placePopularity = 3l;
+
     @Test
     public void testTransform() throws Exception {
+
         List<String> whiteList = Arrays.asList("106", "107");
-        KartverketGeoJsonStreamToElasticsearchCommands transformer = new KartverketGeoJsonStreamToElasticsearchCommands(new GeojsonFeatureWrapperFactory(whiteList));
+        KartverketGeoJsonStreamToElasticsearchCommands transformer = new KartverketGeoJsonStreamToElasticsearchCommands(new GeojsonFeatureWrapperFactory(whiteList), placePopularity);
         Collection<ElasticsearchCommand> commands = transformer
                                                             .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/geojson/stedsnavn.geojson"));
 
@@ -38,6 +41,7 @@ public class PlaceNamesStreamToElasticsearchCommandTest {
         Assert.assertEquals("10", kalland.getParent().getCountyId());
         Assert.assertEquals("1002", kalland.getParent().getLocalityId());
         Assert.assertEquals(Arrays.asList("107"), kalland.getCategory());
+        Assert.assertEquals(placePopularity, kalland.getPopularity());
     }
 
     private void assertCommand(ElasticsearchCommand command) {

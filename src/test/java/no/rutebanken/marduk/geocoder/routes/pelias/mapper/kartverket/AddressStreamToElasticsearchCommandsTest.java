@@ -19,11 +19,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class AddressStreamToElasticsearchCommandsTest {
-
+    private static final Long ADDRESS_POPULARITY = 7L;
+    private static final Long ADDRESS_STREET_POPULARITY = 9L;
 
     @Test
     public void testStreamAddressesToIndexCommands() throws Exception {
-        AddressStreamToElasticSearchCommands transformer = new AddressStreamToElasticSearchCommands();
+        AddressStreamToElasticSearchCommands transformer = new AddressStreamToElasticSearchCommands(new AddressToPeliasMapper(ADDRESS_POPULARITY), new AddressToStreetMapper(ADDRESS_STREET_POPULARITY));
 
         Collection<ElasticsearchCommand> commands = transformer
                                                             .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/csv/addresses.csv"));
@@ -65,6 +66,8 @@ public class AddressStreamToElasticsearchCommandsTest {
         Assert.assertEquals("0125", parent.getLocalityId());
         Assert.assertEquals("01250508", parent.getBoroughId());
         Assert.assertEquals("Kirkås/Enga", parent.getBorough());
+
+        Assert.assertEquals(ADDRESS_POPULARITY, known.getPopularity());
 
         Assert.assertEquals("Bergheimveien 14A", known.getNameMap().get("default"));
         Assert.assertEquals(Arrays.asList("Vegadresse"), known.getCategory());

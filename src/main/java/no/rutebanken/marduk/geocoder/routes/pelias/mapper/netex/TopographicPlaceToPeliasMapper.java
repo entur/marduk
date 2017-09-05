@@ -13,9 +13,11 @@ import static org.rutebanken.netex.model.TopographicPlaceTypeEnumeration.PLACE_O
 
 public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentMapper<TopographicPlace> {
 
+    private long popularity;
 
-    public TopographicPlaceToPeliasMapper(String participantRef) {
+    public TopographicPlaceToPeliasMapper(String participantRef, long popularity) {
         super(participantRef);
+        this.popularity = popularity;
     }
 
     @Override
@@ -23,6 +25,8 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
         if (place.getAlternativeDescriptors() != null && !CollectionUtils.isEmpty(place.getAlternativeDescriptors().getTopographicPlaceDescriptor())) {
             place.getAlternativeDescriptors().getTopographicPlaceDescriptor().stream().filter(an -> an.getName() != null && an.getName().getLang() != null).forEach(n -> document.addName(n.getName().getLang(), n.getName().getValue()));
         }
+
+        document.setPopularity(popularity);
 
         if (PLACE_OF_INTEREST.equals(place.getTopographicPlaceType())) {
             document.setCategory(Arrays.asList("poi"));
@@ -43,7 +47,7 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
         switch (place.getTopographicPlaceType()) {
 
             case PLACE_OF_INTEREST:
-                return "building";
+                return "address";
 
                 // Still using adm units directly from kartverket. Change if tiamat IDs are needed.
 //            case TOWN:

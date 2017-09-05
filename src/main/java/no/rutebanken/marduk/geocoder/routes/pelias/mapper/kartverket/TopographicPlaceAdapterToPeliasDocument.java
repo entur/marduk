@@ -39,10 +39,15 @@ public abstract class TopographicPlaceAdapterToPeliasDocument {
         document.setShape(mapShape());
         document.setCategory(feature.getCategories());
         document.setParent(getParent());
+        document.setPopularity(getPopularity());
         return document;
     }
 
     protected abstract String getLayer();
+
+    protected Long getPopularity() {
+        return null;
+    }
 
     protected String getLocalityId() {
         return null;

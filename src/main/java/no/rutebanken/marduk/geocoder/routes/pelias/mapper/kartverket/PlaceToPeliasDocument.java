@@ -6,24 +6,32 @@ import org.apache.commons.lang3.StringUtils;
 
 public class PlaceToPeliasDocument extends TopographicPlaceAdapterToPeliasDocument {
 
-	public PlaceToPeliasDocument(TopographicPlaceAdapter simpleFeature) {
-		super(simpleFeature);
-	}
+    private long popularity;
 
-	@Override
-	protected String getLayer() {
-		return "address";
-	}
+    public PlaceToPeliasDocument(TopographicPlaceAdapter simpleFeature, long popularity) {
+        super(simpleFeature);
+        this.popularity = popularity;
+    }
 
-	@Override
-	protected String getLocalityId() {
-		return feature.getParentId();
-	}
+    @Override
+    protected Long getPopularity() {
+        return popularity;
+    }
 
-	@Override
-	protected String getCountyId() {
-		return StringUtils.substring(getLocalityId(), 0, 2);
-	}
+    @Override
+    protected String getLayer() {
+        return "address";
+    }
+
+    @Override
+    protected String getLocalityId() {
+        return feature.getParentId();
+    }
+
+    @Override
+    protected String getCountyId() {
+        return StringUtils.substring(getLocalityId(), 0, 2);
+    }
 }
 
 

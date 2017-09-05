@@ -15,7 +15,7 @@ public class FylkeToElasticsearchCommandTest {
 
 	@Test
 	public void testTransform() throws Exception {
-		KartverketGeoJsonStreamToElasticsearchCommands transformer = new KartverketGeoJsonStreamToElasticsearchCommands(new GeojsonFeatureWrapperFactory(null));
+		KartverketGeoJsonStreamToElasticsearchCommands transformer = new KartverketGeoJsonStreamToElasticsearchCommands(new GeojsonFeatureWrapperFactory(null),1);
 		Collection<ElasticsearchCommand> commands = transformer
 				                                            .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson"));
 
