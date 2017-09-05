@@ -115,6 +115,148 @@
                         </Quay>
                     </quays>
                 </StopPlace>
+
+
+                <StopPlace created="2017-01-23T16:59:34.554+01:00" changed="2017-01-23T16:59:34.554+01:00"
+                           modification="new" version="4" id="NSR:StopPlace:1000" xsi:schemaLocation=""
+                           xmlns="http://www.netex.org.uk/netex" xmlns:ns2="http://www.opengis.net/gml/3.2"
+                           xmlns:ns3="http://www.siri.org.uk/siri"
+                           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <ValidBetween>
+                        <FromDate>2017-05-02T13:07:03.764+02:00</FromDate>
+                    </ValidBetween>
+                    <keyList>
+                        <KeyValue>
+                            <Key>imported-id</Key>
+                            <Value>AVI:StopPlace:EVE</Value>
+                        </KeyValue>
+                        <KeyValue>
+                            <Key>IS_PARENT_STOP_PLACE</Key>
+                            <Value>true</Value>
+                        </KeyValue>
+                    </keyList>
+                    <Name lang="no">QuayLessParentStop</Name>
+                    <Centroid>
+                        <Location>
+                            <Longitude>16.687364</Longitude>
+                            <Latitude>68.490412</Latitude>
+                        </Location>
+                    </Centroid>
+                    <AccessModes></AccessModes>
+                    <TopographicPlaceRef ref="92"/>
+                    <OtherTransportModes></OtherTransportModes>
+                    <StopPlaceType>airport</StopPlaceType>
+                </StopPlace>
+
+
+
+                <StopPlace created="2017-01-23T16:59:34.554+01:00" changed="2017-01-23T16:59:34.554+01:00"
+                           modification="new" version="4" id="NSR:StopPlace:1001" xsi:schemaLocation=""
+                           xmlns="http://www.netex.org.uk/netex" xmlns:ns2="http://www.opengis.net/gml/3.2"
+                           xmlns:ns3="http://www.siri.org.uk/siri"
+                           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <ValidBetween>
+                        <FromDate>2017-05-02T13:07:03.764+02:00</FromDate>
+                    </ValidBetween>
+                    <keyList>
+                        <KeyValue>
+                            <Key>imported-id</Key>
+                            <Value>AVI:StopPlace:EVE</Value>
+                        </KeyValue>
+                    </keyList>
+                    <Name lang="no">RailReplacementBus</Name>
+                    <Centroid>
+                        <Location>
+                            <Longitude>16.687364</Longitude>
+                            <Latitude>68.490412</Latitude>
+                        </Location>
+                    </Centroid>
+                    <AccessModes></AccessModes>
+                    <TopographicPlaceRef ref="92"/>
+                    <OtherTransportModes></OtherTransportModes>
+                    <TransportMode>bus</TransportMode>
+                    <RailSubmode>railReplacementBus</RailSubmode>
+                    <StopPlaceType>airport</StopPlaceType>
+                </StopPlace>
+
+
+            <StopPlace created="2017-01-23T16:59:34.554+01:00" changed="2017-01-23T16:59:34.554+01:00"
+                       modification="new" version="4" id="NSR:StopPlace:1002" xsi:schemaLocation=""
+                       xmlns="http://www.netex.org.uk/netex" xmlns:ns2="http://www.opengis.net/gml/3.2"
+                       xmlns:ns3="http://www.siri.org.uk/siri"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                <ValidBetween>
+                    <FromDate>2017-05-02T13:07:03.764+02:00</FromDate>
+                </ValidBetween>
+                <keyList>
+                    <KeyValue>
+                        <Key>imported-id</Key>
+                        <Value>AVI:StopPlace:EVE</Value>
+                    </KeyValue>
+                </keyList>
+                <Name lang="no">QuayLessStop</Name>
+                <Centroid>
+                    <Location>
+                        <Longitude>16.687364</Longitude>
+                        <Latitude>68.490412</Latitude>
+                    </Location>
+                </Centroid>
+                <AccessModes></AccessModes>
+                <TopographicPlaceRef ref="92"/>
+                <OtherTransportModes></OtherTransportModes>
+                <StopPlaceType>airport</StopPlaceType>
+            </StopPlace>
+
+
+                <StopPlace created="2017-01-23T16:59:34.554+01:00" changed="2017-01-23T16:59:34.554+01:00"
+                           modification="new" version="4" id="NSR:StopPlace:1003" xsi:schemaLocation=""
+                           xmlns="http://www.netex.org.uk/netex" xmlns:ns2="http://www.opengis.net/gml/3.2"
+                           xmlns:ns3="http://www.siri.org.uk/siri"
+                           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <ValidBetween>
+                        <FromDate>2017-05-02T13:07:03.764+02:00</FromDate>
+                        <ToDate>2017-08-02T20:00:03.764+02:00</ToDate>
+                    </ValidBetween>
+                    <keyList>
+                        <KeyValue>
+                            <Key>imported-id</Key>
+                            <Value>AVI:StopPlace:EVE</Value>
+                        </KeyValue>
+                    </keyList>
+                    <Name lang="no">OutdatedStop</Name>
+                    <Centroid>
+                        <Location>
+                            <Longitude>16.687364</Longitude>
+                            <Latitude>68.490412</Latitude>
+                        </Location>
+                    </Centroid>
+                    <AccessModes></AccessModes>
+                    <TopographicPlaceRef ref="92"/>
+                    <OtherTransportModes></OtherTransportModes>
+                    <StopPlaceType>airport</StopPlaceType>
+                    <quays>
+                        <Quay created="2017-01-23T16:59:34.553+01:00" changed="2017-01-23T16:59:34.553+01:00"
+                              modification="new" version="1" id="NSR:Quay:69617">
+                            <keyList>
+                                <KeyValue>
+                                    <Key>imported-id</Key>
+                                    <Value>AVI:Quay:EVE</Value>
+                                </KeyValue>
+                            </keyList>
+                            <Centroid>
+                                <Location>
+                                    <Longitude>16.687364</Longitude>
+                                    <Latitude>68.490412</Latitude>
+                                </Location>
+                            </Centroid>
+                            <AccessModes></AccessModes>
+                            <OtherTransportModes></OtherTransportModes>
+                        </Quay>
+                    </quays>
+                </StopPlace>
+
+
+
             </stopPlaces>
         </SiteFrame>
     </dataObjects>

@@ -25,16 +25,29 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
         Collection<ElasticsearchCommand> commands = mapper
                                                             .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/netex/tiamat-export.xml"));
 
-        Assert.assertEquals(2, commands.size());
+        Assert.assertEquals(3, commands.size());
         commands.forEach(c -> assertCommand(c));
 
 
         assertKnownStopPlace(byId(commands, "NSR:StopPlace:39231"));
         assertKnownPoi(byId(commands, "NSR:TopographicPlace:724"));
+        // Parent stop should be mapped
+        Assert.assertNotNull(byId(commands, "NSR:StopPlace:1000"));
+
+        // Rail replacement bus stop should not be mapped
+        assertNotMapped(commands, "NSR:StopPlace:1001");
+        // Stop without quay should not be mapped
+        assertNotMapped(commands, "NSR:StopPlace:1002");
+        // Outdated stop should not be mapped
+        assertNotMapped(commands, "NSR:StopPlace:1003");
     }
 
     private PeliasDocument byId(Collection<ElasticsearchCommand> commands, String sourceId) {
         return commands.stream().map(c -> (PeliasDocument) c.getSource()).filter(d -> d.getSourceId().equals(sourceId)).collect(Collectors.toList()).get(0);
+    }
+
+    private void assertNotMapped(Collection<ElasticsearchCommand> commands, String sourceId) {
+        Assert.assertTrue("Id should not have been matched", commands.stream().map(c -> (PeliasDocument) c.getSource()).noneMatch(d -> d.getSourceId().equals(sourceId)));
     }
 
 

@@ -6,13 +6,17 @@ import net.opengis.gml._3.LinearRingType;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.AddressParts;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
+import org.apache.commons.collections.CollectionUtils;
 import org.geojson.LngLatAlt;
 import org.geojson.Polygon;
 import org.rutebanken.netex.model.LocationStructure;
 import org.rutebanken.netex.model.MultilingualString;
 import org.rutebanken.netex.model.Place_VersionStructure;
+import org.rutebanken.netex.model.ValidBetween;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_VersionStructure> {
@@ -24,13 +28,12 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
     }
 
     public PeliasDocument toPeliasDocument(T place) {
-        String layer = getLayer(place);
 
-        if (layer == null) {
+        if (!isValid(place)) {
             return null;
         }
 
-        PeliasDocument document = new PeliasDocument(layer, place.getId());
+        PeliasDocument document = new PeliasDocument(getLayer(place), place.getId());
 
         MultilingualString name = place.getName();
         if (name != null) {
@@ -55,6 +58,34 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
         populateDocument(place, document);
 
         return document;
+    }
+
+    protected boolean isValid(T place) {
+        String layer = getLayer(place);
+
+        if (layer == null) {
+            return false;
+        }
+
+        if (!CollectionUtils.isEmpty(place.getValidBetween()) && place.getValidBetween().stream().noneMatch(vb -> isValidNow(vb))) {
+            return false;
+        }
+        return true;
+    }
+
+
+    private boolean isValidNow(ValidBetween validBetween) {
+        OffsetDateTime now = OffsetDateTime.now();
+        if (validBetween != null) {
+            if (validBetween.getFromDate() != null && validBetween.getFromDate().isAfter(now)) {
+                return false;
+            }
+
+            if (validBetween.getToDate() != null && validBetween.getToDate().isBefore(now)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
