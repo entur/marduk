@@ -55,6 +55,11 @@
         <netex-java-model.version>0.0.9-SNAPSHOT</netex-java-model.version>
         <rutebanken.helpers.version>0.0.3-SNAPSHOT</rutebanken.helpers.version>
         <fabric8.version>2.3.4</fabric8.version>
+
+        <!-- The guava version seems to affect serialisation of OTP graph. Somehow, it leaks into
+                the graph built and breaks when OTP tries to read it.
+                It should be equal to or lower than the version used by OTP -->
+        <guava.version>18.0</guava.version>
     </properties>
 
 
@@ -81,16 +86,12 @@
                 <artifactId>guice</artifactId>
                 <version>4.1.0</version>
             </dependency>
-
-            <!-- The guava version seems to affect serialisation of OTP graph. Somehow, it leaks into
-                the graph built and breaks when OTP tries to read it.
-                It should be equal to or lower than the version used by OTP -->
+            
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>18.0</version>
+                <version>${guava.version}</version>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 
