@@ -8,7 +8,7 @@ import javax.ws.rs.core.Response;
 
 @Component
 //@Produces("application/json")
-@Path("/appstatus")
+@Path("/health")
 public class ApplicationStatusResource {
 
     @GET
@@ -18,8 +18,8 @@ public class ApplicationStatusResource {
     }
 
     @GET
-    @Path("/up")
-    public Response isUp() {
+    @Path("/live")
+    public Response isLive() {
         return Response.ok().build();
     }
 
