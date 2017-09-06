@@ -77,7 +77,7 @@ public class Parameters {
         try {
             ChouetteInfo chouetteInfo = provider.chouetteInfo;
             String projectionType = null;
-            NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport("for journey planning", chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, projectionType, exportStops);
+            NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport("for journey planning", chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, projectionType, exportStops,chouetteInfo.xmlns);
             NetexExportParameters.Parameters parameters = new NetexExportParameters.Parameters(netexExport);
             NetexExportParameters exportParameters = new NetexExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();
