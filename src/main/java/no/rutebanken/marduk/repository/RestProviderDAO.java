@@ -20,7 +20,7 @@ public class RestProviderDAO {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Value("${nabu.rest.service.url}")
+    @Value("${providers.api.url}")
     private String restServiceUrl;
 
 
@@ -32,7 +32,7 @@ public class RestProviderDAO {
         RestTemplate restTemplate = new RestTemplate();
 
         ResponseEntity<List<Provider>> rateResponse =
-                restTemplate.exchange(restServiceUrl + "/providers/all",
+                restTemplate.exchange(restServiceUrl,
                         HttpMethod.GET, getEntityWithAuthenticationToken(), new ParameterizedTypeReference<List<Provider>>() {
                         });
         return rateResponse.getBody();
@@ -42,28 +42,6 @@ public class RestProviderDAO {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + tokenService.getToken());
         return new HttpEntity<>(headers);
-    }
-
-    public boolean isConnected() {
-        try {
-            RestTemplate restTemplate = new RestTemplate();
-
-            logger.debug("Checking status");
-            ResponseEntity<?> response =
-                    restTemplate.exchange(restServiceUrl + "/appstatus/up",
-                            HttpMethod.GET, getEntityWithAuthenticationToken(), Object.class);
-            logger.debug("Got response: " + response);
-            logger.debug("Response status:" + response.getStatusCode().toString());
-            if ("200".equals(response.getStatusCode().toString())) {
-                logger.debug("Response ok");
-                return true;
-            }
-            logger.debug("Response not ok. Something wrong with REST provider service.");
-            return false;
-        } catch (org.springframework.web.client.ResourceAccessException e) {
-            logger.warn("Response not ok. REST provider service is down: " + e.getMessage());
-            return false;
-        }
     }
 
 }

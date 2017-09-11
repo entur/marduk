@@ -44,7 +44,7 @@ public class OrganisationRegisteryAdministrativeUnitsUpdateRouteBuilder extends 
     @Value("${tiamat.countries.geojson.blobstore.subdirectory:geojson/countries}")
     private String blobStoreSubdirectoryCountries;
 
-    @Value("${nabu.rest.service.url}")
+    @Value("${organisations.api.url}")
     private String organisationRegistryUrl;
 
 
