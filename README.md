@@ -5,9 +5,9 @@ initial project setup location:
   https://github.com/fabric8io/ipaas-quickstarts/
 
 ## Liveness and readyiness
-In production, nabu can be probed with:
-- http://<host>:<port>/jersey/appstatus/up
-- http://<host>:<port>/jersey/appstatus/ready
+In production, marduk can be probed with:
+- http://<host>:<port>/health/live
+- http://<host>:<port>/health/ready
 to check liveness and readiness, accordingly
 
 * Marduk currently has two spring profiles, dev and test. Use the application.properties file to switch between these.
@@ -52,7 +52,8 @@ logging.level.org.apache.camel.component.file.remote=INFO
 logging.level.org.springframework=INFO
 logging.level.no.rutebanken.marduk.routes.otp.GraphPublishRouteBuilder=INFO
 logging.level.no.rutebanken.marduk.routes.file=DEBUG
-nabu.rest.service.url=http://localhost:9004/jersey/
+providers.api.url=http://baba:11601/services/providers/
+organisations.api.url=http://baba:11601/services/organisations/
 
 nri.ftp.delay=40s
 nri.ftp.folder=rutedata
