@@ -155,7 +155,10 @@ public class OrganisationRegisteryAdministrativeUnitsUpdateRouteBuilder extends 
 
 
     private String getOrganisationRegistryUrl() {
-        return organisationRegistryUrl.replaceFirst("https", "https4").replaceFirst("http", "http4");
+        if (organisationRegistryUrl.contains("https")){
+            return organisationRegistryUrl.replaceFirst("https", "https4");
+        }
+        return organisationRegistryUrl.replaceFirst("http", "http4");
     }
 
     private File[] getGeojsonCountryFiles() {
