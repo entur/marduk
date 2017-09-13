@@ -27,8 +27,8 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
         this.participantRef = participantRef;
     }
 
-    public PeliasDocument toPeliasDocument(T place) {
-
+    public PeliasDocument toPeliasDocument(PlaceHierarchy<T> placeHierarchy) {
+        T place = placeHierarchy.getPlace();
         if (!isValid(place)) {
             return null;
         }
@@ -55,7 +55,7 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
 
         addIdToStreetNameToAvoidFalseDuplicates(place, document);
 
-        populateDocument(place, document);
+        populateDocument(placeHierarchy, document);
 
         return document;
     }
@@ -130,7 +130,7 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
         return other.getLatitude() == coordinate.getLatitude() && other.getLongitude() == coordinate.getLongitude();
     }
 
-    protected abstract void populateDocument(T place, PeliasDocument document);
+    protected abstract void populateDocument(PlaceHierarchy<T> placeHierarchy, PeliasDocument document);
 
     protected abstract String getLayer(T place);
 

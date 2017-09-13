@@ -6,9 +6,11 @@ import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex.boost.StopPlaceBoostConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.rutebanken.netex.model.Common_VersionFrameStructure;
-import org.rutebanken.netex.model.Place_VersionStructure;
 import org.rutebanken.netex.model.PublicationDeliveryStructure;
+import org.rutebanken.netex.model.SiteRefStructure;
 import org.rutebanken.netex.model.Site_VersionFrameStructure;
+import org.rutebanken.netex.model.StopPlace;
+import org.rutebanken.netex.model.TopographicPlace;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static javax.xml.bind.JAXBContext.newInstance;
@@ -58,10 +62,10 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
                 Site_VersionFrameStructure siteFrame = (Site_VersionFrameStructure) frameStructure;
 
                 if (siteFrame.getStopPlaces() != null) {
-                    commands.addAll(addCommands(siteFrame.getStopPlaces().getStopPlace(), new StopPlaceToPeliasMapper(deliveryStructure.getParticipantRef(), stopPlaceBoostConfiguration)));
+                    commands.addAll(addStopPlaceCommands(siteFrame.getStopPlaces().getStopPlace(), deliveryStructure.getParticipantRef()));
                 }
                 if (siteFrame.getTopographicPlaces() != null) {
-                    commands.addAll(addCommands(siteFrame.getTopographicPlaces().getTopographicPlace(), new TopographicPlaceToPeliasMapper(deliveryStructure.getParticipantRef(), poiBoost)));
+                    commands.addAll(addTopographicPlaceCommands(siteFrame.getTopographicPlaces().getTopographicPlace(), deliveryStructure.getParticipantRef()));
                 }
             }
         }
@@ -69,11 +73,42 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
         return commands;
     }
 
-    private <P extends Place_VersionStructure> List<ElasticsearchCommand> addCommands(List<P> places, AbstractNetexPlaceToPeliasDocumentMapper<P> mapper) {
+    private List<ElasticsearchCommand> addTopographicPlaceCommands(List<TopographicPlace> places, String participantRef) {
         if (!CollectionUtils.isEmpty(places)) {
-            return places.stream().map(p -> mapper.toPeliasDocument(p)).sorted(new PeliasDocumentPopularityComparator()).filter(d -> d != null).map(p -> ElasticsearchCommand.peliasIndexCommand(p)).collect(Collectors.toList());
+            TopographicPlaceToPeliasMapper mapper = new TopographicPlaceToPeliasMapper(participantRef, poiBoost);
+            return places.stream().map(p -> mapper.toPeliasDocument(new PlaceHierarchy<TopographicPlace>(p))).sorted(new PeliasDocumentPopularityComparator()).filter(d -> d != null).map(p -> ElasticsearchCommand.peliasIndexCommand(p)).collect(Collectors.toList());
         }
         return new ArrayList<>();
+    }
+
+    private List<ElasticsearchCommand> addStopPlaceCommands(List<StopPlace> places, String participantRef) {
+        if (!CollectionUtils.isEmpty(places)) {
+            StopPlaceToPeliasMapper mapper = new StopPlaceToPeliasMapper(participantRef, stopPlaceBoostConfiguration);
+
+            List<PlaceHierarchy<StopPlace>> stopPlaceHierarchies = toPlaceHierarchies(places);
+
+            return stopPlaceHierarchies.stream().map(p -> mapper.toPeliasDocument(p)).sorted(new PeliasDocumentPopularityComparator()).filter(d -> d != null).map(p -> ElasticsearchCommand.peliasIndexCommand(p)).collect(Collectors.toList());
+        }
+        return new ArrayList<>();
+    }
+
+
+    /**
+     * Map list of stop places to list of hierarchies.
+     */
+    protected List<PlaceHierarchy<StopPlace>> toPlaceHierarchies(List<StopPlace> places) {
+        Map<String, List<StopPlace>> childrenByParentIdMap = places.stream().filter(sp -> sp.getParentSiteRef() != null).collect(Collectors.groupingBy(sp -> sp.getParentSiteRef().getRef()));
+        return places.stream().filter(sp -> sp.getParentSiteRef() == null).map(sp -> createHierarchyForStopPlace(sp, childrenByParentIdMap)).collect(Collectors.toList());
+    }
+
+
+    private PlaceHierarchy<StopPlace> createHierarchyForStopPlace(StopPlace stopPlace, Map<String, List<StopPlace>> childrenByParentIdMap) {
+        List<StopPlace> children = childrenByParentIdMap.get(stopPlace.getId());
+        List<PlaceHierarchy<StopPlace>> childHierarchies = new ArrayList<>();
+        if (children != null) {
+            childHierarchies = children.stream().map(child -> createHierarchyForStopPlace(child, childrenByParentIdMap)).collect(Collectors.toList());
+        }
+        return new PlaceHierarchy<>(stopPlace, childHierarchies);
     }
 
 

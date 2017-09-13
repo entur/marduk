@@ -21,7 +21,8 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
     }
 
     @Override
-    protected void populateDocument(TopographicPlace place, PeliasDocument document) {
+    protected void populateDocument(PlaceHierarchy<TopographicPlace> placeHierarchy, PeliasDocument document) {
+        TopographicPlace place = placeHierarchy.getPlace();
         if (place.getAlternativeDescriptors() != null && !CollectionUtils.isEmpty(place.getAlternativeDescriptors().getTopographicPlaceDescriptor())) {
             place.getAlternativeDescriptors().getTopographicPlaceDescriptor().stream().filter(an -> an.getName() != null && an.getName().getLang() != null).forEach(n -> document.addName(n.getName().getLang(), n.getName().getValue()));
         }
@@ -49,7 +50,7 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
             case PLACE_OF_INTEREST:
                 return "address";
 
-                // Still using adm units directly from kartverket. Change if tiamat IDs are needed.
+            // Still using adm units directly from kartverket. Change if tiamat IDs are needed.
 //            case TOWN:
 //                return "locality";
 //

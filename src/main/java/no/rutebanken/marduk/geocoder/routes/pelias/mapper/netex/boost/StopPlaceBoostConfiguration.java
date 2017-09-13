@@ -2,6 +2,7 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex.boost;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.apache.commons.lang3.tuple.Pair;
 import org.rutebanken.netex.model.AirSubmodeEnumeration;
 import org.rutebanken.netex.model.BusSubmodeEnumeration;
 import org.rutebanken.netex.model.InterchangeWeightingEnumeration;
@@ -16,7 +17,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class StopPlaceBoostConfiguration {
@@ -34,12 +37,13 @@ public class StopPlaceBoostConfiguration {
         init(boostConfig);
     }
 
-    public long getPopularity(StopTypeEnumeration stopType, Enum subMode, InterchangeWeightingEnumeration interchangeWeighting) {
+    public long getPopularity(List<Pair<StopTypeEnumeration, Enum>> stopTypeAndSubModeList, InterchangeWeightingEnumeration interchangeWeighting) {
         long popularity = defaultValue;
 
-        StopTypeBoostConfig factorsPerSubMode = stopTypeScaleFactorMap.get(stopType);
-        if (factorsPerSubMode != null) {
-            popularity *= factorsPerSubMode.getFactorForSubMode(subMode);
+        double stopTypeAndSubModeFactor = stopTypeAndSubModeList.stream().collect(Collectors.summarizingDouble(stopTypeAndSubMode -> getStopTypeAndSubModeFactor(stopTypeAndSubMode.getLeft(), stopTypeAndSubMode.getRight()))).getSum();
+
+        if (stopTypeAndSubModeFactor > 0) {
+            popularity *= stopTypeAndSubModeFactor;
         }
 
         Double interchangeFactor = interchangeScaleFactorMap.get(interchangeWeighting);
@@ -48,6 +52,14 @@ public class StopPlaceBoostConfiguration {
         }
 
         return popularity;
+    }
+
+    private double getStopTypeAndSubModeFactor(StopTypeEnumeration stopType, Enum subMode) {
+        StopTypeBoostConfig factorsPerSubMode = stopTypeScaleFactorMap.get(stopType);
+        if (factorsPerSubMode != null) {
+            return factorsPerSubMode.getFactorForSubMode(subMode);
+        }
+        return 0;
     }
 
 

@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex.boost;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.Assert;
 import org.junit.Test;
 import org.rutebanken.netex.model.AirSubmodeEnumeration;
@@ -8,6 +9,8 @@ import org.rutebanken.netex.model.InterchangeWeightingEnumeration;
 import org.rutebanken.netex.model.RailSubmodeEnumeration;
 import org.rutebanken.netex.model.StopTypeEnumeration;
 import org.rutebanken.netex.model.WaterSubmodeEnumeration;
+
+import java.util.Arrays;
 
 public class StopPlaceBoostConfigurationTest {
 
@@ -35,40 +38,47 @@ public class StopPlaceBoostConfigurationTest {
 
     @Test
     public void emptyConfigShouldYieldPopularity0ForAllStops() {
-        Assert.assertEquals(0, new StopPlaceBoostConfiguration("{}").getPopularity(StopTypeEnumeration.FERRY_STOP, null, InterchangeWeightingEnumeration.NO_INTERCHANGE));
-        Assert.assertEquals(0, new StopPlaceBoostConfiguration("{}").getPopularity(StopTypeEnumeration.BUS_STATION, BusSubmodeEnumeration.REGIONAL_BUS, InterchangeWeightingEnumeration.PREFERRED_INTERCHANGE));
+        Assert.assertEquals(0, new StopPlaceBoostConfiguration("{}").getPopularity(Arrays.asList(new ImmutablePair<>(StopTypeEnumeration.FERRY_STOP, null)), InterchangeWeightingEnumeration.NO_INTERCHANGE));
+        Assert.assertEquals(0, new StopPlaceBoostConfiguration("{}").getPopularity(Arrays.asList(new ImmutablePair<>(StopTypeEnumeration.BUS_STATION, BusSubmodeEnumeration.REGIONAL_BUS)), InterchangeWeightingEnumeration.PREFERRED_INTERCHANGE));
     }
 
 
     @Test
     public void allValuesMatchedShouldYieldMultipliedPopularity() {
-        Assert.assertEquals(1000 * 6 * 10, boostConfiguration.getPopularity(StopTypeEnumeration.RAIL_STATION, RailSubmodeEnumeration.HIGH_SPEED_RAIL, InterchangeWeightingEnumeration.PREFERRED_INTERCHANGE));
+        Assert.assertEquals(1000 * 6 * 10, boostConfiguration.getPopularity(Arrays.asList(new ImmutablePair<>(StopTypeEnumeration.RAIL_STATION, RailSubmodeEnumeration.HIGH_SPEED_RAIL)), InterchangeWeightingEnumeration.PREFERRED_INTERCHANGE));
+    }
+
+
+    @Test
+    public void multipleTypesAndSubModesShouldBeSummarized() {
+        Assert.assertEquals(1000 * (6 + 2) * 10, boostConfiguration.getPopularity(Arrays.asList(new ImmutablePair<>(StopTypeEnumeration.RAIL_STATION, RailSubmodeEnumeration.HIGH_SPEED_RAIL), new ImmutablePair<>(StopTypeEnumeration.AIRPORT, null),
+                new ImmutablePair<>(StopTypeEnumeration.FERRY_PORT, null)), InterchangeWeightingEnumeration.PREFERRED_INTERCHANGE));
     }
 
     @Test
     public void noValuesMatchedShouldYieldDefaultPopularity() {
-        Assert.assertEquals(1000, boostConfiguration.getPopularity(StopTypeEnumeration.FERRY_STOP, WaterSubmodeEnumeration.AIRPORT_BOAT_LINK, InterchangeWeightingEnumeration.NO_INTERCHANGE));
+        Assert.assertEquals(1000, boostConfiguration.getPopularity(Arrays.asList(new ImmutablePair<>(StopTypeEnumeration.FERRY_STOP, WaterSubmodeEnumeration.AIRPORT_BOAT_LINK)), InterchangeWeightingEnumeration.NO_INTERCHANGE));
     }
 
     @Test
     public void subModeNotFoundShouldYieldDefaultForStopType() {
-        Assert.assertEquals(1000 * 2, boostConfiguration.getPopularity(StopTypeEnumeration.AIRPORT, AirSubmodeEnumeration.CANAL_BARGE, InterchangeWeightingEnumeration.NO_INTERCHANGE));
+        Assert.assertEquals(1000 * 2, boostConfiguration.getPopularity(Arrays.asList(new ImmutablePair<>(StopTypeEnumeration.AIRPORT, AirSubmodeEnumeration.CANAL_BARGE)), InterchangeWeightingEnumeration.NO_INTERCHANGE));
     }
 
     @Test
     public void subModeNotSetShouldYieldDefaultForStopType() {
-        Assert.assertEquals(1000 * 2, boostConfiguration.getPopularity(StopTypeEnumeration.AIRPORT, null, null));
+        Assert.assertEquals(1000 * 2, boostConfiguration.getPopularity(Arrays.asList(new ImmutablePair<>(StopTypeEnumeration.AIRPORT, null)), null));
     }
 
 
     @Test
     public void subModeNotFoundAndNoStopTypeDefaultShouldYieldDefaultPopularity() {
-        Assert.assertEquals(1000, boostConfiguration.getPopularity(StopTypeEnumeration.BUS_STATION, BusSubmodeEnumeration.REGIONAL_BUS, null));
+        Assert.assertEquals(1000, boostConfiguration.getPopularity(Arrays.asList(new ImmutablePair<>(StopTypeEnumeration.BUS_STATION, BusSubmodeEnumeration.REGIONAL_BUS)), null));
     }
 
     @Test
     public void noValuesSetShouldYieldDefaultPopularity() {
-        Assert.assertEquals(1000, boostConfiguration.getPopularity(null, null, null));
+        Assert.assertEquals(1000, boostConfiguration.getPopularity(Arrays.asList(new ImmutablePair<>(null, null)), null));
     }
 
 }

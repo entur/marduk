@@ -4,11 +4,16 @@ package no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex.boost.StopPlaceBoostConfiguration;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.rutebanken.netex.model.BusSubmodeEnumeration;
 import org.rutebanken.netex.model.StopPlace;
+import org.rutebanken.netex.model.StopTypeEnumeration;
 import org.rutebanken.netex.model.VehicleModeEnumeration;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentMapper<StopPlace> {
 
@@ -32,7 +37,7 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
         }
 
         // Skip stops without quays, unless they are parent stops
-        if (isQuayLessNonParentStop(place)){
+        if (isQuayLessNonParentStop(place)) {
             return false;
         }
 
@@ -40,23 +45,40 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
     }
 
     @Override
-    protected void populateDocument(StopPlace place, PeliasDocument document) {
-        if (place.getStopPlaceType() != null) {
-            document.setCategory(Arrays.asList(place.getStopPlaceType().value()));
-        }
+    protected void populateDocument(PlaceHierarchy<StopPlace> placeHierarchy, PeliasDocument document) {
+        StopPlace place = placeHierarchy.getPlace();
+
+        List<Pair<StopTypeEnumeration, Enum>> stopTypeAndSubModeList = aggregateStopTypeAndSubMode(placeHierarchy);
+
+        document.setCategory(stopTypeAndSubModeList.stream().map(pair -> pair.getLeft()).filter(type -> type != null).map(type -> type.value()).collect(Collectors.toList()));
 
         if (place.getAlternativeNames() != null && !CollectionUtils.isEmpty(place.getAlternativeNames().getAlternativeName())) {
             place.getAlternativeNames().getAlternativeName().stream().filter(an -> an.getName() != null && an.getName().getLang() != null).forEach(n -> document.addName(n.getName().getLang(), n.getName().getValue()));
         }
 
         // Make stop place rank highest in autocomplete by setting popularity
-        long popularity = boostConfiguration.getPopularity(place.getStopPlaceType(), getStopSubMode(place), place.getWeighting());
+        long popularity = boostConfiguration.getPopularity(stopTypeAndSubModeList, place.getWeighting());
         document.setPopularity(popularity);
     }
 
     @Override
     protected String getLayer(StopPlace place) {
         return STOP_PLACE_LAYER;
+    }
+
+
+    private List<Pair<StopTypeEnumeration, Enum>> aggregateStopTypeAndSubMode(PlaceHierarchy<StopPlace> placeHierarchy) {
+        List<Pair<StopTypeEnumeration, Enum>> types = new ArrayList<>();
+
+        StopPlace stopPlace = placeHierarchy.getPlace();
+
+        types.add(new ImmutablePair<>(stopPlace.getStopPlaceType(), getStopSubMode(stopPlace)));
+
+        if (!CollectionUtils.isEmpty(placeHierarchy.getChildren())) {
+            types.addAll(placeHierarchy.getChildren().stream().map(child -> aggregateStopTypeAndSubMode(child)).flatMap(typesForChild -> typesForChild.stream()).collect(Collectors.toList()));
+        }
+
+        return types;
     }
 
 

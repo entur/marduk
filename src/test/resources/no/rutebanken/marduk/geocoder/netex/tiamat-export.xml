@@ -32,7 +32,8 @@
                     <CountryRef ref="no"/>
                     <ParentTopographicPlaceRef ref="1"/>
                 </TopographicPlace>
-                <TopographicPlace created="2017-04-21T14:24:52.265+02:00" modification="new" version="1" id="NSR:TopographicPlace:724">
+                <TopographicPlace created="2017-04-21T14:24:52.265+02:00" modification="new" version="1"
+                                  id="NSR:TopographicPlace:724">
                     <keyList>
                         <KeyValue>
                             <Key>amenity</Key>
@@ -60,7 +61,14 @@
                     <ns2:Polygon ns2:id="GEN-PolygonType-2339">
                         <ns2:exterior>
                             <ns2:LinearRing>
-                                <ns2:posList>62.3084737 6.947365400000001 62.308485700000006 6.947269100000001 62.308415100000005 6.9472287 62.3084033 6.947324200000001 62.308367000000004 6.947395800000001 62.3083492 6.9475486 62.30836480000001 6.947635900000001 62.3083492 6.947761600000001 62.308362900000006 6.9477694 62.308353600000004 6.9478442000000005 62.3083996 6.9478705000000005 62.3084087 6.9477972 62.3084196 6.947803400000001 62.308434000000005 6.9476865000000005 62.308472 6.947614700000001 62.308489800000004 6.9474619 62.3084737 6.947365400000001</ns2:posList>
+                                <ns2:posList>62.3084737 6.947365400000001 62.308485700000006 6.947269100000001
+                                    62.308415100000005 6.9472287 62.3084033 6.947324200000001 62.308367000000004
+                                    6.947395800000001 62.3083492 6.9475486 62.30836480000001 6.947635900000001
+                                    62.3083492 6.947761600000001 62.308362900000006 6.9477694 62.308353600000004
+                                    6.9478442000000005 62.3083996 6.9478705000000005 62.3084087 6.9477972 62.3084196
+                                    6.947803400000001 62.308434000000005 6.9476865000000005 62.308472 6.947614700000001
+                                    62.308489800000004 6.9474619 62.3084737 6.947365400000001
+                                </ns2:posList>
                             </ns2:LinearRing>
                         </ns2:exterior>
                     </ns2:Polygon>
@@ -145,10 +153,106 @@
                     <AccessModes></AccessModes>
                     <TopographicPlaceRef ref="92"/>
                     <OtherTransportModes></OtherTransportModes>
-                    <StopPlaceType>airport</StopPlaceType>
+
                 </StopPlace>
 
 
+                <StopPlace created="2017-01-23T16:59:34.554+01:00" changed="2017-01-23T16:59:34.554+01:00"
+                           modification="new" version="4" id="NSR:StopPlace:1000a" xsi:schemaLocation=""
+                           xmlns="http://www.netex.org.uk/netex" xmlns:ns2="http://www.opengis.net/gml/3.2"
+                           xmlns:ns3="http://www.siri.org.uk/siri"
+                           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <ValidBetween>
+                        <FromDate>2017-05-02T13:07:03.764+02:00</FromDate>
+                    </ValidBetween>
+                    <keyList>
+                        <KeyValue>
+                            <Key>imported-id</Key>
+                            <Value>AVI:StopPlace:EVE</Value>
+                        </KeyValue>
+                    </keyList>
+                    <Name lang="no">Child stop - airport</Name>
+                    <Centroid>
+                        <Location>
+                            <Longitude>16.687364</Longitude>
+                            <Latitude>68.490412</Latitude>
+                        </Location>
+                    </Centroid>
+                    <AccessModes></AccessModes>
+                    <TopographicPlaceRef ref="92"/>
+                    <ParentSiteRef ref="NSR:StopPlace:1000" version="1"/>
+                    <OtherTransportModes></OtherTransportModes>
+
+                    <StopPlaceType>airport</StopPlaceType>
+                    <quays>
+                        <Quay created="2017-01-23T16:59:34.553+01:00" changed="2017-01-23T16:59:34.553+01:00"
+                              modification="new" version="1" id="NSR:Quay:1001a-1">
+                            <keyList>
+                                <KeyValue>
+                                    <Key>imported-id</Key>
+                                    <Value>AVI:Quay:EVE</Value>
+                                </KeyValue>
+                            </keyList>
+                            <Centroid>
+                                <Location>
+                                    <Longitude>16.687364</Longitude>
+                                    <Latitude>68.490412</Latitude>
+                                </Location>
+                            </Centroid>
+                            <AccessModes></AccessModes>
+                            <OtherTransportModes></OtherTransportModes>
+                        </Quay>
+                    </quays>
+                </StopPlace>
+
+
+                <StopPlace created="2017-01-23T16:59:34.554+01:00" changed="2017-01-23T16:59:34.554+01:00"
+                           modification="new" version="4" id="NSR:StopPlace:1000b" xsi:schemaLocation=""
+                           xmlns="http://www.netex.org.uk/netex" xmlns:ns2="http://www.opengis.net/gml/3.2"
+                           xmlns:ns3="http://www.siri.org.uk/siri"
+                           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <ValidBetween>
+                        <FromDate>2017-05-02T13:07:03.764+02:00</FromDate>
+                    </ValidBetween>
+                    <keyList>
+                        <KeyValue>
+                            <Key>imported-id</Key>
+                            <Value>AVI:StopPlace:EVE</Value>
+                        </KeyValue>
+                    </keyList>
+                    <Name lang="no">Child stop - bus</Name>
+                    <Centroid>
+                        <Location>
+                            <Longitude>16.687364</Longitude>
+                            <Latitude>68.490412</Latitude>
+                        </Location>
+                    </Centroid>
+                    <AccessModes></AccessModes>
+                    <TopographicPlaceRef ref="92"/>
+                    <ParentSiteRef ref="NSR:StopPlace:1000" version="1"/>
+                    <OtherTransportModes></OtherTransportModes>
+
+                    <StopPlaceType>onstreetBus</StopPlaceType>
+                    <quays>
+                        <Quay created="2017-01-23T16:59:34.553+01:00" changed="2017-01-23T16:59:34.553+01:00"
+                              modification="new" version="1" id="NSR:Quay:1000b-1">
+                            <keyList>
+                                <KeyValue>
+                                    <Key>imported-id</Key>
+                                    <Value>AVI:Quay:EVE</Value>
+                                </KeyValue>
+                            </keyList>
+                            <Centroid>
+                                <Location>
+                                    <Longitude>16.687364</Longitude>
+                                    <Latitude>68.490412</Latitude>
+                                </Location>
+                            </Centroid>
+                            <AccessModes></AccessModes>
+                            <OtherTransportModes></OtherTransportModes>
+                        </Quay>
+                    </quays>
+                </StopPlace>
 
                 <StopPlace created="2017-01-23T16:59:34.554+01:00" changed="2017-01-23T16:59:34.554+01:00"
                            modification="new" version="4" id="NSR:StopPlace:1001" xsi:schemaLocation=""
@@ -175,37 +279,56 @@
                     <TopographicPlaceRef ref="92"/>
                     <OtherTransportModes></OtherTransportModes>
                     <TransportMode>bus</TransportMode>
-                    <RailSubmode>railReplacementBus</RailSubmode>
+                    <BusSubmode>railReplacementBus</BusSubmode>
                     <StopPlaceType>airport</StopPlaceType>
+                    <quays>
+                        <Quay created="2017-01-23T16:59:34.553+01:00" changed="2017-01-23T16:59:34.553+01:00"
+                              modification="new" version="1" id="NSR:Quay:1001-1">
+                            <keyList>
+                                <KeyValue>
+                                    <Key>imported-id</Key>
+                                    <Value>AVI:Quay:EVE</Value>
+                                </KeyValue>
+                            </keyList>
+                            <Centroid>
+                                <Location>
+                                    <Longitude>16.687364</Longitude>
+                                    <Latitude>68.490412</Latitude>
+                                </Location>
+                            </Centroid>
+                            <AccessModes></AccessModes>
+                            <OtherTransportModes></OtherTransportModes>
+                        </Quay>
+                    </quays>
                 </StopPlace>
 
 
-            <StopPlace created="2017-01-23T16:59:34.554+01:00" changed="2017-01-23T16:59:34.554+01:00"
-                       modification="new" version="4" id="NSR:StopPlace:1002" xsi:schemaLocation=""
-                       xmlns="http://www.netex.org.uk/netex" xmlns:ns2="http://www.opengis.net/gml/3.2"
-                       xmlns:ns3="http://www.siri.org.uk/siri"
-                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-                <ValidBetween>
-                    <FromDate>2017-05-02T13:07:03.764+02:00</FromDate>
-                </ValidBetween>
-                <keyList>
-                    <KeyValue>
-                        <Key>imported-id</Key>
-                        <Value>AVI:StopPlace:EVE</Value>
-                    </KeyValue>
-                </keyList>
-                <Name lang="no">QuayLessStop</Name>
-                <Centroid>
-                    <Location>
-                        <Longitude>16.687364</Longitude>
-                        <Latitude>68.490412</Latitude>
-                    </Location>
-                </Centroid>
-                <AccessModes></AccessModes>
-                <TopographicPlaceRef ref="92"/>
-                <OtherTransportModes></OtherTransportModes>
-                <StopPlaceType>airport</StopPlaceType>
-            </StopPlace>
+                <StopPlace created="2017-01-23T16:59:34.554+01:00" changed="2017-01-23T16:59:34.554+01:00"
+                           modification="new" version="4" id="NSR:StopPlace:1002" xsi:schemaLocation=""
+                           xmlns="http://www.netex.org.uk/netex" xmlns:ns2="http://www.opengis.net/gml/3.2"
+                           xmlns:ns3="http://www.siri.org.uk/siri"
+                           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <ValidBetween>
+                        <FromDate>2017-05-02T13:07:03.764+02:00</FromDate>
+                    </ValidBetween>
+                    <keyList>
+                        <KeyValue>
+                            <Key>imported-id</Key>
+                            <Value>AVI:StopPlace:EVE</Value>
+                        </KeyValue>
+                    </keyList>
+                    <Name lang="no">QuayLessStop</Name>
+                    <Centroid>
+                        <Location>
+                            <Longitude>16.687364</Longitude>
+                            <Latitude>68.490412</Latitude>
+                        </Location>
+                    </Centroid>
+                    <AccessModes></AccessModes>
+                    <TopographicPlaceRef ref="92"/>
+                    <OtherTransportModes></OtherTransportModes>
+                    <StopPlaceType>airport</StopPlaceType>
+                </StopPlace>
 
 
                 <StopPlace created="2017-01-23T16:59:34.554+01:00" changed="2017-01-23T16:59:34.554+01:00"
@@ -254,7 +377,6 @@
                         </Quay>
                     </quays>
                 </StopPlace>
-
 
 
             </stopPlaces>

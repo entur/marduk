@@ -21,7 +21,7 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
     @Test
     public void testTransform() throws Exception {
         DeliveryPublicationStreamToElasticsearchCommands mapper =
-                new DeliveryPublicationStreamToElasticsearchCommands(new StopPlaceBoostConfiguration("{\"defaultValue\":1000, \"stopTypeFactors\":{\"airport\":{\"*\":3}}}"), POI_POPULARITY);
+                new DeliveryPublicationStreamToElasticsearchCommands(new StopPlaceBoostConfiguration("{\"defaultValue\":1000, \"stopTypeFactors\":{\"airport\":{\"*\":3},\"onstreetBus\":{\"*\":2}}}"), POI_POPULARITY);
 
         Collection<ElasticsearchCommand> commands = mapper
                                                             .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/netex/tiamat-export.xml"));
@@ -29,11 +29,9 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
         Assert.assertEquals(3, commands.size());
         commands.forEach(c -> assertCommand(c));
 
-
-        assertKnownStopPlace(byId(commands, "NSR:StopPlace:39231"));
         assertKnownPoi(byId(commands, "NSR:TopographicPlace:724"));
-        // Parent stop should be mapped
-        Assert.assertNotNull(byId(commands, "NSR:StopPlace:1000"));
+        assertKnownStopPlace(byId(commands, "NSR:StopPlace:39231"));
+        assertKnownMultimodalStopPlace(byId(commands, "NSR:StopPlace:1000"));
 
         // Rail replacement bus stop should not be mapped
         assertNotMapped(commands, "NSR:StopPlace:1001");
@@ -51,6 +49,14 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
         Assert.assertTrue("Id should not have been matched", commands.stream().map(c -> (PeliasDocument) c.getSource()).noneMatch(d -> d.getSourceId().equals(sourceId)));
     }
 
+    private void assertKnownMultimodalStopPlace(PeliasDocument known) throws Exception {
+        Assert.assertEquals("QuayLessParentStop", known.getDefaultName());
+        Assert.assertEquals(STOP_PLACE_LAYER, known.getLayer());
+
+        Assert.assertEquals(known.getCategory().size(), 2);
+        Assert.assertTrue(known.getCategory().containsAll(Arrays.asList("airport", "onstreetBus")));
+        Assert.assertEquals("Expected popularity to be default (1000) boosted by sum of stop type boosts (airport=3, onstreetBus=2)", 5000, known.getPopularity().longValue());
+    }
 
     private void assertKnownStopPlace(PeliasDocument known) throws Exception {
         Assert.assertEquals("Harstad/Narvik Lufthavn", known.getDefaultName());
