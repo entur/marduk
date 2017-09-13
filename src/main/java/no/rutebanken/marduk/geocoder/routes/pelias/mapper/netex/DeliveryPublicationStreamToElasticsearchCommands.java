@@ -7,13 +7,13 @@ import no.rutebanken.marduk.geocoder.routes.pelias.mapper.netex.boost.StopPlaceB
 import org.apache.commons.collections.CollectionUtils;
 import org.rutebanken.netex.model.Common_VersionFrameStructure;
 import org.rutebanken.netex.model.PublicationDeliveryStructure;
-import org.rutebanken.netex.model.SiteRefStructure;
 import org.rutebanken.netex.model.Site_VersionFrameStructure;
 import org.rutebanken.netex.model.StopPlace;
 import org.rutebanken.netex.model.TopographicPlace;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static javax.xml.bind.JAXBContext.newInstance;
@@ -38,9 +37,16 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
 
     private final long poiBoost;
 
-    public DeliveryPublicationStreamToElasticsearchCommands(@Autowired StopPlaceBoostConfiguration stopPlaceBoostConfiguration, @Value("${pelias.poi.boost:1}") long poiBoost) {
+    private final List<String> poiFilter;
+
+    public DeliveryPublicationStreamToElasticsearchCommands(@Autowired StopPlaceBoostConfiguration stopPlaceBoostConfiguration, @Value("${pelias.poi.boost:1}") long poiBoost, @Value("#{'${pelias.poi.filter:}'.split(',')}") List<String> poiFilter) {
         this.stopPlaceBoostConfiguration = stopPlaceBoostConfiguration;
         this.poiBoost = poiBoost;
+        if (poiFilter != null) {
+            this.poiFilter = poiFilter.stream().filter(filter -> !StringUtils.isEmpty(filter)).collect(Collectors.toList());
+        } else {
+            this.poiFilter = new ArrayList<>();
+        }
     }
 
     public Collection<ElasticsearchCommand> transform(InputStream publicationDeliveryStream) {
@@ -75,7 +81,7 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
 
     private List<ElasticsearchCommand> addTopographicPlaceCommands(List<TopographicPlace> places, String participantRef) {
         if (!CollectionUtils.isEmpty(places)) {
-            TopographicPlaceToPeliasMapper mapper = new TopographicPlaceToPeliasMapper(participantRef, poiBoost);
+            TopographicPlaceToPeliasMapper mapper = new TopographicPlaceToPeliasMapper(participantRef, poiBoost, poiFilter);
             return places.stream().map(p -> mapper.toPeliasDocument(new PlaceHierarchy<TopographicPlace>(p))).sorted(new PeliasDocumentPopularityComparator()).filter(d -> d != null).map(p -> ElasticsearchCommand.peliasIndexCommand(p)).collect(Collectors.toList());
         }
         return new ArrayList<>();

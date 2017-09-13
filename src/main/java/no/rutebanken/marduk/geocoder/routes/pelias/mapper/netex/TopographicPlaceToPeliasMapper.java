@@ -7,7 +7,7 @@ import org.rutebanken.netex.model.MultilingualString;
 import org.rutebanken.netex.model.TopographicPlace;
 
 import java.util.Arrays;
-import java.util.Locale;
+import java.util.List;
 
 import static org.rutebanken.netex.model.TopographicPlaceTypeEnumeration.PLACE_OF_INTEREST;
 
@@ -15,9 +15,12 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
 
     private long popularity;
 
-    public TopographicPlaceToPeliasMapper(String participantRef, long popularity) {
+    private List<String> typeFilter;
+
+    public TopographicPlaceToPeliasMapper(String participantRef, long popularity, List<String> typeFilter) {
         super(participantRef);
         this.popularity = popularity;
+        this.typeFilter = typeFilter;
     }
 
     @Override
@@ -41,6 +44,22 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
                 document.addName(descriptorName.getLang(), descriptorName.getValue());
             }
         }
+    }
+
+    @Override
+    protected boolean isValid(TopographicPlace place) {
+        return isFilterMatch(place) && super.isValid(place);
+    }
+
+    private boolean isFilterMatch(TopographicPlace place) {
+        if (CollectionUtils.isEmpty(typeFilter)) {
+            return true;
+        }
+        if (place.getKeyList() == null || place.getKeyList().getKeyValue() == null) {
+            return false;
+        }
+
+        return typeFilter.stream().anyMatch(filter -> place.getKeyList().getKeyValue().stream().map(key -> key.getKey() + "=" + key.getValue()).anyMatch(tag -> filter.startsWith(tag)));
     }
 
     @Override

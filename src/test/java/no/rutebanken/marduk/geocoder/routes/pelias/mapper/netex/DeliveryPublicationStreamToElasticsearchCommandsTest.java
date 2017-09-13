@@ -21,7 +21,7 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
     @Test
     public void testTransform() throws Exception {
         DeliveryPublicationStreamToElasticsearchCommands mapper =
-                new DeliveryPublicationStreamToElasticsearchCommands(new StopPlaceBoostConfiguration("{\"defaultValue\":1000, \"stopTypeFactors\":{\"airport\":{\"*\":3},\"onstreetBus\":{\"*\":2}}}"), POI_POPULARITY);
+                new DeliveryPublicationStreamToElasticsearchCommands(new StopPlaceBoostConfiguration("{\"defaultValue\":1000, \"stopTypeFactors\":{\"airport\":{\"*\":3},\"onstreetBus\":{\"*\":2}}}"), POI_POPULARITY, Arrays.asList("leisure=stadium", "building=church"));
 
         Collection<ElasticsearchCommand> commands = mapper
                                                             .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/netex/tiamat-export.xml"));
@@ -39,6 +39,9 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
         assertNotMapped(commands, "NSR:StopPlace:1002");
         // Outdated stop should not be mapped
         assertNotMapped(commands, "NSR:StopPlace:1003");
+
+        // POI not matching filter should not be mapped
+        assertNotMapped(commands, "NSR:TopographicPlace:725");
     }
 
     private PeliasDocument byId(Collection<ElasticsearchCommand> commands, String sourceId) {
