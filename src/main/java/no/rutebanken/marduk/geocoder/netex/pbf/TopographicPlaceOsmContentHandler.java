@@ -95,7 +95,7 @@ public class TopographicPlaceOsmContentHandler implements OpenStreetMapContentHa
 		for (Long nodeRef : osmWay.getNodeRefs()) {
 			OSMNode node = nodes.get(nodeRef);
 			if (node != null) {
-				coordinates.add(new Coordinate(node.lat, node.lon));
+				coordinates.add(new Coordinate(node.lon, node.lat));
 			}
 		}
 
