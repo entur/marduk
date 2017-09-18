@@ -5,23 +5,21 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
-import org.apache.camel.*;
+import org.apache.camel.CamelExecutionException;
+import org.apache.camel.EndpointInject;
+import org.apache.camel.Exchange;
+import org.apache.camel.Produce;
+import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
-import org.apache.camel.test.spring.CamelSpringRunner;
-import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.compress.utils.IOUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -50,23 +48,23 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     @EndpointInject(uri = "mock:chouetteExportQueue")
     protected MockEndpoint exportQueue;
 
-    @Produce(uri = "http4:localhost:28080/admin/services/chouette/2/import")
+    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/import")
     protected ProducerTemplate importTemplate;
 
-    @Produce(uri = "http4:localhost:28080/admin/services/chouette/2/export")
+    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/export")
     protected ProducerTemplate exportTemplate;
 
-    @Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files")
+    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files")
     protected ProducerTemplate listFilesTemplate;
 
-    @Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files/existing_regtopp-file.zip")
+    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files/existing_regtopp-file.zip")
     protected ProducerTemplate getFileTemplate;
 
-    @Produce(uri = "http4:localhost:28080/admin/services/chouette/2/files/unknown-file.zip")
+    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files/unknown-file.zip")
     protected ProducerTemplate getUnknownFileTemplate;
 
 
-    @Produce(uri = "http4:localhost:28080/admin/services/chouette/export/files")
+    @Produce(uri = "http4:localhost:28080/services/timetable_admin/export/files")
     protected ProducerTemplate listExportFilesTemplate;
 
 

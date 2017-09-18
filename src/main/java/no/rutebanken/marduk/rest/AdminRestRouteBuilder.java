@@ -96,10 +96,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .dataFormatProperty("prettyPrint", "true")
                 .host(host)
                 .port(port)
-                .apiContextPath("/api-doc")
+                .apiContextPath("/swagger.json")
                 .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
 
-                .contextPath("/admin");
+                .contextPath("/services");
 
         rest("")
                 .apiDocs(false)
@@ -109,8 +109,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .put().route().routeId("admin-route-authorize-put").throwException(new NotFoundException()).endRest()
                 .delete().route().routeId("admin-route-authorize-delete").throwException(new NotFoundException()).endRest();
 
-        rest("/application")
-                .post("/filestores/clean")
+        rest("/timetable_admin")
+                .post("/idempotentfilter/clean")
                 .description("Clean unique filename and digest Idempotent Stores")
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -118,8 +118,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .to("direct:cleanIdempotentFileStore")
                 .setBody(constant(null))
-                .endRest()
-                .post("/idempotent/download/clean")
+                .endRest();
+
+        rest("/geocoder_admin")
+                .post("/idempotentfilter/clean")
                 .description("Clean Idempotent repo for downloads")
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -127,9 +129,29 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .to("direct:cleanIdempotentDownloadRepo")
                 .setBody(constant(null))
+                .endRest()
+                .post("/build_pipeline")
+                .param().name("task")
+                .type(RestParamType.query)
+                .allowableValues(Arrays.asList(GeoCoderTaskType.values()).stream().map(GeoCoderTaskType::name).collect(Collectors.toList()))
+                .required(Boolean.TRUE)
+                .description("Tasks to be executed")
+                .endParam()
+                .description("Update geocoder tasks")
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Internal error").endResponseMessage()
+                .route().routeId("admin-geocoder-update")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .validate(header("task").isNotNull())
+                .removeHeaders("CamelHttp*")
+                .process(e -> e.getIn().setBody(geoCoderTaskTypesFromString(e.getIn().getHeader("task", Collection.class))))
+                .inOnly("direct:geoCoderStartBatch")
+                .setBody(constant(null))
                 .endRest();
 
-        rest("/services/chouette")
+
+
+        rest("/timetable_admin")
                 .get("/jobs")
                 .description("List Chouette jobs for all providers. Filters defaults to status=SCHEDULED,STARTED")
                 .param()
@@ -208,7 +230,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-chouette-clean-stop-places")
                 .endRest()
 
-                .get("/lineStats/{filter}")
+                .get("/line_statistics/{filter}")
                 .description("List stats about data in chouette for multiple providers")
                 .param().name("providerIds")
                 .type(RestParamType.query).dataType("long")
@@ -253,10 +275,23 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:listTimetableExportAndGraphBlobs")
                 .routeId("admin-chouette-timetable-files-get")
 
+                .endRest()
+                .post("/routing_graph/build")
+                .description("Triggers building of the OTP graph using existing gtfs and map data")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Command accepted").endResponseMessage()
+                .route()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .log(LoggingLevel.INFO, "OTP build graph")
+                .removeHeaders("CamelHttp*")
+                .setBody(simple(""))
+                .inOnly("activemq:queue:OtpGraphQueue")
+                .routeId("admin-build-graph")
                 .endRest();
 
 
-        rest("/services/chouette/{providerId}")
+        rest("/timetable_admin/{providerId}")
                 .post("/import")
                 .description("Triggers the import->validate->export process in Chouette for each blob store file handle. Use /files call to obtain available files. Files are imported in the same order as they are provided")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
@@ -347,7 +382,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
                 .routeId("admin-chouette-file-download")
                 .endRest()
-                .get("/lineStats")
+                .get("/line_statistics")
                 .description("List stats about data in chouette for a given provider")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
                 .bindingMode(RestBindingMode.off)
@@ -491,23 +526,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .endRest();
 
 
-        rest("/services/graph")
-                .post("/build")
-                .description("Triggers building of the OTP graph using existing gtfs and map data")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .log(LoggingLevel.INFO, "OTP build graph")
-                .removeHeaders("CamelHttp*")
-                .setBody(simple(""))
-                .inOnly("activemq:queue:OtpGraphQueue")
-                .routeId("admin-build-graph")
-                .endRest();
 
-        rest("/services/fetch")
-                .post("/osm")
+        rest("/map_admin")
+                .post("/download")
                 .description("Triggers downloading of the latest OSM data")
                 .consumes(PLAIN)
                 .produces(PLAIN)
@@ -520,7 +541,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-fetch-osm")
                 .endRest();
 
-        rest("/services/organisation_admin/administrative_zones")
+        rest("/organisation_admin/administrative_zones")
                 .post("/update")
                 .description("Update administrative zones in the organisation registry")
                 .consumes(PLAIN)
@@ -535,8 +556,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .endRest();
 
 
-        rest("/services/export/stop_places")
-                .post("/full")
+        rest("/export")
+                .post("/stop_places")
                 .description("Trigger export from Stop Place Registry (NSR) for all existing configurations")
                 .consumes(PLAIN)
                 .produces(PLAIN)
@@ -550,27 +571,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-tiamat-publish-export-full")
                 .endRest();
 
-
-        rest("geocoder")
-                .post("/start")
-
-                .param().name("task")
-                .type(RestParamType.query)
-                .allowableValues(Arrays.asList(GeoCoderTaskType.values()).stream().map(GeoCoderTaskType::name).collect(Collectors.toList()))
-                .required(Boolean.TRUE)
-                .description("Tasks to be executed")
-                .endParam()
-                .description("Update geocoder tasks")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-geocoder-update")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .validate(header("task").isNotNull())
-                .removeHeaders("CamelHttp*")
-                .process(e -> e.getIn().setBody(geoCoderTaskTypesFromString(e.getIn().getHeader("task", Collection.class))))
-                .inOnly("direct:geoCoderStartBatch")
-                .setBody(constant(null))
-                .endRest();
 
         from("direct:authorizeRequest")
                 .doTry()
