@@ -91,14 +91,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .endpointProperty("filtersRef", "keycloakPreAuthActionsFilter,keycloakAuthenticationProcessingFilter")
                 .endpointProperty("sessionSupport", "true")
                 .endpointProperty("matchOnUriPrefix", "true")
-                .endpointProperty("enablemulti-partFilter","true")
+                .endpointProperty("enablemulti-partFilter", "true")
                 .enableCORS(true)
                 .dataFormatProperty("prettyPrint", "true")
                 .host(host)
                 .port(port)
                 .apiContextPath("/swagger.json")
                 .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
-
                 .contextPath("/services");
 
         rest("")
@@ -109,16 +108,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .put().route().routeId("admin-route-authorize-put").throwException(new NotFoundException()).endRest()
                 .delete().route().routeId("admin-route-authorize-delete").throwException(new NotFoundException()).endRest();
 
-        rest("/timetable_admin")
-                .post("/idempotentfilter/clean")
-                .description("Clean unique filename and digest Idempotent Stores")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-application-clean-unique-filename-and-digest-idempotent-repos")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .to("direct:cleanIdempotentFileStore")
-                .setBody(constant(null))
-                .endRest();
+
+        String commonApiDocEndpoint = "rest:get:/services/swagger.json?bridgeEndpoint=true";
+
 
         rest("/geocoder_admin")
                 .post("/idempotentfilter/clean")
@@ -130,6 +122,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:cleanIdempotentDownloadRepo")
                 .setBody(constant(null))
                 .endRest()
+
                 .post("/build_pipeline")
                 .param().name("task")
                 .type(RestParamType.query)
@@ -147,11 +140,26 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(e -> e.getIn().setBody(geoCoderTaskTypesFromString(e.getIn().getHeader("task", Collection.class))))
                 .inOnly("direct:geoCoderStartBatch")
                 .setBody(constant(null))
+                .endRest()
+
+                .get("/swagger.json")
+                .apiDocs(false)
+                .bindingMode(RestBindingMode.off)
+                .route()
+                .to(commonApiDocEndpoint)
                 .endRest();
 
-
-
         rest("/timetable_admin")
+                .post("/idempotentfilter/clean")
+                .description("Clean unique filename and digest Idempotent Stores")
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Internal error").endResponseMessage()
+                .route().routeId("admin-application-clean-unique-filename-and-digest-idempotent-repos")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .to("direct:cleanIdempotentFileStore")
+                .setBody(constant(null))
+                .endRest()
+
                 .get("/jobs")
                 .description("List Chouette jobs for all providers. Filters defaults to status=SCHEDULED,STARTED")
                 .param()
@@ -181,6 +189,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:chouetteGetJobsAll")
                 .routeId("admin-chouette-list-jobs-all")
                 .endRest()
+
                 .delete("/jobs")
                 .description("Cancel all Chouette jobs for all providers")
                 .responseMessage().code(200).message("All jobs canceled").endResponseMessage()
@@ -193,6 +202,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-chouette-cancel-all-jobs-all")
                 .setBody(constant(null))
                 .endRest()
+
                 .post("/clean/{filter}")
                 .description("Triggers the clean ALL dataspace process in Chouette. Only timetable data are deleted, not job data (imports, exports, validations) or stop places")
                 .param()
@@ -215,6 +225,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(null))
                 .routeId("admin-chouette-clean-all")
                 .endRest()
+
                 .post("/stop_places/clean")
                 .description("Triggers the cleaning of ALL stop places in Chouette")
                 .consumes(PLAIN)
@@ -274,8 +285,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders("CamelHttp*")
                 .to("direct:listTimetableExportAndGraphBlobs")
                 .routeId("admin-chouette-timetable-files-get")
-
                 .endRest()
+
                 .post("/routing_graph/build")
                 .description("Triggers building of the OTP graph using existing gtfs and map data")
                 .consumes(PLAIN)
@@ -288,6 +299,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple(""))
                 .inOnly("activemq:queue:OtpGraphQueue")
                 .routeId("admin-build-graph")
+                .endRest()
+
+                .get("/swagger.json")
+                .apiDocs(false)
+                .bindingMode(RestBindingMode.off)
+                .route()
+                .to(commonApiDocEndpoint)
                 .endRest();
 
 
@@ -323,6 +341,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .inOnly("activemq:queue:ProcessFileQueue")
                 .routeId("admin-chouette-import")
                 .endRest()
+
                 .get("/files")
                 .description("List files available for reimport into Chouette")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
@@ -340,6 +359,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:listBlobsFlat")
                 .routeId("admin-chouette-import-list")
                 .endRest()
+
                 .post("/files")
                 .description("Upload file for import into Chouette")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
@@ -353,7 +373,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeRequest")
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
-                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL,getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))))
+                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))))
                 .log(LoggingLevel.INFO, correlation() + "upload files and start import pipeline")
                 .removeHeaders("CamelHttp*")
                 .to("direct:uploadFilesAndStartImport")
@@ -382,6 +402,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
                 .routeId("admin-chouette-file-download")
                 .endRest()
+
                 .get("/line_statistics")
                 .description("List stats about data in chouette for a given provider")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
@@ -399,6 +420,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:chouetteGetStatsSingleProvider")
                 .routeId("admin-chouette-stats")
                 .endRest()
+
                 .get("/jobs")
                 .description("List Chouette jobs for a given provider")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
@@ -430,6 +452,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:chouetteGetJobsForProvider")
                 .routeId("admin-chouette-list-jobs")
                 .endRest()
+
                 .delete("/jobs")
                 .description("Cancel all Chouette jobs for a given provider")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
@@ -446,6 +469,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:chouetteCancelAllJobsForProvider")
                 .routeId("admin-chouette-cancel-all-jobs")
                 .endRest()
+
                 .delete("/jobs/{jobId}")
                 .description("Cancel a Chouette job for a given provider")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
@@ -464,6 +488,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:chouetteCancelJob")
                 .routeId("admin-chouette-cancel-job")
                 .endRest()
+
                 .post("/export")
                 .description("Triggers the export process in Chouette. Note that NO validation is performed before export, and that the data must be guaranteed to be error free")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
@@ -479,6 +504,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .inOnly("activemq:queue:ChouetteExportQueue")
                 .routeId("admin-chouette-export")
                 .endRest()
+
                 .post("/validate")
                 .description("Triggers the validate->export process in Chouette")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
@@ -495,6 +521,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .inOnly("activemq:queue:ChouetteValidationQueue")
                 .routeId("admin-chouette-validate")
                 .endRest()
+
                 .post("/clean")
                 .description("Triggers the clean dataspace process in Chouette. Only timetable data are deleted, not job data (imports, exports, validations)")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
@@ -509,6 +536,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:chouetteCleanReferential")
                 .routeId("admin-chouette-clean")
                 .endRest()
+
                 .post("/transfer")
                 .description("Triggers transfer of data from one dataspace to the next")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType("int").endParam()
@@ -526,7 +554,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .endRest();
 
 
-
         rest("/map_admin")
                 .post("/download")
                 .description("Triggers downloading of the latest OSM data")
@@ -539,6 +566,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders("CamelHttp*")
                 .to("direct:considerToFetchOsmMapOverNorway")
                 .routeId("admin-fetch-osm")
+                .endRest()
+
+                .get("/swagger.json")
+                .apiDocs(false)
+                .bindingMode(RestBindingMode.off)
+                .route()
+                .to(commonApiDocEndpoint)
                 .endRest();
 
         rest("/organisation_admin/administrative_zones")
@@ -553,6 +587,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:updateAdminUnitsInOrgReg")
                 .setBody(simple("done"))
                 .routeId("admin-org-reg-import-admin-zones")
+                .endRest()
+
+                .get("/swagger.json")
+                .apiDocs(false)
+                .bindingMode(RestBindingMode.off)
+                .route()
+                .to(commonApiDocEndpoint)
                 .endRest();
 
 
@@ -569,6 +610,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:startFullTiamatPublishExport")
                 .setBody(simple("done"))
                 .routeId("admin-tiamat-publish-export-full")
+                .endRest()
+
+                .get("/swagger.json")
+                .apiDocs(false)
+                .bindingMode(RestBindingMode.off)
+                .route()
+                .to(commonApiDocEndpoint)
                 .endRest();
 
 
