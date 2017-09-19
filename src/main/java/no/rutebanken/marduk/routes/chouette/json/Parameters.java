@@ -53,7 +53,7 @@ public class Parameters {
         ChouetteInfo chouetteInfo = provider.chouetteInfo;
         NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.name,
                 chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation,
-                chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping);
+                chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping, chouetteInfo.xmlns);
         return netexImportParameters.toJsonString();
     }
 
