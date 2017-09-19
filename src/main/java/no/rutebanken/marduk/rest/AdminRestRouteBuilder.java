@@ -575,8 +575,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to(commonApiDocEndpoint)
                 .endRest();
 
-        rest("/organisation_admin/administrative_zones")
-                .post("/update")
+        rest("/organisation_admin")
+                .post("/administrative_zones/update")
                 .description("Update administrative zones in the organisation registry")
                 .consumes(PLAIN)
                 .produces(PLAIN)
