@@ -2,7 +2,13 @@ package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.exceptions.MardukException;
 import org.apache.commons.io.FileUtils;
-import org.onebusaway.gtfs.model.*;
+import org.onebusaway.gtfs.model.AgencyAndId;
+import org.onebusaway.gtfs.model.IdentityBean;
+import org.onebusaway.gtfs.model.Route;
+import org.onebusaway.gtfs.model.ServiceCalendar;
+import org.onebusaway.gtfs.model.ServiceCalendarDate;
+import org.onebusaway.gtfs.model.Stop;
+import org.onebusaway.gtfs.model.Trip;
 import org.onebusaway.gtfs.serialization.GtfsEntitySchemaFactory;
 import org.onebusaway.gtfs.services.GtfsMutableRelationalDao;
 import org.onebusaway.gtfs_merge.GtfsMerger;
@@ -18,7 +24,12 @@ import org.onebusaway.gtfs_transformer.services.TransformContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -80,6 +91,70 @@ public class GtfsFileUtils {
 
         return outputFile;
     }
+
+    /**
+     * Google does not support (all) values in the Extended Route Types code set.
+     * <p>
+     * GTFS to Google needs to be "dumbed" down to the basic code set first.
+     */
+    public static File transformExtendedRouteTypesToBasicRouteTypes(File inputFile) throws Exception {
+
+        ByteArrayOutputStream orgFeedInfo = new ZipFileUtils().extractFileFromZipFile(new FileInputStream(inputFile), FEED_INFO_FILE_NAME);
+
+        logger.debug("Replacing id separator in inputfile: " + inputFile.getPath());
+        long t1 = System.currentTimeMillis();
+
+        GtfsTransformer transformer = new GtfsTransformer();
+        File outputFile = File.createTempFile("marduk-cleanup", ".zip");
+
+        transformer.setGtfsInputDirectories(Arrays.asList(inputFile));
+        transformer.setOutputDirectory(outputFile);
+
+        EntitiesTransformStrategy routeTransformationStrategy = new EntitiesTransformStrategy();
+        routeTransformationStrategy.addModification(new TypedEntityMatch(Route.class, new AlwaysMatch()), new ExtendedRouteTypeTransformer());
+        transformer.addTransform(routeTransformationStrategy);
+
+        EntitiesTransformStrategy stopTransformationStrategy = new EntitiesTransformStrategy();
+        stopTransformationStrategy.addModification(new TypedEntityMatch(Stop.class, new AlwaysMatch()), new ExtendedRouteTypeTransformer());
+        transformer.addTransform(stopTransformationStrategy);
+
+        transformer.getReader().setOverwriteDuplicates(true);
+        transformer.run();
+
+        logger.debug("Replaced Extended Route Types with basic values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
+
+        // Must replace feed_info.txt file with original because feed_id is being stripped away by transformation process
+        ZipFileUtils.replaceFileInZipFile(outputFile, FEED_INFO_FILE_NAME, orgFeedInfo);
+
+        return outputFile;
+    }
+
+    private static class ExtendedRouteTypeTransformer implements EntityTransformStrategy {
+        @Override
+        public void run(TransformContext context, GtfsMutableRelationalDao dao, Object entity) {
+            if (entity instanceof Route) {
+                Route route = (Route) entity;
+                route.setType(convertRouteType(route.getType()));
+            } else if (entity instanceof Stop) {
+                Stop stop = (Stop) entity;
+                stop.setVehicleType(convertRouteType(stop.getVehicleType()));
+            }
+        }
+
+        private int convertRouteType(int extendedType) {
+            if (extendedType <= 0) {
+                return extendedType;
+            }
+
+            int basicType = extendedType - (extendedType % 100);
+
+            if (basicType != extendedType) {
+                logger.debug("Converted route type from {} to {}", extendedType, basicType);
+            }
+            return basicType;
+        }
+    }
+
 
     private static EntitiesTransformStrategy createIdSeparatorTransformationStrategy(Class<?> entityClass) {
         EntitiesTransformStrategy transformStrategy = new EntitiesTransformStrategy();
