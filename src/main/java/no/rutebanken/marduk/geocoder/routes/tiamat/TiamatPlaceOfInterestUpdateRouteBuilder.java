@@ -36,7 +36,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
     @Value("${tiamat.url}")
     private String tiamatUrl;
 
-    @Value("${tiamat.publication.delivery.path:/jersey/publication_delivery}")
+    @Value("${tiamat.publication.delivery.path:/services/stop_places/netex}")
     private String tiamatPublicationDeliveryPath;
 
     /**

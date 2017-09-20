@@ -33,7 +33,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
     @Value("${tiamat.url}")
     private String tiamatUrl;
 
-    @Value("${tiamat.publication.delivery.path:/jersey/publication_delivery}")
+    @Value("${tiamat.publication.delivery.path:/services/stop_places/netex}")
     private String tiamatPublicationDeliveryPath;
 
     @Value("${tiamat.administrative.units.update.directory:files/tiamat/adminUnits}")
