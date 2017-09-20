@@ -56,7 +56,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + "&doneFileName=" + GRAPH_OBJ + ".done&recursive=true&noop=true")
-                .log(LoggingLevel.INFO, correlation() + "Starting graph publishing.")
+                .log(LoggingLevel.INFO, "Starting graph publishing.")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .convertBodyTo(InputStream.class)
                 .process(e -> {
@@ -68,10 +68,10 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 )
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:uploadBlob")
-                .log(LoggingLevel.INFO, correlation() + "Done uploading new OTP graph.")
+                .log(LoggingLevel.INFO,  "Done uploading new OTP graph.")
                 .to("direct:uploadVersionedGraphBuildReport")
                 .to("direct:updateCurrentGraphReportVersion")
-                .log(LoggingLevel.INFO, correlation() + "Done uploading OTP graph build reports.")
+                .log(LoggingLevel.INFO,  "Done uploading OTP graph build reports.")
                 .setProperty(Exchange.FILE_PARENT, header(Exchange.FILE_PARENT))
                 .to("direct:notify")
                 .to("direct:notifyEtcd")
@@ -98,7 +98,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .setProperty("notificationUrl", constant(otpGraphDeploymentNotificationUrl))
                 .choice()
                 .when(exchangeProperty("notificationUrl").isNotEqualTo("none"))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Notifying " + otpGraphDeploymentNotificationUrl + " about new otp graph.")
+                .log(LoggingLevel.INFO, getClass().getName(),  "Notifying " + otpGraphDeploymentNotificationUrl + " about new otp graph.")
                 .setHeader(METADATA_DESCRIPTION, constant("Uploaded new Graph object file."))
                 .setHeader(METADATA_FILE, simple("${header." + FILE_HANDLE + "}"))
                 .setProperty("fileNameRetainer", simple("${header." + FILE_HANDLE + "}"))
@@ -108,11 +108,11 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .toD("${property.notificationUrl}")
-                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
+                .log(LoggingLevel.DEBUG, getClass().getName(),  "Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
                 .process(e -> e.getOut().setHeader(FILE_HANDLE, e.getProperty("fileNameRetainer")))
-                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Put the retained file name header back, as it is going to be used later.")
+                .log(LoggingLevel.DEBUG, getClass().getName(),  "Put the retained file name header back, as it is going to be used later.")
                 .otherwise()
-                .log(LoggingLevel.WARN, getClass().getName(), correlation() + "No notification url configured for otp graph building. Doing nothing.")
+                .log(LoggingLevel.WARN, getClass().getName(),  "No notification url configured for otp graph building. Doing nothing.")
                 .routeId("otp-graph-notify");
 
         /* Putting value directly into etcd */
@@ -120,23 +120,23 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .setProperty("notificationUrl", constant(etcdGraphDeploymentNotificationUrl))
                 .choice()
                 .when(exchangeProperty("notificationUrl").isNotEqualTo("none"))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Notifying " + etcdGraphDeploymentNotificationUrl + " about new otp graph.")
+                .log(LoggingLevel.INFO, getClass().getName(),  "Notifying " + etcdGraphDeploymentNotificationUrl + " about new otp graph.")
                 .process(e -> e.getIn().setBody("value=" + e.getIn().getHeader(FILE_HANDLE, String.class)))
                 .removeHeaders("*")
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.PUT))
                 .setHeader(Exchange.CONTENT_TYPE, constant("application/x-www-form-urlencoded"))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .toD("${property.notificationUrl}")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
+                .log(LoggingLevel.INFO, getClass().getName(),  "Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
                 .otherwise()
-                .log(LoggingLevel.WARN, getClass().getName(), correlation() + "No notification url configured for etcd endpoint. Doing nothing.")
+                .log(LoggingLevel.WARN, getClass().getName(),  "No notification url configured for etcd endpoint. Doing nothing.")
                 .routeId("otp-graph-notify-etcd");
 
 
         from("direct:cleanUp")
-                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Deleting build folder ${property." + Exchange.FILE_PARENT + "} ...")
+                .log(LoggingLevel.DEBUG, getClass().getName(),  "Deleting build folder ${property." + Exchange.FILE_PARENT + "} ...")
                 .process(e -> deleteDirectory(new File(e.getIn().getExchange().getProperty(Exchange.FILE_PARENT, String.class))))
-                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Build folder ${property." + Exchange.FILE_PARENT + "} cleanup done.")
+                .log(LoggingLevel.DEBUG, getClass().getName(),  "Build folder ${property." + Exchange.FILE_PARENT + "} cleanup done.")
                 .routeId("otp-graph-cleanup");
     }
 

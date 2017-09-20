@@ -62,7 +62,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:mergeGtfs")
                 .to("direct:transformToOTPIds")
                 .to("direct:buildGraphAndSendStatus")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP graph building route.")
+                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP graph building route.")
                 .routeId("otp-graph-build");
 
         from("direct:sendStartedEventsInNewTransaction")
