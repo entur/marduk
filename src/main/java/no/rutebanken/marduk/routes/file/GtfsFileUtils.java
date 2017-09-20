@@ -1,10 +1,10 @@
 package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.routes.file.beans.CustomGtfsFileTransformer;
 import org.apache.commons.io.FileUtils;
 import org.onebusaway.gtfs.model.AgencyAndId;
 import org.onebusaway.gtfs.model.IdentityBean;
-import org.onebusaway.gtfs.model.Route;
 import org.onebusaway.gtfs.model.ServiceCalendar;
 import org.onebusaway.gtfs.model.ServiceCalendarDate;
 import org.onebusaway.gtfs.model.Stop;
@@ -31,13 +31,21 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 
 public class GtfsFileUtils {
     private static Logger logger = LoggerFactory.getLogger(GtfsFileUtils.class);
 
-    private static final String FEED_INFO_FILE_NAME = "feed_info.txt";
+    public static final String FEED_INFO_FILE_NAME = "feed_info.txt";
+
+    private static final CustomGtfsFileTransformer IDS_TOP_OTP_FORMAT_TRANSFORMER = new CustomGtfsFileTransformer() {
+
+        @Override
+        protected void addCustomTransformations(GtfsTransformer transformer) {
+            GtfsEntitySchemaFactory.getEntityClasses()
+                    .forEach(ec -> transformer.addTransform(createEntitiesTransformStrategy(ec, new IdSeparatorTransformer())));
+        }
+    };
 
     public static File mergeGtfsFilesInDirectory(String path) {
         return mergeGtfsFiles(FileUtils.listFiles(new File(path), new String[]{"zip"}, false));
@@ -47,8 +55,9 @@ public class GtfsFileUtils {
     public static File mergeGtfsFiles(Collection<File> files) {
 
         try {
-            logger.debug("Merging GTFS-files");
             long t1 = System.currentTimeMillis();
+            logger.debug("Merging GTFS-files");
+
             File outputFile = File.createTempFile("marduk-merge", ".zip");
             buildGtfsMerger(EDuplicateDetectionStrategy.IDENTITY).run(new ArrayList<>(files), outputFile);
 
@@ -69,96 +78,21 @@ public class GtfsFileUtils {
      */
     public static File transformIdsToOTPFormat(File inputFile) throws Exception {
 
-        ByteArrayOutputStream orgFeedInfo = new ZipFileUtils().extractFileFromZipFile(new FileInputStream(inputFile), FEED_INFO_FILE_NAME);
-
         logger.debug("Replacing id separator in inputfile: " + inputFile.getPath());
         long t1 = System.currentTimeMillis();
 
-        GtfsTransformer transformer = new GtfsTransformer();
-        File outputFile = File.createTempFile("marduk-cleanup", ".zip");
 
-        transformer.setGtfsInputDirectories(Arrays.asList(inputFile));
-        transformer.setOutputDirectory(outputFile);
-        GtfsEntitySchemaFactory.getEntityClasses()
-                .forEach(ec -> transformer.addTransform(createIdSeparatorTransformationStrategy(ec)));
-        transformer.getReader().setOverwriteDuplicates(true);
-        transformer.run();
+        File outputFile = IDS_TOP_OTP_FORMAT_TRANSFORMER.transform(inputFile);
 
         logger.debug("Replaced id separator in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
 
-        // Must replace feed_info.txt file with original because feed_id is being stripped away by transformation process
-        ZipFileUtils.replaceFileInZipFile(outputFile, FEED_INFO_FILE_NAME, orgFeedInfo);
-
         return outputFile;
     }
 
-    /**
-     * Google does not support (all) values in the Extended Route Types code set.
-     * <p>
-     * GTFS to Google needs to be "dumbed" down to the basic code set first.
-     */
-    public static File transformExtendedRouteTypesToBasicRouteTypes(File inputFile) throws Exception {
 
-        ByteArrayOutputStream orgFeedInfo = new ZipFileUtils().extractFileFromZipFile(new FileInputStream(inputFile), FEED_INFO_FILE_NAME);
-
-        logger.debug("Replacing id separator in inputfile: " + inputFile.getPath());
-        long t1 = System.currentTimeMillis();
-
-        GtfsTransformer transformer = new GtfsTransformer();
-        File outputFile = File.createTempFile("marduk-cleanup", ".zip");
-
-        transformer.setGtfsInputDirectories(Arrays.asList(inputFile));
-        transformer.setOutputDirectory(outputFile);
-
-        EntitiesTransformStrategy routeTransformationStrategy = new EntitiesTransformStrategy();
-        routeTransformationStrategy.addModification(new TypedEntityMatch(Route.class, new AlwaysMatch()), new ExtendedRouteTypeTransformer());
-        transformer.addTransform(routeTransformationStrategy);
-
-        EntitiesTransformStrategy stopTransformationStrategy = new EntitiesTransformStrategy();
-        stopTransformationStrategy.addModification(new TypedEntityMatch(Stop.class, new AlwaysMatch()), new ExtendedRouteTypeTransformer());
-        transformer.addTransform(stopTransformationStrategy);
-
-        transformer.getReader().setOverwriteDuplicates(true);
-        transformer.run();
-
-        logger.debug("Replaced Extended Route Types with basic values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
-
-        // Must replace feed_info.txt file with original because feed_id is being stripped away by transformation process
-        ZipFileUtils.replaceFileInZipFile(outputFile, FEED_INFO_FILE_NAME, orgFeedInfo);
-
-        return outputFile;
-    }
-
-    private static class ExtendedRouteTypeTransformer implements EntityTransformStrategy {
-        @Override
-        public void run(TransformContext context, GtfsMutableRelationalDao dao, Object entity) {
-            if (entity instanceof Route) {
-                Route route = (Route) entity;
-                route.setType(convertRouteType(route.getType()));
-            } else if (entity instanceof Stop) {
-                Stop stop = (Stop) entity;
-                stop.setVehicleType(convertRouteType(stop.getVehicleType()));
-            }
-        }
-
-        private int convertRouteType(int extendedType) {
-            if (extendedType <= 0) {
-                return extendedType;
-            }
-
-            int basicType = extendedType - (extendedType % 100);
-
-            if (basicType != extendedType) {
-                logger.debug("Converted route type from {} to {}", extendedType, basicType);
-            }
-            return basicType;
-        }
-    }
-
-
-    private static EntitiesTransformStrategy createIdSeparatorTransformationStrategy(Class<?> entityClass) {
+    public static EntitiesTransformStrategy createEntitiesTransformStrategy(Class<?> entityClass, EntityTransformStrategy strategy) {
         EntitiesTransformStrategy transformStrategy = new EntitiesTransformStrategy();
-        transformStrategy.addModification(new TypedEntityMatch(entityClass, new AlwaysMatch()), new IdSeparatorTransformer());
+        transformStrategy.addModification(new TypedEntityMatch(entityClass, new AlwaysMatch()), strategy);
         return transformStrategy;
     }
 
