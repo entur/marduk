@@ -8,12 +8,13 @@ public class GoogleRouteTypeCodeTest {
 
     @Test
     public void supportedVersionsAreReturnedUnchanged() {
+        assertMapping(0, 0);
+        assertMapping(6, 6);
         assertMapping(100, 100);
         assertMapping(101, 101);
         assertMapping(200, 200);
         assertMapping(401, 401);
     }
-
 
     @Test
     public void unsupportedVersionsWithExplicitMappingsAreMapped() {
@@ -43,6 +44,7 @@ public class GoogleRouteTypeCodeTest {
         assertMapping(20000, 1700);
         assertMapping(1600, 1700);
         assertMapping(1601, 1700);
+        assertMapping(9, 1700);
     }
 
     private void assertMapping(int org, int expected) {

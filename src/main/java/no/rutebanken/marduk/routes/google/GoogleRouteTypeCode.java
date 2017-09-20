@@ -5,10 +5,24 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
+/**
+ * Google Transit does not (yet) support all Extended Route Type codes :https://developers.google.com/transit/gtfs/reference/extended-route-types
+ * <p>
+ * This class contains supported codes and mapping for unsupported codes.
+ */
 public enum GoogleRouteTypeCode {
 
+    // Basic code set (supported by google)
+    Tram(0),
+    Subway(1),
+    Rail(2),
+    Bus(3),
+    Ferry(4),
+    Cable(5),
+    Gondola(6),
+    Funicular(7),
 
-    // Values supported by google
+    // Extended values supported by google
     Railway_Service(100),
     High_Speed_Rail_Service(101),
     Long_Distance_Trains(102),
@@ -76,15 +90,16 @@ public enum GoogleRouteTypeCode {
             return orgMapping.getCode();
         }
 
-        // Reduce to basic type (round to whole hundred) and try again
-        int basicType = org - (org % 100);
-
-        GoogleRouteTypeCode basicTypeMapping = map(basicType);
-        if (basicTypeMapping != null) {
-            return basicTypeMapping.getCode();
+        // Reduce to base type (round to whole hundred) and try again
+        if (org >= 100) {
+            int baseType = org - (org % 100);
+            GoogleRouteTypeCode baseTypeMapping = map(baseType);
+            if (baseTypeMapping != null) {
+                return baseTypeMapping.getCode();
+            }
         }
 
-        LOGGER.warn("Unable to map RouteType: {} to google supported value, using [} as default", org, FALLBACK_CODE);
+        LOGGER.warn("Unable to map RouteType: {} to google supported value, using {} as default", org, FALLBACK_CODE);
 
         return FALLBACK_CODE.getCode();
     }

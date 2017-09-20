@@ -1,6 +1,8 @@
 package no.rutebanken.marduk.routes.google;
 
+import com.google.common.collect.Sets;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -18,17 +20,20 @@ public class GoogleGtfsTransformationServiceTest {
 
     @Test
     public void transformToGoogleFormat() throws Exception {
-        File out = new GoogleGtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES));
+        File out = new GoogleGtfsTransformationService(Sets.newHashSet("FILTER_OUT_AGENCY", "UNMATCHED_AGENCY")).transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES));
+
+        FileUtils.copyFile(out,new File("target/test.zip"));
 
         assertRouteRouteTypesAreConverted(out);
-
-
         assertStopVehicleTypesAreConverted(out);
     }
 
     private void assertRouteRouteTypesAreConverted(File out) throws IOException {
         List<String> routeLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "routes.txt").toByteArray()));
         routeLines.remove(0); // remove header
+        Assert.assertEquals(8, routeLines.size());
+        Assert.assertTrue("All routes not belonging to KEEP_AGENCY should have been removed", routeLines.stream().allMatch(routeLine -> routeLine.startsWith("KEEP_AGENCY")));
+
         List<String> transformedRouteTypes = routeLines.stream().map(routeLine -> routeLine.split(",")[4]).collect(Collectors.toList());
         Assert.assertTrue("Expected all route types to have been converted to google valid codes", transformedRouteTypes.stream().allMatch(routeType -> GoogleRouteTypeCode.fromCode(Integer.valueOf(routeType)) != null));
         Assert.assertEquals("200", transformedRouteTypes.get(0));
