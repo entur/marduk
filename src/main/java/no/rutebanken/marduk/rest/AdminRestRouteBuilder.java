@@ -287,6 +287,21 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-chouette-timetable-files-get")
                 .endRest()
 
+                .post("/export/google")
+                .description("Prepare and upload GTFS export to Google")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Internal error").endResponseMessage()
+                .route()
+                .to("direct:authorizeRequest")
+                .log(LoggingLevel.INFO, "Triggered GTFS export to Google")
+                .removeHeaders("CamelHttp*")
+                .inOnly("activemq:queue:GoogleExportQueue")
+                .routeId("admin-timetable-export-google")
+                .endRest()
+
+
                 .post("/routing_graph/build")
                 .description("Triggers building of the OTP graph using existing gtfs and map data")
                 .consumes(PLAIN)

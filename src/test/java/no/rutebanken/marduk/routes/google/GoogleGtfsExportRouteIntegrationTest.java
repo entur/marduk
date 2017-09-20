@@ -1,0 +1,50 @@
+package no.rutebanken.marduk.routes.google;
+
+import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
+import org.apache.camel.Produce;
+import org.apache.camel.ProducerTemplate;
+import org.junit.Assert;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import java.io.File;
+import java.io.FileInputStream;
+
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = GoogleGtfsExportRoute.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+
+
+    @Autowired
+    private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
+
+
+    @Value("${gtfs.norway.merged.file.name:rb_norway-aggregated-gtfs.zip}")
+    private String gtfsNorwayMergedFileName;
+
+
+    @Produce(uri = "activemq:queue:GoogleExportQueue")
+    protected ProducerTemplate startRoute;
+
+
+    @Test
+    public void testUploadGtfsToGoogle() throws Exception {
+
+        String pathname = "src/test/resources/no/rutebanken/marduk/routes/google/gtfs_for_google_transform.zip";
+
+        //populate fake blob repo
+        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + gtfsNorwayMergedFileName, new FileInputStream(new File(pathname)), false);
+
+        startRoute.request("activemq:queue:GoogleExportQueue", ex -> {
+        });
+
+
+        Assert.assertNotNull("Expected transformed gtfs file to have been uploaded", inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/google/" + gtfsNorwayMergedFileName));
+    }
+
+
+}
