@@ -362,7 +362,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.entur</groupId>
+            <groupId>org.rutebanken</groupId>
             <artifactId>netex-java-model</artifactId>
             <version>${netex-java-model.version}</version>
         </dependency>
