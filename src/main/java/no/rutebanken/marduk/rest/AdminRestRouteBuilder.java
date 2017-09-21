@@ -298,8 +298,24 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "Triggered GTFS export to Google")
                 .removeHeaders("CamelHttp*")
                 .inOnly("activemq:queue:GoogleExportQueue")
-                .routeId("admin-timetable-export-google")
+                .routeId("admin-timetable-google-export")
                 .endRest()
+
+
+                .post("/export/netex/merged")
+                .description("Prepare and upload a merged Netex file for Norway")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Internal error").endResponseMessage()
+                .route()
+                .to("direct:authorizeRequest")
+                .log(LoggingLevel.INFO, "Triggered Netex export of merged file for Norway")
+                .removeHeaders("CamelHttp*")
+                .inOnly("activemq:queue:NetexExportMergedQueue")
+                .routeId("admin-timetable-netex-merged-export")
+                .endRest()
+
 
 
                 .post("/routing_graph/build")
