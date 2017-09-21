@@ -31,6 +31,10 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
     protected ProducerTemplate startRoute;
 
 
+    @Value("${google.export.file.name:google_norway-aggregated-gtfs.zip}")
+    private String googleExportFileName;
+
+
     @Test
     public void testUploadGtfsToGoogle() throws Exception {
 
@@ -43,7 +47,7 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
         });
 
 
-        Assert.assertNotNull("Expected transformed gtfs file to have been uploaded", inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/google/" + gtfsNorwayMergedFileName));
+        Assert.assertNotNull("Expected transformed gtfs file to have been uploaded", inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/google/" + googleExportFileName));
     }
 
 

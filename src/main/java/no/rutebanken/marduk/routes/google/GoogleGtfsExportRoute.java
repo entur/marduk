@@ -20,6 +20,9 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
     @Value("${gtfs.norway.merged.file.name:rb_norway-aggregated-gtfs.zip}")
     private String gtfsNorwayMergedFileName;
 
+    @Value("${google.export.file.name:google_norway-aggregated-gtfs.zip}")
+    private String googleExportFileName;
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -65,7 +68,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
         from("direct:uploadGoogleGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Upload google formatted gtfs file.")
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/google/" + gtfsNorwayMergedFileName))
+                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/google/" + googleExportFileName))
                 .to("direct:uploadBlob")
                 .routeId("google-export-upload-gtfs");
     }
