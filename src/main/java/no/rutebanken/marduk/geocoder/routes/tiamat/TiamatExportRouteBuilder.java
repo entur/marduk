@@ -2,18 +2,16 @@ package no.rutebanken.marduk.geocoder.routes.tiamat;
 
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.geocoder.routes.tiamat.xml.ExportJob;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
+import static no.rutebanken.marduk.geocoder.GeoCoderConstants.GEOCODER_NEXT_TASK;
+import static no.rutebanken.marduk.geocoder.GeoCoderConstants.TIAMAT_EXPORT_POLL;
 
 /**
  * Common functionality shared between tiamat exports.
