@@ -8,6 +8,10 @@ public class Utils {
         if (url == null) {
             throw new IllegalArgumentException("Url is null");
         }
+
+        if (url.contains("https")) {
+            return url.replaceFirst("https", "https4");
+        }
         return url.replaceFirst("http", "http4");
     }
 
@@ -18,7 +22,7 @@ public class Utils {
         return Long.valueOf(url.substring(url.lastIndexOf('/') + 1, url.length()));
     }
 
-    public static String getOtpVersion(){
+    public static String getOtpVersion() {
         return MavenVersion.VERSION.version;
     }
 }
