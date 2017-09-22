@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.routes.google;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +33,8 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
                 .log(LoggingLevel.INFO, getClass().getName(), "Start export of GTFS file for Google")
 
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action("EXPORT_GOOGLE_GTFS").fileName(googleExportFileName).state(JobEvent.State.STARTED).newCorrelationId().build()).to("direct:updateStatus")
+
                 .setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
                 .to("direct:cleanUpLocalDirectory")
 
@@ -42,8 +45,9 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 // TODO send to google?
                 .to("direct:cleanUpLocalDirectory")
 
-                .log(LoggingLevel.INFO, getClass().getName(), "Completed export of GTFS file for Google")
+                .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
 
+                .log(LoggingLevel.INFO, getClass().getName(), "Completed export of GTFS file for Google")
                 .routeId("google-export-route");
 
 

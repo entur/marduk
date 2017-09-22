@@ -17,7 +17,7 @@ import static no.rutebanken.marduk.Constants.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class JobEvent {
 
-    public enum JobDomain {TIMETABLE, GRAPH, GEOCODER, TIAMAT}
+    public enum JobDomain {TIMETABLE, GRAPH, GEOCODER, TIAMAT, TIMETABLE_PUBLISH}
 
     public enum TimetableAction {FILE_TRANSFER, FILE_CLASSIFICATION, IMPORT, EXPORT, VALIDATION_LEVEL_1, VALIDATION_LEVEL_2, CLEAN, DATASPACE_TRANSFER, BUILD_GRAPH, EXPORT_NETEX}
 

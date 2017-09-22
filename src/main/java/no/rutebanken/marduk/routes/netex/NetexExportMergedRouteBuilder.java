@@ -3,6 +3,7 @@ package no.rutebanken.marduk.routes.netex;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.commons.io.FileUtils;
@@ -42,6 +43,10 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
         singletonFrom("activemq:queue:NetexExportMergedQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{otp.graph.build.autoStartup:true}}")
                 .transacted()
                 .log(LoggingLevel.INFO, getClass().getName(), "Start export of merged Netex file for Norway")
+
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action("EXPORT_NETEX_MERGED").fileName(netexExportStopsFilePrefix).state(JobEvent.State.STARTED).newCorrelationId().build())
+                .to("direct:updateStatus")
+
                 .setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
                 .to("direct:cleanUpLocalDirectory")
 
@@ -51,6 +56,8 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .to("direct:mergeNetex")
 
                 .to("direct:cleanUpLocalDirectory")
+
+                .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), "Completed export of merged Netex file for Norway")
                 .routeId("netex-export-merged-route");
 
@@ -88,6 +95,7 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
 
                 .otherwise()
                 .log(LoggingLevel.WARN, getClass().getName(), "No stop place export found, unable to create merged Netex for Norway")
+                .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.FAILED).build()).to("direct:updateStatus")
                 .stop()
                 .routeId("netex-export-fetch-latest-for-stops");
 
