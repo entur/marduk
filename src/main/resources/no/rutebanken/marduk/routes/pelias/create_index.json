@@ -54,6 +54,8 @@
             "notnull"
           ]
         },
+
+        // TODO peliasIndexTwoEdgeGram analyzer has been removed in pelias
         "peliasIndexTwoEdgeGram": {
           "type": "custom",
           "tokenizer": "peliasNameTokenizer",
