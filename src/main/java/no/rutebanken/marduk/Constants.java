@@ -53,5 +53,8 @@ public class Constants {
     public static final String LOOP_COUNTER = "RutebankenLoopCounter";
 
     public static final String QUERY_STRING = "RutebankenQueryString";
+
+    public static final String TIAMAT_EXPORT_TASKS = "RutebankenTiamatExportTasks";
+    public static final String ETCD_KEY = "RutebankenEtcdKey";
 }
 
