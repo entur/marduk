@@ -62,6 +62,19 @@ public class FileTypeClassifierBeanTest {
         assertFileType("netex_with_two_files_one_invalid.zip", NETEXPROFILE);
     }
 
+    @Test(expected = FileValidationException.class)
+    public void fileNameWithNonISO_8859_1CharacterIsNotAllowed(){
+        // The å in ekspressbåt below is encoded as 97 ('a') + 778 (ring above)
+        bean.validateFileName("sof-20170904121616-2907_20170904_Buss_og_ekspressbåt_til_rutesøk_19.06.2017-28.02.2018 (1).zip");
+    }
+
+    @Test
+    public void fileNameWithOnlyISO_8859_1CharacterIsAllowed(){
+        // The å in ekspressbåt below is encoded as a regular 229 ('å')
+        bean.validateFileName("sof-20170904121616-2907_20170904_Buss_og_ekspressbåt_til_rutesøk_19.06.2017-28.02.2018 (1).zip");
+    }
+
+
     private void assertFileType(String fileName, FileType expectedFileType) throws IOException {
         byte[] data = IOUtils.toByteArray(this.getClass().getResourceAsStream(fileName));
         assertFileType(fileName, data, expectedFileType);
