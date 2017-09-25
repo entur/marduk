@@ -2,6 +2,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
@@ -10,8 +11,11 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.component.http4.HttpMethods;
+import org.apache.commons.codec.CharEncoding;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.nio.charset.Charset;
 
 import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.Utils.getHttp4;
@@ -95,6 +99,12 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
         from("activemq:queue:ChouetteImportQueue?transacted=true").streamCaching()
                 .transacted()
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette import")
+
+                .choice().when(e-> invalidFileName(e.getIn().getHeader(Constants.FILE_NAME,String.class)))
+                .log(LoggingLevel.WARN, correlation() + "Removed file with invalid filename")
+                .stop()
+                .end()
+
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.PENDING).build())
                 .to("direct:updateStatus")
@@ -207,6 +217,11 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
     private String getImportParameters(String fileName, String fileType, Long providerId) {
         Provider provider = getProviderRepository().getProvider(providerId);
         return Parameters.createImportParameters(fileName, fileType, provider);
+    }
+
+    boolean invalidFileName(String fileName) {
+        return !Charset.forName(CharEncoding.ISO_8859_1).newEncoder().canEncode(fileName);
+
     }
 
 }
