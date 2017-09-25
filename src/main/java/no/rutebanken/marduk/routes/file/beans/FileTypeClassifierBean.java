@@ -39,8 +39,6 @@ public class FileTypeClassifierBean {
                 throw new IllegalArgumentException("Could not get file path from " + FILE_HANDLE + " header.");
             }
 
-            validateFileName(exchange.getIn().getHeader(FILE_NAME, String.class));
-
             FileType fileType = classifyFile(relativePath, data);
             logger.debug("File is classified as " + fileType);
             exchange.getIn().setHeader(FILE_TYPE, fileType.name());
@@ -51,17 +49,16 @@ public class FileTypeClassifierBean {
         }
     }
 
-    void validateFileName(String fileName) {
-        if (!Charset.forName(CharEncoding.ISO_8859_1).newEncoder().canEncode(fileName)) {
-            throw new FileValidationException("File name contains non ISO_8859_1 characters that prevent processing: " + fileName);
-        }
-
+    boolean isValidFileName(String fileName) {
+        return Charset.forName(CharEncoding.ISO_8859_1).newEncoder().canEncode(fileName);
     }
 
     public FileType classifyFile(String relativePath, byte[] data) {
         if (relativePath.toUpperCase().endsWith(".ZIP")) {
             Set<String> filesNamesInZip = zipFileUtils.listFilesInZip(new ByteArrayInputStream(data));
-            if (isRegtoppZip(filesNamesInZip)) {
+            if (!isValidFileName(relativePath)) {
+                return INVALID_FILE_NAME;
+            } else if (isRegtoppZip(filesNamesInZip)) {
                 return REGTOPP;
             } else if (isGtfsZip(filesNamesInZip)) {
                 return GTFS;

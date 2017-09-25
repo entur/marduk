@@ -12,8 +12,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static no.rutebanken.marduk.routes.file.FileType.GTFS;
-import static no.rutebanken.marduk.routes.file.FileType.NETEXPROFILE;
+import static no.rutebanken.marduk.routes.file.FileType.*;
 import static org.junit.Assert.assertEquals;
 
 public class FileTypeClassifierBeanTest {
@@ -57,21 +56,23 @@ public class FileTypeClassifierBeanTest {
         assertFileType("netex_with_two_files.zip", NETEXPROFILE);
     }
 
-    @Test (expected = FileValidationException.class)
+    @Test(expected = FileValidationException.class)
     public void classifyNetexWithTwoFilesOneInvalid() throws Exception {
         assertFileType("netex_with_two_files_one_invalid.zip", NETEXPROFILE);
     }
 
-    @Test(expected = FileValidationException.class)
-    public void fileNameWithNonISO_8859_1CharacterIsNotAllowed(){
+    @Test
+    public void classifyFileNameWithNonISO_8859_1CharacterAsInvalid() throws Exception {
         // The å in ekspressbåt below is encoded as 97 ('a') + 778 (ring above)
-        bean.validateFileName("sof-20170904121616-2907_20170904_Buss_og_ekspressbåt_til_rutesøk_19.06.2017-28.02.2018 (1).zip");
+        byte[] data = IOUtils.toByteArray(this.getClass().getResourceAsStream("netex.zip"));
+        assertFileType("sof-20170904121616-2907_20170904_Buss_og_ekspressbåt_til_rutesøk_19.06.2017-28.02.2018 (1).zip", data, INVALID_FILE_NAME);
     }
 
     @Test
-    public void fileNameWithOnlyISO_8859_1CharacterIsAllowed(){
+    public void classifyFileNameWithOnlyISO_8859_1CharacterAsValid() throws Exception {
         // The å in ekspressbåt below is encoded as a regular 229 ('å')
-        bean.validateFileName("sof-20170904121616-2907_20170904_Buss_og_ekspressbåt_til_rutesøk_19.06.2017-28.02.2018 (1).zip");
+        byte[] data = IOUtils.toByteArray(this.getClass().getResourceAsStream("netex.zip"));
+        assertFileType("sof-20170904121616-2907_20170904_Buss_og_ekspressbåt_til_rutesøk_19.06.2017-28.02.2018 (1).zip", data, NETEXPROFILE);
     }
 
 
