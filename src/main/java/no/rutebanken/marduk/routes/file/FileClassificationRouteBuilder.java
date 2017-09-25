@@ -105,7 +105,9 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .process(e -> {
                     String orgFileName = e.getIn().getHeader(Constants.FILE_NAME, String.class);
                     String sanitizedFileName = sanitizeString(orgFileName);
-                    e.getIn().setHeader(FILE_HANDLE, e.getIn().getHeader(FILE_HANDLE, String.class).replace(orgFileName, sanitizedFileName));
+                    e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
+                                                             + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
+                                                             + "/" + sanitizedFileName);
                     e.getIn().setHeader(FILE_NAME, sanitizedFileName);
                 })
                 .log(LoggingLevel.INFO, correlation() + "Uploading file with new file name ${header." + FILE_HANDLE + "}")
@@ -117,7 +119,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
     /**
      * Remove any non ISO_8859_1 characters from file name as these cause chouette import to crash
      */
-    private String sanitizeString(String value) {
+    String sanitizeString(String value) {
         StringBuilder result = new StringBuilder();
         for (char val : value.toCharArray()) {
 
