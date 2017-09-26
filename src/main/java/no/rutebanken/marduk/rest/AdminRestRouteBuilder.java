@@ -203,6 +203,34 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(null))
                 .endRest()
 
+                .delete("/completed_jobs")
+                .description("Remove completed Chouette jobs for all providers. ")
+                .param()
+                .required(Boolean.FALSE)
+                .name("keepJobs")
+                .type(RestParamType.query)
+                .dataType("int")
+                .description("No of jobs to keep, regardless of age")
+                .endParam()
+                .param()
+                .required(Boolean.FALSE)
+                .name("keepJobs")
+                .type(RestParamType.query)
+                .dataType("int")
+                .description("No of days to keep jobs for")
+                .endParam()
+                .responseMessage().code(200).message("Completed jobs removed").endResponseMessage()
+                .responseMessage().code(500).message("Could not remove complete jobs").endResponseMessage()
+                .route()
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .log(LoggingLevel.INFO, correlation() + "Removing old chouette jobs for all providers")
+                .removeHeaders("CamelHttp*")
+                .to("direct:chouetteRemoveOldJobs")
+                .routeId("admin-chouette-remove-old-jobs")
+                .setBody(constant(null))
+                .endRest()
+
+
                 .post("/clean/{filter}")
                 .description("Triggers the clean ALL dataspace process in Chouette. Only timetable data are deleted, not job data (imports, exports, validations) or stop places")
                 .param()
@@ -315,7 +343,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .inOnly("activemq:queue:NetexExportMergedQueue")
                 .routeId("admin-timetable-netex-merged-export")
                 .endRest()
-
 
 
                 .post("/routing_graph/build")
