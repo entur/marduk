@@ -160,6 +160,22 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(null))
                 .endRest()
 
+                .post("/validate")
+                .description("Triggers the validate->export process for all providers in Chouette")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Command accepted").endResponseMessage()
+                .route()
+                .to("direct:authorizeRequest")
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .log(LoggingLevel.INFO, correlation() + "Chouette start validation for all providers")
+                .removeHeaders("CamelHttp*")
+                .inOnly("direct:chouetteValidateLevel1ForAllProviders")
+                .setBody(constant(null))
+                .routeId("admin-chouette-validate-all-providers")
+                .endRest()
+
+
                 .get("/jobs")
                 .description("List Chouette jobs for all providers. Filters defaults to status=SCHEDULED,STARTED")
                 .param()

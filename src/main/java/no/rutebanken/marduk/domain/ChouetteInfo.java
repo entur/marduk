@@ -50,4 +50,59 @@ public class ChouetteInfo {
         return "regtopp".equals(dataFormat);
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public String getXmlns() {
+        return xmlns;
+    }
+
+    public String getXmlnsurl() {
+        return xmlnsurl;
+    }
+
+    public String getReferential() {
+        return referential;
+    }
+
+    public String getOrganisation() {
+        return organisation;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public String getRegtoppVersion() {
+        return regtoppVersion;
+    }
+
+    public String getRegtoppCoordinateProjection() {
+        return regtoppCoordinateProjection;
+    }
+
+    public String getRegtoppCalendarStrategy() {
+        return regtoppCalendarStrategy;
+    }
+
+    public String getDataFormat() {
+        return dataFormat;
+    }
+
+    public boolean isEnableValidation() {
+        return enableValidation;
+    }
+
+    public boolean isAllowCreateMissingStopPlace() {
+        return allowCreateMissingStopPlace;
+    }
+
+    public boolean isEnableStopPlaceIdMapping() {
+        return enableStopPlaceIdMapping;
+    }
+
+    public boolean isEnableCleanImport() {
+        return enableCleanImport;
+    }
 }
