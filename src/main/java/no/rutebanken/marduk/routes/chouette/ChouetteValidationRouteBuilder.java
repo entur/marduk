@@ -20,7 +20,7 @@ import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
  */
 @Component
 public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder {
-    @Value("${chouette.validate.level1.cron.schedule:0+0+23+?+*+MON-FRI}")
+    @Value("${chouette.validate.level1.cron.schedule:0+30+23+?+*+MON-FRI}")
     private String cronSchedule;
     @Value("${chouette.url}")
     private String chouetteUrl;
