@@ -57,6 +57,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 
         singletonFrom("quartz2://marduk/tiamatAdministrativeUnitsUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{tiamat.administrative.units.update.autoStartup:false}}")
+                .filter(e -> isLeader(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers Tiamat update of administrative units.")
                 .setBody(constant(TIAMAT_ADMINISTRATIVE_UNITS_UPDATE_START))
                 .to("direct:geoCoderStart")

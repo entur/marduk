@@ -34,6 +34,7 @@ public class TiamatGeoCoderExportRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("quartz2://marduk/tiamatGeoCoderExport?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{tiamat.geocoder.export.autoStartup:false}}")
+                .filter(e -> isLeader(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers Tiamat export.")
                 .setBody(constant(TIAMAT_EXPORT_START))
                 .to("direct:geoCoderStart")
