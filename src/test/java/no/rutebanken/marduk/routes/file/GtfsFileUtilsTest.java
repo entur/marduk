@@ -4,12 +4,14 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
+import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class GtfsFileUtilsTest {
 
@@ -52,9 +54,7 @@ public class GtfsFileUtilsTest {
 
         List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "feed_info.txt").toByteArray()));
 
-        Assert.assertEquals( "Feed info should be unchanged","RB,Rutebanken,http://www.rutebanken.org,no", feedInfoLines.get(1));
-
-
+        Assert.assertEquals("Feed info should be unchanged", "RB,Rutebanken,http://www.rutebanken.org,no", feedInfoLines.get(1));
     }
 
 }

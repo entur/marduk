@@ -2,9 +2,15 @@ package no.rutebanken.marduk.routes;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.repository.ProviderRepository;
+import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
+import org.apache.camel.model.FilterDefinition;
 import org.apache.camel.model.RouteDefinition;
+import org.apache.camel.spi.RouteContext;
+import org.apache.camel.spi.RoutePolicy;
 import org.apache.camel.spring.SpringRouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
 
 import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NAME;
 
@@ -20,16 +26,16 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
     @Override
     public void configure() throws Exception {
         errorHandler(transactionErrorHandler()
-                .logExhausted(true)
-                .logRetryStackTrace(true));
+                             .logExhausted(true)
+                             .logRetryStackTrace(true));
     }
 
-    protected ProviderRepository getProviderRepository(){
+    protected ProviderRepository getProviderRepository() {
         return providerRepository;
     }
 
     protected String correlation() {
-    	return "[providerId=${header."+Constants.PROVIDER_ID+"} referential=${header."+Constants.CHOUETTE_REFERENTIAL+"} correlationId=${header."+Constants.CORRELATION_ID+"}] ";
+        return "[providerId=${header." + Constants.PROVIDER_ID + "} referential=${header." + Constants.CHOUETTE_REFERENTIAL + "} correlationId=${header." + Constants.CORRELATION_ID + "}] ";
     }
 
     /**
@@ -37,6 +43,19 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
      */
     protected RouteDefinition singletonFrom(String uri) {
         return this.from(uri).group(SINGLETON_ROUTE_DEFINITION_GROUP_NAME);
+    }
+
+    protected boolean isLeader(String routeId) {
+        RouteContext routeContext = getContext().getRoute(routeId).getRouteContext();
+        List<RoutePolicy> routePolicyList = routeContext.getRoutePolicyList();
+        if (routePolicyList != null) {
+            for (RoutePolicy routePolicy : routePolicyList) {
+                if (routePolicy instanceof HazelcastRoutePolicy) {
+                    return ((HazelcastRoutePolicy) (routePolicy)).isLeader();
+                }
+            }
+        }
+        return false;
     }
 
 

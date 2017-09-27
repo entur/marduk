@@ -1,22 +1,19 @@
 package no.rutebanken.marduk.routes.chouette;
 
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.FILE_NAME;
-import static no.rutebanken.marduk.Constants.JSON_PART;
-
-import java.io.InputStream;
-import java.util.concurrent.ExecutorService;
-
+import com.google.common.base.Strings;
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.ThreadPoolBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 
-import com.google.common.base.Strings;
+import java.io.InputStream;
+import java.util.concurrent.ExecutorService;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import static no.rutebanken.marduk.Constants.FILE_NAME;
+import static no.rutebanken.marduk.Constants.JSON_PART;
 
 public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 

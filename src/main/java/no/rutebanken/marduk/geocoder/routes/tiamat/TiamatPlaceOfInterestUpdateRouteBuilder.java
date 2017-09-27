@@ -66,6 +66,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("quartz2://marduk/tiamatPlaceOfInterestUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{tiamat.poi.update.autoStartup:false}}")
+                .filter(e -> isLeader(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers Tiamat update of place of interest.")
                 .setBody(constant(TIAMAT_PLACES_OF_INTEREST_UPDATE_START))
                 .to("direct:geoCoderStart")

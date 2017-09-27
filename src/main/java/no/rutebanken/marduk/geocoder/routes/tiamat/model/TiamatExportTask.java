@@ -10,6 +10,8 @@ public class TiamatExportTask {
 
     public String queryString = "";
 
+    public TiamatExportTaskType type = TiamatExportTaskType.ASYNC;
+
     private TiamatExportTask() {
     }
 
@@ -18,8 +20,14 @@ public class TiamatExportTask {
         this.queryString = queryString;
     }
 
+    public TiamatExportTask(String name, String queryString, TiamatExportTaskType type) {
+        this.name = name;
+        this.queryString = queryString;
+        this.type = type;
+    }
+
     public TiamatExportTask(String config) {
-        if (config == null || config.split(SEPARATOR).length < 1 || config.split(SEPARATOR).length > 2) {
+        if (config == null || config.split(SEPARATOR).length < 1 || config.split(SEPARATOR).length > 3) {
             throw new MardukException("Invalid config string, should contain 'name' and optionally 'queryString' separated by '" + SEPARATOR + "' : " + config);
         }
 
@@ -27,6 +35,9 @@ public class TiamatExportTask {
         name = configArray[0].trim();
         if (configArray.length > 1) {
             queryString = configArray[1].trim();
+        }
+        if (configArray.length > 2) {
+            type = TiamatExportTaskType.valueOf(configArray[2].trim());
         }
     }
 
@@ -36,6 +47,10 @@ public class TiamatExportTask {
 
     public String getQueryString() {
         return queryString;
+    }
+
+    public TiamatExportTaskType getType() {
+        return type;
     }
 
     @Override

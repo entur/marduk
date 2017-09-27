@@ -90,8 +90,6 @@ otp.graph.deployment.notification.url=none
 
 idempotent.skip=false
 
-provider.cache.path=files/providercache
-
 tiamat.url=http4://tiamat:1888
 babylon.url=http4://babylon:9030/rest
 

@@ -7,6 +7,7 @@
     "islandWithStopsMaxSize": 5,
     "htmlAnnotations": true,
     "stopClusterMode": "parentStation",
-    "maxTransferDistance": 1000
+    "maxTransferDistance": 1000,
+    "extraEdgesStopPlatformLink": true
     
 }

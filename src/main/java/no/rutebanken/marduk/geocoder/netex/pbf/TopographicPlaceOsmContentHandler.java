@@ -167,7 +167,7 @@ public class TopographicPlaceOsmContentHandler implements OpenStreetMapContentHa
 
 	SimplePoint_VersionStructure toCentroid(List<Coordinate> coordinates) {
 		Point centroid = new GeometryFactory().createMultiPoint(coordinates.toArray(new Coordinate[coordinates.size()])).getCentroid();
-		return toCentroid(centroid.getX(), centroid.getY());
+		return toCentroid(centroid.getY(), centroid.getX());
 	}
 
 

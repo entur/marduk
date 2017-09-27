@@ -62,7 +62,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:mergeGtfs")
                 .to("direct:transformToOTPIds")
                 .to("direct:buildGraphAndSendStatus")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP graph building route.")
+                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP graph building route.")
                 .routeId("otp-graph-build");
 
         from("direct:sendStartedEventsInNewTransaction")
@@ -111,6 +111,8 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + gtfsNorwayMergedFileName))
                 .to("direct:uploadBlob")
+                .log(LoggingLevel.INFO, getClass().getName(), "Uploaded new combined Gtfs for Norway, triggering async export to Google")
+                .inOnly("activemq:queue:GoogleExportQueue")
                 .routeId("otp-graph-merge-gtfs");
 
         from("direct:transformToOTPIds")

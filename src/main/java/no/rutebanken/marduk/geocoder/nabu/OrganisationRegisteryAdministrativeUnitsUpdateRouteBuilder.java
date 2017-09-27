@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Utils.getHttp4;
 
 /**
  * Update admin units in organisation registry. Not part of the geocoder, but placed here as it reuses most of the code from the corresponding Tiamat route.
@@ -155,10 +156,7 @@ public class OrganisationRegisteryAdministrativeUnitsUpdateRouteBuilder extends 
 
 
     private String getOrganisationRegistryUrl() {
-        if (organisationRegistryUrl.contains("https")){
-            return organisationRegistryUrl.replaceFirst("https", "https4");
-        }
-        return organisationRegistryUrl.replaceFirst("http", "http4");
+        return getHttp4(organisationRegistryUrl);
     }
 
     private File[] getGeojsonCountryFiles() {

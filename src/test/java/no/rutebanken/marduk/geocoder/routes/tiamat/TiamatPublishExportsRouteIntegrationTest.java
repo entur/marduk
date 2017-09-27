@@ -4,6 +4,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.geocoder.routes.tiamat.model.TiamatExportTask;
+import no.rutebanken.marduk.geocoder.routes.tiamat.model.TiamatExportTaskType;
 import no.rutebanken.marduk.geocoder.routes.tiamat.model.TiamatExportTasks;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
@@ -50,6 +51,9 @@ public class TiamatPublishExportsRouteIntegrationTest extends MardukRouteBuilder
     @EndpointInject(uri = "mock:TiamatExportQueue")
     protected MockEndpoint rescheduleMock;
 
+    @EndpointInject(uri = "mock:changeLogExportMock")
+    protected MockEndpoint changeLogExportMock;
+
 
     @Produce(uri = "activemq:queue:TiamatExportQueue")
     protected ProducerTemplate input;
@@ -63,11 +67,13 @@ public class TiamatPublishExportsRouteIntegrationTest extends MardukRouteBuilder
         try {
 
             replaceEndpoint("tiamat-publish-export-poll-status", "direct:tiamatPollJobStatus", "mock:tiamatPollJobStatus");
-            replaceEndpoint("tiamat-publis-export-start-new", "direct:tiamatExport", "mock:tiamatExport");
+            replaceEndpoint("tiamat-publish-export-start-new", "direct:tiamatExport", "mock:tiamatExport");
 
             replaceEndpoint("tiamat-publish-export", "activemq:TiamatExportQueue", "mock:TiamatExportQueue");
-            replaceEndpoint("tiamat-publis-export-start-new", "direct:updateStatus", "mock:updateStatus");
+            replaceEndpoint("tiamat-publish-export-start-new", "direct:updateStatus", "mock:updateStatus");
             replaceEndpoint("tiamat-publish-export-poll-status", "direct:updateStatus", "mock:updateStatus");
+
+            replaceEndpoint("tiamat-publish-export-start-new", "direct:processTiamatChangeLogExportTask", "mock:changeLogExportMock");
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -83,6 +89,18 @@ public class TiamatPublishExportsRouteIntegrationTest extends MardukRouteBuilder
 
         tiamatStartExportMock.assertIsSatisfied();
         statusQueueMock.assertIsSatisfied();
+        rescheduleMock.assertIsSatisfied();
+    }
+
+    @Test
+    public void newChangeLogExportCompletedSynchronously() throws Exception {
+        tiamatStartExportMock.expectedMessageCount(0);
+        rescheduleMock.expectedMessageCount(0);
+        changeLogExportMock.expectedMessageCount(1);
+        input.sendBody(new TiamatExportTasks(new TiamatExportTask("TaskName", "?query=something", TiamatExportTaskType.CHANGE_LOG)).toString());
+
+        tiamatStartExportMock.assertIsSatisfied();
+        changeLogExportMock.assertIsSatisfied();
         rescheduleMock.assertIsSatisfied();
     }
 
