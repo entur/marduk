@@ -32,7 +32,7 @@ public class TiamatChangeLogExportRouteBuilder extends BaseRouteBuilder {
     @Value("${tiamat.url}")
     private String tiamatUrl;
 
-    @Value("${tiamat.change.log.path:/jersey/publication_delivery/changed}")
+    @Value("${tiamat.change.log.path:/services/stop_places/netex/changed_in_period}")
     private String changeLogPath;
 
     @Value("${tiamat.publish.export.blobstore.subdirectory:tiamat}")
