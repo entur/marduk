@@ -125,8 +125,10 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
             file.setReferential(provider.chouetteInfo.referential);
         }
 
-        if (blob.getAcl().stream().anyMatch(acl -> Acl.User.ofAllUsers().equals(acl.getEntity()) && acl.getRole() != null)) {
-            file.setUrl(blob.getSelfLink());
+        if (blob.getAcl() != null) {
+            if (blob.getAcl().stream().anyMatch(acl -> Acl.User.ofAllUsers().equals(acl.getEntity()) && acl.getRole() != null)) {
+                file.setUrl(blob.getSelfLink());
+            }
         }
         return file;
     }
