@@ -21,7 +21,10 @@ import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
 @Component
 public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder {
     @Value("${chouette.validate.level1.cron.schedule:0+30+23+?+*+MON-FRI}")
-    private String cronSchedule;
+    private String level1CronSchedule;
+
+    @Value("${chouette.validate.level2.cron.schedule:0+30+21+?+*+MON-FRI}")
+    private String level2CronSchedule;
     @Value("${chouette.url}")
     private String chouetteUrl;
 
@@ -30,12 +33,19 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
         super.configure();
 
 
-        singletonFrom("quartz2://marduk/chouetteValidateLevel1?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+        singletonFrom("quartz2://marduk/chouetteValidateLevel1?cron=" + level1CronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{chouette.validate.level1.autoStartup:true}}")
                 .filter(e -> isLeader(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers validation of Level1 for all providers in Chouette.")
                 .to("direct:chouetteValidateLevel1ForAllProviders")
                 .routeId("chouette-validate-level1-quartz");
+
+        singletonFrom("quartz2://marduk/chouetteValidateLevel2?cron=" + level2CronSchedule + "&trigger.timeZone=Europe/Oslo")
+                .autoStartup("{{chouette.validate.level2.autoStartup:true}}")
+                .filter(e -> isLeader(e.getFromRouteId()))
+                .log(LoggingLevel.INFO, "Quartz triggers validation of Level2 for all providers in Chouette.")
+                .to("direct:chouetteValidateLevel2ForAllProviders")
+                .routeId("chouette-validate-level2-quartz");
 
 
         from("direct:chouetteValidateLevel1ForAllProviders")
@@ -49,6 +59,19 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setBody(constant(null))
                 .inOnly("activemq:queue:ChouetteValidationQueue")
                 .routeId("chouette-validate-level1-all-providers");
+
+
+        from("direct:chouetteValidateLevel2ForAllProviders")
+                .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
+                .split().body().parallelProcessing().executorService(allProvidersExecutorService)
+                .filter(simple("${body.chouetteInfo.migrateDataToProvider} == null"))
+                .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
+                .setHeader(PROVIDER_ID, simple("${body.id}"))
+                .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
+                .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
+                .setBody(constant(null))
+                .inOnly("activemq:queue:ChouetteValidationQueue")
+                .routeId("chouette-validate-level2-all-providers");
 
 
         from("activemq:queue:ChouetteValidationQueue?transacted=true&maxConcurrentConsumers=3").streamCaching()

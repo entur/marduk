@@ -26,6 +26,7 @@ public class BlobStoreFiles {
 	}
 
 	public static class File {
+		public  enum Format { NETEX,GTFS,GRAPH, UNKOWN}
 		public String getName() {
 			return name;
 		}
@@ -57,6 +58,42 @@ public class BlobStoreFiles {
 			return created;
 		}
 
+		public void setCreated(Date created) {
+			this.created = created;
+		}
+
+		public String getReferential() {
+			return referential;
+		}
+
+		public void setReferential(String referential) {
+			this.referential = referential;
+		}
+
+		public Format getFormat() {
+			return format;
+		}
+
+		public void setFormat(Format format) {
+			this.format = format;
+		}
+
+		public String getUrl() {
+			return url;
+		}
+
+		public void setUrl(String url) {
+			this.url = url;
+		}
+
+		public Long getProviderId() {
+			return providerId;
+		}
+
+		public void setProviderId(Long providerId) {
+			this.providerId = providerId;
+		}
+
 		public File(String name, Date created, Date updated, Long fileSize) {
 			super();
 			this.name = name;
@@ -76,6 +113,18 @@ public class BlobStoreFiles {
 
 		@JsonProperty(required = false)
 		private Long fileSize;
+
+		@JsonProperty(required = false)
+		private String referential;
+
+		@JsonProperty(required = false)
+		private Long providerId;
+
+		@JsonProperty(required = false)
+		private Format format;
+
+		@JsonProperty(required = false)
+		private String url;
 
 		@Override
 		public String toString() {
