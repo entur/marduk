@@ -142,6 +142,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .routeId("osm-check-for-newer-map");
 
         from("quartz2://marduk/fetchOsmMap?cron="+cronSchedule+"&trigger.timeZone=Europe/Oslo")
+                .filter(e -> isLeader(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers fetch of OSM map over Norway.")
                 .to("direct:considerToFetchOsmMapOverNorway")
                 .log(LoggingLevel.INFO,  "Quartz processing done.")
