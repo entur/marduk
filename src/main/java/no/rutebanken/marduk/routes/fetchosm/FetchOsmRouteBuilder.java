@@ -141,14 +141,14 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .end()
                 .routeId("osm-check-for-newer-map");
 
-        from("quartz2://marduk/fetchOsmMap?cron="+cronSchedule+"&trigger.timeZone=Europe/Oslo")
+        singletonFrom("quartz2://marduk/fetchOsmMap?cron="+cronSchedule+"&trigger.timeZone=Europe/Oslo")
                 .filter(e -> isLeader(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers fetch of OSM map over Norway.")
                 .to("direct:considerToFetchOsmMapOverNorway")
                 .log(LoggingLevel.INFO,  "Quartz processing done.")
                 .routeId("osm-trigger-fetching");
 
-        singletonFrom("direct:notifyOsmStatus")
+        from("direct:notifyOsmStatus")
                 .setProperty("notificationUrl", constant(otpGraphDeploymentNotificationUrl))
                 .choice()
                 .when(exchangeProperty("notificationUrl").isNotEqualTo("none"))
