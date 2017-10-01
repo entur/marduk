@@ -148,7 +148,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO,  "Quartz processing done.")
                 .routeId("osm-trigger-fetching");
 
-        from("direct:notifyOsmStatus")
+        singletonFrom("direct:notifyOsmStatus")
                 .setProperty("notificationUrl", constant(otpGraphDeploymentNotificationUrl))
                 .choice()
                 .when(exchangeProperty("notificationUrl").isNotEqualTo("none"))
