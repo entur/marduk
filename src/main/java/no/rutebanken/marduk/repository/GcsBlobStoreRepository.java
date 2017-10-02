@@ -52,7 +52,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
         for (String prefix : prefixes) {
             Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage, containerName, prefix);
-            blobIterator.forEachRemaining(blob -> blobStoreFiles.add(toBlobStoreFile(blob)));
+            blobIterator.forEachRemaining(blob -> blobStoreFiles.add(toBlobStoreFile(blob, blob.getName())));
         }
 
         return blobStoreFiles;
@@ -72,7 +72,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
             Blob blob = blobIterator.next();
             String fileName = blob.getName().replace(prefix, "");
             if (!StringUtils.isEmpty(fileName)) {
-                blobStoreFiles.add(toBlobStoreFile(blob));
+                blobStoreFiles.add(toBlobStoreFile(blob, fileName));
             }
         }
 
@@ -105,8 +105,8 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
     }
 
 
-    private BlobStoreFiles.File toBlobStoreFile(Blob blob) {
-        BlobStoreFiles.File file = new BlobStoreFiles.File(blob.getName(), new Date(blob.getCreateTime()), new Date(blob.getUpdateTime()), blob.getSize());
+    private BlobStoreFiles.File toBlobStoreFile(Blob blob, String fileName) {
+        BlobStoreFiles.File file = new BlobStoreFiles.File(fileName, new Date(blob.getCreateTime()), new Date(blob.getUpdateTime()), blob.getSize());
         Provider provider = null;
         if (file.getName().contains("graphs/")) {
             file.setFormat(BlobStoreFiles.File.Format.GRAPH);
