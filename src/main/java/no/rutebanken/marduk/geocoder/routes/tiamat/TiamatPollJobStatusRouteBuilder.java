@@ -26,7 +26,7 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
 
         from(TIAMAT_EXPORT_POLL.getEndpoint())
                 .validate(header(Constants.JOB_ID).isNotNull())
-                .validate(header(Constants.JOB_STATUS_URL).isNotNull())
+                .validate(header(Constants.JOB_URL).isNotNull())
                 .validate(header(Constants.JOB_STATUS_ROUTING_DESTINATION).isNotNull())
                 .to("direct:checkTiamatJobStatus")
                 .routeId("tiamat-validate-job-status-parameters");
@@ -36,7 +36,7 @@ public class TiamatPollJobStatusRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .doTry()
-                .toD(tiamatUrl + "${header." + Constants.JOB_STATUS_URL + "}")
+                .toD(tiamatUrl + "${header." + Constants.JOB_URL + "}/status")
                 .convertBodyTo(ExportJob.class)
                 .setHeader("current_status", simple("${body.status}"))
                 .doCatch(HttpOperationFailedException.class).onWhen(exchange -> {

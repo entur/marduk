@@ -46,7 +46,7 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
     @Produce(uri = "direct:checkTiamatJobStatus")
     protected ProducerTemplate checkTiamatJobStatusTemplate;
 
-    private static String JOB_STATUS_URL = "/job/status/url";
+    private static String JOB_URL = "/job/1234";
 
     @Before
     public void setUp() {
@@ -57,7 +57,7 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
             context.getRouteDefinition("tiamat-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
                 @Override
                 public void configure() throws Exception {
-                    interceptSendToEndpoint(tiamatUrl + JOB_STATUS_URL)
+                    interceptSendToEndpoint(tiamatUrl + JOB_URL + "/status")
                             .skipSendToOriginalEndpoint().to("mock:tiamat");
                 }
             });
@@ -126,7 +126,7 @@ public class TiamatPollJobStatusRouteIntegrationTest extends MardukRouteBuilderI
 
     private Exchange checkStatus() {
         Exchange exchange = checkTiamatJobStatusTemplate.request("direct:checkTiamatJobStatus", e -> {
-            e.getIn().setHeader(Constants.JOB_STATUS_URL, JOB_STATUS_URL);
+            e.getIn().setHeader(Constants.JOB_URL, JOB_URL);
             e.getIn().setHeader(Constants.JOB_ID, "1");
             e.getIn().setHeader(Constants.JOB_STATUS_ROUTING_DESTINATION, "mock:complete");
             JobEvent jobEventEvent = status(e, JobEvent.State.STARTED);

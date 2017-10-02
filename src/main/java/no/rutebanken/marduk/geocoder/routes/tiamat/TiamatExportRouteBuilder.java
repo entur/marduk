@@ -37,7 +37,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
                 .toD(tiamatUrl + tiamatPublicationDeliveryPath + "/export/initiate/${header." + Constants.QUERY_STRING + "}")
                 .convertBodyTo(ExportJob.class)
                 .setHeader(Constants.JOB_ID, simple("${body.id}"))
-                .setHeader(Constants.JOB_STATUS_URL, simple(tiamatPublicationDeliveryPath + "/${body.jobUrl}"))
+                .setHeader(Constants.JOB_URL, simple(tiamatPublicationDeliveryPath + "/${body.jobUrl}"))
                 .log(LoggingLevel.INFO, "Started Tiamat export of file: ${body.fileName}")
                 .setProperty(GEOCODER_NEXT_TASK, constant(TIAMAT_EXPORT_POLL))
                 .end()
@@ -45,7 +45,7 @@ public class TiamatExportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:tiamatExportMoveFileToMardukBlobStore")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching tiamat export file ...")
-                .toD(tiamatUrl + "/${header." + Constants.JOB_STATUS_URL + "}/content")
+                .toD(tiamatUrl + "/${header." + Constants.JOB_URL + "}/content")
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
                 .to("direct:uploadBlob")
                 .routeId("tiamat-export-move-file");
