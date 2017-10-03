@@ -47,11 +47,11 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .to("direct:chouetteValidateLevel2ForAllProviders")
                 .routeId("chouette-validate-level2-quartz");
 
-
+        // Trigger validation level1 for all level1 providers (ie migrateDateToProvider and referential set)
         from("direct:chouetteValidateLevel1ForAllProviders")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorService(allProvidersExecutorService)
-                .filter(simple("${body.chouetteInfo.migrateDataToProvider}"))
+                .filter(simple("${body.chouetteInfo.migrateDataToProvider} && ${body.chouetteInfo.referential}"))
                 .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
@@ -61,10 +61,11 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .routeId("chouette-validate-level1-all-providers");
 
 
+        // Trigger validation level2 for all level2 providers (ie no migrateDateToProvider and referential set)
         from("direct:chouetteValidateLevel2ForAllProviders")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorService(allProvidersExecutorService)
-                .filter(simple("${body.chouetteInfo.migrateDataToProvider} == null"))
+                .filter(simple("${body.chouetteInfo.migrateDataToProvider} == null && ${body.chouetteInfo.referential}"))
                 .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
@@ -87,10 +88,13 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(e -> e.getIn().setHeader(JSON_PART, Parameters.getValidationParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class))))) //Using header to addToExchange json data
+
+                .to("direct:assertHeadersForChouetteValidation")
+
                 .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
                 .process(e -> toGenericChouetteMultipart(e))
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
-                .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/validator") // TODO set to validation
+                .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/validator")
                 .process(e -> {
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
@@ -102,6 +106,16 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .removeHeader("loopCounter")
                 .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-validation-job");
+
+        from("direct:assertHeadersForChouetteValidation")
+                .choice()
+                .when(simple("${header."+CHOUETTE_REFERENTIAL+"} == null or ${header."+PROVIDER_ID+"} == null "))
+                .log(LoggingLevel.WARN, correlation() + "Unable to start Chouette validation for missing referential or providerId")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.class)).state(State.FAILED).build())
+                .to("direct:updateStatus")
+                .stop()
+                .end()
+                .routeId("chouette-send-validation-job-validate-headers");
 
         // Will be sent here after polling completes
         from("direct:processValidationResult")
