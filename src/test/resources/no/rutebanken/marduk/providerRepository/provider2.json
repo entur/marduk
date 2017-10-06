@@ -15,6 +15,7 @@
         "regtoppCalendarStrategy": null,
         "dataFormat": "regtopp",
         "enableValidation": true,
+        "enableAutoImport": true,
         "migrateDataToProvider": 2
     }
 }

@@ -19,6 +19,8 @@ public class ChouetteInfo {
     public boolean allowCreateMissingStopPlace = false;
     public boolean enableStopPlaceIdMapping = false;
     public boolean enableCleanImport = false;
+    public boolean enableAutoImport;
+
 	public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
 
     public Long getMigrateDataToProvider() {
@@ -104,5 +106,9 @@ public class ChouetteInfo {
 
     public boolean isEnableCleanImport() {
         return enableCleanImport;
+    }
+
+    public boolean isEnableAutoImport() {
+        return enableAutoImport;
     }
 }

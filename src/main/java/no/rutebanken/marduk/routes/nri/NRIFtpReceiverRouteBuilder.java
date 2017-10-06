@@ -60,8 +60,13 @@ public class NRIFtpReceiverRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "File handle is: ${header." + FILE_HANDLE + "}")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:uploadBlob")
+
+                .choice().when(e-> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID,Long.class)).chouetteInfo.enableAutoImport)
                 .log(LoggingLevel.INFO, correlation() + "Putting handle ${header." + FILE_HANDLE + "}")
                 .to("activemq:queue:ProcessFileQueue")
+                .otherwise()
+                .log(LoggingLevel.INFO, "Do not initiate processing of  ${header." + FILE_HANDLE + "} as autoImport is not enabled for provider")
+                .end()
                 .routeId("nri-ftp-activemq");
     }
 

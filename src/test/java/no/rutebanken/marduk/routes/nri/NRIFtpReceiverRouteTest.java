@@ -13,7 +13,6 @@ import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.DateUtils;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockftpserver.fake.FakeFtpServer;
@@ -53,19 +52,35 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
     @Autowired
     IdempotentRepositoryService idempotentRepositoryService;
 
-    @EndpointInject(uri = "mock:buskerud")
-    protected MockEndpoint buskerud;
+    @EndpointInject(uri = "mock:processFileMock")
+    protected MockEndpoint processFileMock;
 
-    @Before
-    public void setUpProvider() throws IOException {
+
+    public void setUp(boolean autoImport, long id) throws IOException {
         //wipe idempotent stores
         idempotentRepositoryService.cleanUniqueFileNameAndDigestRepo();
-        when(providerRepository.getProvider(5L)).thenReturn(Provider.create(IOUtils.toString(new FileReader(
-                                                                                                                   "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json"))));
+        Provider provider = Provider.create(IOUtils.toString(new FileReader(
+                                                                                   "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")));
+        provider.chouetteInfo.enableAutoImport = autoImport;
+        when(providerRepository.getProvider(id)).thenReturn(provider);
+
+        processFileMock.reset();
     }
 
     @Test
-    public void testFetchFilesFromFTP() throws Exception {
+    public void testFetchFilesFromFTPWithAutoImport() throws Exception {
+        setUp(true,4);
+        testFetchFilesFromFTP(true,"Jotunheimen og Valdresruten Bilselskap");
+    }
+
+    @Test
+    public void testFetchFilesFromFTPWithoutAutoImport() throws Exception {
+        setUp(false,5);
+        testFetchFilesFromFTP(false,"Brakar (Buskerud fylke)");
+    }
+
+
+    public void testFetchFilesFromFTP(boolean autoImport, String providerFolder) throws Exception {
 
         FakeFtpServer fakeFtpServer = new FakeFtpServer();
         fakeFtpServer.setSystemName("UNIX");
@@ -74,29 +89,29 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
 
         FileSystem fileSystem = new UnixFakeFileSystem();
         fileSystem.add(new DirectoryEntry("/rutedata"));
-        fileSystem.add(new DirectoryEntry("/rutedata/Brakar (Buskerud fylke)"));
+        fileSystem.add(new DirectoryEntry("/rutedata/" + providerFolder + ""));
 
-        fileSystem.add(new DirectoryEntry("/rutedata/Brakar (Buskerud fylke)/1585"));
-        fileSystem.add(new DirectoryEntry("/rutedata/Brakar (Buskerud fylke)/1585/Hovedsett 2016_unzipped"));
-        fileSystem.add(new DirectoryEntry("/rutedata/Brakar (Buskerud fylke)/985"));
-        fileSystem.add(new DirectoryEntry("/rutedata/Brakar (Buskerud fylke)/984"));
-        fileSystem.add(new DirectoryEntry("/rutedata/Brakar (Buskerud fylke)/985/Hovedsett 2016_unzipped"));
-        FileEntry file1585 = new FileEntry("/rutedata/Brakar (Buskerud fylke)/1585/Hovedsett 2017.zip");
+        fileSystem.add(new DirectoryEntry("/rutedata/" + providerFolder + "/1585"));
+        fileSystem.add(new DirectoryEntry("/rutedata/" + providerFolder + "/1585/Hovedsett 2016_unzipped"));
+        fileSystem.add(new DirectoryEntry("/rutedata/" + providerFolder + "/985"));
+        fileSystem.add(new DirectoryEntry("/rutedata/" + providerFolder + "/984"));
+        fileSystem.add(new DirectoryEntry("/rutedata/" + providerFolder + "/985/Hovedsett 2016_unzipped"));
+        FileEntry file1585 = new FileEntry("/rutedata/" + providerFolder + "/1585/Hovedsett 2017.zip");
         file1585.setLastModified(DateUtils.addMonths(new Date(), -(fileAgeFilterMonths - 1)));
         file1585.setContents(new byte[]{12, 11, 10});//IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")));
         fileSystem.add(file1585);
-        FileEntry file984 = new FileEntry("/rutedata/Brakar (Buskerud fylke)/984/Hovedsett 2016.zip");
+        FileEntry file984 = new FileEntry("/rutedata/" + providerFolder + "/984/Hovedsett 2016.zip");
         file984.setContents(new byte[]{11, 10, 12});//IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")));
         fileSystem.add(file984);
-        FileEntry file985_1 = new FileEntry("/rutedata/Brakar (Buskerud fylke)/985/Hovedsett 2016_v2.zip");
+        FileEntry file985_1 = new FileEntry("/rutedata/" + providerFolder + "/985/Hovedsett 2016_v2.zip");
         file985_1.setContents(new byte[]{10, 11, 12});//IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")));
         fileSystem.add(file985_1);
         //idempotent filter should take care of this, since content is the same as above
-        FileEntry file985_2 = new FileEntry("/rutedata/Brakar (Buskerud fylke)/985/ShouldBeFiltered.zip");
+        FileEntry file985_2 = new FileEntry("/rutedata/" + providerFolder + "/985/ShouldBeFiltered.zip");
         file985_2.setContents(new byte[]{10, 11, 12});//IOUtils.toByteArray(getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")));
         fileSystem.add(file985_2);
 
-        FileEntry toOld = new FileEntry("/rutedata/Brakar (Buskerud fylke)/985/TooOldShouldBeFiltered.zip");
+        FileEntry toOld = new FileEntry("/rutedata/" + providerFolder + "/985/TooOldShouldBeFiltered.zip");
         toOld.setContents(new byte[]{10, 11, 12, 13});
         toOld.setLastModified(DateUtils.addMonths(new Date(), -(fileAgeFilterMonths + 1)));
         fileSystem.add(toOld);
@@ -111,7 +126,7 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
             @Override
             public void configure() throws Exception {
                 interceptSendToEndpoint("activemq:queue:ProcessFileQueue").skipSendToOriginalEndpoint()
-                        .to("mock:buskerud");
+                        .to("mock:processFileMock");
             }
         });
 
@@ -121,17 +136,21 @@ public class NRIFtpReceiverRouteTest extends MardukRouteBuilderIntegrationTestBa
 
 
         // setup expectations on the mocks
-        buskerud.expectedMessageCount(3);
+        processFileMock.expectedMessageCount(autoImport? 3 : 0);
 
         // assert that the test was okay
-        buskerud.assertIsSatisfied();
+        processFileMock.assertIsSatisfied();
 
-        List<Exchange> exchanges = buskerud.getExchanges();
-        assertEquals(2L, exchanges.get(0).getIn().getHeader(Constants.PROVIDER_ID));
-        assertNotNull(exchanges.get(0).getIn().getHeader(Constants.CORRELATION_ID));
-        assertEquals("984_Hovedsett_2016.zip", exchanges.get(0).getIn().getHeader(Constants.FILE_NAME));
-        assertEquals("985_Hovedsett_2016_v2.zip", exchanges.get(1).getIn().getHeader(Constants.FILE_NAME));
-        assertEquals("1585_Hovedsett_2017.zip", exchanges.get(2).getIn().getHeader(Constants.FILE_NAME));
+        if (autoImport) {
+            List<Exchange> exchanges = processFileMock.getExchanges();
+            assertEquals(2L, exchanges.get(0).getIn().getHeader(Constants.PROVIDER_ID));
+            assertNotNull(exchanges.get(0).getIn().getHeader(Constants.CORRELATION_ID));
+            assertEquals("984_Hovedsett_2016.zip", exchanges.get(0).getIn().getHeader(Constants.FILE_NAME));
+            assertEquals("985_Hovedsett_2016_v2.zip", exchanges.get(1).getIn().getHeader(Constants.FILE_NAME));
+            assertEquals("1585_Hovedsett_2017.zip", exchanges.get(2).getIn().getHeader(Constants.FILE_NAME));
+        }
+
+        fakeFtpServer.stop();
     }
 
 }
