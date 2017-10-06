@@ -57,4 +57,12 @@ public class GtfsFileUtilsTest {
         Assert.assertEquals("Feed info should be unchanged", "RB,Rutebanken,http://www.rutebanken.org,no", feedInfoLines.get(1));
     }
 
+    @Test
+    public void mergeWithTransfers() throws Exception {
+        File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(new File(GTFS_FILE_1), new File(GTFS_FILE_1)));
+
+        List<String> transferLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(merged), "transfers.txt").toByteArray()));
+        Assert.assertEquals("Expected file two duplicates and one other transfer to be merged to two (+ header)",3, transferLines.size());
+    }
+
 }
