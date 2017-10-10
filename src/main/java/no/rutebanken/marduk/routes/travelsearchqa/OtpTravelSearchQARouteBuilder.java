@@ -20,10 +20,11 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class OtpTravelSearchQARouteBuilder extends BaseRouteBuilder {
+
     @Value("${babylon.url:http4://babylon/babylon/api}")
     private String babylonUrl;
 
-        @Value("${otp.travelsearch.qa.job:otp-travelsearch-qa-pod.yaml}")
+    @Value("${otp.travelsearch.qa.job:otp-travelsearch-qa-pod.yaml}")
     private String otpTravelSearchJobFilename;
 
     @Value("${otp.travelsearch.qa.cron.schedule:0+15+10+?+*+*}")
@@ -42,7 +43,7 @@ public class OtpTravelSearchQARouteBuilder extends BaseRouteBuilder {
 
 
         from("direct:runOtpTravelSearchQA")
-                .log(LoggingLevel.INFO, "Requesting Babylon to start "+ otpTravelSearchJobFilename)
+                .log(LoggingLevel.INFO, "Requesting Babylon to start " + otpTravelSearchJobFilename)
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
