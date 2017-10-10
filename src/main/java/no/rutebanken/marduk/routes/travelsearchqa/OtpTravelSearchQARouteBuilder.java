@@ -23,7 +23,7 @@ public class OtpTravelSearchQARouteBuilder extends BaseRouteBuilder {
     @Value("${otp.travelsearch.qa.job:otp-travelsearch-qa-pod.yaml}")
     private String otpTravelSearchJobFilename;
 
-    @Value("${otp.travelsearch.qa.cron.schedule:0+15+10+?+*+*}")
+    @Value("${otp.travelsearch.qa.cron.schedule:0+0/15+*+?+*+*}")
     private String cronSchedule;
 
     @Override
