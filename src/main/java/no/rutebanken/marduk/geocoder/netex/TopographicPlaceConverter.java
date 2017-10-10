@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -37,12 +38,12 @@ public class TopographicPlaceConverter {
 
 	private PublicationDeliveryStructure createPublicationDeliveryStructure(TopographicPlaceReader input) {
 		SiteFrame siteFrame = new SiteFrame()
-				                      .withCreated(OffsetDateTime.now()).withId(input.getParticipantRef() + ":SiteFrame:1")
+				                      .withCreated(LocalDateTime.now()).withId(input.getParticipantRef() + ":SiteFrame:1")
 				                      .withModification(ModificationEnumeration.NEW).withVersion("any");
 
 		return new PublicationDeliveryStructure()
 				       .withParticipantRef(input.getParticipantRef())
-				       .withPublicationTimestamp(OffsetDateTime.now())
+				       .withPublicationTimestamp(LocalDateTime.now())
 				       .withDescription(input.getDescription())
 				       .withDataObjects(new PublicationDeliveryStructure.DataObjects()
 						                        .withCompositeFrameOrCommonFrame(new ObjectFactory().createSiteFrame(siteFrame)));

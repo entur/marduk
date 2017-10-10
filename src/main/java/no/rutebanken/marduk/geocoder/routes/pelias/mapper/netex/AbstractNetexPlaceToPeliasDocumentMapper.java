@@ -14,9 +14,8 @@ import org.rutebanken.netex.model.MultilingualString;
 import org.rutebanken.netex.model.Place_VersionStructure;
 import org.rutebanken.netex.model.ValidBetween;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_VersionStructure> {
@@ -73,9 +72,9 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
         return true;
     }
 
-
+    // Should compare instant with validbetween from/to in timezone defined in PublicationDelivery, but makes little difference in practice
     private boolean isValidNow(ValidBetween validBetween) {
-        OffsetDateTime now = OffsetDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
         if (validBetween != null) {
             if (validBetween.getFromDate() != null && validBetween.getFromDate().isAfter(now)) {
                 return false;
