@@ -374,8 +374,15 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-timetable-netex-merged-export")
                 .endRest()
 
+                .get("/swagger.json")
+                .apiDocs(false)
+                .bindingMode(RestBindingMode.off)
+                .route()
+                .to(commonApiDocEndpoint)
+                .endRest();
 
-                .post("/routing_graph/build")
+        rest("/timetable_admin/routing_graph")
+                .post("/build")
                 .description("Triggers building of the OTP graph using existing gtfs and map data")
                 .consumes(PLAIN)
                 .produces(PLAIN)
@@ -389,12 +396,21 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-build-graph")
                 .endRest()
 
-                .get("/swagger.json")
-                .apiDocs(false)
-                .bindingMode(RestBindingMode.off)
+                .post("/qa")
+                .description("Triggers running the OTP TravelSearch QA (tests)")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
-                .to(commonApiDocEndpoint)
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .log(LoggingLevel.INFO, "Trigger OTP TravelSearch QA")
+                .removeHeaders("CamelHttp*")
+                .setBody(simple(""))
+                .to("direct:runOtpTravelSearchQA")
+                .routeId("otp-travelsearch-qa-by-called")
                 .endRest();
+
+
 
 
         rest("/timetable_admin/{providerId}")

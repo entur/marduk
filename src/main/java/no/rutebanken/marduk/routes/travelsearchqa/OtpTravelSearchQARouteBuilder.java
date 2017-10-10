@@ -3,14 +3,10 @@ package no.rutebanken.marduk.routes.travelsearchqa;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.geocoder.routes.pelias.babylon.StartFile;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.security.AuthorizationClaim;
-import no.rutebanken.marduk.security.AuthorizationService;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
 import org.apache.camel.model.dataformat.JsonLibrary;
-import org.rutebanken.helper.organisation.AuthorizationConstants;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -30,9 +26,6 @@ public class OtpTravelSearchQARouteBuilder extends BaseRouteBuilder {
     @Value("${otp.travelsearch.qa.cron.schedule:0+15+10+?+*+*}")
     private String cronSchedule;
 
-    @Autowired
-    private AuthorizationService authorizationService;
-
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -44,7 +37,6 @@ public class OtpTravelSearchQARouteBuilder extends BaseRouteBuilder {
 
         from("direct:runOtpTravelSearchQA")
                 .log(LoggingLevel.INFO, "Requesting Babylon to start " + otpTravelSearchJobFilename)
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setBody(constant(new StartFile(otpTravelSearchJobFilename)))
