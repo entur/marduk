@@ -30,7 +30,7 @@ public class OtpTravelSearchQARouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         onException(MardukException.class)
-                .log(LoggingLevel.ERROR, "Failed while fetching OSM file.")
+                .log(LoggingLevel.ERROR, "Failed while initiating " + otpTravelSearchJobFilename)
                 .handled(true);
 
 
