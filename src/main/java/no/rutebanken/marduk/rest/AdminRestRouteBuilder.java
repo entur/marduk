@@ -379,10 +379,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .bindingMode(RestBindingMode.off)
                 .route()
                 .to(commonApiDocEndpoint)
-                .endRest();
+                .endRest()
 
-        rest("/timetable_admin/routing_graph")
-                .post("/build")
+                .post("routing_graph/build")
                 .description("Triggers building of the OTP graph using existing gtfs and map data")
                 .consumes(PLAIN)
                 .produces(PLAIN)
@@ -396,7 +395,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-build-graph")
                 .endRest()
 
-                .post("/qa")
+                .post("routing_graph/qa")
                 .description("Triggers running the OTP TravelSearch QA (tests)")
                 .consumes(PLAIN)
                 .produces(PLAIN)
@@ -407,7 +406,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders("CamelHttp*")
                 .setBody(simple(""))
                 .to("direct:runOtpTravelSearchQA")
-                .routeId("otp-travelsearch-qa-by-called")
+                .routeId("admin-otp-travelsearch-qa")
                 .endRest();
 
 
