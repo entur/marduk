@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Joiner;
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
@@ -16,7 +15,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,8 +37,8 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     /**
      * Every ten minutes as default.
      */
-    @Value("${chouette.stats.cache.refresh.cron.schedule:0 */10 * * * ?}")
-    private String cronSchedule;
+    @Value("${chouette.stats.cache.refresh.quartz.trigger:trigger.repeatInterval=600000&trigger.repeatCount=-1&fireNow=true}")
+    private String quartzTrigger;
 
     private JsonNode cache;
 
@@ -49,7 +47,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
         super.configure();
 
         // Quartz job must run on all nodes
-        from("quartz2://marduk/refreshLine?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+        from("quartz2://marduk/refreshLine?" + quartzTrigger)
                 .log(LoggingLevel.DEBUG, "Quartz triggers refresh of line stats.")
                 .to("direct:chouetteRefreshStatsCache")
 
@@ -62,6 +60,9 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .to("direct:chouetteRefreshStatsCache")
                 .end()
                 .process(e -> e.getIn().setBody(cache.get(e.getIn().getHeader(PROVIDER_ID, String.class))))
+                .choice().when(body().isNull())
+                    .log(LoggingLevel.WARN, "No line statistics cached for provider: ${header." + PROVIDER_ID + "}")
+                .end()
                 .routeId("chouette-line-stats-get-single");
 
         from("direct:chouetteGetStats")
@@ -76,7 +77,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .removeHeaders("Camel*")
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
-                .process(e -> e.getIn().setHeader("refParam", getReferentialsAsParam(e)))
+                .process(e -> e.getIn().setHeader("refParam", getAllReferentialsAsParam()))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/statistics/line?days=" + days + "&" + getValidityCategories() + "${header.refParam}"))
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Calling chouette with ${property.chouette_url}")
                 .toD("${exchangeProperty.chouette_url}")
@@ -101,8 +102,10 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                        .collect(Collectors.toMap(Provider::getId, provider -> statsPerReferential.get(provider.chouetteInfo.referential)));
     }
 
-    private String getReferentialsAsParam(Exchange e) {
-        List<String> referentials = getMatchingProviders(e).stream().map(provider -> provider.chouetteInfo.referential).collect(Collectors.toList());
+    private String getAllReferentialsAsParam() {
+        List<String> referentials = getProviderRepository().getProviders().stream()
+                                            .filter(provider -> provider.chouetteInfo!=null && provider.chouetteInfo.referential!=null)
+                                            .map(provider -> provider.chouetteInfo.referential).collect(Collectors.toList());
         return "&referentials=" + Joiner.on(",").join(referentials);
     }
 
