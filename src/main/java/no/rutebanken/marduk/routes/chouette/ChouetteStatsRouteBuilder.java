@@ -1,7 +1,11 @@
 package no.rutebanken.marduk.routes.chouette;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Joiner;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
@@ -12,6 +16,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,20 +36,43 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     @Value("${chouette.stats.days}")
     private int days;
 
+    /**
+     * Every ten minutes as default.
+     */
+    @Value("${chouette.stats.cache.refresh.cron.schedule:0 */10 * * * ?}")
+    private String cronSchedule;
+
+    private JsonNode cache;
+
     @Override
     public void configure() throws Exception {
         super.configure();
 
+        // Quartz job must run on all nodes
+        from("quartz2://marduk/refreshLine?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+                .log(LoggingLevel.DEBUG, "Quartz triggers refresh of line stats.")
+                .to("direct:chouetteRefreshStatsCache")
+
+                .log(LoggingLevel.DEBUG, "Quartz refresh of line stats done.")
+                .routeId("chouette-line-stats-cache-refresh-quartz");
+
+
         from("direct:chouetteGetStatsSingleProvider")
-                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-                .removeHeaders("Camel*")
-                .setBody(constant(""))
-                .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
-                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/statistics/${header." + CHOUETTE_REFERENTIAL + "}/line?days=" + days + "&" + getValidityCategories()))
-                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Calling chouette with ${property.chouette_url}")
-                .toD("${exchangeProperty.chouette_url}");
+                .choice().when(e -> cache == null)
+                .to("direct:chouetteRefreshStatsCache")
+                .end()
+                .process(e -> e.getIn().setBody(cache.get(e.getIn().getHeader(PROVIDER_ID, String.class))))
+                .routeId("chouette-line-stats-get-single");
 
         from("direct:chouetteGetStats")
+                .choice().when(e -> cache == null)
+                .to("direct:chouetteRefreshStatsCache")
+                .end()
+                .process(e -> populateWithMatchingLineStatsFromCache(e))
+                .routeId("chouette-line-stats-get");
+
+
+        from("direct:chouetteGetFreshStats")
                 .removeHeaders("Camel*")
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
@@ -54,8 +82,19 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .toD("${exchangeProperty.chouette_url}")
                 .unmarshal().json(JsonLibrary.Jackson, Map.class)
                 .process(e -> e.getIn().setBody(mapReferentialToProviderId(e.getIn().getBody(Map.class))))
-                .marshal().json(JsonLibrary.Jackson);
+                .marshal().json(JsonLibrary.Jackson)
+                .routeId("chouette-line-stats-get-fresh");
+
+
+        from("direct:chouetteRefreshStatsCache")
+                .to("direct:chouetteGetFreshStats")
+                .unmarshal().json(JsonLibrary.Jackson, JsonNode.class)
+                .process(e -> cache = e.getIn().getBody(JsonNode.class))
+                .setBody(constant(null))
+                .log(LoggingLevel.INFO,  "Refresh of line stats done")
+                .routeId("chouette-line-stats-cache-refresh");
     }
+
 
     private Map<Long, Object> mapReferentialToProviderId(Map<String, Object> statsPerReferential) {
         return getProviderRepository().getProviders().stream().filter(provider -> statsPerReferential.containsKey(provider.chouetteInfo.referential))
@@ -63,16 +102,31 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     }
 
     private String getReferentialsAsParam(Exchange e) {
-        List<String> providerIds = e.getIn().getHeader(PROVIDER_IDS, List.class);
-        String filter = e.getIn().getHeader("filter", String.class);
-
-        List<String> referentials = getProviderRepository().getProviders().stream().filter(provider -> isMatch(provider, filter, providerIds)).
-                                                                                                                                                      map(provider -> provider.chouetteInfo.referential).collect(Collectors.toList());
+        List<String> referentials = getMatchingProviders(e).stream().map(provider -> provider.chouetteInfo.referential).collect(Collectors.toList());
         return "&referentials=" + Joiner.on(",").join(referentials);
     }
 
+    private List<Provider> getMatchingProviders(Exchange e) {
+        List<String> providerIds = e.getIn().getHeader(PROVIDER_IDS, List.class);
+        String filter = e.getIn().getHeader("filter", String.class);
+
+        return getProviderRepository().getProviders().stream().filter(provider -> isMatch(provider, filter, providerIds)).collect(Collectors.toList());
+    }
+
+    private void populateWithMatchingLineStatsFromCache(Exchange e) {
+        ObjectNode stats = JsonNodeFactory.instance.objectNode();
+        getMatchingProviders(e).stream().map(provider -> provider.getId().toString()).forEach(providerId -> stats.set(providerId, cache.get(providerId)));
+        e.getIn().setBody(stats);
+    }
+
+
     boolean isMatch(Provider provider, String filter, List<String> whiteListedProviderIds) {
         boolean match = true;
+
+        if (provider.chouetteInfo == null || StringUtils.isEmpty(provider.chouetteInfo)) {
+            return false;
+        }
+
         if (StringUtils.hasLength(filter) && !"all".equalsIgnoreCase(filter)) {
             if ("level1".equalsIgnoreCase(filter)) {
                 match &= provider.getChouetteInfo().migrateDataToProvider != null;
