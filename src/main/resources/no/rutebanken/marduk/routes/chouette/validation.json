@@ -11,9 +11,10 @@
     "inter_stop_duration_max": "1800",
     "facility_stop_area_distance_max": "300",
     "check_allowed_transport_modes": "0",
+    "check_interchange": "0",
     "check_lines_in_groups": "0",
     "check_line_routes": "0",
-    "check_stop_parent": "0",
+    "check_stop_parent": "1",
     "check_connection_link_on_physical": "0",
     "mode_coach": {
         "allowed_transport": "1",
