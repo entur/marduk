@@ -31,7 +31,7 @@ public class BackupDatabaseRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         onException(MardukException.class)
-                .log(LoggingLevel.ERROR, "Failed while fetching OSM file.")
+                .log(LoggingLevel.ERROR, "Failed while processing database backup.")
                 .handled(true);
 
 
