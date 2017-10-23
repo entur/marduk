@@ -1,13 +1,27 @@
 {
-    "areaVisibility": true,
-    "parentStopLinking": true,
-    "platformEntriesLinking": true,
-    "osmWayPropertySet": "norway",
-    "islandWithoutStopsMaxSize": 5,
-    "islandWithStopsMaxSize": 5,
-    "htmlAnnotations": true,
-    "stopClusterMode": "parentStation",
-    "maxTransferDistance": 1000,
-    "extraEdgesStopPlatformLink": true
-    
+	"htmlAnnotations": false,
+	"transit": true,
+	"useTransfersTxt": false,
+	"parentStopLinking": false,
+	"stationTransfers": false,
+	"subwayAccessTime": 2.0,
+	"streets": true,
+	"embedRouterConfig": true,
+	"areaVisibility": true, // Changed from false
+	"platformEntriesLinking": false,
+	"matchBusRoutesToStreets": false,
+	"fetchElevationUS": false,
+	"osmWayPropertySet": "norway", // Changed from default
+	"staticBikeRental": false,
+	"staticParkAndRide": true,
+	"staticBikeParkAndRide": false,
+	"maxHtmlAnnotationsPerFile": 1000,
+	"maxInterlineDistance": 200,
+	"allowDuplicateStops": false,
+	"islandWithoutStopsMaxSize": 40,
+	"islandWithStopsMaxSize": 5,
+	"banDiscouragedWalking": false,
+	"banDiscouragedBiking": false,
+	"maxTransferDistance": 2000,
+	"extraEdgesStopPlatformLink": false
 }
