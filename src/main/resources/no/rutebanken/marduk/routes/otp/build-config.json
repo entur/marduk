@@ -1,14 +1,14 @@
 {
-	"htmlAnnotations": false,
+	"htmlAnnotations": true, // Changed from false
 	"transit": true,
 	"useTransfersTxt": false,
-	"parentStopLinking": false,
+	"parentStopLinking": true, // Changed from false
 	"stationTransfers": false,
 	"subwayAccessTime": 2.0,
 	"streets": true,
 	"embedRouterConfig": true,
 	"areaVisibility": true, // Changed from false
-	"platformEntriesLinking": false,
+	"platformEntriesLinking": true,
 	"matchBusRoutesToStreets": false,
 	"fetchElevationUS": false,
 	"osmWayPropertySet": "norway", // Changed from default
@@ -18,10 +18,11 @@
 	"maxHtmlAnnotationsPerFile": 1000,
 	"maxInterlineDistance": 200,
 	"allowDuplicateStops": false,
-	"islandWithoutStopsMaxSize": 40,
+	"islandWithoutStopsMaxSize": 5, // Changed from 40
 	"islandWithStopsMaxSize": 5,
 	"banDiscouragedWalking": false,
 	"banDiscouragedBiking": false,
 	"maxTransferDistance": 2000,
-	"extraEdgesStopPlatformLink": false
+	"extraEdgesStopPlatformLink": true, // Changed from false
+	"stopClusterMode": "parentStation"
 }
