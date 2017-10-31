@@ -7,6 +7,7 @@ import org.apache.activemq.command.ActiveMQMessage;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.stream.Collectors;
 
@@ -33,6 +34,9 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
     @Value("${otp.graph.blobstore.subdirectory}")
     private String blobStoreSubdirectory;
+
+    @Value("${otp.graph.build.config:}")
+    private String otpGraphBuildConfig;
 
     @Value("${osm.pbf.blobstore.subdirectory:osm}")
     private String blobStoreSubdirectoryForOsm;
@@ -123,8 +127,13 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-graph-transform-ids");
 
         from("direct:fetchConfig")
+                .choice().when(constant(StringUtils.isEmpty(otpGraphBuildConfig)))
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Fetching config ...")
                 .to("language:constant:resource:classpath:no/rutebanken/marduk/routes/otp/" + BUILD_CONFIG_JSON)
+                .otherwise()
+                .log(LoggingLevel.WARN, getClass().getName(), correlation() + "Using overridden otp build config from property")
+                .setBody(constant(otpGraphBuildConfig))
+                .end()
                 .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + BUILD_CONFIG_JSON)
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + BUILD_CONFIG_JSON + " fetched.")
                 .routeId("otp-graph-fetch-config");
