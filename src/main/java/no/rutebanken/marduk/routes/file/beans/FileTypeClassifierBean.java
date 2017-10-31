@@ -14,7 +14,6 @@ import java.nio.charset.Charset;
 import java.util.Set;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
 import static no.rutebanken.marduk.routes.file.FileType.*;
 import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.firstElementQNameMatchesNetex;
@@ -28,6 +27,8 @@ public class FileTypeClassifierBean {
     private static final String requiredGtfsFilesRegex = "agency.txt|stops.txt|routes.txt|trips.txt|stop_times.txt";
     private static final String requiredNeptuneFilesRegex = "[A-Z]{1,}\\-Line\\-[0-9].*\\.xml";
     private static final String xmlFilesRegex = ".+\\.xml";    //TODO can we be more specific?
+
+    public static final String NON_XML_FILE_XML=".*\\.(?!XML$|xml$)[^.]+";
 
     private final static ZipFileUtils zipFileUtils = new ZipFileUtils();
 
@@ -95,7 +96,7 @@ public class FileTypeClassifierBean {
 
     private static boolean isNetexXml(InputStream inputStream) {
         try {
-            return validateZipContent(inputStream, firstElementQNameMatchesNetex());
+            return validateZipContent(inputStream, firstElementQNameMatchesNetex(), NON_XML_FILE_XML);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
