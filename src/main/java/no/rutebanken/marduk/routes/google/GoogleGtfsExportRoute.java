@@ -42,7 +42,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .to("direct:transformToGoogleGTFS")
                 .to("direct:uploadGoogleGtfs")
 
-                // TODO send to google?
+                .to("activemq:queue:GooglePublishQueue")
                 .to("direct:cleanUpLocalDirectory")
 
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
