@@ -189,7 +189,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 				.log(LoggingLevel.DEBUG, correlation() + "Exited retry loop with status ${header.current_status}")
 				.to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 				.choice()
-				.when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "'"))
+				.when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "' || ${header.current_status} == '" + RESCHEDULED + "'"))
 				.log(LoggingLevel.WARN, correlation() + "Job timed out with state ${header.current_status}. Config should probably be tweaked. Stopping route.")
 				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.TIMEOUT).build())
 				.to("direct:updateStatus")
