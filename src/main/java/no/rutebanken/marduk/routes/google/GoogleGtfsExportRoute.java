@@ -42,7 +42,8 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .to("direct:transformToGoogleGTFS")
                 .to("direct:uploadGoogleGtfs")
 
-                .to("activemq:queue:GooglePublishQueue")
+                // Do not trigger publish on every build (done as scheduled job).to("activemq:queue:GooglePublishQueue")
+
                 .to("direct:cleanUpLocalDirectory")
 
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
