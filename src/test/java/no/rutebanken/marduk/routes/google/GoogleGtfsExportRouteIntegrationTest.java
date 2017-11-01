@@ -38,9 +38,6 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
     private String googleExportFileName;
 
 
-    @EndpointInject(uri = "mock:publishQueue")
-    protected MockEndpoint mockPublishQueue;
-
 
     @Test
     public void testUploadGtfsToGoogle() throws Exception {
@@ -61,14 +58,11 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
         inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + gtfsNorwayMergedFileName, new FileInputStream(new File(pathname)), false);
 
 
-        mockPublishQueue.expectedMessageCount(1);
         startRoute.request("activemq:queue:GoogleExportQueue", ex -> {
         });
 
 
         Assert.assertNotNull("Expected transformed gtfs file to have been uploaded", inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/google/" + googleExportFileName));
-
-        mockPublishQueue.assertIsSatisfied();
     }
 
 
