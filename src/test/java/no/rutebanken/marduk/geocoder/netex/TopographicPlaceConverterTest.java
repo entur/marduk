@@ -25,6 +25,7 @@ import static javax.xml.bind.JAXBContext.newInstance;
 
 public class TopographicPlaceConverterTest {
 
+    private TopographicPlaceConverter converter = new TopographicPlaceConverter("CET");
 
     @Test
     public void testFilterConvertAdminUnitsFromGeoJson() throws Exception {
@@ -32,7 +33,7 @@ public class TopographicPlaceConverterTest {
         new FeatureJSONFilter("src/test/resources/no/rutebanken/marduk/geocoder/geojson/fylker.geojson", filteredFilePath, "fylkesnr", "area").filter();
 
         String targetPath = "target/adm-units-from-geojson.xml";
-        new TopographicPlaceConverter().toNetexFile(new GeoJsonCollectionTopographicPlaceReader
+        converter.toNetexFile(new GeoJsonCollectionTopographicPlaceReader
                                                             (new GeojsonFeatureWrapperFactory(null), new File(filteredFilePath)
                                                             ), targetPath);
         validateNetexFile(targetPath);
@@ -45,7 +46,7 @@ public class TopographicPlaceConverterTest {
         TopographicPlaceReader reader = new PbfTopographicPlaceReader(filter, IanaCountryTldEnumeration.NO,
                                                                              new File("src/test/resources/no/rutebanken/marduk/geocoder/pbf/sample.pbf"));
         String targetPath = "target/poi.xml";
-        new TopographicPlaceConverter().toNetexFile(reader,
+        converter.toNetexFile(reader,
                 targetPath);
 
         validateNetexFile(targetPath);
@@ -55,7 +56,7 @@ public class TopographicPlaceConverterTest {
     public void testConvertAdminUnitsFromSosi() throws Exception {
         TopographicPlaceReader reader = new SosiTopographicPlaceReader(new File("src/test/resources/no/rutebanken/marduk/geocoder/sosi/SosiTest.sos"));
         String targetPath = "target/admin-units-from-sosi.xml";
-        new TopographicPlaceConverter().toNetexFile(reader,
+        converter.toNetexFile(reader,
                 targetPath);
 
         validateNetexFile(targetPath);
@@ -67,7 +68,7 @@ public class TopographicPlaceConverterTest {
         TopographicPlaceReader reader = new GeoJsonSingleTopographicPlaceReader(new GeojsonFeatureWrapperFactory(null),
                                                                                        new File("src/test/resources/no/rutebanken/marduk/geocoder/geojson/finland.geojson"));
         String targetPath = "target/neighbouring-countries_from_geosjon.xml";
-        new TopographicPlaceConverter().toNetexFile(reader,
+        converter.toNetexFile(reader,
                 targetPath);
 
         validateNetexFile(targetPath);
@@ -77,7 +78,7 @@ public class TopographicPlaceConverterTest {
 //    public void testConvertAdminUnitsFromSosiRealKartverketData() throws Exception {
 //        TopographicPlaceReader reader = new SosiTopographicPlaceReader(new File("files/ADM_enheter_Norge.sos"));
 //        String targetPath = "target/admin-units-from-sosi.xml";
-//        new TopographicPlaceConverter().toNetexFile(reader,
+//        converter.toNetexFile(reader,
 //                targetPath);
 //
 //        validateNetexFile(targetPath);
