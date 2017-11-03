@@ -165,7 +165,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 				.unmarshal().json(JsonLibrary.Jackson, JobResponseWithLinks.class)
 				.setProperty("current_status", simple("${body.status}"))
 				.choice()
-				.when(PredicateBuilder.or(simple("${body.status} != ${type:no.rutebanken.marduk.routes.chouette.json.Status.SCHEDULED} && ${body.status} != ${type:no.rutebanken.marduk.routes.chouette.json.Status.STARTED}"),
+				.when(PredicateBuilder.or(simple("${body.status} != ${type:no.rutebanken.marduk.routes.chouette.json.Status.SCHEDULED} && ${body.status} != ${type:no.rutebanken.marduk.routes.chouette.json.Status.STARTED} && ${body.status} != ${type:no.rutebanken.marduk.routes.chouette.json.Status.RESCHEDULED}"),
 						simple("${header.loopCounter} > " + maxRetries)))
 				.to("direct:jobStatusDone")
 				.otherwise()
