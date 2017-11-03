@@ -7,18 +7,20 @@ import java.util.Collection;
 
 public class PlaceHierarchy<T extends Place_VersionStructure> {
 
+    private PlaceHierarchy<T> parent;
+
     private T place;
 
     private Collection<PlaceHierarchy<T>> children;
 
 
-    public PlaceHierarchy(T place, Collection<PlaceHierarchy<T>> children) {
+    public PlaceHierarchy(T place, PlaceHierarchy<T> parent) {
         this.place = place;
-        this.children = children;
+        this.parent = parent;
     }
 
     public PlaceHierarchy(T place) {
-        this(place, new ArrayList<>());
+        this(place, null);
     }
 
 
@@ -28,5 +30,13 @@ public class PlaceHierarchy<T extends Place_VersionStructure> {
 
     public Collection<PlaceHierarchy<T>> getChildren() {
         return children;
+    }
+
+    public PlaceHierarchy<T> getParent() {
+        return parent;
+    }
+
+    public void setChildren(Collection<PlaceHierarchy<T>> children) {
+        this.children = children;
     }
 }

@@ -22,6 +22,9 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
 
     private static final String KEY_IS_PARENT_STOP_PLACE = "IS_PARENT_STOP_PLACE";
 
+    public static final String SOURCE_PARENT_STOP_PLACE = "openstreetmap";
+    public static final String SOURCE_CHILD_STOP_PLACE = "geonames";
+
     private StopPlaceBoostConfiguration boostConfiguration;
 
     public StopPlaceToPeliasMapper(String participantRef, StopPlaceBoostConfiguration boostConfiguration) {
@@ -47,6 +50,7 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
     @Override
     protected void populateDocument(PlaceHierarchy<StopPlace> placeHierarchy, PeliasDocument document) {
         StopPlace place = placeHierarchy.getPlace();
+        document.setSource(getSource(placeHierarchy));
 
         List<Pair<StopTypeEnumeration, Enum>> stopTypeAndSubModeList = aggregateStopTypeAndSubMode(placeHierarchy);
 
@@ -59,6 +63,25 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
         // Make stop place rank highest in autocomplete by setting popularity
         long popularity = boostConfiguration.getPopularity(stopTypeAndSubModeList, place.getWeighting());
         document.setPopularity(popularity);
+    }
+
+    /**
+     * Categorize multimodal stops with separate sources in ordre to be able to filter in queries.
+     *
+     * Multimodal parents with one source
+     * Multimodal children with another source
+     * Non-multimodal stops with default soure
+     *
+     * @param hierarchy
+     * @return
+     */
+    private String getSource(PlaceHierarchy<StopPlace> hierarchy) {
+        if (hierarchy.getParent() != null) {
+            return SOURCE_CHILD_STOP_PLACE;
+        } else if (!CollectionUtils.isEmpty(hierarchy.getChildren())) {
+            return SOURCE_PARENT_STOP_PLACE;
+        }
+        return PeliasDocument.DEFAULT_SOURCE;
     }
 
     @Override

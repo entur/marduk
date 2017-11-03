@@ -34,7 +34,7 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
 
         PeliasDocument document = new PeliasDocument(getLayer(place), place.getId());
 
-        MultilingualString name = place.getName();
+        MultilingualString name = getName(placeHierarchy);
         if (name != null) {
             document.setDefaultNameAndPhrase(name.getValue());
             if (name.getLang() != null) {
@@ -57,6 +57,20 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
         populateDocument(placeHierarchy, document);
 
         return document;
+    }
+
+    /**
+     * Get name from current place or, if not set, on closest parent with name set.
+     *
+     */
+    private MultilingualString getName(PlaceHierarchy<T> placeHierarchy) {
+        if (placeHierarchy.getPlace().getName() != null) {
+            return placeHierarchy.getPlace().getName();
+        }
+        if (placeHierarchy.getParent() != null) {
+            return getName(placeHierarchy.getParent());
+        }
+        return null;
     }
 
     protected boolean isValid(T place) {

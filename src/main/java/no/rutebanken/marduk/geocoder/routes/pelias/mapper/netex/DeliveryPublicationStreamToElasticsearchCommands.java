@@ -23,8 +23,10 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static javax.xml.bind.JAXBContext.newInstance;
@@ -91,7 +93,7 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
         if (!CollectionUtils.isEmpty(places)) {
             StopPlaceToPeliasMapper mapper = new StopPlaceToPeliasMapper(participantRef, stopPlaceBoostConfiguration);
 
-            List<PlaceHierarchy<StopPlace>> stopPlaceHierarchies = toPlaceHierarchies(places);
+            Set<PlaceHierarchy<StopPlace>> stopPlaceHierarchies = toPlaceHierarchies(places);
 
             return stopPlaceHierarchies.stream().map(p -> mapper.toPeliasDocument(p)).sorted(new PeliasDocumentPopularityComparator()).filter(d -> d != null).map(p -> ElasticsearchCommand.peliasIndexCommand(p)).collect(Collectors.toList());
         }
@@ -99,22 +101,36 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
     }
 
 
-    /**
-     * Map list of stop places to list of hierarchies.
-     */
-    protected List<PlaceHierarchy<StopPlace>> toPlaceHierarchies(List<StopPlace> places) {
-        Map<String, List<StopPlace>> childrenByParentIdMap = places.stream().filter(sp -> sp.getParentSiteRef() != null).collect(Collectors.groupingBy(sp -> sp.getParentSiteRef().getRef()));
-        return places.stream().filter(sp -> sp.getParentSiteRef() == null).map(sp -> createHierarchyForStopPlace(sp, childrenByParentIdMap)).collect(Collectors.toList());
+    private void expandStopPlaceHierarchies(Collection<PlaceHierarchy<StopPlace>> hierarchies, Set<PlaceHierarchy<StopPlace>> target) {
+        if (hierarchies != null) {
+            for (PlaceHierarchy<StopPlace> stopPlacePlaceHierarchy : hierarchies) {
+                target.add(stopPlacePlaceHierarchy);
+                expandStopPlaceHierarchies(stopPlacePlaceHierarchy.getChildren(), target);
+            }
+        }
     }
 
 
-    private PlaceHierarchy<StopPlace> createHierarchyForStopPlace(StopPlace stopPlace, Map<String, List<StopPlace>> childrenByParentIdMap) {
+    /**
+     * Map list of stop places to list of hierarchies.
+     */
+    protected Set<PlaceHierarchy<StopPlace>> toPlaceHierarchies(List<StopPlace> places) {
+        Map<String, List<StopPlace>> childrenByParentIdMap = places.stream().filter(sp -> sp.getParentSiteRef() != null).collect(Collectors.groupingBy(sp -> sp.getParentSiteRef().getRef()));
+        Set<PlaceHierarchy<StopPlace>> allStopPlaces = new HashSet<>();
+        expandStopPlaceHierarchies(places.stream().filter(sp -> sp.getParentSiteRef() == null).map(sp -> createHierarchyForStopPlace(sp, null, childrenByParentIdMap)).collect(Collectors.toList()), allStopPlaces);
+        return allStopPlaces;
+    }
+
+
+    private PlaceHierarchy<StopPlace> createHierarchyForStopPlace(StopPlace stopPlace, PlaceHierarchy<StopPlace> parent, Map<String, List<StopPlace>> childrenByParentIdMap) {
         List<StopPlace> children = childrenByParentIdMap.get(stopPlace.getId());
         List<PlaceHierarchy<StopPlace>> childHierarchies = new ArrayList<>();
+        PlaceHierarchy<StopPlace> hierarchy = new PlaceHierarchy<>(stopPlace, parent);
         if (children != null) {
-            childHierarchies = children.stream().map(child -> createHierarchyForStopPlace(child, childrenByParentIdMap)).collect(Collectors.toList());
+            childHierarchies = children.stream().map(child -> createHierarchyForStopPlace(child, hierarchy, childrenByParentIdMap)).collect(Collectors.toList());
         }
-        return new PlaceHierarchy<>(stopPlace, childHierarchies);
+        hierarchy.setChildren(childHierarchies);
+        return hierarchy;
     }
 
 
