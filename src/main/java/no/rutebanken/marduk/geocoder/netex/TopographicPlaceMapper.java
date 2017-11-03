@@ -72,11 +72,11 @@ public class TopographicPlaceMapper {
     protected TopographicPlaceTypeEnumeration getType() {
         switch (feature.getType()) {
             case COUNTRY:
-                return TopographicPlaceTypeEnumeration.STATE;
+                return TopographicPlaceTypeEnumeration.COUNTRY;
             case COUNTY:
                 return TopographicPlaceTypeEnumeration.COUNTY;
             case LOCALITY:
-                return TopographicPlaceTypeEnumeration.TOWN;
+                return TopographicPlaceTypeEnumeration.MUNICIPALITY;
             case BOROUGH:
                 return TopographicPlaceTypeEnumeration.AREA;
         }
