@@ -7,20 +7,26 @@ import no.rutebanken.marduk.geocoder.netex.geojson.GeoJsonSingleTopographicPlace
 import no.rutebanken.marduk.geocoder.netex.geojson.GeoJsonCollectionTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.netex.pbf.PbfTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.netex.sosi.SosiTopographicPlaceReader;
+import org.apache.commons.collections.CollectionUtils;
+import org.junit.Assert;
 import org.junit.Test;
 import org.rutebanken.netex.model.IanaCountryTldEnumeration;
 import org.rutebanken.netex.model.PublicationDeliveryStructure;
+import org.rutebanken.netex.model.Site_VersionFrameStructure;
 import org.rutebanken.netex.validation.NeTExValidator;
 
 import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.stream.StreamSource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.Arrays;
 import java.util.List;
 
+import static java.lang.System.in;
 import static javax.xml.bind.JAXBContext.newInstance;
 
 public class TopographicPlaceConverterTest {
@@ -34,8 +40,8 @@ public class TopographicPlaceConverterTest {
 
         String targetPath = "target/adm-units-from-geojson.xml";
         converter.toNetexFile(new GeoJsonCollectionTopographicPlaceReader
-                                                            (new GeojsonFeatureWrapperFactory(null), new File(filteredFilePath)
-                                                            ), targetPath);
+                                      (new GeojsonFeatureWrapperFactory(null), new File(filteredFilePath)
+                                      ), targetPath);
         validateNetexFile(targetPath);
     }
 
@@ -85,14 +91,21 @@ public class TopographicPlaceConverterTest {
 //    }
 
 
-    private void validateNetexFile(String path) throws Exception {
+    private PublicationDeliveryStructure validateNetexFile(String path) throws Exception {
         JAXBContext publicationDeliveryContext = newInstance(PublicationDeliveryStructure.class);
         Unmarshaller unmarshaller = publicationDeliveryContext.createUnmarshaller();
 
         NeTExValidator neTExValidator = new NeTExValidator();
         unmarshaller.setSchema(neTExValidator.getSchema());
         XMLStreamReader xmlReader = XMLInputFactory.newInstance().createXMLStreamReader(new FileInputStream(new File(path)));
-        unmarshaller.unmarshal(xmlReader);
+        JAXBElement<PublicationDeliveryStructure> jaxbElement = unmarshaller.unmarshal(xmlReader, PublicationDeliveryStructure.class);
+        PublicationDeliveryStructure publicationDeliveryStructure = jaxbElement.getValue();
+
+        boolean containsTopographicPlaces=publicationDeliveryStructure.getDataObjects().getCompositeFrameOrCommonFrame().stream().map(frame -> frame.getValue())
+                .filter(frame  -> frame instanceof Site_VersionFrameStructure).anyMatch(frame -> ((Site_VersionFrameStructure)frame).getTopographicPlaces()!=null && !CollectionUtils.isEmpty(((Site_VersionFrameStructure)frame).getTopographicPlaces().getTopographicPlace()));
+
+        Assert.assertTrue("Expected publication delivery to contain site frame with topograhpic places", containsTopographicPlaces);
+        return publicationDeliveryStructure;
     }
 
 
