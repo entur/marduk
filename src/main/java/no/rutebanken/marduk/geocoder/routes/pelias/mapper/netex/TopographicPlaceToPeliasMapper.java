@@ -6,8 +6,10 @@ import org.apache.commons.collections.CollectionUtils;
 import org.rutebanken.netex.model.MultilingualString;
 import org.rutebanken.netex.model.TopographicPlace;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.rutebanken.netex.model.TopographicPlaceTypeEnumeration.PLACE_OF_INTEREST;
 
@@ -35,15 +37,23 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
         if (PLACE_OF_INTEREST.equals(place.getTopographicPlaceType())) {
             document.setCategory(Arrays.asList("poi"));
         }
+    }
 
-        // Use descriptor.name if name is not set
-        if (document.getDefaultName() == null && place.getDescriptor() != null) {
-            MultilingualString descriptorName = place.getDescriptor().getName();
-            document.setDefaultNameAndPhrase(descriptorName.getValue());
-            if (descriptorName.getLang() != null) {
-                document.addName(descriptorName.getLang(), descriptorName.getValue());
-            }
+    @Override
+    protected List<MultilingualString> getNames(PlaceHierarchy<TopographicPlace> placeHierarchy) {
+        List<MultilingualString> names = new ArrayList<>();
+        TopographicPlace place = placeHierarchy.getPlace();
+        if (place.getName() != null) {
+            names.add(placeHierarchy.getPlace().getName());
+        }    // Use descriptor.name if name is not set
+        else if (place.getDescriptor() != null && place.getDescriptor().getName() != null) {
+            names.add(place.getDescriptor().getName());
         }
+
+        if (place.getAlternativeDescriptors() != null && !CollectionUtils.isEmpty(place.getAlternativeDescriptors().getTopographicPlaceDescriptor())) {
+            place.getAlternativeDescriptors().getTopographicPlaceDescriptor().stream().filter(an -> an.getName() != null && an.getName().getLang() != null).forEach(n -> names.add(n.getName()));
+        }
+        return names.stream().filter(distinctByKey(name -> name.getValue())).collect(Collectors.toList());
     }
 
     @Override

@@ -84,7 +84,7 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
     private List<ElasticsearchCommand> addTopographicPlaceCommands(List<TopographicPlace> places, String participantRef) {
         if (!CollectionUtils.isEmpty(places)) {
             TopographicPlaceToPeliasMapper mapper = new TopographicPlaceToPeliasMapper(participantRef, poiBoost, poiFilter);
-            return places.stream().map(p -> mapper.toPeliasDocument(new PlaceHierarchy<TopographicPlace>(p))).sorted(new PeliasDocumentPopularityComparator()).filter(d -> d != null).map(p -> ElasticsearchCommand.peliasIndexCommand(p)).collect(Collectors.toList());
+            return places.stream().map(p -> mapper.toPeliasDocuments(new PlaceHierarchy<TopographicPlace>(p))).flatMap(documents -> documents.stream()).sorted(new PeliasDocumentPopularityComparator()).filter(d -> d != null).map(p -> ElasticsearchCommand.peliasIndexCommand(p)).collect(Collectors.toList());
         }
         return new ArrayList<>();
     }
@@ -95,7 +95,7 @@ public class DeliveryPublicationStreamToElasticsearchCommands {
 
             Set<PlaceHierarchy<StopPlace>> stopPlaceHierarchies = toPlaceHierarchies(places);
 
-            return stopPlaceHierarchies.stream().map(p -> mapper.toPeliasDocument(p)).sorted(new PeliasDocumentPopularityComparator()).filter(d -> d != null).map(p -> ElasticsearchCommand.peliasIndexCommand(p)).collect(Collectors.toList());
+            return stopPlaceHierarchies.stream().map(p -> mapper.toPeliasDocuments(p)).flatMap(documents -> documents.stream()).sorted(new PeliasDocumentPopularityComparator()).map(p -> ElasticsearchCommand.peliasIndexCommand(p)).collect(Collectors.toList());
         }
         return new ArrayList<>();
     }

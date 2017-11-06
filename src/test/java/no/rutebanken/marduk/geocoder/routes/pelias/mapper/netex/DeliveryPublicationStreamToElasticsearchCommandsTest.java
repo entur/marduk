@@ -26,11 +26,12 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
         Collection<ElasticsearchCommand> commands = mapper
                                                             .transform(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/netex/tiamat-export.xml"));
 
-        Assert.assertEquals(5, commands.size());
+        Assert.assertEquals(10, commands.size());
         commands.forEach(c -> assertCommand(c));
 
         assertKnownPoi(byId(commands, "NSR:TopographicPlace:724"));
-        assertKnownStopPlace(byId(commands, "NSR:StopPlace:39231"));
+        assertKnownStopPlace(byId(commands, "NSR:StopPlace:39231"),"Harstad/Narvik Lufthavn");
+        assertKnownStopPlace(byId(commands, "NSR:StopPlace:39231-1"),"AliasName");
         assertKnownMultimodalStopPlaceParent(byId(commands, "NSR:StopPlace:1000"));
         assertKnownMultimodalStopPlaceChild(byId(commands, "NSR:StopPlace:1000a"));
 
@@ -71,9 +72,10 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
         Assert.assertEquals("Expected popularity to be default (1000) boosted by stop type boosts (airport=3)", 3000, known.getPopularity().longValue());
     }
 
-    private void assertKnownStopPlace(PeliasDocument known) throws Exception {
-        Assert.assertEquals("Harstad/Narvik Lufthavn", known.getDefaultName());
-        Assert.assertEquals("Harstad/Narvik Lufthavn", known.getNameMap().get("no"));
+    private void assertKnownStopPlace(PeliasDocument known, String defaultName) throws Exception {
+        Assert.assertEquals(defaultName, known.getDefaultName());
+        Assert.assertEquals(defaultName, known.getNameMap().get("no"));
+        Assert.assertEquals("Harstad/Narvik Lufthavn",known.getNameMap().get("display"));
         Assert.assertEquals(STOP_PLACE_LAYER, known.getLayer());
         Assert.assertEquals(PeliasDocument.DEFAULT_SOURCE, known.getSource());
         Assert.assertEquals(Arrays.asList("airport"), known.getCategory());

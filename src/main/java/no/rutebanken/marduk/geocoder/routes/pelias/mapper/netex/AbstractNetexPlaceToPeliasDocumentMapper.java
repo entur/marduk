@@ -17,6 +17,12 @@ import org.rutebanken.netex.model.ValidBetween;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_VersionStructure> {
 
@@ -26,20 +32,39 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
         this.participantRef = participantRef;
     }
 
-    public PeliasDocument toPeliasDocument(PlaceHierarchy<T> placeHierarchy) {
+    /**
+     * Map single place hierarchy to (potentially) multiple pelias documents, one per alias/alternative name.
+     *
+     * Pelias does not yet support queries in multiple languages / for aliases. When support for this is ready this mapping should be
+     * refactored to produce a single document per place hierarchy.
+     */
+    public List<PeliasDocument> toPeliasDocuments(PlaceHierarchy<T> placeHierarchy) {
         T place = placeHierarchy.getPlace();
         if (!isValid(place)) {
-            return null;
+            return new ArrayList<>();
         }
+        AtomicInteger cnt = new AtomicInteger();
 
-        PeliasDocument document = new PeliasDocument(getLayer(place), place.getId());
+        return getNames(placeHierarchy).stream().map(name -> toPeliasDocument(placeHierarchy, name, cnt.getAndAdd(1))).collect(Collectors.toList());
+    }
 
-        MultilingualString name = getName(placeHierarchy);
+    private PeliasDocument toPeliasDocument(PlaceHierarchy<T> placeHierarchy, MultilingualString name, int idx) {
+        T place = placeHierarchy.getPlace();
+
+        String idSuffix = idx > 0 ? "-" + idx : "";
+
+        PeliasDocument document = new PeliasDocument(getLayer(place), place.getId() + idSuffix);
         if (name != null) {
             document.setDefaultNameAndPhrase(name.getValue());
             if (name.getLang() != null) {
                 document.addName(name.getLang(), name.getValue());
             }
+        }
+
+        // Add official name as display name. Not a part of standard pelias model, will be copied to name.default before deduping and labelling in Entur-pelias API.
+        MultilingualString displayName = getDisplayName(placeHierarchy);
+        if (displayName != null) {
+            document.getNameMap().put("display", displayName.getValue());
         }
 
         if (place.getCentroid() != null) {
@@ -55,23 +80,24 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
         addIdToStreetNameToAvoidFalseDuplicates(place, document);
 
         populateDocument(placeHierarchy, document);
-
         return document;
     }
 
     /**
      * Get name from current place or, if not set, on closest parent with name set.
-     *
      */
-    private MultilingualString getName(PlaceHierarchy<T> placeHierarchy) {
+    private MultilingualString getDisplayName(PlaceHierarchy<T> placeHierarchy) {
         if (placeHierarchy.getPlace().getName() != null) {
             return placeHierarchy.getPlace().getName();
         }
         if (placeHierarchy.getParent() != null) {
-            return getName(placeHierarchy.getParent());
+            return getDisplayName(placeHierarchy.getParent());
         }
         return null;
     }
+
+
+    protected abstract List<MultilingualString> getNames(PlaceHierarchy<T> placeHierarchy);
 
     protected boolean isValid(T place) {
         String layer = getLayer(place);
@@ -141,6 +167,11 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
 
     private boolean equals(LngLatAlt coordinate, LngLatAlt other) {
         return other.getLatitude() == coordinate.getLatitude() && other.getLongitude() == coordinate.getLongitude();
+    }
+
+    protected static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
+        Map<Object, Boolean> seen = new ConcurrentHashMap<>();
+        return t -> seen.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
     }
 
     protected abstract void populateDocument(PlaceHierarchy<T> placeHierarchy, PeliasDocument document);

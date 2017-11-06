@@ -143,6 +143,12 @@
                         </Location>
                     </Centroid>
                     <AccessModes></AccessModes>
+                    <alternativeNames>
+                        <AlternativeName modification="new" version="1" id="NSR:AlternativeName:6">
+                            <NameType>alias</NameType>
+                            <Name lang="no">AliasName</Name>
+                        </AlternativeName>
+                    </alternativeNames>
                     <TopographicPlaceRef ref="92"/>
                     <OtherTransportModes></OtherTransportModes>
                     <StopPlaceType>airport</StopPlaceType>

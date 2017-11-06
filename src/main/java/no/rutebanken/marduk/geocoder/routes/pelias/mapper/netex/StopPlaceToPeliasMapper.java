@@ -7,6 +7,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.rutebanken.netex.model.BusSubmodeEnumeration;
+import org.rutebanken.netex.model.MultilingualString;
+import org.rutebanken.netex.model.NameTypeEnumeration;
 import org.rutebanken.netex.model.StopPlace;
 import org.rutebanken.netex.model.StopTypeEnumeration;
 import org.rutebanken.netex.model.VehicleModeEnumeration;
@@ -48,6 +50,38 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
     }
 
     @Override
+    protected List<MultilingualString> getNames(PlaceHierarchy<StopPlace> placeHierarchy) {
+        List<MultilingualString> names = new ArrayList<>();
+
+        collectNames(placeHierarchy, names, true);
+        collectNames(placeHierarchy, names, false);
+
+        return names.stream().filter(distinctByKey(name -> name.getValue())).collect(Collectors.toList());
+    }
+
+    private void collectNames(PlaceHierarchy<StopPlace> placeHierarchy, List<MultilingualString> names, boolean up) {
+        StopPlace place = placeHierarchy.getPlace();
+        if (place.getName() != null) {
+            names.add(placeHierarchy.getPlace().getName());
+        }
+
+        if (place.getAlternativeNames() != null && !CollectionUtils.isEmpty(place.getAlternativeNames().getAlternativeName())) {
+            place.getAlternativeNames().getAlternativeName().stream().filter(an -> an.getName() != null && an.getName().getLang() != null).forEach(n -> names.add(n.getName()));
+        }
+
+        if (up) {
+            if (placeHierarchy.getParent() != null) {
+                collectNames(placeHierarchy.getParent(), names, up);
+            }
+        } else {
+            if (!CollectionUtils.isEmpty(placeHierarchy.getChildren())) {
+                placeHierarchy.getChildren().forEach(child -> collectNames(child, names, up));
+            }
+        }
+    }
+
+
+    @Override
     protected void populateDocument(PlaceHierarchy<StopPlace> placeHierarchy, PeliasDocument document) {
         StopPlace place = placeHierarchy.getPlace();
         document.setSource(getSource(placeHierarchy));
@@ -57,7 +91,7 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
         document.setCategory(stopTypeAndSubModeList.stream().map(pair -> pair.getLeft()).filter(type -> type != null).map(type -> type.value()).collect(Collectors.toList()));
 
         if (place.getAlternativeNames() != null && !CollectionUtils.isEmpty(place.getAlternativeNames().getAlternativeName())) {
-            place.getAlternativeNames().getAlternativeName().stream().filter(an -> an.getName() != null && an.getName().getLang() != null).forEach(n -> document.addName(n.getName().getLang(), n.getName().getValue()));
+            place.getAlternativeNames().getAlternativeName().stream().filter(an -> NameTypeEnumeration.TRANSLATION.equals(an.getNameType()) && an.getName() != null && an.getName().getLang() != null).forEach(n -> document.addName(n.getName().getLang(), n.getName().getValue()));
         }
 
         // Make stop place rank highest in autocomplete by setting popularity
@@ -67,7 +101,7 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
 
     /**
      * Categorize multimodal stops with separate sources in ordre to be able to filter in queries.
-     *
+     * <p>
      * Multimodal parents with one source
      * Multimodal children with another source
      * Non-multimodal stops with default soure
