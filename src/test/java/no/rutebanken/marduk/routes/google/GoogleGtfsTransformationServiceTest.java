@@ -50,7 +50,7 @@ public class GoogleGtfsTransformationServiceTest {
         Assert.assertTrue("Line with extended value 1012 should be converted to 1000", stopLines.get(2).endsWith(",1000"));
         Assert.assertTrue("Line with extended value 1601 should be converted to 1700 (default)", stopLines.get(3).endsWith(",1700"));
         List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "feed_info.txt").toByteArray()));
-        Assert.assertEquals("Feed info should be unchanged", "RB,Rutebanken,http://www.rutebanken.org,no", feedInfoLines.get(1));
+        Assert.assertEquals("Entur info should be used as feed info", "ENTUR,Entur,http://www.entur.no,no", feedInfoLines.get(1));
     }
 
 }

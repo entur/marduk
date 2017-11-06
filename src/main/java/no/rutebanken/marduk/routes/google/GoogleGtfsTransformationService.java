@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.routes.google;
 
 import no.rutebanken.marduk.routes.file.beans.CustomGtfsFileTransformer;
+import org.apache.commons.io.IOUtils;
 import org.onebusaway.collections.beans.PropertyPathExpression;
 import org.onebusaway.gtfs.model.Agency;
 import org.onebusaway.gtfs.model.Route;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.Set;
 
@@ -49,7 +51,11 @@ public class GoogleGtfsTransformationService {
         long t1 = System.currentTimeMillis();
         logger.debug("Replacing id separator in inputfile: " + inputFile.getPath());
 
-        File outputFile = TRANSFORMER.transform(inputFile);
+        // Add feed info for google export
+        byte[] feedBytes=IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("no/rutebanken/marduk/routes/google/feed_info.txt"));
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(feedBytes.length);
+        baos.write(feedBytes, 0, feedBytes.length);
+        File outputFile = TRANSFORMER.transform(inputFile, baos);
 
         logger.debug("Replaced Extended Route Types with basic values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
 

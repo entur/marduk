@@ -1,0 +1,2 @@
+feed_id,feed_publisher_name,feed_publisher_url,feed_lang
+ENTUR,Entur,http://www.entur.no,no
