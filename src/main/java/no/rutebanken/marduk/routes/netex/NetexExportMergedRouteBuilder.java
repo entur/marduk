@@ -27,7 +27,7 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
     @Value("${netex.export.download.directory:files/netex/merged}")
     private String localWorkingDirectory;
 
-    @Value("${netex.export.stop.place.blob.path:tiamat/CurrentAndFuture_latest.zip}")
+    @Value("${netex.export.stop.place.blob.path:tiamat/Full_latest.zip}")
     private String stopPlaceExportBlobPath;
 
     @Value("${netex.export.file.path:netex/rb_norway-aggregated-netex.zip}")
