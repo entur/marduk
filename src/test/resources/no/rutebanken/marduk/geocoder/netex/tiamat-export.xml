@@ -19,7 +19,7 @@
                     <Descriptor>
                         <Name>Sarpsborg</Name>
                     </Descriptor>
-                    <TopographicPlaceType>town</TopographicPlaceType>
+                    <TopographicPlaceType>municipality</TopographicPlaceType>
                     <CountryRef ref="no"/>
                     <ParentTopographicPlaceRef ref="1"/>
                 </TopographicPlace>
@@ -28,7 +28,7 @@
                     <Descriptor>
                         <Name>Fredrikstad</Name>
                     </Descriptor>
-                    <TopographicPlaceType>town</TopographicPlaceType>
+                    <TopographicPlaceType>municipality</TopographicPlaceType>
                     <CountryRef ref="no"/>
                     <ParentTopographicPlaceRef ref="1"/>
                 </TopographicPlace>

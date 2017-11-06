@@ -70,7 +70,7 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
                 return "address";
 
             // Still using adm units directly from kartverket. Change if tiamat IDs are needed.
-//            case TOWN:
+//            case MUNICIPALITY:
 //                return "locality";
 //
 //            case COUNTY:
