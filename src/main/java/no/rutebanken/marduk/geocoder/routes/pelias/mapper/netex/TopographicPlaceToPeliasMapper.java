@@ -40,14 +40,25 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
     }
 
     @Override
+    protected MultilingualString getDisplayName(PlaceHierarchy<TopographicPlace> placeHierarchy) {
+        TopographicPlace place = placeHierarchy.getPlace();
+        if (place.getName() != null) {
+            return placeHierarchy.getPlace().getName();
+        }    // Use descriptor.name if name is not set
+        else if (place.getDescriptor() != null && place.getDescriptor().getName() != null) {
+            return place.getDescriptor().getName();
+        }
+        return null;
+    }
+
+    @Override
     protected List<MultilingualString> getNames(PlaceHierarchy<TopographicPlace> placeHierarchy) {
         List<MultilingualString> names = new ArrayList<>();
         TopographicPlace place = placeHierarchy.getPlace();
-        if (place.getName() != null) {
-            names.add(placeHierarchy.getPlace().getName());
-        }    // Use descriptor.name if name is not set
-        else if (place.getDescriptor() != null && place.getDescriptor().getName() != null) {
-            names.add(place.getDescriptor().getName());
+
+        MultilingualString displayName = getDisplayName(placeHierarchy);
+        if (displayName != null) {
+            names.add(displayName);
         }
 
         if (place.getAlternativeDescriptors() != null && !CollectionUtils.isEmpty(place.getAlternativeDescriptors().getTopographicPlaceDescriptor())) {
@@ -55,6 +66,7 @@ public class TopographicPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDo
         }
         return names.stream().filter(distinctByKey(name -> name.getValue())).collect(Collectors.toList());
     }
+
 
     @Override
     protected boolean isValid(TopographicPlace place) {

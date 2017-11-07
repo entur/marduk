@@ -56,15 +56,15 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
         PeliasDocument document = new PeliasDocument(getLayer(place), place.getId() + idSuffix);
         if (name != null) {
             document.setDefaultNameAndPhrase(name.getValue());
-            if (name.getLang() != null) {
-                document.addName(name.getLang(), name.getValue());
-            }
         }
 
         // Add official name as display name. Not a part of standard pelias model, will be copied to name.default before deduping and labelling in Entur-pelias API.
         MultilingualString displayName = getDisplayName(placeHierarchy);
         if (displayName != null) {
             document.getNameMap().put("display", displayName.getValue());
+            if (displayName.getLang() != null) {
+                document.addName(displayName.getLang(), displayName.getValue());
+            }
         }
 
         if (place.getCentroid() != null) {
@@ -86,7 +86,7 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
     /**
      * Get name from current place or, if not set, on closest parent with name set.
      */
-    private MultilingualString getDisplayName(PlaceHierarchy<T> placeHierarchy) {
+    protected MultilingualString getDisplayName(PlaceHierarchy<T> placeHierarchy) {
         if (placeHierarchy.getPlace().getName() != null) {
             return placeHierarchy.getPlace().getName();
         }

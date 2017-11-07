@@ -74,7 +74,7 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
 
     private void assertKnownStopPlace(PeliasDocument known, String defaultName) throws Exception {
         Assert.assertEquals(defaultName, known.getDefaultName());
-        Assert.assertEquals(defaultName, known.getNameMap().get("no"));
+        Assert.assertEquals("Harstad/Narvik Lufthavn", known.getNameMap().get("no"));
         Assert.assertEquals("Harstad/Narvik Lufthavn",known.getNameMap().get("display"));
         Assert.assertEquals(STOP_PLACE_LAYER, known.getLayer());
         Assert.assertEquals(PeliasDocument.DEFAULT_SOURCE, known.getSource());
