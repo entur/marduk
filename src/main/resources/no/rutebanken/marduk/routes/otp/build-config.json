@@ -4,7 +4,7 @@
 	"useTransfersTxt": false,
 	"parentStopLinking": true, // Changed from false
 	"stationTransfers": false,
-	"subwayAccessTime": 2.0,
+	"subwayAccessTime": 0, // Changed from 2.0
 	"streets": true,
 	"embedRouterConfig": true,
 	"areaVisibility": true, // Changed from false
