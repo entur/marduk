@@ -54,6 +54,9 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
     @Value("${tiamat.poi.update.enabled:true}")
     private boolean routeEnabled;
 
+    @Value("${tiamat.poi.update.eraseTopographicPlaceWithIdPrefixAndTypeValue:OSM;PLACE_OF_INTEREST}")
+    private String eraseTopographicPlaceWithIdPrefixAndTypeValue;
+
     @Autowired
     private TopographicPlaceConverter topographicPlaceConverter;
 
@@ -111,6 +114,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
         from("direct:updatePlaceOfInterestInTiamat")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
                 .setHeader(Exchange.CONTENT_TYPE, simple(MediaType.APPLICATION_XML))
+                .setHeader(Exchange.HTTP_QUERY, simple("eraseTopographicPlaceWithIdPrefixAndType=" + eraseTopographicPlaceWithIdPrefixAndTypeValue))
                 .process(e -> e.getIn().setHeader("Authorization", "Bearer " + tokenService.getToken()))
                 .to(tiamatUrl + tiamatPublicationDeliveryPath)
                 .routeId("tiamat-poi-update-start");
