@@ -7,6 +7,7 @@ import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.ValidationException;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.*;
@@ -20,6 +21,15 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
     @Override
     public void configure() throws Exception {
         super.configure();
+
+        onException(ValidationException.class)
+                .handled(true)
+                .log(LoggingLevel.INFO, correlation() + "Could not process file ${header." + FILE_HANDLE + "}")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
+                .to("direct:updateStatus")
+                .setBody(simple(""))      //remove file data from body
+                .to("activemq:queue:DeadLetterQueue");
+
 
         from("activemq:queue:MardukInboundQueue?transacted=true").streamCaching()
                 .transacted()
