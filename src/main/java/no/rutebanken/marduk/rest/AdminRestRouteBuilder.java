@@ -244,7 +244,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .endParam()
                 .param()
                 .required(Boolean.FALSE)
-                .name("keepJobs")
+                .name("keepDays")
                 .type(RestParamType.query)
                 .dataType("int")
                 .description("No of days to keep jobs for")
