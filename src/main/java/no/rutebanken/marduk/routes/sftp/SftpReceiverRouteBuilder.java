@@ -52,7 +52,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("sftp://" + sftpUser + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&knownHostsFile=" + knownHostsFile + "&recursive=true&sorter=#caseIdSftpSorter&delay={{sftp.delay}}&delete={{idempotent.skip:false}}&localWorkDirectory=files/tmp&connectTimeout=1000")
                 .autoStartup("{{sftp.autoStartup:true}}")
-                .setHeader(FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES,simple("true"))
+                .setHeader(FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES, simple("true"))
                 .filter(simple("${header." + Exchange.FILE_NAME + "} contains '" + timetablePath + "'"))
                 .process(e -> setHeadersFromFileName(e))
                 .filter(simple("${header." + PROVIDER_ID + "} != null"))
@@ -65,7 +65,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:uploadBlob")
 
-                .choice().when(e-> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID,Long.class)).chouetteInfo.enableAutoImport)
+                .choice().when(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.enableAutoImport)
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build())
                 .to("direct:updateStatus")
                 .log(LoggingLevel.INFO, correlation() + "Putting handle ${header." + FILE_HANDLE + "} on queue...")
@@ -84,9 +84,10 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
         String providerSftpAccount = parts[0];
         String fileName = parts[1];
 
-        Provider provider = providerRepository.getProviders().stream().filter(candidate -> providerSftpAccount.equals(candidate.sftpAccount)).findFirst().get();
+        Optional<Provider> providerOpt = providerRepository.getProviders().stream().filter(candidate -> providerSftpAccount.equals(candidate.sftpAccount)).findFirst();
 
-        if (provider != null) {
+        if (providerOpt.isPresent()) {
+            Provider provider = providerOpt.get();
             e.getIn().setHeader(PROVIDER_ID, provider.getId());
             e.getIn().setHeader(Constants.FILE_NAME, fileName);
             e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.getChouetteInfo().referential);
