@@ -32,7 +32,7 @@ public class UtilsTest {
 
     @Test
     public void getOtpVersion(){
-        assertThat(Utils.getOtpVersion(), matchesPattern("\\d+\\.\\d+\\.\\d+\\.RB.*"));
+        assertThat(Utils.getOtpVersion(), matchesPattern("\\d+\\.\\d+\\.\\d+.*"));
     }
 
 }
