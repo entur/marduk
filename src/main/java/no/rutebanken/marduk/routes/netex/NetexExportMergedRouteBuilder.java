@@ -40,7 +40,7 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("activemq:queue:NetexExportMergedQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{otp.graph.build.autoStartup:true}}")
+        singletonFrom("activemq:queue:NetexExportMergedQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{netex.export.autoStartup:true}}")
                 .transacted()
                 .log(LoggingLevel.INFO, getClass().getName(), "Start export of merged Netex file for Norway")
 
