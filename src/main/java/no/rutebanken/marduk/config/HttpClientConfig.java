@@ -12,6 +12,9 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.Arrays;
 
+import static no.rutebanken.marduk.Constants.ET_CLIENT_ID_HEADER;
+import static no.rutebanken.marduk.Constants.ET_CLIENT_NAME_HEADER;
+
 @Configuration
 public class HttpClientConfig {
 
@@ -27,8 +30,7 @@ public class HttpClientConfig {
         HttpClientConfigurer httpClientConfigurer = new HttpClientConfigurer() {
             @Override
             public void configureHttpClient(HttpClientBuilder httpClientBuilder) {
-
-                httpClientBuilder.setDefaultHeaders(Arrays.asList(new BasicHeader("CLIENT_ID", clientId), new BasicHeader("CLIENT_NAME", clientName)));
+                httpClientBuilder.setDefaultHeaders(Arrays.asList(new BasicHeader(ET_CLIENT_ID_HEADER, clientId), new BasicHeader(ET_CLIENT_NAME_HEADER, clientName)));
             }
         };
 
