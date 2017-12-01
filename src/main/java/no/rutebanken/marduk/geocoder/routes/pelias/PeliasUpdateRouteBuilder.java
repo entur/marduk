@@ -28,7 +28,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
     @Value("${pelias.update.cron.schedule:0+0+23+?+*+MON-FRI}")
     private String cronSchedule;
 
-    @Value("${babylon.url:http4://babylon/babylon/api}")
+    @Value("${babylon.url:http4://babylon/services/local}")
     private String babylonUrl;
 
     @Value("${elasticsearch.scratch.deployment.name:es-scratch}")
@@ -121,7 +121,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .process(e -> e.getIn().setBody(new ScalingOrder(elasticsearchScratchDeploymentName, "marduk", e.getIn().getHeader(NO_OF_REPLICAS, Integer.class))))
                 .marshal().json(JsonLibrary.Jackson)
-                .to(babylonUrl + "/scale")
+                .to(babylonUrl + "/deployment/scale")
                 .setProperty(GEOCODER_NEXT_TASK, constant(GeoCoderConstants.PELIAS_ES_SCRATCH_STATUS_POLL))
                 .routeId("pelias-es-scratch-rescale");
 
@@ -138,7 +138,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
         from("direct:getElasticsearchScratchStatus")
                 .setBody(constant(null))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
-                .to(babylonUrl + "/status?deployment=" + elasticsearchScratchDeploymentName)
+                .to(babylonUrl + "/deployment/status?deployment=" + elasticsearchScratchDeploymentName)
                 .unmarshal().json(JsonLibrary.Jackson, DeploymentStatus.class)
                 .routeId("pelias-es-scratch-status");
 
@@ -149,7 +149,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setBody(constant(new StartFile(elasticsearchBuildFileName)))
                 .marshal().json(JsonLibrary.Jackson)
-                .to(babylonUrl + "/run")
+                .to(babylonUrl + "/job/run")
                 .to("direct:processPeliasDeployCompleted")
                 .routeId("pelias-es-build");
 
