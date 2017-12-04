@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.routes.otp;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -20,7 +21,11 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.Date;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.METADATA_DESCRIPTION;
+import static no.rutebanken.marduk.Constants.METADATA_FILE;
+import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static org.apache.camel.Exchange.FILE_PARENT;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 
@@ -29,9 +34,6 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
 
     @Value("${otp.graph.deployment.notification.url:none}")
     private String otpGraphDeploymentNotificationUrl;
-
-    @Value("${etcd.graph.notification.url:none}")
-    private String etcdGraphDeploymentNotificationUrl;
 
     @Value("${otp.graph.build.directory}")
     private String otpGraphBuildDirectory;
@@ -47,6 +49,8 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
 
     @Autowired
     private OtpReportBlobStoreService otpReportBlobStoreService;
+
+    private static final String ETCD_GRAPH_URL_SOURCE =  "/v2/keys/prod/marduk/etcd.graph.notification.url";
 
 
     private static final String GRAPH_VERSION = "RutebankenGraphVersion";
@@ -117,10 +121,12 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
 
         /* Putting value directly into etcd */
         from("direct:notifyEtcd")
-                .setProperty("notificationUrl", constant(etcdGraphDeploymentNotificationUrl))
+                .setHeader(Constants.ETCD_KEY, simple(ETCD_GRAPH_URL_SOURCE))
+                .to("direct:getEtcdValue")
+                .process(e -> e.getIn().setHeader("notificationUrl", e.getIn().getBody() == null ? "none" : e.getIn().getBody(String.class)))
                 .choice()
                 .when(exchangeProperty("notificationUrl").isNotEqualTo("none"))
-                .log(LoggingLevel.INFO, getClass().getName(),  "Notifying " + etcdGraphDeploymentNotificationUrl + " about new otp graph.")
+                .log(LoggingLevel.INFO, getClass().getName(),  "Notifying " + exchangeProperty("notificationUrl") + " about new otp graph.")
                 .process(e -> e.getIn().setBody("value=" + e.getIn().getHeader(FILE_HANDLE, String.class)))
                 .removeHeaders("*")
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.PUT))

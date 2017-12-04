@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OtpTravelSearchQARouteBuilder extends BaseRouteBuilder {
 
-    @Value("${babylon.url:http4://babylon/babylon/api}")
+    @Value("${babylon.url:http4://babylon/services/local}")
     private String babylonUrl;
 
     @Value("${otp.travelsearch.qa.job:otp-travelsearch-qa-pod.yaml}")
@@ -41,7 +41,7 @@ public class OtpTravelSearchQARouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setBody(constant(new StartFile(otpTravelSearchJobFilename)))
                 .marshal().json(JsonLibrary.Jackson)
-                .to(babylonUrl + "/run")
+                .to(babylonUrl + "/job/run")
                 .log(LoggingLevel.INFO, "Invocation of otp travel search complete")
                 .routeId("otp-travelsearch-qa-by-called");
 

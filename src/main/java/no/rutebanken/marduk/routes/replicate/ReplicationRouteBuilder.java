@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ReplicationRouteBuilder extends BaseRouteBuilder {
-    @Value("${babylon.url:http4://babylon/babylon/api}")
+    @Value("${babylon.url:http4://babylon/services/local}")
     private String babylonUrl;
 
     @Value("${replication.job:replication-job.yaml}")
@@ -42,7 +42,7 @@ public class ReplicationRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setBody(constant(new StartFile(replicationJobFilename)))
                 .marshal().json(JsonLibrary.Jackson)
-                .to(babylonUrl + "/run")
+                .to(babylonUrl + "/job/run")
                 .log(LoggingLevel.INFO, "Invocation of replication job complete")
                 .routeId("replication-job-called");
 

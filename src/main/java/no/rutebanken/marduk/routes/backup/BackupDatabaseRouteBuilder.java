@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class BackupDatabaseRouteBuilder extends BaseRouteBuilder {
-    @Value("${babylon.url:http4://babylon/babylon/api}")
+    @Value("${babylon.url:http4://babylon/services/local}")
     private String babylonUrl;
 
     @Value("${database.backup.job:database-backup-pod.yaml}")
@@ -41,7 +41,7 @@ public class BackupDatabaseRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setBody(constant(new StartFile(databaseBackupFilename)))
                 .marshal().json(JsonLibrary.Jackson)
-                .to(babylonUrl + "/run")
+                .to(babylonUrl + "/job/run")
                 .log(LoggingLevel.INFO, "Invocation of backup code complete")
                 .routeId("backup-database-by-called");
 
