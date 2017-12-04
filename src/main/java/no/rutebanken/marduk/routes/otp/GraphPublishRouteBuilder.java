@@ -35,13 +35,6 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.deployment.notification.url:none}")
     private String otpGraphDeploymentNotificationUrl;
 
-    /**
-     * @deprecated TO be replaced with re-reading of property for each use
-     */
-    @Deprecated
-    @Value("${etcd.graph.notification.url:none}")
-    private String etcdGraphDeploymentNotificationUrl;
-
     @Value("${otp.graph.build.directory}")
     private String otpGraphBuildDirectory;
 
@@ -131,11 +124,9 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Constants.ETCD_KEY, simple(ETCD_GRAPH_URL_SOURCE))
                 .to("direct:getEtcdValue")
                 .process(e -> e.getIn().setHeader("notificationUrl", e.getIn().getBody() == null ? "none" : e.getIn().getBody(String.class)))
-                //.setProperty("notificationUrl", constant(etcdGraphDeploymentNotificationUrl))
                 .choice()
                 .when(exchangeProperty("notificationUrl").isNotEqualTo("none"))
                 .log(LoggingLevel.INFO, getClass().getName(),  "Notifying " + exchangeProperty("notificationUrl") + " about new otp graph.")
-                //.log(LoggingLevel.INFO, getClass().getName(),  "Notifying " + etcdGraphDeploymentNotificationUrl + " about new otp graph.")
                 .process(e -> e.getIn().setBody("value=" + e.getIn().getHeader(FILE_HANDLE, String.class)))
                 .removeHeaders("*")
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.PUT))
