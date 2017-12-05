@@ -77,8 +77,8 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 					String url = (String) e.getProperty("chouette_url");
 
 					URIBuilder b = new URIBuilder(url);
-					if (e.getIn().getHeader("timetableAction") != null) {
-						b.addParameter("timetableAction", (String) e.getIn().getHeader("timetableAction"));
+					if (e.getIn().getHeader("action") != null) {
+						b.addParameter("action", (String) e.getIn().getHeader("action"));
 					}
 					if (e.getIn().getHeader("status") != null) {
 
@@ -208,15 +208,15 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 				.process(e -> {
 					JobResponseWithLinks response = e.getIn().getBody(JobResponseWithLinks.class);
 					Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "action_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
-					e.getIn().setHeader("action_report_url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for timetableAction report.")));
+					e.getIn().setHeader("action_report_url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
 					Optional<String> validationReportUrlOptional = response.links.stream().filter(li -> "validation_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
 					e.getIn().setHeader("validation_report_url", validationReportUrlOptional.orElse(null));
 					Optional<String> dataUrlOptional = response.links.stream().filter(li -> "data".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
 					e.getIn().setHeader("data_url", dataUrlOptional.orElse(null));
 				})
-				// Fetch and parse timetableAction report
+				// Fetch and parse action report
 				.to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-				.log(LoggingLevel.DEBUG, getClass().getName(), "Calling timetableAction report url ${header.action_report_url}")
+				.log(LoggingLevel.DEBUG, getClass().getName(), "Calling action report url ${header.action_report_url}")
 				.removeHeaders("Camel*")
 				.setBody(simple(""))
 				.setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
