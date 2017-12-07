@@ -39,8 +39,8 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 	@EndpointInject(uri = "mock:processValidationResult")
 	protected MockEndpoint processValidationResult;
 
-	@EndpointInject(uri = "mock:chouetteExportQueue")
-	protected MockEndpoint chouetteExportQueue;
+	@EndpointInject(uri = "mock:chouetteTransferExportQueue")
+	protected MockEndpoint chouetteTransferExportQueue;
 
 	@EndpointInject(uri = "mock:checkScheduledJobsBeforeTriggeringExport")
 	protected MockEndpoint chouetteCheckScheduledJobs;
@@ -67,7 +67,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 		pollJobStatus.reset();
 		chouetteGetJobs.reset();
 		processValidationResult.reset();
-		chouetteExportQueue.reset();
+		chouetteTransferExportQueue.reset();
 		chouetteCheckScheduledJobs.reset();
 		updateStatus.reset();
 	}
@@ -162,7 +162,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 						.to("mock:chouetteGetJobsForProvider");
 				interceptSendToEndpoint("activemq:queue:ChouetteTransferExportQueue")
 					.skipSendToOriginalEndpoint()
-					.to("mock:chouetteExportQueue");
+					.to("mock:chouetteTransferExportQueue");
 			}
 		});
 
@@ -194,9 +194,9 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 		chouetteGetJobs.assertIsSatisfied();
 
 		if (expectExport) {
-			chouetteExportQueue.expectedMessageCount(1);
+			chouetteTransferExportQueue.expectedMessageCount(1);
 		}
-		chouetteExportQueue.assertIsSatisfied();
+		chouetteTransferExportQueue.assertIsSatisfied();
 
 	}
 

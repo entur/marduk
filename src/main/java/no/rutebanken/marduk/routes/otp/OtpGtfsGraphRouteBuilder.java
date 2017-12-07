@@ -9,8 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.util.stream.Collectors;
-
 import static no.rutebanken.marduk.Constants.*;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
 
@@ -18,7 +16,7 @@ import static org.apache.camel.builder.Builder.exceptionStackTrace;
  * Trigger OTP graph building
  */
 @Component
-public class OtpGraphRouteBuilder extends BaseRouteBuilder {
+public class OtpGtfsGraphRouteBuilder extends BaseRouteBuilder {
 
     private static final String BUILD_CONFIG_JSON = "build-config.json";
     private static final String NORWAY_LATEST_OSM_PBF = "norway-latest.osm.pbf";
@@ -52,7 +50,7 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("activemq:queue:OtpGraphQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{otp.graph.build.autoStartup:true}}")
+        singletonFrom("activemq:queue:OtpGtfsGraphQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{otp.graph.build.autoStartup:true}}")
                 .transacted()
                 .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
                 .setProperty(PROP_MESSAGES, simple("${body}"))
@@ -62,8 +60,8 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:fetchConfig")
                 .to("direct:fetchMap")
-                .to("direct:fetchLatestGtfs")
-                .to("direct:mergeGtfs")
+
+                .to("direct:getLatestMergedGtfs")
                 .to("direct:transformToOTPIds")
                 .to("direct:buildGraphAndSendStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP graph building route.")
@@ -88,36 +86,17 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:updateStatus")
                 .routeId("otp-graph-send-status-for-timetable-jobs");
 
-        from("direct:fetchLatestGtfs")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs files for all providers.")
-                .setBody(simple(getAggregatedGtfsFiles()))
-                .split(body())
-                .to("direct:getGtfsFiles")
-                .routeId("otp-graph-fetch-gtfs");
 
-        from("direct:getGtfsFiles")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetching " + BLOBSTORE_PATH_OUTBOUND + "gtfs/${body}")
-                .setProperty("fileName", body())
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${property.fileName}"))
+        from("direct:getLatestMergedGtfs")
+                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + gtfsNorwayMergedFileName))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetching latest GTFS file for norway: " + " ${header." + FILE_HANDLE + "}")
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/org/${property.fileName}")
+                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/org/merged.zip")
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${property.fileName} was empty when trying to fetch it from blobstore.")
-                .routeId("otp-graph-get-gtfs");
-
-        from("direct:mergeGtfs")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Merging gtfs files for all providers.")
-                .setBody(simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}/org"))
-                .bean(method(GtfsFileUtils.class, "mergeGtfsFilesInDirectory"))
-                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/org/merged.zip")
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + gtfsNorwayMergedFileName))
-                .to("direct:uploadBlob")
-                .log(LoggingLevel.INFO, getClass().getName(), "Uploaded new combined Gtfs for Norway, triggering async export to Google")
-                .inOnly("activemq:queue:GoogleExportQueue")
-                .routeId("otp-graph-merge-gtfs");
+                .routeId("otp-graph-get-merged-gtfs");
 
         from("direct:transformToOTPIds")
                 .setBody(simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}/org/merged.zip"))
@@ -172,11 +151,5 @@ public class OtpGraphRouteBuilder extends BaseRouteBuilder {
 
     }
 
-    String getAggregatedGtfsFiles() {
-        return getProviderRepository().getProviders().stream()
-                       .filter(p -> p.chouetteInfo.migrateDataToProvider == null)
-                       .map(p -> p.chouetteInfo.referential + "-" + CURRENT_AGGREGATED_GTFS_FILENAME)
-                       .collect(Collectors.joining(","));
-    }
 
 }

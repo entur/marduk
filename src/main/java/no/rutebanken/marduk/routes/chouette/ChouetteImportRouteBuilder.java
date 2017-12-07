@@ -197,7 +197,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .to("activemq:queue:ChouetteTransferExportQueue")
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Import ok, triggering export")
-                .to("activemq:queue:ChouetteExportQueue")
+                .to("activemq:queue:ChouetteExportNetexQueue")
                 .end()
                 .end()
                 .routeId("chouette-process-job-list-after-import");

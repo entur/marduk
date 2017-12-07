@@ -43,14 +43,7 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 	@EndpointInject(uri = "mock:chouetteGetData")
 	protected MockEndpoint chouetteGetData;
 
-	@EndpointInject(uri = "mock:OtpGraphQueue")
-	protected MockEndpoint otpGraphQueue;
-
-	@EndpointInject(uri = "mock:ExportNetexQueue")
-	protected MockEndpoint exportNetexQueue;
-
-
-	@Produce(uri = "activemq:queue:ChouetteExportQueue")
+	@Produce(uri = "activemq:queue:ChouetteExportGtfsQueue")
 	protected ProducerTemplate importTemplate;
 
 	@Produce(uri = "direct:processExportResult")
@@ -68,6 +61,17 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 			public void configure() throws Exception {
 				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/gtfs")
 						.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
+				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+						.to("mock:updateStatus");
+			}
+		});
+
+		// Mock update status calls
+		context.getRouteDefinition("chouette-process-export-status").adviceWith(context, new AdviceWithRouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+						.to("mock:updateStatus");
 			}
 		});
 
@@ -80,18 +84,6 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 			}
 		});
 
-		// Mock update status calls
-		context.getRouteDefinition("chouette-process-export-status").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() throws Exception {
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-				.to("mock:updateStatus");
-				interceptSendToEndpoint("activemq:queue:OtpGraphQueue").skipSendToOriginalEndpoint().to("mock:OtpGraphQueue");
-				interceptSendToEndpoint("activemq:queue:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:ExportNetexQueue");
-
-			}
-		});
-		
 		context.getRouteDefinition("chouette-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
@@ -130,12 +122,9 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 
 	
 		pollJobStatus.expectedMessageCount(1);
-		
-		
+
 		updateStatus.expectedMessageCount(2);
-		
-		otpGraphQueue.expectedMessageCount(1);
-		exportNetexQueue.expectedMessageCount(1);
+
 
 		Map<String, Object> headers = new HashMap<String, Object>();
 		headers.put(Constants.PROVIDER_ID, "2");
@@ -152,9 +141,7 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 		
 		chouetteGetData.assertIsSatisfied();
 		updateStatus.assertIsSatisfied();
-		otpGraphQueue.assertIsSatisfied();
-		exportNetexQueue.assertIsSatisfied();
-		
+
 	}
 
 }

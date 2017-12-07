@@ -148,7 +148,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Validation ok, triggering GTFS export.")
                 .setBody(constant(""))
-                .to("activemq:queue:ChouetteExportQueue") // Check on provider if should trigger transfer
+                .to("activemq:queue:ChouetteExportNetexQueue") // Check on provider if should trigger transfer
                 .end()
                 .routeId("chouette-process-job-list-after-validation");
 

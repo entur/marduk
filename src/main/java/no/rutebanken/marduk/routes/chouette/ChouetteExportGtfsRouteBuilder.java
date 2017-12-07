@@ -38,7 +38,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
     public void configure() throws Exception {
         super.configure();
 
-        from("activemq:queue:ChouetteExportQueue?transacted=true").streamCaching()
+        from("activemq:queue:ChouetteExportGtfsQueue?transacted=true").streamCaching()
                 .transacted()
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette GTFS export for provider with id ${header." + PROVIDER_ID + "}")
                 .process(e -> {
@@ -84,12 +84,8 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
                 .to("direct:uploadBlob")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.EXPORT).state(State.OK).build()).to("direct:updateStatus")
-                .removeHeader(Constants.CHOUETTE_JOB_ID)
-                .setBody(constant(null))
-                .to("activemq:queue:OtpGraphQueue")
-                .to("activemq:queue:ChouetteExportNetexQueue")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.BUILD_GRAPH).state(State.PENDING).build())
+                .to("activemq:queue:GtfsExportMergedQueue")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.EXPORT).state(State.OK).build())
                 .when(simple("${header.action_report_result} == 'NOK'"))
                 .log(LoggingLevel.WARN, correlation() + "Export failed")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.EXPORT).state(State.FAILED).build())
