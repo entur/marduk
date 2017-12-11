@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = ChouetteExportGtfsRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
-public class OtpGraphRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+public class OtpGtfsGraphRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
     @Value("${otp.graph.blobstore.subdirectory}")
     private String blobStoreSubdirectory;
 
@@ -29,7 +29,7 @@ public class OtpGraphRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @EndpointInject(uri = "mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce(uri = "activemq:queue:OtpGraphQueue")
+    @Produce(uri = "activemq:queue:OtpGtfsGraphQueue")
     protected ProducerTemplate producerTemplate;
 
     @Test

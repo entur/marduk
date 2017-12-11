@@ -45,7 +45,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     @EndpointInject(uri = "mock:chouetteImportQueue")
     protected MockEndpoint importQueue;
 
-    @EndpointInject(uri = "mock:chouetteExportQueue")
+    @EndpointInject(uri = "mock:chouetteExportNetexQueue")
     protected MockEndpoint exportQueue;
 
     @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/import")
@@ -125,7 +125,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         camelContext.getRouteDefinition("admin-chouette-export").adviceWith(camelContext, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                interceptSendToEndpoint("activemq:queue:ChouetteExportQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportQueue");
+                interceptSendToEndpoint("activemq:queue:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportNetexQueue");
 
             }
         });

@@ -94,7 +94,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
                 .setHeader(FINISHED, constant("true"))
                 .log(LoggingLevel.INFO, "Map was updated, therefore triggering OSM graph build and Tiamat POI update")
-                .inOnly("activemq:queue:OtpGraphQueue")
+                .inOnly("activemq:queue:OtpNetexGraphQueue")
                 .setBody(constant(TIAMAT_PLACES_OF_INTEREST_UPDATE_START))
                 .inOnly("direct:geoCoderStart")
                 .to("direct:notifyOsmStatus")

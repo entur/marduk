@@ -62,9 +62,10 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
                 .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
+                .to("direct:fetchLatestNetex")
                 .to("direct:fetchBuildConfigForOtpNetexGraph")
                 .to("direct:fetchMapForOtpNetexGraph")
-                .to("direct:fetchLatestNetex")
+
                 .to("direct:buildNetexGraphAndSendStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP graph building route.")
                 .routeId("otp-netex-graph-build");
@@ -89,6 +90,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-netex-graph-send-status-for-timetable-jobs");
 
         from("direct:fetchLatestNetex")
+                .to("direct:exportMergedNetex")
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetching latest netex file for norway: " + " ${header." + FILE_HANDLE + "}")
                 .to("direct:getBlob")

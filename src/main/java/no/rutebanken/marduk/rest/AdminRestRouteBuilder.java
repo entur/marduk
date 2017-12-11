@@ -410,7 +410,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to(commonApiDocEndpoint)
                 .endRest()
 
-                .post("routing_graph/build")
+                .post("routing_graph/build/gtfs")
                 .description("Triggers building of the OTP graph using existing gtfs and map data")
                 .consumes(PLAIN)
                 .produces(PLAIN)
@@ -420,11 +420,11 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "OTP build graph")
                 .removeHeaders("CamelHttp*")
                 .setBody(simple(""))
-                .inOnly("activemq:queue:OtpGraphQueue")
+                .inOnly("activemq:queue:OtpGtfsGraphQueue")
                 .routeId("admin-build-graph")
                 .endRest()
 
-                .post("routing_graph/build/netex")
+                .post("routing_graph/build")
                 .description("Triggers building of the OTP graph using existing NeTEx and map data")
                 .consumes(PLAIN)
                 .produces(PLAIN)
@@ -647,7 +647,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "Chouette start export")
                 .removeHeaders("CamelHttp*")
-                .inOnly("activemq:queue:ChouetteExportQueue")
+                .inOnly("activemq:queue:ChouetteExportNetexQueue")
                 .routeId("admin-chouette-export")
                 .endRest()
 

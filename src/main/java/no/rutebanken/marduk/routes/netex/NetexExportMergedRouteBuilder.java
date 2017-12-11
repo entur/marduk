@@ -6,6 +6,7 @@ import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.util.toolbox.AggregationStrategies;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -36,18 +37,26 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
     @Value("${netex.export.stops.file.prefix:_stops}")
     private String netexExportStopsFilePrefix;
 
+
+
     @Override
     public void configure() throws Exception {
         super.configure();
 
         singletonFrom("activemq:queue:NetexExportMergedQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{netex.export.autoStartup:true}}")
                 .transacted()
+                .to("direct:exportMergedNetex")
+                .setBody(constant(null))
+                .routeId("netex-export-merged-jms-route");
+
+        from("direct:exportMergedNetex")
                 .log(LoggingLevel.INFO, getClass().getName(), "Start export of merged Netex file for Norway")
 
+                .setProperty(FOLDER_NAME, simple(localWorkingDirectory + "/${date:now:yyyyMMddHHmmss}"))
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action("EXPORT_NETEX_MERGED").fileName(netexExportStopsFilePrefix).state(JobEvent.State.STARTED).newCorrelationId().build())
                 .to("direct:updateStatus")
 
-                .setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
+                .setHeader(Exchange.FILE_PARENT, simple("${exchangeProperty."+FOLDER_NAME+"}"))
                 .to("direct:cleanUpLocalDirectory")
 
                 .to("direct:fetchLatestProviderNetexExports")
@@ -56,11 +65,16 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .to("direct:mergeNetex")
 
                 .to("direct:cleanUpLocalDirectory")
+                // Use wire tap to avoid replacing body
+                .wireTap("direct:reportExportMergedNetexOK")
 
-                .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), "Completed export of merged Netex file for Norway")
                 .routeId("netex-export-merged-route");
 
+        from("direct:reportExportMergedNetexOK")
+                .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build())
+                .to("direct:updateStatus")
+                .routeId("netex-export-merged-report-ok");
 
         from("direct:fetchLatestProviderNetexExports")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching netex files for all providers.")
@@ -77,7 +91,7 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), localWorkingDirectory))
+                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class)))
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), "${property.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("netex-export-fetch-latest-for-provider");
@@ -90,8 +104,8 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), localWorkingDirectory + "/stops"))
-                .process(e -> copyStopFiles(localWorkingDirectory + "/stops"))
+                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class),  e.getProperty(FOLDER_NAME, String.class) + "/stops"))
+                .process(e -> copyStopFiles( e.getProperty(FOLDER_NAME, String.class) + "/stops", e.getProperty(FOLDER_NAME, String.class)))
 
                 .otherwise()
                 .log(LoggingLevel.WARN, getClass().getName(), "No stop place export found, unable to create merged Netex for Norway")
@@ -99,10 +113,10 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .stop()
                 .routeId("netex-export-fetch-latest-for-stops");
 
-        from("direct:mergeNetex")
+        from("direct:mergeNetex").streamCaching()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Merging Netex files for all providers and stop place registry.")
-                .process(e -> new File(localWorkingDirectory + "/result").mkdir())
-                .process(e -> e.getIn().setBody(ZipFileUtils.zipFilesInFolder(localWorkingDirectory, localWorkingDirectory + "/result/merged.zip")))
+                .process(e -> new File( e.getProperty(FOLDER_NAME, String.class) + "/result").mkdir())
+                .process(e -> e.getIn().setBody(ZipFileUtils.zipFilesInFolder( e.getProperty(FOLDER_NAME, String.class),  e.getProperty(FOLDER_NAME, String.class) + "/result/merged.zip")))
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath))
                 .to("direct:uploadBlob")
@@ -122,12 +136,12 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
     /**
      * Copy stop files from stop place registry to ensure they are given a name in compliance with profile.
      */
-    private void copyStopFiles(String sourceDir) {
+    private void copyStopFiles(String sourceDir, String targetDir) {
         try {
             int i = 0;
             for (File stopFile : FileUtils.listFiles(new File(sourceDir), null, false)) {
                 String targetFileName = netexExportStopsFilePrefix + (i > 0 ? i : "") + ".xml";
-                FileUtils.copyFile(stopFile, new File(localWorkingDirectory + "/" + targetFileName));
+                FileUtils.copyFile(stopFile, new File(targetDir + "/" + targetFileName));
             }
         } catch (IOException ioe) {
             throw new MardukException("Failed to copy/rename stop files from NSR: " + ioe.getMessage(), ioe);
