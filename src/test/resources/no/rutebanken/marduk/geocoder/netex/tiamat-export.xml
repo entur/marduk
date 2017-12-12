@@ -151,6 +151,9 @@
                     </alternativeNames>
                     <TopographicPlaceRef ref="92"/>
                     <OtherTransportModes></OtherTransportModes>
+                    <tariffZones>
+                        <TariffZoneRef ref="AKT:TariffZone:505"/>
+                    </tariffZones>
                     <StopPlaceType>airport</StopPlaceType>
                     <quays>
                         <Quay created="2017-01-23T16:59:34.553+01:00" changed="2017-01-23T16:59:34.553+01:00"
@@ -429,6 +432,27 @@
 
 
             </stopPlaces>
+            <tariffZones>
+                <TariffZone modification="new" version="4" id="RUT:TariffZone:505">
+                    <Name>4Ø</Name>
+                    <Description>ID_10010</Description>
+                    <ns2:Polygon ns2:id="GEN-PolygonType-6528">
+                        <ns2:exterior>
+                            <ns2:LinearRing>
+                                <ns2:posList>62.3084737 6.947365400000001 62.308485700000006 6.947269100000001
+                                    62.308415100000005 6.9472287 62.3084033 6.947324200000001 62.308367000000004
+                                    6.947395800000001 62.3083492 6.9475486 62.30836480000001 6.947635900000001
+                                    62.3083492 6.947761600000001 62.308362900000006 6.9477694 62.308353600000004
+                                    6.9478442000000005 62.3083996 6.9478705000000005 62.3084087 6.9477972 62.3084196
+                                    6.947803400000001 62.308434000000005 6.9476865000000005 62.308472 6.947614700000001
+                                    62.308489800000004 6.9474619 62.3084737 6.947365400000001
+                                </ns2:posList>
+                            </ns2:LinearRing>
+                        </ns2:exterior>
+                    </ns2:Polygon>
+                </TariffZone>
+
+            </tariffZones>
         </SiteFrame>
     </dataObjects>
 </PublicationDelivery>

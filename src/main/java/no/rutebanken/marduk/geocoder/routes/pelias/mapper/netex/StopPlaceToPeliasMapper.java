@@ -97,6 +97,10 @@ public class StopPlaceToPeliasMapper extends AbstractNetexPlaceToPeliasDocumentM
         // Make stop place rank highest in autocomplete by setting popularity
         long popularity = boostConfiguration.getPopularity(stopTypeAndSubModeList, place.getWeighting());
         document.setPopularity(popularity);
+
+        if (place.getTariffZones() != null && place.getTariffZones().getTariffZoneRef() != null) {
+            document.setTariffZones(place.getTariffZones().getTariffZoneRef().stream().map(zoneRef -> zoneRef.getRef()).collect(Collectors.toList()));
+        }
     }
 
     /**

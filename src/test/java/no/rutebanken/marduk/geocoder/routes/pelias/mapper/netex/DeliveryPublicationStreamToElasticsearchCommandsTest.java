@@ -30,8 +30,8 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
         commands.forEach(c -> assertCommand(c));
 
         assertKnownPoi(byId(commands, "NSR:TopographicPlace:724"));
-        assertKnownStopPlace(byId(commands, "NSR:StopPlace:39231"),"Harstad/Narvik Lufthavn");
-        assertKnownStopPlace(byId(commands, "NSR:StopPlace:39231-1"),"AliasName");
+        assertKnownStopPlace(byId(commands, "NSR:StopPlace:39231"), "Harstad/Narvik Lufthavn");
+        assertKnownStopPlace(byId(commands, "NSR:StopPlace:39231-1"), "AliasName");
         assertKnownMultimodalStopPlaceParent(byId(commands, "NSR:StopPlace:1000"));
         assertKnownMultimodalStopPlaceChild(byId(commands, "NSR:StopPlace:1000a"));
 
@@ -75,12 +75,13 @@ public class DeliveryPublicationStreamToElasticsearchCommandsTest {
     private void assertKnownStopPlace(PeliasDocument known, String defaultName) throws Exception {
         Assert.assertEquals(defaultName, known.getDefaultName());
         Assert.assertEquals("Harstad/Narvik Lufthavn", known.getNameMap().get("no"));
-        Assert.assertEquals("Harstad/Narvik Lufthavn",known.getNameMap().get("display"));
+        Assert.assertEquals("Harstad/Narvik Lufthavn", known.getNameMap().get("display"));
         Assert.assertEquals(STOP_PLACE_LAYER, known.getLayer());
         Assert.assertEquals(PeliasDocument.DEFAULT_SOURCE, known.getSource());
         Assert.assertEquals(Arrays.asList("airport"), known.getCategory());
         Assert.assertEquals(68.490412, known.getCenterPoint().getLat(), 0.0001);
         Assert.assertEquals(16.687364, known.getCenterPoint().getLon(), 0.0001);
+        Assert.assertEquals(Arrays.asList("AKT:TariffZone:505"), known.getTariffZones());
         Assert.assertEquals("Expected popularity to be default (1000) boosted by stop type (airport)", 3000, known.getPopularity().longValue());
     }
 
