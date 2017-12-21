@@ -53,6 +53,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
         singletonFrom("sftp://" + sftpUser + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&knownHostsFile=" + knownHostsFile + "&recursive=true&sorter=#caseIdSftpSorter&delay={{sftp.delay}}&delete={{idempotent.skip:false}}&localWorkDirectory=files/tmp&connectTimeout=1000")
                 .autoStartup("{{sftp.autoStartup:true}}")
                 .transacted()
+                .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
                 .setHeader(FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES, simple("true"))
                 .filter(simple("${header." + Exchange.FILE_NAME + "} contains '" + timetablePath + "'"))
                 .process(e -> setHeadersFromFileName(e))
