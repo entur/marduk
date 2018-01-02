@@ -2,7 +2,6 @@ package no.rutebanken.marduk.routes.chouette.json.importer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import no.rutebanken.marduk.routes.chouette.json.ChouetteJobParameters;
 
 public class NetexImportParameters extends ChouetteJobParameters {
@@ -30,7 +29,11 @@ public class NetexImportParameters extends ChouetteJobParameters {
         @JsonProperty("continue_on_line_errors")
         @JsonInclude(JsonInclude.Include.ALWAYS)
     	private boolean continueOnLineErrors = true;
-        
+
+        @JsonProperty("clean_on_error")
+        @JsonInclude(JsonInclude.Include.ALWAYS)
+        private boolean cleanOnErrors = true;
+
     	@JsonProperty("object_id_prefix")
         @JsonInclude(JsonInclude.Include.ALWAYS)
     	private String objectIdPrefix;
