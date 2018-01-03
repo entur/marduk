@@ -13,41 +13,51 @@ import org.springframework.stereotype.Component;
 import java.io.InputStream;
 
 import static no.rutebanken.marduk.Constants.FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES;
+import static org.apache.camel.builder.PredicateBuilder.and;
 import static org.apache.camel.builder.PredicateBuilder.not;
 
 @Component
 public class IdempotentFileFilterRoute extends BaseRouteBuilder {
 
-	@Autowired
-	private IdempotentRepository fileNameAndDigestIdempotentRepository;
+    @Autowired
+    private IdempotentRepository fileNameAndDigestIdempotentRepository;
 
 
-	@Override
-	public void configure() throws Exception {
-		super.configure();
+    private static final String HEADER_FILE_NAME_AND_DIGEST = "file_NameAndDigest";
 
-		from("direct:filterDuplicateFile").routeId("filter-duplicate-file")
-				.choice()
-				.when(simple("{{idempotent.skip:false}}"))
-				.log(LoggingLevel.WARN, getClass().getName(), "Idempotent filter is disabled. This also means that consumed SFTP files will be deleted.")
-				.otherwise()
-				.to("direct:runIdempotentConsumer")
-				.endChoice();
+    @Override
+    public void configure() throws Exception {
+        super.configure();
+
+        from("direct:filterDuplicateFile").routeId("filter-duplicate-file")
+                .onCompletion().onFailureOnly()
+                // Need to set removeOnFailure=false and clean up ourselves if exchange fails. IdempotentConsumer impl removes key even if not added during failed exchange (because it already existed, ie is a duplicate).
+                // We will only remove the key on failure if not a duplicate.
+                .onWhen(and(exchangeProperty(Exchange.DUPLICATE_MESSAGE).isNotEqualTo(true), header(HEADER_FILE_NAME_AND_DIGEST).isNotNull()))
+                .process(e -> fileNameAndDigestIdempotentRepository.remove(e.getIn().getHeader(HEADER_FILE_NAME_AND_DIGEST).toString()))
+                .log(LoggingLevel.INFO, "Removed from repository as exchange failed: ${exchangeId} with id: ${header." + HEADER_FILE_NAME_AND_DIGEST + "}")
+                .end()
+                .choice()
+                .when(simple("{{idempotent.skip:false}}"))
+                .log(LoggingLevel.WARN, getClass().getName(), "Idempotent filter is disabled. This also means that consumed SFTP files will be deleted.")
+                .otherwise()
+                .to("direct:runIdempotentConsumer")
+                .endChoice();
 
 
-		from("direct:runIdempotentConsumer")
-				.process(e -> e.getIn().setHeader("file_NameAndDigest", new FileNameAndDigest(e.getIn().getHeader(Exchange.FILE_NAME, String.class), DigestUtils.md5Hex(e.getIn().getBody(InputStream.class)))))
-				.idempotentConsumer(header("file_NameAndDigest")).messageIdRepository(fileNameAndDigestIdempotentRepository).skipDuplicate(false)
-				.filter(exchangeProperty(Exchange.DUPLICATE_MESSAGE).isEqualTo(true))
-				.log(LoggingLevel.DEBUG, getClass().getName(), "Detected ${header." + Exchange.FILE_NAME + "} as duplicate.")
-				.to("direct:updateStatusForDuplicateFile")
-				.stop()
-				.end();
+        from("direct:runIdempotentConsumer")
+                .process(e -> e.getIn().setHeader(HEADER_FILE_NAME_AND_DIGEST, new FileNameAndDigest(e.getIn().getHeader(Exchange.FILE_NAME, String.class), DigestUtils.md5Hex(e.getIn().getBody(InputStream.class)))))
+                .idempotentConsumer(header(HEADER_FILE_NAME_AND_DIGEST)).messageIdRepository(fileNameAndDigestIdempotentRepository).skipDuplicate(false).removeOnFailure(false)
+                .filter(exchangeProperty(Exchange.DUPLICATE_MESSAGE).isEqualTo(true))
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Detected ${header." + Exchange.FILE_NAME + "} as duplicate.")
+                .to("direct:updateStatusForDuplicateFile")
+                .stop()
+                .end();
 
 
-		from("direct:updateStatusForDuplicateFile")
-				.choice().when(not(simple("${header." + FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES + "}")))
-				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.DUPLICATE).build()).to("direct:updateStatus").endChoice();
+        from("direct:updateStatusForDuplicateFile")
+                .choice().when(not(simple("${header." + FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES + "}")))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.DUPLICATE).build()).to("direct:updateStatus").endChoice();
 
-	}
+    }
 }
