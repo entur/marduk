@@ -60,7 +60,7 @@ public class TopographicPlaceConverterTest {
 
     @Test
     public void testConvertAdminUnitsFromSosi() throws Exception {
-        TopographicPlaceReader reader = new SosiTopographicPlaceReader(new File("src/test/resources/no/rutebanken/marduk/geocoder/sosi/SosiTest.sos"));
+        TopographicPlaceReader reader = new SosiTopographicPlaceReader(Arrays.asList(new File("src/test/resources/no/rutebanken/marduk/geocoder/sosi/SosiTest.sos")));
         String targetPath = "target/admin-units-from-sosi.xml";
         converter.toNetexFile(reader,
                 targetPath);

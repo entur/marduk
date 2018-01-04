@@ -23,7 +23,7 @@ public class AddressDownloadRouteBuilder extends BaseRouteBuilder {
 	@Value("${kartverket.blobstore.subdirectory:kartverket}")
 	private String blobStoreSubdirectoryForKartverket;
 
-	@Value("${kartverket.addresses.dataSetId:offisielle-adresser-utm33-csv}")
+	@Value("${kartverket.addresses.dataSetId:58cad8d3-b09a-44e7-9d38-f67fb5c9eaae}")
 	private String addressesDataSetId;
 
 	@Override

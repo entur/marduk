@@ -11,30 +11,26 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 public class SosiTopographicPlaceReader implements TopographicPlaceReader {
     private static final String LANGUAGE = "en";
 
     private static final String PARTICIPANT_REF = "KVE";
-    private File sosiFile;
+    private Collection<File> sosiFiles;
 
-    private InputStream sosiInputStream;
-
-    public SosiTopographicPlaceReader(File sosiFile) {
-        this.sosiFile = sosiFile;
+    public SosiTopographicPlaceReader(Collection<File> sosiFiles) {
+        this.sosiFiles = sosiFiles;
     }
-
-    public SosiTopographicPlaceReader(InputStream sosiInputStream) {
-        this.sosiInputStream = sosiInputStream;
-    }
-
 
     public void addToQueue(BlockingQueue<TopographicPlace> queue) throws IOException, InterruptedException {
-        if (sosiInputStream == null) {
-            sosiInputStream = new FileInputStream(sosiFile);
+        for (File file : sosiFiles) {
+            new SosiTopographicPlaceAdapterReader(new FileInputStream(file)).read().forEach(a -> queue.add(new TopographicPlaceMapper(a, getParticipantRef()).toTopographicPlace()));
         }
-        new SosiTopographicPlaceAdapterReader(sosiInputStream).read().forEach(a -> queue.add(new TopographicPlaceMapper(a, getParticipantRef()).toTopographicPlace()));
     }
 
 

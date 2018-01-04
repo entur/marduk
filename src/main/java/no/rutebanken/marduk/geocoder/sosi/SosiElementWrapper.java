@@ -8,6 +8,7 @@ import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.vegvesen.nvdb.sosi.document.SosiElement;
 import no.vegvesen.nvdb.sosi.document.SosiRefIsland;
 import no.vegvesen.nvdb.sosi.document.SosiRefNumber;
+import no.vegvesen.nvdb.sosi.document.SosiString;
 import no.vegvesen.nvdb.sosi.document.SosiValue;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
@@ -123,8 +125,22 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
         if (names == null) {
             names = new HashMap<>();
             for (SosiElement nameElement : sosiElement.findSubElements(se -> getNamePropertyName().equals(se.getName())).collect(Collectors.toList())) {
-                String lang = nameElement.findSubElement(se -> "SPRÅK".equals(se.getName())).get().getValueAs(SosiValue.class).toString();
-                String name = nameElement.findSubElement(se -> "NAVN".equals(se.getName())).get().getValueAs(SosiValue.class).toString();
+                String lang = null;
+                String name = null;
+
+                Optional<SosiElement> langSubElement = nameElement.findSubElement(se -> "SPRÅK".equals(se.getName()));
+                if (langSubElement.isPresent()) {
+                    lang = langSubElement.get().getValueAs(SosiValue.class).toString();
+                    name = nameElement.findSubElement(se -> "NAVN".equals(se.getName())).get().getValueAs(SosiValue.class).toString();
+                } else {
+                    List<SosiValue> values = nameElement.getValuesAs(SosiValue.class);
+                    if (values.size() > 0) {
+                        name = values.get(0).getString();
+                        if (values.size() > 1) {
+                            lang = values.get(1).getString();
+                        }
+                    }
+                }
                 names.put(lang, name);
             }
         }

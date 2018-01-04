@@ -46,7 +46,6 @@ public class KartverketService {
     private List<File> downloadFilesInternal(String dataSetId, Downloader kd, String localDownloadDir) {
         List<File> files = new ArrayList<>();
         try {
-            kd.login();
             kd.dataset(dataSetId);
             kd.download(new DefaultReceiver() {
 
@@ -81,6 +80,7 @@ public class KartverketService {
             }
         } else {
             kd = new KartverketDownload(username, password);
+
         }
         return kd;
     }

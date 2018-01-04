@@ -23,8 +23,13 @@ public class AdministrativeUnitsDownloadRouteBuilder extends BaseRouteBuilder {
 	@Value("${kartverket.blobstore.subdirectory:kartverket}")
 	private String blobStoreSubdirectoryForKartverket;
 
-	@Value("${kartverket.administrative.units.dataSetId:administrative-enheter-norge-utm-33-hele-landet}")
-	private String administrativeUnitsDataSetId;
+	@Value("${kartverket.administrative.units.county.dataSetId:6093c8a8-fa80-11e6-bc64-92361f002671}")
+	private String countyDataSetId;
+
+
+	@Value("${kartverket.administrative.units.municipality.dataSetId:041f1e6e-bdbc-4091-b48f-8a5990f3cc5b}")
+	private String municipalityDataSetId;
+
 
 
 	@Override
@@ -42,7 +47,8 @@ public class AdministrativeUnitsDownloadRouteBuilder extends BaseRouteBuilder {
 		from(KARTVERKET_ADMINISTRATIVE_UNITS_DOWNLOAD.getEndpoint())
 				.log(LoggingLevel.INFO, "Start downloading administrative units")
 				.process(e -> JobEvent.systemJobBuilder(e).startGeocoder(GeoCoderTaskType.ADMINISTRATIVE_UNITS_DOWNLOAD).build()).to("direct:updateStatus")
-				.to("direct:transferAdministrativeUnitsFile")
+				.to("direct:transferCountyFile")
+				.to("direct:transferMunicipalityFile")
 				.choice()
 				.when(simple("${header." + CONTENT_CHANGED + "}"))
 				.log(LoggingLevel.INFO, "Uploaded updated administrative units from mapping authority. Initiating update of Tiamat")
@@ -54,11 +60,19 @@ public class AdministrativeUnitsDownloadRouteBuilder extends BaseRouteBuilder {
 				.process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
 				.routeId("admin-units-download");
 
-		from("direct:transferAdministrativeUnitsFile")
-				.setHeader(KARTVERKET_DATASETID, constant(administrativeUnitsDataSetId))
-				.setHeader(FOLDER_NAME, constant(blobStoreSubdirectoryForKartverket + "/administrativeUnits"))
+		from("direct:transferCountyFile")
+				.setHeader(KARTVERKET_DATASETID, constant(countyDataSetId))
+				.setHeader(KARTVERKET_FORMAT, constant("SOSI"))
+				.setHeader(FOLDER_NAME, constant(blobStoreSubdirectoryForKartverket + "/administrativeUnits/county"))
 				.to("direct:uploadUpdatedFiles")
-				.routeId("administrative-units-to-blobstore");
+				.routeId("administrative-units-county-to-blobstore");
+
+		from("direct:transferMunicipalityFile")
+				.setHeader(KARTVERKET_DATASETID, constant(municipalityDataSetId))
+				.setHeader(KARTVERKET_FORMAT, constant("SOSI"))
+				.setHeader(FOLDER_NAME, constant(blobStoreSubdirectoryForKartverket + "/administrativeUnits/municipality"))
+				.to("direct:uploadUpdatedFiles")
+				.routeId("administrative-units-municipality-to-blobstore");
 	}
 
 }

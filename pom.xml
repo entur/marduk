@@ -510,7 +510,7 @@
         <dependency>
             <groupId>no.jskdata</groupId>
             <artifactId>jskdata</artifactId>
-            <version>1.0.4</version>
+            <version>1.0.8</version>
         </dependency>
         <dependency>
             <groupId>no.vegvesen.nvdb</groupId>
