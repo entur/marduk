@@ -136,6 +136,7 @@
                         </KeyValue>
                     </keyList>
                     <Name lang="no">Harstad/Narvik Lufthavn</Name>
+                    <Description lang="no">Norsk beskrivelse</Description>
                     <Centroid>
                         <Location>
                             <Longitude>16.687364</Longitude>

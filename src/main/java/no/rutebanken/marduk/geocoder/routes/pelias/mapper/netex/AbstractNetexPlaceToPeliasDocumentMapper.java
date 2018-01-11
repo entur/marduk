@@ -34,7 +34,7 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
 
     /**
      * Map single place hierarchy to (potentially) multiple pelias documents, one per alias/alternative name.
-     *
+     * <p>
      * Pelias does not yet support queries in multiple languages / for aliases. When support for this is ready this mapping should be
      * refactored to produce a single document per place hierarchy.
      */
@@ -78,6 +78,11 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
         }
 
         addIdToStreetNameToAvoidFalseDuplicates(place, document);
+
+
+        if (place.getDescription() != null) {
+            document.addDescription(place.getDescription().getLang(), place.getDescription().getValue());
+        }
 
         populateDocument(placeHierarchy, document);
         return document;

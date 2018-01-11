@@ -35,6 +35,9 @@ public class PeliasDocument {
     @JsonProperty("phrase")
     private Map<String, String> phraseMap;
 
+    @JsonProperty("description")
+    private Map<String, String> descriptionMap;
+
     @JsonProperty("center_point")
     private GeoPoint centerPoint;
 
@@ -121,10 +124,24 @@ public class PeliasDocument {
         nameMap.put(language, name);
     }
 
+    public void addDescription(String language, String description) {
+        if (descriptionMap == null) {
+            descriptionMap = new HashMap<>();
+        }
+        descriptionMap.put(language, description);
+    }
+
+    public void setDescriptionMap(Map<String, String> descriptionMap) {
+        this.descriptionMap = descriptionMap;
+    }
+
+    public Map<String, String> getDescriptionMap() {
+        return descriptionMap;
+    }
 
     @JsonIgnore
     public String getDefaultPhrase() {
-        if (phraseMap != null) {
+        if (descriptionMap != null) {
             return phraseMap.get("default");
         }
         return null;
