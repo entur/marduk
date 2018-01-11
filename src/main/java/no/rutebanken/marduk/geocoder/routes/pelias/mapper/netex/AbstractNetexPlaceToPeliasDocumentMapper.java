@@ -28,6 +28,8 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
 
     private String participantRef;
 
+    private static final String DEFAULT_LANGUAGE = "no";
+
     public AbstractNetexPlaceToPeliasDocumentMapper(String participantRef) {
         this.participantRef = participantRef;
     }
@@ -81,7 +83,11 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
 
 
         if (place.getDescription() != null) {
-            document.addDescription(place.getDescription().getLang(), place.getDescription().getValue());
+            String lang = place.getDescription().getLang();
+            if (lang == null) {
+                lang = DEFAULT_LANGUAGE;
+            }
+            document.addDescription(lang, place.getDescription().getValue());
         }
 
         populateDocument(placeHierarchy, document);
