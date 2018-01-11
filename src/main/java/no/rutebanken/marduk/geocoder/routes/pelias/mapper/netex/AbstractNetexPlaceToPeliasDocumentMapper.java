@@ -7,6 +7,7 @@ import no.rutebanken.marduk.geocoder.routes.pelias.json.AddressParts;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.GeoPoint;
 import no.rutebanken.marduk.geocoder.routes.pelias.json.PeliasDocument;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.geojson.LngLatAlt;
 import org.geojson.Polygon;
 import org.rutebanken.netex.model.LocationStructure;
@@ -81,8 +82,7 @@ public abstract class AbstractNetexPlaceToPeliasDocumentMapper<T extends Place_V
 
         addIdToStreetNameToAvoidFalseDuplicates(place, document);
 
-
-        if (place.getDescription() != null) {
+        if (place.getDescription() != null && !StringUtils.isEmpty(place.getDescription().getValue())) {
             String lang = place.getDescription().getLang();
             if (lang == null) {
                 lang = DEFAULT_LANGUAGE;
