@@ -14,6 +14,7 @@ import java.util.function.Function;
 @Service
 public class SosiFileFilter {
 
+    private static final String ENCODING = "utf-8";
 
     /**
      * Create a copy of a SOSI file, containing only elements that match provided matcher function.
@@ -24,7 +25,7 @@ public class SosiFileFilter {
         StringBuilder currentElement = new StringBuilder();
 
         boolean headerRead = false;
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(orgFile, "utf-8"))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(orgFile, ENCODING))) {
 
             FileOutputStream fos = new FileOutputStream(filteredFile);
             String line;
@@ -36,12 +37,12 @@ public class SosiFileFilter {
                         headerRead = true;
                         currentElement.append(line).append("\n");
                     } else {
-                        IOUtils.write(line + "\n", fos);
+                        IOUtils.write(line + "\n", fos, ENCODING);
                     }
                 } else {
                     if (startOfElement) {
                         if (currentMatch) {
-                            IOUtils.write(currentElement.toString(), fos);
+                            IOUtils.write(currentElement.toString(), fos, ENCODING);
                         }
                         currentElement = new StringBuilder();
                         currentMatch = false;
@@ -55,7 +56,7 @@ public class SosiFileFilter {
                 }
             }
 
-            IOUtils.write(currentElement.toString(), fos);
+            IOUtils.write(currentElement.toString(), fos, ENCODING);
         } catch (IOException ioe) {
             throw new RuntimeException("Failed to split SOSI file:" + ioe.getMessage(), ioe);
         }
