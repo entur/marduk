@@ -1,17 +1,13 @@
 package no.rutebanken.marduk.geocoder.sosi;
 
-import com.vividsolutions.jts.geom.Coordinate;
 import no.vegvesen.nvdb.sosi.document.SosiElement;
-
-import java.util.List;
-import java.util.Map;
 
 public class SosiLocality extends SosiElementWrapper {
 
     public static final String OBJECT_TYPE = "Kommune";
 
-    public SosiLocality(SosiElement sosiElement, Map<Long, List<Coordinate>> geoRef) {
-        super(sosiElement, geoRef);
+    public SosiLocality(SosiElement sosiElement, SosiCoordinates coordinates) {
+        super(sosiElement, coordinates);
     }
 
     @Override
@@ -21,7 +17,7 @@ public class SosiLocality extends SosiElementWrapper {
 
     @Override
     public String getId() {
-        return pad(getProperty("KOMMUNENUMMER"),4);
+        return pad(getProperty("KOMMUNENUMMER"), 4);
     }
 
     @Override

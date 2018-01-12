@@ -32,6 +32,8 @@ public class PlaceToPeliasDocument extends TopographicPlaceAdapterToPeliasDocume
     protected String getCountyId() {
         return StringUtils.substring(getLocalityId(), 0, 2);
     }
+
+
 }
 
 

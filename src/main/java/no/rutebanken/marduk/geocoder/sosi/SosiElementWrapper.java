@@ -8,7 +8,6 @@ import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.vegvesen.nvdb.sosi.document.SosiElement;
 import no.vegvesen.nvdb.sosi.document.SosiRefIsland;
 import no.vegvesen.nvdb.sosi.document.SosiRefNumber;
-import no.vegvesen.nvdb.sosi.document.SosiString;
 import no.vegvesen.nvdb.sosi.document.SosiValue;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -24,16 +23,14 @@ import java.util.stream.Collectors;
 public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
     protected SosiElement sosiElement;
-
-    protected Map<Long, List<Coordinate>> geoRef;
-
     protected Geometry geometry;
-
     protected Map<String, String> names;
 
-    public SosiElementWrapper(SosiElement sosiElement, Map<Long, List<Coordinate>> geoRef) {
+    protected SosiCoordinates coordinates;
+
+    public SosiElementWrapper(SosiElement sosiElement, SosiCoordinates coordinates) {
         this.sosiElement = sosiElement;
-        this.geoRef = geoRef;
+        this.coordinates = coordinates;
     }
 
     protected abstract String getNamePropertyName();
@@ -43,40 +40,43 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
         if (geometry != null) {
             return geometry;
         }
-        List<Coordinate> coordinates = new ArrayList<>();
+        List<Coordinate> coordinateList = new ArrayList<>();
 
-        for (SosiValue ref : sosiElement.findSubElement(se -> "REF".equals(se.getName())).get().getValuesAs(SosiValue.class)) {
+        Optional<SosiElement> refElement = sosiElement.findSubElement(se -> "REF".equals(se.getName()));
+        if (refElement.isPresent()) {
+            for (SosiValue ref : refElement.get().getValuesAs(SosiValue.class)) {
 
-            if (ref instanceof SosiRefNumber) {
-                SosiRefNumber sosiRefNumber = (SosiRefNumber) ref;
-                Long refId = sosiRefNumber.longValue();
-                List<Coordinate> coordinatesForRef = geoRef.get(refId);
-                if (coordinatesForRef != null) {
+                if (ref instanceof SosiRefNumber) {
+                    SosiRefNumber sosiRefNumber = (SosiRefNumber) ref;
+                    Long refId = sosiRefNumber.longValue();
+                    List<Coordinate> coordinatesForRef = coordinates.getForRef(refId);
+                    if (coordinatesForRef != null) {
 
-                    if (!coordinatesForRef.isEmpty()) {
-                        if (sosiRefNumber.isReversedOrder()) {
-                            coordinates.addAll(Lists.reverse(coordinatesForRef));
+                        if (!coordinatesForRef.isEmpty()) {
+                            if (sosiRefNumber.isReversedOrder()) {
+                                coordinateList.addAll(Lists.reverse(coordinatesForRef));
+                            } else {
+                                coordinateList.addAll(coordinatesForRef);
+                            }
+
                         } else {
-                            coordinates.addAll(coordinatesForRef);
+                            logger.info("Bad coord sequence for  SosiRef: " + refId + " for: " + getType() + ": " + getId() + ": " + getName());
                         }
-
                     } else {
-                        logger.info("Bad coord sequence for  SosiRef: " + refId + " for: " + getType() + ": " + getId() + ": " + getName());
+                        logger.info("Ignore unknown SosiRef: " + refId + " for: " + getType() + ": " + getId() + ": " + getName());
                     }
-                } else {
-                    logger.info("Ignore unknown SosiRef: " + refId + " for: " + getType() + ": " + getId() + ": " + getName());
+                } else if (ref instanceof SosiRefIsland) {
+                    logger.info("Ignore SosiRefIsland (enclave) for: " + getType() + ": " + getId() + ": " + getName());
                 }
-            } else if (ref instanceof SosiRefIsland) {
-                logger.info("Ignore SosiRefIsland (enclave) for: " + getType() + ": " + getId() + ": " + getName());
-            }
 
+            }
         }
 
-        if (coordinates.isEmpty()) {
+        if (coordinateList.isEmpty()) {
             return null;
         }
 
-        geometry = new GeometryFactory().createPolygon(coordinates.toArray(new Coordinate[coordinates.size()]));
+        geometry = new GeometryFactory().createPolygon(coordinateList.toArray(new Coordinate[coordinateList.size()]));
         return geometry;
     }
 
@@ -94,7 +94,7 @@ public abstract class SosiElementWrapper implements TopographicPlaceAdapter {
 
         SosiElement subElement = sosiElement;
         for (String propName : path) {
-            subElement = subElement.findSubElement(se -> propName.equals(se.getName())).get();
+            subElement = subElement.findSubElement(se -> propName.equals(se.getName())).orElse(null);
             if (subElement == null) {
                 break;
             }

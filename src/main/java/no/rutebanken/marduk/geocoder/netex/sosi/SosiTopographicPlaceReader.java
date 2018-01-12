@@ -3,6 +3,7 @@ package no.rutebanken.marduk.geocoder.netex.sosi;
 
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceMapper;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceReader;
+import no.rutebanken.marduk.geocoder.sosi.SosiElementWrapperFactory;
 import no.rutebanken.marduk.geocoder.sosi.SosiTopographicPlaceAdapterReader;
 import org.rutebanken.netex.model.MultilingualString;
 import org.rutebanken.netex.model.TopographicPlace;
@@ -23,13 +24,16 @@ public class SosiTopographicPlaceReader implements TopographicPlaceReader {
     private static final String PARTICIPANT_REF = "KVE";
     private Collection<File> sosiFiles;
 
-    public SosiTopographicPlaceReader(Collection<File> sosiFiles) {
+    private SosiElementWrapperFactory wrapperFactory;
+
+    public SosiTopographicPlaceReader(SosiElementWrapperFactory wrapperFactory, Collection<File> sosiFiles) {
         this.sosiFiles = sosiFiles;
+        this.wrapperFactory = wrapperFactory;
     }
 
     public void addToQueue(BlockingQueue<TopographicPlace> queue) throws IOException, InterruptedException {
         for (File file : sosiFiles) {
-            new SosiTopographicPlaceAdapterReader(new FileInputStream(file)).read().forEach(a -> queue.add(new TopographicPlaceMapper(a, getParticipantRef()).toTopographicPlace()));
+            new SosiTopographicPlaceAdapterReader(wrapperFactory, new FileInputStream(file)).read().forEach(a -> queue.add(new TopographicPlaceMapper(a, getParticipantRef()).toTopographicPlace()));
         }
     }
 

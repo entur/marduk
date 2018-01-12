@@ -1,12 +1,10 @@
 package no.rutebanken.marduk.geocoder.sosi;
 
-import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
-import no.rutebanken.marduk.geocoder.routes.pelias.mapper.coordinates.GeometryTransformer;
-import no.rutebanken.marduk.geocoder.routes.pelias.mapper.kartverket.KartverketCoordinatSystemMapper;
 import no.vegvesen.nvdb.sosi.Sosi;
-import no.vegvesen.nvdb.sosi.document.*;
+import no.vegvesen.nvdb.sosi.document.SosiDocument;
+import no.vegvesen.nvdb.sosi.document.SosiElement;
 import no.vegvesen.nvdb.sosi.reader.SosiReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +13,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SosiTopographicPlaceAdapterReader {
 
@@ -23,24 +23,27 @@ public class SosiTopographicPlaceAdapterReader {
 
     private static final String AREA_TYPE = "FLATE";
 
+    private static final String SVERM_TYPE = "SVERM";
+
     private InputStream sosiInputStream;
 
     private File sosiFile;
 
-    private double unit = 0.01;
+    private SosiCoordinates coordinates;
 
-    private String utmZone = "33";
-
-    private Map<Long, List<Coordinate>> coordinatesMap = new HashMap<>();
 
     private Map<String, TopographicPlaceAdapter> adapterMap = new HashMap<>();
 
-    public SosiTopographicPlaceAdapterReader(InputStream sosiInputStream) {
+    private SosiElementWrapperFactory wrapperFactory;
+
+    public SosiTopographicPlaceAdapterReader(SosiElementWrapperFactory wrapperFactory, InputStream sosiInputStream) {
         this.sosiInputStream = sosiInputStream;
+        this.wrapperFactory = wrapperFactory;
     }
 
-    public SosiTopographicPlaceAdapterReader(File sosiFile) {
+    public SosiTopographicPlaceAdapterReader(SosiElementWrapperFactory wrapperFactory, File sosiFile) {
         this.sosiFile = sosiFile;
+        this.wrapperFactory = wrapperFactory;
     }
 
     public Collection<TopographicPlaceAdapter> read() {
@@ -67,20 +70,20 @@ public class SosiTopographicPlaceAdapterReader {
         SosiReader reader = Sosi.createReader(sosiInputStream);
 
         SosiDocument doc = reader.read();
-        readHeaderValues(doc.getHead());
-        doc.getElements().forEach(se -> collectCoordinates(se));
+        coordinates = new SosiCoordinates(doc.getHead());
+        doc.getElements().forEach(se -> coordinates.collectCoordinates(se));
         doc.getElements().forEach(se -> collectAdminUnits(se));
         sosiInputStream.close();
     }
 
     private void collectAdminUnits(SosiElement sosiElement) {
-        if (sosiElement.getName().equals(AREA_TYPE) && sosiElement.hasSubElements()) {
+        if ((sosiElement.getName().equals(SVERM_TYPE) || sosiElement.getName().equals(AREA_TYPE)) && sosiElement.hasSubElements()) {
 
-            TopographicPlaceAdapter area = SosiElementWrapperFactory.createWrapper(sosiElement, coordinatesMap);
+            TopographicPlaceAdapter area = wrapperFactory.createWrapper(sosiElement, coordinates);
             if (area != null) {
                 String id = area.getId();
                 TopographicPlaceAdapter existingArea = adapterMap.get(id);
-                if (shouldAddNewArea(area, existingArea)) {
+                if (area.isValid() && shouldAddNewArea(area, existingArea)) {
                     adapterMap.put(id, area);
                 }
             }
@@ -105,66 +108,5 @@ public class SosiTopographicPlaceAdapterReader {
 
         return areaGeo != null && areaGeo.getArea() > existingAreaGeo.getArea();
     }
-
-
-    private void collectCoordinates(SosiElement sosiElement) {
-        if (sosiElement.getName().equals("KURVE") || sosiElement.getName().equals("BUEP")) {
-
-            Long id = sosiElement.getValueAs(SosiSerialNumber.class).longValue();
-
-            List<SosiNumber> sosiNumbers = new ArrayList<>();
-            sosiElement.subElements().filter(se -> "NØ".equals(se.getName())).forEach(se -> sosiNumbers.addAll(se.getValuesAs(SosiNumber.class)));
-
-            List<Coordinate> coordinates = toLatLonCoordinates(sosiNumbers);
-
-            coordinatesMap.put(id, coordinates);
-        }
-
-    }
-
-    private void readHeaderValues(SosiElement head) {
-        SosiElement transpar = head.findSubElement(se -> "TRANSPAR".equals(se.getName())).get();
-
-        if (transpar != null) {
-            SosiElement unitElement = transpar.findSubElement(se -> "ENHET".equals(se.getName())).get();
-            if (unitElement != null) {
-                unit = unitElement.getValueAs(SosiNumber.class).doubleValue();
-            } else {
-                logger.warn("Unable to read unit from SOSI file header. Using default value: " + unit);
-            }
-
-            SosiElement coordSysElement = transpar.findSubElement(se -> "KOORDSYS".equals(se.getName())).get();
-            if (coordSysElement != null) {
-                utmZone = KartverketCoordinatSystemMapper.toUTMZone(coordSysElement.getValueAs(SosiValue.class).toString());
-            } else {
-                logger.warn("Unable to read utmZone from SOSI file header. Using default value: " + utmZone);
-            }
-
-
-        } else {
-            logger.warn("Unable to read TRANSPAR from Sosi file header. Relying on default values.");
-        }
-    }
-
-    private List<Coordinate> toLatLonCoordinates(List<SosiNumber> sosiNumbers) {
-        List<Coordinate> coordinates = new ArrayList<>();
-        Double y = null;
-        for (SosiNumber sosiNumber : sosiNumbers) {
-            if (y == null) {
-                y = sosiNumber.longValue() * unit;
-            } else {
-                Double x = sosiNumber.longValue() * unit;
-                try {
-                    Coordinate utmCoord = new Coordinate(x, y);
-                    coordinates.add(GeometryTransformer.fromUTM(utmCoord, utmZone));
-                } catch (Exception e) {
-                    logger.warn("Failed to convert coordinates from utm to wgs84:" + e.getMessage(), e);
-                }
-                y = null;
-            }
-        }
-        return coordinates;
-    }
-
 
 }

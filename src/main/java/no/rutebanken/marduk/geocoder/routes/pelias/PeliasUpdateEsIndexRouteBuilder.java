@@ -6,6 +6,7 @@ import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.geocoder.GeoCoderConstants;
 import no.rutebanken.marduk.geocoder.routes.util.AbortRouteException;
 import no.rutebanken.marduk.geocoder.routes.util.MarkContentChangedAggregationStrategy;
+import no.rutebanken.marduk.geocoder.sosi.SosiFileFilter;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.camel.Exchange;
@@ -14,7 +15,10 @@ import org.apache.camel.component.http4.HttpMethods;
 import org.apache.camel.http.common.HttpOperationFailedException;
 import org.apache.camel.processor.aggregate.UseOriginalAggregationStrategy;
 import org.apache.camel.processor.validation.PredicateValidationException;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -23,6 +27,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 
 import static no.rutebanken.marduk.Constants.CONTENT_CHANGED;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
@@ -48,8 +53,14 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
     @Value("${pelias.insert.batch.size:10000}")
     private int insertBatchSize;
 
+    @Value("#{'${geocoder.place.type.whitelist:tettsted,tettsteddel,tettbebyggelse,bygdelagBygd,boligfelt,industriområde,bydel,industriområde}'.split(',')}")
+    private List<String> placeTypeWhiteList;
+
     @Autowired
     private PeliasUpdateStatusService updateStatusService;
+
+    @Autowired
+    private SosiFileFilter sosiFileFilter;
 
     private static final String FILE_EXTENSION = "RutebankenFileExtension";
     private static final String CONVERSION_ROUTE = "RutebankenConversionRoute";
@@ -64,6 +75,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
                 .setHeader(CONTENT_CHANGED, constant(false))
                 .setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
                 .to("direct:cleanUpLocalDirectory")
+                .process(e -> new File(localWorkingDirectory).mkdirs())
                 .to("direct:createPeliasIndex")
                 .bean("adminUnitRepositoryBuilder", "build")
                 .setProperty(GeoCoderConstants.GEOCODER_ADMIN_UNIT_REPO, simple("body"))
@@ -139,8 +151,8 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, "Start inserting place names to ES")
                 .setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForKartverket + "/placeNames"))
                 .setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/placeNames"))
-                .setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromKartverketGeoJson"))
-                .setHeader(FILE_EXTENSION, constant("geojson"))
+                .setHeader(CONVERSION_ROUTE, constant("direct:convertToPeliasCommandsFromPlaceNames"))
+                .setHeader(FILE_EXTENSION, constant("sos"))
                 .to("direct:haltIfContentIsMissing")
                 .log(LoggingLevel.DEBUG, "Finished inserting place names to ES")
                 .routeId("pelias-insert-place-names");
@@ -201,14 +213,15 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
                 .process(e -> deleteDirectory(new File(e.getIn().getHeader(WORKING_DIRECTORY, String.class))))
                 .routeId("pelias-insert-from-zip");
 
-
         from("direct:convertToPeliasCommandsFromKartverketSOSI")
                 .bean("kartverketSosiStreamToElasticsearchCommands", "transform")
                 .routeId("pelias-convert-commands-kartverket-sosi");
 
-        from("direct:convertToPeliasCommandsFromKartverketGeoJson")
-                .bean("kartverketGeoJsonStreamToElasticsearchCommands", "transform")
-                .routeId("pelias-convert-commands-kartverket-geojson");
+        from("direct:convertToPeliasCommandsFromPlaceNames")
+                .process(e -> filterSosiFile(e))
+                .bean("kartverketSosiStreamToElasticsearchCommands", "transform")
+                .routeId("pelias-convert-commands-place_names");
+
 
         from("direct:convertToPeliasCommandsFromAddresses")
                 .bean("addressStreamToElasticSearchCommands", "transform")
@@ -251,5 +264,24 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
         String directory = e.getIn().getHeader(WORKING_DIRECTORY, String.class);
         return FileUtils.listFiles(new File(directory), new String[]{fileExtension}, true);
     }
+
+    // Create a new Sosi file with only certain types. File with place names is huge and parser does not support streaming.
+    private void filterSosiFile(Exchange e) {
+        String filteredFile = localWorkingDirectory + "/filtered_place_name.sos";
+        sosiFileFilter.filterElements(e.getIn().getBody(InputStream.class), filteredFile, sosiMatcher);
+        e.getIn().setBody(new File(filteredFile));
+    }
+
+
+    Function<Pair<String, String>, Boolean> sosiMatcher = kv -> {
+        if (!"NAVNEOBJEKTTYPE".equals(kv.getKey())) {
+            return false;
+        }
+        if (CollectionUtils.isEmpty(placeTypeWhiteList)) {
+            return true;
+        }
+
+        return kv.getValue() != null && placeTypeWhiteList.contains(kv.getValue());
+    };
 
 }

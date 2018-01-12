@@ -8,6 +8,7 @@ import com.vividsolutions.jts.geom.Point;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
 import no.rutebanken.marduk.geocoder.netex.sosi.SosiTopographicPlaceReader;
+import no.rutebanken.marduk.geocoder.sosi.SosiElementWrapperFactory;
 import no.rutebanken.marduk.geocoder.sosi.SosiTopographicPlaceAdapterReader;
 import no.rutebanken.marduk.repository.BlobStoreRepository;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
@@ -40,6 +41,9 @@ public class AdminUnitRepositoryBuilder {
 
     @Value("${blobstore.gcs.container.name}")
     String containerName;
+
+    @Autowired
+    private SosiElementWrapperFactory sosiElementWrapperFactory;
 
     @PostConstruct
     public void init() {
@@ -100,11 +104,10 @@ public class AdminUnitRepositoryBuilder {
             for (BlobStoreFiles.File blob : blobs.getFiles()) {
                 if (blob.getName().endsWith(".zip")) {
                     ZipFileUtils.unzipFile(repository.getBlob(blob.getName()), localWorkingDirectory);
-
-                    FileUtils.listFiles(new File(localWorkingDirectory), new String[]{"sos"}, true).stream().forEach(f -> new SosiTopographicPlaceAdapterReader(f).read().forEach(au -> addAdminUnit(au)));
-                    new File(localWorkingDirectory).delete();
                 }
             }
+            FileUtils.listFiles(new File(localWorkingDirectory), new String[]{"sos"}, true).stream().forEach(f -> new SosiTopographicPlaceAdapterReader(sosiElementWrapperFactory, f).read().forEach(au -> addAdminUnit(au)));
+            new File(localWorkingDirectory).delete();
         }
 
         private void addAdminUnit(TopographicPlaceAdapter wrapper) {

@@ -5,6 +5,7 @@ import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceConverter;
 import no.rutebanken.marduk.geocoder.netex.sosi.SosiTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
+import no.rutebanken.marduk.geocoder.sosi.SosiElementWrapperFactory;
 import no.rutebanken.marduk.repository.BlobStoreRepository;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
@@ -52,6 +53,9 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
     @Autowired
     private BlobStoreService blobStore;
 
+    @Autowired
+    private SosiElementWrapperFactory wrapperFactory;
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -86,9 +90,9 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 
                     blobStore.listBlobsInFolder(blobStoreSubdirectoryForKartverket + "/administrativeUnits", e).getFiles().stream()
                             .filter(blob -> blob.getName().endsWith(".zip"))
-                            .forEach(blob ->  ZipFileUtils.unzipFile(blobStore.getBlob(blob.getName(), e), localWorkingDirectory));
+                            .forEach(blob -> ZipFileUtils.unzipFile(blobStore.getBlob(blob.getName(), e), localWorkingDirectory));
                     topographicPlaceConverter.toNetexFile(
-                            new SosiTopographicPlaceReader(FileUtils.listFiles(new File(localWorkingDirectory), new String[]{"sos"}, true)), localWorkingDirectory + "/admin-units-netex.xml");
+                            new SosiTopographicPlaceReader(wrapperFactory, FileUtils.listFiles(new File(localWorkingDirectory), new String[]{"sos"}, true)), localWorkingDirectory + "/admin-units-netex.xml");
                     new File(localWorkingDirectory).delete();
                     e.getIn().setBody(new File(localWorkingDirectory + "/admin-units-netex.xml"));
                 })
