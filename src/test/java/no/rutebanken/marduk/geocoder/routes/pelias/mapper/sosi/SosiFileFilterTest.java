@@ -20,7 +20,7 @@ public class SosiFileFilterTest {
     public void filterByType() throws Exception {
         String targetFile = "target/filtered.sos";
         new SosiFileFilter().filterElements(new FileInputStream("src/test/resources/no/rutebanken/marduk/geocoder/sosi/placeNames.sos"), targetFile, kv -> "NAVNEOBJEKTTYPE".equals(kv.getKey()) && "industriområde".equals(kv.getValue()));
-        LoggerFactory.getLogger(getClass()).warn("TODO Filtered content:" + new String(Files.readAllBytes(Paths.get(targetFile)));
+        LoggerFactory.getLogger(getClass()).warn("TODO Filtered content:" + new String(Files.readAllBytes(Paths.get(targetFile))));
 
 
         Collection<ElasticsearchCommand> commands = new KartverketSosiStreamToElasticsearchCommands(new SosiElementWrapperFactory(), 1).transform(new FileInputStream(targetFile));
