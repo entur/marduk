@@ -107,7 +107,7 @@ public class AdminUnitRepositoryBuilder {
                     ZipFileUtils.unzipFile(repository.getBlob(blob.getName()), localWorkingDirectory);
                 } else if (blob.getName().endsWith(".sos")) {
                     try {
-                        FileUtils.copyInputStreamToFile(repository.getBlob(blob.getName()), new File(localWorkingDirectory + blobStoreSubdirectoryForKartverket));
+                        FileUtils.copyInputStreamToFile(repository.getBlob(blob.getName()), new File(localWorkingDirectory + "/" + blob.getName()));
                     } catch (IOException ioe) {
                         throw new RuntimeException("Failed to download admin units file: " + ioe.getMessage(), ioe);
                     }
