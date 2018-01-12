@@ -58,7 +58,6 @@ public class MapLayerUpdateRouteBuilder extends BaseRouteBuilder {
         from("direct:convertToMapLayerFromTiamat")
                 .log(LoggingLevel.INFO, "convertToMapLayerFromTiamat")
                 .bean("deliveryPublicationStreamToMapLayerData", "transform")
-
                 .routeId("map-layer-convert-commands-from-tiamat");
 
         from("direct:insertToTmpFile")
@@ -71,27 +70,10 @@ public class MapLayerUpdateRouteBuilder extends BaseRouteBuilder {
                 .when(header(FILE_HANDLE).endsWith(".zip"))
                 .to("direct:insertToPeliasFromZipArchive")
                 .otherwise()
-                .log(LoggingLevel.INFO, "Updating  from file: ${header." + FILE_HANDLE + "}")
+                .log(LoggingLevel.INFO, "Updating map data from file: ${header." + FILE_HANDLE + "}")
                 .toD("${header." + CONVERSION_ROUTE + "}")
                 .end()
                 .routeId("map-layer-insert-to-tmp-file");
-
-//        from("direct:insertToPeliasFromFilesInFolder")
-//                .bean("blobStoreService", "listBlobsInFolder")
-//                .split(simple("${body.files}")).stopOnException()
-//                .aggregationStrategy(new MarkContentChangedAggregationStrategy())
-//                .to("direct:haltIfAborted")
-//                .setHeader(FILE_HANDLE, simple("${body.name}"))
-//                .to("direct:getBlob")
-//                .choice()
-
-//                .log(LoggingLevel.INFO, "Updating indexes in elasticsearch from file: ${header." + FILE_HANDLE + "}")
-//                .toD("${header." + CONVERSION_ROUTE + "}")
-//                .to("direct:invokePeliasBulkCommand")
-//                .end()
-//                .routeId("pelias-insert-from-folder");
-
     }
-
 
 }
