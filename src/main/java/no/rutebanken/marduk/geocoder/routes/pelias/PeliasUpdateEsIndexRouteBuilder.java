@@ -18,16 +18,12 @@ import org.apache.camel.processor.validation.PredicateValidationException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
@@ -92,7 +88,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
                 .doCatch(AbortRouteException.class)
                 .doFinally()
                 .setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
-             // TODO tmp   .to("direct:cleanUpLocalDirectory")
+                .to("direct:cleanUpLocalDirectory")
                 .end()
                 .choice()
                 .when(e -> updateStatusService.getStatus() != PeliasUpdateStatusService.Status.ABORT)
@@ -272,12 +268,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
     private void filterSosiFile(Exchange e) {
         String filteredFile = localWorkingDirectory + "/filtered_place_name.sos";
         sosiFileFilter.filterElements(e.getIn().getBody(InputStream.class), filteredFile, sosiMatcher);
-        try {
-            LoggerFactory.getLogger(getClass()).warn("TODO Filtered content:" + new String(Files.readAllBytes(Paths.get(filteredFile))));
-            e.getIn().setBody(new FileInputStream(filteredFile));
-        } catch (Exception ex) {
-            throw new RuntimeException("Failed to read filtered sosi file: " + ex.getMessage(), ex);
-        }
+        e.getIn().setBody(new File(filteredFile));
     }
 
 

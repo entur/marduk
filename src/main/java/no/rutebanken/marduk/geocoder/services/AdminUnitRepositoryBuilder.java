@@ -7,7 +7,6 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.Point;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceAdapter;
-import no.rutebanken.marduk.geocoder.netex.sosi.SosiTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.sosi.SosiElementWrapperFactory;
 import no.rutebanken.marduk.geocoder.sosi.SosiTopographicPlaceAdapterReader;
 import no.rutebanken.marduk.repository.BlobStoreRepository;
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,9 +101,16 @@ public class AdminUnitRepositoryBuilder {
 
             localities = new ArrayList<>();
             tmpCache = CacheBuilder.newBuilder().maximumSize(cacheMaxSize).build();
+
             for (BlobStoreFiles.File blob : blobs.getFiles()) {
                 if (blob.getName().endsWith(".zip")) {
                     ZipFileUtils.unzipFile(repository.getBlob(blob.getName()), localWorkingDirectory);
+                } else if (blob.getName().endsWith(".sos")) {
+                    try {
+                        FileUtils.copyInputStreamToFile(repository.getBlob(blob.getName()), new File(localWorkingDirectory + blobStoreSubdirectoryForKartverket));
+                    } catch (IOException ioe) {
+                        throw new RuntimeException("Failed to download admin units file: " + ioe.getMessage(), ioe);
+                    }
                 }
             }
             FileUtils.listFiles(new File(localWorkingDirectory), new String[]{"sos"}, true).stream().forEach(f -> new SosiTopographicPlaceAdapterReader(sosiElementWrapperFactory, f).read().forEach(au -> addAdminUnit(au)));
