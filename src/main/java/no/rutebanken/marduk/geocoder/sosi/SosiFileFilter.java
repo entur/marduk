@@ -24,7 +24,7 @@ public class SosiFileFilter {
         StringBuilder currentElement = new StringBuilder();
 
         boolean headerRead = false;
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(orgFile))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(orgFile, "utf-8"))) {
 
             FileOutputStream fos = new FileOutputStream(filteredFile);
             String line;
