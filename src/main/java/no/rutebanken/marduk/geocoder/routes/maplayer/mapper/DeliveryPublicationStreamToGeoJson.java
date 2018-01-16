@@ -7,26 +7,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.transform.stream.StreamSource;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static javax.xml.bind.JAXBContext.newInstance;
 
 @Service
-public class DeliveryPublicationStreamToMapLayerData {
+public class DeliveryPublicationStreamToGeoJson {
 
-    private static final Logger logger = LoggerFactory.getLogger(DeliveryPublicationStreamToMapLayerData.class);
+    private static final Logger logger = LoggerFactory.getLogger(DeliveryPublicationStreamToGeoJson.class);
 
-    public DeliveryPublicationStreamToMapLayerData() {
+    public DeliveryPublicationStreamToGeoJson() {
 
     }
 

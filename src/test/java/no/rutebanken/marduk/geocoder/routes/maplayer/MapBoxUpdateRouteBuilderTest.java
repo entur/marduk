@@ -14,9 +14,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.io.File;
 import java.io.FileInputStream;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = MapLayerUpdateRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = MapBoxUpdateRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 
-public class MapLayerUpdateRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
+public class MapBoxUpdateRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Autowired
     private ModelCamelContext context;

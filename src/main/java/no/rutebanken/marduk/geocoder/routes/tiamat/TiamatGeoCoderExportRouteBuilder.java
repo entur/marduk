@@ -26,7 +26,7 @@ public class TiamatGeoCoderExportRouteBuilder extends BaseRouteBuilder {
     @Value("${tiamat.geocoder.export.query:?topographicPlaceExportMode=ALL}")
     private String tiamatExportQuery;
 
-    private String TIAMAT_EXPORT_LATEST_FILE_NAME = "tiamat_export_geocoder_latest.zip";
+    public static String TIAMAT_EXPORT_LATEST_FILE_NAME = "tiamat_export_geocoder_latest.zip";
 
     @Override
     public void configure() throws Exception {
