@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.geocoder.routes.maplayer;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.geocoder.routes.tiamat.TiamatGeoCoderExportRouteBuilder;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
@@ -24,18 +25,18 @@ public class MapBoxUpdateRouteBuilderTest extends MardukRouteBuilderIntegrationT
     @Value("${tiamat.export.blobstore.subdirectory:tiamat/geocoder}")
     private String blobStoreSubdirectoryForTiamatGeoCoderExport;
 
-    @Produce(uri = "direct:insertElasticsearchIndexData")
-    protected ProducerTemplate insertESDataTemplate;
+    @Produce(uri = "direct:uploadTiamatToMapboxAsGeoJson")
+    protected ProducerTemplate producerTemplate;
 
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
     @Test
     public void testMapLayerDataSuccess() throws Exception {
-        inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForTiamatGeoCoderExport + "/tiamat/tiamat-export-latest.xml",
-                new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/geocoder/netex/tiamat-export.xml")), false);
+        inMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectoryForTiamatGeoCoderExport + "/" + TiamatGeoCoderExportRouteBuilder.TIAMAT_EXPORT_LATEST_FILE_NAME,
+                new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip")), false);
 
         context.start();
-        Exchange e = insertESDataTemplate.request("direct:convertTiamatDataMapLayer", System.out::println);
+        Exchange e = producerTemplate.request("direct:uploadTiamatToMapboxAsGeoJson", System.out::println);
     }
 }

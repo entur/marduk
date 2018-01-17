@@ -2,14 +2,15 @@ package no.rutebanken.marduk.geocoder.routes.maplayer;
 
 
 import no.rutebanken.marduk.geocoder.routes.tiamat.TiamatGeoCoderExportRouteBuilder;
-import no.rutebanken.marduk.geocoder.routes.util.MarkContentChangedAggregationStrategy;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.FileInputStream;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 
@@ -19,6 +20,7 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
     private static final String FILE_EXTENSION = "RutebankenFileExtension";
     private static final String CONVERSION_ROUTE = "RutebankenConversionRoute";
     private static final String WORKING_DIRECTORY = "RutebankenWorkingDirectory";
+    private static final String TIAMAT_EXPORT_GCP_PATH = "tiamat-export";
 
     /**
      * One time per 24H on MON-FRI
@@ -31,7 +33,6 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
      */
     @Value("${tiamat.export.blobstore.subdirectory:tiamat/geocoder}")
     private String blobStoreSubdirectoryForTiamatGeoCoderExport;
-
 
 
     @Value("${mapbox.download.directory:files/mapbox}")
@@ -48,31 +49,51 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadTiamatToMapboxAsGeoJson")
                 .routeId("mapbox-update-quartz");
 
-
         from("direct:uploadTiamatToMapboxAsGeoJson")
-                .to("direct:cleanUpLocalDirectory")
-                .process(e -> new File(localWorkingDirectory).mkdirs())
-                .setHeader(Exchange.FILE_PARENT, simple(blobStoreSubdirectoryForTiamatGeoCoderExport))
-                .setHeader(WORKING_DIRECTORY, simple(localWorkingDirectory + "/tiamat"))
-                .setHeader(CONVERSION_ROUTE, constant("direct:convertToGeoJsonFromTiamat"))
-                .setHeader(FILE_EXTENSION, constant("xml"))
-                .to("direct:insertTiamatExportToTmpFile")
+                .setHeader(TIAMAT_EXPORT_GCP_PATH, simple(blobStoreSubdirectoryForTiamatGeoCoderExport + "/" + TiamatGeoCoderExportRouteBuilder.TIAMAT_EXPORT_LATEST_FILE_NAME))
+                .to("direct:recreateLocalMapboxDirectory")
+                .to("direct:downloadLatestTiamatExportToFolder")
+                .to("direct:mapboxUnzipLatestTiamatExportToFolder")
+//                .setBody(simple("file://" + localWorkingDirectory + "/tiamat/tiamat-export.xml"))
+                .process(e -> e.getOut().setBody(new FileInputStream(localWorkingDirectory + "/tiamat/tiamat-export.xml")))
+//                .log(LoggingLevel.INFO, "Body: ${body}")
+                .to("direct:transformToGeoJsonFromTiamat")
+                .to("direct:insertGeoJsonFileToLocalDir")
                 .log(LoggingLevel.INFO, "Finished inserting tiamat data")
                 .end()
                 .routeId("mapbox-convert-tiamat-data");
 
-        from("direct:convertToGeoJsonFromTiamat")
-                .log(LoggingLevel.INFO, "convertToMapLayerFromTiamat")
+        from("direct:downloadLatestTiamatExportToFolder")
+                .setHeader(FILE_HANDLE, header(TIAMAT_EXPORT_GCP_PATH))
+                .to("direct:getBlob")
+                .choice()
+                .when(body().isNotEqualTo(null))
+                .toD("file:" + localWorkingDirectory + "/tiamat/?fileName=" + TiamatGeoCoderExportRouteBuilder.TIAMAT_EXPORT_LATEST_FILE_NAME)
+                .otherwise()
+                .log(LoggingLevel.INFO, getClass().getName(), "${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
+                .routeId("mapbox-download-latest-tiamat-export-to-folder");
+
+        from("direct:mapboxUnzipLatestTiamatExportToFolder")
+                .process(e -> ZipFileUtils.unzipFile(new FileInputStream(localWorkingDirectory + "/tiamat/" + TiamatGeoCoderExportRouteBuilder.TIAMAT_EXPORT_LATEST_FILE_NAME), localWorkingDirectory + "/tiamat"))
+                .log(LoggingLevel.INFO, "Unzipped file to folder tiamat")
+                .routeId("mapbox-unzip-tiamat-export");
+
+        from("direct:recreateLocalMapboxDirectory")
+                .setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
+                .to("direct:cleanUpLocalDirectory")
+                .process(e -> new File(localWorkingDirectory).mkdirs())
+                .routeId("mapbox-recreate-mapbox-directory");
+
+        from("direct:transformToGeoJsonFromTiamat")
+                .log(LoggingLevel.INFO, "convert tiamat data to geojson")
+                .setBody(simple(localWorkingDirectory + "/tiamat/" + TiamatGeoCoderExportRouteBuilder.TIAMAT_EXPORT_LATEST_FILE_NAME))
                 .bean("deliveryPublicationStreamToGeoJson", "transform")
                 .routeId("mapbox-convert-from-tiamat");
 
-        from("direct:insertTiamatExportToTmpFile")
-                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForTiamatGeoCoderExport + "/" + TiamatGeoCoderExportRouteBuilder.TIAMAT_EXPORT_LATEST_FILE_NAME ))
+        from("direct:insertGeoJsonFileToLocalDir")
+                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForTiamatGeoCoderExport + "/" + TiamatGeoCoderExportRouteBuilder.TIAMAT_EXPORT_LATEST_FILE_NAME))
                 .to("direct:getBlob")
-                .log(LoggingLevel.INFO, "Updating map data from file: ${header." + FILE_HANDLE + "}")
-                .toD("${header." + CONVERSION_ROUTE + "}")
-                .end()
-                .routeId("map-layer-insert-to-tmp-file");
+                .routeId("mapbox-insert-to-tmp-file");
     }
 
 }
