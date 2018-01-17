@@ -4,6 +4,7 @@ import org.rutebanken.netex.model.*;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.stream.StreamSource;
 import java.io.InputStream;
@@ -48,9 +49,12 @@ public class PublicationDeliveryHelper {
     }
 
     public static PublicationDeliveryStructure unmarshall(InputStream in) throws Exception {
-        JAXBContext publicationDeliveryContext = newInstance(PublicationDeliveryStructure.class);
-        Unmarshaller unmarshaller = publicationDeliveryContext.createUnmarshaller();
-        JAXBElement<PublicationDeliveryStructure> jaxbElement = unmarshaller.unmarshal(new StreamSource(in), PublicationDeliveryStructure.class);
+        JAXBElement<PublicationDeliveryStructure> jaxbElement = createUnmarshaller().unmarshal(new StreamSource(in), PublicationDeliveryStructure.class);
         return jaxbElement.getValue();
+    }
+
+    public static Unmarshaller createUnmarshaller() throws JAXBException {
+        JAXBContext publicationDeliveryContext = newInstance(PublicationDeliveryStructure.class);
+        return publicationDeliveryContext.createUnmarshaller();
     }
 }
