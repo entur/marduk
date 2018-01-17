@@ -34,9 +34,7 @@ public class DeliveryPublicationStreamToGeoJson {
     public Collection<String> transform(InputStream publicationDeliveryStream) {
         logger.info("Transform {}", publicationDeliveryStream);
 
-
         try {
-            logger.info("{}", IOUtils.toString(publicationDeliveryStream));
             PublicationDeliveryStructure deliveryStructure = PublicationDeliveryHelper.unmarshall(publicationDeliveryStream);
             fromDeliveryPublicationStructure(deliveryStructure);
         } catch (Exception e) {

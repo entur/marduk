@@ -46,21 +46,22 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
                 .autoStartup("{{mapbox.update.autoStartup:false}}")
                 .filter(e -> isLeader(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Update mapbox tileset")
-                .to("direct:uploadTiamatToMapboxAsGeoJson")
+                .to("direct:downloadUnzipMapboxData")
                 .routeId("mapbox-update-quartz");
 
-        from("direct:uploadTiamatToMapboxAsGeoJson")
+        from("direct:downloadUnzipMapboxData")
                 .setHeader(TIAMAT_EXPORT_GCP_PATH, simple(blobStoreSubdirectoryForTiamatGeoCoderExport + "/" + TiamatGeoCoderExportRouteBuilder.TIAMAT_EXPORT_LATEST_FILE_NAME))
                 .to("direct:recreateLocalMapboxDirectory")
                 .to("direct:downloadLatestTiamatExportToFolder")
                 .to("direct:mapboxUnzipLatestTiamatExportToFolder")
 //                .setBody(simple("file://" + localWorkingDirectory + "/tiamat/tiamat-export.xml"))
-                .process(e -> e.getOut().setBody(new FileInputStream(localWorkingDirectory + "/tiamat/tiamat-export.xml")))
-//                .log(LoggingLevel.INFO, "Body: ${body}")
+                
+                .routeId("mapbox-download-extract-tiamat-data");
+
+        from("file://"+localWorkingDirectory + "/tiamat/?flatten=true&include=.*xml")
                 .to("direct:transformToGeoJsonFromTiamat")
                 .to("direct:insertGeoJsonFileToLocalDir")
                 .log(LoggingLevel.INFO, "Finished inserting tiamat data")
-                .end()
                 .routeId("mapbox-convert-tiamat-data");
 
         from("direct:downloadLatestTiamatExportToFolder")
@@ -86,7 +87,6 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
 
         from("direct:transformToGeoJsonFromTiamat")
                 .log(LoggingLevel.INFO, "convert tiamat data to geojson")
-                .setBody(simple(localWorkingDirectory + "/tiamat/" + TiamatGeoCoderExportRouteBuilder.TIAMAT_EXPORT_LATEST_FILE_NAME))
                 .bean("deliveryPublicationStreamToGeoJson", "transform")
                 .routeId("mapbox-convert-from-tiamat");
 
