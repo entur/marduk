@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.geocoder.routes.maplayer;
+package no.rutebanken.marduk.routes.mapbox;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.geocoder.routes.tiamat.TiamatGeoCoderExportRouteBuilder;

@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.geocoder.routes.maplayer;
+package no.rutebanken.marduk.routes.mapbox;
 
 
 import no.rutebanken.marduk.geocoder.routes.tiamat.TiamatGeoCoderExportRouteBuilder;
@@ -25,7 +25,7 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
     /**
      * One time per 24H on MON-FRI
      */
-    @Value("${maplayer.update.cron.schedule:0+0+23+?+*+MON-FRI}")
+    @Value("${mapbox.update.cron.schedule:0+0+23+?+*+MON-FRI}")
     private String cronSchedule;
 
     /**

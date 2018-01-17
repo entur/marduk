@@ -1,24 +1,17 @@
-package no.rutebanken.marduk.geocoder.routes.maplayer.mapper;
+package no.rutebanken.marduk.routes.mapbox.mapper;
 
 import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.netex.PublicationDeliveryHelper;
-import no.rutebanken.marduk.routes.file.ZipFileUtils;
-import org.apache.commons.io.IOUtils;
 import org.rutebanken.netex.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import static javax.xml.bind.JAXBContext.newInstance;
 
@@ -33,6 +26,8 @@ public class DeliveryPublicationStreamToGeoJson {
 
     public Collection<String> transform(InputStream publicationDeliveryStream) {
         logger.info("Transform {}", publicationDeliveryStream);
+
+
 
         try {
             PublicationDeliveryStructure deliveryStructure = PublicationDeliveryHelper.unmarshall(publicationDeliveryStream);
