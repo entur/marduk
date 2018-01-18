@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.routes.mapbox;
+package no.rutebanken.marduk.routes.mapbox.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
