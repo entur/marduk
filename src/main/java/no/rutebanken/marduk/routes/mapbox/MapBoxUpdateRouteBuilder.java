@@ -9,6 +9,7 @@ import no.rutebanken.marduk.geocoder.routes.tiamat.TiamatGeoCoderExportRouteBuil
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.mapbox.model.MapBoxAwsCredentials;
+import no.rutebanken.marduk.routes.mapbox.model.MapBoxUploadStatus;
 import no.rutebanken.marduk.routes.mapbox.model.MapboxUploadRequest;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -57,7 +58,7 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
 
     @Value("${mapbox.aws.region:us-east-1")
     private String awsRegion;
-    
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -85,9 +86,58 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "${body}")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
                 .to(mapboxApiUrl + "/uploads/v1/" + mapboxUser + "?access_token=" + mapboxAccessToken)
-                .log(LoggingLevel.INFO, "${body}")
+                .unmarshal().json(JsonLibrary.Jackson, MapBoxUploadStatus.class)
+                .log(LoggingLevel.INFO, "Received ${body}")
+                .to("direct:pollMapboxStatus")
                 .log(LoggingLevel.INFO, "Finished inserting tiamat data")
                 .routeId("mapbox-convert-tiamat-data");
+
+        from("direct:pollMapboxStatus")
+                .loop(10)
+
+                .choice()
+                .when(simple("${body.error}"))
+                .to("direct:errorUploadMapboxTileset")
+                .end() // End choice
+
+                .choice()
+                    .when(simple("${body.complete}"))
+                    .log("complete ${body}")
+                    .to("direct:mapboxEnd")
+                    .otherwise()
+                    .log(LoggingLevel.INFO, "${body.id} Not complete yet.. wait a bit and try again")
+                    .delay(5000)
+                    .to("direct:fetchMapboxUploadStatus")
+                    .end() // End choice
+                .end() // End loop
+
+                .choice()
+                .when(simple("${body.complete}"))
+                .otherwise()
+                .log("Gave up looking for complete status after 10 attempts")
+                .end() // End choice
+
+                .routeId("mapbox-poll-upload-status");
+
+        from("direct:errorUploadMapboxTileset")
+                .log(LoggingLevel.ERROR, "Got error uploading tileset. ${body}")
+                .end();
+
+        from("direct:fetchMapboxUploadStatus")
+                .setProperty("tilesetId", simple("${body.id}"))
+                .log("Tilset id is: ${property.tilesetId}")
+                .setBody(simple(""))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                .toD(mapboxApiUrl + "/uploads/v1/" + mapboxUser + "/${property.tilesetId}?access_token=" + mapboxAccessToken)
+                .unmarshal().json(JsonLibrary.Jackson, MapBoxUploadStatus.class)
+                .log("${body}")
+                .routeId("fetch-mapbox-upload-status");
+
+        from("direct:mapboxEnd")
+                .log("COMPLETE")
+                .end()
+                .routeId("mapbox-upload-complete-end");
+
 
 
         from("direct:retrieveMapboxAwsCredentials")
