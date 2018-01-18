@@ -276,11 +276,6 @@
             <artifactId>camel-hazelcast</artifactId>
             <version>${camel-version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-aws</artifactId>
-            <version>${camel-version}</version>
-        </dependency>
         <!-- Due to maven artifact cache, this dependency needs to be explicit -->
         <dependency>
             <groupId>io.fabric8</groupId>
