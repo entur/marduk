@@ -28,7 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         properties = {
                 "spring.main.sources=no.rutebanken.marduk.test",
                 "mapbox.api.url=http4://localhost:${wiremock.server.port}",
-                "mapbox.upload.status.poll.delay=0"
+                "mapbox.upload.status.poll.delay=0",
+                "blobstore.gcs.project.id=lawrencium-1287"
         })
 @AutoConfigureWireMock(port = 0)
 public class MapBoxUpdateRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
