@@ -46,7 +46,10 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
     @Value("${mapbox.api.url:https4://api.mapbox.com}")
     private String mapboxApiUrl;
 
-    @Value("${mapbox.access.token:configureme}")
+    @Value("${blobstore.gcs.project.id}")
+    private String projectId;
+
+    @Value("${mapbox.access.token:sk.eyJ1IjoiZW50dXIiLCJhIjoiY2pjYW1mN214MDh3ejMzcGU4eHYza3k2YSJ9.swfCxG6A_EiySERrZVTOYQ}")
     private String mapboxAccessToken;
 
     @Value("${mapbox.user:entur}")
@@ -64,6 +67,8 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
     @Override
     public void configure() throws Exception {
         super.configure();
+
+        final String tilesetName = mapboxUser + ".automated-uploaded-tileset" + projectId;
 
         singletonFrom("quartz2://marduk/mapboxUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{mapbox.update.autoStartup:false}}")
@@ -90,7 +95,7 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
 
         from("direct:initiateMapboxUpload")
                 .process(exchange -> exchange.getOut().setBody(
-                        new MapboxUploadRequest(mapboxUser + ".automated-uploaded-tileset",
+                        new MapboxUploadRequest(tilesetName,
                             ((MapBoxAwsCredentials) exchange.getIn().getHeader("credentials")).getUrl(),
                             exchange.getIn().getHeader("filename").toString())))
                 .marshal().json(JsonLibrary.Jackson)
