@@ -9,6 +9,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import no.rutebanken.marduk.routes.mapbox.model.MapBoxAwsCredentials;
 import org.apache.camel.Body;
 import org.apache.camel.Header;
+import org.apache.camel.PropertyInject;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,9 +33,9 @@ public class AwsS3Uploader {
     }
 
     public void upload(@Header("credentials") MapBoxAwsCredentials credentials,
-                       @Header("filename") String filename,
+                       @PropertyInject("filename") String filename,
                        @Body InputStream inputStream) throws IOException {
-        logger.info("Uploading inputStream {} to aws. Bucket: {}, Key: {}, Filename: {}", inputStream, credentials.getBucket(), credentials.getKey(), filename);
+        logger.info("Uploading inputStream {} to aws. bucket: {}, key: {}, filename: {}", inputStream, credentials.getBucket(), credentials.getKey(), filename);
         AmazonS3Client amazonS3Client = createClient(credentials);
         amazonS3Client.setRegion(Region.getRegion(Regions.US_EAST_1));
 

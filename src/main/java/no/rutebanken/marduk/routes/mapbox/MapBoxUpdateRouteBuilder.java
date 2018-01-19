@@ -24,8 +24,12 @@ import static no.rutebanken.marduk.Constants.LOOP_COUNTER;
 public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
 
     private static final String TIAMAT_EXPORT_GCP_PATH = "tiamat-export";
-    private static final int POLL_MAPBOX_UPLOAD_STATUS_DELAY = 15000;
     private static final String TIAMAT_GEOSJON_FILENAME = "tiamat.geojson";
+
+    protected static final String PROPERTY_STATE = "state";
+    protected static final String STATE_FINISHED = "finished";
+    protected static final String STATE_ERROR = "error";
+    protected static final String STATE_TIMEOUT = "timeout";
 
     @Value("${mapbox.update.cron.schedule:0+0+23+?+*+MON-FRI}")
     private String cronSchedule;
@@ -36,14 +40,13 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
     @Value("${tiamat.export.blobstore.subdirectory:tiamat/geocoder}")
     private String blobStoreSubdirectoryForTiamatGeoCoderExport;
 
-
     @Value("${mapbox.download.directory:files/mapbox}")
     private String localWorkingDirectory;
 
     @Value("${mapbox.api.url:https4://api.mapbox.com}")
     private String mapboxApiUrl;
 
-    @Value("${mapbox.access.token}")
+    @Value("${mapbox.access.token:configureme}")
     private String mapboxAccessToken;
 
     @Value("${mapbox.user:entur}")
@@ -53,7 +56,10 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
     private String awsRegion;
 
     @Value("${mapbox.upload.status.max.retries:10}")
-    private int maxRetries;
+    private int mapboxUploadPollMaxRetries;
+
+    @Value("${mapbox.upload.status.poll.delay:15000}")
+    private int mapboxUploadPollDelay;
 
     @Override
     public void configure() throws Exception {
@@ -74,18 +80,21 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
                 .to("direct:retrieveMapboxAwsCredentials")
                 .to("direct:findFirstXmlFileRecursive")
                 .to("direct:transformToGeoJsonFromTiamat")
+                .setHeader("filename", constant(TIAMAT_GEOSJON_FILENAME))
                 .to("direct:uploadMapboxDataAws")
                 .to("direct:initiateMapboxUpload")
-                .delay(POLL_MAPBOX_UPLOAD_STATUS_DELAY)
+                .delay(mapboxUploadPollDelay)
                 .to("direct:pollRetryMapboxStatus")
                 .to("direct:recreateLocalMapboxDirectory")
-                .log(LoggingLevel.INFO, "Finished inserting tiamat data")
-                .routeId("mapbox-convert-tiamat-data");
+                .routeId("mapbox-convert-upload-tiamat-data");
 
         from("direct:initiateMapboxUpload")
-                .process(exchange -> exchange.getOut().setBody(new MapboxUploadRequest(mapboxUser  + ".automated-uploaded-tileset", ((MapBoxAwsCredentials) exchange.getIn().getHeader("credentials")).getUrl(), exchange.getIn().getHeader("filename").toString())))
+                .process(exchange -> exchange.getOut().setBody(
+                        new MapboxUploadRequest(mapboxUser + ".automated-uploaded-tileset",
+                            ((MapBoxAwsCredentials) exchange.getIn().getHeader("credentials")).getUrl(),
+                            exchange.getIn().getHeader("filename").toString())))
                 .marshal().json(JsonLibrary.Jackson)
-                .log(LoggingLevel.INFO, "${body}")
+                .log(LoggingLevel.INFO, "Upload: ${body}")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
                 .to(mapboxApiUrl + "/uploads/v1/" + mapboxUser + "?access_token=" + mapboxAccessToken)
                 .unmarshal().json(JsonLibrary.Jackson, MapBoxUploadStatus.class)
@@ -93,7 +102,6 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
                 .routeId("initiate-mapbox-upload");
 
         from("direct:uploadMapboxDataAws")
-                .setHeader("filename", constant(TIAMAT_GEOSJON_FILENAME))
                 .bean("awsS3Uploader", "upload")
                 .routeId("upload-mapbox-data-aws");
 
@@ -102,24 +110,26 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
                 .routeId("mapbox-find-first-xml-file-recursive");
 
         from("direct:pollRetryMapboxStatus")
-                .loopDoWhile(simple("${body.error} == null && ${body.complete} == false"))
+                .process(e -> e.getIn().setHeader(LOOP_COUNTER, 0))
+                .loopDoWhile(simple("${header."+LOOP_COUNTER +"} <= " + mapboxUploadPollMaxRetries))
                 .process(e -> e.getIn().setHeader(LOOP_COUNTER, (Integer) e.getIn().getHeader(LOOP_COUNTER, 0) + 1))
-                .log("loop counter ${header." + LOOP_COUNTER + "}")
                 .to("direct:endIfMapboxUploadError")
 
                 .choice()
                     .when(simple("${body.complete}"))
-                        .log("complete ${body}")
-                        .to("direct:mapboxEnd")
+                        .log(LoggingLevel.INFO,"Tileset upload complete: ${body.id}")
+                        .setProperty(PROPERTY_STATE, simple(STATE_FINISHED))
+                        .stop()
                     .otherwise()
-                        .log(LoggingLevel.INFO, "${body.id} Not complete yet.. wait a bit and try again")
-                        .delay(POLL_MAPBOX_UPLOAD_STATUS_DELAY)
+                        .log(LoggingLevel.INFO, "Tileset upload ${body.id}: Not complete yet.. wait a bit and try again. (${header.\"" + LOOP_COUNTER + "\"})")
+                        .delay(mapboxUploadPollDelay)
                         .to("direct:fetchMapboxUploadStatus")
                 .endChoice()
 
                 .choice()
-                    .when(simple("${header." + LOOP_COUNTER + "} > " + maxRetries))
-                        .log(LoggingLevel.WARN, getClass().getName(), "Giving up after looping after " + maxRetries + " iterations")
+                    .when(simple("${header." + LOOP_COUNTER + "} > " + mapboxUploadPollMaxRetries))
+                        .log(LoggingLevel.WARN, getClass().getName(), "Giving up after looping after " + mapboxUploadPollMaxRetries + " iterations")
+                .setProperty(PROPERTY_STATE, simple(STATE_TIMEOUT))
                         .stop() // end route?
                 .endChoice()
                 .routeId("mapbox-poll-retry-upload-status");
@@ -128,23 +138,20 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
                 .choice()
                     .when(simple("${body.error}"))
                     .log(LoggingLevel.ERROR, "Got error uploading tileset. ${body}")
+                    .setProperty(PROPERTY_STATE, simple(STATE_ERROR))
                     .stop()
-                .endChoice();
+                .endChoice()
+                .routeId("mapbox-end-if-upload-error");
 
         from("direct:fetchMapboxUploadStatus")
                 .setProperty("tilesetId", simple("${body.id}"))
-                .log("Tilset id is: ${property.tilesetId}")
+                .log("Checking status for tileset: ${property.tilesetId}")
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD(mapboxApiUrl + "/uploads/v1/" + mapboxUser + "/${property.tilesetId}?access_token=" + mapboxAccessToken)
                 .unmarshal().json(JsonLibrary.Jackson, MapBoxUploadStatus.class)
-                .log("${body}")
+                .log("Received status ${body}")
                 .routeId("fetch-mapbox-upload-status");
-
-        from("direct:mapboxEnd")
-                .log("COMPLETE")
-                .end()
-                .routeId("mapbox-upload-complete-end");
 
         from("direct:retrieveMapboxAwsCredentials")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
