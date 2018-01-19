@@ -39,15 +39,15 @@ public class DeliveryPublicationStreamToGeoJsonTest {
         assertThat(featureCollection.getFeatures())
                 .extracting(Feature::getGeometry).doesNotContainNull();
 
-        List<String> titles = featureCollection.getFeatures()
+        List<String> names = featureCollection.getFeatures()
                 .stream()
                 .map(Feature::getProperties)
                 .flatMap(properties -> properties.entrySet().stream())
-                .filter(entrySet -> entrySet.getKey().equals("title"))
+                .filter(entrySet -> entrySet.getKey().equals("name"))
                 .map(Map.Entry::getValue)
                 .map(object -> (String) object)
                 .collect(toList());
-        assertThat(titles)
+        assertThat(names)
                 .contains("Drangedal stasjon", "Paradis");
 
     }
