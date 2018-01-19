@@ -59,9 +59,6 @@ public class MapBoxUpdateRouteBuilderTest extends MardukRouteBuilderIntegrationT
     @Produce(uri = "direct:uploadTiamatToMapboxAsGeoJson")
     protected ProducerTemplate producerTemplate;
 
-    @EndpointInject(uri = "mock:uploadMapboxDataAws")
-    protected MockEndpoint uploadMapboxDataAws;
-
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
