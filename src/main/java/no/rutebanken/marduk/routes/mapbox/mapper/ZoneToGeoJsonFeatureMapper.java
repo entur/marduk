@@ -14,7 +14,7 @@ public class ZoneToGeoJsonFeatureMapper {
         Feature feature = new Feature();
         feature.setId(zone.getId());
         if(zone.getName() != null) {
-            feature.setProperty("title", zone.getName().getValue());
+            feature.setProperty("name", zone.getName().getValue());
         }
 
         if (zone.getCentroid() != null && zone.getCentroid().getLocation() != null) {

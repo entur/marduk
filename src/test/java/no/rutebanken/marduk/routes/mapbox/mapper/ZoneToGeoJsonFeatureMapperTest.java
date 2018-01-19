@@ -41,8 +41,8 @@ public class ZoneToGeoJsonFeatureMapperTest {
         assertThat(feature.getGeometry()).isNotNull();
         assertThat(feature.getGeometry()).isInstanceOf(Point.class);
 
-        String name = (String) feature.getProperties().get("title");
-        assertThat(name).as("stopPlaceName").isEqualTo("A name");
+        String name = (String) feature.getProperties().get("name");
+        assertThat(name).as("stopPlaceName").isEqualTo(stopPlaceName);
 
         Point point = (Point) feature.getGeometry();
 
