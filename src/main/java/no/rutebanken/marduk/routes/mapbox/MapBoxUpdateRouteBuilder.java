@@ -32,7 +32,7 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
     protected static final String STATE_ERROR = "error";
     protected static final String STATE_TIMEOUT = "timeout";
 
-    @Value("${mapbox.update.cron.schedule:0+10+9+?+*+MON-SAT}")
+    @Value("${mapbox.update.cron.schedule:0+35+?+?+*+MON-SAT}")
     private String cronSchedule;
 
     /**
