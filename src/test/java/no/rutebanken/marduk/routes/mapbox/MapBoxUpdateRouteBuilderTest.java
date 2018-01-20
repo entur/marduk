@@ -28,28 +28,27 @@ import static org.assertj.core.api.Assertions.assertThat;
         properties = {
                 "spring.main.sources=no.rutebanken.marduk.test",
                 "mapbox.api.url=http4://localhost:${wiremock.server.port}",
-                "mapbox.upload.status.poll.delay=0",
-                "blobstore.gcs.project.id=lawrencium-1287"
+                "mapbox.upload.status.poll.delay=0"
         })
 @AutoConfigureWireMock(port = 0)
 public class MapBoxUpdateRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
 
-    public static final String TILESET_ID = "someId";
-    public static final String RETRIEVE_CREDENTIALS_PATH_PATTERN = "/uploads/v1/(\\w+)/credentials.*";
-    public static final String UPLOAD_INITIATE_PATH_PATTERN = "/uploads/v1/\\w+\\?{1}access_token.*";
-    public static final String UPLOAD_STATUS_PATH_PATTERN = "/uploads/v1/\\w+/" + TILESET_ID;
+    private static final String TILESET_ID = "someId";
+    private static final String RETRIEVE_CREDENTIALS_PATH_PATTERN = "/uploads/v1/(\\w+)/credentials.*";
+    private static final String UPLOAD_INITIATE_PATH_PATTERN = "/uploads/v1/\\w+\\?{1}access_token.*";
+    private static final String UPLOAD_STATUS_PATH_PATTERN = "/uploads/v1/\\w+/" + TILESET_ID;
 
-    public static final String MAPBOX_RESPONSE_NOT_COMPLETE = "{\"id\":\"" + TILESET_ID + "\", \"name\":\"tiamat.geojson\", \"complete\":false, \"error\":null, \"created\":\"2018-01-19T10:14:41.359Z\"," +
+    private static final String MAPBOX_RESPONSE_NOT_COMPLETE = "{\"id\":\"" + TILESET_ID + "\", \"name\":\"tiamat.geojson\", \"complete\":false, \"error\":null, \"created\":\"2018-01-19T10:14:41.359Z\"," +
             " \"modified\":\"2018-01-19T10:14:41.359Z\", \"tileset\":\"tilesetname\", \"owner\":\"owner\", \"progress\":0}";
 
-    public static final String MAPBOX_RESPONSE_ERROR = "{\"id\":\"" + TILESET_ID + "\", \"name\":\"tiamat.geojson\", \"complete\":false, \"error\":\"Failure!\", \"created\":\"2018-01-19T10:14:41.359Z\"," +
+    private static final String MAPBOX_RESPONSE_ERROR = "{\"id\":\"" + TILESET_ID + "\", \"name\":\"tiamat.geojson\", \"complete\":false, \"error\":\"Failure!\", \"created\":\"2018-01-19T10:14:41.359Z\"," +
             " \"modified\":\"2018-01-19T10:14:41.359Z\", \"tileset\":\"tilesetname\", \"owner\":\"owner\", \"progress\":0}";
 
-    public static final String MAPBOX_RESPONSE_COMPLETE = "{\"id\":\"" + TILESET_ID + "\", \"name\":\"tiamat.geojson\", \"complete\":true, \"error\":null, \"created\":\"2018-01-19T10:14:41.359Z\"," +
+    private static final String MAPBOX_RESPONSE_COMPLETE = "{\"id\":\"" + TILESET_ID + "\", \"name\":\"tiamat.geojson\", \"complete\":true, \"error\":null, \"created\":\"2018-01-19T10:14:41.359Z\"," +
             " \"modified\":\"2018-01-19T10:14:41.359Z\", \"tileset\":\"tilesetname\", \"owner\":\"owner\", \"progress\":1}";
-    public static final String MAPBOX_CREDENTIALS_RESPONSE = "{ \"bucket\": \"bucket\", \"key\": \"key\", \"accessKeyId\": \"accessKeyId\", " +
-            " \"secretAccessKey\": \"secretAKey\", \"sessionToken\": \"sestoken\", \"url\": \"http://localhost:0000\" }";
 
+    private static final String MAPBOX_CREDENTIALS_RESPONSE = "{ \"bucket\": \"bucket\", \"key\": \"key\", \"accessKeyId\": \"accessKeyId\", " +
+            " \"secretAccessKey\": \"secretAKey\", \"sessionToken\": \"sestoken\", \"url\": \"http://localhost:0000\" }";
 
     @Autowired
     private ModelCamelContext context;

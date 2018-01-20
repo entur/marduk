@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.routes.mapbox;
 
 
+import com.google.common.base.Strings;
 import no.rutebanken.marduk.geocoder.routes.tiamat.TiamatGeoCoderExportRouteBuilder;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
@@ -46,10 +47,10 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
     @Value("${mapbox.api.url:https4://api.mapbox.com}")
     private String mapboxApiUrl;
 
-    @Value("${blobstore.gcs.project.id}")
+    @Value("${blobstore.gcs.project.id:}")
     private String projectId;
 
-    @Value("${mapbox.access.token:sk.eyJ1IjoiZW50dXIiLCJhIjoiY2pjYW1mN214MDh3ejMzcGU4eHYza3k2YSJ9.swfCxG6A_EiySERrZVTOYQ}")
+    @Value("${mapbox.access.token:}")
     private String mapboxAccessToken;
 
     @Value("${mapbox.user:entur}")
@@ -68,7 +69,7 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        final String tilesetName = mapboxUser + ".automated-uploaded-tileset" + projectId;
+        final String tilesetName = mapboxUser + ".automated-uploaded-tileset" + (Strings.isNullOrEmpty(projectId) ? "" : "-" + projectId);
 
         singletonFrom("quartz2://marduk/mapboxUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{mapbox.update.autoStartup:false}}")
