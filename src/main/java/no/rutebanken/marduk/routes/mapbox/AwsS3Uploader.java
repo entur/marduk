@@ -13,6 +13,7 @@ import org.apache.camel.PropertyInject;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -33,13 +34,11 @@ public class AwsS3Uploader {
     }
 
     public void upload(@Header("credentials") MapBoxAwsCredentials credentials,
-                       @PropertyInject("filename") String filename,
+                       @Header("filename") String filename,
                        @Body InputStream inputStream) throws IOException {
         logger.info("Uploading inputStream {} to aws. bucket: {}, key: {}, filename: {}", inputStream, credentials.getBucket(), credentials.getKey(), filename);
         AmazonS3Client amazonS3Client = createClient(credentials);
         amazonS3Client.setRegion(Region.getRegion(Regions.US_EAST_1));
-
-
 
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentType("application/json");

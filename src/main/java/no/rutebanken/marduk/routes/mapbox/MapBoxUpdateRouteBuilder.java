@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.LOOP_COUNTER;
 
 @Component
@@ -86,7 +87,7 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
                 .to("direct:retrieveMapboxAwsCredentials")
                 .to("direct:findFirstXmlFileRecursive")
                 .to("direct:transformToGeoJsonFromTiamat")
-                .setHeader("filename", constant(TIAMAT_GEOSJON_FILENAME))
+                .setHeader(FILE_NAME, constant(TIAMAT_GEOSJON_FILENAME))
                 .to("direct:uploadMapboxDataAws")
                 .to("direct:initiateMapboxUpload")
                 .delay(mapboxUploadPollDelay)
@@ -98,7 +99,7 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
                 .process(exchange -> exchange.getOut().setBody(
                         new MapboxUploadRequest(tilesetName,
                             ((MapBoxAwsCredentials) exchange.getIn().getHeader("credentials")).getUrl(),
-                            exchange.getIn().getHeader("filename").toString())))
+                            exchange.getIn().getHeader(FILE_NAME).toString())))
                 .marshal().json(JsonLibrary.Jackson)
                 .log(LoggingLevel.INFO, "Upload: ${body}")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
