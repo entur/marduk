@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.InputStream;
 
+import static no.rutebanken.marduk.Constants.FILE_NAME;
+
 /**
  * Implemented because of the requirement to use aws client with temporary session token.
  */
@@ -34,7 +36,7 @@ public class AwsS3Uploader {
     }
 
     public void upload(@Header("credentials") MapBoxAwsCredentials credentials,
-                       @Header("filename") String filename,
+                       @Header(FILE_NAME) String filename,
                        @Body InputStream inputStream) throws IOException {
         logger.info("Uploading inputStream {} to aws. bucket: {}, key: {}, filename: {}", inputStream, credentials.getBucket(), credentials.getKey(), filename);
         AmazonS3Client amazonS3Client = createClient(credentials);
