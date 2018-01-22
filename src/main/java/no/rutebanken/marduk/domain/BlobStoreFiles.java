@@ -1,135 +1,144 @@
 package no.rutebanken.marduk.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class BlobStoreFiles {
 
-	@JsonProperty("files")
-	private List<File> files = new ArrayList<File>();
+    @JsonProperty("files")
+    private List<File> files = new ArrayList<File>();
 
-	public void add(File file) {
-		files.add(file);
-	}
+    public void add(File file) {
+        files.add(file);
+    }
 
-	public void add(Collection<File> files) {
-		this.files.addAll(files);
-	}
+    public void add(Collection<File> files) {
+        this.files.addAll(files);
+    }
 
-	public List<File> getFiles() {
-		return files;
-	}
+    public List<File> getFiles() {
+        return files;
+    }
 
-	public static class File {
-		public  enum Format { NETEX,GTFS,GRAPH, UNKOWN}
-		public String getName() {
-			return name;
-		}
+    public static class File {
+        public enum Format {NETEX, GTFS, GRAPH, UNKOWN}
 
-		public File() {
-		}
+        public String getName() {
+            return name;
+        }
 
-		public void setName(String name) {
-			this.name = name;
-		}
+        public File() {
+        }
 
-		public void setUpdated(Date updated) {
-			this.updated = updated;
-		}
+        public void setName(String name) {
+            this.name = name;
+        }
 
-		public void setFileSize(Long fileSize) {
-			this.fileSize = fileSize;
-		}
+        public void setUpdated(Date updated) {
+            this.updated = updated;
+        }
 
-		public Date getUpdated() {
-			return updated;
-		}
+        public void setFileSize(Long fileSize) {
+            this.fileSize = fileSize;
+        }
 
-		public Long getFileSize() {
-			return fileSize;
-		}
+        public Date getUpdated() {
+            return updated;
+        }
 
-		public Date getCreated() {
-			return created;
-		}
+        public Long getFileSize() {
+            return fileSize;
+        }
 
-		public void setCreated(Date created) {
-			this.created = created;
-		}
+        public Date getCreated() {
+            return created;
+        }
 
-		public String getReferential() {
-			return referential;
-		}
+        public void setCreated(Date created) {
+            this.created = created;
+        }
 
-		public void setReferential(String referential) {
-			this.referential = referential;
-		}
+        public String getReferential() {
+            return referential;
+        }
 
-		public Format getFormat() {
-			return format;
-		}
+        public void setReferential(String referential) {
+            this.referential = referential;
+        }
 
-		public void setFormat(Format format) {
-			this.format = format;
-		}
+        public Format getFormat() {
+            return format;
+        }
 
-		public String getUrl() {
-			return url;
-		}
+        public void setFormat(Format format) {
+            this.format = format;
+        }
 
-		public void setUrl(String url) {
-			this.url = url;
-		}
+        public String getUrl() {
+            return url;
+        }
 
-		public Long getProviderId() {
-			return providerId;
-		}
+        public void setUrl(String url) {
+            this.url = url;
+        }
 
-		public void setProviderId(Long providerId) {
-			this.providerId = providerId;
-		}
+        public Long getProviderId() {
+            return providerId;
+        }
 
-		public File(String name, Date created, Date updated, Long fileSize) {
-			super();
-			this.name = name;
-			this.created = created;
-			this.updated = updated;
-			this.fileSize = fileSize;
-		}
+        public void setProviderId(Long providerId) {
+            this.providerId = providerId;
+        }
 
-		@JsonProperty(required = true)
-		private String name;
+        public File(String name, Date created, Date updated, Long fileSize) {
+            super();
+            this.name = name;
+            this.created = created;
+            this.updated = updated;
+            this.fileSize = fileSize;
+        }
 
-		@JsonProperty(required = false)
-		private Date created;
+        @JsonProperty(required = true)
+        private String name;
 
-		@JsonProperty(required = false)
-		private Date updated;
+        @JsonProperty(required = false)
+        private Date created;
 
-		@JsonProperty(required = false)
-		private Long fileSize;
+        @JsonProperty(required = false)
+        private Date updated;
 
-		@JsonProperty(required = false)
-		private String referential;
+        @JsonProperty(required = false)
+        private Long fileSize;
 
-		@JsonProperty(required = false)
-		private Long providerId;
+        @JsonProperty(required = false)
+        private String referential;
 
-		@JsonProperty(required = false)
-		private Format format;
+        @JsonProperty(required = false)
+        private Long providerId;
 
-		@JsonProperty(required = false)
-		private String url;
+        @JsonProperty(required = false)
+        private Format format;
 
-		@Override
-		public String toString() {
-			return "File [name=" + name + ", created=" + created + ", updated=" + updated + ", fileSize=" + fileSize + "]";
-		}
+        @JsonProperty(required = false)
+        private String url;
 
-}
+        public String getFileNameOnly() {
+            if (name == null || name.endsWith("/")) {
+                return null;
+            }
+
+            return Paths.get(name).getFileName().toString();
+        }
+
+        @Override
+        public String toString() {
+            return "File [name=" + name + ", created=" + created + ", updated=" + updated + ", fileSize=" + fileSize + "]";
+        }
+
+    }
 }

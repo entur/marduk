@@ -43,6 +43,7 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
         // Skip everything but event reporting
         replaceEndpoint("otp-netex-graph-build", "direct:fetchBuildConfigForOtpNetexGraph", "mock:sink");
         replaceEndpoint("otp-netex-graph-build", "direct:fetchMapForOtpNetexGraph", "mock:sink");
+        replaceEndpoint("otp-netex-graph-build", "direct:fetchAdditionalMapDataForOtpNetexGraph", "mock:sink");
         replaceEndpoint("otp-netex-graph-build", "direct:fetchLatestNetex", "mock:sink");
         replaceEndpoint("otp-netex-graph-build", "direct:mergeNetex", "mock:sink");
         replaceEndpoint("otp-netex-graph-build-and-send-status", "direct:buildNetexGraph", "mock:sink");

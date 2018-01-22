@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
+
 import static no.rutebanken.marduk.Constants.*;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
 
@@ -24,11 +26,12 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.netex.graph.build.directory:files/otpgraph/netex}")
     private String otpGraphBuildDirectory;
 
-    /**
-     * This is the name which the graph file is stored remotely.
-     */
-    @Value("${otp.graph.file.name:norway-latest.osm.pbf}")
-    private String otpGraphFileName;
+
+    @Value("${otp.graph.osm.file.name:norway-latest.osm.pbf}")
+    private String osmNorwayMapFileName;
+
+    @Value("#{'${otp.graph.additional.files.subdirectory.names:osm/static,kartverket/heightData}'.split(',')}")
+    private List<String> additionalFilesSubDirectories;
 
     @Value("${otp.graph.blobstore.subdirectory}")
     private String blobStoreSubdirectory;
@@ -46,6 +49,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.netex.import.file.name:netex_no.zip}")
     private String otpGraphImportFileName;
 
+
     private static final String PROP_MESSAGES = "RutebankenPropMessages";
 
     private static final String HEADER_STATUS = "RutebankenGraphBuildStatus";
@@ -62,6 +66,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
                 .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
+                .to("direct:fetchAdditionalMapDataForOtpNetexGraph")
                 .to("direct:fetchLatestNetex")
                 .to("direct:fetchBuildConfigForOtpNetexGraph")
                 .to("direct:fetchMapForOtpNetexGraph")
@@ -113,14 +118,27 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + BUILD_CONFIG_JSON + " fetched.")
                 .routeId("otp-netex-graph-fetch-config");
 
-        from("direct:fetchMapForOtpNetexGraph")
+        from("direct:fetchNorwayMapForOtpNetexGraph")
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Fetching map ...")
-                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm + "/" + otpGraphFileName))
+                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm + "/" + osmNorwayMapFileName))
                 .to("direct:getBlob")
-                // Should really store to otpGraphFileName, but store to NORWAY_LATEST in fear of side effects later in the build
+                // Should really store to osmNorwayMapFileName, but store to NORWAY_LATEST in fear of side effects later in the build
                 .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + NORWAY_LATEST_OSM_PBF)
-                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + NORWAY_LATEST_OSM_PBF + " fetched (original name: " + otpGraphFileName + ").")
+                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + NORWAY_LATEST_OSM_PBF + " fetched (original name: " + osmNorwayMapFileName + ").")
                 .routeId("otp-netex-graph-fetch-map");
+
+        from("direct:fetchAdditionalMapDataForOtpNetexGraph")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetching additional files for map building from: " + additionalFilesSubDirectories)
+                .setHeader(FILE_PARENT_COLLECTION, constant(additionalFilesSubDirectories))
+                .to("direct:listBlobsInFolders")
+                .split().simple("${body.files}")
+                .setProperty("tmpFileName", simple("${body.fileNameOnly}"))
+                .filter(simple("${body.fileNameOnly}"))
+                .setHeader(FILE_HANDLE, simple("${body.name}"))
+                .to("direct:getBlob")
+                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/${exchangeProperty.tmpFileName}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetched additional map file:${header." + FILE_HANDLE + "}")
+                .routeId("otp-netex-graph-fetch-map-additional");
 
 
         from("direct:buildNetexGraphAndSendStatus")
