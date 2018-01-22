@@ -69,7 +69,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:fetchAdditionalMapDataForOtpNetexGraph")
                 .to("direct:fetchLatestNetex")
                 .to("direct:fetchBuildConfigForOtpNetexGraph")
-                .to("direct:fetchMapForOtpNetexGraph")
+                .to("direct:fetchNorwayMapForOtpNetexGraph")
 
                 .to("direct:buildNetexGraphAndSendStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP graph building route.")
