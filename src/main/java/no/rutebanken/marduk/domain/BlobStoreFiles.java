@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.nio.file.Paths;
@@ -127,6 +128,7 @@ public class BlobStoreFiles {
         @JsonProperty(required = false)
         private String url;
 
+        @JsonIgnore
         public String getFileNameOnly() {
             if (name == null || name.endsWith("/")) {
                 return null;
