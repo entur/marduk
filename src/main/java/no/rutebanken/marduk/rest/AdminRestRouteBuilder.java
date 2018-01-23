@@ -734,9 +734,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .log(LoggingLevel.INFO, "Mapbox update data from tiamat")
+                .log(LoggingLevel.INFO, "Mapbox update with data from tiamat")
                 .removeHeaders("CamelHttp*")
-                .to("direct:uploadTiamatToMapboxAsGeoJson")
+                .to("direct:runMapboxUpdate")
                 .routeId("admin-update-mapbox")
                 .endRest()
 
