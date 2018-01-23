@@ -2,6 +2,7 @@ package no.rutebanken.marduk.routes;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.repository.ProviderRepository;
+import org.apache.camel.ServiceStatus;
 import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
 import org.apache.camel.model.FilterDefinition;
 import org.apache.camel.model.RouteDefinition;
@@ -43,6 +44,19 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
      */
     protected RouteDefinition singletonFrom(String uri) {
         return this.from(uri).group(SINGLETON_ROUTE_DEFINITION_GROUP_NAME);
+    }
+
+
+    /**
+     * Singleton route is only active if it is started and this node is the cluster leader for the route
+     */
+    protected boolean isSingletonRouteActive(String routeId) {
+        return isStarted(routeId) && isLeader(routeId);
+    }
+
+    protected boolean isStarted(String routeId) {
+        ServiceStatus status = getContext().getRouteStatus(routeId);
+        return status != null && status.isStarted();
     }
 
     protected boolean isLeader(String routeId) {

@@ -32,7 +32,7 @@ public class AddressDownloadRouteBuilder extends BaseRouteBuilder {
 
 		singletonFrom("quartz2://marduk/addressDownload?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
 				.autoStartup("{{kartverket.address.download.autoStartup:false}}")
-				.filter(e -> isLeader(e.getFromRouteId()))
+				.filter(e -> isSingletonRouteActive(e.getFromRouteId()))
 				.log(LoggingLevel.INFO, "Quartz triggers address download.")
 				.setBody(constant(KARTVERKET_ADDRESS_DOWNLOAD))
 				.to("direct:geoCoderStart")

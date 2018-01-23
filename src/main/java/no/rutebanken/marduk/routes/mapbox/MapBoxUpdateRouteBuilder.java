@@ -74,7 +74,7 @@ public class MapBoxUpdateRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("quartz2://marduk/mapboxUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{mapbox.update.autoStartup:false}}")
-                .filter(e -> isLeader(e.getFromRouteId()))
+                .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Update mapbox tileset from tiamat export started by cron")
                 .to("direct:uploadTiamatToMapboxAsGeoJson")
                 .routeId("mapbox-update-quartz");

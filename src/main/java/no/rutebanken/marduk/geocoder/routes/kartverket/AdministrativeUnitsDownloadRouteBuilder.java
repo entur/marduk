@@ -38,7 +38,7 @@ public class AdministrativeUnitsDownloadRouteBuilder extends BaseRouteBuilder {
 
 		singletonFrom("quartz2://marduk/administrativeUnitsDownload?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
 				.autoStartup("{{kartverket.administrative.units.download.autoStartup:false}}")
-				.filter(e -> isLeader(e.getFromRouteId()))
+				.filter(e -> isSingletonRouteActive(e.getFromRouteId()))
 				.log(LoggingLevel.INFO, "Quartz triggers download of administrative units.")
 				.setBody(constant(KARTVERKET_ADMINISTRATIVE_UNITS_DOWNLOAD))
 				.to("direct:geoCoderStart")

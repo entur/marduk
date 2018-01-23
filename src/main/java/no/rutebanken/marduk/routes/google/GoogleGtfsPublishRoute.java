@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.geocoder.GeoCoderConstants.KARTVERKET_PLACE_NAMES_DOWNLOAD;
 
 /**
  * Route publishing GTFS export to google
@@ -46,7 +45,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
         singletonFrom("quartz2://marduk/googleExportPublish?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{google.publish.scheduler.autoStartup:true}}")
-                .filter(e -> isLeader(e.getFromRouteId()))
+                .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs export.")
                 .to("activemq:queue:GooglePublishQueue")
                 .routeId("google-publish-quartz");

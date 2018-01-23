@@ -48,7 +48,7 @@ public class ReplicationRouteBuilder extends BaseRouteBuilder {
 
 
         singletonFrom("quartz2://marduk/triggerReplication?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
-                .filter(e -> isLeader(e.getFromRouteId()))
+                .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers replication job.")
                 .to("direct:runReplicationJob")
                 .log(LoggingLevel.INFO, "Quartz processing done.")

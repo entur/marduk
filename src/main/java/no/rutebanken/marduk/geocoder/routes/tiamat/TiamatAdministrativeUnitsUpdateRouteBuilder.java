@@ -1,12 +1,10 @@
 package no.rutebanken.marduk.geocoder.routes.tiamat;
 
 
-import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.geocoder.netex.TopographicPlaceConverter;
 import no.rutebanken.marduk.geocoder.netex.sosi.SosiTopographicPlaceReader;
 import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.geocoder.sosi.SosiElementWrapperFactory;
-import no.rutebanken.marduk.repository.BlobStoreRepository;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -21,8 +19,6 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.MediaType;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 import static no.rutebanken.marduk.geocoder.GeoCoderConstants.*;
 
@@ -62,7 +58,7 @@ public class TiamatAdministrativeUnitsUpdateRouteBuilder extends BaseRouteBuilde
 
         singletonFrom("quartz2://marduk/tiamatAdministrativeUnitsUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{tiamat.administrative.units.update.autoStartup:false}}")
-                .filter(e -> isLeader(e.getFromRouteId()))
+                .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers Tiamat update of administrative units.")
                 .setBody(constant(TIAMAT_ADMINISTRATIVE_UNITS_UPDATE_START))
                 .to("direct:geoCoderStart")

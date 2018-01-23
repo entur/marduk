@@ -33,7 +33,7 @@ public class PlaceNamesDownloadRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("quartz2://marduk/placeNamesDownload?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{kartverket.place.names.download.autoStartup:false}}")
-                .filter(e -> isLeader(e.getFromRouteId()))
+                .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers download of place names.")
                 .setBody(constant(KARTVERKET_PLACE_NAMES_DOWNLOAD))
                 .to("direct:geoCoderStart")

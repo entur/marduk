@@ -53,7 +53,7 @@ public class TiamatPublishExportsRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("quartz2://marduk/tiamatPublishExport?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{tiamat.export.autoStartup:true}}")
-                .filter(e -> isLeader(e.getFromRouteId()))
+                .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers Tiamat exports for publish ")
                 .to("direct:startFullTiamatPublishExport")
                 .routeId("tiamat-publish-export-quartz");
