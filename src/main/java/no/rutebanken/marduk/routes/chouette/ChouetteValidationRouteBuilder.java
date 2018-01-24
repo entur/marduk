@@ -37,14 +37,14 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .autoStartup("{{chouette.validate.level1.autoStartup:true}}")
                 .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers validation of Level1 for all providers in Chouette.")
-                .to("direct:chouetteValidateLevel1ForAllProviders")
+                .inOnly("direct:chouetteValidateLevel1ForAllProviders")
                 .routeId("chouette-validate-level1-quartz");
 
         singletonFrom("quartz2://marduk/chouetteValidateLevel2?cron=" + level2CronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{chouette.validate.level2.autoStartup:false}}")
                 .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers validation of Level2 for all providers in Chouette.")
-                .to("direct:chouetteValidateLevel2ForAllProviders")
+                .inOnly("direct:chouetteValidateLevel2ForAllProviders")
                 .routeId("chouette-validate-level2-quartz");
 
         // Trigger validation level1 for all level1 providers (ie migrateDateToProvider and referential set)
