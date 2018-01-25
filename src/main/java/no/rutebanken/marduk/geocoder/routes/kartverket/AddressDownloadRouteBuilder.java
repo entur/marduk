@@ -35,7 +35,7 @@ public class AddressDownloadRouteBuilder extends BaseRouteBuilder {
 				.filter(e -> isSingletonRouteActive(e.getFromRouteId()))
 				.log(LoggingLevel.INFO, "Quartz triggers address download.")
 				.setBody(constant(KARTVERKET_ADDRESS_DOWNLOAD))
-				.to("direct:geoCoderStart")
+				.inOnly("direct:geoCoderStart")
 				.routeId("address-download-quartz");
 
 		from(KARTVERKET_ADDRESS_DOWNLOAD.getEndpoint())

@@ -47,7 +47,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .autoStartup("{{google.publish.scheduler.autoStartup:true}}")
                 .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs export.")
-                .to("activemq:queue:GooglePublishQueue")
+                .inOnly("activemq:queue:GooglePublishQueue")
                 .routeId("google-publish-quartz");
 
 

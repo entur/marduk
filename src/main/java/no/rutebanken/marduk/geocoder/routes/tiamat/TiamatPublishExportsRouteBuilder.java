@@ -55,7 +55,7 @@ public class TiamatPublishExportsRouteBuilder extends BaseRouteBuilder {
                 .autoStartup("{{tiamat.export.autoStartup:true}}")
                 .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers Tiamat exports for publish ")
-                .to("direct:startFullTiamatPublishExport")
+                .inOnly("direct:startFullTiamatPublishExport")
                 .routeId("tiamat-publish-export-quartz");
 
         from("direct:startFullTiamatPublishExport")

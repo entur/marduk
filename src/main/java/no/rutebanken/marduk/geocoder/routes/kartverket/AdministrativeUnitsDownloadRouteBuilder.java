@@ -41,7 +41,7 @@ public class AdministrativeUnitsDownloadRouteBuilder extends BaseRouteBuilder {
 				.filter(e -> isSingletonRouteActive(e.getFromRouteId()))
 				.log(LoggingLevel.INFO, "Quartz triggers download of administrative units.")
 				.setBody(constant(KARTVERKET_ADMINISTRATIVE_UNITS_DOWNLOAD))
-				.to("direct:geoCoderStart")
+				.inOnly("direct:geoCoderStart")
 				.routeId("admin-units-download-quartz");
 
 		from(KARTVERKET_ADMINISTRATIVE_UNITS_DOWNLOAD.getEndpoint())

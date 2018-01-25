@@ -64,7 +64,7 @@ public class PeliasUpdateRouteBuilder extends BaseRouteBuilder {
                 .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers download of administrative units.")
                 .setBody(constant(PELIAS_UPDATE_START))
-                .to("direct:geoCoderStart")
+                .inOnly("direct:geoCoderStart")
                 .routeId("pelias-update-quartz");
 
         from(PELIAS_UPDATE_START.getEndpoint())

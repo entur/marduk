@@ -37,7 +37,7 @@ public class TiamatGeoCoderExportRouteBuilder extends BaseRouteBuilder {
                 .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers Tiamat export.")
                 .setBody(constant(TIAMAT_EXPORT_START))
-                .to("direct:geoCoderStart")
+                .inOnly("direct:geoCoderStart")
                 .routeId("tiamat-geocoder-export-quartz");
 
         from(TIAMAT_EXPORT_START.getEndpoint())

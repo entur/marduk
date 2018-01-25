@@ -36,7 +36,7 @@ public class PlaceNamesDownloadRouteBuilder extends BaseRouteBuilder {
                 .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers download of place names.")
                 .setBody(constant(KARTVERKET_PLACE_NAMES_DOWNLOAD))
-                .to("direct:geoCoderStart")
+                .inOnly("direct:geoCoderStart")
                 .routeId("place-names-download-quartz");
 
         from(KARTVERKET_PLACE_NAMES_DOWNLOAD.getEndpoint())

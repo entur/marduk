@@ -72,7 +72,7 @@ public class TiamatPlaceOfInterestUpdateRouteBuilder extends BaseRouteBuilder {
                 .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
                 .log(LoggingLevel.INFO, "Quartz triggers Tiamat update of place of interest.")
                 .setBody(constant(TIAMAT_PLACES_OF_INTEREST_UPDATE_START))
-                .to("direct:geoCoderStart")
+                .inOnly("direct:geoCoderStart")
                 .routeId("tiamat-poi-update-quartz");
 
         from(TIAMAT_PLACES_OF_INTEREST_UPDATE_START.getEndpoint())
