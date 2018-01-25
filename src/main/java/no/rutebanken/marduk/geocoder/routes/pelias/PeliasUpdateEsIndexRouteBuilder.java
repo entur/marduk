@@ -52,7 +52,7 @@ public class PeliasUpdateEsIndexRouteBuilder extends BaseRouteBuilder {
     @Value("${pelias.insert.batch.size:10000}")
     private int insertBatchSize;
 
-    @Value("#{'${geocoder.place.type.whitelist:tettsted,tettsteddel,tettbebyggelse,bygdelagBygd,boligfelt,industriområde,bydel,industriområde}'.split(',')}")
+    @Value("#{'${geocoder.place.type.whitelist:tettsted,tettsteddel,tettbebyggelse,bygdelagBygd,grend,boligfelt,industriområde,bydel}'.split(',')}")
     private List<String> placeTypeWhiteList;
 
     @Autowired

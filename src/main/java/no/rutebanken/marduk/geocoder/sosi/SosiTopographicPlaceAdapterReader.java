@@ -15,7 +15,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class SosiTopographicPlaceAdapterReader {
 
@@ -24,6 +26,8 @@ public class SosiTopographicPlaceAdapterReader {
     private static final String AREA_TYPE = "FLATE";
 
     private static final String SVERM_TYPE = "SVERM";
+
+    private static final String POINT_TYPE = "PUNKT";
 
     private InputStream sosiInputStream;
 
@@ -77,7 +81,8 @@ public class SosiTopographicPlaceAdapterReader {
     }
 
     private void collectAdminUnits(SosiElement sosiElement) {
-        if ((sosiElement.getName().equals(SVERM_TYPE) || sosiElement.getName().equals(AREA_TYPE)) && sosiElement.hasSubElements()) {
+
+        if ((sosiElement.getName().equals(SVERM_TYPE) || sosiElement.getName().equals(AREA_TYPE)|| sosiElement.getName().equals(POINT_TYPE)) && sosiElement.hasSubElements()) {
 
             TopographicPlaceAdapter area = wrapperFactory.createWrapper(sosiElement, coordinates);
             if (area != null) {
