@@ -23,7 +23,7 @@ public class MapboxUpdateRouteBuilder extends BaseRouteBuilder {
     @Value("${mapbox.update.job:mapbox-update-pod.yaml}")
     private String mapboxUpdateJobFilename;
 
-    @Value("${mapbox.update.cron.schedule:0+30+6-15/3+*+*+*}")
+    @Value("${mapbox.update.cron.schedule:0+30+7-15/2+?+*+*}")
     private String cronSchedule;
 
     @Override
