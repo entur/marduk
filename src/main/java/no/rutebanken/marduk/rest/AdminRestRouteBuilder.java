@@ -718,16 +718,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:considerToFetchOsmMapOverNorway")
                 .routeId("admin-fetch-osm")
                 .endRest()
-
-                .get("/swagger.json")
-                .apiDocs(false)
-                .bindingMode(RestBindingMode.off)
-                .route()
-                .to(commonApiDocEndpoint)
-                .endRest();
-
-        rest("/mapbox_admin")
-                .post("/update")
+                
+                .post("/mapbox_update")
                 .description("Triggers update of mapbox tileset from tiamat data")
                 .consumes(PLAIN)
                 .produces(PLAIN)
@@ -746,6 +738,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .route()
                 .to(commonApiDocEndpoint)
                 .endRest();
+
 
         rest("/organisation_admin")
                 .post("/administrative_zones/update")
