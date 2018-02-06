@@ -16,12 +16,9 @@
 
 package no.rutebanken.marduk.repository;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import no.rutebanken.marduk.domain.Provider;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,9 +28,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.web.client.ResourceAccessException;
 
 import javax.annotation.PostConstruct;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.ConnectException;
 import java.util.Collection;
 import java.util.Map;

@@ -32,7 +32,5 @@ public class ApplicationAdminRoute extends RouteBuilder {
         from("direct:cleanIdempotentFileStore")
                 .bean(idempotentRepositoryService, "cleanUniqueFileNameAndDigestRepo");
 
-        from("direct:cleanIdempotentDownloadRepo")
-                .bean(idempotentRepositoryService, "cleanIdempotentDownloadRepo");
     }
 }

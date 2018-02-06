@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import org.apache.camel.Exchange;
 
 import java.io.IOException;
@@ -33,7 +32,7 @@ import static no.rutebanken.marduk.Constants.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class JobEvent {
 
-    public enum JobDomain {TIMETABLE, GRAPH, GEOCODER, TIAMAT, TIMETABLE_PUBLISH}
+    public enum JobDomain {TIMETABLE, GRAPH, TIMETABLE_PUBLISH}
 
     public enum TimetableAction {FILE_TRANSFER, FILE_CLASSIFICATION, IMPORT, EXPORT, VALIDATION_LEVEL_1, VALIDATION_LEVEL_2, CLEAN, DATASPACE_TRANSFER, BUILD_GRAPH, EXPORT_NETEX}
 
@@ -114,15 +113,6 @@ public class JobEvent {
             jobDomain(JobDomain.TIMETABLE);
             return this;
         }
-
-        public Builder startGeocoder(GeoCoderTaskType action) {
-            jobEvent = new JobEvent();
-            newCorrelationId();
-            jobDomain(JobDomain.GEOCODER);
-            state(State.STARTED);
-            return action(action.toString());
-        }
-
 
         public Builder action(String action) {
             jobEvent.action = action;

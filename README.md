@@ -53,7 +53,6 @@ logging.level.org.springframework=INFO
 logging.level.no.rutebanken.marduk.routes.otp.GraphPublishRouteBuilder=INFO
 logging.level.no.rutebanken.marduk.routes.file=DEBUG
 providers.api.url=http://baba:11601/services/providers/
-organisations.api.url=http://baba:11601/services/organisations/
 
 nri.ftp.delay=40s
 nri.ftp.folder=rutedata
