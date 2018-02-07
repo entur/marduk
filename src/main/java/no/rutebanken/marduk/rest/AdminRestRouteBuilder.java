@@ -385,22 +385,22 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to(commonApiDocEndpoint)
                 .endRest()
 
-                .post("routing_graph/build/gtfs")
-                .description("Triggers building of the OTP graph using existing gtfs and map data")
+                .post("routing_graph/build_base")
+                .description("Triggers building of the OTP base graph using map data (osm + height)")
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .log(LoggingLevel.INFO, "OTP build graph")
+                .log(LoggingLevel.INFO, "Triggered build of OTP base graph with map data")
                 .removeHeaders("CamelHttp*")
                 .setBody(simple(""))
-                .inOnly("activemq:queue:OtpGtfsGraphQueue")
-                .routeId("admin-build-graph")
+                .inOnly("activemq:queue:OtpBaseGraphBuildQueue")
+                .routeId("admin-build-base-graph")
                 .endRest()
 
                 .post("routing_graph/build")
-                .description("Triggers building of the OTP graph using existing NeTEx and map data")
+                .description("Triggers building of the OTP graph using existing NeTEx and and a pre-prepared base graph with map data")
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
@@ -426,8 +426,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:runOtpTravelSearchQA")
                 .routeId("admin-otp-travelsearch-qa")
                 .endRest();
-
-
 
 
         rest("/timetable_admin/{providerId}")

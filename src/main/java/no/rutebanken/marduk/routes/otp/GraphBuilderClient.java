@@ -23,11 +23,14 @@ import java.io.File;
 
 public class GraphBuilderClient {
 
-    public void buildGraph(File directory) {
+    public void buildGraph(File directory, boolean skipTransit, boolean loadBaseGraph) {
         if (directory == null || !directory.exists() || !directory.isDirectory()) {
             throw new IllegalArgumentException(directory + " is not a directory.");
         }
         CommandLineParameters commandLineParameters = new CommandLineParameters();
+
+        commandLineParameters.skipTransit = skipTransit;
+        commandLineParameters.loadBaseGraph = loadBaseGraph;
         commandLineParameters.build = directory;
         GraphBuilder graphBuilder = GraphBuilder.forDirectory(commandLineParameters, directory);
         graphBuilder.run();

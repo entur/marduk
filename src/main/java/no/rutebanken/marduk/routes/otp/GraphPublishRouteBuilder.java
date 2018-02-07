@@ -54,7 +54,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.build.directory}")
     private String otpGraphBuildDirectory;
 
-    @Value("${otp.graph.blobstore.subdirectory}")
+    @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
 
     @Value("${otp.graph.blobstore.public.report.folder:report}")

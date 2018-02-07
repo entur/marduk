@@ -33,6 +33,7 @@ public class Constants {
     public static final String CURRENT_AGGREGATED_GTFS_FILENAME = "aggregated-gtfs.zip";
     public static final String CURRENT_AGGREGATED_NETEX_FILENAME = "aggregated-netex.zip";
     public static final String GRAPH_OBJ = "Graph.obj";
+    public static final String BASE_GRAPH_OBJ = "baseGraph.obj";
 
     public static final String METADATA_DESCRIPTION = "MetadataDescription";
     public static final String METADATA_FILE = "MetadataFile";

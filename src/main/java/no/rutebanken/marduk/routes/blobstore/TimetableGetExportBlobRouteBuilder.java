@@ -38,7 +38,7 @@ public class TimetableGetExportBlobRouteBuilder extends BaseRouteBuilder {
     private int noOfMonthsToFetchGraphBlobsFor;
 
 
-    @Value("${otp.graph.blobstore.subdirectory}")
+    @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
 
     @Override
