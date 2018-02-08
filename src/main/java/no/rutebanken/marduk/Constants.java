@@ -50,13 +50,7 @@ public class Constants {
     public static final String CHOUETTE_JOB_STATUS_JOB_TYPE = "RutebankenChouetteJobStatusType";
     public static final String CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL = "RutebankenChouetteJobStatusValidationLevel";
 
-    public static final String JOB_URL = "RutebankenJobURL";
-    public static final String JOB_ID = "RutebankenJobId";
-    public static final String JOB_STATUS_ROUTING_DESTINATION = "RutebankenJobStatusRoutingDestination";
     public static final String JOB_ACTION = "RutebankenJobAction";
-
-    public static final String KARTVERKET_DATASETID = "RutebankenKartverketDataSetId";
-    public static final String KARTVERKET_FORMAT = "RutebankenKartverketFormat";
 
     public static final String BLOBSTORE_MAKE_BLOB_PUBLIC = "RutebankenBlobstoreMakeBlobPublic";
 
