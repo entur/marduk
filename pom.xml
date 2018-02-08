@@ -302,21 +302,6 @@
             <artifactId>camel-sql</artifactId>
             <version>${camel-version}</version>
         </dependency>
-        <!-- <dependency>
-                <groupId>com.google.cloud</groupId>
-                <artifactId>google-cloud-storage</artifactId>
-                <version>${google.cloud.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.servlet</groupId>
-                        <artifactId>servlet-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>io.netty</groupId>
-                        <artifactId>netty-codec-http2</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency> -->
 
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -359,13 +344,6 @@
             <artifactId>hibernate-validator</artifactId>
             <version>5.2.3.Final</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.entur</groupId>
-            <artifactId>netex-java-model</artifactId>
-            <version>${netex-java-model.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
@@ -411,13 +389,6 @@
             <version>0.7</version>
         </dependency>
 
-        <dependency>
-            <groupId>crosby.binary</groupId>
-            <artifactId>osmpbf</artifactId>
-            <version>1.3.4</version>
-            <classifier>20150914.191218-1</classifier>
-            <!-- Specifying snapshot -->
-        </dependency>
         <!-- testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

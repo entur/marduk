@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.config;
 
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
-import no.rutebanken.marduk.repository.UniqueDigestPerFileNameIdempotentRepository;
 import org.apache.camel.spi.IdempotentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -34,9 +33,5 @@ public class IdempotentRepositoryConfig {
 		return new FileNameAndDigestIdempotentRepository(datasource, "nameAndDigest");
 	}
 
-	@Bean
-	public IdempotentRepository idempotentDownloadRepository() {
-		return new UniqueDigestPerFileNameIdempotentRepository(datasource, "uniqueDigestForName");
-	}
 
 }

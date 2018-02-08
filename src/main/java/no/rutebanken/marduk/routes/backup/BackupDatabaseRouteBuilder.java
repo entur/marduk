@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.routes.backup;
 
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.geocoder.routes.pelias.babylon.StartFile;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;

@@ -19,7 +19,6 @@ package no.rutebanken.marduk.rest;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
-import no.rutebanken.marduk.geocoder.routes.control.GeoCoderTaskType;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
@@ -42,10 +41,8 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.net.URLDecoder;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -126,44 +123,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 
         String commonApiDocEndpoint = "rest:get:/services/swagger.json?bridgeEndpoint=true";
-
-
-        rest("/geocoder_admin")
-                .post("/idempotentfilter/clean")
-                .description("Clean Idempotent repo for downloads")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-application-clean-idempotent-download-repos")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .to("direct:cleanIdempotentDownloadRepo")
-                .setBody(constant(null))
-                .endRest()
-
-                .post("/build_pipeline")
-                .param().name("task")
-                .type(RestParamType.query)
-                .allowableValues(Arrays.asList(GeoCoderTaskType.values()).stream().map(GeoCoderTaskType::name).collect(Collectors.toList()))
-                .required(Boolean.TRUE)
-                .description("Tasks to be executed")
-                .endParam()
-                .description("Update geocoder tasks")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .route().routeId("admin-geocoder-update")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .validate(header("task").isNotNull())
-                .removeHeaders("CamelHttp*")
-                .process(e -> e.getIn().setBody(geoCoderTaskTypesFromString(e.getIn().getHeader("task", Collection.class))))
-                .inOnly("direct:geoCoderStartBatch")
-                .setBody(constant(null))
-                .endRest()
-
-                .get("/swagger.json")
-                .apiDocs(false)
-                .bindingMode(RestBindingMode.off)
-                .route()
-                .to(commonApiDocEndpoint)
-                .endRest();
 
         rest("/timetable_admin")
                 .post("/idempotentfilter/clean")
@@ -785,52 +744,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to(commonApiDocEndpoint)
                 .endRest();
 
-
-        rest("/organisation_admin")
-                .post("/administrative_zones/update")
-                .description("Update administrative zones in the organisation registry")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ORGANISATION_EDIT)))
-                .removeHeaders("CamelHttp*")
-                .to("direct:updateAdminUnitsInOrgReg")
-                .setBody(simple("done"))
-                .routeId("admin-org-reg-import-admin-zones")
-                .endRest()
-
-                .get("/swagger.json")
-                .apiDocs(false)
-                .bindingMode(RestBindingMode.off)
-                .route()
-                .to(commonApiDocEndpoint)
-                .endRest();
-
-
-        rest("/export")
-                .post("/stop_places")
-                .description("Trigger export from Stop Place Registry (NSR) for all existing configurations")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .removeHeaders("CamelHttp*")
-                .removeHeaders("Authorization")
-                .to("direct:startFullTiamatPublishExport")
-                .setBody(simple("done"))
-                .routeId("admin-tiamat-publish-export-full")
-                .endRest()
-
-                .get("/swagger.json")
-                .apiDocs(false)
-                .bindingMode(RestBindingMode.off)
-                .route()
-                .to(commonApiDocEndpoint)
-                .endRest();
-
-
         from("direct:authorizeRequest")
                 .doTry()
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
@@ -838,10 +751,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-authorize-request");
 
 
-    }
-
-    private Set<GeoCoderTaskType> geoCoderTaskTypesFromString(Collection<String> typeStrings) {
-        return typeStrings.stream().map(s -> GeoCoderTaskType.valueOf(s)).collect(Collectors.toSet());
     }
 
     public static class ImportFilesSplitter {

@@ -14,10 +14,23 @@
  *
  */
 
-package no.rutebanken.marduk.geocoder.routes.pelias.kartverket;
+package no.rutebanken.marduk.routes.backup;
 
-import org.beanio.annotation.Record;
-// Necessary for handling header line i kartverket CSV files.
-@Record(minOccurs = 1, maxOccurs = 1)
-public class KartverketHeader {
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class StartFile {
+	public String name;
+
+	public StartFile(String name) {
+		this.name = name;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
 }
