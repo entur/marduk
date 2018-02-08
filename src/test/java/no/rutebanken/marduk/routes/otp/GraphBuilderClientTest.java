@@ -28,7 +28,7 @@ public class GraphBuilderClientTest {
 
     @Test
     public void buildGraphWithNullDirectory() {
-        assertThatThrownBy(() -> new GraphBuilderClient().buildGraph(null))
+        assertThatThrownBy(() -> new GraphBuilderClient().buildGraph(null,false, false))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("null is not a directory.")
                 .hasNoCause();
@@ -36,7 +36,7 @@ public class GraphBuilderClientTest {
 
     @Test
     public void buildGraphWithNonexistingDirectory() {
-        assertThatThrownBy(() -> new GraphBuilderClient().buildGraph(new File("bogus")) )
+        assertThatThrownBy(() -> new GraphBuilderClient().buildGraph(new File("bogus"),false, false) )
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("bogus is not a directory.")
                 .hasNoCause();
@@ -45,7 +45,7 @@ public class GraphBuilderClientTest {
     @Test
     public void buildGraphWithFile() throws IOException {
         File temp = File.createTempFile("bogus", "tmp", new File("/tmp"));
-        assertThatThrownBy(() -> new GraphBuilderClient().buildGraph(temp) )
+        assertThatThrownBy(() -> new GraphBuilderClient().buildGraph(temp, false, false) )
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageEndingWith(" is not a directory.")
                 .hasNoCause();
@@ -57,7 +57,7 @@ public class GraphBuilderClientTest {
         File graphObjectFile = new File(directory, "Graph.obj");
         deleteIfExists(graphObjectFile);
         assertThat(graphObjectFile).doesNotExist();
-        new GraphBuilderClient().buildGraph(directory);
+        new GraphBuilderClient().buildGraph(directory,false, false);
         assertThat(new File(directory, "Graph.obj")).exists().isFile();
     }
 

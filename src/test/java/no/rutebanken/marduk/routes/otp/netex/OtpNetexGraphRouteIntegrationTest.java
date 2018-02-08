@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = OtpNetexGraphRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
-    @Value("${otp.graph.blobstore.subdirectory}")
+    @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
 
     @EndpointInject(uri = "mock:sink")
@@ -58,8 +58,7 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
 
         // Skip everything but event reporting
         replaceEndpoint("otp-netex-graph-build", "direct:fetchBuildConfigForOtpNetexGraph", "mock:sink");
-        replaceEndpoint("otp-netex-graph-build", "direct:fetchNorwayMapForOtpNetexGraph", "mock:sink");
-        replaceEndpoint("otp-netex-graph-build", "direct:fetchAdditionalMapDataForOtpNetexGraph", "mock:sink");
+        replaceEndpoint("otp-netex-graph-build", "direct:fetchBaseGraph", "mock:sink");
         replaceEndpoint("otp-netex-graph-build", "direct:fetchLatestNetex", "mock:sink");
         replaceEndpoint("otp-netex-graph-build", "direct:mergeNetex", "mock:sink");
         replaceEndpoint("otp-netex-graph-build-and-send-status", "direct:buildNetexGraph", "mock:sink");
