@@ -14,15 +14,13 @@
  *
  */
 
-package no.rutebanken.marduk.routes.google;
+package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.domain.ChouetteInfo;
-import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,24 +30,25 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.Arrays;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = GoogleGtfsExportRoute.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
-public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = GtfsBasicMergedExportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+public class GtfsBasicExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
-    @Produce(uri = "direct:exportGtfsGoogle")
+    @Produce(uri = "direct:exportGtfsBasicMerged")
     protected ProducerTemplate startRoute;
 
 
-    @Value("${google.export.file.name:google/google_norway-aggregated-gtfs.zip}")
-    private String googleExportFileName;
+    @Value("${gtfs.basic.norway.merged.file.name:rb_norway-aggregated-gtfs-basic.zip}")
+    private String exportFileName;
 
 
     @Before
@@ -59,19 +58,23 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
 
 
     @Test
-    public void testUploadGtfsToGoogle() throws Exception {
+    public void testUploadBasicGtfsMergedFile() throws Exception {
         context.start();
 
         String pathname = "src/test/resources/no/rutebanken/marduk/routes/gtfs/extended_gtfs.zip";
 
         //populate fake blob repo
         inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(new File(pathname)), false);
+        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_avi-aggregated-gtfs.zip", new FileInputStream(new File(pathname)), false);
 
         startRoute.requestBody(null);
 
+        InputStream mergedIS = inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + exportFileName);
+        Assert.assertNotNull("Expected transformed gtfs file to have been uploaded", mergedIS);
 
-        Assert.assertNotNull("Expected transformed gtfs file to have been uploaded", inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName));
+        File mergedFile = File.createTempFile("mergedID", "tmp");
+        FileUtils.copyInputStreamToFile(mergedIS, mergedFile);
+        GtfsTransformationServiceTest.assertRouteRouteTypesAreConvertedToBasicGtfsValues(mergedFile);
     }
-
 
 }

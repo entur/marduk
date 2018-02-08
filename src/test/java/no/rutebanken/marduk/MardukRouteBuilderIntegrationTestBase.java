@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk;
 
+import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
@@ -68,5 +69,14 @@ public class MardukRouteBuilderIntegrationTestBase {
         });
     }
 
+    protected Provider provider(String ref, long id, Long migrateToProvider) throws Exception {
+        Provider provider = new Provider();
+        provider.chouetteInfo = new ChouetteInfo();
+        provider.chouetteInfo.referential = ref;
+        provider.chouetteInfo.migrateDataToProvider = migrateToProvider;
+        provider.id = id;
+
+        return provider;
+    }
 
 }

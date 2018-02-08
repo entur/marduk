@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.gtfs;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.GtfsFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -24,63 +25,54 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.*;
+import static org.apache.camel.Exchange.FILE_PARENT;
 
 /**
- * Route combining gtfs exports from all providers.
+ * Common routes for building GTFS exports.
  */
 @Component
-public class GtfsExportMergedRouteBuilder  extends BaseRouteBuilder {
+public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
 
     @Value("${gtfs.export.download.directory:files/gtfs/merged}")
     private String localWorkingDirectory;
 
-    @Value("${gtfs.norway.merged.file.name:rb_norway-aggregated-gtfs.zip}")
-    private String gtfsNorwayMergedFileName;
-
     @Override
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("activemq:queue:GtfsExportMergedQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{gtfs.export.autoStartup:true}}")
-                .transacted()
-                .to("direct:exportMergedGtfs")
-                .setBody(constant(null))
-                .inOnly("activemq:queue:GoogleExportQueue")
-                .routeId("gtfs-export-merged-jms-route");
-
         from("direct:exportMergedGtfs")
-                .log(LoggingLevel.INFO, getClass().getName(), "Start export of merged GTFS file for Norway")
+                .log(LoggingLevel.INFO, getClass().getName(), "Start export of merged GTFS file: ${header." + FILE_NAME + "}")
 
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action("EXPORT_GTFS_MERGED").fileName(gtfsNorwayMergedFileName).state(JobEvent.State.STARTED).newCorrelationId().build())
-                .to("direct:updateStatus")
-
-                .setHeader(Exchange.FILE_PARENT, constant(localWorkingDirectory))
-                .to("direct:cleanUpLocalDirectory")
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action(e.getIn().getHeader(JOB_ACTION, String.class)).state(JobEvent.State.STARTED).newCorrelationId().build())
+                .inOnly("direct:updateStatus")
+                .setHeader(FILE_PARENT, simple(localWorkingDirectory + "/${header." + JOB_ACTION + "}/${date:now:yyyyMMddHHmmss}"))
 
                 .to("direct:fetchLatestGtfs")
                 .to("direct:mergeGtfs")
+                .to("direct:transformGtfs")
                 .to("direct:uploadMergedGtfs")
-
                 .to("direct:cleanUpLocalDirectory")
                 // Use wire tap to avoid replacing body
                 .wireTap("direct:reportExportMergedGtfsOK")
 
-                .log(LoggingLevel.INFO, getClass().getName(), "Completed export of merged GTFS file for Norway")
+                .log(LoggingLevel.INFO, getClass().getName(), "Completed export of merged GTFS file: ${header." + FILE_NAME + "}")
                 .routeId("gtfs-export-merged-route");
 
 
         from("direct:reportExportMergedGtfsOK")
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build())
-                .to("direct:updateStatus")
+                .inOnly("direct:updateStatus")
                 .routeId("gtfs-export-merged-report-ok");
 
         from("direct:fetchLatestGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs files for all providers.")
-                .setBody(simple(getAggregatedGtfsFiles()))
+                .process(e -> e.getIn().setBody(getAggregatedGtfsFiles(getProviderBlackList(e))))
                 .split(body())
                 .to("direct:getGtfsFiles")
                 .routeId("gtfs-export-fetch-latest");
@@ -92,36 +84,49 @@ public class GtfsExportMergedRouteBuilder  extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .toD("file:" + localWorkingDirectory + "?fileName=${property." + TIMESTAMP + "}/org/${property.fileName}")
+                .toD("file:${header." + FILE_PARENT + "}/org?fileName=${property.fileName}")
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${property.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("gtfs-export-get-latest-for-provider");
 
         from("direct:mergeGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Merging gtfs files for all providers.")
-                .setBody(simple(localWorkingDirectory + "/${property." + TIMESTAMP + "}/org"))
+                .setBody(simple("${header." + FILE_PARENT + "}/org"))
                 .bean(method(GtfsFileUtils.class, "mergeGtfsFilesInDirectory"))
-                .toD("file:" + localWorkingDirectory + "?fileName=${property." + TIMESTAMP + "}/org/merged.zip")
+                .toD("file:${header." + FILE_PARENT + "}?fileName=merged.zip")
 
                 .routeId("gtfs-export-merge");
 
+        from("direct:transformGtfs")
+                .choice().when(simple("${exchangeProperty." + Constants.TRANSFORMATION_ROUTING_DESTINATION + "} != null"))
+                .toD("${exchangeProperty." + Constants.TRANSFORMATION_ROUTING_DESTINATION + "}")
+                .routeId("gtfs-export-merged-transform");
+
         from("direct:uploadMergedGtfs")
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + gtfsNorwayMergedFileName))
+                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + FILE_NAME + "}"))
                 .to("direct:uploadBlob")
-                .log(LoggingLevel.INFO, getClass().getName(), "Uploaded new combined Gtfs for Norway, triggering async export to Google")
+                .log(LoggingLevel.INFO, getClass().getName(), "Uploaded new merged GTFS file: ${header." + FILE_NAME + "}")
                 .routeId("gtfs-export-upload-merged");
 
 
     }
 
-    String getAggregatedGtfsFiles() {
+    String getAggregatedGtfsFiles(List<String> providerBlackList) {
         return getProviderRepository().getProviders().stream()
                        .filter(p -> p.chouetteInfo.migrateDataToProvider == null)
+                       .filter(p -> providerBlackList.stream().noneMatch(blacklisted -> blacklisted.equalsIgnoreCase(p.chouetteInfo.referential)))
                        .map(p -> p.chouetteInfo.referential + "-" + CURRENT_AGGREGATED_GTFS_FILENAME)
                        .collect(Collectors.joining(","));
     }
 
+    private List<String> getProviderBlackList(Exchange e) {
+        List<String> providerBlackList = e.getProperty(PROVIDER_BLACK_LIST, List.class);
+        if (providerBlackList == null) {
+            providerBlackList = new ArrayList<>();
+        }
+        return providerBlackList;
+    }
 
 
 }

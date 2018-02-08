@@ -52,7 +52,8 @@ public class Constants {
 
     public static final String JOB_URL = "RutebankenJobURL";
     public static final String JOB_ID = "RutebankenJobId";
-    public static final String JOB_STATUS_ROUTING_DESTINATION = "RutebankenobStatusRoutingDestination";
+    public static final String JOB_STATUS_ROUTING_DESTINATION = "RutebankenJobStatusRoutingDestination";
+    public static final String JOB_ACTION = "RutebankenJobAction";
 
     public static final String KARTVERKET_DATASETID = "RutebankenKartverketDataSetId";
     public static final String KARTVERKET_FORMAT = "RutebankenKartverketFormat";
@@ -75,5 +76,8 @@ public class Constants {
 
     public static final String ET_CLIENT_NAME_HEADER = "ET-Client-Name";
     public static final String ET_CLIENT_ID_HEADER = "ET-Client-ID";
+
+    public static final String PROVIDER_BLACK_LIST = "RutebankenProviderBlackList";
+    public static final String TRANSFORMATION_ROUTING_DESTINATION = "RutebankenTransformationRoutingDestination";
 }
 
