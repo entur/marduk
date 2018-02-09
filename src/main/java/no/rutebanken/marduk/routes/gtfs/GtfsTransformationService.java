@@ -156,7 +156,7 @@ public class GtfsTransformationService {
         }
 
         private int convertRouteType(int extendedType) {
-            if (extendedType >=1 && extendedType<=7){
+            if (extendedType >= 1 && extendedType <= 7) {
                 return extendedType; // Is actually basic type
             }
             if (extendedType >= 100 && extendedType < 200) { // Railway Service
@@ -177,22 +177,15 @@ public class GtfsTransformationService {
                 return BasicRouteTypeCode.TRAM.getCode();
             } else if (extendedType >= 1000 && extendedType < 1100) {
                 return BasicRouteTypeCode.FERRY.getCode();
-            }  else if (extendedType >= 1200 && extendedType < 1300) {
+            } else if (extendedType >= 1200 && extendedType < 1300) {
                 return BasicRouteTypeCode.FERRY.getCode();
             } else if (extendedType >= 1300 && extendedType < 1400) {
                 return BasicRouteTypeCode.GONDOLA.getCode();
             } else if (extendedType >= 1400 && extendedType < 1500) {
                 return BasicRouteTypeCode.FUNICULAR.getCode();
-            } else if (extendedType >= 1500 && extendedType < 1600) {
-             // TODO   throw new IllegalArgumentException("Taxi service not supported" + extendedType);
-            } else if (extendedType >= 1600 && extendedType < 1700) {
-                //TODO        return BasicRouteTypeCode.CAR;
-            }
-            else if (extendedType >= 1100 && extendedType < 1200) {
-                //TODO      return BasicRouteTypeCode.AIRPLANE;
             }
 
-            // TODO how to handle types without mapping? airplane, taxi, car??
+            logger.warn("Attempted to map unsupported extend route type to basic GTFS route type: {}. Using BUS as default. " , extendedType);
             return BasicRouteTypeCode.BUS.getCode();
         }
 

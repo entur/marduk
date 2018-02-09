@@ -22,6 +22,11 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import static org.apache.camel.Exchange.FILE_PARENT;
 
 /**
@@ -34,9 +39,11 @@ import static org.apache.camel.Exchange.FILE_PARENT;
 @Component
 public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
 
-    @Value("${gtfs.basic.norway.merged.file.name:rb_norway-aggregated-gtfs-basic.zip}")
+    @Value("${gtfs.basic.export.merged.file.name:rb_norway-aggregated-gtfs-basic.zip}")
     private String gtfsBasicMergedFileName;
 
+    @Value("#{'${gtfs.basic.export.agency.prefix.blacklist:AVI}'.split(',')}")
+    private Set<String> agencyBlackList;
 
     @Override
     public void configure() throws Exception {
@@ -51,6 +58,7 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
         from("direct:exportGtfsBasicMerged")
                 .setBody(constant(null))
                 .setProperty(Constants.TRANSFORMATION_ROUTING_DESTINATION, constant("direct:transformToBasicGTFS"))
+                .setProperty(Constants.PROVIDER_BLACK_LIST, constant(createProviderBlackList()))
                 .setHeader(Constants.FILE_NAME, constant(gtfsBasicMergedFileName))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GTFS_BASIC_MERGED"))
                 .to("direct:exportMergedGtfs")
@@ -62,6 +70,19 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .bean("gtfsTransformationService", "transformToBasicGTFSFormat")
                 .routeId("gtfs-basic-export-transform-gtfs");
 
+    }
+
+
+
+    /**
+     * Make sure blacklisted agencies start with "rb_" prefix.
+     */
+    private List<String> createProviderBlackList() {
+        if (agencyBlackList == null) {
+            return new ArrayList<>();
+        }
+
+        return agencyBlackList.stream().map(agency -> agency.startsWith("rb_") ? agency : "rb_" + agency).collect(Collectors.toList());
     }
 
 }
