@@ -156,7 +156,7 @@ public class GtfsTransformationService {
         }
 
         private int convertRouteType(int extendedType) {
-            if (extendedType >= 1 && extendedType <= 7) {
+            if (extendedType >= 0 && extendedType <= 7) {
                 return extendedType; // Is actually basic type
             }
             if (extendedType >= 100 && extendedType < 200) { // Railway Service
