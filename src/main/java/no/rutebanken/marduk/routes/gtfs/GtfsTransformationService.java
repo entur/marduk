@@ -156,6 +156,9 @@ public class GtfsTransformationService {
         }
 
         private int convertRouteType(int extendedType) {
+            if (extendedType < 0) {
+                return extendedType; // Probably not set
+            }
             if (extendedType >= 0 && extendedType <= 7) {
                 return extendedType; // Is actually basic type
             }
@@ -185,7 +188,7 @@ public class GtfsTransformationService {
                 return BasicRouteTypeCode.FUNICULAR.getCode();
             }
 
-            logger.warn("Attempted to map unsupported extend route type to basic GTFS route type: {}. Using BUS as default. " , extendedType);
+            logger.warn("Attempted to map unsupported extend route type to basic GTFS route type: {}. Using BUS as default. ", extendedType);
             return BasicRouteTypeCode.BUS.getCode();
         }
 
