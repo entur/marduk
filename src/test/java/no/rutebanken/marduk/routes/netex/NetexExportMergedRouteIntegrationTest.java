@@ -38,7 +38,7 @@ public class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderInt
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
-    @Produce(uri = "activemq:queue:NetexExportMergedQueue")
+    @Produce(uri = "direct:exportMergedNetex")
     protected ProducerTemplate startRoute;
 
     @Value("${netex.export.download.directory:files/netex/merged}")
@@ -60,9 +60,7 @@ public class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderInt
         inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-aggregated-netex.zip", new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip")), false);
 
 
-        startRoute.request("activemq:queue:NetexExportMergedQueue", ex -> {
-        });
-
+        startRoute.requestBody(null);
 
         Assert.assertNotNull("Expected merged netex file to have been uploaded", inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath));
     }

@@ -64,7 +64,7 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
 
                 .setProperty(FOLDER_NAME, simple(localWorkingDirectory + "/${date:now:yyyyMMddHHmmss}"))
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action("EXPORT_NETEX_MERGED").fileName(netexExportStopsFilePrefix).state(JobEvent.State.STARTED).newCorrelationId().build())
-                .to("direct:updateStatus")
+                .inOnly("direct:updateStatus")
 
                 .setHeader(Exchange.FILE_PARENT, simple("${exchangeProperty."+FOLDER_NAME+"}"))
                 .to("direct:cleanUpLocalDirectory")
@@ -83,7 +83,7 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
 
         from("direct:reportExportMergedNetexOK")
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build())
-                .to("direct:updateStatus")
+                .inOnly("direct:updateStatus")
                 .routeId("netex-export-merged-report-ok");
 
         from("direct:fetchLatestProviderNetexExports")
