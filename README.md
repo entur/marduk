@@ -20,6 +20,9 @@ marduk.shutdown.timeout=1
 blobstore.gcs.container.name=marduk-test
 blobstore.gcs.credential.path=/home/tomgag/.ssh/Carbon-ef49cabc6d04.json
 blobstore.gcs.project.id=carbon-1287
+blobstore.gcs.exchange.container.name=marduk-test-exchange
+blobstore.gcs.exchange.credential.path=/home/tomgag/.ssh/Carbon-ef49cabc6d04.json
+blobstore.delete.external.blobs=false
 
 camel.springboot.name=Marduk
 chouette.export.days.back=365
