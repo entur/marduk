@@ -52,7 +52,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
         singletonFrom("quartz2://marduk/chouetteValidateLevel1?cron=" + level1CronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{chouette.validate.level1.autoStartup:true}}")
                 .transacted()
-                .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
+                .filter(e -> isSingletonRouteActive(e.getFromRouteId()) && isScheduledQuartzFiring(e))
                 .log(LoggingLevel.INFO, "Quartz triggers validation of Level1 for all providers in Chouette.")
                 .inOnly("direct:chouetteValidateLevel1ForAllProviders")
                 .routeId("chouette-validate-level1-quartz");
@@ -127,7 +127,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 
         from("direct:assertHeadersForChouetteValidation")
                 .choice()
-                .when(simple("${header."+CHOUETTE_REFERENTIAL+"} == null or ${header."+PROVIDER_ID+"} == null "))
+                .when(simple("${header." + CHOUETTE_REFERENTIAL + "} == null or ${header." + PROVIDER_ID + "} == null "))
                 .log(LoggingLevel.WARN, correlation() + "Unable to start Chouette validation for missing referential or providerId")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.class)).state(State.FAILED).build())
                 .to("direct:updateStatus")
@@ -171,7 +171,6 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .routeId("chouette-process-job-list-after-validation");
 
     }
-
 
 }
 

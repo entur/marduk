@@ -18,15 +18,17 @@ package no.rutebanken.marduk.routes;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.repository.ProviderRepository;
+import org.apache.camel.Exchange;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
-import org.apache.camel.model.FilterDefinition;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.RouteContext;
 import org.apache.camel.spi.RoutePolicy;
 import org.apache.camel.spring.SpringRouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.util.Date;
 import java.util.List;
 
 import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NAME;
@@ -39,6 +41,9 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
 
     @Autowired
     private ProviderRepository providerRepository;
+
+    @Value("${quartz.lenient.fire.time.s:60000}")
+    private int lenientFireTimeMs;
 
     @Override
     public void configure() throws Exception {
@@ -68,6 +73,20 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
      */
     protected boolean isSingletonRouteActive(String routeId) {
         return isStarted(routeId) && isLeader(routeId);
+    }
+
+    protected boolean isScheduledQuartzFiring(Exchange exchange) {
+        Date scheduledFireTime = exchange.getIn().getHeader("scheduledFireTime", Date.class);
+        Date fireTime = exchange.getIn().getHeader("fireTime", Date.class);
+        if (fireTime == null || scheduledFireTime == null) {
+            return false;
+        }
+
+        boolean isScheduledFiring = Math.abs(fireTime.getTime() - scheduledFireTime.getTime()) < lenientFireTimeMs;
+        if (isScheduledFiring) {
+            log.warn("Ignoring quartz trigger as fireTime ({}) is too far removed from scheduledFireTime ({})", fireTime, scheduledFireTime);
+        }
+        return isScheduledFiring;
     }
 
     protected boolean isStarted(String routeId) {
