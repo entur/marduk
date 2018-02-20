@@ -83,7 +83,7 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
         }
 
         boolean isScheduledFiring = Math.abs(fireTime.getTime() - scheduledFireTime.getTime()) < lenientFireTimeMs;
-        if (isScheduledFiring) {
+        if (!isScheduledFiring) {
             log.warn("Ignoring quartz trigger as fireTime ({}) is too far removed from scheduledFireTime ({})", fireTime, scheduledFireTime);
         }
         return isScheduledFiring;
