@@ -31,6 +31,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
+import org.apache.camel.util.ServiceHelper;
 import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,6 +124,22 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 
         String commonApiDocEndpoint = "rest:get:/services/swagger.json?bridgeEndpoint=true";
+
+        rest("/todo")
+                .post("/pause")
+
+                .route()
+                .process(e -> ServiceHelper.suspendService(e.getContext().getRoute("osm-trigger-fetching")))
+                .process(e -> ServiceHelper.suspendService(e.getContext().getRoute("osm-trigger-fetching").getConsumer()))
+                .process(e -> ServiceHelper.suspendService(e.getContext().getRoute("osm-trigger-fetching").getEndpoint()))
+                .endRest()
+                .post("/resume")
+
+                .route()
+                .process(e ->ServiceHelper.resumeService(e.getContext().getRoute("osm-trigger-fetching").getEndpoint()))
+                .process(e ->ServiceHelper.resumeService(e.getContext().getRoute("osm-trigger-fetching").getConsumer()))
+                .process(e ->ServiceHelper.resumeService(e.getContext().getRoute("osm-trigger-fetching")))
+                .endRest();
 
         rest("/timetable_admin")
                 .post("/idempotentfilter/clean")

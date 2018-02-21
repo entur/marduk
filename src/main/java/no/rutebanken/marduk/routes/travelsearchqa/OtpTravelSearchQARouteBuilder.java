@@ -64,7 +64,7 @@ public class OtpTravelSearchQARouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("quartz2://marduk/triggerOtpTravelSearchQA?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{otp.travelsearch.qa.autoStartup:true}}")
-                .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
+                .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers otp travel search.")
                 .to("direct:runOtpTravelSearchQA")
                 .log(LoggingLevel.INFO, "Quartz processing otp travel search done.")

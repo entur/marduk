@@ -61,7 +61,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
         singletonFrom("quartz2://marduk/googleExportPublish?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{google.publish.scheduler.autoStartup:true}}")
-                .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
+                .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs export.")
                 .inOnly("activemq:queue:GooglePublishQueue")
                 .routeId("google-publish-quartz");

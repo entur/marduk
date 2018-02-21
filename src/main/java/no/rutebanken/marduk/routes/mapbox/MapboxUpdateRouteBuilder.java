@@ -62,7 +62,7 @@ public class MapboxUpdateRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("quartz2://marduk/triggerMapboxUpdate?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{mapbox.update.autoStartup:true}}")
-                .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
+                .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers " + mapboxUpdateJobFilename)
                 .to("direct:runMapboxUpdate")
                 .log(LoggingLevel.INFO, "Quartz processing " + mapboxUpdateJobFilename + " done.")

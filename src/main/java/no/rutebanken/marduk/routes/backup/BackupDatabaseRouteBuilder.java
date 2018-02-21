@@ -62,7 +62,7 @@ public class BackupDatabaseRouteBuilder extends BaseRouteBuilder {
 
 
         singletonFrom("quartz2://marduk/triggerDatabaseBackup?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
-                .filter(e -> isSingletonRouteActive(e.getFromRouteId()))
+                .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers database backup.")
                 .to("direct:runDatabaseBackup")
                 .log(LoggingLevel.INFO, "Quartz processing done.")

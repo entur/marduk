@@ -25,9 +25,12 @@ import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.RouteContext;
 import org.apache.camel.spi.RoutePolicy;
 import org.apache.camel.spring.SpringRouteBuilder;
+import org.apache.commons.lang3.time.DateUtils;
+import org.quartz.CronExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 
@@ -42,7 +45,7 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
     @Autowired
     private ProviderRepository providerRepository;
 
-    @Value("${quartz.lenient.fire.time.s:60000}")
+    @Value("${quartz.lenient.fire.time.ms:180000}")
     private int lenientFireTimeMs;
 
     @Override
@@ -69,22 +72,28 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
 
 
     /**
-     * Singleton route is only active if it is started and this node is the cluster leader for the route
+     * Quartz should only trigger if singleton route is started, this node is the cluster leader for the route and fireTime is (almost) same as scheduledFireTime.
+     * <p>
+     * To avoid multiple firings in cluster and re-firing as route is resumed upon change of leadership.
      */
-    protected boolean isSingletonRouteActive(String routeId) {
-        return isStarted(routeId) && isLeader(routeId);
+    protected boolean shouldQuartzRouteTrigger(Exchange e, String cron) {
+        CronExpression cronExpression;
+        String cleanCron = cron.replace("+", " ");
+        try {
+            cronExpression = new CronExpression(cleanCron);
+        } catch (ParseException pe) {
+            throw new RuntimeException("Invalid cron: " + cleanCron, pe);
+        }
+        return isStarted(e.getFromRouteId()) && isLeader(e.getFromRouteId()) && isScheduledQuartzFiring(e, cronExpression);
     }
 
-    protected boolean isScheduledQuartzFiring(Exchange exchange) {
-        Date scheduledFireTime = exchange.getIn().getHeader("scheduledFireTime", Date.class);
-        Date fireTime = exchange.getIn().getHeader("fireTime", Date.class);
-        if (fireTime == null || scheduledFireTime == null) {
-            return false;
-        }
+    private boolean isScheduledQuartzFiring(Exchange exchange, CronExpression cron) {
+        Date now = new Date();
+        Date scheduledFireTime = cron.getNextValidTimeAfter(DateUtils.addMilliseconds(now, -lenientFireTimeMs));
+        boolean isScheduledFiring = scheduledFireTime.before(now);
 
-        boolean isScheduledFiring = Math.abs(fireTime.getTime() - scheduledFireTime.getTime()) < lenientFireTimeMs;
         if (!isScheduledFiring) {
-            log.warn("Ignoring quartz trigger as fireTime ({}) is too far removed from scheduledFireTime ({})", fireTime, scheduledFireTime);
+            log.warn("Ignoring quartz trigger for route:{} as this is probably not a match for cron expression: {}", exchange.getFromRouteId(), cron.getCronExpression());
         }
         return isScheduledFiring;
     }
