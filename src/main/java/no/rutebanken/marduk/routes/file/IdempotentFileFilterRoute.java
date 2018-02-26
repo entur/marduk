@@ -50,8 +50,9 @@ public class IdempotentFileFilterRoute extends BaseRouteBuilder {
                 // Need to set removeOnFailure=false and clean up ourselves if exchange fails. IdempotentConsumer impl removes key even if not added during failed exchange (because it already existed, ie is a duplicate).
                 // We will only remove the key on failure if not a duplicate.
                 .onWhen(and(exchangeProperty(Exchange.DUPLICATE_MESSAGE).isNotEqualTo(true), header(HEADER_FILE_NAME_AND_DIGEST).isNotNull()))
-                .process(e -> fileNameAndDigestIdempotentRepository.remove(e.getIn().getHeader(HEADER_FILE_NAME_AND_DIGEST).toString()))
-                .log(LoggingLevel.INFO, "Removed from repository as exchange failed: ${exchangeId} with id: ${header." + HEADER_FILE_NAME_AND_DIGEST + "}")
+                    .choice().when(e -> fileNameAndDigestIdempotentRepository.remove(e.getIn().getHeader(HEADER_FILE_NAME_AND_DIGEST).toString()))
+                        .log(LoggingLevel.INFO, "Removed from repository as exchange failed: ${exchangeId} with id: ${header." + HEADER_FILE_NAME_AND_DIGEST + "}")
+                    .end()
                 .end()
                 .choice()
                 .when(simple("{{idempotent.skip:false}}"))
