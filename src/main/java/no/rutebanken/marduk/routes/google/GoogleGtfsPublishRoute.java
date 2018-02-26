@@ -26,7 +26,9 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 
 /**
- * Route publishing GTFS export to google
+ * Route publishing GTFS exports to google.
+ *
+ * Supports regular production export in addition to a separate dataset for testing / QA / onboarding new providers.
  */
 @Component
 public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
@@ -37,7 +39,8 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
     @Value("${google.publish.cron.schedule:0+0+4+?+*+*}")
     private String cronSchedule;
 
-    @Value("${google.export.file.name:google_norway-aggregated-gtfs.zip}")
+
+    @Value("${google.export.file.name:google/google_norway-aggregated-gtfs.zip}")
     private String googleExportFileName;
 
 
@@ -55,6 +58,24 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
     @Value("${google.publish.sftp.password}")
     private String googleSftpPassword;
 
+    // Config for QA / test dataset
+    /**
+     * Every morning at 4:30 AM.
+     */
+    @Value("${google.publish.qa.cron.schedule:0+30+4+?+*+*}")
+    private String qaCronSchedule;
+
+
+    @Value("${google.export.qa.file.name:google/google_norway-aggregated-qa-gtfs.zip}")
+    private String googleQaExportFileName;
+
+
+    @Value("${google.publish.qa.sftp.username:NA}")
+    private String googleQaSftpUsername;
+
+    @Value("${google.publish.qa.sftp.password:NA}")
+    private String googleQAaSftpPassword;
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -64,7 +85,15 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs export.")
                 .inOnly("activemq:queue:GooglePublishQueue")
-                .routeId("google-publish-quartz");
+                .routeId("google-publish--quartz");
+
+
+        singletonFrom("quartz2://marduk/googleQaExportPublish?cron=" + qaCronSchedule + "&trigger.timeZone=Europe/Oslo")
+                .autoStartup("{{google.publish.qa.scheduler.autoStartup:true}}")
+                .filter(e -> shouldQuartzRouteTrigger(e, qaCronSchedule))
+                .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs QA export.")
+                .inOnly("activemq:queue:GooglePublishQaQueue")
+                .routeId("google-publish-qa-quartz");
 
 
         singletonFrom("activemq:queue:GooglePublishQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{google.publish.autoStartup:true}}")
@@ -72,13 +101,27 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
                 .log(LoggingLevel.INFO, getClass().getName(), "Start publish of GTFS file to Google")
 
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/google/" + googleExportFileName))
+                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName))
                 .to("direct:getBlob")
                 .setHeader(Exchange.FILE_NAME, constant(googleExportFileName))
                 .to("sftp:" + googleSftpUsername + ":" + googleSftpPassword + "@" + googleSftpHost + ":" + googleSftpPort)
 
                 .log(LoggingLevel.INFO, getClass().getName(), "Completed publish of GTFS file to Google")
                 .routeId("google-publish-route");
+
+
+        singletonFrom("activemq:queue:GooglePublishQaQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{google.publish.qa.autoStartup:false}}")
+                .transacted()
+
+                .log(LoggingLevel.INFO, getClass().getName(), "Start publish of GTFS QA file to Google")
+
+                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName))
+                .to("direct:getBlob")
+                .setHeader(Exchange.FILE_NAME, constant(googleQaExportFileName))
+                .to("sftp:" + googleQaSftpUsername + ":" + googleQAaSftpPassword + "@" + googleSftpHost + ":" + googleSftpPort)
+
+                .log(LoggingLevel.INFO, getClass().getName(), "Completed publish of GTFS QA file to Google")
+                .routeId("google-publish-qa-route");
 
 
     }

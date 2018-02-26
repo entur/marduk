@@ -31,7 +31,6 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
-import org.apache.camel.util.ServiceHelper;
 import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,22 +123,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 
         String commonApiDocEndpoint = "rest:get:/services/swagger.json?bridgeEndpoint=true";
-
-        rest("/todo")
-                .post("/pause")
-
-                .route()
-                .process(e -> ServiceHelper.suspendService(e.getContext().getRoute("osm-trigger-fetching")))
-                .process(e -> ServiceHelper.suspendService(e.getContext().getRoute("osm-trigger-fetching").getConsumer()))
-                .process(e -> ServiceHelper.suspendService(e.getContext().getRoute("osm-trigger-fetching").getEndpoint()))
-                .endRest()
-                .post("/resume")
-
-                .route()
-                .process(e ->ServiceHelper.resumeService(e.getContext().getRoute("osm-trigger-fetching").getEndpoint()))
-                .process(e ->ServiceHelper.resumeService(e.getContext().getRoute("osm-trigger-fetching").getConsumer()))
-                .process(e ->ServiceHelper.resumeService(e.getContext().getRoute("osm-trigger-fetching")))
-                .endRest();
 
         rest("/timetable_admin")
                 .post("/idempotentfilter/clean")
@@ -396,6 +379,20 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-timetable-google-export")
                 .endRest()
 
+                .post("/export/gtfs/google-qa")
+                .description("Prepare and upload GTFS QA export to Google")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Internal error").endResponseMessage()
+                .route()
+                .to("direct:authorizeRequest")
+                .log(LoggingLevel.INFO, "Triggered GTFS QA export to Google")
+                .removeHeaders("CamelHttp*")
+                .inOnly("activemq:queue:GoogleQaExportQueue")
+                .routeId("admin-timetable-google-qa-export")
+                .endRest()
+
                 .post("/export/google/publish")
                 .description("Upload GTFS export to Google")
                 .consumes(PLAIN)
@@ -408,6 +405,20 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders("CamelHttp*")
                 .inOnly("activemq:queue:GooglePublishQueue")
                 .routeId("admin-timetable-google-publish")
+                .endRest()
+
+                .post("/export/google-qa/publish/")
+                .description("Upload GTFS QA export to Google")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Internal error").endResponseMessage()
+                .route()
+                .to("direct:authorizeRequest")
+                .log(LoggingLevel.INFO, "Triggered publish of GTFS QA export to Google")
+                .removeHeaders("CamelHttp*")
+                .inOnly("activemq:queue:GooglePublishQaQueue")
+                .routeId("admin-timetable-google-qa-publish")
                 .endRest()
 
 
@@ -685,9 +696,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders("CamelHttp*")
 
                 .choice().when(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.migrateDataToProvider == null)
-                    .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
+                .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
                 .otherwise()
-                    .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
+                .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
                 .end()
                 .inOnly("activemq:queue:ChouetteValidationQueue")
                 .routeId("admin-chouette-validate")
@@ -738,7 +749,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:considerToFetchOsmMapOverNorway")
                 .routeId("admin-fetch-osm")
                 .endRest()
-                
+
                 .post("/mapbox_update")
                 .description("Triggers update of mapbox tileset from tiamat data")
                 .consumes(PLAIN)

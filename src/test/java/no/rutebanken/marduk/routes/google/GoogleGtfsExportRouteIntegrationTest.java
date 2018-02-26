@@ -17,12 +17,9 @@
 package no.rutebanken.marduk.routes.google;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.domain.ChouetteInfo;
-import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,10 +44,17 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
     @Produce(uri = "direct:exportGtfsGoogle")
     protected ProducerTemplate startRoute;
 
-
     @Value("${google.export.file.name:google/google_norway-aggregated-gtfs.zip}")
     private String googleExportFileName;
 
+    @Produce(uri = "direct:exportQaGtfsGoogle")
+    protected ProducerTemplate startQaRoute;
+
+
+    @Value("${google.export.qa.file.name:google/google_norway-aggregated-qa-gtfs.zip}")
+    private String googleQaExportFileName;
+
+    private String testFile = "src/test/resources/no/rutebanken/marduk/routes/gtfs/extended_gtfs.zip";
 
     @Before
     public void prepare() throws Exception {
@@ -62,15 +66,25 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
     public void testUploadGtfsToGoogle() throws Exception {
         context.start();
 
-        String pathname = "src/test/resources/no/rutebanken/marduk/routes/gtfs/extended_gtfs.zip";
-
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(new File(pathname)), false);
+        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(new File(testFile)), false);
 
         startRoute.requestBody(null);
 
 
         Assert.assertNotNull("Expected transformed gtfs file to have been uploaded", inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName));
+    }
+
+    @Test
+    public void testUploadQaGtfsToGoogle() throws Exception {
+        context.start();
+
+        //populate fake blob repo
+        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(new File(testFile)), false);
+
+        startQaRoute.requestBody(null);
+
+        Assert.assertNotNull("Expected transformed gtfs file to have been uploaded", inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName));
     }
 
 
