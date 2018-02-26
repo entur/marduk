@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.google;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -32,20 +33,20 @@ import static org.apache.camel.Exchange.FILE_PARENT;
 
 /**
  * Route preparing and uploading GTFS export to google.
- *
- *  Supports regular production export in addition to a separate dataset for testing / QA / onboarding new providers.
+ * <p>
+ * Supports regular production export in addition to a separate dataset for testing / QA / onboarding new providers.
  */
 @Component
 public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
-    @Value("#{'${google.export.agency.prefix.blacklist:AVI}'.split(',')}")
-    private Set<String> agencyBlackList;
+    @Value("#{'${google.export.agency.prefix.whitelist:}'.split(',')}")
+    private Set<String> agencyWhiteList;
 
     @Value("${google.export.file.name:google/google_norway-aggregated-gtfs.zip}")
     private String googleExportFileName;
 
-    @Value("#{'${google.export.qa.agency.prefix.blacklist:AVI}'.split(',')}")
-    private Set<String> qaAgencyBlackList;
+    @Value("#{'${google.export.qa.agency.prefix.whitelist:}'.split(',')}")
+    private Set<String> qaAgencyWhiteList;
 
     @Value("${google.export.qa.file.name:google/google_norway-aggregated-qa-gtfs.zip}")
     private String googleQaExportFileName;
@@ -70,7 +71,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
         from("direct:exportGtfsGoogle")
                 .setBody(constant(null))
-                .setProperty(Constants.PROVIDER_BLACK_LIST, constant(prepareProviderBlackList(agencyBlackList)))
+                .setProperty(Constants.PROVIDER_WHITE_LIST, constant(prepareProviderWhiteList(agencyWhiteList)))
                 .setProperty(Constants.TRANSFORMATION_ROUTING_DESTINATION, constant("direct:transformToGoogleGTFS"))
                 .setHeader(Constants.FILE_NAME, constant(googleExportFileName))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GOOGLE_GTFS"))
@@ -86,7 +87,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
         from("direct:exportQaGtfsGoogle")
                 .setBody(constant(null))
-                .setProperty(Constants.PROVIDER_BLACK_LIST, constant(prepareProviderBlackList(qaAgencyBlackList)))
+                .setProperty(Constants.PROVIDER_WHITE_LIST, constant(prepareProviderWhiteList(qaAgencyWhiteList)))
                 .setProperty(Constants.TRANSFORMATION_ROUTING_DESTINATION, constant("direct:transformToGoogleGTFS"))
                 .setHeader(Constants.FILE_NAME, constant(googleQaExportFileName))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GOOGLE_GTFS_QA"))
@@ -98,14 +99,14 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
 
     /**
-     * Make sure blacklisted agencies start with "rb_" prefix.
+     * Make sure whitelisted agencies start with "rb_" prefix.
      */
-    private List<String> prepareProviderBlackList(Collection<String> rawIds) {
+    private List<String> prepareProviderWhiteList(Collection<String> rawIds) {
         if (rawIds == null) {
             return new ArrayList<>();
         }
 
-        return rawIds.stream().map(agency -> agency.startsWith("rb_") ? agency : "rb_" + agency).collect(Collectors.toList());
+        return rawIds.stream().filter(StringUtils::isNotEmpty).map(agency -> agency.startsWith("rb_") ? agency : "rb_" + agency).collect(Collectors.toList());
     }
 
 

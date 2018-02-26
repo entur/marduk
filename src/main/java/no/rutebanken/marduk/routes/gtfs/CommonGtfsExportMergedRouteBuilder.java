@@ -17,11 +17,13 @@
 package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.GtfsFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -72,7 +74,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
         from("direct:fetchLatestGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs files for all providers.")
-                .process(e -> e.getIn().setBody(getAggregatedGtfsFiles(getProviderBlackList(e))))
+                .process(e -> e.getIn().setBody(getAggregatedGtfsFiles(getProviderBlackList(e), getProviderWhiteList(e))))
                 .split(body())
                 .to("direct:getGtfsFiles")
                 .routeId("gtfs-export-fetch-latest");
@@ -112,12 +114,19 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
     }
 
-    String getAggregatedGtfsFiles(List<String> providerBlackList) {
+    String getAggregatedGtfsFiles(List<String> providerBlackList, List<String> providerWhiteList) {
         return getProviderRepository().getProviders().stream()
                        .filter(p -> p.chouetteInfo.migrateDataToProvider == null)
-                       .filter(p -> providerBlackList.stream().noneMatch(blacklisted -> blacklisted.equalsIgnoreCase(p.chouetteInfo.referential)))
+                       .filter(p -> isMatch(p, providerBlackList, providerWhiteList))
                        .map(p -> p.chouetteInfo.referential + "-" + CURRENT_AGGREGATED_GTFS_FILENAME)
                        .collect(Collectors.joining(","));
+    }
+
+    private boolean isMatch(Provider p, List<String> providerBlackList, List<String> providerWhiteList) {
+        if (CollectionUtils.isEmpty(providerWhiteList)) {
+            return providerBlackList.stream().noneMatch(blacklisted -> blacklisted.equalsIgnoreCase(p.chouetteInfo.referential));
+        }
+        return providerWhiteList.stream().anyMatch(whiteListed -> whiteListed.equalsIgnoreCase(p.chouetteInfo.referential));
     }
 
     private List<String> getProviderBlackList(Exchange e) {
@@ -128,6 +137,12 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
         return providerBlackList;
     }
 
-
+    private List<String> getProviderWhiteList(Exchange e) {
+        List<String> providerBlackList = e.getProperty(PROVIDER_WHITE_LIST, List.class);
+        if (providerBlackList == null) {
+            providerBlackList = new ArrayList<>();
+        }
+        return providerBlackList;
+    }
 }
 
