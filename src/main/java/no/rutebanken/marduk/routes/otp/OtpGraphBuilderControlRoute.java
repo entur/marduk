@@ -19,7 +19,6 @@ package no.rutebanken.marduk.routes.otp;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.activemq.command.ActiveMQMessage;
-import org.apache.activemq.command.ActiveMQTextMessage;
 import org.apache.camel.Exchange;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
@@ -31,7 +30,7 @@ public class OtpGraphBuilderControlRoute extends BaseRouteBuilder {
 
     private enum Mode {BASE, FULL, BOTH}
 
-    ;
+    private static final String MODE_PROP_NAME="otpMode";
 
     @Override
     public void configure() throws Exception {
@@ -40,16 +39,20 @@ public class OtpGraphBuilderControlRoute extends BaseRouteBuilder {
         singletonFrom("activemq:queue:OtpGraphBuildQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{otp.graph.build.autoStartup:true}}")
                 .transacted()
                 .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
+                .process(e -> e.setProperty(MODE_PROP_NAME, getBuildMode(e)))
                 .choice()
-                .when(e -> Mode.FULL.equals(getBuildMode(e)))
+                .when(exchangeProperty(MODE_PROP_NAME).isEqualTo(Mode.FULL))
                     // Build full graph (step2)
                     .to("direct:buildOtpGraph")
                 .otherwise()
+                .doTry()
                     // Build base graph (step1)
                     .to("direct:buildOtpBaseGraph")
-                    .choice().when(e -> Mode.BOTH.equals(getBuildMode(e)))
-                        // Trigger build of full graph (step2). This may already have been done if base graph build was successful, any duplicates will be discarded.
-                        .inOnly("activemq:queue:OtpGraphBuildQueue")
+                    .doFinally()
+                        .choice().when(exchangeProperty(MODE_PROP_NAME).isEqualTo(Mode.BOTH))
+                            // Trigger build of full graph (step2). This may already have been done if base graph build was successful, any duplicates will be discarded.
+                            .inOnly("activemq:queue:OtpGraphBuildQueue")
+                        .end()
                     .end()
                 .end()
                 .routeId("otp-graph-build-jms");
