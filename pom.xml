@@ -515,7 +515,6 @@
                     <argLine>-Xmx3G</argLine>
                     <systemPropertyVariables combine.children="override">
                         <spring.output.ansi.enabled>ALWAYS</spring.output.ansi.enabled>
-                        <env>dev</env>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
