@@ -65,9 +65,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("activemq:queue:OtpNetexGraphQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{otp.netex.graph.build.autoStartup:true}}")
-                .transacted()
-                .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
+        from("direct:buildOtpGraph")
                 .setProperty(PROP_MESSAGES, simple("${body}"))
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
                 .to("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")

@@ -9,6 +9,7 @@
     "walk_mobility_restricted_traveller_speed_max": "1",
     "inter_access_link_distance_max": "300",
     "inter_stop_duration_max": "1800",
+    "max_speed_hard_limit_factor": "10.0"
     "facility_stop_area_distance_max": "300",
     "check_allowed_transport_modes": "0",
     "check_interchange": "1",

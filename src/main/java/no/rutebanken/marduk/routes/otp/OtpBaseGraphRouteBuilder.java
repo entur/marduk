@@ -61,9 +61,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("activemq:queue:OtpBaseGraphBuildQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{otp.base.graph.build.autoStartup:true}}")
-                .transacted()
-                .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
+        from("direct:buildOtpBaseGraph")
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
                 .to("direct:sendOtpBaseGraphStartedEventsInNewTransaction")
                 .setProperty(OTP_GRAPH_DIR, simple(otpBaseGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
@@ -121,7 +119,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:buildBaseGraphAndSendStatus")
                 .log(LoggingLevel.INFO, correlation() + "Preparing OTP graph with all non-transit data...")
                 .doTry()
-                .to("direct:buildOtpBaseGraph")
+                .to("direct:buildBaseGraph")
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .doCatch(Exception.class)
                 .log(LoggingLevel.ERROR, correlation() + "Graph building failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
@@ -129,7 +127,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .end()
                 .routeId("otp-base-graph-build-build-and-send-status");
 
-        from("direct:buildOtpBaseGraph")
+        from("direct:buildBaseGraph")
                 .process(new GraphBuilderProcessor(true))
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP base graph.")
                 .process(e -> e.getIn().setBody(new File(e.getProperty(OTP_GRAPH_DIR) + "/" + BASE_GRAPH_OBJ)))
@@ -137,7 +135,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Uploaded new new OTP base graph, triggering full OTP graph build")
-                .inOnly("activemq:queue:OtpNetexGraphQueue")
+                .inOnly("activemq:queue:OtpGraphBuildQueue")
                 .routeId("otp-base-graph-build-build-otp");
 
     }

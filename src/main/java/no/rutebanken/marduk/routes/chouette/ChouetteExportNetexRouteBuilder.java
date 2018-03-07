@@ -93,7 +93,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .setBody(constant(null))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
-                .to("activemq:queue:OtpNetexGraphQueue")
+                .to("activemq:queue:OtpGraphBuildQueue")
                 .to("activemq:queue:ChouetteExportGtfsQueue")
                 .endChoice()
                 .when(simple("${header.action_report_result} == 'NOK'"))

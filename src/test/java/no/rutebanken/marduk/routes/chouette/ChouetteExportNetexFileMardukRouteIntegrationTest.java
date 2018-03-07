@@ -52,7 +52,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 	protected MockEndpoint chouetteGetData;
 
 
-	@EndpointInject(uri = "mock:OtpNetexGraphQueue")
+	@EndpointInject(uri = "mock:OtpGraphBuildQueue")
 	protected MockEndpoint otpNetexGraphQueue;
 
 	@EndpointInject(uri = "mock:ExportGtfsQueue")
@@ -98,7 +98,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 						.to("mock:updateStatus");
-				interceptSendToEndpoint("activemq:queue:OtpNetexGraphQueue").skipSendToOriginalEndpoint().to("mock:OtpNetexGraphQueue");
+				interceptSendToEndpoint("activemq:queue:OtpGraphBuildQueue").skipSendToOriginalEndpoint().to("mock:OtpGraphBuildQueue");
 				interceptSendToEndpoint("activemq:queue:ChouetteExportGtfsQueue").skipSendToOriginalEndpoint().to("mock:ExportGtfsQueue");
 			}
 		});

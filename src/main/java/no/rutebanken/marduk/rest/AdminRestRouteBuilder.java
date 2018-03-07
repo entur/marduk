@@ -453,7 +453,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "Triggered build of OTP base graph with map data")
                 .removeHeaders("CamelHttp*")
                 .setBody(simple(""))
-                .inOnly("activemq:queue:OtpBaseGraphBuildQueue")
+                .setHeader(Constants.OTP_BASE_GRAPH_BUILD, constant(true))
+                .inOnly("activemq:queue:OtpGraphBuildQueue")
                 .routeId("admin-build-base-graph")
                 .endRest()
 
@@ -467,7 +468,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "OTP build graph from NeTEx")
                 .removeHeaders("CamelHttp*")
                 .setBody(simple(""))
-                .inOnly("activemq:queue:OtpNetexGraphQueue")
+                .inOnly("activemq:queue:OtpGraphBuildQueue")
                 .routeId("admin-build-graph-netex")
                 .endRest()
 
