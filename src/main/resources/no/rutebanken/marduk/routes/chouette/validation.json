@@ -31,7 +31,7 @@
         "inter_stop_area_distance_max": "2100000",
         "speed_max": "900",
         "speed_min": "100",
-        "inter_stop_duration_variation_max": "300"
+        "inter_stop_duration_variation_max": "1200"
     },
     "mode_water": {
         "allowed_transport": "1",
