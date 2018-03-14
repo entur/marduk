@@ -28,7 +28,7 @@
     "mode_air": {
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "30000",
-        "inter_stop_area_distance_max": "2000000",
+        "inter_stop_area_distance_max": "2100000",
         "speed_max": "900",
         "speed_min": "100",
         "inter_stop_duration_variation_max": "300"
