@@ -59,7 +59,8 @@ public class RegtoppImportParameters extends ChouetteJobParameters {
 	public static RegtoppImportParameters create(String name, String objectIdPrefix, String referentialName,
 			String organisationName, String userName, String version, String coordinateProjection,
 			String calendarStrategy, boolean cleanRepository, boolean enableValidation, boolean allowCreateMissingStopPlace,
-			                                            boolean enableStopPlaceIdMapping, boolean keepObsoleteLines, boolean batchParse) {
+			                                            boolean enableStopPlaceIdMapping, boolean keepObsoleteLines,
+			                                            boolean batchParse, boolean generateMissingServiceLinks) {
 		Regtopp regtoppImport = new Regtopp();
 		regtoppImport.name = name;
 		regtoppImport.objectIdPrefix = objectIdPrefix;
@@ -74,6 +75,7 @@ public class RegtoppImportParameters extends ChouetteJobParameters {
 		regtoppImport.keepObsoleteLines = keepObsoleteLines;
 		regtoppImport.batchParse = batchParse;
 		regtoppImport.stopAreaRemoteIdMapping = enableStopPlaceIdMapping;
+		regtoppImport.generateMissingRouteSections= generateMissingServiceLinks;
 		if (allowCreateMissingStopPlace) {
 			regtoppImport.stopAreaImportMode = AbstractImportParameters.StopAreaImportMode.CREATE_NEW;
 		}

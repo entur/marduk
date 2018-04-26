@@ -36,8 +36,9 @@ public class ChouetteInfo {
     public boolean enableStopPlaceIdMapping = false;
     public boolean enableCleanImport = false;
     public boolean enableAutoImport;
+    public boolean generateMissingServiceLinks;
 
-	public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
+    public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
 
     public Long getMigrateDataToProvider() {
 		return migrateDataToProvider;
@@ -60,6 +61,7 @@ public class ChouetteInfo {
                 ", allowCreateMissingStopPlace='" + allowCreateMissingStopPlace + '\'' +
                 ", enableStopPlaceIdMapping='" + enableStopPlaceIdMapping + '\'' +
                 ", enableCleanImport='" + enableCleanImport + '\'' +
+                ", generateMissingServiceLinks='" + generateMissingServiceLinks + '\'' +
                 ", migrateDataToProvider='" + migrateDataToProvider + '\'' +
                 '}';
     }
@@ -126,5 +128,9 @@ public class ChouetteInfo {
 
     public boolean isEnableAutoImport() {
         return enableAutoImport;
+    }
+
+    public boolean isGenerateMissingServiceLinks() {
+        return generateMissingServiceLinks;
     }
 }
