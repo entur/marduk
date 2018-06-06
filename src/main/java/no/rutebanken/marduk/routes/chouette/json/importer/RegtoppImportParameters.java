@@ -21,6 +21,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import no.rutebanken.marduk.routes.chouette.json.AbstractParameters;
 import no.rutebanken.marduk.routes.chouette.json.ChouetteJobParameters;
 
+import java.util.Set;
+
 public class RegtoppImportParameters extends ChouetteJobParameters {
 
     public Parameters parameters;
@@ -60,7 +62,7 @@ public class RegtoppImportParameters extends ChouetteJobParameters {
 			String organisationName, String userName, String version, String coordinateProjection,
 			String calendarStrategy, boolean cleanRepository, boolean enableValidation, boolean allowCreateMissingStopPlace,
 			                                            boolean enableStopPlaceIdMapping, boolean keepObsoleteLines,
-			                                            boolean batchParse, boolean generateMissingServiceLinks) {
+			                                            boolean batchParse, Set<String> generateMissingRouteSectionsForModes) {
 		Regtopp regtoppImport = new Regtopp();
 		regtoppImport.name = name;
 		regtoppImport.objectIdPrefix = objectIdPrefix;
@@ -75,7 +77,7 @@ public class RegtoppImportParameters extends ChouetteJobParameters {
 		regtoppImport.keepObsoleteLines = keepObsoleteLines;
 		regtoppImport.batchParse = batchParse;
 		regtoppImport.stopAreaRemoteIdMapping = enableStopPlaceIdMapping;
-		regtoppImport.generateMissingRouteSections= generateMissingServiceLinks;
+		regtoppImport.generateMissingRouteSectionsForModes= generateMissingRouteSectionsForModes;
 		if (allowCreateMissingStopPlace) {
 			regtoppImport.stopAreaImportMode = AbstractImportParameters.StopAreaImportMode.CREATE_NEW;
 		}

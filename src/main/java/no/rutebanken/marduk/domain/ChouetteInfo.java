@@ -18,6 +18,8 @@ package no.rutebanken.marduk.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.Set;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ChouetteInfo {
 
@@ -36,7 +38,7 @@ public class ChouetteInfo {
     public boolean enableStopPlaceIdMapping = false;
     public boolean enableCleanImport = false;
     public boolean enableAutoImport;
-    public boolean generateMissingServiceLinks;
+    public Set<String> generateMissingServiceLinksForModes;
 
     public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
 
@@ -61,7 +63,7 @@ public class ChouetteInfo {
                 ", allowCreateMissingStopPlace='" + allowCreateMissingStopPlace + '\'' +
                 ", enableStopPlaceIdMapping='" + enableStopPlaceIdMapping + '\'' +
                 ", enableCleanImport='" + enableCleanImport + '\'' +
-                ", generateMissingServiceLinks='" + generateMissingServiceLinks + '\'' +
+                ", generateMissingServiceLinksForModes='" + generateMissingServiceLinksForModes + '\'' +
                 ", migrateDataToProvider='" + migrateDataToProvider + '\'' +
                 '}';
     }
@@ -130,7 +132,7 @@ public class ChouetteInfo {
         return enableAutoImport;
     }
 
-    public boolean isGenerateMissingServiceLinks() {
-        return generateMissingServiceLinks;
+    public Set<String> getGenerateMissingServiceLinksForModes() {
+        return generateMissingServiceLinksForModes;
     }
 }

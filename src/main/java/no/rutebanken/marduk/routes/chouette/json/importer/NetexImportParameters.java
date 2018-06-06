@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import no.rutebanken.marduk.routes.chouette.json.ChouetteJobParameters;
 
+import java.util.Set;
+
 public class NetexImportParameters extends ChouetteJobParameters {
 
     public Parameters parameters;
@@ -58,7 +60,7 @@ public class NetexImportParameters extends ChouetteJobParameters {
 
     public static NetexImportParameters create(String name, String referentialName, String organisationName, String userName, boolean cleanRepository,
                                                       boolean enableValidation, boolean allowCreateMissingStopPlace, boolean enableStopPlaceIdMapping,
-                                                      String objectIdPrefix, boolean generateMissingRouteSections) {
+                                                      String objectIdPrefix, Set<String> generateMissingRouteSectionsForModes) {
         Netex netexImport = new Netex();
         netexImport.name = name;
         netexImport.referentialName = referentialName;
@@ -67,7 +69,7 @@ public class NetexImportParameters extends ChouetteJobParameters {
         netexImport.cleanRepository = cleanRepository ? "1":"0";
         netexImport.stopAreaRemoteIdMapping = enableStopPlaceIdMapping;
         netexImport.objectIdPrefix = objectIdPrefix;
-        netexImport.generateMissingRouteSections = generateMissingRouteSections;
+        netexImport.generateMissingRouteSectionsForModes = generateMissingRouteSectionsForModes;
         if (allowCreateMissingStopPlace) {
             netexImport.stopAreaImportMode = AbstractImportParameters.StopAreaImportMode.CREATE_NEW;
         }

@@ -53,7 +53,7 @@ public class Parameters {
                 chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion,
                 chouetteInfo.regtoppCoordinateProjection, chouetteInfo.regtoppCalendarStrategy, chouetteInfo.enableCleanImport,
                 chouetteInfo.enableValidation, chouetteInfo.allowCreateMissingStopPlace,
-                chouetteInfo.enableStopPlaceIdMapping,false, true, chouetteInfo.generateMissingServiceLinks);
+                chouetteInfo.enableStopPlaceIdMapping,false, true, chouetteInfo.generateMissingServiceLinksForModes);
         return regtoppImportParameters.toJsonString();
     }
 
@@ -61,7 +61,7 @@ public class Parameters {
         ChouetteInfo chouetteInfo = provider.chouetteInfo;
         GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.xmlns,
                 chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport,
-                chouetteInfo.enableValidation, chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping, chouetteInfo.generateMissingServiceLinks);
+                chouetteInfo.enableValidation, chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping, chouetteInfo.generateMissingServiceLinksForModes);
         return gtfsImportParameters.toJsonString();
     }
 
@@ -69,7 +69,7 @@ public class Parameters {
         ChouetteInfo chouetteInfo = provider.chouetteInfo;
         NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.name,
                 chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation,
-                chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping, chouetteInfo.xmlns, chouetteInfo.generateMissingServiceLinks);
+                chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping, chouetteInfo.xmlns, chouetteInfo.generateMissingServiceLinksForModes);
         return netexImportParameters.toJsonString();
     }
 

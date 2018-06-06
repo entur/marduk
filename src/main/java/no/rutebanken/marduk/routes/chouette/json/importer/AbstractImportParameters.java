@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import no.rutebanken.marduk.routes.chouette.json.AbstractParameters;
 
+import java.util.Set;
+
 public class AbstractImportParameters extends AbstractParameters {
 
     public enum StopAreaImportMode {
@@ -57,7 +59,7 @@ public class AbstractImportParameters extends AbstractParameters {
     @JsonProperty("keep_obsolete_lines")
     public boolean keepObsoleteLines = true;
 
-    @JsonProperty("generate_missing_route_sections")
+    @JsonProperty("generate_missing_route_sections_for_modes")
     @JsonInclude(JsonInclude.Include.ALWAYS)
-    public boolean generateMissingRouteSections;
+    public Set<String> generateMissingRouteSectionsForModes;
 }
