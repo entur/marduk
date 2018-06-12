@@ -78,7 +78,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
         from("direct:processNetexExportResult")
                 .choice()
                 .when(simple("${header.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, correlation() + "Export ok")
+                .log(LoggingLevel.INFO, correlation() + "Export ended with status '${header.action_report_result}'")
                 .log(LoggingLevel.DEBUG, correlation() + "Calling url ${header.data_url}")
                 .removeHeaders("Camel*")
                 .setBody(simple(""))
