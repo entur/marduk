@@ -54,16 +54,19 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action(e.getIn().getHeader(JOB_ACTION, String.class)).state(JobEvent.State.STARTED).newCorrelationId().build())
                 .inOnly("direct:updateStatus")
                 .setHeader(FILE_PARENT, simple(localWorkingDirectory + "/${header." + JOB_ACTION + "}/${date:now:yyyyMMddHHmmss}"))
-
+                .doTry()
                 .to("direct:fetchLatestGtfs")
                 .to("direct:mergeGtfs")
                 .to("direct:transformGtfs")
                 .to("direct:uploadMergedGtfs")
-                .to("direct:cleanUpLocalDirectory")
+
                 // Use wire tap to avoid replacing body
                 .wireTap("direct:reportExportMergedGtfsOK")
-
+                .end()
                 .log(LoggingLevel.INFO, getClass().getName(), "Completed export of merged GTFS file: ${header." + FILE_NAME + "}")
+                .doFinally()
+                .to("direct:cleanUpLocalDirectory")
+                .end()
                 .routeId("gtfs-export-merged-route");
 
 
