@@ -1,10 +1,11 @@
-# Marduk
+= Marduk
 
 For details, see the
 initial project setup location:
-  https://github.com/fabric8io/ipaas-quickstarts/
+ https://github.com/fabric8io/ipaas-quickstarts/[https://github.com/fabric8io/ipaas-quickstarts/]
 
-## Liveness and readyiness
+== Liveness and readyiness
+
 In production, marduk can be probed with:
 - http://<host>:<port>/health/live
 - http://<host>:<port>/health/ready
@@ -13,14 +14,14 @@ to check liveness and readiness, accordingly
 * Marduk currently has two spring profiles, dev and test. Use the application.properties file to switch between these.
 * The application is unable to run without configuration. This must be defined externally to the application in a file called application.properties. Copy application.properties into either the current directory, i.e. where the application will be run from, or a /config subdirectory of this folder
 * Typical application.properties for dev environment:
-
-```
+[source]
+----
 marduk.shutdown.timeout=1
 
 blobstore.gcs.container.name=marduk-test
 blobstore.gcs.credential.path=/home/tomgag/.ssh/Carbon-ef49cabc6d04.json
 blobstore.gcs.project.id=carbon-1287
-blobstore.gcs.exchange.container.name=marduk-test-exchange
+blobstore.gcs.exchange.container.name=marduk-exchange-test
 blobstore.gcs.exchange.credential.path=/home/tomgag/.ssh/Carbon-ef49cabc6d04.json
 blobstore.delete.external.blobs=false
 
@@ -39,7 +40,6 @@ logging.level.no.rutebanken.marduk=INFO
 logging.level.org=INFO
 logging.level.org.opentripplanner=INFO
 logging.level.org.apache.camel.util=INFO
-
 
 logging.level.org.apache=INFO
 logging.level.org.apache=INFO
@@ -91,28 +91,36 @@ idempotent.skip=false
 
 babylon.url=http4://babylon:9030/rest
 
+----
 
-```
-* Run with maven `mvn spring-boot:run -Dspring.profiles.active=dev`
+* 
 
-* Build: `mvn clean install`
+Run with maven `mvn spring-boot:run -Dspring.profiles.active=dev`
+
+* 
+
+Build: `mvn clean install`
+
 * Local run: `java -Xmx1280m -Dspring.profiles.active=dev -jar target/marduk-0.0.1-SNAPSHOT.jar`
 * Docker image: `mvn -Dspring.profiles.active=dev -Pf8-build`
-* Run the docker image in docker inside vagrant:
+* 
 
-     ```docker rm -f marduk ; mvn -Pf8-build && docker run -it --name marduk -e JAVA_OPTIONS="-Xmx1280m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005" --link activemq --link lamassu --link chouette -p 5005:5005 -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro -v /git/config/marduk/dev/application.properties:/app/config/application.properties:ro dr.rutebanken.org/rutebanken/marduk:0.0.1-SNAPSHOT```
+Run the docker image in docker inside vagrant:
 
-  Here, we mount the lamssu key and an application.properties file from vagrant.
+`docker rm -f marduk ; mvn -Pf8-build &amp;&amp; docker run -it --name marduk -e JAVA_OPTIONS=&quot;-Xmx1280m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005&quot; --link activemq --link lamassu --link chouette -p 5005:5005 -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro -v /git/config/marduk/dev/application.properties:/app/config/application.properties:ro dr.rutebanken.org/rutebanken/marduk:0.0.1-SNAPSHOT`
 
-* For more docker plugin goals, see: http://ro14nd.de/docker-maven-plugin/goals.html
+Here, we mount the lamssu key and an application.properties file from vagrant.
 
-## Using the admin services
+* For more docker plugin goals, see: http://ro14nd.de/docker-maven-plugin/goals.html[http://ro14nd.de/docker-maven-plugin/goals.html]
+
+== Using the admin services
 
 You find REST services in the `.../marduk/rest/` package. These can be invoked by calling
 them. The call is easiest performed within the pod. First you need to find
 the pod ID, and then you can call the rest service as follows. The OSM map
 fetch is used as an example:
 
-```
+[source]
+----
 kc exec -it marduk-dnt0p curl -- -v -XPOST http://0.0.0.0:8080/admin/services/fetch/osm
-```
+----

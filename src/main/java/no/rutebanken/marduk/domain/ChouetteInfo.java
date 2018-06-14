@@ -38,6 +38,7 @@ public class ChouetteInfo {
     public boolean enableStopPlaceIdMapping = false;
     public boolean enableCleanImport = false;
     public boolean enableAutoImport;
+    public boolean generateDatedServiceJourneyIds;
     public Set<String> generateMissingServiceLinksForModes;
 
     public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
@@ -65,6 +66,7 @@ public class ChouetteInfo {
                 ", enableCleanImport='" + enableCleanImport + '\'' +
                 ", generateMissingServiceLinksForModes='" + generateMissingServiceLinksForModes + '\'' +
                 ", migrateDataToProvider='" + migrateDataToProvider + '\'' +
+                ", generateDatedServiceJourneyIds='" + generateDatedServiceJourneyIds + '\'' +
                 '}';
     }
 
@@ -134,5 +136,9 @@ public class ChouetteInfo {
 
     public Set<String> getGenerateMissingServiceLinksForModes() {
         return generateMissingServiceLinksForModes;
+    }
+
+    public boolean isGenerateDatedServiceJourneyIds() {
+        return generateDatedServiceJourneyIds;
     }
 }
