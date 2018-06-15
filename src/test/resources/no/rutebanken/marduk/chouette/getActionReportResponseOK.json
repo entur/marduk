@@ -6,17 +6,17 @@
             {
                 "step": "INITIALISATION",
                 "total": 6,
-                "realized": 4
+                "realized": 6
             },
             {
                 "step": "PROCESSING",
                 "total": 1,
-                "realized": 0
+                "realized": 1
             },
             {
                 "step": "FINALISATION",
                 "total": 1,
-                "realized": 0
+                "realized": 1
             }
         ]
     },

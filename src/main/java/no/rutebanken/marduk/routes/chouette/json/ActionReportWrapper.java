@@ -19,6 +19,8 @@ package no.rutebanken.marduk.routes.chouette.json;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+
 public class ActionReportWrapper {
 
     /*
@@ -109,9 +111,33 @@ public class ActionReportWrapper {
     @JsonProperty("action_report")
     public ActionReport actionReport;
 
+    public boolean isFinalised() {
+        if (actionReport != null && actionReport.progression != null && actionReport.progression.steps != null) {
+            return actionReport.progression.steps.stream().anyMatch(s -> "FINALISATION".equals(s.step) && s.total == s.realized);
+        }
+        return false;
+    }
+
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ActionReport {
-       public String result;
+        public String result;
+
+        public Progression progression;
     }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Progression {
+        public List<Step> steps;
+
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Step {
+        public String step;
+        public int total;
+        public int realized;
+    }
+
 
 }
