@@ -243,12 +243,18 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .toD("${header.action_report_url}")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .setProperty("action_report_string,",body())
                 .unmarshal().json(JsonLibrary.Jackson, ActionReportWrapper.class)
                 .choice().when(simple("${body.finalised} == false"))
-                .log(LoggingLevel.WARN, correlation() + "Received non-finalised action report for terminated job: ${exchangeProperty.action_report_string}")
+
+                .choice().when(simple("${header.loopCounter} > " + maxRetries))
+                .log(LoggingLevel.INFO, correlation() + "Received non-finalised action report for terminated job. Waiting before retry ")
                 // Update status
                 .to("direct:rescheduleJob")
+                .otherwise()
+                .log(LoggingLevel.WARN, correlation() + "Received non-finalised action report for terminated job. Giving up.")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.FAILED).build())
+                .to("direct:updateStatus")
+                .end()
                 .stop()
                 .end()
 
