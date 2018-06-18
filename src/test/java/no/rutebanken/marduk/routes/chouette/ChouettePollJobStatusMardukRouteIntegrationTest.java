@@ -95,10 +95,18 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/validation_report.json")
 						.skipSendToOriginalEndpoint().to("mock:chouetteGetValidationReport");
 
+			}
+		});
+
+		context.getRouteDefinition("chouette-reschedule-job").adviceWith(context, new AdviceWithRouteBuilder() {
+			@Override
+			public void configure() throws Exception {
+
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
 
 			}
 		});
+
 
 		// we must manually start when we are done with all the advice with
 		context.start();

@@ -186,6 +186,13 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .to("direct:jobStatusDone")
                 .otherwise()
                 // Update status
+                .to("direct:rescheduleJob")
+
+                .end()
+                .routeId("chouette-get-job-status");
+
+
+        from("direct:rescheduleJob")
                 .choice()
                 .when(simple("${exchangeProperty.current_status} == '" + STARTED + "' && ${header.loopCounter} == 1"))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.STARTED).jobId(e.getIn().getHeader(Constants.CHOUETTE_JOB_ID, Long.class)).build())
@@ -197,9 +204,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .setBody(constant(""))
                 //.log(LoggingLevel.INFO,"Scheduling next polling message in ${header."+ActiveMQMessage.AMQ_SCHEDULED_DELAY+"}ms")
                 .to("activemq:queue:ChouettePollStatusQueue")
-                .end()
-                .routeId("chouette-get-job-status");
-
+                .routeId("chouette-reschedule-job");
 
         from("direct:jobStatusDone")
                 .log(LoggingLevel.DEBUG, correlation() + "Exited retry loop with status ${header.current_status}")
@@ -242,15 +247,14 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .unmarshal().json(JsonLibrary.Jackson, ActionReportWrapper.class)
                 .choice().when(simple("${body.finalised} == false"))
                 .log(LoggingLevel.WARN, correlation() + "Received non-finalised action report for terminated job: ${exchangeProperty.action_report_string}")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.FAILED).build())
-                .to("direct:updateStatus")
+                // Update status
+                .to("direct:rescheduleJob")
                 .stop()
                 .end()
 
                 .process(e -> {
                     e.getIn().setHeader("action_report_result", e.getIn().getBody(ActionReportWrapper.class).actionReport.result);
                 })
-
 
                 // Fetch and parse validation report
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
