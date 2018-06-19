@@ -52,7 +52,7 @@
 
         <!-- Holding back activemq version as newest version no long support spring wired broker config-->
         <activemq.version>5.13.4</activemq.version>
-        <netex-java-model.version>1.0.8-SNAPSHOT</netex-java-model.version>
+        <netex-java-model.version>1.0.9-SNAPSHOT</netex-java-model.version>
         <rutebanken.helpers.version>0.0.3-SNAPSHOT</rutebanken.helpers.version>
         <fabric8.version>2.3.4</fabric8.version>
 
