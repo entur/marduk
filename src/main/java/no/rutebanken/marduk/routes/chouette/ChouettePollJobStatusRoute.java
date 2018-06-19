@@ -247,13 +247,13 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .choice().when(simple("${body.finalised} == false"))
 
                 .choice().when(simple("${header.loopCounter} > " + maxRetries))
-                .log(LoggingLevel.INFO, correlation() + "Received non-finalised action report for terminated job. Waiting before retry ")
-                // Update status
-                .to("direct:rescheduleJob")
-                .otherwise()
                 .log(LoggingLevel.WARN, correlation() + "Received non-finalised action report for terminated job. Giving up.")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.FAILED).build())
                 .to("direct:updateStatus")
+                .otherwise()
+                .log(LoggingLevel.INFO, correlation() + "Received non-finalised action report for terminated job. Waiting before retry ")
+                // Update status
+                .to("direct:rescheduleJob")
                 .end()
                 .stop()
                 .end()
