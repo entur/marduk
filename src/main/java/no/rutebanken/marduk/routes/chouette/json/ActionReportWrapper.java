@@ -111,9 +111,22 @@ public class ActionReportWrapper {
     @JsonProperty("action_report")
     public ActionReport actionReport;
 
+    /**
+     * Check if report signals a completed job.
+     * <p>
+     * Job is completed if status is changed from default values (OK) or if finalisation step has been completed.
+     * <p>
+     * This check is needed because db job in chouette is somtimes given status 'TERMINATED' before action report has been written.
+     */
     public boolean isFinalised() {
-        if (actionReport != null && actionReport.progression != null && actionReport.progression.steps != null) {
-            return actionReport.progression.steps.stream().anyMatch(s -> "FINALISATION".equals(s.step) && s.total == s.realized);
+
+        if (actionReport != null) {
+            if (actionReport.result != null && !"OK".equals(actionReport.result)) {
+                return true;
+            }
+            if (actionReport.progression != null && actionReport.progression.steps != null) {
+                return actionReport.progression.steps.stream().anyMatch(s -> "FINALISATION".equals(s.step) && s.total == s.realized);
+            }
         }
         return false;
     }
