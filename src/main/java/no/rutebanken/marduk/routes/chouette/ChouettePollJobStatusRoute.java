@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.chouette;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
@@ -243,9 +244,17 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .toD("${header.action_report_url}")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .unmarshal().json(JsonLibrary.Jackson, ActionReportWrapper.class)
-                .choice().when(simple("${body.finalised} == false"))
 
+                .doTry()
+                .unmarshal().json(JsonLibrary.Jackson, ActionReportWrapper.class).process(e -> { /** Dummy line to make doCatch available */})
+                .doCatch(JsonMappingException.class)
+                .log(LoggingLevel.WARN, correlation() + "Received invalid (empty?) action report for terminated job. Giving up.")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.FAILED).build())
+                .to("direct:updateStatus")
+                .stop()
+                .end()
+
+                .choice().when(simple("${body.finalised} == false"))
                 .choice().when(simple("${header.loopCounter} > " + maxRetries))
                 .log(LoggingLevel.WARN, correlation() + "Received non-finalised action report for terminated job. Giving up.")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.FAILED).build())
@@ -258,9 +267,12 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .stop()
                 .end()
 
+
                 .process(e -> {
                     e.getIn().setHeader("action_report_result", e.getIn().getBody(ActionReportWrapper.class).actionReport.result);
                 })
+
+
 
                 // Fetch and parse validation report
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
