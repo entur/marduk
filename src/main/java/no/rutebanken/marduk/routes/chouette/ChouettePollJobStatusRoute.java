@@ -93,6 +93,12 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .process(e -> {
                     String url = (String) e.getProperty("chouette_url");
 
+                    // Convert camel dynamic endpoint format (http4:xxxx) to url (http://xxx) before manipulating url. Needed as interception
+                    // does not seem to work with // in target anymore (as of camel 2.22.0)
+                    boolean dynamicEndpointNotation=!url.contains("://");
+                    if (dynamicEndpointNotation) {
+                        url = url.replaceFirst(":", "://");
+                    }
                     URIBuilder b = new URIBuilder(url);
                     if (e.getIn().getHeader("action") != null) {
                         b.addParameter("action", (String) e.getIn().getHeader("action"));
@@ -109,8 +115,13 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                         }
                     }
                     b.addParameter("addActionParameters", Boolean.FALSE.toString());
-
-                    e.setProperty("chouette_url", b.toString());
+                    String newUri = b.toString();
+                    if (dynamicEndpointNotation) {
+                        // Convert url (http://xxx) back to camel dynamic endpoint format (http4:xxxx). Needed as interception
+                        // does not seem to work with // in target anymore (as of camel 2.22.0)
+                        newUri.replace("://", ":");
+                    }
+                    e.setProperty("chouette_url", newUri);
                 })
                 .toD("${exchangeProperty.chouette_url}")
                 .unmarshal().json(JsonLibrary.Jackson, JobResponse[].class)
