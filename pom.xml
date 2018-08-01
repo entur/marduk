@@ -92,6 +92,12 @@
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.glassfish.jersey.bundles.repackaged</groupId>
+                <artifactId>jersey-guava</artifactId>
+                <version>2.25.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -410,6 +416,11 @@
             <groupId>com.github.junrar</groupId>
             <artifactId>junrar</artifactId>
             <version>0.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.bundles.repackaged</groupId>
+            <artifactId>jersey-guava</artifactId>
         </dependency>
 
         <!-- testing -->
