@@ -43,7 +43,7 @@ public class CacheProviderRepository implements ProviderRepository {
     @Value("${marduk.provider.cache.refresh.max.size:100}")
     private Integer cacheMaxSize;
 
-    private static Cache<Long, Provider> cache;
+    private Cache<Long, Provider> cache;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -61,7 +61,9 @@ public class CacheProviderRepository implements ProviderRepository {
                 logger.warn("Result from REST Provider Service is empty. Skipping provider cache update. Keeping " + cache.size() + " existing elements.");
                 return;
             }
-            cache.putAll(providerMap);
+            Cache<Long, Provider> newCache = CacheBuilder.newBuilder().maximumSize(cacheMaxSize).build();
+            newCache.putAll(providerMap);
+            cache = newCache;
             logger.info("Updated provider cache with result from REST Provider Service. Cache now has " + cache.size() + " elements");
         } catch (ResourceAccessException re) {
             if (re.getCause() instanceof ConnectException) {
