@@ -55,10 +55,13 @@ public class FileClassifierPredicates {
         XMLStreamReader streamReader = null;
         try {
             streamReader = xmlInputFactory.createXMLStreamReader(inputStream);
-            if (streamReader.hasNext()) {
+            while (streamReader.hasNext()) {
                 int eventType = streamReader.next();
                 if (eventType == XMLStreamReader.START_ELEMENT) {
                     return Optional.of(streamReader.getName());
+                } else if (eventType != XMLStreamReader.COMMENT) {
+                    // If event is neither start of element or a comment, then this is probably not a xml file.
+                    break;
                 }
             }
         } catch (XMLStreamException e) {

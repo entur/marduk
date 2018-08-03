@@ -48,6 +48,13 @@ public class FileClassifierPredicatesTest {
     }
 
     @Test
+    public void firstElementQNameMatchesComment() throws Exception {
+        assertPredicateTrueInZipFile("netex_with_initial_comment.zip",
+                FileClassifierPredicates.firstElementQNameMatches(
+                        NETEX_PUBLICATION_DELIVERY_QNAME));
+    }
+
+    @Test
     public void firstElementQNameMatchesNot() throws Exception {
         assertPredicateFalseInZipFile("netex_with_two_files_one_invalid.zip",
                 FileClassifierPredicates.firstElementQNameMatches(
