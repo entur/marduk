@@ -28,7 +28,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.InputStream;
 import java.util.Date;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
@@ -85,17 +84,17 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, "Fetching OSM map over Norway.")
                 .to("direct:fetchOsmMapOverNorwayMd5")
                 // Storing the MD5
-                .convertBodyTo(InputStream.class)
+                .convertBodyTo(byte[].class)
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm +"/"+"norway-latest.osm.pbf.md5"))
                 .to("direct:uploadBlob")
                 // Fetch the actual file
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .streamCaching()
                 .to( osmMapUrl )
-                .convertBodyTo(InputStream.class)
+                .convertBodyTo(byte[].class)
                 .process(p -> {
                     // Throw exception if the expected MD5 does not match MD5 from body
-                    InputStream body = (InputStream) p.getIn().getBody();
+                    byte[] body = (byte[]) p.getIn().getBody();
                     String md5 = DigestUtils.md5Hex( body );
                     String md5FromFile = (String) p.getIn().getHeader(Constants.FILE_TARGET_MD5);
                     if (! md5.equals( md5FromFile)) {
