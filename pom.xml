@@ -51,9 +51,9 @@
         <onebusaway.gtfs.modules>1.3.12</onebusaway.gtfs.modules>
 
         <!-- Holding back activemq version as newest version no long support spring wired broker config-->
-        <activemq.version>5.13.4</activemq.version>ush
+        <activemq.version>5.13.4</activemq.version>
         <netex-java-model.version>1.0.9-SNAPSHOT</netex-java-model.version>
-        <entur.helpers.version>0.0.3-SNAPSHOT</entur.helpers.version>
+        <rutebanken.helpers.version>0.0.3-SNAPSHOT</rutebanken.helpers.version>
         <fabric8.version>2.3.4</fabric8.version>
 
         <!-- The guava version seems to affect serialisation of OTP graph. Somehow, it leaks into
@@ -163,7 +163,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.entur.helpers</groupId>
+            <groupId>org.rutebanken.helpers</groupId>
             <artifactId>gcp-storage</artifactId>
             <version>${gcp-storage.version}</version>
             <exclusions>
@@ -289,19 +289,19 @@
             <version>2.6.1</version>
         </dependency>
         <dependency>
-            <groupId>org.entur.helpers</groupId>
+            <groupId>org.rutebanken.helpers</groupId>
             <artifactId>hazelcast-helper</artifactId>
-            <version>${entur.helpers.version}</version>
+            <version>${rutebanken.helpers.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.entur.helpers</groupId>
+            <groupId>org.rutebanken.helpers</groupId>
             <artifactId>organisation</artifactId>
-            <version>${entur.helpers.version}</version>
+            <version>${rutebanken.helpers.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.entur.helpers</groupId>
+            <groupId>org.rutebanken.helpers</groupId>
             <artifactId>jms-batch</artifactId>
-            <version>${entur.helpers.version}</version>
+            <version>${rutebanken.helpers.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>

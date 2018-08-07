@@ -101,13 +101,13 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public void uploadBlob(String name, byte[] content, boolean makePublic) {
-        BlobStoreHelper.uploadBlob(storage, containerName, name, content, makePublic);
+    public void uploadBlob(String name, InputStream inputStream, boolean makePublic) {
+        BlobStoreHelper.uploadBlob(storage, containerName, name, inputStream, makePublic);
     }
 
     @Override
-    public void uploadBlob(String name, byte[] content, boolean makePublic, String contentType) {
-        BlobStoreHelper.uploadBlob(storage, containerName, name, content, makePublic, contentType);
+    public void uploadBlob(String name, InputStream inputStream, boolean makePublic, String contentType) {
+        BlobStoreHelper.uploadBlob(storage, containerName, name, inputStream, makePublic, contentType);
     }
 
     @Override
