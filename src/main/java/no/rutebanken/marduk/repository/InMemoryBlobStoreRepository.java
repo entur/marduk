@@ -54,7 +54,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
         logger.debug("list blobs called in in-memory blob store");
         List<BlobStoreFiles.File> files = blobs.keySet().stream()
                                                   .filter(k -> prefixes.stream().anyMatch(prefix -> k.startsWith(prefix)))
-                                                  .map(k -> new BlobStoreFiles.File(k,new Date(), new Date(), 1234L))    //TODO Add real details?
+                                                  .map(k -> new BlobStoreFiles.File(k, new Date(), new Date(), 1234L))    //TODO Add real details?
                                                   .collect(Collectors.toList());
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(files);
@@ -78,21 +78,14 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType) {
-        uploadBlob(objectName, inputStream, makePublic);
+    public void uploadBlob(String objectName, byte[] content, boolean makePublic, String contentType) {
+        uploadBlob(objectName, content, makePublic);
     }
 
     @Override
-    public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
-        try {
-            logger.debug("upload blob called in in-memory blob store");
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            IOUtils.copy(inputStream, byteArrayOutputStream);
-            byte[] data = byteArrayOutputStream.toByteArray();
-            blobs.put(objectName, data);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void uploadBlob(String objectName, byte[] content, boolean makePublic) {
+        logger.debug("upload blob called in in-memory blob store");
+        blobs.put(objectName, content);
     }
 
     @Override

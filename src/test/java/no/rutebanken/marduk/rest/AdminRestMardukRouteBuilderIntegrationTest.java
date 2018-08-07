@@ -30,6 +30,7 @@ import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -174,7 +175,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, new FileInputStream(new File(pathname)), false);
+        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, FileUtils.readFileToByteArray(new File(pathname)), false);
 //		BlobStoreFiles blobStoreFiles = inMemoryBlobStoreRepository.listBlobs(fileStorePath);
 
         camelContext.start();
@@ -201,9 +202,9 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         String filename = "existing_regtopp-file.zip";
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
         String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
-        FileInputStream testFileStream = new FileInputStream(new File(pathname));
+        byte[] testFile = FileUtils.readFileToByteArray(new File(pathname));
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFileStream, false);
+        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
 
 
         camelContext.start();
@@ -235,7 +236,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         String testFileName = "testFile";
         //populate fake blob repo
         for (String prefix : exportFileStaticPrefixes) {
-            inMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, new FileInputStream(new File( "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")), false);
+            inMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, FileUtils.readFileToByteArray(new File( "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")), false);
         }
         camelContext.start();
 

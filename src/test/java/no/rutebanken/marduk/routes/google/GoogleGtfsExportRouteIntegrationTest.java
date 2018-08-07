@@ -20,6 +20,7 @@ import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
+import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -67,7 +68,7 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
         context.start();
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(new File(testFile)), false);
+        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", FileUtils.readFileToByteArray(new File(testFile)), false);
 
         startRoute.requestBody(null);
 
@@ -80,7 +81,7 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
         context.start();
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(new File(testFile)), false);
+        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", FileUtils.readFileToByteArray(new File(testFile)), false);
 
         startQaRoute.requestBody(null);
 

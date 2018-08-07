@@ -20,8 +20,6 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
 
-import java.io.FileOutputStream;
-
 import static no.rutebanken.marduk.Constants.*;
 
 @Component
