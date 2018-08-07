@@ -104,7 +104,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .process(e ->
                         {
                             String fileName = e.getIn().getBody(File.class).getName();
-                            otpReportBlobStoreService.uploadBlob(e.getProperty(GRAPH_VERSION) + "/" + fileName, e.getIn().getBody(InputStream.class), true);
+                            otpReportBlobStoreService.uploadBlob(e.getProperty(GRAPH_VERSION) + "/" + fileName, e.getIn().getBody(byte[].class), true);
                         }
                 )
                 .routeId("otp-graph-build-report-versioned-upload");
@@ -171,18 +171,14 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
         return FileUtils.listFiles(new File(directory), null, true);
     }
 
-    private InputStream createRedirectPage(String version) {
-        try {
-            String url = "http://" + otpReportContainerName + "/" + version + "/index.html";
-            String html = "<html>\n" +
-                                  "<head>\n" +
-                                  "    <meta http-equiv=\"refresh\" content=\"0; url=" + url + "\" />\n" +
-                                  "</head>\n" +
-                                  "</html>";
+    private byte[] createRedirectPage(String version) {
+        String url = "http://" + otpReportContainerName + "/" + version + "/index.html";
+        String html = "<html>\n" +
+                              "<head>\n" +
+                              "    <meta http-equiv=\"refresh\" content=\"0; url=" + url + "\" />\n" +
+                              "</head>\n" +
+                              "</html>";
 
-            return IOUtils.toInputStream(html, "UTF-8");
-        } catch (IOException ioE) {
-            throw new MardukException("Failed to create input stream for redirect page: " + ioE.getMessage(), ioE);
-        }
+        return html.getBytes();
     }
 }

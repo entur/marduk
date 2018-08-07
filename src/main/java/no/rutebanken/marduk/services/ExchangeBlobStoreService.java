@@ -48,9 +48,9 @@ public class ExchangeBlobStoreService {
         repository.setContainerName(containerName);
     }
 
-    public void uploadBlob(@Header(value = Constants.FILE_HANDLE) String name, InputStream inputStream, Exchange exchange) {
+    public void uploadBlob(@Header(value = Constants.FILE_HANDLE) String name, byte[] content, Exchange exchange) {
         ExchangeUtils.addHeadersAndAttachments(exchange);
-        repository.uploadBlob(name, inputStream, false);
+        repository.uploadBlob(name, content, false);
     }
 
     public InputStream getBlob(@Header(value = FILE_HANDLE) String name, Exchange exchange) {

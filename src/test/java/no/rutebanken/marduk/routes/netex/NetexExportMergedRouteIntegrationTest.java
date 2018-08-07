@@ -20,6 +20,7 @@ import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
+import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,10 +55,10 @@ public class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderInt
     public void testExportMergedNetex() throws Exception {
 
         // Create stop file in in memory blob store
-        inMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip")), false);
+        inMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, FileUtils.readFileToByteArray(new File("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip")), false);
 
         // Create provider netex export in in memory blob store
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-aggregated-netex.zip", new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip")), false);
+        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-aggregated-netex.zip",  FileUtils.readFileToByteArray(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip")), false);
 
 
         startRoute.requestBody(null);

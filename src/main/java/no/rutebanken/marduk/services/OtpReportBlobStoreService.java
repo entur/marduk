@@ -46,11 +46,11 @@ public class OtpReportBlobStoreService {
         repository.setContainerName(containerName);
     }
 
-    public void uploadBlob(String name, InputStream inputStream, boolean makePublic) {
+    public void uploadBlob(String name, byte[] content, boolean makePublic) {
         if (name.endsWith(".html")) {
-            repository.uploadBlob(name, inputStream, makePublic, "text/html");
+            repository.uploadBlob(name, content, makePublic, "text/html");
         } else {
-            repository.uploadBlob(name, inputStream, makePublic);
+            repository.uploadBlob(name, content, makePublic);
         }
     }
 
