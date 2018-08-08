@@ -25,7 +25,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <gcp-storage.version>0.0.3-SNAPSHOT</gcp-storage.version>
+        <gcp-storage.version>0.0.4-SNAPSHOT</gcp-storage.version>
 
         <docker.maven.plugin.version>0.21.0</docker.maven.plugin.version>
         <spring-boot-plugin.version>2.0.3.RELEASE</spring-boot-plugin.version>
@@ -53,13 +53,13 @@
         <!-- Holding back activemq version as newest version no long support spring wired broker config-->
         <activemq.version>5.13.4</activemq.version>
         <netex-java-model.version>1.0.9-SNAPSHOT</netex-java-model.version>
-        <entur.helpers.version>0.0.3-SNAPSHOT</entur.helpers.version>
+        <entur.helpers.version>0.0.4-SNAPSHOT</entur.helpers.version>
         <fabric8.version>2.3.4</fabric8.version>
 
         <!-- The guava version seems to affect serialisation of OTP graph. Somehow, it leaks into
                 the graph built and breaks when OTP tries to read it.
                 It should be equal to or lower than the version used by OTP -->
-        <guava.version>18.0</guava.version>
+        <guava.version>26.0-jre</guava.version>
     </properties>
 
 
