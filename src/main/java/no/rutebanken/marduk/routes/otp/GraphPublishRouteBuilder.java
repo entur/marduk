@@ -70,6 +70,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
         from("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + "&doneFileName=" + GRAPH_OBJ + ".done&recursive=true&noop=true")
                 .log(LoggingLevel.INFO, "Starting graph publishing.")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .convertBodyTo(byte[].class)
                 .process(e -> {
                             e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"));
                             String timestamp = getBuildTimestamp(e);
