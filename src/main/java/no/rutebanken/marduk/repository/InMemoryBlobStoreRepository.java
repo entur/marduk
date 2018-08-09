@@ -89,6 +89,19 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
+    public void uploadBlobAsInputStream(String objectName, InputStream inputStream, boolean makePublic) {
+        try {
+            logger.debug("upload blob called in in-memory blob store");
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            IOUtils.copy(inputStream, byteArrayOutputStream);
+            byte[] data = byteArrayOutputStream.toByteArray();
+            blobs.put(objectName, data);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public boolean delete(String objectName) {
         blobs.remove(objectName);
         return true;
