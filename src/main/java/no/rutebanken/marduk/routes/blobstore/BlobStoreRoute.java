@@ -28,19 +28,6 @@ public class BlobStoreRoute extends BaseRouteBuilder {
     @Override
     public void configure() throws Exception {
 
-        from("direct:uploadBlobAsInputStream")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .choice()
-                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))     //defaulting to false if not specified
-                .end()
-                .bean("blobStoreService", "uploadBlobAsInputStream")
-                .setBody(simple(""))
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .log(LoggingLevel.INFO, correlation() + "Stored file ${header." + FILE_HANDLE + "} in blob store from input stream.")
-                .routeId("blobstore-upload-inputstream");
-
-
         from("direct:uploadBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .choice()

@@ -30,7 +30,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.io.InputStream;
 import java.util.Collection;
 import java.util.Date;
 
@@ -71,7 +70,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
         from("file:" + otpGraphBuildDirectory + "?fileName=" + GRAPH_OBJ + "&doneFileName=" + GRAPH_OBJ + ".done&recursive=true&noop=true")
                 .log(LoggingLevel.INFO, "Starting graph publishing.")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .convertBodyTo(InputStream.class)
+                .convertBodyTo(byte[].class)
                 .process(e -> {
                             e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"));
                             String timestamp = getBuildTimestamp(e);
@@ -80,7 +79,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                         }
                 )
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .to("direct:uploadBlobAsInputStream")
+                .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO,  "Done uploading new OTP graph.")
                 .to("direct:uploadVersionedGraphBuildReport")
                 .to("direct:updateCurrentGraphReportVersion")
