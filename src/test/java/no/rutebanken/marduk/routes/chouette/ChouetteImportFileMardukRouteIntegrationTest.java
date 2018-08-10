@@ -27,7 +27,6 @@ import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
 import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -109,7 +108,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob("rut/" + filename, FileUtils.readFileToByteArray(new File(pathname)), false);
+        inMemoryBlobStoreRepository.uploadBlob("rut/" + filename, new FileInputStream(new File(pathname)), false);
 
         // Mock initial call to Chouette to import job
         context.getRouteDefinition("chouette-send-import-job").adviceWith(context, new AdviceWithRouteBuilder() {
@@ -184,7 +183,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         String pathname = "src/test/resources/no/rutebanken/marduk/routes/file/beans/gtfs-folder.zip";
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(filename, FileUtils.readFileToByteArray(new File(pathname)), false);
+        inMemoryBlobStoreRepository.uploadBlob(filename, new FileInputStream(new File(pathname)), false);
 
         // Mock initial call to Chouette to import job
         context.getRouteDefinition("chouette-send-import-job").adviceWith(context, new AdviceWithRouteBuilder() {

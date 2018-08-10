@@ -33,9 +33,9 @@ public interface BlobStoreRepository {
 
     InputStream getBlob(String objectName);
 
-    void uploadBlob(String objectName, byte[] content, boolean makePublic);
+    void uploadBlob(String objectName, InputStream inputStream, boolean makePublic);
 
-    void uploadBlob(String objectName, byte[] content, boolean makePublic, String contentType);
+    void uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType);
 
     void setStorage(Storage storage);
 
