@@ -52,8 +52,8 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 	protected MockEndpoint chouetteGetData;
 
 
-	@EndpointInject(uri = "mock:OtpGraphBuildQueue")
-	protected MockEndpoint otpNetexGraphQueue;
+	@EndpointInject(uri = "mock:ChouetteMergeWithFlexibleLinesQueue")
+	protected MockEndpoint mergeWithFlexibleLinesMock;
 
 	@EndpointInject(uri = "mock:ExportGtfsQueue")
 	protected MockEndpoint exportGtfsQueue;
@@ -98,7 +98,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 						.to("mock:updateStatus");
-				interceptSendToEndpoint("activemq:queue:OtpGraphBuildQueue").skipSendToOriginalEndpoint().to("mock:OtpGraphBuildQueue");
+				interceptSendToEndpoint("activemq:queue:ChouetteMergeWithFlexibleLinesQueue").skipSendToOriginalEndpoint().to("mock:ChouetteMergeWithFlexibleLinesQueue");
 				interceptSendToEndpoint("activemq:queue:ChouetteExportGtfsQueue").skipSendToOriginalEndpoint().to("mock:ExportGtfsQueue");
 			}
 		});
@@ -141,10 +141,10 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 
 
 		pollJobStatus.expectedMessageCount(1);
-		updateStatus.expectedMessageCount(3);
+		updateStatus.expectedMessageCount(2);
 
 
-		otpNetexGraphQueue.expectedMessageCount(1);
+		mergeWithFlexibleLinesMock.expectedMessageCount(1);
 		exportGtfsQueue.expectedMessageCount(1);
 
 		Map<String, Object> headers = new HashMap<>();
@@ -162,7 +162,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 
 		chouetteGetData.assertIsSatisfied();
 		updateStatus.assertIsSatisfied();
-		otpNetexGraphQueue.assertIsSatisfied();
+		mergeWithFlexibleLinesMock.assertIsSatisfied();
 		exportGtfsQueue.assertIsSatisfied();
 
 	}

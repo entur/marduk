@@ -32,6 +32,7 @@ public class Constants {
 
     public static final String CURRENT_AGGREGATED_GTFS_FILENAME = "aggregated-gtfs.zip";
     public static final String CURRENT_AGGREGATED_NETEX_FILENAME = "aggregated-netex.zip";
+    public static final String CURRENT_FLEXIBLE_LINES_NETEX_FILENAME = "flexible-lines.zip";
     public static final String GRAPH_OBJ = "Graph.obj";
     public static final String BASE_GRAPH_OBJ = "baseGraph.obj";
 
@@ -44,6 +45,7 @@ public class Constants {
 
     public static final String BLOBSTORE_PATH_INBOUND = "inbound/received/";
     public static final String BLOBSTORE_PATH_OUTBOUND = "outbound/";
+    public static final String BLOBSTORE_PATH_CHOUETTE = "chouette/";
 
     public static final String CHOUETTE_JOB_STATUS_URL = "RutebankenChouetteJobStatusURL";
     public static final String CHOUETTE_JOB_ID = "RutebankenChouetteJobId";

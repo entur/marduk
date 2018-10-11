@@ -27,4 +27,6 @@ public interface ProviderRepository {
     Provider getProvider(Long id);
 
     String getReferential(Long id);
+
+    Long getProviderId(String referential);
 }
