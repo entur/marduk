@@ -1,4 +1,4 @@
-= Marduk
+= Marduk image:https://circleci.com/gh/entur/marduk/tree/master.svg?style=svg["CircleCI", link="https://circleci.com/gh/entur/marduk/tree/master"]
 
 For details, see the
 initial project setup location:
