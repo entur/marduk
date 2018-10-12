@@ -62,7 +62,6 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRou
             @Override
             public void configure() throws Exception {
 
-
                 interceptSendToEndpoint("activemq:queue:OtpGraphBuildQueue").skipSendToOriginalEndpoint()
                         .to("mock:OtpGraphBuildQueue");
                 interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
@@ -86,6 +85,9 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRou
         startRoute.requestBodyAndHeader(null, Constants.CHOUETTE_REFERENTIAL, "rb_rut");
 
         Assert.assertNotNull("Expected merged netex file to have been uploaded", inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME));
+        Assert.assertNotNull("Expected merged netex file to have been uploaded to marduk exchange for DatedServiceJourneyId-generation", inMemoryBlobStoreRepository.listBlobs(BLOBSTORE_PATH_OUTBOUND + "dated").getFiles().size() > 0);
+
+
         updateStatus.assertIsSatisfied();
         otpBuildGraph.assertIsSatisfied();
     }

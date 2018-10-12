@@ -44,7 +44,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     @Override
     public void configure() throws Exception {
         super.configure();
-        
+
         from("activemq:queue:ChouetteMergeWithFlexibleLinesQueue?transacted=true")
                 .to("direct:mergeChouetteExportWithFlexibleLinesExport")
                 .routeId("netex-export-merge-chouette-with-flexible-lines-jms");
@@ -64,11 +64,6 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
                 .to("direct:uploadWorkingFolderContent")
 
-
-                .choice().when(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.generateDatedServiceJourneyIds)
-                .to("direct:uploadDatedExport")
-                .end()
-
                 .setBody(constant(null))
                 .process(e -> e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString())))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
@@ -82,6 +77,12 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
         from("direct:uploadWorkingFolderContent").streamCaching()
                 .process(e -> new File(e.getProperty(FOLDER_NAME, String.class) + "/result").mkdir())
                 .process(e -> e.getIn().setBody(ZipFileUtils.zipFilesInFolder(e.getProperty(FOLDER_NAME, String.class), e.getProperty(FOLDER_NAME, String.class) + "/result/merged.zip")))
+
+
+                .choice().when(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.generateDatedServiceJourneyIds)
+                .to("direct:uploadDatedExport")
+                .end()
+
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + EXPORT_FILE_NAME))
                 .to("direct:uploadBlob")

@@ -16,6 +16,7 @@
         "dataFormat": "regtopp",
         "enableValidation": true,
         "enableAutoImport": true,
-        "migrateDataToProvider": 2
+        "migrateDataToProvider": 2,
+        "generateDatedServiceJourneyIds":true
     }
 }
