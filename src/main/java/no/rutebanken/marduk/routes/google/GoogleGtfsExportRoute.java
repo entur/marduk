@@ -17,15 +17,12 @@
 package no.rutebanken.marduk.routes.google;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,18 +36,11 @@ import static org.apache.camel.Exchange.FILE_PARENT;
 @Component
 public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
-    @Value("#{'${google.export.agency.prefix.whitelist:}'.split(',')}")
-    private Set<String> agencyWhiteList;
-
     @Value("${google.export.file.name:google/google_norway-aggregated-gtfs.zip}")
     private String googleExportFileName;
 
-    @Value("#{'${google.export.qa.agency.prefix.whitelist:}'.split(',')}")
-    private Set<String> qaAgencyWhiteList;
-
     @Value("${google.export.qa.file.name:google/google_norway-aggregated-qa-gtfs.zip}")
     private String googleQaExportFileName;
-
 
     @Override
     public void configure() throws Exception {
@@ -71,7 +61,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
         from("direct:exportGtfsGoogle")
                 .setBody(constant(null))
-                .setProperty(Constants.PROVIDER_WHITE_LIST, constant(prepareProviderWhiteList(agencyWhiteList)))
+                .process(e -> e.setProperty(Constants.PROVIDER_WHITE_LIST, prepareProviderWhiteListGoogleUpload()))
                 .setProperty(Constants.TRANSFORMATION_ROUTING_DESTINATION, constant("direct:transformToGoogleGTFS"))
                 .setHeader(Constants.FILE_NAME, constant(googleExportFileName))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GOOGLE_GTFS"))
@@ -87,7 +77,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
         from("direct:exportQaGtfsGoogle")
                 .setBody(constant(null))
-                .setProperty(Constants.PROVIDER_WHITE_LIST, constant(prepareProviderWhiteList(qaAgencyWhiteList)))
+                .process(e -> e.setProperty(Constants.PROVIDER_WHITE_LIST, prepareProviderWhiteListGoogleQAUpload()))
                 .setProperty(Constants.TRANSFORMATION_ROUTING_DESTINATION, constant("direct:transformToGoogleGTFS"))
                 .setHeader(Constants.FILE_NAME, constant(googleQaExportFileName))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GOOGLE_GTFS_QA"))
@@ -98,16 +88,31 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
     }
 
 
-    /**
-     * Make sure whitelisted agencies start with "rb_" prefix.
-     */
-    private List<String> prepareProviderWhiteList(Collection<String> rawIds) {
-        if (rawIds == null) {
-            return new ArrayList<>();
-        }
-
-        return rawIds.stream().filter(StringUtils::isNotEmpty).map(agency -> agency.startsWith("rb_") ? agency : "rb_" + agency).collect(Collectors.toList());
+    private Set<String> prepareProviderWhiteListGoogleUpload() {
+        return getProviderRepository().getProviders().stream().filter(p -> p.chouetteInfo.googleUpload).map(this::getExportReferentialForProvider).collect(Collectors.toSet());
     }
 
+    private Set<String> prepareProviderWhiteListGoogleQAUpload() {
+        return getProviderRepository().getProviders().stream().filter(p -> p.chouetteInfo.googleQAUpload).map(this::getExportReferentialForProvider).collect(Collectors.toSet());
+    }
+
+
+    /**
+     * Use referential for RB-space provider even if providers own space is configured for export.
+     *
+     * @param provider
+     * @return
+     */
+    private String getExportReferentialForProvider(Provider provider) {
+        if (provider.chouetteInfo.migrateDataToProvider != null) {
+
+            Provider migrateToProvider = getProviderRepository().getProvider(provider.chouetteInfo.migrateDataToProvider);
+            if (migrateToProvider != null) {
+                return migrateToProvider.chouetteInfo.referential;
+            }
+
+        }
+        return provider.chouetteInfo.referential;
+    }
 
 }

@@ -27,7 +27,6 @@ import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -37,6 +36,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import static org.mockito.Mockito.when;
+
 @RunWith(CamelSpringRunner.class)
 @ActiveProfiles({"default", "in-memory-blobstore"})
 @UseAdviceWith
@@ -52,16 +52,16 @@ public class MardukRouteBuilderIntegrationTestBase {
     public void setUp() throws IOException {
 
         when(providerRepository.getProviders()).thenReturn(Collections.singletonList(Provider.create(IOUtils.toString(new FileReader(
-						"src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))));
+                                                                                                                                            "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))));
 
         when(providerRepository.getProvider(2L)).thenReturn(Provider.create(IOUtils.toString(new FileReader(
-                "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json"))));
+                                                                                                                   "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json"))));
 
         when(providerRepository.getProviderId("rb_rut")).thenReturn(2l);
 
     }
 
-    protected void replaceEndpoint(String routeId,String originalEndpoint,String replacementEndpoint) throws Exception {
+    protected void replaceEndpoint(String routeId, String originalEndpoint, String replacementEndpoint) throws Exception {
         context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -72,11 +72,17 @@ public class MardukRouteBuilderIntegrationTestBase {
     }
 
     protected Provider provider(String ref, long id, Long migrateToProvider) throws Exception {
+        return provider(ref, id, migrateToProvider, false, false);
+    }
+
+    protected Provider provider(String ref, long id, Long migrateToProvider, boolean googleUpload, boolean googleQAUpload) throws Exception {
         Provider provider = new Provider();
         provider.chouetteInfo = new ChouetteInfo();
         provider.chouetteInfo.referential = ref;
         provider.chouetteInfo.migrateDataToProvider = migrateToProvider;
         provider.id = id;
+        provider.chouetteInfo.googleUpload = googleUpload;
+        provider.chouetteInfo.googleQAUpload = googleQAUpload;
 
         return provider;
     }

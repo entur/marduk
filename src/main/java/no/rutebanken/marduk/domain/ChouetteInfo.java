@@ -40,37 +40,41 @@ public class ChouetteInfo {
     public boolean enableAutoImport;
     public boolean generateDatedServiceJourneyIds;
     public Set<String> generateMissingServiceLinksForModes;
+    public boolean googleUpload;
+    public boolean googleQAUpload;
 
     public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
 
     public Long getMigrateDataToProvider() {
-		return migrateDataToProvider;
-	}
-
-	@Override
-    public String toString() {
-        return "ChouetteInfo{" +
-                "id=" + id +
-                ", xmlns='" + xmlns + '\'' +
-                ", xmlnsurl='" + xmlnsurl + '\'' +
-                ", referential='" + referential + '\'' +
-                ", organisation='" + organisation + '\'' +
-                ", user='" + user + '\'' +
-                ", regtoppVersion='" + regtoppVersion + '\'' +
-                ", regtoppCoordinateProjection='" + regtoppCoordinateProjection + '\'' +
-                ", regtoppCalendarStrategy='" + regtoppCalendarStrategy + '\'' +
-                ", dataFormat='" + dataFormat + '\'' +
-                ", enableValidation='" + enableValidation + '\'' +
-                ", allowCreateMissingStopPlace='" + allowCreateMissingStopPlace + '\'' +
-                ", enableStopPlaceIdMapping='" + enableStopPlaceIdMapping + '\'' +
-                ", enableCleanImport='" + enableCleanImport + '\'' +
-                ", generateMissingServiceLinksForModes='" + generateMissingServiceLinksForModes + '\'' +
-                ", migrateDataToProvider='" + migrateDataToProvider + '\'' +
-                ", generateDatedServiceJourneyIds='" + generateDatedServiceJourneyIds + '\'' +
-                '}';
+        return migrateDataToProvider;
     }
 
-    public boolean usesRegtopp(){
+    @Override
+    public String toString() {
+        return "ChouetteInfo{" +
+                       "id=" + id +
+                       ", xmlns='" + xmlns + '\'' +
+                       ", xmlnsurl='" + xmlnsurl + '\'' +
+                       ", referential='" + referential + '\'' +
+                       ", organisation='" + organisation + '\'' +
+                       ", user='" + user + '\'' +
+                       ", regtoppVersion='" + regtoppVersion + '\'' +
+                       ", regtoppCoordinateProjection='" + regtoppCoordinateProjection + '\'' +
+                       ", regtoppCalendarStrategy='" + regtoppCalendarStrategy + '\'' +
+                       ", dataFormat='" + dataFormat + '\'' +
+                       ", enableValidation='" + enableValidation + '\'' +
+                       ", allowCreateMissingStopPlace='" + allowCreateMissingStopPlace + '\'' +
+                       ", enableStopPlaceIdMapping='" + enableStopPlaceIdMapping + '\'' +
+                       ", enableCleanImport='" + enableCleanImport + '\'' +
+                       ", generateMissingServiceLinksForModes='" + generateMissingServiceLinksForModes + '\'' +
+                       ", migrateDataToProvider='" + migrateDataToProvider + '\'' +
+                       ", generateDatedServiceJourneyIds='" + generateDatedServiceJourneyIds + '\'' +
+                       ", googleUpload='" + googleUpload + '\'' +
+                       ", googleQAUpload='" + googleQAUpload + '\'' +
+                       '}';
+    }
+
+    public boolean usesRegtopp() {
         return "regtopp".equals(dataFormat);
     }
 
@@ -140,5 +144,13 @@ public class ChouetteInfo {
 
     public boolean isGenerateDatedServiceJourneyIds() {
         return generateDatedServiceJourneyIds;
+    }
+
+    public boolean isGoogleUpload() {
+        return googleUpload;
+    }
+
+    public boolean isGoogleQAUpload() {
+        return googleQAUpload;
     }
 }

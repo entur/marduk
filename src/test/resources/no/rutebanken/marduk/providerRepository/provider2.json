@@ -17,6 +17,8 @@
         "enableValidation": true,
         "enableAutoImport": true,
         "migrateDataToProvider": 2,
-        "generateDatedServiceJourneyIds":true
+        "generateDatedServiceJourneyIds":true,
+        "googleUpload": true,
+        "googleQAUpload": true
     }
 }

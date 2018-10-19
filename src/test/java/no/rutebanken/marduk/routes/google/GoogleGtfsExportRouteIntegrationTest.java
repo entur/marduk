@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes.google;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -58,7 +59,11 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
 
     @Before
     public void prepare() throws Exception {
-        when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null), provider("rb_rut", 2, null), provider("opp", 3, 4l)));
+        Provider rbOppProvider = provider("rb_opp", 4, null, false, false);
+        when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null, false, false), provider("rb_rut", 2, null, true, false),
+                provider("opp", 3, rbOppProvider.id, false, true), rbOppProvider));
+
+        when(providerRepository.getProvider(rbOppProvider.id)).thenReturn(rbOppProvider);
     }
 
 
@@ -80,7 +85,7 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
         context.start();
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(new File(testFile)), false);
+        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_opp-aggregated-gtfs.zip", new FileInputStream(new File(testFile)), false);
 
         startQaRoute.requestBody(null);
 
