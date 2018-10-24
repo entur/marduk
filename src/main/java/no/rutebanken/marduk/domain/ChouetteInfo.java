@@ -38,6 +38,7 @@ public class ChouetteInfo {
     public boolean enableStopPlaceIdMapping = false;
     public boolean enableCleanImport = false;
     public boolean enableAutoImport;
+    public boolean enableAutoValidation;
     public boolean generateDatedServiceJourneyIds;
     public Set<String> generateMissingServiceLinksForModes;
     public boolean googleUpload;
@@ -65,6 +66,8 @@ public class ChouetteInfo {
                        ", enableValidation='" + enableValidation + '\'' +
                        ", allowCreateMissingStopPlace='" + allowCreateMissingStopPlace + '\'' +
                        ", enableStopPlaceIdMapping='" + enableStopPlaceIdMapping + '\'' +
+                       ", enableAutoImport='" + enableAutoImport + '\'' +
+                       ", enableAutoValidation='" + enableAutoValidation + '\'' +
                        ", enableCleanImport='" + enableCleanImport + '\'' +
                        ", generateMissingServiceLinksForModes='" + generateMissingServiceLinksForModes + '\'' +
                        ", migrateDataToProvider='" + migrateDataToProvider + '\'' +
@@ -152,5 +155,9 @@ public class ChouetteInfo {
 
     public boolean isGoogleQAUpload() {
         return googleQAUpload;
+    }
+
+    public boolean isEnableAutoValidation() {
+        return enableAutoValidation;
     }
 }
