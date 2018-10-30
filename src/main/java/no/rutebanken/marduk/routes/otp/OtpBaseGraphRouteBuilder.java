@@ -21,6 +21,7 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
@@ -104,7 +105,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:fetchAdditionalMapDataForOtpGraphBaseBuild")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetching additional files for map building from: " + additionalFilesSubDirectories)
-                .filter(constant(!StringUtils.isEmpty(additionalFilesSubDirectories)))
+                .filter(constant(!CollectionUtils.isEmpty(additionalFilesSubDirectories)))
                 .setHeader(FILE_PARENT_COLLECTION, constant(additionalFilesSubDirectories))
                 .to("direct:listBlobsInFolders")
                 .split().simple("${body.files}")
