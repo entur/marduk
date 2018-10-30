@@ -109,7 +109,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FILE_PARENT_COLLECTION, constant(additionalFilesSubDirectories))
                 .to("direct:listBlobsInFolders")
                 .split().simple("${body.files}")
-                .filter(simple("${header.STORE_NUMBER.toString().trim()} != ''"))
+                .filter(simple("${body.toString().trim()} != ''"))
                 .setProperty("tmpFileName", simple("${body.fileNameOnly}"))
                 .filter(simple("${body.fileNameOnly}"))
                 .setHeader(FILE_HANDLE, simple("${body.name}"))
