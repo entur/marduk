@@ -104,6 +104,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:fetchAdditionalMapDataForOtpGraphBaseBuild")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetching additional files for map building from: " + additionalFilesSubDirectories)
+                .filter(constant(!StringUtils.isEmpty(additionalFilesSubDirectories)))
                 .setHeader(FILE_PARENT_COLLECTION, constant(additionalFilesSubDirectories))
                 .to("direct:listBlobsInFolders")
                 .split().simple("${body.files}")
