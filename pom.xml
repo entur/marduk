@@ -37,22 +37,16 @@
         <postgresql.version>9.4-1201-jdbc41</postgresql.version>
         <keycloak.version>4.1.0.Final</keycloak.version>
         <spring.security.version>5.0.7.RELEASE</spring.security.version>
-        <!-- Docker & Fabric8 Configs -->
+        <!-- Docker  Configs -->
         <docker.from>eu.gcr.io/carbon-1287/java-base-image</docker.from>
         <fabric8.dockerUser>carbon-1287/</fabric8.dockerUser>
         <docker.image>eu.gcr.io/${fabric8.dockerUser}${project.artifactId}:${project.version}</docker.image>
         <docker.cleanup>none</docker.cleanup>
 
-        <!-- fabric8.env.AB_JOLOKIA_AUTH_OPENSHIFT>true</fabric8.env.AB_JOLOKIA_AUTH_OPENSHIFT -->
-        <fabric8.label.component>${project.artifactId}</fabric8.label.component>
-        <fabric8.label.container>spring-boot</fabric8.label.container>
-        <fabric8.label.group>quickstarts</fabric8.label.group>
-        <fabric8.iconRef>camel</fabric8.iconRef>
         <onebusaway.gtfs.version>1.3.4</onebusaway.gtfs.version>
 
         <netex-java-model.version>1.0.9-SNAPSHOT</netex-java-model.version>
         <entur.helpers.version>0.0.4-SNAPSHOT</entur.helpers.version>
-        <fabric8.version>2.3.4</fabric8.version>
 
         <!-- The guava version seems to affect serialisation of OTP graph. Somehow, it leaks into
                 the graph built and breaks when OTP tries to read it.
@@ -80,13 +74,6 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.fabric8</groupId>
-                <artifactId>fabric8-project</artifactId>
-                <version>${fabric8.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -445,15 +432,6 @@
             <scope>test</scope>
         </dependency>
 
-
-        <!-- <dependency> <groupId>org.jboss.arquillian.junit</groupId> <artifactId>arquillian-junit-container</artifactId> <scope>test</scope>
-            </dependency> -->
-
-        <dependency>
-            <groupId>io.fabric8</groupId>
-            <artifactId>fabric8-arquillian</artifactId>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>net.javacrumbs.json-unit</groupId>
             <artifactId>json-unit</artifactId>
@@ -552,28 +530,6 @@
 
             <plugin>
                 <groupId>io.fabric8</groupId>
-                <artifactId>fabric8-maven-plugin</artifactId>
-                <version>${fabric8.version}</version>
-                <executions>
-                    <execution>
-                        <id>json</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>json</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>attach</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>attach</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
                 <version>${docker.maven.plugin.version}</version>
                 <configuration>
@@ -597,75 +553,14 @@
                 </configuration>
             </plugin>
         </plugins>
-        <pluginManagement>
-            <plugins>
-                <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself. -->
-                <plugin>
-                    <groupId>org.eclipse.m2e</groupId>
-                    <artifactId>lifecycle-mapping</artifactId>
-                    <version>1.0.0</version>
-                    <configuration>
-                        <lifecycleMappingMetadata>
-                            <pluginExecutions>
-                                <pluginExecution>
-                                    <pluginExecutionFilter>
-                                        <groupId>io.fabric8</groupId>
-                                        <artifactId>fabric8-maven-plugin</artifactId>
-                                        <versionRange>[2.2.84,)</versionRange>
-                                        <goals>
-                                            <goal>json</goal>
-                                        </goals>
-                                    </pluginExecutionFilter>
-                                    <action>
-                                        <ignore/>
-                                    </action>
-                                </pluginExecution>
-                            </pluginExecutions>
-                        </lifecycleMappingMetadata>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 
-    <!-- Default sample commands: mvn -Pf8-build ... build Docker images and create OpenShift deployment configs mvn -Pf8-deploy
-        ... f8-build + push to Docker registry + applying deployment config to OpenShift mvn -Pf8-local-deploy ... deployment for
-        a single node setup without pushing to a registry For individual goal usage please consult the fabric8 documentation -->
+
     <profiles>
         <profile>
             <id>rutebanken</id>
-            <properties>
-                <fabric8.imagePullPolicySnapshot>Always</fabric8.imagePullPolicySnapshot>
-                <fabric8.recreate>true</fabric8.recreate>
-            </properties>
             <build>
-                <!-- Missing fabric8:apply, as this crashed (probably due to missing fabric8) -->
-                <defaultGoal>clean install docker:build docker:push fabric8:json</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <id>f8-build</id>
-            <build>
-                <defaultGoal>clean install docker:build fabric8:json</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <id>f8-deploy</id>
-            <properties>
-                <fabric8.imagePullPolicySnapshot>Always</fabric8.imagePullPolicySnapshot>
-                <fabric8.recreate>true</fabric8.recreate>
-            </properties>
-            <build>
-                <defaultGoal>clean install docker:build docker:push fabric8:json fabric8:apply</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <id>f8-local-deploy</id>
-            <properties>
-                <fabric8.recreate>true</fabric8.recreate>
-            </properties>
-            <build>
-                <defaultGoal>clean install docker:build fabric8:json fabric8:apply</defaultGoal>
+                <defaultGoal>clean install docker:build docker:push</defaultGoal>
             </build>
         </profile>
     </profiles>
