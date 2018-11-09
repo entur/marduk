@@ -48,7 +48,7 @@
         <fabric8.label.container>spring-boot</fabric8.label.container>
         <fabric8.label.group>quickstarts</fabric8.label.group>
         <fabric8.iconRef>camel</fabric8.iconRef>
-        <onebusaway.gtfs.modules>1.3.12</onebusaway.gtfs.modules>
+        <onebusaway.gtfs.version>1.3.4</onebusaway.gtfs.version>
 
         <netex-java-model.version>1.0.9-SNAPSHOT</netex-java-model.version>
         <entur.helpers.version>0.0.4-SNAPSHOT</entur.helpers.version>
@@ -486,7 +486,7 @@
         <dependency>
             <groupId>org.onebusaway</groupId>
             <artifactId>onebusaway-gtfs-transformer</artifactId>
-            <version>${onebusaway.gtfs.modules}</version>
+            <version>${onebusaway.gtfs.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.kurtraschke</groupId>
@@ -497,17 +497,7 @@
         <dependency>
             <groupId>org.onebusaway</groupId>
             <artifactId>onebusaway-gtfs-merge</artifactId>
-            <version>${onebusaway.gtfs.modules}</version>
-        </dependency>
-        <dependency>
-            <groupId>no.jskdata</groupId>
-            <artifactId>jskdata</artifactId>
-            <version>1.0.8</version>
-        </dependency>
-        <dependency>
-            <groupId>no.vegvesen.nvdb</groupId>
-            <artifactId>sosi-reader-impl</artifactId>
-            <version>1.18</version>
+            <version>${onebusaway.gtfs.version}</version>
         </dependency>
         <dependency>
             <groupId>org.wololo</groupId>
