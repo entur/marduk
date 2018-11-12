@@ -97,6 +97,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FILE_HANDLE, constant(otpGraphCurrentFile))
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, "Done uploading reference to current graph: ${header." + FILE_HANDLE + "}")
+                .setHeader(FILE_HANDLE, body())
 
                 .to("direct:uploadVersionedGraphBuildReport")
                 .to("direct:updateCurrentGraphReportVersion")
