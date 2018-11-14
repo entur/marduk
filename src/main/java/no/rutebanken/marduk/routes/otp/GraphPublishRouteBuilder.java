@@ -74,6 +74,10 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
 
     private static final String GRAPH_VERSION = "RutebankenGraphVersion";
 
+
+    private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
+
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -93,11 +97,13 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, "Done uploading new OTP graph: ${header." + FILE_HANDLE + "}")
 
+
+                .setProperty(GRAPH_PATH_PROPERTY, header(FILE_HANDLE))
                 .setBody(header(FILE_HANDLE))
                 .setHeader(FILE_HANDLE, constant(otpGraphCurrentFile))
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, "Done uploading reference to current graph: ${header." + FILE_HANDLE + "}")
-                .setHeader(FILE_HANDLE, body())
+                .setHeader(FILE_HANDLE, exchangeProperty(GRAPH_PATH_PROPERTY))
 
                 .to("direct:uploadVersionedGraphBuildReport")
                 .to("direct:updateCurrentGraphReportVersion")
