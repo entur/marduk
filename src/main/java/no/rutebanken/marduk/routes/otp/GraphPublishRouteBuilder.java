@@ -46,9 +46,6 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.deployment.notification.url:none}")
     private String otpGraphDeploymentNotificationUrl;
 
-    @Value("${otp.graph.etcd.notification.url:http4://etcd-client:2379/v2/keys/prod/otp/marduk.file}")
-    private String otpGraphEtcdNotificationUrl;
-
     @Value("${otp.graph.build.directory}")
     private String otpGraphBuildDirectory;
 
@@ -105,7 +102,6 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "Done uploading OTP graph build reports.")
                 .setProperty(Exchange.FILE_PARENT, header(Exchange.FILE_PARENT))
                 .to("direct:notify")
-                .to("direct:notifyEtcd")
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
                 .to("direct:cleanUp")
                 .routeId("otp-graph-upload");
@@ -145,24 +141,6 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .otherwise()
                 .log(LoggingLevel.WARN, getClass().getName(), "No notification url configured for otp graph building. Doing nothing.")
                 .routeId("otp-graph-notify");
-
-        /* Putting value directly into etcd */
-        from("direct:notifyEtcd")
-                .setProperty("notificationUrl", constant(otpGraphEtcdNotificationUrl))
-                .choice()
-                .when(exchangeProperty("notificationUrl").isNotEqualTo("none"))
-                .log(LoggingLevel.INFO, getClass().getName(), "Notifying " + exchangeProperty("notificationUrl") + " about new otp graph.")
-                .process(e -> e.getIn().setBody("value=" + e.getIn().getHeader(FILE_HANDLE, String.class)))
-                .removeHeaders("*")
-                .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.PUT))
-                .setHeader(Exchange.CONTENT_TYPE, constant("application/x-www-form-urlencoded"))
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .toD("${property.notificationUrl}")
-                .log(LoggingLevel.INFO, getClass().getName(), "Done notifying. Got a ${header." + Exchange.HTTP_RESPONSE_CODE + "} back.")
-                .otherwise()
-                .log(LoggingLevel.WARN, getClass().getName(), "No notification url configured for etcd endpoint. Doing nothing.")
-                .routeId("otp-graph-notify-etcd");
-
 
         from("direct:cleanUp")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Deleting build folder ${property." + Exchange.FILE_PARENT + "} ...")

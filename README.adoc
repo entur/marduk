@@ -84,7 +84,6 @@ spring.activemq.user=admin
 spring.activemq.pooled=true
 spring.main.sources=no.rutebanken.marduk
 spring.profiles.active=gcs-blobstore
-etcd.graph.notification.url=none
 otp.graph.deployment.notification.url=none
 
 idempotent.skip=false
@@ -105,7 +104,7 @@ Build: `mvn clean install`
 * Docker image: `mvn -Dspring.profiles.active=dev -Pf8-build`
 * 
 
-Run the docker image in docker inside vagrant:
+Run the docker image in docker inside vagrant:et
 
 `docker rm -f marduk ; mvn -Pf8-build &amp;&amp; docker run -it --name marduk -e JAVA_OPTIONS=&quot;-Xmx1280m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005&quot; --link activemq --link lamassu --link chouette -p 5005:5005 -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro -v /git/config/marduk/dev/application.properties:/app/config/application.properties:ro dr.rutebanken.org/rutebanken/marduk:0.0.1-SNAPSHOT`
 
