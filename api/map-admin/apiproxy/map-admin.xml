@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<APIProxy name="map-admin">
+    <Description>map-admin</Description>
+    <DisplayName>map-admin</DisplayName>
+   <Policies>
+        <Policy>assignMessage.addCors</Policy>
+        <Policy>flowCallout.getEnvironmentConfiguration</Policy>
+        <Policy>flowCallout.generalStackdriverLogging</Policy>
+        <Policy>flowCallout.globalIpBlacklistTeamRutedata</Policy>
+        <Policy>flowCallout.replaceTargetUrl</Policy>
+        <Policy>spikeArrest</Policy>
+        <Policy>flowCallout.generalSecurityHeaders</Policy>
+    </Policies>
+    <ProxyEndpoints>
+        <ProxyEndpoint>map-v1</ProxyEndpoint>
+    </ProxyEndpoints>
+    <Resources/>
+    <Spec></Spec>
+    <TargetServers/>
+    <TargetEndpoints>
+        <TargetEndpoint>map-v1</TargetEndpoint>
+    </TargetEndpoints>
+</APIProxy>
