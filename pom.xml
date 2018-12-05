@@ -38,7 +38,7 @@
         <keycloak.version>4.1.0.Final</keycloak.version>
         <spring.security.version>5.0.7.RELEASE</spring.security.version>
         <!-- Docker  Configs -->
-        <docker.from>eu.gcr.io/carbon-1287/openjdk11-base-imag</docker.from>
+        <docker.from>eu.gcr.io/carbon-1287/openjdk11-base-image</docker.from>
         <fabric8.dockerUser>carbon-1287/</fabric8.dockerUser>
         <docker.image>eu.gcr.io/${fabric8.dockerUser}${project.artifactId}:${project.version}</docker.image>
         <docker.cleanup>none</docker.cleanup>
