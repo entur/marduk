@@ -39,6 +39,9 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     @Value("${netex.export.download.directory:files/netex/merged}")
     private String localWorkingDirectory;
 
+    @Value("${netex.export.merge.flexible.lines.enabled:false}")
+    private String mergeFlexibleLinesEnabled;
+
     private static String EXPORT_FILE_NAME = "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
 
     @Override
@@ -102,6 +105,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
 
         from("direct:unpackFlexibleLinesExportToWorkingFolder")
+                .choice().when(constant(mergeFlexibleLinesEnabled))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME))
                 .to("direct:fetchExternalBlob")
                 .choice()
@@ -109,6 +113,9 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class)))
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), "${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
+                .otherwise()
+                .log(LoggingLevel.INFO, getClass().getName(), "Skipping merge with flexible lines as this is diabled.")
+                .end()
                 .routeId("netex-export-merge-chouette-with-flexible-lines-unpack-flexible-lines-export");
 
     }
