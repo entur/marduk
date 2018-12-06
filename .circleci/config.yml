@@ -26,6 +26,7 @@ jobs:
         password: $GCLOUD_SERVICE_KEY
     environment:
       MAVEN_OPTS: -Xmx3G
+      _JAVA_OPTIONS: -Xss4m
     steps:
     - checkout
     - restore_cache:
