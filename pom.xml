@@ -48,10 +48,7 @@
         <netex-java-model.version>1.0.9-SNAPSHOT</netex-java-model.version>
         <entur.helpers.version>0.0.4-SNAPSHOT</entur.helpers.version>
 
-        <!-- The guava version seems to affect serialisation of OTP graph. Somehow, it leaks into
-                the graph built and breaks when OTP tries to read it.
-                It should be equal to or lower than the version used by OTP -->
-        <guava.version>26.0-jre</guava.version>
+        <guava.version>27.0.1-jre</guava.version>
     </properties>
 
     <dependencyManagement>
