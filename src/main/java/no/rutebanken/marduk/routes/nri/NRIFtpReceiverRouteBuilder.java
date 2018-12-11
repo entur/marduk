@@ -16,9 +16,9 @@
 
 package no.rutebanken.marduk.routes.nri;
 
-import java.util.Date;
-import java.util.UUID;
-
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.file.FileComponent;
@@ -29,11 +29,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import java.util.Date;
+import java.util.UUID;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 /**
  * Downloads zip files from NRI ftp, sends to activemq

@@ -28,7 +28,13 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.UUID;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_CHOUETTE;
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FOLDER_NAME;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 /**
  * Merge NeTEx dataset exported from Chouette with NeTEx dataset with flexible lines

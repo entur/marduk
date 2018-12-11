@@ -16,12 +16,12 @@
 
 package no.rutebanken.marduk.routes.sftp;
 
+import org.apache.camel.component.file.GenericFile;
+import org.springframework.stereotype.Component;
+
 import java.util.Comparator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.camel.component.file.GenericFile;
-import org.springframework.stereotype.Component;
 
 @Component(value = "caseIdSftpSorter")
 public class CaseIdSorter<T> implements Comparator<GenericFile<T>> {

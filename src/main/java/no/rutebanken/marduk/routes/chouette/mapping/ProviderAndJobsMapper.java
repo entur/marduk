@@ -21,7 +21,11 @@ import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.rest.ProviderAndJobs;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ProviderAndJobsMapper {
 

@@ -31,7 +31,13 @@ import java.util.Set;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
-import static no.rutebanken.marduk.routes.file.FileType.*;
+import static no.rutebanken.marduk.routes.file.FileType.GTFS;
+import static no.rutebanken.marduk.routes.file.FileType.INVALID_FILE_NAME;
+import static no.rutebanken.marduk.routes.file.FileType.NEPTUNE;
+import static no.rutebanken.marduk.routes.file.FileType.NETEXPROFILE;
+import static no.rutebanken.marduk.routes.file.FileType.RAR;
+import static no.rutebanken.marduk.routes.file.FileType.REGTOPP;
+import static no.rutebanken.marduk.routes.file.FileType.ZIP_WITH_SINGLE_FOLDER;
 import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.firstElementQNameMatchesNetex;
 import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.validateZipContent;
 

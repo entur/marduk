@@ -16,6 +16,18 @@
 
 package no.rutebanken.marduk.routes.file;
 
+import com.github.junrar.Archive;
+import com.github.junrar.exception.RarException;
+import com.github.junrar.impl.FileVolumeManager;
+import com.github.junrar.rarfile.FileHeader;
+import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
+import org.apache.camel.Body;
+import org.apache.camel.Exchange;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,20 +41,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-
-import org.apache.camel.Body;
-import org.apache.camel.Exchange;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.github.junrar.Archive;
-import com.github.junrar.exception.RarException;
-import com.github.junrar.impl.FileVolumeManager;
-import com.github.junrar.rarfile.FileHeader;
-
-import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 
 public class RARToZipFilesSplitter {
 

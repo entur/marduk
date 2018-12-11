@@ -28,7 +28,12 @@ import org.springframework.util.StringUtils;
 
 import javax.jms.JMSException;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
+import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static org.apache.camel.Exchange.FILE_PARENT;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
 

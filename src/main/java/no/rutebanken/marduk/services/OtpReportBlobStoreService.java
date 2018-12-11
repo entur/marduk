@@ -17,10 +17,7 @@
 package no.rutebanken.marduk.services;
 
 import com.google.cloud.storage.Storage;
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.repository.BlobStoreRepository;
-import org.apache.camel.Exchange;
-import org.apache.camel.Header;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

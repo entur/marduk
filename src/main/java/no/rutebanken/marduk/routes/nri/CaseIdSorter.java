@@ -16,14 +16,14 @@
 
 package no.rutebanken.marduk.routes.nri;
 
-import java.util.Comparator;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.camel.component.file.GenericFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import java.util.Comparator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component(value = "caseIdNriFtpSorter")
 public class CaseIdSorter<T> implements Comparator<GenericFile<T>> {

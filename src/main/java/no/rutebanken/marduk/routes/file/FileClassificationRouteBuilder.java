@@ -25,13 +25,16 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
 import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.tomcat.util.bcel.Const;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.Charset;
 import java.util.UUID;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_NAME;
+import static no.rutebanken.marduk.Constants.FILE_TYPE;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 /**
  * Receives file handle, pulls file from blob store, classifies files and performs initial validation.

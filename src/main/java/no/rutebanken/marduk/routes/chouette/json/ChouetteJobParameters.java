@@ -16,16 +16,15 @@
 
 package no.rutebanken.marduk.routes.chouette.json;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
 
 public abstract class ChouetteJobParameters {
 

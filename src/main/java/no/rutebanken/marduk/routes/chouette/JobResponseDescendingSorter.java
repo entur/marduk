@@ -16,9 +16,9 @@
 
 package no.rutebanken.marduk.routes.chouette;
 
-import java.util.Comparator;
-
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
+
+import java.util.Comparator;
 
 public class JobResponseDescendingSorter implements Comparator<JobResponse> {
 

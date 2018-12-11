@@ -36,7 +36,11 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.Date;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.METADATA_DESCRIPTION;
+import static no.rutebanken.marduk.Constants.METADATA_FILE;
+import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static org.apache.camel.Exchange.FILE_PARENT;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 

@@ -27,7 +27,11 @@ import org.springframework.util.StringUtils;
 import java.io.File;
 import java.util.List;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.BASE_GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_PARENT_COLLECTION;
+import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
+import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static org.apache.camel.Exchange.FILE_PARENT;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
 

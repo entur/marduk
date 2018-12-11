@@ -23,8 +23,8 @@ import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.JobResponseWithLinks;
 import no.rutebanken.marduk.routes.chouette.mapping.ProviderAndJobsMapper;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
 import no.rutebanken.marduk.routes.status.JobEvent.State;
+import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
 import org.apache.activemq.ScheduledMessage;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -41,7 +41,11 @@ import java.util.Optional;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-import static no.rutebanken.marduk.routes.chouette.json.Status.*;
+import static no.rutebanken.marduk.routes.chouette.json.Status.ABORTED;
+import static no.rutebanken.marduk.routes.chouette.json.Status.CANCELED;
+import static no.rutebanken.marduk.routes.chouette.json.Status.RESCHEDULED;
+import static no.rutebanken.marduk.routes.chouette.json.Status.SCHEDULED;
+import static no.rutebanken.marduk.routes.chouette.json.Status.STARTED;
 
 @Component
 public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
