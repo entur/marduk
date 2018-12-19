@@ -37,6 +37,7 @@ import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.USERNAME;
 
 /**
  * Downloads file from lamassu, putting it in blob store, posting handle on queue.
@@ -113,6 +114,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
             e.getIn().setHeader(PROVIDER_ID, provider.getId());
             e.getIn().setHeader(Constants.FILE_NAME, fileName);
             e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.getChouetteInfo().referential);
+            e.getIn().setHeader(USERNAME, provider.sftpAccount);
         } else {
             logger.warn("Found timetable file for unknown provider: " + fullFilePath);
         }
