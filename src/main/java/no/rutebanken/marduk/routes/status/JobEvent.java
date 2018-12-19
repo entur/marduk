@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.Utils;
 import org.apache.camel.Exchange;
 
 import java.io.IOException;
@@ -32,6 +33,7 @@ import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.SYSTEM_STATUS;
+import static no.rutebanken.marduk.Constants.USERNAME;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class JobEvent {
@@ -59,6 +61,8 @@ public class JobEvent {
     public Instant eventTime;
 
     public String referential;
+
+    public String username;
 
     private JobEvent() {
     }
@@ -158,6 +162,11 @@ public class JobEvent {
             return this;
         }
 
+        public Builder username(String username) {
+            jobEvent.username = username;
+            return this;
+        }
+
         public JobEvent build() {
             if (JobDomain.TIMETABLE.equals(jobEvent.domain) && jobEvent.providerId == null) {
                 throw new IllegalArgumentException("No provider id");
@@ -196,6 +205,7 @@ public class JobEvent {
             jobEvent.correlationId = exchange.getIn().getHeader(CORRELATION_ID, String.class);
             jobEvent.externalId = exchange.getIn().getHeader(CHOUETTE_JOB_ID, Long.class);
             jobEvent.referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);
+            jobEvent.username = exchange.getIn().getHeader(USERNAME, String.class);
             return this;
         }
 
@@ -210,6 +220,7 @@ public class JobEvent {
                 jobEvent.action = currentJobEvent.action;
                 jobEvent.name = currentJobEvent.name;
                 jobEvent.externalId = currentJobEvent.externalId;
+                jobEvent.username = currentJobEvent.username;
             }
             return this;
         }
@@ -221,6 +232,11 @@ public class JobEvent {
             }
 
             JobEvent jobEvent = super.build();
+
+            if (jobEvent.username == null) {
+                jobEvent.username = Utils.getUsername();
+                exchange.getIn().setHeader(USERNAME, jobEvent.username);
+            }
 
             exchange.getIn().setHeader(SYSTEM_STATUS, jobEvent.toString());
             exchange.getOut().setBody(jobEvent.toString());

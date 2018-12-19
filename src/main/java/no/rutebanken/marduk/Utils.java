@@ -17,6 +17,10 @@
 package no.rutebanken.marduk;
 
 import org.opentripplanner.common.MavenVersion;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.Objects;
 
 public class Utils {
 
@@ -40,5 +44,14 @@ public class Utils {
 
     public static String getOtpVersion() {
         return MavenVersion.VERSION.version;
+    }
+
+    public static String getUsername() {
+        String user = "unknown";
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            user = Objects.toString(auth.getPrincipal());
+        }
+        return user;
     }
 }
