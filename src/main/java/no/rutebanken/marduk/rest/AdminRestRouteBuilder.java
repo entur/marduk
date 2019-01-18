@@ -475,22 +475,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple(""))
                 .inOnly("activemq:queue:OtpGraphBuildQueue")
                 .routeId("admin-build-graph-netex")
-                .endRest()
-
-                .post("routing_graph/qa")
-                .description("Triggers running the OTP TravelSearch QA (tests)")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .log(LoggingLevel.INFO, "Trigger OTP TravelSearch QA")
-                .removeHeaders("CamelHttp*")
-                .setBody(simple(""))
-                .to("direct:runOtpTravelSearchQA")
-                .routeId("admin-otp-travelsearch-qa")
                 .endRest();
-
 
         rest("/timetable_admin/{providerId}")
                 .post("/import")
