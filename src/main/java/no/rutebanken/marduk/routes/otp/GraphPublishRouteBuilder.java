@@ -133,7 +133,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .setHeader(METADATA_DESCRIPTION, constant("Uploaded new Graph object file."))
                 .setHeader(METADATA_FILE, simple("${header." + FILE_HANDLE + "}"))
                 .setProperty("fileNameRetainer", simple("${header." + FILE_HANDLE + "}"))
-                .process(e -> e.getIn().setBody(new Metadata("Uploaded new Graph object file.", e.getIn().getHeader(FILE_HANDLE, String.class), new Date(), Metadata.Status.OK, Metadata.Action.OTP_GRAPH_UPLOAD).getJson()))
+                .process(e -> e.getIn().setBody(new Metadata("Uploaded new Graph object file.", e.getIn().getHeader(FILE_HANDLE, String.class), new Date(), Metadata.Status.OK, Metadata.Action.OTP_X_GRAPH_UPLOAD).getJson()))
                 .removeHeaders("*")
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))

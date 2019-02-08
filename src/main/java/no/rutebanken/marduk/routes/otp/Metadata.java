@@ -26,7 +26,7 @@ import java.util.Date;
 
 public class Metadata {
 
-    public enum Action {OTP_GRAPH_UPLOAD,OSM_NORWAY_UPDATED}
+    public enum Action {OTP_X_GRAPH_UPLOAD,OSM_NORWAY_UPDATED}
 
     public enum Status {OK, NOK}
 

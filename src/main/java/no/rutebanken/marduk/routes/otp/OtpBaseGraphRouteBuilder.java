@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.List;
 
 import static no.rutebanken.marduk.Constants.BASE_GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.BASE_GRAPH_X_OBJ;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_PARENT_COLLECTION;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
@@ -138,7 +139,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .process(new GraphBuilderProcessor(true))
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP base graph.")
                 .process(e -> e.getIn().setBody(new File(e.getProperty(OTP_GRAPH_DIR) + "/" + BASE_GRAPH_OBJ)))
-                .setHeader(FILE_HANDLE, constant(blobStoreSubdirectory + "/" + BASE_GRAPH_OBJ))
+                .setHeader(FILE_HANDLE, constant(blobStoreSubdirectory + "/" + BASE_GRAPH_X_OBJ))
                 .to("direct:uploadBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Uploaded new new OTP base graph, triggering full OTP graph build")
