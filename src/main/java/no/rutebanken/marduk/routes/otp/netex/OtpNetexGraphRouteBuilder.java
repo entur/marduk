@@ -131,7 +131,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Fetching base graph ...")
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory + "/" + Constants.BASE_GRAPH_X_OBJ))
                 .to("direct:getBlob")
-                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + Constants.BASE_GRAPH_X_OBJ)
+                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + Constants.BASE_GRAPH_OBJ)
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + " fetched base graph")
                 .routeId("otp-netex-graph-fetch-base-graph");
 
