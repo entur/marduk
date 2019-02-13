@@ -36,6 +36,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Simple memory-based blob store repository for testing purpose.
+ */
 @Repository
 @Profile("in-memory-blobstore")
 public class InMemoryBlobStoreRepository implements BlobStoreRepository {

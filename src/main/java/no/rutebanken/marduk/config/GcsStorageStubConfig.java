@@ -22,9 +22,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
+/**
+ * Stub implementation of GCS storage for testing purpose.
+ */
 @Configuration
-@Profile("in-memory-blobstore")
-public class InMemoryGcsStorageConfig {
+@Profile({"in-memory-blobstore", "local-disk-blobstore"})
+public class GcsStorageStubConfig {
 
     @Bean
     public Storage storage() {
