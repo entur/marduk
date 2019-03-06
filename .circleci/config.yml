@@ -10,6 +10,14 @@ aliases:
   command: |
     echo 'export GCLOUD_SERVICE_KEY="$GCLOUD_SERVICE_KEY"' >> $BASH_ENV
     /tools/docker_login.sh
+- &build-notify
+  name: Notify babylon about build and docker image pushed
+  command: |
+    echo 'export CIRCLE_SHA1="$CIRCLE_SHA1"' >> $BASH_ENV
+    echo 'export BUILD_STATUS_API_KEY="$BUILD_STATUS_API_KEY"' >> $BASH_ENV
+    /tools/build_notify.sh
+  environment:
+    CIRCLE_PROJECT_REPONAME: otp-x
 jobs:
   build:
     docker:
@@ -67,6 +75,7 @@ jobs:
     - run:
         name: Docker build and push
         command: mvn docker:build docker:push -s /tools/m2/settings.xml
+    - run: *build-notify
 workflows:
   version: 2
   build_test_deploy:
