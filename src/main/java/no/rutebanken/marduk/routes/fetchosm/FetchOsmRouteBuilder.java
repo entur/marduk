@@ -35,8 +35,8 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 
 /**
- * Fetch data file as listed on: http://download.geofabrik.de/europe/norway.html
- * This is expected to be http://download.geofabrik.de/europe/norway-latest.osm.pbf
+ * Fetch data file as listed on: https://download.geofabrik.de/europe/norway.html
+ * This is expected to be https://download.geofabrik.de/europe/norway-latest.osm.pbf
  *
  * <p>
  *     The MD5 sum is found by adding <code>.md5</code> to the URL
@@ -60,7 +60,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
     private String cronSchedule;
 
     //@Value("${fetch.osm.map.url:http4://jump.rutebanken.org/testfile.txt}")
-    @Value("${fetch.osm.map.url:http4://download.geofabrik.de/europe/norway-latest.osm.pbf}")
+    @Value("${fetch.osm.map.url:https4://download.geofabrik.de/europe/norway-latest.osm.pbf}")
     private String osmMapUrl;
 
     /**
