@@ -21,7 +21,12 @@
         <connection>scm:git:ssh://git@github.com:entur/marduk.git</connection>
         <developerConnection>scm:git:ssh://git@github.com:entur/marduk.git</developerConnection>
     </scm>
-
+    <repositories>
+        <repository>
+            <id>public.onebusaway.org</id>
+            <url>http://nexus.onebusaway.org/content/groups/public/</url>
+        </repository>
+    </repositories>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
