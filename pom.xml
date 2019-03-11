@@ -2,6 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
+    <parent>
+        <groupId>org.rutebanken.superpom</groupId>
+        <artifactId>superpom</artifactId>
+        <version>0.0.8-SNAPSHOT</version>
+    </parent>
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>no.rutebanken.marduk</groupId>
@@ -15,13 +21,6 @@
         <connection>scm:git:ssh://git@github.com:entur/marduk.git</connection>
         <developerConnection>scm:git:ssh://git@github.com:entur/marduk.git</developerConnection>
     </scm>
-
-    <repositories>
-            <repository>
-                <id>public.onebusaway.org</id>
-                <url>http://nexus.onebusaway.org/content/groups/public/</url>
-            </repository>
-    </repositories>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -497,15 +496,6 @@
                     <systemPropertyVariables combine.children="override">
                         <spring.output.ansi.enabled>ALWAYS</spring.output.ansi.enabled>
                     </systemPropertyVariables>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
-                <configuration>
-                    <release>11</release>
                 </configuration>
             </plugin>
 
