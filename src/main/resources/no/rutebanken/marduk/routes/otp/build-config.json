@@ -12,7 +12,8 @@
   "embedRouterConfig": true,
   "areaVisibility": true,
   // Changed from false
-  "platformEntriesLinking": true,
+  "platformEntriesLinking": false,
+  // Changed from true
   "matchBusRoutesToStreets": false,
   "fetchElevationUS": false,
   "osmWayPropertySet": "norway",
