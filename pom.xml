@@ -33,7 +33,7 @@
         <httpcomponents.version>4.5.1</httpcomponents.version>
         <otp.version>1.3.7.RB-SNAPSHOT</otp.version>
         <assertj-core.version>3.3.0</assertj-core.version>
-        <camel-version>2.23.0</camel-version>
+        <camel-version>2.23.1</camel-version>
         <postgresql.version>42.2.5</postgresql.version>
         <keycloak.version>4.7.0.Final</keycloak.version>
         <spring.security.version>5.0.11.RELEASE</spring.security.version>
