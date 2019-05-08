@@ -33,6 +33,7 @@
                             "message": "%message\n%ex{full}",
                             "severity": "%level",
                             "breadcrumb": "%X{camel.breadcrumbId}",
+                            "correlationId": "%X{camel.correlationId}"
                             "reportLocation": {
                                 "filePath": "%logger",
                                 "lineNumber": "%line",
