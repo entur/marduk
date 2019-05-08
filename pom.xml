@@ -488,11 +488,6 @@
             <artifactId>jackson-datatype-jsr310</artifactId>
             <version>2.9.8</version>
         </dependency>
-        <dependency>
-            <groupId>org.entur.logging</groupId>
-            <artifactId>common-logging-spring-boot-starter</artifactId>
-            <version>1.0.14</version>
-        </dependency>
     </dependencies>
 
     <build>
