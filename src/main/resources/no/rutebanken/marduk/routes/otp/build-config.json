@@ -11,8 +11,7 @@
   "streets": true,
   "embedRouterConfig": true,
   "areaVisibility": true,
-  // Changed from false
-  "platformEntriesLinking": false,
+  "platformEntriesLinking": true,
   // Changed from true
   "matchBusRoutesToStreets": false,
   "fetchElevationUS": false,
