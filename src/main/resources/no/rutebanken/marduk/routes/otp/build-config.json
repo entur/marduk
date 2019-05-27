@@ -42,5 +42,6 @@
   },
   "linkMultiModalStopsToParentStations": true,
   "parkAndRideFromTransitData": true,
-  "callAndRideReluctance": 2
+  "callAndRideReluctance": 2,
+  "analyzeTransfers": true
 }
