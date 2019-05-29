@@ -96,7 +96,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .routeId("google-publish-qa-quartz");
 
 
-        singletonFrom("activemq:queue:GooglePublishQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{google.publish.autoStartup:true}}")
+        singletonFrom("activemq:queue:GooglePublishQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory")
                 .transacted()
 
                 .log(LoggingLevel.INFO, getClass().getName(), "Start publish of GTFS file to Google")
@@ -110,7 +110,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .routeId("google-publish-route");
 
 
-        singletonFrom("activemq:queue:GooglePublishQaQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{google.publish.qa.autoStartup:false}}")
+        singletonFrom("activemq:queue:GooglePublishQaQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory")
                 .transacted()
 
                 .log(LoggingLevel.INFO, getClass().getName(), "Start publish of GTFS QA file to Google")
