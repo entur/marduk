@@ -134,7 +134,7 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 		// 1 initial import call
 		chouetteCreateExport.expectedMessageCount(1);
 		chouetteCreateExport.returnReplyHeader("Location", new SimpleExpression(
-				chouetteUrl.replace("http4://", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
+				chouetteUrl.replace("http4:", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
 
 	
 		pollJobStatus.expectedMessageCount(1);

@@ -88,6 +88,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processExportResult"))
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT.name()))
                 .removeHeader("loopCounter")
+                .setBody(constant(null))
                 .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-export-job");
 
@@ -98,7 +99,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .when(simple("${header.action_report_result} == 'OK'"))
                 .log(LoggingLevel.INFO, correlation() + "Export ended with status '${header.action_report_result}'")
                 .log(LoggingLevel.INFO, correlation() + "Calling url ${header.data_url}")
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${header.data_url}")

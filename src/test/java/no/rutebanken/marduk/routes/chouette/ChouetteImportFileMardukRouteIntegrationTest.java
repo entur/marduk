@@ -25,17 +25,13 @@ import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
-import org.apache.camel.test.spring.CamelSpringRunner;
-import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -49,9 +45,6 @@ import static junit.framework.TestCase.assertTrue;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = ChouetteImportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
-
-    @Autowired
-    private ModelCamelContext context;
 
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
@@ -132,10 +125,8 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         context.getRouteDefinition("chouette-process-import-status").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-                        .to("mock:updateStatus");
-                interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringNextAction").skipSendToOriginalEndpoint()
-                        .to("mock:checkScheduledJobsBeforeTriggeringNextAction");
+                weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
+                weaveByToUri("direct:checkScheduledJobsBeforeTriggeringNextAction").replace().to("mock:checkScheduledJobsBeforeTriggeringNextAction");
             }
         });
 
@@ -145,7 +136,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         // 1 initial import call
         chouetteCreateImport.expectedMessageCount(1);
         chouetteCreateImport.returnReplyHeader("Location", new SimpleExpression(
-                                                                                       chouetteUrl.replace("http4://", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
+                                                                                       chouetteUrl.replace("http4:", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
 
 
         pollJobStatus.expectedMessageCount(1);
@@ -207,12 +198,11 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         context.getRouteDefinition("chouette-process-import-status").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-                        .to("mock:updateStatus");
-                interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringNextAction").skipSendToOriginalEndpoint()
-                        .to("mock:checkScheduledJobsBeforeTriggeringNextAction");
+                weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
+                weaveByToUri("direct:checkScheduledJobsBeforeTriggeringNextAction").replace().to("mock:checkScheduledJobsBeforeTriggeringNextAction");
             }
         });
+
 
         // we must manually start when we are done with all the advice with
         context.start();
@@ -220,7 +210,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         // 1 initial import call
         chouetteCreateImport.expectedMessageCount(1);
         chouetteCreateImport.returnReplyHeader("Location", new SimpleExpression(
-                                                                                       chouetteUrl.replace("http4://", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
+                                                                                       chouetteUrl.replace("http4:", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
 
 
         pollJobStatus.expectedMessageCount(1);
@@ -271,7 +261,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
                 interceptSendToEndpoint(chouetteUrl + "/*")
                         .skipSendToOriginalEndpoint()
                         .to("mock:chouetteGetJobsForProvider");
-                interceptSendToEndpoint("activemq:queue:ChouetteValidationQueue")
+                interceptSendToEndpoint("entur-google-pubsub:ChouetteValidationQueue")
                         .skipSendToOriginalEndpoint()
                         .to("mock:chouetteValidationQueue");
             }

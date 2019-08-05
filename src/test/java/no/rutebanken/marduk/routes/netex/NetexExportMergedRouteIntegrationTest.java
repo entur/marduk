@@ -59,6 +59,7 @@ public class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderInt
         // Create provider netex export in in memory blob store
         inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-aggregated-netex.zip", new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip")), false);
 
+        context.start();
 
         startRoute.requestBody(null);
 

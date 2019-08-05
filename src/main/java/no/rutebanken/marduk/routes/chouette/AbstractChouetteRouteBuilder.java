@@ -22,6 +22,7 @@ import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.ThreadPoolBuilder;
+import org.apache.camel.component.http4.HttpMethods;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 
@@ -61,6 +62,7 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 	    exchange.getOut().setBody(entityBuilder.build());
 	    exchange.getOut().setHeaders(exchange.getIn().getHeaders());
 	    exchange.getOut().setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"));
+		exchange.getOut().setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST));
 	}
 
 	protected void toImportMultipart(Exchange exchange) {

@@ -74,6 +74,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 .log(LoggingLevel.INFO,correlation()+"Sending transfer export to poll job status")
                 .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
 		        .removeHeader("loopCounter")
+				.setBody(constant(""))
                 .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-transfer-job");
 
@@ -118,7 +119,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  		        
  		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 				.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
-				.to("activemq:queue:ChouetteValidationQueue")
+				.to("entur-google-pubsub:ChouetteValidationQueue")
              .end()
              .routeId("chouette-process-job-list-after-transfer");
 

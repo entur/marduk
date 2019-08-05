@@ -56,7 +56,7 @@ public class ChouetteRemoveOldJobsRouteBuilder extends BaseRouteBuilder {
 
         from("direct:chouetteRemoveOldJobs")
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette remove old jobs")
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .setBody(constant(null))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.DELETE))
 
