@@ -64,7 +64,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 	@EndpointInject(uri = "mock:updateStatus")
 	protected MockEndpoint updateStatus;
 
-	@Produce(uri = "activemq:queue:ChouetteValidationQueue")
+	@Produce(uri = "entur-google-pubsub:ChouetteValidationQueue")
 	protected ProducerTemplate validationTemplate;
 
 	@Produce(uri = "direct:processValidationResult")
@@ -128,7 +128,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 		// 1 initial import call
 		chouetteCreateValidation.expectedMessageCount(1);
 		chouetteCreateValidation.returnReplyHeader("Location", new SimpleExpression(
-				chouetteUrl.replace("http4://", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
+				chouetteUrl.replace("http4:", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
 
 	
 		pollJobStatus.expectedMessageCount(1);

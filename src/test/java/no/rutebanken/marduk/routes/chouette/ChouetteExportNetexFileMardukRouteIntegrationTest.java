@@ -28,12 +28,14 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = ChouetteExportNetexRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
@@ -137,7 +139,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 		// 1 initial import call
 		chouetteCreateExport.expectedMessageCount(1);
 		chouetteCreateExport.returnReplyHeader("Location", new SimpleExpression(
-				                                                                       chouetteUrl.replace("http4://", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
+				                                                                       chouetteUrl.replace("http4:", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
 
 
 		pollJobStatus.expectedMessageCount(1);

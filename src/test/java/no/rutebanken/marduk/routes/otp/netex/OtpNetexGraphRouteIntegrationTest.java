@@ -18,11 +18,11 @@ package no.rutebanken.marduk.routes.otp.netex;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.routes.otp.netex.OtpNetexGraphRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.Assert;
 import org.junit.Test;
@@ -52,23 +52,45 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
     @Test
     public void testStatusEventReporting() throws Exception {
 
-        replaceEndpoint("otp-netex-graph-send-started-events", "direct:updateStatus", "mock:updateStatus");
-        replaceEndpoint("otp-netex-graph-send-status-for-timetable-jobs", "direct:updateStatus", "mock:updateStatus");
-        replaceEndpoint("otp-netex-graph-build-and-send-status", "direct:updateStatus", "mock:updateStatus");
+        context.getRouteDefinition("otp-netex-graph-send-started-events").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
+            }
+        });
 
-        // Skip everything but event reporting
-        replaceEndpoint("otp-netex-graph-build", "direct:fetchBuildConfigForOtpNetexGraph", "mock:sink");
-        replaceEndpoint("otp-netex-graph-build", "direct:fetchBaseGraph", "mock:sink");
-        replaceEndpoint("otp-netex-graph-build", "direct:fetchLatestNetex", "mock:sink");
-        replaceEndpoint("otp-netex-graph-build", "direct:mergeNetex", "mock:sink");
-        replaceEndpoint("otp-netex-graph-build-and-send-status", "direct:buildNetexGraph", "mock:sink");
+        context.getRouteDefinition("otp-netex-graph-send-status-for-timetable-jobs").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
+            }
+        });
 
-        producerTemplate.sendBody(null);
-        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2l, "ref", "corr-id"));
+        context.getRouteDefinition("otp-netex-graph-build-and-send-status").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
+                weaveByToUri("direct:buildNetexGraph").replace().to("mock:sink");
+            }
+        });
+
+        context.getRouteDefinition("otp-netex-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveByToUri("direct:fetchBuildConfigForOtpNetexGraph").replace().to("mock:sink");
+                weaveByToUri("direct:fetchBaseGraph").replace().to("mock:sink");
+                weaveByToUri("direct:fetchLatestNetex").replace().to("mock:sink");
+                //weaveByToUri("direct:mergeNetex").replace().to("mock:sink");
+            }
+        });
+
+
+        updateStatus.expectedMessageCount(3);
 
         context.start();
 
-        updateStatus.expectedMessageCount(3);
+        producerTemplate.sendBody(null);
+        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2l, "ref", "corr-id"));
 
         updateStatus.assertIsSatisfied();
 

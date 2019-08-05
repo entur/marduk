@@ -21,7 +21,7 @@ import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.model.ModelCamelContext;
-import org.apache.camel.test.spring.CamelSpringRunner;
+import org.apache.camel.test.spring.CamelSpringBootRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
@@ -37,8 +37,8 @@ import java.util.Collections;
 
 import static org.mockito.Mockito.when;
 
-@RunWith(CamelSpringRunner.class)
-@ActiveProfiles({"default", "in-memory-blobstore"})
+@RunWith(CamelSpringBootRunner.class)
+@ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator"})
 @UseAdviceWith
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class MardukRouteBuilderIntegrationTestBase {

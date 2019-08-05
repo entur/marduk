@@ -77,6 +77,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processNetexExportResult"))
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT_NETEX.name()))
                 .removeHeader("loopCounter")
+                .setBody(constant(null))
                 .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-start-export-netex");
 
@@ -86,7 +87,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .when(simple("${header.action_report_result} == 'OK'"))
                 .log(LoggingLevel.INFO, correlation() + "Export ended with status '${header.action_report_result}'")
                 .log(LoggingLevel.DEBUG, correlation() + "Calling url ${header.data_url}")
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${header.data_url}")

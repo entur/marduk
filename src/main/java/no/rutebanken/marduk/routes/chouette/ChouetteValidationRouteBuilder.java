@@ -79,7 +79,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
                 .setBody(constant(null))
-                .inOnly("activemq:queue:ChouetteValidationQueue")
+                .inOnly("entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("chouette-validate-level1-all-providers");
 
 
@@ -93,11 +93,11 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
                 .setBody(constant(null))
-                .inOnly("activemq:queue:ChouetteValidationQueue")
+                .inOnly("entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("chouette-validate-level2-all-providers");
 
 
-        from("activemq:queue:ChouetteValidationQueue?transacted=true&maxConcurrentConsumers=3").streamCaching()
+        from("entur-google-pubsub:ChouetteValidationQueue?concurrentConsumers=3").streamCaching()
                 .transacted()
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette validation")
                 .process(e -> {
@@ -126,6 +126,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL));
                 })
                 .removeHeader("loopCounter")
+                .setBody(constant(null))
                 .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-validation-job");
 
@@ -166,6 +167,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .log(LoggingLevel.INFO, correlation() + "Validation ok, skipping export as there are more import jobs active")
                 .when(method(getClass(), "shouldTransferData").isEqualTo(true))
                 .log(LoggingLevel.INFO, correlation() + "Validation ok, transfering data to next dataspace")
+                .setBody(constant(""))
                 .to("activemq:queue:ChouetteTransferExportQueue")
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Validation ok, triggering GTFS export.")

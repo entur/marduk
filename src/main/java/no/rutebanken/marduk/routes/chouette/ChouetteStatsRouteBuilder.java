@@ -91,7 +91,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
 
 
         from("direct:chouetteGetFreshStats")
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .process(e -> e.getIn().setHeader("refParam", getAllReferentialsAsParam()))

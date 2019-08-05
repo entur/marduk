@@ -71,7 +71,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
         from("direct:chouetteCleanStopPlaces")
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette stop place clean")
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .setBody(constant(null))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/clean/stop_areas"))
@@ -81,7 +81,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
         from("direct:chouetteCleanAllReferentials")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorService(allProvidersExecutorService)
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .setHeader(Constants.PROVIDER_ID, simple("${body.id}"))
                 .validate(header("filter").in("all", "level1", "level2"))
                 .choice()
@@ -107,7 +107,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
                 })
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/clean"))
                 .toD("${property.chouette_url}")
@@ -164,6 +164,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processImportResult"))
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.IMPORT.name()))
                 .removeHeader("loopCounter")
+                .setBody(constant(null))
                 .to("activemq:queue:ChouettePollStatusQueue")
                 .routeId("chouette-send-import-job");
 
@@ -212,7 +213,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .when(constant("true").isEqualTo(header(Constants.ENABLE_VALIDATION)))
                 .log(LoggingLevel.INFO, correlation() + "Import ok, triggering validation")
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
-                .to("activemq:queue:ChouetteValidationQueue")
+                .to("entur-google-pubsub:ChouetteValidationQueue")
                 .when(method(getClass(), "shouldTransferData").isEqualTo(true))
                 .log(LoggingLevel.INFO, correlation() + "Import ok, transfering data to next dataspace")
                 .to("activemq:queue:ChouetteTransferExportQueue")

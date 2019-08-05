@@ -91,7 +91,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-list-jobs-for-provider");
 
         from("direct:chouetteGetJobs")
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .process(e -> {
@@ -134,7 +134,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
         from("direct:chouetteCancelJob")
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .setBody(constant(null))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.DELETE))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/scheduled_jobs/${header." + Constants.CHOUETTE_JOB_ID + "}"))
@@ -146,7 +146,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .process(e -> e.getIn().setHeader("status", Arrays.asList("STARTED", "SCHEDULED")))
                 .to("direct:chouetteGetJobsForProvider")
                 .sort(body(), new JobResponseDescendingSorter())
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .split().body().parallelProcessing().executorService(allProvidersExecutorService)
                 .setHeader(Constants.CHOUETTE_JOB_ID, simple("${body.id}"))
                 .setBody(constant(null))
@@ -158,7 +158,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .split().body().parallelProcessing().executorService(allProvidersExecutorService)
                 .setHeader(Constants.PROVIDER_ID, simple("${body.id}"))
                 .setBody(constant(null))
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .to("direct:chouetteCancelAllJobsForProvider")
                 .routeId("chouette-cancel-all-jobs-for-all-providers");
 
@@ -186,11 +186,11 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
         from("direct:checkJobStatus")
                 .process(e -> {
-                    e.getIn().setHeader("loopCounter", (Integer) e.getIn().getHeader("loopCounter", 0) + 1);
+                    e.getIn().setHeader("loopCounter", e.getIn().getHeader("loopCounter", 0, Integer.class) + 1);
                 })
                 .setProperty(Constants.CHOUETTE_REFERENTIAL, header(Constants.CHOUETTE_REFERENTIAL))
                 .setProperty("url", header(Constants.CHOUETTE_JOB_STATUS_URL))
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${exchangeProperty.url}")
@@ -254,7 +254,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 // Fetch and parse action report
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Calling action report url ${header.action_report_url}")
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .toD("${header.action_report_url}")
@@ -294,7 +294,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .choice()
                 .when(simple("${header.validation_report_url} != null"))
                 .log(LoggingLevel.DEBUG, correlation() + "Calling validation report url ${header.validation_report_url}")
-                .removeHeaders("Camel*")
+                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .toD("${header.validation_report_url}")

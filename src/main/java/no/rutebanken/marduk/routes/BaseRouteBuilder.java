@@ -50,9 +50,14 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
 
     @Override
     public void configure() throws Exception {
+        // 3 local retries at interval 5s, 15s and 45s
         errorHandler(transactionErrorHandler()
-                             .logExhausted(true)
-                             .logRetryStackTrace(true));
+                .redeliveryDelay(5000)
+                .maximumRedeliveries(3)
+                .useExponentialBackOff()
+                .backOffMultiplier(3)
+                .logExhausted(true)
+                .logRetryStackTrace(true));
     }
 
     protected ProviderRepository getProviderRepository() {

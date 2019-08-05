@@ -27,7 +27,12 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Simple file-based blob store repository for testing purpose.
@@ -42,18 +47,38 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
     private String baseFolder;
 
     @Override
-    public BlobStoreFiles listBlobs(Collection<String> prefixes) {
-        throw new UnsupportedOperationException();
+    public BlobStoreFiles listBlobs(String prefix) {
+        return listBlobs(Arrays.asList(prefix));
     }
 
     @Override
-    public BlobStoreFiles listBlobs(String prefix) {
-        throw new UnsupportedOperationException();
+    public BlobStoreFiles listBlobs(Collection<String> prefixes) {
+
+        BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
+        for (String prefix : prefixes) {
+            if(Paths.get(baseFolder, prefix).toFile().isDirectory()) {
+                try (Stream<Path> walk = Files.walk(Paths.get(baseFolder, prefix))) {
+                    List<BlobStoreFiles.File> result = walk.filter(Files::isRegularFile)
+                            .map(x -> new BlobStoreFiles.File(x.getFileName().toString(), new Date(), new Date(), x.toFile().length())).collect(Collectors.toList());
+                    blobStoreFiles.add(result);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+        }
+        return blobStoreFiles;
     }
+
+
 
     @Override
     public BlobStoreFiles listBlobsFlat(String prefix) {
-        throw new UnsupportedOperationException();
+        List<BlobStoreFiles.File> files = listBlobs(prefix).getFiles();
+        List<BlobStoreFiles.File> result = files.stream().map(k -> new BlobStoreFiles.File(k.getName().replaceFirst(prefix + "/", ""), new Date(), new Date(), 1234L)).collect(Collectors.toList());
+        BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
+        blobStoreFiles.add(result);
+        return blobStoreFiles;
     }
 
     @Override

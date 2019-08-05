@@ -691,7 +691,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .otherwise()
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
                 .end()
-                .inOnly("activemq:queue:ChouetteValidationQueue")
+                .inOnly("entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("admin-chouette-validate")
                 .endRest()
 
