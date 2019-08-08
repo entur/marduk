@@ -32,7 +32,6 @@
 
         <gcp-storage.version>0.0.6-SNAPSHOT</gcp-storage.version>
 
-        <docker.maven.plugin.version>0.28.0</docker.maven.plugin.version>
         <spring-boot-plugin.version>2.1.6.RELEASE</spring-boot-plugin.version>
         <spring-boot.version>2.1.6.RELEASE</spring-boot.version>
         <spring-cloud-gcp.version>1.1.2.RELEASE</spring-cloud-gcp.version>
@@ -43,11 +42,6 @@
         <postgresql.version>42.2.5</postgresql.version>
         <keycloak.version>4.7.0.Final</keycloak.version>
         <spring.security.version>5.0.11.RELEASE</spring.security.version>
-        <!-- Docker  Configs -->
-        <docker.from>eu.gcr.io/carbon-1287/openjdk11-base-image</docker.from>
-        <fabric8.dockerUser>carbon-1287/</fabric8.dockerUser>
-        <docker.image>eu.gcr.io/${fabric8.dockerUser}${project.artifactId}:${project.version}</docker.image>
-        <docker.cleanup>none</docker.cleanup>
 
         <onebusaway.gtfs.version>1.3.4</onebusaway.gtfs.version>
 
@@ -536,30 +530,6 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>io.fabric8</groupId>
-                <artifactId>docker-maven-plugin</artifactId>
-                <version>${docker.maven.plugin.version}</version>
-                <configuration>
-                    <autoPull>always</autoPull>
-                    <images>
-                        <image>
-                            <name>${docker.image}</name>
-                            <build>
-                                <from>${docker.from}</from>
-                                <cleanup>${docker.cleanup}</cleanup>
-                                <assembly>
-                                    <basedir>/deployments</basedir>
-                                    <descriptorRef>artifact</descriptorRef>
-                                </assembly>
-                                <env>
-                                    <JAVA_APP_JAR>${project.build.finalName}.jar</JAVA_APP_JAR>
-                                </env>
-                            </build>
-                        </image>
-                    </images>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
@@ -568,7 +538,7 @@
         <profile>
             <id>rutebanken</id>
             <build>
-                <defaultGoal>clean install docker:build docker:push</defaultGoal>
+                <defaultGoal>clean install</defaultGoal>
             </build>
         </profile>
     </profiles>
