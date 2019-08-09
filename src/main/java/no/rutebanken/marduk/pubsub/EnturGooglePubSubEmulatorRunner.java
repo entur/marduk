@@ -20,7 +20,7 @@ public class EnturGooglePubSubEmulatorRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(EnturGooglePubSubEmulatorRunner.class);
 
-    @Value("${marduk.pubsub.emulator.path:/usr/lib/google-cloud-sdk/platform/pubsub-emulator/lib/cloud-pubsub-emulator-0.1-SNAPSHOT-all.jar}")
+    @Value("${marduk.pubsub.emulator.path:target/pubsub-emulator/pubsub-emulator-0.1-SNAPSHOT.jar}")
     private String pathToEmulator;
 
 
