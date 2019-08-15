@@ -43,5 +43,6 @@
   "linkMultiModalStopsToParentStations": true,
   "parkAndRideFromTransitData": true,
   "callAndRideReluctance": 2,
-  "analyzeTransfers": true
+  "analyzeTransfers": true,
+  "distanceBetweenElevationSamples": 25
 }
