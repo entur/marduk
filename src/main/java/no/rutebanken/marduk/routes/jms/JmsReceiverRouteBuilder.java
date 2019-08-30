@@ -50,7 +50,7 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
                 .to("activemq:queue:DeadLetterQueue");
 
 
-        from("activemq:queue:MardukInboundQueue?transacted=true").streamCaching()
+        from("entur-google-pubsub:MardukInboundQueue").streamCaching()
                 .transacted()
                 .setHeader(Exchange.FILE_NAME, header(Constants.FILE_NAME))
                 .log(LoggingLevel.INFO, correlation() + "Received notification about file '${header." + Constants.FILE_NAME + "}' on jms. Fetching file ...")

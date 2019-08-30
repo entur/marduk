@@ -27,7 +27,6 @@ import no.rutebanken.marduk.config.IdempotentRepositoryConfig;
 import no.rutebanken.marduk.config.TransactionManagerConfig;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
 import org.apache.camel.builder.RouteBuilder;
-import org.entur.pubsub.config.GooglePubSubCamelComponentConfig;
 import org.entur.pubsub.config.GooglePubSubConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
