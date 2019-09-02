@@ -35,7 +35,7 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
  * Receives file notification from "external" queue and uses this to download the file from blob store.
  */
 @Component
-public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
+public class InboundQueueRouteBuilder extends BaseRouteBuilder {
 
     @Override
     public void configure() throws Exception {
@@ -76,7 +76,8 @@ public class JmsReceiverRouteBuilder extends BaseRouteBuilder {
                 .when(simple("{{blobstore.delete.external.blobs:true}}"))
                 .to("direct:deleteExternalBlob")
                 .end()
-                .to("activemq:queue:ProcessFileQueue");
+                .to("activemq:queue:ProcessFileQueue")
+                .routeId("inbound-queue");
 
     }
 
