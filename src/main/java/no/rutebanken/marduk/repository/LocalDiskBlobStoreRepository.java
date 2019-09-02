@@ -83,11 +83,13 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public InputStream getBlob(String objectName) {
-        logger.debug("get blob called in local-disk blob store");
+        logger.debug("get blob called in local-disk blob store on " + objectName);
         Path path = Paths.get(baseFolder).resolve(objectName);
         if (!path.toFile().exists()) {
+            logger.debug("getBlob(): File not found in local-disk blob store: " + path);
             return null;
         }
+        logger.debug("getBlob(): File found in local-disk blob store: " + path);
         try {
             // converted as ByteArrayInputStream so that Camel stream cache can reopen it
             // since ByteArrayInputStream.close() does nothing
@@ -99,7 +101,7 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
-        logger.debug("upload blob called in local-disk blob store");
+        logger.debug("Upload blob called in local-disk blob store on " + objectName);
         try {
             Path localPath = Paths.get(objectName);
 
@@ -131,7 +133,18 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public boolean delete(String objectName) {
-        throw new UnsupportedOperationException();
+        logger.debug("Delete blob called in local-disk blob store on: " + objectName);
+        Path path = Paths.get(baseFolder).resolve(objectName);
+        if (!path.toFile().exists()) {
+            logger.debug("delete(): File not found in local-disk blob store: " + path);
+            return false;
+        }
+        try {
+            Files.delete(path);
+            return true;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
