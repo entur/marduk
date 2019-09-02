@@ -37,6 +37,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 
+/**
+ * Blob store repository targeting Google Cloud Storage.
+ */
 @Repository
 @Profile("gcs-blobstore")
 @Scope("prototype")
