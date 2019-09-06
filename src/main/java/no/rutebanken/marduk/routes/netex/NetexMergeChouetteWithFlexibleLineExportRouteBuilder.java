@@ -32,6 +32,7 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_CHOUETTE;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
@@ -66,7 +67,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .validate(header(Constants.PROVIDER_ID).isNotNull())
 
 
-                .setProperty(FOLDER_NAME, simple(localWorkingDirectory + "/${date:now:yyyyMMddHHmmss}"))
+                .setProperty(FOLDER_NAME, simple(localWorkingDirectory + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}"))
 
                 .to("direct:unpackChouetteExportToWorkingFolder")
                 .to("direct:unpackFlexibleLinesExportToWorkingFolder")
