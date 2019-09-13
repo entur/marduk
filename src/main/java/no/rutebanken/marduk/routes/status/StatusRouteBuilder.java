@@ -27,7 +27,7 @@ public class StatusRouteBuilder extends RouteBuilder {
 	public void configure() throws Exception {
 		from("direct:updateStatus")
 				.log(LoggingLevel.INFO, getClass().getName(), "Sending off job status event: ${body}")
-				.to("activemq:queue:JobEventQueue")
+				.to("entur-google-pubsub:JobEventQueue")
 				.routeId("update-status").startupOrder(1);
 	}
 
