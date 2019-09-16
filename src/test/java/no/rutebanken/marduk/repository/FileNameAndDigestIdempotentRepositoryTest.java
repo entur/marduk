@@ -17,34 +17,25 @@
 package no.rutebanken.marduk.repository;
 
 
+import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.config.IdempotentRepositoryConfig;
 import no.rutebanken.marduk.domain.FileNameAndDigest;
 import org.apache.commons.lang3.time.DateUtils;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 
-import javax.sql.DataSource;
 import java.sql.Timestamp;
 import java.util.Date;
 
-@RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = IdempotentRepositoryConfig.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator"})
-public class FileNameAndDigestIdempotentRepositoryTest {
+public class FileNameAndDigestIdempotentRepositoryTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Autowired
     private FileNameAndDigestIdempotentRepository idempotentRepository;
-
-    @Autowired
-    private DataSource datasource;
-
 
     @Test
     public void testNonUniqueFileNameRejected() {
