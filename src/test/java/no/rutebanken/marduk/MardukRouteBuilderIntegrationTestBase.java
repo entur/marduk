@@ -40,8 +40,8 @@ import static org.mockito.Mockito.when;
 @RunWith(CamelSpringBootRunner.class)
 @ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator"})
 @UseAdviceWith
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class MardukRouteBuilderIntegrationTestBase {
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+public abstract class MardukRouteBuilderIntegrationTestBase {
 
     @Autowired
     protected ModelCamelContext context;
