@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.gtfs;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -49,10 +50,12 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("activemq:queue:GtfsBasicExportMergedQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{gtfs.export.basic.autoStartup:true}}")
-                .transacted()
+        singletonFrom("entur-google-pubsub:GtfsBasicExportMergedQueue?ackMode=NONE").autoStartup("{{gtfs.export.basic.autoStartup:true}}")
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS Basics export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
                 .to("direct:exportGtfsBasicMerged")
-                .inOnly("activemq:queue:GoogleExportQueue")
+                .inOnly("entur-google-pubsub:GoogleExportQueue")
                 .routeId("gtfs-basic-export-merged-jms-route");
 
         from("direct:exportGtfsBasicMerged")

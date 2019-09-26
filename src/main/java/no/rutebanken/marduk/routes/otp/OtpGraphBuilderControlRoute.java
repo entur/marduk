@@ -18,12 +18,15 @@ package no.rutebanken.marduk.routes.otp;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import org.apache.activemq.command.ActiveMQMessage;
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
+import org.apache.camel.Message;
+import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.List;
 
 @Component
 public class OtpGraphBuilderControlRoute extends BaseRouteBuilder {
@@ -35,9 +38,11 @@ public class OtpGraphBuilderControlRoute extends BaseRouteBuilder {
     @Override
     public void configure() throws Exception {
         super.configure();
-
-        singletonFrom("activemq:queue:OtpGraphBuildQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{otp.graph.build.autoStartup:true}}")
-                .transacted()
+        // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
+        singletonFrom("entur-google-pubsub:OtpGraphBuildQueue?ackMode=NONE").autoStartup("{{otp.graph.build.autoStartup:true}}")
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
+                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
                 .process(e -> e.setProperty(MODE_PROP_NAME, getBuildMode(e)))
                 .choice()
@@ -51,7 +56,7 @@ public class OtpGraphBuilderControlRoute extends BaseRouteBuilder {
                     .doFinally()
                         .choice().when(exchangeProperty(MODE_PROP_NAME).isEqualTo(Mode.BOTH))
                             // Trigger build of full graph (step2). This may already have been done if base graph build was successful, any duplicates will be discarded.
-                            .inOnly("activemq:queue:OtpGraphBuildQueue")
+                            .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
                         .end()
                     .end()
                 .end()
@@ -60,7 +65,7 @@ public class OtpGraphBuilderControlRoute extends BaseRouteBuilder {
 
 
     private Mode getBuildMode(Exchange e) {
-        Collection<ActiveMQMessage> messages = e.getIn().getBody(Collection.class);
+        Collection<Message> messages = e.getIn().getBody(List.class);
         if (CollectionUtils.isEmpty(messages)) {
             return Mode.FULL;
         }
@@ -74,9 +79,9 @@ public class OtpGraphBuilderControlRoute extends BaseRouteBuilder {
         return Mode.BOTH;
     }
 
-    private boolean isBaseGraphBuild(ActiveMQMessage message) {
+    private boolean isBaseGraphBuild(Message message) {
         try {
-            return message.getProperty(Constants.OTP_BASE_GRAPH_BUILD) != null;
+            return message.getHeader(Constants.OTP_BASE_GRAPH_BUILD) != null;
         } catch (Exception e) {
             return false;
         }

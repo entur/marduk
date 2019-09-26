@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.google;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -84,7 +85,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .autoStartup("{{google.publish.scheduler.autoStartup:true}}")
                 .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs export.")
-                .inOnly("activemq:queue:GooglePublishQueue")
+                .inOnly("entur-google-pubsub:GooglePublishQueue")
                 .routeId("google-publish--quartz");
 
 
@@ -92,13 +93,14 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .autoStartup("{{google.publish.qa.scheduler.autoStartup:true}}")
                 .filter(e -> shouldQuartzRouteTrigger(e, qaCronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs QA export.")
-                .inOnly("activemq:queue:GooglePublishQaQueue")
+                .inOnly("entur-google-pubsub:GooglePublishQaQueue")
                 .routeId("google-publish-qa-quartz");
 
 
-        singletonFrom("activemq:queue:GooglePublishQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory")
-                .transacted()
-
+        singletonFrom("entur-google-pubsub:GooglePublishQueue?ackMode=NONE")
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
                 .log(LoggingLevel.INFO, getClass().getName(), "Start publish of GTFS file to Google")
 
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName))
@@ -110,11 +112,11 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .routeId("google-publish-route");
 
 
-        singletonFrom("activemq:queue:GooglePublishQaQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory")
-                .transacted()
-
+        singletonFrom("entur-google-pubsub:GooglePublishQaQueue?ackMode=NONE")
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish QA requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
                 .log(LoggingLevel.INFO, getClass().getName(), "Start publish of GTFS QA file to Google")
-
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName))
                 .to("direct:getBlob")
                 .setHeader(Exchange.FILE_NAME, constant(googleQaExportFileName))

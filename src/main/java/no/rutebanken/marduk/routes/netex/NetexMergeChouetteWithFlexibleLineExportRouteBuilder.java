@@ -79,7 +79,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
 
-                .to("activemq:queue:OtpGraphBuildQueue")
+                .to("entur-google-pubsub:OtpGraphBuildQueue")
 
                 .routeId("netex-export-merge-chouette-with-flexible-lines");
 

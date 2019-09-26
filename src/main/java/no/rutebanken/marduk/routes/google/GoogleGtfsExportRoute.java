@@ -20,6 +20,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -47,10 +48,12 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
         super.configure();
 
 
-        singletonFrom("activemq:queue:GoogleExportQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{google.export.autoStartup:true}}")
-                .transacted()
+        singletonFrom("entur-google-pubsub:GoogleExportQueue?ackMode=NONE").autoStartup("{{google.export.autoStartup:true}}")
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
                 .to("direct:exportGtfsGoogle")
-                .inOnly("activemq:queue:GoogleQaExportQueue")
+                .inOnly("entur-google-pubsub:GoogleQaExportQueue")
                 .routeId("gtfs-google-export-merged-jms-route");
 
         from("direct:transformToGoogleGTFS")
@@ -69,8 +72,10 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .routeId("gtfs-google-export-merged");
 
 
-        singletonFrom("activemq:queue:GoogleQaExportQueue?transacted=true&maxConcurrentConsumers=1&messageListenerContainerFactoryRef=batchListenerContainerFactory").autoStartup("{{google.export.qa.autoStartup:true}}")
-                .transacted()
+        singletonFrom("entur-google-pubsub:GoogleQaExportQueue?ackMode=NONE").autoStartup("{{google.export.qa.autoStartup:true}}")
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google QA export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
                 .to("direct:exportQaGtfsGoogle")
                 .routeId("gtfs-google-qa-export-merged-jms-route");
 

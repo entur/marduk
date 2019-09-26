@@ -82,7 +82,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-base-graph-build");
 
         from("direct:sendOtpBaseGraphStartedEventsInNewTransaction")
-                .transacted("PROPAGATION_REQUIRES_NEW")
+
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_BASE").state(JobEvent.State.STARTED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
                 .routeId("otp-base-graph-build-send-started-events");
 
@@ -142,7 +142,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Uploaded new new OTP base graph, triggering full OTP graph build")
-                .inOnly("activemq:queue:OtpGraphBuildQueue")
+                .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
                 .routeId("otp-base-graph-build-build-otp");
 
     }

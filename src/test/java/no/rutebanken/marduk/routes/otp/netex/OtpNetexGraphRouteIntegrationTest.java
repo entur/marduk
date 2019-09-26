@@ -46,7 +46,7 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
     @EndpointInject(uri = "mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce(uri = "activemq:queue:OtpGraphBuildQueue")
+    @Produce(uri = "entur-google-pubsub:OtpGraphBuildQueue")
     protected ProducerTemplate producerTemplate;
 
     @Test
