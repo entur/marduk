@@ -20,7 +20,6 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.GraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.activemq.command.ActiveMQMessage;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -64,7 +63,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
 
     private static final String PROP_MESSAGES = "RutebankenPropMessages";
 
-    private static final String HEADER_STATUS = "RutebankenGraphBuildStatus";
+    private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
 
     @Override
     public void configure() throws Exception {
@@ -85,19 +84,18 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-netex-graph-build");
 
         from("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
-                .transacted("PROPAGATION_REQUIRES_NEW")
+
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.STARTED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
-                .setHeader(HEADER_STATUS, constant(JobEvent.State.STARTED))
+                .setProperty(PROP_STATUS, constant(JobEvent.State.STARTED))
                 .to("direct:sendStatusForOtpNetexJobs")
                 .routeId("otp-netex-graph-send-started-events");
 
         from("direct:sendStatusForOtpNetexJobs")
                 .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
                 .split().exchangeProperty(PROP_MESSAGES)
-                .filter(simple("${body.properties[" + CHOUETTE_REFERENTIAL + "]}"))
+                .filter(simple("${headers[" + CHOUETTE_REFERENTIAL + "]}"))
                 .process(e -> {
-                    JobEvent.State state = e.getIn().getHeader(HEADER_STATUS, JobEvent.State.class);
-                    e.getIn().setHeaders(((ActiveMQMessage) e.getIn().getBody()).getProperties());
+                    JobEvent.State state = e.getProperty(PROP_STATUS, JobEvent.State.class);
                     JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(state).build();
                 })
                 .to("direct:updateStatus")
@@ -139,7 +137,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Building OTP graph...")
                 .doTry()
                 .to("direct:buildNetexGraph")
-                .setHeader(HEADER_STATUS, constant(JobEvent.State.OK))
+                .setProperty(PROP_STATUS, constant(JobEvent.State.OK))
                 .to("direct:sendStatusForOtpNetexJobs")
                 .doCatch(JMSException.class)
                 .log(LoggingLevel.ERROR, correlation() + "Graph building failed with JMS exception. Not sending error event as we expect retry of build. Msg: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
@@ -148,7 +146,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .doCatch(Exception.class)
                 .log(LoggingLevel.ERROR, correlation() + "Graph building failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.FAILED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
-                .setHeader(HEADER_STATUS, constant(JobEvent.State.FAILED))
+                .setProperty(PROP_STATUS, constant(JobEvent.State.FAILED))
                 .to("direct:sendStatusForOtpNetexJobs")
                 .setHeader(FILE_PARENT, exchangeProperty(OTP_GRAPH_DIR))
                 .to("direct:cleanUpLocalDirectory")

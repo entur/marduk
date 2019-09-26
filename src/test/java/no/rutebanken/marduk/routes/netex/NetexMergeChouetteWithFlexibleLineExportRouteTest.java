@@ -62,7 +62,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRou
             @Override
             public void configure() throws Exception {
 
-                interceptSendToEndpoint("activemq:queue:OtpGraphBuildQueue").skipSendToOriginalEndpoint()
+                interceptSendToEndpoint("entur-google-pubsub:OtpGraphBuildQueue").skipSendToOriginalEndpoint()
                         .to("mock:OtpGraphBuildQueue");
                 interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
                         .to("mock:updateStatus");

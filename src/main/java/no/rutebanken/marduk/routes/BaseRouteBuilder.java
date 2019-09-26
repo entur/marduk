@@ -19,20 +19,26 @@ package no.rutebanken.marduk.routes;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import org.apache.camel.Exchange;
+import org.apache.camel.Message;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.RouteContext;
 import org.apache.camel.spi.RoutePolicy;
+import org.apache.camel.spi.Synchronization;
 import org.apache.camel.spring.SpringRouteBuilder;
 import org.apache.commons.lang3.time.DateUtils;
+import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.quartz.CronExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.gcp.pubsub.support.BasicAcknowledgeablePubsubMessage;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NAME;
 
@@ -48,16 +54,59 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
     @Value("${quartz.lenient.fire.time.ms:180000}")
     private int lenientFireTimeMs;
 
+    @Value("${marduk.camel.redelivery.max:3}")
+    private int maxRedelivery;
+
+    @Value("${marduk.camel.redelivery.delay:5000}")
+    private int redeliveryDelay;
+
+    @Value("${marduk.camel.redelivery.backoff.multiplier:3}")
+    private int backOffMultiplier;
+
+
     @Override
     public void configure() throws Exception {
-        // 3 local retries at interval 5s, 15s and 45s
         errorHandler(transactionErrorHandler()
-                .redeliveryDelay(5000)
-                .maximumRedeliveries(3)
+                .redeliveryDelay(redeliveryDelay)
+                .maximumRedeliveries(maxRedelivery)
+                .onRedelivery(exchange -> logRedelivery(exchange))
                 .useExponentialBackOff()
-                .backOffMultiplier(3)
+                .backOffMultiplier(backOffMultiplier)
                 .logExhausted(true)
                 .logRetryStackTrace(true));
+
+    }
+
+    protected void logRedelivery(Exchange exchange) {
+        int redeliveryCounter = exchange.getIn().getHeader("CamelRedeliveryCounter", Integer.class);
+        int redeliveryMaxCounter = exchange.getIn().getHeader("CamelRedeliveryMaxCounter", Integer.class);
+        log.warn("Exchange failed. Redelivering the message locally, attempt {}/{}...", redeliveryCounter, redeliveryMaxCounter);
+    }
+
+    /**
+     * Add ACK/NACK completion callback for an aggregated exchange.
+     * The callback should be added after the aggregation is complete to prevent individual messages from being acked
+     * by the aggregator.
+     */
+    protected void addOnCompletionForAggregatedExchange(Exchange exchange) {
+
+        List<Message> messages = (List<Message>) exchange.getIn().getBody(List.class);
+        List<BasicAcknowledgeablePubsubMessage> ackList = messages.stream()
+                .map(m->m.getHeader(EnturGooglePubSubConstants.ACK_ID, BasicAcknowledgeablePubsubMessage.class))
+                .collect(Collectors.toList());
+
+        exchange.addOnCompletion(new Synchronization() {
+
+            @Override
+            public void onComplete(Exchange exchange) {
+                ackList.stream().forEach(e->e.ack());
+            }
+
+            @Override
+            public void onFailure(Exchange exchange) {
+                ackList.stream().forEach(e->e.nack());
+            }
+        });
     }
 
     protected ProviderRepository getProviderRepository() {

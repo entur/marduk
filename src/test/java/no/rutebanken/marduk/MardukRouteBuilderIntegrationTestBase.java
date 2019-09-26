@@ -19,7 +19,9 @@ package no.rutebanken.marduk;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
+import org.apache.camel.EndpointInject;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.test.spring.CamelSpringBootRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
@@ -28,6 +30,7 @@ import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -45,17 +48,24 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
 
     @Autowired
     protected ModelCamelContext context;
+
+    @Autowired
+    protected PubSubTemplate pubSubTemplate;
+
     @MockBean
     public CacheProviderRepository providerRepository;
+
+    @EndpointInject(uri = "mock:sink")
+    protected MockEndpoint sink;
 
     @Before
     public void setUp() throws IOException {
 
         when(providerRepository.getProviders()).thenReturn(Collections.singletonList(Provider.create(IOUtils.toString(new FileReader(
-                                                                                                                                            "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))));
+                "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))));
 
         when(providerRepository.getProvider(2L)).thenReturn(Provider.create(IOUtils.toString(new FileReader(
-                                                                                                                   "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json"))));
+                "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json"))));
 
         when(providerRepository.getProviderId("rb_rut")).thenReturn(2l);
 

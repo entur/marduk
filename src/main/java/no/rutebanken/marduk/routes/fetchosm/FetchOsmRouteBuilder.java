@@ -111,7 +111,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "Map was updated, therefore triggering OSM base graph build and Geocoder POI update")
                 .setBody(constant(null))
                 .setHeader(Constants.OTP_BASE_GRAPH_BUILD, constant(true))
-                .inOnly("activemq:queue:OtpGraphBuildQueue")
+                .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
                 .inOnly("activemq:queue:GeoCoderOsmUpdateNotificationQueue")
                 .to("direct:notifyOsmStatus")
                 .log(LoggingLevel.DEBUG, "Processing of OSM map finished")
