@@ -85,7 +85,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .autoStartup("{{google.publish.scheduler.autoStartup:true}}")
                 .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs export.")
-                .inOnly("entur-google-pubsub:GooglePublishQueue")
+                .inOnly("entur-google-pubsub:GtfsGooglePublishQueue")
                 .routeId("google-publish--quartz");
 
 
@@ -93,11 +93,11 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .autoStartup("{{google.publish.qa.scheduler.autoStartup:true}}")
                 .filter(e -> shouldQuartzRouteTrigger(e, qaCronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs QA export.")
-                .inOnly("entur-google-pubsub:GooglePublishQaQueue")
+                .inOnly("entur-google-pubsub:GtfsGooglePublishQaQueue")
                 .routeId("google-publish-qa-quartz");
 
 
-        singletonFrom("entur-google-pubsub:GooglePublishQueue?ackMode=NONE")
+        singletonFrom("entur-google-pubsub:GtfsGooglePublishQueue?ackMode=NONE")
                 .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
@@ -112,7 +112,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .routeId("google-publish-route");
 
 
-        singletonFrom("entur-google-pubsub:GooglePublishQaQueue?ackMode=NONE")
+        singletonFrom("entur-google-pubsub:GtfsGooglePublishQaQueue?ackMode=NONE")
                 .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish QA requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(exchange -> addOnCompletionForAggregatedExchange(exchange))

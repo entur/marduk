@@ -380,7 +380,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS export to Google")
                 .removeHeaders("CamelHttp*")
-                .inOnly("entur-google-pubsub:GoogleExportQueue")
+                .inOnly("entur-google-pubsub:GtfsGoogleExportQueue")
                 .routeId("admin-timetable-google-export")
                 .endRest()
 
@@ -394,7 +394,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS QA export to Google")
                 .removeHeaders("CamelHttp*")
-                .inOnly("entur-google-pubsub:GoogleQaExportQueue")
+                .inOnly("entur-google-pubsub:GtfsGoogleQaExportQueue")
                 .routeId("admin-timetable-google-qa-export")
                 .endRest()
 
@@ -408,7 +408,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeRequest")
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS to Google")
                 .removeHeaders("CamelHttp*")
-                .inOnly("entur-google-pubsub:GooglePublishQueue")
+                .inOnly("entur-google-pubsub:GtfsGooglePublishQueue")
                 .routeId("admin-timetable-google-publish")
                 .endRest()
 
@@ -422,7 +422,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeRequest")
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS QA export to Google")
                 .removeHeaders("CamelHttp*")
-                .inOnly("entur-google-pubsub:GooglePublishQaQueue")
+                .inOnly("entur-google-pubsub:GtfsGooglePublishQaQueue")
                 .routeId("admin-timetable-google-qa-publish")
                 .endRest()
 
