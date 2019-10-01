@@ -60,8 +60,8 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
     public void configure() throws Exception {
         super.configure();
 
-        from("activemq:queue:ChouetteExportGtfsQueue?transacted=true").streamCaching()
-                .transacted()
+        from("entur-google-pubsub:ChouetteExportGtfsQueue").streamCaching()
+
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette GTFS export for provider with id ${header." + PROVIDER_ID + "}")
                 .process(e -> {
                     // Add correlation id only if missing
@@ -89,7 +89,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT.name()))
                 .removeHeader("loopCounter")
                 .setBody(constant(null))
-                .to("activemq:queue:ChouettePollStatusQueue")
+                .to("entur-google-pubsub:ChouettePollStatusQueue")
                 .routeId("chouette-send-export-job");
 
 

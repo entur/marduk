@@ -52,7 +52,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .setBody(simple(""))      //remove file data from body
-                .to("activemq:queue:DeadLetterQueue");
+                .to("entur-google-pubsub:DeadLetterQueue");
 
         from("activemq:queue:ProcessFileQueue?transacted=true")
                 .transacted()
@@ -80,7 +80,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .end()
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .setBody(simple(""))   //remove file data from body since this is in blobstore
-                .to("activemq:queue:ChouetteImportQueue")
+                .to("entur-google-pubsub:ChouetteImportQueue")
                 .end()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .to("direct:getBlob")

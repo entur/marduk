@@ -437,7 +437,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeRequest")
                 .log(LoggingLevel.INFO, "Triggered Netex export of merged file for Norway")
                 .removeHeaders("CamelHttp*")
-                .inOnly("activemq:queue:NetexExportMergedQueue")
+                .inOnly("entur-google-pubsub:NetexExportMergedQueue")
                 .routeId("admin-timetable-netex-merged-export")
                 .endRest()
 
@@ -669,7 +669,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "Chouette start export")
                 .removeHeaders("CamelHttp*")
-                .inOnly("activemq:queue:ChouetteExportNetexQueue")
+                .inOnly("entur-google-pubsub:ChouetteExportNetexQueue")
                 .routeId("admin-chouette-export")
                 .endRest()
 
@@ -722,7 +722,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders("CamelHttp*")
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
-                .inOnly("activemq:queue:ChouetteTransferExportQueue")
+                .inOnly("entur-google-pubsub:ChouetteTransferExportQueue")
                 .routeId("admin-chouette-transfer")
                 .endRest();
 

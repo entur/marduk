@@ -176,7 +176,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 				interceptSendToEndpoint(chouetteUrl + "/*")
 						.skipSendToOriginalEndpoint()
 						.to("mock:chouetteGetJobsForProvider");
-				interceptSendToEndpoint("activemq:queue:ChouetteTransferExportQueue")
+				interceptSendToEndpoint("entur-google-pubsub:ChouetteTransferExportQueue")
 					.skipSendToOriginalEndpoint()
 					.to("mock:chouetteTransferExportQueue");
 			}

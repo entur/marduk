@@ -52,23 +52,6 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-
-//        RedeliveryPolicy chouettePolicy = new RedeliveryPolicy();
-//        chouettePolicy.setMaximumRedeliveries(3);
-//        chouettePolicy.setRedeliveryDelay(30000);
-//        chouettePolicy.setRetriesExhaustedLogLevel(LoggingLevel.ERROR);
-//        chouettePolicy.setRetryAttemptedLogLevel(LoggingLevel.WARN);
-//        chouettePolicy.setLogExhausted(true);
-
-
-//        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
-//                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
-//                .process(e -> Status.addStatus(e, TimetableAction.IMPORT, State.FAILED))
-//                .to("direct:updateStatus")
-//                .log(LoggingLevel.ERROR,correlation()+ "Failed while importing to Chouette")
-//                .to("log:" + getClass().getName() + "?level=ERROR&showAll=true&multiline=true")
-//                .handled(true);
-
         from("direct:chouetteCleanStopPlaces")
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette stop place clean")
                 .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
@@ -113,8 +96,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .toD("${property.chouette_url}")
                 .routeId("chouette-clean-dataspace");
 
-        from("activemq:queue:ChouetteImportQueue?transacted=true").streamCaching()
-                .transacted()
+        from("entur-google-pubsub:ChouetteImportQueue").streamCaching()
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette import")
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.PENDING).build())
@@ -165,7 +147,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.IMPORT.name()))
                 .removeHeader("loopCounter")
                 .setBody(constant(null))
-                .to("activemq:queue:ChouettePollStatusQueue")
+                .to("entur-google-pubsub:ChouettePollStatusQueue")
                 .routeId("chouette-send-import-job");
 
 
@@ -216,10 +198,10 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .to("entur-google-pubsub:ChouetteValidationQueue")
                 .when(method(getClass(), "shouldTransferData").isEqualTo(true))
                 .log(LoggingLevel.INFO, correlation() + "Import ok, transfering data to next dataspace")
-                .to("activemq:queue:ChouetteTransferExportQueue")
+                .to("entur-google-pubsub:ChouetteTransferExportQueue")
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Import ok, triggering export")
-                .to("activemq:queue:ChouetteExportNetexQueue")
+                .to("entur-google-pubsub:ChouetteExportNetexQueue")
                 .end()
                 .end()
                 .routeId("chouette-process-job-list-after-import");
