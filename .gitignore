@@ -35,7 +35,6 @@ gradlew.bat
 /config/
 /dummy/
 /files/
-/activemq-data/
 /local_config/
 
 # local log files

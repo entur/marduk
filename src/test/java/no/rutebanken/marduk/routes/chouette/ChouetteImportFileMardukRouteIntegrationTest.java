@@ -70,7 +70,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
     @EndpointInject(uri = "mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce(uri = "activemq:queue:ProcessFileQueue")
+    @Produce(uri = "entur-google-pubsub:ProcessFileQueue")
     protected ProducerTemplate importTemplate;
 
     @Produce(uri = "direct:processImportResult")

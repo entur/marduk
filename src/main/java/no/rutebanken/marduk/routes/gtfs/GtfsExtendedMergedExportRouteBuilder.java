@@ -48,7 +48,7 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
                 .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
                 .to("direct:exportGtfsExtendedMerged")
                 .inOnly("entur-google-pubsub:GtfsBasicExportMergedQueue")
-                .routeId("gtfs-extended-export-merged-jms-route");
+                .routeId("gtfs-extended-export-merged-route");
 
 
         from("direct:exportGtfsExtendedMerged")

@@ -54,8 +54,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple(""))      //remove file data from body
                 .to("entur-google-pubsub:DeadLetterQueue");
 
-        from("activemq:queue:ProcessFileQueue?transacted=true")
-                .transacted()
+        from("entur-google-pubsub:ProcessFileQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.OK).build())
                 .to("direct:updateStatus")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.STARTED).build()).to("direct:updateStatus")
@@ -101,7 +100,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .bean(method(ZipFileUtils.class, "rePackZipFile"))
                 .log(LoggingLevel.INFO, correlation() + "ZIP-file repacked ${header." + FILE_HANDLE + "}")
                 .to("direct:uploadBlob")
-                .to("activemq:queue:ProcessFileQueue")
+                .to("entur-google-pubsub:ProcessFileQueue")
                 .routeId("file-repack-zip");
 
         from("direct:splitRarFile")
@@ -116,7 +115,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 })
                 .log(LoggingLevel.INFO, correlation() + "New fragment from RAR file ${header." + FILE_HANDLE + "}")
                 .to("direct:uploadBlob")
-                .to("activemq:queue:ProcessFileQueue")
+                .to("entur-google-pubsub:ProcessFileQueue")
                 .routeId("file-split-rar");
 
 
@@ -131,7 +130,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 })
                 .log(LoggingLevel.INFO, correlation() + "Uploading file with new file name ${header." + FILE_HANDLE + "}")
                 .to("direct:uploadBlob")
-                .to("activemq:queue:ProcessFileQueue")
+                .to("entur-google-pubsub:ProcessFileQueue")
                 .routeId("file-sanitize-filename");
     }
 

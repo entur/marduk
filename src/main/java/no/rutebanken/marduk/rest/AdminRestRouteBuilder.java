@@ -506,7 +506,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 })
                 .setBody(constant(null))
 
-                .inOnly("activemq:queue:ProcessFileQueue")
+                .inOnly("entur-google-pubsub:ProcessFileQueue")
                 .routeId("admin-chouette-import")
                 .endRest()
 

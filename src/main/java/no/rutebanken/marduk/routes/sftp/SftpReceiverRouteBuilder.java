@@ -92,7 +92,7 @@ public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build())
                 .to("direct:updateStatus")
                 .log(LoggingLevel.INFO, correlation() + "Putting handle ${header." + FILE_HANDLE + "} on queue...")
-                .to("activemq:queue:ProcessFileQueue")
+                .to("entur-google-pubsub:ProcessFileQueue")
                 .otherwise()
                 .log(LoggingLevel.INFO, "Do not initiate processing of  ${header." + FILE_HANDLE + "} as autoImport is not enabled for provider")
                 .end()
