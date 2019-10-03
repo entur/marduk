@@ -112,7 +112,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(null))
                 .setHeader(Constants.OTP_BASE_GRAPH_BUILD, constant(true))
                 .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
-                .inOnly("activemq:queue:GeoCoderOsmUpdateNotificationQueue")
+                .inOnly("entur-google-pubsub:GeoCoderOsmUpdateNotificationQueue")
                 .to("direct:notifyOsmStatus")
                 .log(LoggingLevel.DEBUG, "Processing of OSM map finished")
                 .routeId("osm-fetch-map");

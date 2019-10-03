@@ -54,7 +54,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
                 .to("direct:exportGtfsGoogle")
                 .inOnly("entur-google-pubsub:GtfsGoogleQaExportQueue")
-                .routeId("gtfs-google-export-merged-jms-route");
+                .routeId("gtfs-google-export-merged-route");
 
         from("direct:transformToGoogleGTFS")
                 .log(LoggingLevel.INFO, getClass().getName(), "Transforming gtfs to suit google")
@@ -77,7 +77,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google QA export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
                 .to("direct:exportQaGtfsGoogle")
-                .routeId("gtfs-google-qa-export-merged-jms-route");
+                .routeId("gtfs-google-qa-export-merged-route");
 
 
         from("direct:exportQaGtfsGoogle")

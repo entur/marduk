@@ -60,7 +60,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 	@EndpointInject(uri = "mock:ExportGtfsQueue")
 	protected MockEndpoint exportGtfsQueue;
 
-	@Produce(uri = "activemq:queue:ChouetteExportNetexQueue")
+	@Produce(uri = "entur-google-pubsub:ChouetteExportNetexQueue")
 	protected ProducerTemplate importTemplate;
 
 	@Produce(uri = "direct:processNetexExportResult")
@@ -101,7 +101,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 						.to("mock:updateStatus");
 				interceptSendToEndpoint("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue").skipSendToOriginalEndpoint().to("mock:ChouetteMergeWithFlexibleLinesQueue");
-				interceptSendToEndpoint("activemq:queue:ChouetteExportGtfsQueue").skipSendToOriginalEndpoint().to("mock:ExportGtfsQueue");
+				interceptSendToEndpoint("entur-google-pubsub:ChouetteExportGtfsQueue").skipSendToOriginalEndpoint().to("mock:ExportGtfsQueue");
 			}
 		});
 

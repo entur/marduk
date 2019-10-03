@@ -25,7 +25,6 @@ import no.rutebanken.marduk.routes.chouette.mapping.ProviderAndJobsMapper;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEvent.State;
 import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
-import org.apache.activemq.ScheduledMessage;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
@@ -174,8 +173,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-get-jobs-all");
 
 
-        from("activemq:queue:ChouettePollStatusQueue?transacted=true&maxConcurrentConsumers=" + maxConsumers)
-                .transacted()
+        from("entur-google-pubsub:ChouettePollStatusQueue?concurrentConsumers=" + maxConsumers)
                 .validate(header(Constants.CORRELATION_ID).isNotNull())
                 .validate(header(Constants.PROVIDER_ID).isNotNull())
                 .validate(header(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION).isNotNull())
@@ -214,12 +212,11 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.STARTED).jobId(e.getIn().getHeader(Constants.CHOUETTE_JOB_ID, Long.class)).build())
                 .to("direct:updateStatus")
                 .end()
-                .setHeader(ScheduledMessage.AMQ_SCHEDULED_DELAY, constant(retryDelay))
+                .delay(retryDelay)
                 // Remove or ActiveMQ will think message is overdue and resend immediately
                 .removeHeader("scheduledJobId")
                 .setBody(constant(""))
-                //.log(LoggingLevel.INFO,"Scheduling next polling message in ${header."+ActiveMQMessage.AMQ_SCHEDULED_DELAY+"}ms")
-                .to("activemq:queue:ChouettePollStatusQueue")
+                .to("entur-google-pubsub:ChouettePollStatusQueue")
                 .routeId("chouette-reschedule-job");
 
         from("direct:jobStatusDone")

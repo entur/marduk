@@ -59,7 +59,7 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
             if(Paths.get(baseFolder, prefix).toFile().isDirectory()) {
                 try (Stream<Path> walk = Files.walk(Paths.get(baseFolder, prefix))) {
                     List<BlobStoreFiles.File> result = walk.filter(Files::isRegularFile)
-                            .map(x -> new BlobStoreFiles.File(x.getFileName().toString(), new Date(), new Date(), x.toFile().length())).collect(Collectors.toList());
+                            .map(x -> new BlobStoreFiles.File(Paths.get(baseFolder).relativize(x).toString(), new Date(), new Date(), x.toFile().length())).collect(Collectors.toList());
                     blobStoreFiles.add(result);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -104,8 +104,8 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
         logger.debug("Upload blob called in local-disk blob store on " + objectName);
         try {
             Path localPath = Paths.get(objectName);
-
-            Path folder = Paths.get(baseFolder).resolve(localPath.getParent());
+            Path parentDirectory = localPath.getParent();
+            Path folder = parentDirectory == null ? Paths.get(baseFolder) : Paths.get(baseFolder).resolve(parentDirectory);
             Files.createDirectories(folder);
 
             Path fullPath = Paths.get(baseFolder).resolve(localPath);

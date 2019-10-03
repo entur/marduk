@@ -57,7 +57,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
         from("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue")
                 .to("direct:mergeChouetteExportWithFlexibleLinesExport")
-                .routeId("netex-export-merge-chouette-with-flexible-lines-jms");
+                .routeId("netex-export-merge-chouette-with-flexible-lines-queue");
 
         from("direct:mergeChouetteExportWithFlexibleLinesExport").streamCaching()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Merging chouette NeTEx export with FlexibleLines for provider")

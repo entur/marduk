@@ -44,9 +44,6 @@ logging.level.org.apache.camel.util=INFO
 logging.level.org.apache=INFO
 logging.level.org.apache=INFO
 logging.level.org.apache.http.wire=INFO
-logging.level.org.apache.activemq=INFO
-logging.level.org.apache.activemq.thread=INFO
-logging.level.org.apache.activemq.transport=INFO
 logging.level.org.apache.camel.component.file=INFO
 logging.level.org.apache.camel.component.file.remote=INFO
 logging.level.org.springframework=INFO
@@ -76,12 +73,6 @@ sftp.known.hosts.file=/home/tomgag/.ssh/known_hosts
 sftp.autoStartup=false
 sftp.delay=30s
 
-spring.activemq.broker-url=tcp://localhost:51616?jms.redeliveryPolicy.maximumRedeliveries=0
-activemq.broker.host=localhost
-activemq.broker.mgmt.port=18161
-spring.activemq.password=admin
-spring.activemq.user=admin
-spring.activemq.pooled=true
 spring.main.sources=no.rutebanken.marduk
 spring.profiles.active=gcs-blobstore
 otp.graph.deployment.notification.url=none
@@ -106,7 +97,7 @@ Build: `mvn clean install`
 
 Run the docker image in docker inside vagrant:et
 
-`docker rm -f marduk ; mvn -Pf8-build &amp;&amp; docker run -it --name marduk -e JAVA_OPTIONS=&quot;-Xmx1280m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005&quot; --link activemq --link lamassu --link chouette -p 5005:5005 -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro -v /git/config/marduk/dev/application.properties:/app/config/application.properties:ro dr.rutebanken.org/rutebanken/marduk:0.0.1-SNAPSHOT`
+`docker rm -f marduk ; mvn -Pf8-build &amp;&amp; docker run -it --name marduk -e JAVA_OPTIONS=&quot;-Xmx1280m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005&quot; --link lamassu --link chouette -p 5005:5005 -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro -v /git/config/marduk/dev/application.properties:/app/config/application.properties:ro dr.rutebanken.org/rutebanken/marduk:0.0.1-SNAPSHOT`
 
 Here, we mount the lamssu key and an application.properties file from vagrant.
 

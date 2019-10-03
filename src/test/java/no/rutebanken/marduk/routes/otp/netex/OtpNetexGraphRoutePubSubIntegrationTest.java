@@ -50,7 +50,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
     @Test
     public void testOtpGraphMessageAggregationOneMessageWithoutException() throws Exception {
 
-        context.getRouteDefinition("otp-graph-build-jms").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveByToUri("direct:buildOtpGraph").replace().to("mock:buildOtpGraph");
@@ -73,7 +73,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
     @Test
     public void testOtpGraphMessageAggregationWithoutException() throws Exception {
 
-        context.getRouteDefinition("otp-graph-build-jms").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveByToUri("direct:buildOtpGraph").replace().to("mock:buildOtpGraph");
@@ -99,7 +99,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
     @Test
     public void testOtpGraphMessageAggregationWithException() throws Exception {
 
-        context.getRouteDefinition("otp-graph-build-jms").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
 

@@ -24,7 +24,6 @@ import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import no.rutebanken.marduk.config.GcsStorageConfig;
 import no.rutebanken.marduk.config.IdempotentRepositoryConfig;
-import no.rutebanken.marduk.config.TransactionManagerConfig;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
 import org.apache.camel.builder.RouteBuilder;
 import org.entur.pubsub.camel.config.GooglePubSubCamelComponentConfig;
@@ -45,7 +44,7 @@ import java.util.Set;
  */
 @SpringBootApplication
 @EnableScheduling
-@Import({GcsStorageConfig.class, TransactionManagerConfig.class, IdempotentRepositoryConfig.class, GooglePubSubCamelComponentConfig.class})
+@Import({GcsStorageConfig.class, IdempotentRepositoryConfig.class, GooglePubSubCamelComponentConfig.class})
 public class App extends RouteBuilder {
 
 	@Value("${marduk.shutdown.timeout:300}")

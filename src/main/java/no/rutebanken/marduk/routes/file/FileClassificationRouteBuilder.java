@@ -52,10 +52,9 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .setBody(simple(""))      //remove file data from body
-                .to("activemq:queue:DeadLetterQueue");
+                .to("entur-google-pubsub:DeadLetterQueue");
 
-        from("activemq:queue:ProcessFileQueue?transacted=true")
-                .transacted()
+        from("entur-google-pubsub:ProcessFileQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.OK).build())
                 .to("direct:updateStatus")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.STARTED).build()).to("direct:updateStatus")
@@ -80,7 +79,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .end()
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .setBody(simple(""))   //remove file data from body since this is in blobstore
-                .to("activemq:queue:ChouetteImportQueue")
+                .to("entur-google-pubsub:ChouetteImportQueue")
                 .end()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .to("direct:getBlob")
@@ -101,7 +100,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .bean(method(ZipFileUtils.class, "rePackZipFile"))
                 .log(LoggingLevel.INFO, correlation() + "ZIP-file repacked ${header." + FILE_HANDLE + "}")
                 .to("direct:uploadBlob")
-                .to("activemq:queue:ProcessFileQueue")
+                .to("entur-google-pubsub:ProcessFileQueue")
                 .routeId("file-repack-zip");
 
         from("direct:splitRarFile")
@@ -116,7 +115,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 })
                 .log(LoggingLevel.INFO, correlation() + "New fragment from RAR file ${header." + FILE_HANDLE + "}")
                 .to("direct:uploadBlob")
-                .to("activemq:queue:ProcessFileQueue")
+                .to("entur-google-pubsub:ProcessFileQueue")
                 .routeId("file-split-rar");
 
 
@@ -131,7 +130,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 })
                 .log(LoggingLevel.INFO, correlation() + "Uploading file with new file name ${header." + FILE_HANDLE + "}")
                 .to("direct:uploadBlob")
-                .to("activemq:queue:ProcessFileQueue")
+                .to("entur-google-pubsub:ProcessFileQueue")
                 .routeId("file-sanitize-filename");
     }
 

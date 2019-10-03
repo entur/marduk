@@ -47,8 +47,8 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
     public void configure() throws Exception {
         super.configure();
 
-        from("activemq:queue:ChouetteTransferExportQueue?transacted=true").streamCaching()
-				.transacted()
+        from("entur-google-pubsub:ChouetteTransferExportQueue").streamCaching()
+
         		.log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette transfer for provider with id ${header." + PROVIDER_ID + "}")
                 .process(e -> { 
                 	// Add correlation id only if missing
@@ -75,7 +75,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
 		        .removeHeader("loopCounter")
 				.setBody(constant(""))
-                .to("activemq:queue:ChouettePollStatusQueue")
+                .to("entur-google-pubsub:ChouettePollStatusQueue")
                 .routeId("chouette-send-transfer-job");
 
  		 from("direct:processTransferExportResult")

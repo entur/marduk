@@ -53,8 +53,8 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
     public void configure() throws Exception {
         super.configure();
 
-        from("activemq:queue:ChouetteExportNetexQueue?transacted=true").streamCaching()
-                .transacted()
+        from("entur-google-pubsub:ChouetteExportNetexQueue").streamCaching()
+
                 .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette Netex export for provider with id ${header." + PROVIDER_ID + "}")
                 .process(e -> {
                     // Add correlation id only if missing
@@ -78,7 +78,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT_NETEX.name()))
                 .removeHeader("loopCounter")
                 .setBody(constant(null))
-                .to("activemq:queue:ChouettePollStatusQueue")
+                .to("entur-google-pubsub:ChouettePollStatusQueue")
                 .routeId("chouette-start-export-netex");
 
 
@@ -98,7 +98,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .setBody(constant(null))
 
                 .to("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue")
-                .to("activemq:queue:ChouetteExportGtfsQueue")
+                .to("entur-google-pubsub:ChouetteExportGtfsQueue")
 
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.OK).build())
 

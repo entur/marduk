@@ -25,8 +25,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import javax.jms.JMSException;
-
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
@@ -139,10 +137,6 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:buildNetexGraph")
                 .setProperty(PROP_STATUS, constant(JobEvent.State.OK))
                 .to("direct:sendStatusForOtpNetexJobs")
-                .doCatch(JMSException.class)
-                .log(LoggingLevel.ERROR, correlation() + "Graph building failed with JMS exception. Not sending error event as we expect retry of build. Msg: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
-                .setHeader(FILE_PARENT, exchangeProperty(OTP_GRAPH_DIR))
-                .to("direct:cleanUpLocalDirectory")
                 .doCatch(Exception.class)
                 .log(LoggingLevel.ERROR, correlation() + "Graph building failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.FAILED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")

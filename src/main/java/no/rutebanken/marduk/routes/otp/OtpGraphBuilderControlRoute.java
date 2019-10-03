@@ -60,7 +60,7 @@ public class OtpGraphBuilderControlRoute extends BaseRouteBuilder {
                         .end()
                     .end()
                 .end()
-                .routeId("otp-graph-build-jms");
+                .routeId("otp-graph-build");
     }
 
 
