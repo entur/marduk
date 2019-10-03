@@ -104,8 +104,8 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
         logger.debug("Upload blob called in local-disk blob store on " + objectName);
         try {
             Path localPath = Paths.get(objectName);
-
-            Path folder = Paths.get(baseFolder).resolve(localPath.getParent());
+            Path parentDirectory = localPath.getParent();
+            Path folder = parentDirectory == null ? Paths.get(baseFolder) : Paths.get(baseFolder).resolve(parentDirectory);
             Files.createDirectories(folder);
 
             Path fullPath = Paths.get(baseFolder).resolve(localPath);
