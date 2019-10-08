@@ -35,7 +35,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gcp.pubsub.support.BasicAcknowledgeablePubsubMessage;
 
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -66,7 +65,7 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
 
     @Override
     public void configure() throws Exception {
-        errorHandler(transactionErrorHandler()
+        errorHandler(defaultErrorHandler()
                 .redeliveryDelay(redeliveryDelay)
                 .maximumRedeliveries(maxRedelivery)
                 .onRedelivery(exchange -> logRedelivery(exchange))

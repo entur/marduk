@@ -19,7 +19,7 @@ package no.rutebanken.marduk.routes.sftp;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.ProviderRepository;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.TransactionalBaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -43,7 +43,7 @@ import static no.rutebanken.marduk.Constants.USERNAME;
  * Downloads file from lamassu, putting it in blob store, posting handle on queue.
  */
 @Component
-public class SftpReceiverRouteBuilder extends BaseRouteBuilder {
+public class SftpReceiverRouteBuilder extends TransactionalBaseRouteBuilder {
 
     @Value("${sftp.host}")
     private String sftpHost;
