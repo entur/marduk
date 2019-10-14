@@ -16,7 +16,7 @@
 
 package no.rutebanken.marduk.routes.chouette.json.exporter;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.ZoneId;

@@ -23,11 +23,9 @@ import org.apache.camel.EndpointInject;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
-import org.apache.camel.test.spring.CamelSpringBootRunner;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
-import org.junit.Before;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
@@ -40,7 +38,6 @@ import java.util.Collections;
 
 import static org.mockito.Mockito.when;
 
-@RunWith(CamelSpringBootRunner.class)
 @ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator"})
 @UseAdviceWith
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -58,7 +55,7 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
     @EndpointInject(uri = "mock:sink")
     protected MockEndpoint sink;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException {
 
         when(providerRepository.getProviders()).thenReturn(Collections.singletonList(Provider.create(IOUtils.toString(new FileReader(

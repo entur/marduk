@@ -17,8 +17,9 @@
 package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates;
-import org.junit.Ignore;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
@@ -37,13 +38,13 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class NeptuneCalendarDayChecker {
 
     private final String path = "/home/tomgag/Downloads/export_neptune_2504.zip";
 
-    @Ignore
+    @Disabled
     @Test
     public void test() throws Exception {
        assertTrue(FileClassifierPredicates.validateZipContent(

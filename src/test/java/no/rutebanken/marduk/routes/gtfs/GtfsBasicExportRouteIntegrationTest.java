@@ -21,12 +21,13 @@ import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.commons.io.FileUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -51,7 +52,7 @@ public class GtfsBasicExportRouteIntegrationTest extends MardukRouteBuilderInteg
     private String exportFileName;
 
 
-    @Before
+    @BeforeEach
     public void prepare() throws Exception {
         when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null), provider("rb_rut", 2, null), provider("opp", 3, 4l)));
     }
@@ -70,7 +71,7 @@ public class GtfsBasicExportRouteIntegrationTest extends MardukRouteBuilderInteg
         startRoute.requestBody(null);
 
         InputStream mergedIS = inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + exportFileName);
-        Assert.assertNotNull("Expected transformed gtfs file to have been uploaded", mergedIS);
+        assertThat(mergedIS).as("Expected transformed gtfs file to have been uploaded").isNotNull();
 
         File mergedFile = File.createTempFile("mergedID", "tmp");
         FileUtils.copyInputStreamToFile(mergedIS, mergedFile);

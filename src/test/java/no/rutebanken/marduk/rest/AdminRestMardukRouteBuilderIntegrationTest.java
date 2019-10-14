@@ -30,9 +30,10 @@ import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,6 +49,7 @@ import java.util.Map;
 import static no.rutebanken.marduk.Constants.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
@@ -88,7 +90,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     private List<String> exportFileStaticPrefixes;
 
 
-    @Before
+    @BeforeEach
     public void setUpProvider() {
         when(providerRepository.getReferential(2L)).thenReturn("rut");
     }
@@ -175,7 +177,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
         //populate fake blob repo
         inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, new FileInputStream(new File(pathname)), false);
-//		BlobStoreFiles blobStoreFiles = inMemoryBlobStoreRepository.listBlobs(fileStorePath);
+//        BlobStoreFiles blobStoreFiles = inMemoryBlobStoreRepository.listBlobs(fileStorePath);
 
         camelContext.start();
 
@@ -189,8 +191,8 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
         ObjectMapper mapper = new ObjectMapper();
         BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
-        Assert.assertEquals(1, rsp.getFiles().size());
-        Assert.assertEquals(fileStorePath + filename, rsp.getFiles().get(0).getName());
+        assertEquals(1, rsp.getFiles().size());
+        assertEquals(fileStorePath + filename, rsp.getFiles().get(0).getName());
 
     }
 
@@ -214,19 +216,21 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         InputStream response = (InputStream) getFileTemplate.requestBodyAndHeaders(null, headers);
         // Parse response
 
-//		Assert.assertTrue(org.apache.commons.io.IOUtils.contentEquals(testFileStream, response));
+//        Assert.assertTrue(org.apache.commons.io.IOUtils.contentEquals(testFileStream, response));
     }
 
 
-    @Test(expected = CamelExecutionException.class)
+    @Test
     public void getBlobStoreFile_unknownFile() throws Exception {
 
         camelContext.start();
 
-        // Do rest call
-        Map<String, Object> headers = new HashMap<String, Object>();
-        headers.put(Exchange.HTTP_METHOD, "GET");
-        getUnknownFileTemplate.requestBodyAndHeaders(null, headers);
+        assertThrows(CamelExecutionException.class, () -> {
+            // Do rest call
+            Map<String, Object> headers = new HashMap<String, Object>();
+            headers.put(Exchange.HTTP_METHOD, "GET");
+            getUnknownFileTemplate.requestBodyAndHeaders(null, headers);
+        });
     }
 
 
@@ -249,7 +253,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
         ObjectMapper mapper = new ObjectMapper();
         BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
-        Assert.assertEquals(exportFileStaticPrefixes.size(), rsp.getFiles().size());
+        assertEquals(exportFileStaticPrefixes.size(), rsp.getFiles().size());
         exportFileStaticPrefixes.forEach(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName())));
     }
 

@@ -38,6 +38,7 @@
         <entur.helpers.version>0.0.6-SNAPSHOT</entur.helpers.version>
         <guava.version>28.1-jre</guava.version>
 
+        <junit-jupiter.version>5.5.2</junit-jupiter.version>
     </properties>
 
     <dependencyManagement>
@@ -414,11 +415,21 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+       	<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
-        </dependency>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-launcher</artifactId>
+			<scope>test</scope>
+		</dependency>
         <dependency>
             <groupId>org.mockftpserver</groupId>
             <artifactId>MockFtpServer</artifactId>
