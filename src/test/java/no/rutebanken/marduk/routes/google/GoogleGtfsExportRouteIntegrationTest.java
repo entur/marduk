@@ -21,9 +21,9 @@ import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,6 +34,7 @@ import java.util.Arrays;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = GoogleGtfsExportRoute.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
@@ -57,7 +58,7 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
 
     private String testFile = "src/test/resources/no/rutebanken/marduk/routes/gtfs/extended_gtfs.zip";
 
-    @Before
+    @BeforeEach
     public void prepare() throws Exception {
         Provider rbOppProvider = provider("rb_opp", 4, null, false, false);
         when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null, false, false), provider("rb_rut", 2, null, true, false),
@@ -76,8 +77,7 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
 
         startRoute.requestBody(null);
 
-
-        Assert.assertNotNull("Expected transformed gtfs file to have been uploaded", inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName));
+        assertThat(inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName)).as("Expected transformed gtfs file to have been uploaded").isNotNull();
     }
 
     @Test
@@ -89,7 +89,7 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
 
         startQaRoute.requestBody(null);
 
-        Assert.assertNotNull("Expected transformed gtfs file to have been uploaded", inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName));
+        assertThat(inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName)).as("Expected transformed gtfs file to have been uploaded").isNotNull();
     }
 
 

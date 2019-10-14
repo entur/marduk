@@ -16,12 +16,12 @@
 
 package no.rutebanken.marduk.routes.otp;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.Date;
-
-import static org.junit.Assert.assertTrue;
 
 public class MetadataTest {
 

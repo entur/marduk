@@ -21,8 +21,8 @@ import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.rest.ProviderAndJobs;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,10 +36,10 @@ public class ProviderAndJobsMapperTest {
 		JobResponse[] jobs = new JobResponse[]{job("ref1"), job("ref2"), job("ref1")};
 
 		List<ProviderAndJobs> mapped = new ProviderAndJobsMapper().mapJobResponsesToProviderAndJobs(jobs, providers);
-		Assert.assertEquals(3,mapped.size() );
-		Assert.assertEquals(2,get(mapped,1).getNumJobs());
-		Assert.assertEquals(1,get(mapped,2).getNumJobs());
-		Assert.assertEquals(0,get(mapped,3).getNumJobs());
+		assertEquals(3,mapped.size() );
+		assertEquals(2,get(mapped,1).getNumJobs());
+		assertEquals(1,get(mapped,2).getNumJobs());
+		assertEquals(0,get(mapped,3).getNumJobs());
 	}
 
 	private ProviderAndJobs get(List<ProviderAndJobs> providerAndJobsList, int id) {

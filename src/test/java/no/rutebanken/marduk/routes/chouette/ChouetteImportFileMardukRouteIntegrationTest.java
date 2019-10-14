@@ -26,8 +26,8 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
 import org.apache.commons.io.IOUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -82,7 +82,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
     @Value("${chouette.url}")
     private String chouetteUrl;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException {
         super.setUp();
         chouetteCreateImport.reset();
