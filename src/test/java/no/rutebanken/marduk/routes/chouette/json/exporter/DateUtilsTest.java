@@ -16,12 +16,12 @@
 
 package no.rutebanken.marduk.routes.chouette.json.exporter;
 
-import org.junit.Test;
-
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+
+import org.junit.jupiter.api.Test;
 
 import static junit.framework.TestCase.assertEquals;
 

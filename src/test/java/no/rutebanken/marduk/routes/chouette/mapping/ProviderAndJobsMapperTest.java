@@ -22,7 +22,7 @@ import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.rest.ProviderAndJobs;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;

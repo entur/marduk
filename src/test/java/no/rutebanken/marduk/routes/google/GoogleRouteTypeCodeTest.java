@@ -17,7 +17,7 @@
 package no.rutebanken.marduk.routes.google;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class GoogleRouteTypeCodeTest {
 

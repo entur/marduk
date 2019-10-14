@@ -16,10 +16,10 @@
 
 package no.rutebanken.marduk.routes.otp;
 
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
+
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

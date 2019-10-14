@@ -18,7 +18,7 @@ package no.rutebanken.marduk.domain;
 
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class FileNameAndDigestTest {
 

@@ -19,7 +19,7 @@ package no.rutebanken.marduk.routes.file;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;

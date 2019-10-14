@@ -1,0 +1,28 @@
+<configuration>
+    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>
+    
+    <!-- default console pattern plus marker -->
+    <property name="CONSOLE_LOG_PATTERN" value="${CONSOLE_LOG_PATTERN:-%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg %marker%n}"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CONSOLE-ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- https://logback.qos.ch/manual/appenders.html#AsyncAppender -->
+        <discardingThreshold>0</discardingThreshold>
+        <maxFlushTime>0</maxFlushTime>
+        <appender-ref ref="CONSOLE" />
+    </appender>    
+
+    <logger name="com" level="INFO"/>
+    <logger name="no" level="INFO"/>
+    <logger name="org" level="INFO"/>
+            
+    <root level="INFO">
+        <appender-ref ref="CONSOLE-ASYNC" />
+    </root>
+
+</configuration>

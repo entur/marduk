@@ -32,7 +32,7 @@ import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,8 +48,10 @@ import java.util.Map;
 import static no.rutebanken.marduk.Constants.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+//@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Autowired
@@ -218,15 +220,17 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     }
 
 
-    @Test(expected = CamelExecutionException.class)
+    @Test
     public void getBlobStoreFile_unknownFile() throws Exception {
 
         camelContext.start();
 
-        // Do rest call
-        Map<String, Object> headers = new HashMap<String, Object>();
-        headers.put(Exchange.HTTP_METHOD, "GET");
-        getUnknownFileTemplate.requestBodyAndHeaders(null, headers);
+        assertThrows(CamelExecutionException.class, () -> {
+        	// Do rest call
+	        Map<String, Object> headers = new HashMap<String, Object>();
+	        headers.put(Exchange.HTTP_METHOD, "GET");
+	        getUnknownFileTemplate.requestBodyAndHeaders(null, headers);
+        });
     }
 
 

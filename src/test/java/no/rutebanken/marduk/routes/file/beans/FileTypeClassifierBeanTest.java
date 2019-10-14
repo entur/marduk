@@ -22,7 +22,7 @@ import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,6 +31,7 @@ import java.io.InputStream;
 
 import static no.rutebanken.marduk.routes.file.FileType.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class FileTypeClassifierBeanTest {
 
@@ -58,9 +59,11 @@ public class FileTypeClassifierBeanTest {
         assertFileType("netex.zip", NETEXPROFILE);
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void classifyNetexFileFromRuter() throws Exception {
-        assertFileType("AOR.zip", NETEXPROFILE);
+    	assertThrows(RuntimeException.class, () ->
+    		assertFileType("AOR.zip", NETEXPROFILE)
+   		);
     }
 
     @Test
@@ -73,9 +76,11 @@ public class FileTypeClassifierBeanTest {
         assertFileType("netex_with_two_files.zip", NETEXPROFILE);
     }
 
-    @Test(expected = FileValidationException.class)
+    @Test
     public void classifyNetexWithTwoFilesOneInvalid() throws Exception {
-        assertFileType("netex_with_two_files_one_invalid.zip", NETEXPROFILE);
+    	assertThrows(FileValidationException.class, () ->
+        	assertFileType("netex_with_two_files_one_invalid.zip", NETEXPROFILE)
+        );
     }
 
     @Test
