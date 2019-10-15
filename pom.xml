@@ -230,6 +230,12 @@
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-hazelcast</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.camel</groupId>
+            <artifactId>camel-micrometer-starter</artifactId>
+        </dependency>
+
         <!-- Due to maven artifact cache, this dependency needs to be explicit -->
 
         <!--See compatibility matrix https://github.com/fabric8io/kubernetes-client#compatibility-matrix -->
