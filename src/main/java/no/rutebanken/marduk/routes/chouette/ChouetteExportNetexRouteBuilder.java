@@ -97,8 +97,8 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .to("direct:uploadBlob")
                 .setBody(constant(null))
 
-                .to("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue")
-                .to("entur-google-pubsub:ChouetteExportGtfsQueue")
+                .to("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue").id("ToChouetteMergeWithFlexibleLinesQueueNode")
+                .to("entur-google-pubsub:ChouetteExportGtfsQueue").id("ToChouetteExportGtfsQueueNode")
 
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.OK).build())
 

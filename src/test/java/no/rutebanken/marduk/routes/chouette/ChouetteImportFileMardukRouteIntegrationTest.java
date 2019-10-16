@@ -16,15 +16,24 @@
 
 package no.rutebanken.marduk.routes.chouette;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
-import no.rutebanken.marduk.routes.file.ZipFileUtils;
-import org.apache.camel.*;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.camel.EndpointInject;
+import org.apache.camel.Exchange;
+import org.apache.camel.Expression;
+import org.apache.camel.Produce;
+import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
+import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,16 +42,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
+import no.rutebanken.marduk.routes.file.ZipFileUtils;
+import no.rutebanken.marduk.test.TestApp;
 
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = ChouetteImportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
@@ -130,9 +136,6 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
             }
         });
 
-        // we must manually start when we are done with all the advice with
-        context.start();
-
         // 1 initial import call
         chouetteCreateImport.expectedMessageCount(1);
         chouetteCreateImport.returnReplyHeader("Location", new SimpleExpression(
@@ -203,10 +206,6 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
             }
         });
 
-
-        // we must manually start when we are done with all the advice with
-        context.start();
-
         // 1 initial import call
         chouetteCreateImport.expectedMessageCount(1);
         chouetteCreateImport.returnReplyHeader("Location", new SimpleExpression(
@@ -254,21 +253,14 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
     }
 
     public void testJobListResponse(String jobListResponseClasspathReference, boolean expectExport) throws Exception {
-
         context.getRouteDefinition("chouette-process-job-list-after-import").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                interceptSendToEndpoint(chouetteUrl + "/*")
-                        .skipSendToOriginalEndpoint()
-                        .to("mock:chouetteGetJobsForProvider");
-                interceptSendToEndpoint("entur-google-pubsub:ChouetteValidationQueue")
-                        .skipSendToOriginalEndpoint()
-                        .to("mock:chouetteValidationQueue");
+                weaveById("ToJobStatusNode").replace().to("mock:chouetteGetJobsForProvider");
+                weaveById("ToChouetteValidationQueueNode").replace().to("mock:chouetteValidationQueue");
             }
         });
-
-        context.start();
-
+        
         // 1 call to list other import jobs in referential
         chouetteGetJobs.expectedMessageCount(1);
         chouetteGetJobs.returnReplyBody(new Expression() {
@@ -279,9 +271,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
                 try {
                     return (T) IOUtils.toString(getClass().getResourceAsStream(jobListResponseClasspathReference));
                 } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                    return null;
+                    throw new RuntimeException(e);
                 }
             }
         });

@@ -21,13 +21,11 @@ import com.google.common.cache.CacheBuilder;
 import no.rutebanken.marduk.domain.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.client.ResourceAccessException;
 
-import javax.annotation.PostConstruct;
 import java.net.ConnectException;
 import java.util.Collection;
 import java.util.Map;
@@ -37,21 +35,21 @@ import java.util.stream.Collectors;
 @Repository
 public class CacheProviderRepository implements ProviderRepository {
 
-    @Autowired
-    RestProviderDAO restProviderService;
+    private static Logger logger = LoggerFactory.getLogger(CacheProviderRepository.class);
 
-    @Value("${marduk.provider.cache.refresh.max.size:1000}")
+    private RestProviderDAO restProviderService;
     private Integer cacheMaxSize;
 
-    private Cache<Long, Provider> cache;
+    private volatile Cache<Long, Provider> cache;
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
-
-    @PostConstruct
-    void init() {
-        cache = CacheBuilder.newBuilder().maximumSize(cacheMaxSize).build();
-    }
-
+    public CacheProviderRepository(
+    		RestProviderDAO restProviderService,
+    		@Value("${marduk.provider.cache.refresh.max.size:1000}") int cacheMaxSize
+   		) {
+        this.restProviderService = restProviderService;
+        this.cacheMaxSize = cacheMaxSize;
+	}
+    
     @Scheduled(fixedRateString = "${marduk.provider.cache.refresh.interval:300000}")
     public void populate() {
         try {
@@ -90,11 +88,23 @@ public class CacheProviderRepository implements ProviderRepository {
 
     @Override
     public Collection<Provider> getProviders() {
-        return cache.asMap().values();
+    	ensurePopulated();
+		return cache.asMap().values();
     }
+
+	private void ensurePopulated() {
+		if(isEmpty()) {
+    		synchronized(this) {
+    			if(isEmpty()) {
+    				populate();
+    			}
+    		}
+    	}
+	}
 
     @Override
     public Provider getProvider(Long id) {
+    	ensurePopulated();
         return cache.getIfPresent(id);
     }
 
@@ -105,6 +115,8 @@ public class CacheProviderRepository implements ProviderRepository {
 
     @Override
     public Long getProviderId(String referential) {
+    	ensurePopulated();
+
         Provider provider = cache.asMap().values().stream().filter(p -> referential.equals(p.chouetteInfo.referential)).findFirst().orElse(null);
         if (provider != null) {
             return provider.getId();
