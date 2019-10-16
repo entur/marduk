@@ -100,8 +100,9 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 						.to("mock:updateStatus");
-				interceptSendToEndpoint("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue").skipSendToOriginalEndpoint().to("mock:ChouetteMergeWithFlexibleLinesQueue");
-				interceptSendToEndpoint("entur-google-pubsub:ChouetteExportGtfsQueue").skipSendToOriginalEndpoint().to("mock:ExportGtfsQueue");
+				
+				weaveById("ToChouetteMergeWithFlexibleLinesQueueNode").replace().to("mock:ChouetteMergeWithFlexibleLinesQueue");
+				weaveById("ToChouetteExportGtfsQueueNode").replace().to("mock:ExportGtfsQueue");
 			}
 		});
 

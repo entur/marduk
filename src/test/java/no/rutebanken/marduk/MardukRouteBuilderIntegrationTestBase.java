@@ -39,7 +39,6 @@ import java.util.Collections;
 import static org.mockito.Mockito.when;
 
 @ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator"})
-@UseAdviceWith
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public abstract class MardukRouteBuilderIntegrationTestBase {
 
@@ -57,7 +56,8 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
 
     @BeforeEach
     public void setUp() throws IOException {
-
+    	when(providerRepository.isReady()).thenReturn(true);
+    	
         when(providerRepository.getProviders()).thenReturn(Collections.singletonList(Provider.create(IOUtils.toString(new FileReader(
                 "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))));
 
