@@ -36,6 +36,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
@@ -82,7 +83,7 @@ public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderI
     }
 
    private void assertStopVehicleTypesAreNotConverted(File out) throws IOException {
-        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()));
+        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
         
         assertThat(stopLines.get(0)).as("Line without vehicle type should not be changed").endsWith(",");

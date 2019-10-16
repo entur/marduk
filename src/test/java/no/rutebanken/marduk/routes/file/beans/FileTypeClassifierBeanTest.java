@@ -29,8 +29,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import static no.rutebanken.marduk.routes.file.FileType.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class FileTypeClassifierBeanTest {
 

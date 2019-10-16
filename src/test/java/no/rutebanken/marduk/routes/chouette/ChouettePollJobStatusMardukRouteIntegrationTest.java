@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -123,11 +124,11 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 					int currval = reportCounter.getAndIncrement();
 					if (currval == 0) {
 						return (T) IOUtils.toString(getClass().getResourceAsStream(
-								"/no/rutebanken/marduk/chouette/getJobStatusResponseStarted.json"));
+								"/no/rutebanken/marduk/chouette/getJobStatusResponseStarted.json"), StandardCharsets.UTF_8);
 
 					} else {
 						return (T) IOUtils.toString(getClass().getResourceAsStream(
-								"/no/rutebanken/marduk/chouette/getJobStatusResponseTerminated.json"));
+								"/no/rutebanken/marduk/chouette/getJobStatusResponseTerminated.json"), StandardCharsets.UTF_8);
 
 					}
 				} catch (IOException e) {
@@ -147,7 +148,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 			public <T> T evaluate(Exchange ex, Class<T> arg1) {
 				try {
 					return (T) IOUtils.toString(getClass()
-							.getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"));
+							.getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"), StandardCharsets.UTF_8);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -165,7 +166,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 			public <T> T evaluate(Exchange ex, Class<T> arg1) {
 				try {
 					return (T) IOUtils.toString(getClass()
-							.getResourceAsStream("/no/rutebanken/marduk/chouette/getValidationReportResponseOK.json"));
+							.getResourceAsStream("/no/rutebanken/marduk/chouette/getValidationReportResponseOK.json"), StandardCharsets.UTF_8);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -243,7 +244,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 			public <T> T evaluate(Exchange ex, Class<T> arg1) {
 				try {
 					return (T) IOUtils.toString(getClass()
-							.getResourceAsStream("/no/rutebanken/marduk/chouette/getJobListResponseScheduled.json"));
+							.getResourceAsStream("/no/rutebanken/marduk/chouette/getJobListResponseScheduled.json"), StandardCharsets.UTF_8);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

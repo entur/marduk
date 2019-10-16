@@ -16,12 +16,12 @@
 
 package no.rutebanken.marduk.routes.chouette;
 
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,7 +33,6 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.language.SimpleExpression;
-import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -224,7 +223,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         headers.put(Constants.CORRELATION_ID, "corr_id");
         headers.put(Constants.FILE_HANDLE, filename);
 
-        assertTrue("Testing invalid file, but file is not invalid.", ZipFileUtils.zipFileContainsSingleFolder(IOUtils.toByteArray(inMemoryBlobStoreRepository.getBlob(filename))));
+        assertTrue(ZipFileUtils.zipFileContainsSingleFolder(IOUtils.toByteArray(inMemoryBlobStoreRepository.getBlob(filename))), "Testing invalid file, but file is not invalid.");
         importTemplate.sendBodyAndHeaders(null, headers);
 
         chouetteCreateImport.assertIsSatisfied();
@@ -238,7 +237,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         checkScheduledJobsBeforeTriggeringNextAction.assertIsSatisfied();
         updateStatus.assertIsSatisfied();
 
-        assertFalse("Invalid file has not been replaced during import.", ZipFileUtils.zipFileContainsSingleFolder(IOUtils.toByteArray(inMemoryBlobStoreRepository.getBlob(filename))));
+        assertFalse(ZipFileUtils.zipFileContainsSingleFolder(IOUtils.toByteArray(inMemoryBlobStoreRepository.getBlob(filename))), "Invalid file has not been replaced during import.");
     }
 
 
@@ -269,7 +268,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
             @Override
             public <T> T evaluate(Exchange ex, Class<T> arg1) {
                 try {
-                    return (T) IOUtils.toString(getClass().getResourceAsStream(jobListResponseClasspathReference));
+                    return (T) IOUtils.toString(getClass().getResourceAsStream(jobListResponseClasspathReference), StandardCharsets.UTF_8);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
