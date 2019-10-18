@@ -127,9 +127,9 @@ public class FileUploadRouteBuilder extends BaseRouteBuilder {
             return new ByteArrayInputStream(content);
         }
 
-		@Override
-		public int getContentLength() {
-			return content.length;
-		}
+        @Override
+        public int getContentLength() {
+            return content.length;
+        }
     }
 }
