@@ -31,7 +31,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -101,9 +100,8 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 			public void configure() throws Exception {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 						.to("mock:updateStatus");
-				
-				weaveById("ToChouetteMergeWithFlexibleLinesQueueNode").replace().to("mock:ChouetteMergeWithFlexibleLinesQueue");
-				weaveById("ToChouetteExportGtfsQueueNode").replace().to("mock:ExportGtfsQueue");
+				interceptSendToEndpoint("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue").skipSendToOriginalEndpoint().to("mock:ChouetteMergeWithFlexibleLinesQueue");
+				interceptSendToEndpoint("entur-google-pubsub:ChouetteExportGtfsQueue").skipSendToOriginalEndpoint().to("mock:ExportGtfsQueue");
 			}
 		});
 
@@ -125,7 +123,8 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 			public <T> T evaluate(Exchange ex, Class<T> arg1) {
 				try {
 					// Should be GTFS contnet
-					return (T) IOUtils.toString(getClass().getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"), StandardCharsets.UTF_8);
+					return (T) IOUtils.toString(getClass()
+							                            .getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

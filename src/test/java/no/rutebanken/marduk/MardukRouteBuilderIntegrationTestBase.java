@@ -23,8 +23,11 @@ import org.apache.camel.EndpointInject;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
+import org.apache.camel.spring.SpringCamelContext;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -36,6 +39,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.when;
 
 @ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator"})
@@ -53,6 +57,24 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
 
     @EndpointInject(uri = "mock:sink")
     protected MockEndpoint sink;
+
+    // manually start the camel context so that routes can be reliably modified (mocked).
+    
+    @BeforeAll
+    public static void disableStartBeforeContext() {
+    	SpringCamelContext.setNoStart(true);
+    }
+
+    @BeforeEach
+    public void enableStart() {
+    	assertFalse(context.getStatus().isStarted());
+    	SpringCamelContext.setNoStart(false);
+    }
+
+    @AfterEach
+    public void disableStartBeforeReloadedContext() {
+    	SpringCamelContext.setNoStart(true);
+    }
 
     @BeforeEach
     public void setUp() throws IOException {

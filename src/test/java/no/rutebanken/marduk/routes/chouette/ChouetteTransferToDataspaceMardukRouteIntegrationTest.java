@@ -65,9 +65,14 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 		context.getRouteDefinition("chouette-send-transfer-job").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
 			public void configure() throws Exception {
-				weaveById("ToChouetteReferentialNode").replace().to("mock:chouetteCreateExport");
-				weaveByToUri("entur-google-pubsub:ChouettePollStatusQueue").replace().to("mock:pollJobStatus");
-				weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
+				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/transfer")
+					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
+				
+				interceptSendToEndpoint("entur-google-pubsub:ChouettePollStatusQueue")
+					.skipSendToOriginalEndpoint().to("mock:pollJobStatus");
+
+				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+				.to("mock:updateStatus");
 			}
 		});
 

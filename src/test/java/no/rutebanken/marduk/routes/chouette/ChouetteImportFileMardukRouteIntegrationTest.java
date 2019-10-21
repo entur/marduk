@@ -32,6 +32,7 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -135,6 +136,9 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
             }
         });
 
+        // we must manually start when we are done with all the advice with
+        context.start();
+
         // 1 initial import call
         chouetteCreateImport.expectedMessageCount(1);
         chouetteCreateImport.returnReplyHeader("Location", new SimpleExpression(
@@ -205,6 +209,10 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
             }
         });
 
+
+        // we must manually start when we are done with all the advice with
+        context.start();
+
         // 1 initial import call
         chouetteCreateImport.expectedMessageCount(1);
         chouetteCreateImport.returnReplyHeader("Location", new SimpleExpression(
@@ -252,14 +260,21 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
     }
 
     public void testJobListResponse(String jobListResponseClasspathReference, boolean expectExport) throws Exception {
+
         context.getRouteDefinition("chouette-process-job-list-after-import").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveById("ToJobStatusNode").replace().to("mock:chouetteGetJobsForProvider");
-                weaveById("ToChouetteValidationQueueNode").replace().to("mock:chouetteValidationQueue");
+                interceptSendToEndpoint(chouetteUrl + "/*")
+                        .skipSendToOriginalEndpoint()
+                        .to("mock:chouetteGetJobsForProvider");
+                interceptSendToEndpoint("entur-google-pubsub:ChouetteValidationQueue")
+                        .skipSendToOriginalEndpoint()
+                        .to("mock:chouetteValidationQueue");
             }
         });
-        
+
+        context.start();
+
         // 1 call to list other import jobs in referential
         chouetteGetJobs.expectedMessageCount(1);
         chouetteGetJobs.returnReplyBody(new Expression() {
