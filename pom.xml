@@ -158,10 +158,12 @@
             <artifactId>jul-to-slf4j</artifactId>
         </dependency>
 
+		<!-- Camel runs in its own connector, so don't add a servlet for the spring connector.
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-servlet-starter</artifactId>
         </dependency>
+         -->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-jackson-starter</artifactId>
@@ -321,6 +323,15 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-simple</artifactId>
                 </exclusion>
+                <!-- axis contains additional copies of javax.xml -->
+                <exclusion>
+                    <groupId>org.apache.axis</groupId>
+                    <artifactId>axis</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.axis</groupId>
+                    <artifactId>axis-jaxrpc</artifactId>
+                </exclusion>                
             </exclusions>
         </dependency>
 

@@ -69,8 +69,19 @@ public class App extends RouteBuilder {
 
 	@Override
 	public void configure() throws Exception {
+		waitForProviderRepository();
+
 		getContext().getShutdownStrategy().setTimeout(shutdownTimeout);
 		getContext().setUseMDCLogging(true);
+	}
+
+	protected void waitForProviderRepository() throws InterruptedException {
+		while (!providerRepository.isReady()){
+			logger.warn("Provider Repository not available. Waiting " + providerRetryInterval/1000 + " secs before retrying...");
+			Thread.sleep(providerRetryInterval);
+            providerRepository.populate();
+        }
+		logger.info("Provider Repository available. Starting camel routes...");
 	}
 
 	private static void configureJsonPath() {

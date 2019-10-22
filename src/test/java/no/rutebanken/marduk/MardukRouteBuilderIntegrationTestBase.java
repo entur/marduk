@@ -78,8 +78,6 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
 
     @BeforeEach
     public void setUp() throws IOException {
-    	when(providerRepository.isReady()).thenReturn(true);
-    	
         when(providerRepository.getProviders()).thenReturn(Collections.singletonList(Provider.create(IOUtils.toString(new FileReader(
                 "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))));
 

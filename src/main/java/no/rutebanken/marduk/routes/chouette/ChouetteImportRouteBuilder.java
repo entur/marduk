@@ -183,7 +183,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
         // Check that no other import jobs in status SCHEDULED exists for this referential. If so, do not trigger export
         from("direct:checkScheduledJobsBeforeTriggeringNextAction")
                 .setProperty("job_status_url", simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?timetableAction=importer&status=SCHEDULED&status=STARTED"))
-                .toD("${exchangeProperty.job_status_url}").id("ToJobStatusNode")
+                .toD("${exchangeProperty.job_status_url}")
                 .choice()
                 .when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
                 .log(LoggingLevel.INFO, correlation() + "Import and validation ok, skipping next step as there are more import jobs active")
@@ -195,7 +195,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .when(constant("true").isEqualTo(header(Constants.ENABLE_VALIDATION)))
                 .log(LoggingLevel.INFO, correlation() + "Import ok, triggering validation")
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
-                .to("entur-google-pubsub:ChouetteValidationQueue").id("ToChouetteValidationQueueNode")
+                .to("entur-google-pubsub:ChouetteValidationQueue")
                 .when(method(getClass(), "shouldTransferData").isEqualTo(true))
                 .log(LoggingLevel.INFO, correlation() + "Import ok, transfering data to next dataspace")
                 .to("entur-google-pubsub:ChouetteTransferExportQueue")

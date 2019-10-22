@@ -30,4 +30,8 @@ public class TestApp extends App {
         App.main(args);
     }
 
+    @Override
+    protected void waitForProviderRepository() throws InterruptedException {
+    	
+    }
 }
