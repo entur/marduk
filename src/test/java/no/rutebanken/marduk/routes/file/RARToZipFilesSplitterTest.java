@@ -27,8 +27,9 @@ import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.commons.io.IOUtils;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 import com.github.junrar.exception.RarException;
 
@@ -53,11 +54,11 @@ public class RARToZipFilesSplitterTest {
 		Exchange ex = new DefaultExchange(ctx);
 
 		byte[] data = IOUtils.toByteArray(new FileInputStream(filename));
-		Assert.assertNotNull(data);
+		assertNotNull(data);
 
 		List<Object> zipFiles = RARToZipFilesSplitter.splitRarFile(data, ex);
-		Assert.assertNotNull(zipFiles);
-		Assert.assertEquals("Number of files in file "+filename,numParts, zipFiles.size());
+		assertNotNull(zipFiles);
+		assertThat(zipFiles.size()).as("Number of files in file "+filename).isEqualTo(numParts);
 		
 	}
 }

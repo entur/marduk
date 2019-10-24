@@ -15,6 +15,8 @@
  */
 
 package no.rutebanken.marduk.routes.gtfs;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
@@ -23,9 +25,8 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,6 +36,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
@@ -55,7 +57,7 @@ public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderI
     private String exportFileName;
 
 
-    @Before
+    @BeforeEach
     public void prepare() throws Exception {
         when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null), provider("rb_rut", 2, null), provider("opp", 3, 4l)));
     }
@@ -73,7 +75,7 @@ public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderI
         startRoute.requestBody(null);
 
         InputStream mergedIS = inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + exportFileName);
-        Assert.assertNotNull("Expected transformed gtfs file to have been uploaded", mergedIS);
+        assertThat(mergedIS).as("Expected transformed gtfs file to have been uploaded").isNotNull();
 
         File mergedFile = File.createTempFile("mergedID", "tmp");
         FileUtils.copyInputStreamToFile(mergedIS, mergedFile);
@@ -81,12 +83,14 @@ public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderI
     }
 
    private void assertStopVehicleTypesAreNotConverted(File out) throws IOException {
-        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()));
+        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
-        Assert.assertTrue("Line without vehicle type should not be changed", stopLines.get(0).endsWith(","));
-        Assert.assertTrue("Line with valid value 701 should not be changed", stopLines.get(1).endsWith(",701"));
-        Assert.assertTrue("Line with extended value 1012 should not be changed", stopLines.get(2).endsWith(",1012"));
-        Assert.assertTrue("Line with extended value 1601 should not be changed", stopLines.get(3).endsWith(",1601"));
+        
+        assertThat(stopLines.get(0)).as("Line without vehicle type should not be changed").endsWith(",");
+        assertThat(stopLines.get(1)).as("Line with valid value 701 should not be changed").endsWith(",701");
+
+        assertThat(stopLines.get(2)).as("Line with extended value 1012 should not be changed").endsWith(",1012");
+        assertThat(stopLines.get(3)).as("Line with extended value 1601 should not be changed").endsWith(",1601");
     }
 
 }

@@ -24,8 +24,9 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -84,8 +85,8 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRou
 
         startRoute.requestBodyAndHeader(null, Constants.CHOUETTE_REFERENTIAL, "rb_rut");
 
-        Assert.assertNotNull("Expected merged netex file to have been uploaded", inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME));
-        Assert.assertNotNull("Expected merged netex file to have been uploaded to marduk exchange for DatedServiceJourneyId-generation", inMemoryBlobStoreRepository.listBlobs(BLOBSTORE_PATH_OUTBOUND + "dated").getFiles().size() > 0);
+        assertNotNull(inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME), "Expected merged netex file to have been uploaded");
+        assertNotNull(inMemoryBlobStoreRepository.listBlobs(BLOBSTORE_PATH_OUTBOUND + "dated").getFiles().size() > 0, "Expected merged netex file to have been uploaded to marduk exchange for DatedServiceJourneyId-generation");
 
 
         updateStatus.assertIsSatisfied();

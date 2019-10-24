@@ -20,23 +20,23 @@ import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-
 import static no.rutebanken.marduk.routes.file.FileType.*;
-import static org.junit.Assert.assertEquals;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class FileTypeClassifierBeanTest {
 
     private FileTypeClassifierBean bean;
 
-    @Before
+    @BeforeEach
     public void before() {
         bean = new FileTypeClassifierBean();
     }
@@ -58,9 +58,11 @@ public class FileTypeClassifierBeanTest {
         assertFileType("netex.zip", NETEXPROFILE);
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void classifyNetexFileFromRuter() throws Exception {
-        assertFileType("AOR.zip", NETEXPROFILE);
+    	assertThrows(RuntimeException.class, () ->
+    		assertFileType("AOR.zip", NETEXPROFILE)
+   		);
     }
 
     @Test
@@ -73,9 +75,11 @@ public class FileTypeClassifierBeanTest {
         assertFileType("netex_with_two_files.zip", NETEXPROFILE);
     }
 
-    @Test(expected = FileValidationException.class)
+    @Test
     public void classifyNetexWithTwoFilesOneInvalid() throws Exception {
-        assertFileType("netex_with_two_files_one_invalid.zip", NETEXPROFILE);
+    	assertThrows(FileValidationException.class, () ->
+        	assertFileType("netex_with_two_files_one_invalid.zip", NETEXPROFILE)
+        );
     }
 
     @Test
@@ -94,17 +98,17 @@ public class FileTypeClassifierBeanTest {
 
     @Test
     public void nonXMLFilePatternShouldMatchOtherFileTypes() {
-        Assert.assertTrue("test.log".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        Assert.assertTrue("test.xml.log".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        Assert.assertTrue("test.xml2".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        Assert.assertTrue("test.txml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertTrue("test.log".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertTrue("test.xml.log".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertTrue("test.xml2".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertTrue("test.txml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
     }
 
     @Test
     public void nonXMLFilePatternShouldNotMatchXMLFiles() {
-        Assert.assertFalse("test.xml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        Assert.assertFalse("test.XML".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        Assert.assertFalse("test.test.xml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertFalse("test.xml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertFalse("test.XML".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertFalse("test.test.xml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
     }
 
     private void assertFileType(String fileName, FileType expectedFileType) throws IOException {

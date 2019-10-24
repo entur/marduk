@@ -16,8 +16,8 @@
 
 package no.rutebanken.marduk.routes.google;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 public class GoogleRouteTypeCodeTest {
 
@@ -64,6 +64,6 @@ public class GoogleRouteTypeCodeTest {
     }
 
     private void assertMapping(int org, int expected) {
-        Assert.assertEquals(expected, GoogleRouteTypeCode.toGoogleSupportedRouteTypeCode(org));
+        assertEquals(expected, GoogleRouteTypeCode.toGoogleSupportedRouteTypeCode(org));
     }
 }

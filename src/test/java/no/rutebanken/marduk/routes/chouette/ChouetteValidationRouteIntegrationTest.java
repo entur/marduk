@@ -25,14 +25,15 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
 import org.apache.commons.io.IOUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -76,7 +77,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 	@Value("${chouette.url}")
 	private String chouetteUrl;
 
-	@Before
+	@BeforeEach
 	public void setUp() throws IOException {
 		super.setUp();
 		chouetteCreateValidation.reset();
@@ -192,11 +193,9 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 			@Override
 			public <T> T evaluate(Exchange ex, Class<T> arg1) {
 				try {
-					return (T) IOUtils.toString(getClass().getResourceAsStream(jobListResponseClasspathReference));
+					return (T) IOUtils.toString(getClass().getResourceAsStream(jobListResponseClasspathReference), StandardCharsets.UTF_8);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return null;
+					throw new RuntimeException(e);
 				}
 			}
 		});

@@ -18,13 +18,15 @@ package no.rutebanken.marduk.routes.file;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Test;
-import org.springframework.util.StringUtils;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,9 +43,9 @@ public class GtfsFileUtilsTest {
         File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(input1, input1));
 
         // Should assert content, but no exceptions must do for now
-        // Assert.assertTrue(FileUtils.sizeOf(merged) <= FileUtils.sizeOf(input1));
+        // assertTrue(FileUtils.sizeOf(merged) <= FileUtils.sizeOf(input1));
 
-        Assert.assertTrue(new ZipFileUtils().listFilesInZip(merged).stream().anyMatch(n -> "feed_info.txt".equals(n)));
+        assertTrue(new ZipFileUtils().listFilesInZip(merged).stream().anyMatch(n -> "feed_info.txt".equals(n)));
     }
 
     @Test
@@ -53,10 +55,10 @@ public class GtfsFileUtilsTest {
         File input2 = new File(GTFS_FILE_2);
         File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(input1, input2));
 
-        Assert.assertTrue(FileUtils.sizeOf(merged) >= FileUtils.sizeOf(input1));
-        Assert.assertTrue(FileUtils.sizeOf(merged) >= FileUtils.sizeOf(input2));
+        assertTrue(FileUtils.sizeOf(merged) >= FileUtils.sizeOf(input1));
+        assertTrue(FileUtils.sizeOf(merged) >= FileUtils.sizeOf(input2));
 
-        Assert.assertTrue(new ZipFileUtils().listFilesInZip(merged).stream().anyMatch(n -> "feed_info.txt".equals(n)));
+        assertTrue(new ZipFileUtils().listFilesInZip(merged).stream().anyMatch(n -> "feed_info.txt".equals(n)));
     }
 
 
@@ -64,21 +66,21 @@ public class GtfsFileUtilsTest {
     public void replaceIdSeparatorInFile() throws Exception {
         File out = GtfsFileUtils.transformIdsToOTPFormat(new File(GTFS_FILE_2));
 
-        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()));
+        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()), StandardCharsets.UTF_8);
 
-        Assert.assertEquals("RUT.StopArea.7600100,Oslo S,59.910200,10.755330,RUT.StopArea.7600207", stopLines.get(1));
+        assertEquals("RUT.StopArea.7600100,Oslo S,59.910200,10.755330,RUT.StopArea.7600207", stopLines.get(1));
 
-        List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "feed_info.txt").toByteArray()));
+        List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "feed_info.txt").toByteArray()), StandardCharsets.UTF_8);
 
-        Assert.assertEquals("Feed info should be unchanged", "RB,Rutebanken,http://www.rutebanken.org,no", feedInfoLines.get(1));
+        assertThat(feedInfoLines.get(1)).as("Feed info should be unchanged").isEqualTo("RB,Rutebanken,http://www.rutebanken.org,no");
     }
 
     @Test
     public void mergeWithTransfers() throws Exception {
         File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(new File(GTFS_FILE_1), new File(GTFS_FILE_1)));
 
-        List<String> transferLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(merged), "transfers.txt").toByteArray()));
-        Assert.assertEquals("Expected file two duplicates and one other transfer to be merged to two (+ header)",3, transferLines.size());
+        List<String> transferLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(merged), "transfers.txt").toByteArray()), StandardCharsets.UTF_8);
+        assertThat(transferLines.size()).as("Expected file two duplicates and one other transfer to be merged to two (+ header)").isEqualTo(3);
     }
 
 }

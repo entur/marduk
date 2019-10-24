@@ -20,13 +20,15 @@ import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.google.GoogleRouteTypeCode;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -60,60 +62,59 @@ public class GtfsTransformationServiceTest {
     }
 
     public static void assertRouteRouteTypesAreConvertedToGoogleSupportedValues(File out) throws IOException {
-        List<String> routeLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "routes.txt").toByteArray()));
+        List<String> routeLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "routes.txt").toByteArray()), StandardCharsets.UTF_8);
         routeLines.remove(0); // remove header
-        Assert.assertEquals(10, routeLines.size());
+        assertEquals(10, routeLines.size());
 
         List<String> transformedRouteTypes = routeLines.stream().map(routeLine -> routeLine.split(",")[4]).collect(Collectors.toList());
-        Assert.assertTrue("Expected all route types to have been converted to google valid codes", transformedRouteTypes.stream().allMatch(routeType -> GoogleRouteTypeCode.fromCode(Integer.valueOf(routeType)) != null));
-        Assert.assertEquals("200", transformedRouteTypes.get(0));
-        Assert.assertEquals("201", transformedRouteTypes.get(1));
-        Assert.assertEquals("200", transformedRouteTypes.get(2));
-        Assert.assertEquals("1501", transformedRouteTypes.get(3));
+        assertThat(transformedRouteTypes.stream().allMatch(routeType -> GoogleRouteTypeCode.fromCode(Integer.valueOf(routeType)) != null)).as("Expected all route types to have been converted to google valid codes").isTrue();
+        assertEquals("200", transformedRouteTypes.get(0));
+        assertEquals("201", transformedRouteTypes.get(1));
+        assertEquals("200", transformedRouteTypes.get(2));
+        assertEquals("1501", transformedRouteTypes.get(3));
     }
 
     public static void assertStopVehicleTypesAreConvertedToGoogleSupportedValues(File out) throws IOException {
-        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()));
+        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
-        Assert.assertTrue("Line without vehicle type should not be changed", stopLines.get(0).endsWith(","));
-        Assert.assertTrue("Line with valid value 701 should be kept", stopLines.get(1).endsWith(",701"));
-        Assert.assertTrue("Line with extended value 1012 should be converted to 1000", stopLines.get(2).endsWith(",1000"));
-        Assert.assertTrue("Line with extended value 1601 should be converted to 1700 (default)", stopLines.get(3).endsWith(",1700"));
-        List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "feed_info.txt").toByteArray()));
-        Assert.assertEquals("Entur info should be used as feed info", "ENTUR,Entur,http://www.entur.no,no", feedInfoLines.get(1));
+        assertThat(stopLines.get(0)).as("Line without vehicle type should not be changed").endsWith(",");
+        assertThat(stopLines.get(1)).as("Line with valid value 701 should be kept").endsWith(",701");
+        assertThat(stopLines.get(2)).as("Line with extended value 1012 should be converted to 1000").endsWith(",1000");
+        assertThat(stopLines.get(3)).as("Line with extended value 1601 should be converted to 1700 (default)").endsWith(",1700");
+        List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "feed_info.txt").toByteArray()), StandardCharsets.UTF_8);
+        assertThat(feedInfoLines.get(1)).as("Entur info should be used as feed info").isEqualTo("ENTUR,Entur,http://www.entur.no,no");
     }
 
     public static void assertRouteRouteTypesAreConvertedToBasicGtfsValues(File out) throws IOException {
-        List<String> routeLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "routes.txt").toByteArray()));
+        List<String> routeLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "routes.txt").toByteArray()), StandardCharsets.UTF_8);
         routeLines.remove(0); // remove header
-        Assert.assertEquals(10, routeLines.size());
+        assertEquals(10, routeLines.size());
 
         List<String> transformedRouteTypes = routeLines.stream().map(routeLine -> routeLine.split(",")[4]).collect(Collectors.toList());
-        Assert.assertTrue("Expected all route types to have been converted to basic codes",
-                transformedRouteTypes.stream().allMatch(routeType -> Arrays.stream(BasicRouteTypeCode.values()).anyMatch(basic -> Integer.toString(basic.getCode()).equals(routeType))));
-        Assert.assertEquals("3", transformedRouteTypes.get(0));
-        Assert.assertEquals("3", transformedRouteTypes.get(1));
-        Assert.assertEquals("3", transformedRouteTypes.get(2));
-        Assert.assertEquals("3", transformedRouteTypes.get(3));
+        assertThat(transformedRouteTypes.stream().allMatch(routeType -> Arrays.stream(BasicRouteTypeCode.values()).anyMatch(basic -> Integer.toString(basic.getCode()).equals(routeType)))).as("Expected all route types to have been converted to basic codes").isTrue();
+        assertEquals("3", transformedRouteTypes.get(0));
+        assertEquals("3", transformedRouteTypes.get(1));
+        assertEquals("3", transformedRouteTypes.get(2));
+        assertEquals("3", transformedRouteTypes.get(3));
     }
 
     public static void assertStopVehicleTypesAreConvertedToBasicGtfsValues(File out) throws IOException {
-        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()));
+        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
-        Assert.assertTrue("Line with valid value 701 should be converted to 3", stopLines.get(1).endsWith(",3"));
-        Assert.assertTrue("Line with extended value 1012 should be converted to 4", stopLines.get(2).endsWith(",4"));
-        Assert.assertTrue("Line with extended value 1601 should be converted to 3 (default)", stopLines.get(3).endsWith(",3"));
-        List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "feed_info.txt").toByteArray()));
-        Assert.assertEquals("Entur info should be used as feed info", "ENTUR,Entur,http://www.entur.no,no", feedInfoLines.get(1));
+        assertThat(stopLines.get(1)).as("Line with valid value 701 should be converted to 3").endsWith(",3");
+        assertThat(stopLines.get(2)).as("Line with extended value 1012 should be converted to 4").endsWith(",4");
+        assertThat(stopLines.get(3)).as("Line with extended value 1601 should be converted to 3 (default)").endsWith(",3");
+        List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "feed_info.txt").toByteArray()), StandardCharsets.UTF_8);
+        assertThat(feedInfoLines.get(1)).as("Entur info should be used as feed info").isEqualTo("ENTUR,Entur,http://www.entur.no,no");
     }
 
     public static void assertShapesAreRemoved(File out) throws IOException {
-        Assert.assertNull("All Shapes should have been removed", ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "shapes.txt"));
+    	assertThat(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "shapes.txt")).as("All Shapes should have been removed").isNull();;
 
-        List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "trips.txt").toByteArray()));
+        List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "trips.txt").toByteArray()), StandardCharsets.UTF_8);
         String tripWithShape = trips.stream().filter(t -> t.startsWith("9797,262919,")).findFirst().get();
 
-        Assert.assertFalse(tripWithShape.contains("SKY:JourneyPattern:1-362_0_10446_1"));
+        assertFalse(tripWithShape.contains("SKY:JourneyPattern:1-362_0_10446_1"));
     }
 
 }

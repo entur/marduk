@@ -32,6 +32,6 @@ public class TestApp extends App {
 
     @Override
     protected void waitForProviderRepository() throws InterruptedException {
-        // NOOP
+    	
     }
 }

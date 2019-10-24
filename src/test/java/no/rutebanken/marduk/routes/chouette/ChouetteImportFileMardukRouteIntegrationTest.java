@@ -16,33 +16,39 @@
 
 package no.rutebanken.marduk.routes.chouette;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
-import no.rutebanken.marduk.routes.file.ZipFileUtils;
-import org.apache.camel.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.camel.EndpointInject;
+import org.apache.camel.Exchange;
+import org.apache.camel.Expression;
+import org.apache.camel.Produce;
+import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
 import org.apache.commons.io.IOUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
+import no.rutebanken.marduk.routes.file.ZipFileUtils;
+import no.rutebanken.marduk.test.TestApp;
 
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = ChouetteImportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
@@ -82,7 +88,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
     @Value("${chouette.url}")
     private String chouetteUrl;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException {
         super.setUp();
         chouetteCreateImport.reset();
@@ -225,7 +231,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         headers.put(Constants.CORRELATION_ID, "corr_id");
         headers.put(Constants.FILE_HANDLE, filename);
 
-        assertTrue("Testing invalid file, but file is not invalid.", ZipFileUtils.zipFileContainsSingleFolder(IOUtils.toByteArray(inMemoryBlobStoreRepository.getBlob(filename))));
+        assertTrue(ZipFileUtils.zipFileContainsSingleFolder(IOUtils.toByteArray(inMemoryBlobStoreRepository.getBlob(filename))), "Testing invalid file, but file is not invalid.");
         importTemplate.sendBodyAndHeaders(null, headers);
 
         chouetteCreateImport.assertIsSatisfied();
@@ -239,7 +245,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         checkScheduledJobsBeforeTriggeringNextAction.assertIsSatisfied();
         updateStatus.assertIsSatisfied();
 
-        assertFalse("Invalid file has not been replaced during import.", ZipFileUtils.zipFileContainsSingleFolder(IOUtils.toByteArray(inMemoryBlobStoreRepository.getBlob(filename))));
+        assertFalse(ZipFileUtils.zipFileContainsSingleFolder(IOUtils.toByteArray(inMemoryBlobStoreRepository.getBlob(filename))), "Invalid file has not been replaced during import.");
     }
 
 
@@ -277,11 +283,9 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
             @Override
             public <T> T evaluate(Exchange ex, Class<T> arg1) {
                 try {
-                    return (T) IOUtils.toString(getClass().getResourceAsStream(jobListResponseClasspathReference));
+                    return (T) IOUtils.toString(getClass().getResourceAsStream(jobListResponseClasspathReference), StandardCharsets.UTF_8);
                 } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                    return null;
+                    throw new RuntimeException(e);
                 }
             }
         });

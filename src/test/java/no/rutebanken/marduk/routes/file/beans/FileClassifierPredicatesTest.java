@@ -16,7 +16,8 @@
 
 package no.rutebanken.marduk.routes.file.beans;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
