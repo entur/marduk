@@ -57,12 +57,6 @@
             </dependency>
 
             <dependency>
-                <groupId>org.glassfish.jersey.bundles.repackaged</groupId>
-                <artifactId>jersey-guava</artifactId>
-                <version>2.25.1</version>
-            </dependency>
-
-            <dependency>
                 <groupId>org.apache.camel</groupId>
                 <artifactId>camel-bom</artifactId>
                 <version>${camel.version}</version>
@@ -120,15 +114,11 @@
             <version>4.11</version>
         </dependency>
 
+        <!--Required by Logback for conditional processing in logback.xml-->
         <dependency>
             <groupId>org.codehaus.janino</groupId>
             <artifactId>janino</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.beanio</groupId>
-            <artifactId>beanio</artifactId>
-            <version>2.1.0</version>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>
@@ -203,7 +193,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-jackson</artifactId>
+            <artifactId>camel-jackson-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
@@ -219,7 +209,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
-            <artifactId>camel-swagger-java</artifactId>
+            <artifactId>camel-swagger-java-starter</artifactId>
             <exclusions>
                 <exclusion>
                     <artifactId>jsr311-api</artifactId>
@@ -289,16 +279,6 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jersey</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
         <dependency>
@@ -309,6 +289,7 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
+            <scope>runtime</scope>
         </dependency>
 
 
@@ -340,7 +321,19 @@
                 <exclusion>
                     <groupId>org.apache.axis</groupId>
                     <artifactId>axis-jaxrpc</artifactId>
-                </exclusion>                
+                </exclusion>
+                <exclusion>
+                    <groupId>org.glassfish.jersey.core</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.glassfish.jersey.media</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.glassfish.jersey.containers</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -362,11 +355,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.glassfish.jersey.bundles.repackaged</groupId>
-            <artifactId>jersey-guava</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.onebusaway</groupId>
             <artifactId>onebusaway-gtfs-transformer</artifactId>
             <version>${onebusaway.gtfs.version}</version>
@@ -381,11 +369,6 @@
             <groupId>org.onebusaway</groupId>
             <artifactId>onebusaway-gtfs-merge</artifactId>
             <version>${onebusaway.gtfs.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.wololo</groupId>
-            <artifactId>jts2geojson</artifactId>
-            <version>0.13.0</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
