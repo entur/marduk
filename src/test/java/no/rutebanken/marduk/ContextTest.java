@@ -9,10 +9,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.ActiveProfiles;
+
 import com.auth0.jwt.interfaces.DecodedJWT;
 
+import no.rutebanken.marduk.test.TestApp;
+
 @PartnerAuthorizationServer
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator"})
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 public class ContextTest {
 
 	@Autowired

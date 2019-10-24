@@ -20,24 +20,23 @@ import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
-import org.junit.Before;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-
 import static no.rutebanken.marduk.routes.file.FileType.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class FileTypeClassifierBeanTest {
 
     private FileTypeClassifierBean bean;
 
-    @Before
+    @BeforeEach
     public void before() {
         bean = new FileTypeClassifierBean();
     }
@@ -99,17 +98,17 @@ public class FileTypeClassifierBeanTest {
 
     @Test
     public void nonXMLFilePatternShouldMatchOtherFileTypes() {
-        Assert.assertTrue("test.log".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        Assert.assertTrue("test.xml.log".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        Assert.assertTrue("test.xml2".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        Assert.assertTrue("test.txml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertTrue("test.log".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertTrue("test.xml.log".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertTrue("test.xml2".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertTrue("test.txml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
     }
 
     @Test
     public void nonXMLFilePatternShouldNotMatchXMLFiles() {
-        Assert.assertFalse("test.xml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        Assert.assertFalse("test.XML".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        Assert.assertFalse("test.test.xml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertFalse("test.xml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertFalse("test.XML".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertFalse("test.test.xml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
     }
 
     private void assertFileType(String fileName, FileType expectedFileType) throws IOException {

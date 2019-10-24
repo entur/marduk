@@ -16,18 +16,21 @@
 
 package no.rutebanken.marduk.config;
 
-import no.rutebanken.marduk.rest.ApplicationStatusResource;
-import org.glassfish.jersey.server.ResourceConfig;
+import org.apache.camel.component.micrometer.routepolicy.MicrometerRoutePolicyFactory;
+import org.apache.camel.spi.RoutePolicyFactory;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.ws.rs.ApplicationPath;
-
+/**
+ * Enable metrics-gathering for all routes.
+ * Metrics are exported to Prometheus through Spring Boot Actuator/Micrometer.
+ */
 @Configuration
-@ApplicationPath("/")
-public class JerseyConfig extends ResourceConfig {
+public class MardukMetricsConfig {
 
-    public JerseyConfig() {
-        register(ApplicationStatusResource.class);
+    @Bean
+    RoutePolicyFactory contextConfiguration() {
+        return new MicrometerRoutePolicyFactory();
     }
 
 }

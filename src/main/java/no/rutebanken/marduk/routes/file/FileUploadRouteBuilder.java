@@ -22,13 +22,13 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
 import org.apache.commons.fileupload.UploadContext;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.CloseShieldInputStream;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
@@ -127,9 +127,9 @@ public class FileUploadRouteBuilder extends BaseRouteBuilder {
             return new ByteArrayInputStream(content);
         }
 
-		@Override
-		public int getContentLength() {
-			return content.length;
-		}
+        @Override
+        public int getContentLength() {
+            return content.length;
+        }
     }
 }

@@ -23,11 +23,12 @@ import org.apache.camel.EndpointInject;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
-import org.apache.camel.test.spring.CamelSpringBootRunner;
+import org.apache.camel.spring.SpringCamelContext;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
-import org.junit.Before;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
@@ -38,11 +39,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.when;
 
-@RunWith(CamelSpringBootRunner.class)
 @ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator"})
-@UseAdviceWith
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public abstract class MardukRouteBuilderIntegrationTestBase {
 
@@ -58,9 +58,26 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
     @EndpointInject(uri = "mock:sink")
     protected MockEndpoint sink;
 
-    @Before
-    public void setUp() throws IOException {
+    // manually start the camel context so that routes can be reliably modified (mocked).
+    
+    @BeforeAll
+    public static void disableStartBeforeContext() {
+    	SpringCamelContext.setNoStart(true);
+    }
 
+    @BeforeEach
+    public void enableStart() {
+    	assertFalse(context.getStatus().isStarted());
+    	SpringCamelContext.setNoStart(false);
+    }
+
+    @AfterEach
+    public void disableStartBeforeReloadedContext() {
+    	SpringCamelContext.setNoStart(true);
+    }
+
+    @BeforeEach
+    public void setUp() throws IOException {
         when(providerRepository.getProviders()).thenReturn(Collections.singletonList(Provider.create(IOUtils.toString(new FileReader(
                 "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))));
 

@@ -22,9 +22,9 @@ import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.importer.GtfsImportParameters;
 import no.rutebanken.marduk.routes.chouette.json.importer.RegtoppImportParameters;
 
-import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
-
 import org.junit.jupiter.api.Test;
+
+import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
 
 public class ParametersTest {
 

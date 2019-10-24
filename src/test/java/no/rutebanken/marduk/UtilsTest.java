@@ -16,14 +16,9 @@
 
 package no.rutebanken.marduk;
 
-import static org.hamcrest.text.MatchesPattern.matchesPattern;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import org.apache.camel.CamelExecutionException;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
+import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
 public class UtilsTest {
@@ -36,9 +31,9 @@ public class UtilsTest {
 
     @Test
     public void testGetJobIdWithNull(){
-    	assertThrows(IllegalArgumentException.class, () -> {
-    		Utils.getLastPathElementOfUrl(null);
-    	});
+        assertThrows(IllegalArgumentException.class, () -> {
+            Utils.getLastPathElementOfUrl(null);
+        });
     }
 
     @Test
@@ -49,14 +44,14 @@ public class UtilsTest {
 
     @Test
     public void testGetHttp4WithNull(){
-    	assertThrows(IllegalArgumentException.class, () -> {
-    		Utils.getHttp4(null);
-    	});
+        assertThrows(IllegalArgumentException.class, () -> {
+            Utils.getHttp4(null);
+        });
     }
 
     @Test
     public void getOtpVersion(){
-        assertThat(Utils.getOtpVersion(), matchesPattern("\\d+\\.\\d+\\.\\d+.*"));
+        assertThat(Utils.getOtpVersion()).matches("\\d+\\.\\d+\\.\\d+.*");
     }
 
 }

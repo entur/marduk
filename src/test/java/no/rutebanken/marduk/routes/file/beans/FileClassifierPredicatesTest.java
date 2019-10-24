@@ -16,13 +16,14 @@
 
 package no.rutebanken.marduk.routes.file.beans;
 
+
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
-import org.junit.jupiter.api.Test;
 
 import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.*;
 
