@@ -82,7 +82,7 @@ public class GtfsTransformationServiceTest {
         assertThat(stopLines.get(2)).as("Line with extended value 1012 should be converted to 1000").endsWith(",1000");
         assertThat(stopLines.get(3)).as("Line with extended value 1601 should be converted to 1700 (default)").endsWith(",1700");
         List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "feed_info.txt").toByteArray()), StandardCharsets.UTF_8);
-        assertThat(feedInfoLines.get(1)).as("Entur info should be used as feed info").isEqualTo("ENTUR,Entur,http://www.entur.no,no");
+        assertThat(feedInfoLines.get(1)).as("Entur info should be used as feed info").isEqualTo("ENTUR,Entur,https://www.entur.org,no");
     }
 
     public static void assertRouteRouteTypesAreConvertedToBasicGtfsValues(File out) throws IOException {
@@ -105,7 +105,7 @@ public class GtfsTransformationServiceTest {
         assertThat(stopLines.get(2)).as("Line with extended value 1012 should be converted to 4").endsWith(",4");
         assertThat(stopLines.get(3)).as("Line with extended value 1601 should be converted to 3 (default)").endsWith(",3");
         List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "feed_info.txt").toByteArray()), StandardCharsets.UTF_8);
-        assertThat(feedInfoLines.get(1)).as("Entur info should be used as feed info").isEqualTo("ENTUR,Entur,http://www.entur.no,no");
+        assertThat(feedInfoLines.get(1)).as("Entur info should be used as feed info").isEqualTo("ENTUR,Entur,https://www.entur.org,no");
     }
 
     public static void assertShapesAreRemoved(File out) throws IOException {
