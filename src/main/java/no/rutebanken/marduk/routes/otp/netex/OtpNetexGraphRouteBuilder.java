@@ -23,11 +23,15 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_PARENT_COLLECTION;
 import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
@@ -58,6 +62,9 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.netex.import.file.name:netex_no.zip}")
     private String otpGraphImportFileName;
 
+    @Value("#{'${otp.graph.netex.additional.files.subdirectory.names:}'.split(',')}")
+    private List<String> additionalFilesSubDirectories;
+
 
     private static final String PROP_MESSAGES = "RutebankenPropMessages";
 
@@ -76,7 +83,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:fetchBaseGraph")
                 .to("direct:fetchLatestNetex")
                 .to("direct:fetchBuildConfigForOtpNetexGraph")
-
+                .to("direct:fetchAdditionalFilesForOtpGraphBuild")
                 .to("direct:buildNetexGraphAndSendStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP graph building route.")
                 .routeId("otp-netex-graph-build");
@@ -155,5 +162,20 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP graph.")
                 .routeId("otp-netex-graph-build-otp");
 
+
+        from("direct:fetchAdditionalFilesForOtpGraphBuild")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetching additional files graph building from: " + additionalFilesSubDirectories)
+                .filter(constant(!CollectionUtils.isEmpty(additionalFilesSubDirectories) && additionalFilesSubDirectories.stream().anyMatch(d -> !StringUtils.isEmpty(d))))
+                .setHeader(FILE_PARENT_COLLECTION, constant(additionalFilesSubDirectories))
+                .to("direct:listBlobsInFolders")
+                .split().simple("${body.files}")
+                .filter(simple("${body.toString().trim()} != ''"))
+                .setProperty("tmpFileName", simple("${body.fileNameOnly}"))
+                .filter(simple("${body.fileNameOnly}"))
+                .setHeader(FILE_HANDLE, simple("${body.name}"))
+                .to("direct:getBlob")
+                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/${exchangeProperty.tmpFileName}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetched additional file:${header." + FILE_HANDLE + "}")
+                .routeId("otp-graph-build-fetch-additional-files");
     }
 }
