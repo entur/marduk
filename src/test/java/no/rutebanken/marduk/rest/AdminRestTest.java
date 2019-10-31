@@ -5,11 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.net.URI;
 import java.util.Arrays;
 
+import org.entur.jwt.junit5.entur.test.PartnerAccessToken;
+import org.entur.jwt.junit5.entur.test.PartnerAuthorizationServer;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-
+import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -23,29 +25,52 @@ import org.springframework.web.client.RestTemplate;
 
 import no.rutebanken.marduk.test.TestApp;
 
+import static io.restassured.RestAssured.*;
+import static io.restassured.matcher.RestAssuredMatchers.*;
+import static org.hamcrest.Matchers.*;
+
+@PartnerAuthorizationServer
 @ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator"})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-@DirtiesContext(classMode = ClassMode.BEFORE_EACH_TEST_METHOD)
 public class AdminRestTest {
 
-    @Value("${server.admin.port}")
-    public String adminPort;
+    @LocalServerPort
+    public int port;
 
-    @Disabled
 	@Test
-	// TODO some other test has loaded the context without the REST component (or shut it down)
-	public void testThatSwaggerSpecificationIsAvailable() throws Exception {
-		URI uri = new URI("http://localhost:" + adminPort + "/services/swagger.json");
+	public void testThatSwaggerSpecificationIsAvailableWithoutAuthentication() throws Exception {
+		URI uri = new URI("http://localhost:" + port + "/services/swagger.json");
 
-		RestTemplate restTemplate = new RestTemplate();
-		
-		HttpHeaders headers = new HttpHeaders();
-		headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-		HttpEntity <String> entity = new HttpEntity<String>(headers);
-
-		ResponseEntity<String> exchange = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
-		
-		assertEquals(200, exchange.getStatusCodeValue());
+	    when()
+	    	.get(uri)
+	    .then()
+	       	.assertThat()
+	       	.statusCode(200);
 	}
+	
+	@Test
+	public void testTimeTableAdmin(@PartnerAccessToken(organisationId = 1) String token) throws Exception {
+		URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
+
+		 given()
+		 	.header("Authorization", token)
+	    .when()
+	    	.get(uri)
+	    .then()
+        	.assertThat()
+        	.statusCode(200);
+	    
+	}	
+
+	@Test
+	public void testTimeTableAdminWithoutToken() throws Exception {
+		URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
+
+	    when()
+	        .get(uri)
+	    .then()
+	        .assertThat()
+	        .statusCode(403);
+	}	
 
 }

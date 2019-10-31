@@ -17,22 +17,22 @@
 package no.rutebanken.marduk.rest;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.config.JwtAuthenticationProcessor;
+import no.rutebanken.marduk.config.JwtAuthenticationRoutePolicyFactory;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import no.rutebanken.marduk.security.AuthorizationClaim;
-import no.rutebanken.marduk.security.AuthorizationService;
 import org.apache.camel.Body;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.component.spring.security.SpringSecurityAccessPolicy;
+import org.apache.camel.component.spring.security.SpringSecurityAuthorizationPolicy;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
-import org.rutebanken.helper.organisation.AuthorizationConstants;
-import org.rutebanken.helper.organisation.NotAuthenticatedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
@@ -65,23 +65,30 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     private static final String X_OCTET_STREAM = "application/x-octet-stream";
     private static final String PLAIN = "text/plain";
 
-    @Value("${server.admin.port}")
+    @Value("${server.port}")
     public String port;
 
     @Value("${server.admin.host}")
     public String host;
-
+    
     @Autowired
-    private AuthorizationService authorizationService;
+    private SpringSecurityAuthorizationPolicy springSecurityAuthorizationPolicy;
+    
+    @Autowired
+    private JwtAuthenticationProcessor jwtAuthenticationProcessor;
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
+        JwtAuthenticationRoutePolicyFactory factory = new JwtAuthenticationRoutePolicyFactory(jwtAuthenticationProcessor);
+        
         RestPropertyDefinition corsAllowedHeaders = new RestPropertyDefinition();
         corsAllowedHeaders.setKey("Access-Control-Allow-Headers");
         corsAllowedHeaders.setValue("Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
 
+        getContext().addRoutePolicyFactory(factory);
+        
         restConfiguration().setCorsHeaders(Collections.singletonList(corsAllowedHeaders));
 
 
@@ -90,13 +97,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(403))
                 .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
                 .transform(exceptionMessage());
-
+/*
         onException(NotAuthenticatedException.class)
                 .handled(true)
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(401))
                 .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
                 .transform(exceptionMessage());
-
+*/
         onException(NotFoundException.class)
                 .handled(true)
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404))
@@ -104,30 +111,17 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .transform(exceptionMessage());
 
         restConfiguration()
-                .component("jetty")
-                .bindingMode(RestBindingMode.json)
-                .endpointProperty("filtersRef", "keycloakPreAuthActionsFilter,keycloakAuthenticationProcessingFilter")
-                .endpointProperty("sessionSupport", "true")
-                .endpointProperty("matchOnUriPrefix", "true")
-                .endpointProperty("enablemulti-partFilter", "true")
-                .enableCORS(true)
-                .dataFormatProperty("prettyPrint", "true")
-                .host(host)
+                .component("servlet")
+                .contextPath("/services")
                 .port(port)
+                .bindingMode(RestBindingMode.json)
+                .endpointProperty("matchOnUriPrefix", "true")
+//                .endpointProperty("enablemulti-partFilter", "true")
+                .enableCORS(true)
                 .apiContextPath("/swagger.json")
                 .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
-                .contextPath("/services");
-
-        rest("")
-                .apiDocs(false)
-                .description("Wildcard definitions necessary to get Jetty to match authorization filters to endpoints with path params")
-                .get().route().routeId("admin-route-authorize-get").throwException(new NotFoundException()).endRest()
-                .post().route().routeId("admin-route-authorize-post").throwException(new NotFoundException()).endRest()
-                .put().route().routeId("admin-route-authorize-put").throwException(new NotFoundException()).endRest()
-                .delete().route().routeId("admin-route-authorize-delete").throwException(new NotFoundException()).endRest();
-
-
-        String commonApiDocEndpoint = "rest:get:/services/swagger.json?bridgeEndpoint=true";
+                .apiContextRouteId("doc-api")
+                ;
 
         rest("/timetable_admin")
                 .post("/idempotentfilter/clean")
@@ -135,7 +129,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-application-clean-unique-filename-and-digest-idempotent-repos")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .policy(springSecurityAuthorizationPolicy)
                 .to("direct:cleanIdempotentFileStore")
                 .setBody(constant(null))
                 .endRest()
@@ -146,8 +140,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation level1 for all providers")
                 .removeHeaders("CamelHttp*")
                 .inOnly("direct:chouetteValidateLevel1ForAllProviders")
@@ -161,8 +154,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation level2 for all providers")
                 .removeHeaders("CamelHttp*")
                 .inOnly("direct:chouetteValidateLevel2ForAllProviders")
@@ -192,7 +184,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.DEBUG, correlation() + "Get chouette active jobs all providers")
                 .removeHeaders("CamelHttp*")
                 .process(e -> e.getIn().setHeader("status", e.getIn().getHeader("status") != null ? e.getIn().getHeader("status") : Arrays.asList("STARTED", "SCHEDULED")))
@@ -205,7 +197,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("All jobs canceled").endResponseMessage()
                 .responseMessage().code(500).message("Could not cancel all jobs").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, correlation() + "Cancel all chouette jobs for all providers")
                 .removeHeaders("CamelHttp*")
                 .to("direct:chouetteCancelAllJobsForAllProviders")
@@ -232,7 +224,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Completed jobs removed").endResponseMessage()
                 .responseMessage().code(500).message("Could not remove complete jobs").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, correlation() + "Removing old chouette jobs for all providers")
                 .removeHeaders("CamelHttp*")
                 .to("direct:chouetteRemoveOldJobs")
@@ -256,7 +248,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .responseMessage().code(500).message("Internal error - check filter").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean all dataspaces")
                 .removeHeaders("CamelHttp*")
                 .to("direct:chouetteCleanAllReferentials")
@@ -271,7 +263,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .responseMessage().code(500).message("Internal error - check filter").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean all stop places")
                 .removeHeaders("CamelHttp*")
                 .to("direct:chouetteCleanStopPlaces")
@@ -299,7 +291,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, correlation() + "get stats for multiple providers")
                 .removeHeaders("CamelHttp*")
                 .choice()
@@ -318,7 +310,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, correlation() + "refresh stats cache")
                 .removeHeaders("CamelHttp*")
                 .to("direct:chouetteRefreshStatsCache")
@@ -333,7 +325,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, correlation() + "get time table and graph files")
                 .removeHeaders("CamelHttp*")
                 .to("direct:listTimetableExportAndGraphBlobs")
@@ -348,7 +340,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, "Triggered GTFS extended export")
                 .removeHeaders("CamelHttp*")
                 .inOnly("entur-google-pubsub:GtfsExportMergedQueue")
@@ -363,7 +355,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, "Triggered GTFS basic export")
                 .removeHeaders("CamelHttp*")
                 .inOnly("entur-google-pubsub:GtfsBasicExportMergedQueue")
@@ -377,7 +369,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, "Triggered GTFS export to Google")
                 .removeHeaders("CamelHttp*")
                 .inOnly("entur-google-pubsub:GtfsGoogleExportQueue")
@@ -391,7 +383,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, "Triggered GTFS QA export to Google")
                 .removeHeaders("CamelHttp*")
                 .inOnly("entur-google-pubsub:GtfsGoogleQaExportQueue")
@@ -405,7 +397,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS to Google")
                 .removeHeaders("CamelHttp*")
                 .inOnly("entur-google-pubsub:GtfsGooglePublishQueue")
@@ -419,7 +411,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS QA export to Google")
                 .removeHeaders("CamelHttp*")
                 .inOnly("entur-google-pubsub:GtfsGooglePublishQaQueue")
@@ -434,19 +426,21 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, "Triggered Netex export of merged file for Norway")
                 .removeHeaders("CamelHttp*")
                 .inOnly("entur-google-pubsub:NetexExportMergedQueue")
                 .routeId("admin-timetable-netex-merged-export")
                 .endRest()
 
+                /*
                 .get("/swagger.json")
                 .apiDocs(false)
                 .bindingMode(RestBindingMode.off)
                 .route()
                 .to(commonApiDocEndpoint)
                 .endRest()
+*/
 
                 .post("routing_graph/build_base")
                 .description("Triggers building of the OTP base graph using map data (osm + height)")
@@ -454,7 +448,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, "Triggered build of OTP base graph with map data")
                 .removeHeaders("CamelHttp*")
                 .setBody(simple(""))
@@ -469,7 +463,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, "OTP build graph from NeTEx")
                 .removeHeaders("CamelHttp*")
                 .setBody(simple(""))
@@ -490,7 +484,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .route()
                 .removeHeaders("CamelHttp*")
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .split(method(ImportFilesSplitter.class, "splitFiles"))
 
@@ -520,7 +514,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "blob store get files")
                 .removeHeaders("CamelHttp*")
@@ -539,7 +533,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .route()
                 .streamCaching()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))))
                 .log(LoggingLevel.INFO, correlation() + "upload files and start import pipeline")
@@ -558,7 +552,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid fileName").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .process(e -> e.getIn().setHeader("fileName", URLDecoder.decode(e.getIn().getHeader("fileName", String.class), "utf-8")))
                 .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
@@ -581,7 +575,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "get stats")
                 .removeHeaders("CamelHttp*")
@@ -613,7 +607,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "Get chouette jobs status=${header.status} action=${header.action}")
                 .removeHeaders("CamelHttp*")
@@ -630,7 +624,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid jobId").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "Cancel all chouette jobs")
                 .removeHeaders("CamelHttp*")
@@ -648,7 +642,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid jobId").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .setHeader(Constants.CHOUETTE_JOB_ID, header("jobId"))
                 .log(LoggingLevel.INFO, correlation() + "Cancel chouette job")
@@ -665,7 +659,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "Chouette start export")
                 .removeHeaders("CamelHttp*")
@@ -681,7 +675,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
+                .policy(springSecurityAuthorizationPolicy)
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation")
                 .removeHeaders("CamelHttp*")
@@ -734,7 +728,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, "OSM update map data")
                 .removeHeaders("CamelHttp*")
                 .to("direct:considerToFetchOsmMapOverNorway")
@@ -747,25 +741,23 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .policy(springSecurityAuthorizationPolicy)
                 .log(LoggingLevel.INFO, "Mapbox update with data from tiamat")
                 .removeHeaders("CamelHttp*")
                 .to("direct:runMapboxUpdate")
                 .routeId("admin-update-mapbox")
-                .endRest()
+                .endRest();
 
+                /*
                 .get("/swagger.json")
                 .apiDocs(false)
                 .bindingMode(RestBindingMode.off)
                 .route()
                 .to(commonApiDocEndpoint)
                 .endRest();
+                */
 
-        from("direct:authorizeRequest")
-                .doTry()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
-                        new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT, e.getIn().getHeader(PROVIDER_ID, Long.class))))
-                .routeId("admin-authorize-request");
+
 
 
     }
