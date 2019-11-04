@@ -44,6 +44,7 @@ import static org.mockito.Mockito.when;
 
 @ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@UseAdviceWith
 public abstract class MardukRouteBuilderIntegrationTestBase {
 
     @Autowired

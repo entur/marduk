@@ -21,6 +21,9 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
+import no.rutebanken.marduk.security.MockedRoleAssignmentExtractor;
+import no.rutebanken.marduk.test.TestApp;
+
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
@@ -32,29 +35,38 @@ import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.web.server.LocalServerPort;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.when;
 import static no.rutebanken.marduk.Constants.*;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
-    @Autowired
-    ModelCamelContext camelContext;
+	@Autowired
+	private MockedRoleAssignmentExtractor extractor;
+	
+    @LocalServerPort
+    public int port;
 
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
@@ -65,29 +77,31 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     @EndpointInject(uri = "mock:chouetteExportNetexQueue")
     protected MockEndpoint exportQueue;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/import")
+    @Produce(uri = "http4:localhost:8080/services/timetable_admin/2/import")
     protected ProducerTemplate importTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/export")
+    @Produce(uri = "http4:localhost:8080/services/timetable_admin/2/export")
     protected ProducerTemplate exportTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files")
+    @Produce(uri = "http4:localhost:8080/services/timetable_admin/2/files")
     protected ProducerTemplate listFilesTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files/existing_regtopp-file.zip")
+    @Produce(uri = "http4:localhost:8080/services/timetable_admin/2/files/existing_regtopp-file.zip")
     protected ProducerTemplate getFileTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files/unknown-file.zip")
+    @Produce(uri = "http4:localhost:8080/services/timetable_admin/2/files/unknown-file.zip")
     protected ProducerTemplate getUnknownFileTemplate;
 
-
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/export/files")
+    @Produce(uri = "http4:localhost:8080/services/timetable_admin/export/files")
     protected ProducerTemplate listExportFilesTemplate;
-
 
     @Value("#{'${timetable.export.blob.prefixes:outbound/gtfs/,outbound/netex/}'.split(',')}")
     private List<String> exportFileStaticPrefixes;
 
+    @AfterEach
+    public void defaultPermissions() {
+		extractor.setNextReturnedRoleAssignmentList(null);
+    }
 
     @BeforeEach
     public void setUpProvider() {
@@ -97,7 +111,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     @Test
     public void runImport() throws Exception {
 
-        camelContext.getRouteDefinition("admin-chouette-import").adviceWith(camelContext, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("admin-chouette-import").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 interceptSendToEndpoint("entur-google-pubsub:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue");
@@ -106,7 +120,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
 
         // we must manually start when we are done with all the advice with
-        camelContext.start();
+        context.start();
 
         BlobStoreFiles d = new BlobStoreFiles();
         d.add(new BlobStoreFiles.File("file1", null, null, null));
@@ -139,7 +153,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     @Test
     public void runExport() throws Exception {
 
-        camelContext.getRouteDefinition("admin-chouette-export").adviceWith(camelContext, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("admin-chouette-export").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportNetexQueue");
@@ -148,7 +162,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         });
 
         // we must manually start when we are done with all the advice with
-        camelContext.start();
+        context.start();
 
         // Do rest call
         Map<String, Object> headers = new HashMap<String, Object>();
@@ -178,7 +192,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, new FileInputStream(new File(pathname)), false);
 //        BlobStoreFiles blobStoreFiles = inMemoryBlobStoreRepository.listBlobs(fileStorePath);
 
-        camelContext.start();
+        context.start();
 
         // Do rest call
         Map<String, Object> headers = new HashMap<String, Object>();
@@ -207,7 +221,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFileStream, false);
 
 
-        camelContext.start();
+        context.start();
 
         // Do rest call
         Map<String, Object> headers = new HashMap<String, Object>();
@@ -222,7 +236,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     @Test
     public void getBlobStoreFile_unknownFile() throws Exception {
 
-        camelContext.start();
+        context.start();
 
         assertThrows(CamelExecutionException.class, () -> {
             // Do rest call
@@ -240,7 +254,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         for (String prefix : exportFileStaticPrefixes) {
             inMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, new FileInputStream(new File( "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")), false);
         }
-        camelContext.start();
+        context.start();
 
         // Do rest call
         Map<String, Object> headers = new HashMap<String, Object>();
@@ -255,6 +269,49 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         assertEquals(exportFileStaticPrefixes.size(), rsp.getFiles().size());
         exportFileStaticPrefixes.forEach(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName())));
     }
+
+	@Test
+	public void testThatSwaggerSpecificationIsAvailableWithoutAuthentication() throws Exception {
+		extractor.setNextReturnedRoleAssignmentList(new ArrayList<>());
+		context.start();
+		URI uri = new URI("http://localhost:" + port + "/services/swagger.json");
+
+	    when()
+	    	.get(uri)
+	    .then()
+	       	.assertThat()
+	       	.statusCode(200);
+	}
+	
+	@Test
+	public void testTimeTableAdminWithInvalidToken() throws Exception {
+		extractor.setNextReturnedRoleAssignmentList(new ArrayList<>());
+		context.start();
+		URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
+
+		String token = "Bearer invalid.token.value";
+		
+		 given()
+		 	.header("Authorization", token)
+	    .when()
+	    	.get(uri)
+	    .then()
+        	.assertThat()
+        	.statusCode(401);
+	}	
+
+	@Test
+	public void testTimeTableAdminWithoutPermissions() throws Exception {
+		extractor.setNextReturnedRoleAssignmentList(new ArrayList<>());
+		context.start();
+		URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
+
+	    when()
+	        .get(uri)
+	    .then()
+	        .assertThat()
+	        .statusCode(403);
+	}	
 
 
 }

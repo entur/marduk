@@ -17,11 +17,21 @@
 package no.rutebanken.marduk.test;
 
 import no.rutebanken.marduk.App;
+
+import org.apache.camel.test.spring.CamelSpringTestContextLoaderTestExecutionListener;
+import org.apache.camel.test.spring.CamelTestContextBootstrapper;
+import org.apache.camel.test.spring.DisableJmxTestExecutionListener;
+import org.apache.camel.test.spring.StopWatchTestExecutionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.BootstrapWith;
+import org.springframework.test.context.TestExecutionListeners;
 
 @SpringBootApplication
+@BootstrapWith(CamelTestContextBootstrapper.class)
+@TestExecutionListeners(value = {CamelSpringTestContextLoaderTestExecutionListener.class, DisableJmxTestExecutionListener.class, StopWatchTestExecutionListener.class}, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public class TestApp extends App {
 
     private static Logger logger = LoggerFactory.getLogger(TestApp.class);
