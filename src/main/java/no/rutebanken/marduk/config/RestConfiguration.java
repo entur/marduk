@@ -8,11 +8,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RestConfiguration {
 
-	// Substitute for using Camel .endpointProperty("enablemulti-partFilter", "true")
-	@Bean
-	public FilterRegistrationBean multiPartFilter() {
-		FilterRegistrationBean mapping = new FilterRegistrationBean();
+    // Substitute for using Camel .endpointProperty("enablemulti-partFilter", "true")
+    @Bean
+    public FilterRegistrationBean multiPartFilter() {
+        FilterRegistrationBean mapping = new FilterRegistrationBean();
         mapping.setFilter(new MultiPartFilter());
         return mapping;
-	}
+    }
 }
