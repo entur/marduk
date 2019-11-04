@@ -62,9 +62,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
-	@Autowired
-	private MockedRoleAssignmentExtractor extractor;
-	
+    @Autowired
+    private MockedRoleAssignmentExtractor extractor;
+    
     @LocalServerPort
     public int port;
 
@@ -100,7 +100,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
     @AfterEach
     public void defaultPermissions() {
-		extractor.setNextReturnedRoleAssignmentList(null);
+        extractor.setNextReturnedRoleAssignmentList(null);
     }
 
     @BeforeEach
@@ -229,7 +229,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         InputStream response = (InputStream) getFileTemplate.requestBodyAndHeaders(null, headers);
         // Parse response
 
-//		assertTrue(org.apache.commons.io.IOUtils.contentEquals(testFileStream, response));
+//        assertTrue(org.apache.commons.io.IOUtils.contentEquals(testFileStream, response));
     }
 
 
@@ -270,48 +270,48 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         exportFileStaticPrefixes.forEach(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName())));
     }
 
-	@Test
-	public void testThatSwaggerSpecificationIsAvailableWithoutAuthentication() throws Exception {
-		extractor.setNextReturnedRoleAssignmentList(new ArrayList<>());
-		context.start();
-		URI uri = new URI("http://localhost:" + port + "/services/swagger.json");
+    @Test
+    public void testThatSwaggerSpecificationIsAvailableWithoutAuthentication() throws Exception {
+        extractor.setNextReturnedRoleAssignmentList(new ArrayList<>());
+        context.start();
+        URI uri = new URI("http://localhost:" + port + "/services/swagger.json");
 
-	    when()
-	    	.get(uri)
-	    .then()
-	       	.assertThat()
-	       	.statusCode(200);
-	}
-	
-	@Test
-	public void testTimeTableAdminWithInvalidToken() throws Exception {
-		extractor.setNextReturnedRoleAssignmentList(new ArrayList<>());
-		context.start();
-		URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
+        when()
+            .get(uri)
+        .then()
+               .assertThat()
+               .statusCode(200);
+    }
+    
+    @Test
+    public void testTimeTableAdminWithInvalidToken() throws Exception {
+        extractor.setNextReturnedRoleAssignmentList(new ArrayList<>());
+        context.start();
+        URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
 
-		String token = "Bearer invalid.token.value";
-		
-		 given()
-		 	.header("Authorization", token)
-	    .when()
-	    	.get(uri)
-	    .then()
-        	.assertThat()
-        	.statusCode(401);
-	}	
+        String token = "Bearer invalid.token.value";
+        
+         given()
+             .header("Authorization", token)
+        .when()
+            .get(uri)
+        .then()
+            .assertThat()
+            .statusCode(401);
+    }    
 
-	@Test
-	public void testTimeTableAdminWithoutPermissions() throws Exception {
-		extractor.setNextReturnedRoleAssignmentList(new ArrayList<>());
-		context.start();
-		URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
+    @Test
+    public void testTimeTableAdminWithoutPermissions() throws Exception {
+        extractor.setNextReturnedRoleAssignmentList(new ArrayList<>());
+        context.start();
+        URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
 
-	    when()
-	        .get(uri)
-	    .then()
-	        .assertThat()
-	        .statusCode(403);
-	}	
+        when()
+            .get(uri)
+        .then()
+            .assertThat()
+            .statusCode(403);
+    }    
 
 
 }
