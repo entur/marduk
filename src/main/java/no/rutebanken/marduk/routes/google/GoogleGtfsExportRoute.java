@@ -40,8 +40,15 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
     @Value("${google.export.file.name:google/google_norway-aggregated-gtfs.zip}")
     private String googleExportFileName;
 
+    @Value("${google.export.includes.shapes:false}")
+    private boolean googleExportIncludeShapes;
+
+
     @Value("${google.export.qa.file.name:google/google_norway-aggregated-qa-gtfs.zip}")
     private String googleQaExportFileName;
+
+    @Value("${google.export.qa.includes.shapes:false}")
+    private String googleQaExportIncludeShapes;
 
     @Override
     public void configure() throws Exception {
@@ -67,6 +74,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .process(e -> e.setProperty(Constants.PROVIDER_WHITE_LIST, prepareProviderWhiteListGoogleUpload()))
                 .setProperty(Constants.TRANSFORMATION_ROUTING_DESTINATION, constant("direct:transformToGoogleGTFS"))
                 .setHeader(Constants.FILE_NAME, constant(googleExportFileName))
+                .setHeader(Constants.INCLUDE_SHAPES, constant(googleExportIncludeShapes))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GOOGLE_GTFS"))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-google-export-merged");
@@ -85,6 +93,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .process(e -> e.setProperty(Constants.PROVIDER_WHITE_LIST, prepareProviderWhiteListGoogleQAUpload()))
                 .setProperty(Constants.TRANSFORMATION_ROUTING_DESTINATION, constant("direct:transformToGoogleGTFS"))
                 .setHeader(Constants.FILE_NAME, constant(googleQaExportFileName))
+                .setHeader(Constants.INCLUDE_SHAPES, constant(googleQaExportIncludeShapes))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GOOGLE_GTFS_QA"))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-google-qa-export-merged");

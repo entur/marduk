@@ -16,8 +16,10 @@
 
 package no.rutebanken.marduk.routes.gtfs;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.file.beans.CustomGtfsFileTransformer;
 import no.rutebanken.marduk.routes.google.GoogleRouteTypeCode;
+import org.apache.camel.Header;
 import org.apache.commons.io.IOUtils;
 import org.onebusaway.gtfs.model.Route;
 import org.onebusaway.gtfs.model.ShapePoint;
@@ -46,25 +48,24 @@ import static no.rutebanken.marduk.routes.file.GtfsFileUtils.createEntitiesTrans
 @Service
 public class GtfsTransformationService {
 
+
     private static Logger logger = LoggerFactory.getLogger(GtfsTransformationService.class);
-
-    private final GoogleGtfsFileTransformer GOOGLE_TRANSFORMER = new GoogleGtfsFileTransformer();
-
-    private final BasicGtfsFileTransformer BASIC_TRANSFORMER = new BasicGtfsFileTransformer();
 
 
     /**
      * Google does not support (all) values in the Extended Route Types code set.
      * <p>
      * GTFS to Google needs to be "dumbed" down to the google supported code set first.
+     * <p>
+     * * @param includeShapes whether shape data from input file should be included in transformed output
      */
-    public File transformToGoogleFormat(File inputFile) throws Exception {
+    public File transformToGoogleFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) boolean includeShapes) throws Exception {
         long t1 = System.currentTimeMillis();
         // Add feed info for google export
         byte[] feedBytes = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("no/rutebanken/marduk/routes/google/feed_info.txt"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream(feedBytes.length);
         baos.write(feedBytes, 0, feedBytes.length);
-        File outputFile = GOOGLE_TRANSFORMER.transform(inputFile, baos);
+        File outputFile = new GoogleGtfsFileTransformer(!includeShapes).transform(inputFile, baos);
 
         logger.debug("Replaced Extended Route Types with google supported values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
 
@@ -73,14 +74,16 @@ public class GtfsTransformationService {
 
     /**
      * Entur gtfs contains fields and values proposed as extensions to the GTFS standard.
+     *
+     * @param includeShapes whether shape data from input file should be included in transformed output
      */
-    public File transformToBasicGTFSFormat(File inputFile) throws Exception {
+    public File transformToBasicGTFSFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) boolean includeShapes) throws Exception {
         long t1 = System.currentTimeMillis();
         // Add feed info export
         byte[] feedBytes = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("no/rutebanken/marduk/routes/google/feed_info.txt"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream(feedBytes.length);
         baos.write(feedBytes, 0, feedBytes.length);
-        File outputFile = BASIC_TRANSFORMER.transform(inputFile, baos);
+        File outputFile = new BasicGtfsFileTransformer(!includeShapes).transform(inputFile, baos);
 
         logger.debug("Replaced Extended Route Types with basic values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
 
@@ -89,20 +92,37 @@ public class GtfsTransformationService {
 
 
     private class GoogleGtfsFileTransformer extends CustomGtfsFileTransformer {
+        private boolean removeShapes;
+
+        public GoogleGtfsFileTransformer(boolean removeShapes) {
+            this.removeShapes = removeShapes;
+        }
+
         @Override
         protected void addCustomTransformations(GtfsTransformer transformer) {
-            transformer.addTransform(new BasicExtendedRouteTypeTransformer.RemoveShapeTransformer());
-            transformer.addTransform(createRemoveTripShapeIdStrategy());
+
+            if (removeShapes) {
+                transformer.addTransform(new BasicExtendedRouteTypeTransformer.RemoveShapeTransformer());
+                transformer.addTransform(createRemoveTripShapeIdStrategy());
+            }
             transformer.addTransform(createEntitiesTransformStrategy(Route.class, new GoogleExtendedRouteTypeTransformer()));
             transformer.addTransform(createEntitiesTransformStrategy(Stop.class, new GoogleExtendedRouteTypeTransformer()));
         }
     }
 
     private class BasicGtfsFileTransformer extends CustomGtfsFileTransformer {
+        private boolean removeShapes;
+
+        public BasicGtfsFileTransformer(boolean removeShapes) {
+            this.removeShapes = removeShapes;
+        }
+
         @Override
         protected void addCustomTransformations(GtfsTransformer transformer) {
-            transformer.addTransform(new BasicExtendedRouteTypeTransformer.RemoveShapeTransformer());
-            transformer.addTransform(createRemoveTripShapeIdStrategy());
+            if (removeShapes) {
+                transformer.addTransform(new BasicExtendedRouteTypeTransformer.RemoveShapeTransformer());
+                transformer.addTransform(createRemoveTripShapeIdStrategy());
+            }
             transformer.addTransform(createEntitiesTransformStrategy(Route.class, new BasicExtendedRouteTypeTransformer()));
             transformer.addTransform(createEntitiesTransformStrategy(Stop.class, new BasicExtendedRouteTypeTransformer()));
         }

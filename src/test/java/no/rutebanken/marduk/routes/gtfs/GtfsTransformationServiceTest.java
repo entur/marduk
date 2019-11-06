@@ -20,9 +20,7 @@ import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.google.GoogleRouteTypeCode;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -33,13 +31,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class GtfsTransformationServiceTest {
 
     private static final String GTFS_FILE_EXTENDED_ROUTE_TYPES = "src/test/resources/no/rutebanken/marduk/routes/gtfs/extended_gtfs.zip";
 
     @Test
-    public void transformToGoogleFormat() throws Exception {
-        File out = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES));
+    public void transformToGoogleFormatExcludeShapes() throws Exception {
+        File out = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), false);
 
         FileUtils.copyFile(out, new File("target/test.zip"));
 
@@ -50,8 +53,21 @@ public class GtfsTransformationServiceTest {
     }
 
     @Test
-    public void transformToBasicGTFSFormat() throws Exception {
-        File out = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES));
+    public void transformToGoogleFormatIncludeShapes() throws Exception {
+        File out = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), true);
+
+        FileUtils.copyFile(out, new File("target/test.zip"));
+
+        assertRouteRouteTypesAreConvertedToGoogleSupportedValues(out);
+        assertStopVehicleTypesAreConvertedToGoogleSupportedValues(out);
+
+        assertShapesAreIncluded(out);
+    }
+
+
+    @Test
+    public void transformToBasicGTFSFormatExcludeShapes() throws Exception {
+        File out = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), false);
 
         FileUtils.copyFile(out, new File("target/test.zip"));
 
@@ -59,6 +75,18 @@ public class GtfsTransformationServiceTest {
         assertStopVehicleTypesAreConvertedToBasicGtfsValues(out);
 
         assertShapesAreRemoved(out);
+    }
+
+    @Test
+    public void transformToBasicGTFSFormatIncludeShapes() throws Exception {
+        File out = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), true);
+
+        FileUtils.copyFile(out, new File("target/test.zip"));
+
+        assertRouteRouteTypesAreConvertedToBasicGtfsValues(out);
+        assertStopVehicleTypesAreConvertedToBasicGtfsValues(out);
+
+        assertShapesAreIncluded(out);
     }
 
     public static void assertRouteRouteTypesAreConvertedToGoogleSupportedValues(File out) throws IOException {
@@ -109,12 +137,23 @@ public class GtfsTransformationServiceTest {
     }
 
     public static void assertShapesAreRemoved(File out) throws IOException {
-    	assertThat(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "shapes.txt")).as("All Shapes should have been removed").isNull();;
+        assertThat(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "shapes.txt")).as("All Shapes should have been removed").isNull();
+        ;
 
         List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "trips.txt").toByteArray()), StandardCharsets.UTF_8);
         String tripWithShape = trips.stream().filter(t -> t.startsWith("9797,262919,")).findFirst().get();
 
         assertFalse(tripWithShape.contains("SKY:JourneyPattern:1-362_0_10446_1"));
+    }
+
+    public static void assertShapesAreIncluded(File out) throws IOException {
+        assertThat(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "shapes.txt")).as("All Shapes should be present").isNotNull();
+        ;
+
+        List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "trips.txt").toByteArray()), StandardCharsets.UTF_8);
+        String tripWithShape = trips.stream().filter(t -> t.startsWith("9797,262919,")).findFirst().get();
+
+        assertTrue(tripWithShape.contains("SKY:JourneyPattern:1-362_0_10446_1"));
     }
 
 }
