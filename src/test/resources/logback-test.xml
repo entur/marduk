@@ -24,7 +24,7 @@
     <logger name="org.apache.camel" level="INFO"/>
     <logger name="org.apache.processor.DefaultErrorHandler" level="INFO"/>
     
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="CONSOLE-ASYNC" />
     </root>
 
