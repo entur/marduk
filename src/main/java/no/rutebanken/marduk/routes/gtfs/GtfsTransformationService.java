@@ -59,13 +59,16 @@ public class GtfsTransformationService {
      * <p>
      * * @param includeShapes whether shape data from input file should be included in transformed output
      */
-    public File transformToGoogleFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) boolean includeShapes) throws Exception {
+    public File transformToGoogleFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) throws Exception {
         long t1 = System.currentTimeMillis();
         // Add feed info for google export
         byte[] feedBytes = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("no/rutebanken/marduk/routes/google/feed_info.txt"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream(feedBytes.length);
         baos.write(feedBytes, 0, feedBytes.length);
-        File outputFile = new GoogleGtfsFileTransformer(!includeShapes).transform(inputFile, baos);
+
+        boolean removeShapes = !Boolean.TRUE.equals(includeShapes);
+
+        File outputFile = new GoogleGtfsFileTransformer(removeShapes).transform(inputFile, baos);
 
         logger.debug("Replaced Extended Route Types with google supported values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
 
@@ -77,13 +80,15 @@ public class GtfsTransformationService {
      *
      * @param includeShapes whether shape data from input file should be included in transformed output
      */
-    public File transformToBasicGTFSFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) boolean includeShapes) throws Exception {
+    public File transformToBasicGTFSFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) throws Exception {
         long t1 = System.currentTimeMillis();
         // Add feed info export
         byte[] feedBytes = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("no/rutebanken/marduk/routes/google/feed_info.txt"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream(feedBytes.length);
         baos.write(feedBytes, 0, feedBytes.length);
-        File outputFile = new BasicGtfsFileTransformer(!includeShapes).transform(inputFile, baos);
+
+        boolean removeShapes = !Boolean.TRUE.equals(includeShapes);
+        File outputFile = new BasicGtfsFileTransformer(removeShapes).transform(inputFile, baos);
 
         logger.debug("Replaced Extended Route Types with basic values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
 
@@ -92,7 +97,7 @@ public class GtfsTransformationService {
 
 
     private class GoogleGtfsFileTransformer extends CustomGtfsFileTransformer {
-        private boolean removeShapes;
+        private Boolean removeShapes;
 
         public GoogleGtfsFileTransformer(boolean removeShapes) {
             this.removeShapes = removeShapes;

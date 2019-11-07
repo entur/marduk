@@ -43,6 +43,9 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
     @Value("${gtfs.basic.export.merged.file.name:rb_norway-aggregated-gtfs-basic.zip}")
     private String gtfsBasicMergedFileName;
 
+    @Value("${gtfs.basic.norway.includes.shapes:false}")
+    private boolean includeShapes;
+
     @Value("#{'${gtfs.basic.export.agency.prefix.blacklist:AVI}'.split(',')}")
     private Set<String> agencyBlackList;
 
@@ -63,6 +66,7 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .setProperty(Constants.TRANSFORMATION_ROUTING_DESTINATION, constant("direct:transformToBasicGTFS"))
                 .setProperty(Constants.PROVIDER_BLACK_LIST, constant(createProviderBlackList()))
                 .setHeader(Constants.FILE_NAME, constant(gtfsBasicMergedFileName))
+                .setHeader(Constants.INCLUDE_SHAPES, constant(includeShapes))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GTFS_BASIC_MERGED"))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-basic-export-merged");
@@ -74,7 +78,6 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .routeId("gtfs-basic-export-transform-gtfs");
 
     }
-
 
 
     /**
