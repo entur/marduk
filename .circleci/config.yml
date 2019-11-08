@@ -32,8 +32,7 @@ jobs:
         username: _json_key
         password: $DOCKER_PASSWORD
     environment:
-      MAVEN_OPTS: -Xmx3G
-      _JAVA_OPTIONS: -Xss16m
+      MAVEN_OPTS: -Xmx200m
     steps:
     - checkout
     - restore_cache:
