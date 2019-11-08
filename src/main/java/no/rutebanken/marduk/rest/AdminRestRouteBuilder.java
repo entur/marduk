@@ -109,7 +109,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .endpointProperty("filtersRef", "keycloakPreAuthActionsFilter,keycloakAuthenticationProcessingFilter")
                 .endpointProperty("sessionSupport", "true")
                 .endpointProperty("matchOnUriPrefix", "true")
-                .endpointProperty("enablemulti-partFilter", "true")
                 .enableCORS(true)
                 .dataFormatProperty("prettyPrint", "true")
                 .host(host)
