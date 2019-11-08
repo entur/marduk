@@ -23,6 +23,10 @@
     <logger name="io" level="INFO"/>
     <logger name="org.apache.camel" level="INFO"/>
     <logger name="org.apache.processor.DefaultErrorHandler" level="INFO"/>
+
+    <logger name="org.apache.camel.component.jackson.JacksonDataFormat" level="WARN"/>
+
+    <logger name="GRAPH_BUILDER_ANNOTATION_LOG" level="WARN" />
     
     <root level="DEBUG">
         <appender-ref ref="CONSOLE-ASYNC" />
