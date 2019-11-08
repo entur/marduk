@@ -92,7 +92,7 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
         producerTemplate.sendBody(null);
         producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2l, "ref", "corr-id"));
 
-        updateStatus.assertIsSatisfied();
+        updateStatus.assertIsSatisfied(20000);
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
 

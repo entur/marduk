@@ -65,7 +65,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
 
         producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2l, "ref", "corr-id"));
 
-        buildOtpGraph.assertIsSatisfied();
+        buildOtpGraph.assertIsSatisfied(20000);
 
     }
 
@@ -92,7 +92,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
         producerTemplate.sendBody("");
         producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2l, "ref", "corr-id"));
 
-        buildOtpGraph.assertIsSatisfied();
+        buildOtpGraph.assertIsSatisfied(20000);
 
     }
 
