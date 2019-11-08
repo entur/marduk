@@ -68,9 +68,6 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .when(header(FILE_TYPE).isEqualTo(FileType.ZIP_WITH_SINGLE_FOLDER.name()))
                 .log(LoggingLevel.WARN, correlation() + "Unexpected file type or invalid file ${header." + FILE_HANDLE + "}")
                 .to("direct:repackZipFile")
-                .when(header(FILE_TYPE).isEqualTo(FileType.RAR.name()))
-                .log(LoggingLevel.INFO, correlation() + "Splitting and repackaging file ${header." + FILE_HANDLE + "}")
-                .to("direct:splitRarFile")
                 .otherwise()
                 .choice()
                 .when(header(FILE_TYPE).isEqualTo(FileType.GTFS.name()))
@@ -102,22 +99,6 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .to("entur-google-pubsub:ProcessFileQueue")
                 .routeId("file-repack-zip");
-
-        from("direct:splitRarFile")
-                .split(method(RARToZipFilesSplitter.class, "splitRarFile"))
-                .process(e -> {
-                    int currentPart = e.getProperty("CamelSplitIndex", Integer.class) + 1;
-                    String currentPartPadded = StringUtils.leftPad("" + currentPart, 4, '0');
-                    String numParts = e.getProperty("CamelSplitSize", String.class);
-                    e.getIn().setHeader(FILE_HANDLE, e.getIn().getHeader(FILE_HANDLE) + "_part_" + currentPartPadded + "_of_" + numParts + ".zip");
-                    e.getIn().setHeader(FILE_NAME, e.getIn().getHeader(FILE_NAME) + "_part_" + currentPartPadded + "_of_" + numParts + ".zip");
-                    e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString());
-                })
-                .log(LoggingLevel.INFO, correlation() + "New fragment from RAR file ${header." + FILE_HANDLE + "}")
-                .to("direct:uploadBlob")
-                .to("entur-google-pubsub:ProcessFileQueue")
-                .routeId("file-split-rar");
-
 
         from("direct:sanitizeFileName")
                 .process(e -> {
