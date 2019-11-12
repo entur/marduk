@@ -38,7 +38,8 @@
     "sharedGroupFilePattern": "_(\\w{3})(_flexible)?_shared_data.xml",
     "groupFilePattern": "(\\w{3})_.*\\.xml",
     "netexFeedId": "RB",
-    "flexMaxTravelTime": "2t+5"
+    "flexMaxTravelTime": "2t+5",
+    "defaultMinimumFlexPaddingTime": 15
   },
   "linkMultiModalStopsToParentStations": true,
   "parkAndRideFromTransitData": true,
