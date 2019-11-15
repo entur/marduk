@@ -244,13 +244,11 @@
             <artifactId>hazelcast-helper</artifactId>
             <version>${entur.helpers.version}</version>
         </dependency>
-        <!-- 
         <dependency>
             <groupId>org.entur.helpers</groupId>
             <artifactId>organisation</artifactId>
             <version>${entur.helpers.version}</version>
         </dependency>
-         -->
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-sql</artifactId>

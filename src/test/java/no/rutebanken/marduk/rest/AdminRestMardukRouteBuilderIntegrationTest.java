@@ -34,6 +34,8 @@ import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
 import org.entur.jwt.junit5.entur.test.auth0.Auth0PartnerAuthorizationServer;
 import org.entur.jwt.junit5.entur.test.auth0.Auth0PartnerToken;
+import org.entur.jwt.junit5.entur.test.keycloak.KeycloakPartnerAuthorizationServer;
+import org.entur.jwt.junit5.entur.test.keycloak.KeycloakPartnerToken;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -61,7 +63,7 @@ import static no.rutebanken.marduk.Constants.*;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@Auth0PartnerAuthorizationServer
+@KeycloakPartnerAuthorizationServer
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
@@ -283,9 +285,9 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 	       	.assertThat()
 	       	.statusCode(200);
 	}
-	
+
 	@Test
-	public void testTimeTableAdmin(@Auth0PartnerToken(organisationId = 1) String token) throws Exception {
+	public void testTimeTableAdmin(@KeycloakPartnerToken(organisationId = 1, roles = "{\"r\":\"adminEditRouteData\",\"o\":\"RB\"}") String token) throws Exception {
 		context.start();
 		
 		URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
