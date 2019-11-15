@@ -17,7 +17,10 @@
 package no.rutebanken.marduk.repository;
 
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.security.TokenService;
+
+import org.entur.jwt.client.AccessToken;
+import org.entur.jwt.client.AccessTokenException;
+import org.entur.jwt.client.AccessTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,12 +29,16 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Collection;
 import java.util.List;
+
 
 @Component
 public class RestProviderDAO {
@@ -41,25 +48,34 @@ public class RestProviderDAO {
     @Value("${providers.api.url}")
     private String restServiceUrl;
 
-
     @Autowired
-    private TokenService tokenService;
+    private RestTemplate restTemplate;
 
+	@Autowired
+	private AccessTokenProvider accessTokenProvider;
 
-    public Collection<Provider> getProviders() {
-        RestTemplate restTemplate = new RestTemplate();
+    public Collection<Provider> getProviders() throws AccessTokenException {
+        try {
+        	return getProvidersImpl(false);
+        } catch(HttpClientErrorException e) {
+        	if(e.getStatusCode().equals(HttpStatus.UNAUTHORIZED)) {
+        		// refresh token and retry once
+            	return getProvidersImpl(true);
+        	}
+            throw e;
+        }
+    }
 
-        ResponseEntity<List<Provider>> rateResponse =
+	private Collection<Provider> getProvidersImpl(boolean refresh) throws RestClientException, AccessTokenException {
+        HttpHeaders headers = new HttpHeaders();
+        AccessToken accessToken = accessTokenProvider.getAccessToken(refresh);
+        headers.set("Authorization", "Bearer " + accessToken.getValue());
+		
+		ResponseEntity<List<Provider>> rateResponse =
                 restTemplate.exchange(restServiceUrl,
-                        HttpMethod.GET, getEntityWithAuthenticationToken(), new ParameterizedTypeReference<List<Provider>>() {
+                        HttpMethod.GET, new HttpEntity<>(headers), new ParameterizedTypeReference<List<Provider>>() {
                         });
         return rateResponse.getBody();
-    }
-
-    private HttpEntity<String> getEntityWithAuthenticationToken() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + tokenService.getToken());
-        return new HttpEntity<>(headers);
-    }
+	}
 
 }

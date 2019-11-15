@@ -19,6 +19,8 @@ package no.rutebanken.marduk.repository;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import no.rutebanken.marduk.domain.Provider;
+
+import org.entur.jwt.client.AccessTokenException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +79,8 @@ public class CacheProviderRepository implements ProviderRepository {
             } else {
                 throw re;
             }
+        } catch (AccessTokenException e) {
+            logger.warn("Unable to populate due to access-token issue", e);
         }
     }
 
