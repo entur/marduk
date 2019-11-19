@@ -1,7 +1,7 @@
 package no.rutebanken.marduk.config;
 
-import org.rutebanken.helper.organisation.JwtRoleAssignmentExtractor;
-import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
+import org.entur.jwt.spring.entur.organisation.JwtRoleAssignmentExtractor;
+import org.entur.jwt.spring.entur.organisation.RoleAssignmentExtractor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

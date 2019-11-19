@@ -113,10 +113,27 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-          <groupId>org.entur.jwt-rs</groupId>
-          <artifactId>jwt-junit5-entur</artifactId>
-          <version>1.0.0-SNAPSHOT</version>
-          <scope>test</scope>
+			<groupId>org.entur.jwt-rs</groupId>
+			<artifactId>jwt-junit5-entur</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+			<scope>test</scope>
+        </dependency>
+        <dependency>
+			<groupId>org.entur.jwt-rs</groupId>
+			<artifactId>jwt-spring-entur-organisation</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+			<groupId>org.entur.jwt-rs</groupId>
+			<artifactId>jwt-junit5-entur-organisation</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+			<scope>test</scope>
+        </dependency>
+        <dependency>
+			<groupId>org.entur.jwt-rs</groupId>
+			<artifactId>jwt-junit5-entur</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+			<scope>test</scope>
         </dependency>
         
         <!--Required by Logback for conditional processing in logback.xml-->
@@ -242,11 +259,6 @@
         <dependency>
             <groupId>org.entur.helpers</groupId>
             <artifactId>hazelcast-helper</artifactId>
-            <version>${entur.helpers.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.entur.helpers</groupId>
-            <artifactId>organisation</artifactId>
             <version>${entur.helpers.version}</version>
         </dependency>
         <dependency>

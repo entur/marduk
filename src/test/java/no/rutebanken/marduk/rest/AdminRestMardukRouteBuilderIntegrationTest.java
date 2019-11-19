@@ -32,10 +32,10 @@ import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
-import org.entur.jwt.junit5.entur.test.auth0.Auth0PartnerAuthorizationServer;
-import org.entur.jwt.junit5.entur.test.auth0.Auth0PartnerToken;
-import org.entur.jwt.junit5.entur.test.keycloak.KeycloakPartnerAuthorizationServer;
-import org.entur.jwt.junit5.entur.test.keycloak.KeycloakPartnerToken;
+import org.entur.jwt.junit5.entur.test.auth0.PartnerAuth0AuthorizationServer;
+import org.entur.jwt.junit5.entur.test.auth0.PartnerAuth0Token;
+import org.entur.jwt.junit5.entur.test.organsation.OrganisationAuthorizationServer;
+import org.entur.jwt.junit5.entur.test.organsation.OrganisationToken;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -63,10 +63,15 @@ import static no.rutebanken.marduk.Constants.*;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@KeycloakPartnerAuthorizationServer
+@OrganisationAuthorizationServer
+@PartnerAuth0AuthorizationServer
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
+	// "{\"r\":\"adminEditRouteData\",\"o\":\"RB\"}")
+	// RoleAssignment.builder().withOrganisation("RB").withRole("adminEditRouteData").build().toJson();
+	private static final String adminEditRouteDataForRB = "{\"r\":\"adminEditRouteData\",\"o\":\"RB\"}";
+	
     @LocalServerPort
     public int port;
 
@@ -106,7 +111,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     }
 
     @Test
-    public void runImport(@Auth0PartnerToken(organisationId = 1) String token) throws Exception {
+    public void runImport(@OrganisationToken(roles = adminEditRouteDataForRB) String token) throws Exception {
 
         context.getRouteDefinition("admin-chouette-import").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -149,7 +154,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     }
 
     @Test
-    public void runExport(@Auth0PartnerToken(organisationId = 1) String token) throws Exception {
+    public void runExport(@OrganisationToken(roles = adminEditRouteDataForRB) String token) throws Exception {
 
         context.getRouteDefinition("admin-chouette-export").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -180,7 +185,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     }
 
     @Test
-    public void getBlobStoreFiles(@Auth0PartnerToken(organisationId = 1) String token) throws Exception {
+    public void getBlobStoreFiles(@OrganisationToken(roles = adminEditRouteDataForRB) String token) throws Exception {
 
         // Preparations
         String filename = "ruter_fake_data.zip";
@@ -209,9 +214,8 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
     }
 
-
     @Test
-    public void getBlobStoreFile(@Auth0PartnerToken(organisationId = 1) String token) throws Exception {
+    public void getBlobStoreFile(@OrganisationToken(roles = adminEditRouteDataForRB) String token) throws Exception {
         // Preparations
         String filename = "existing_regtopp-file.zip";
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
@@ -233,9 +237,8 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 //        assertTrue(org.apache.commons.io.IOUtils.contentEquals(testFileStream, response));
     }
 
-
     @Test
-    public void getBlobStoreFile_unknownFile(@Auth0PartnerToken(organisationId = 1) String token) throws Exception {
+    public void getBlobStoreFile_unknownFile(@OrganisationToken(roles = adminEditRouteDataForRB) String token) throws Exception {
 
         context.start();
 
@@ -250,7 +253,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
 
     @Test
-    public void getBlobStoreExportFiles(@Auth0PartnerToken(organisationId = 1) String token) throws Exception {
+    public void getBlobStoreExportFiles(@OrganisationToken(roles = adminEditRouteDataForRB) String token) throws Exception {
         String testFileName = "testFile";
         //populate fake blob repo
         for (String prefix : exportFileStaticPrefixes) {
@@ -287,7 +290,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 	}
 
 	@Test
-	public void testTimeTableAdmin(@KeycloakPartnerToken(organisationId = 1, roles = "{\"r\":\"adminEditRouteData\",\"o\":\"RB\"}") String token) throws Exception {
+	public void testTimeTableAdmin(@OrganisationToken(roles = adminEditRouteDataForRB) String token) throws Exception {
 		context.start();
 		
 		URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
@@ -329,7 +332,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 	        .get(uri)
 	    .then()
 	        .assertThat()
-	        .statusCode(403);
+	        .statusCode(401);
 	}	
 
 }

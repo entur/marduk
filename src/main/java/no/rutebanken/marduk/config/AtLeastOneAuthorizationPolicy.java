@@ -12,11 +12,9 @@ import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.processor.DelegateProcessor;
 import org.apache.camel.spi.AuthorizationPolicy;
 import org.apache.camel.spi.RouteContext;
+import org.entur.jwt.spring.entur.organisation.AuthorizationClaim;
 import org.entur.jwt.spring.filter.JwtAuthenticationToken;
-import org.rutebanken.helper.organisation.AuthorizationClaim;
 import org.springframework.security.core.Authentication;
-
-import com.amazonaws.auth.policy.Principal;
 
 import no.rutebanken.marduk.security.AuthorizationService;
 

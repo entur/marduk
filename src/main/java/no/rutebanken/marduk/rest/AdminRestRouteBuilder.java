@@ -27,6 +27,7 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.security.AuthorizationService;
 
 import org.apache.camel.Body;
+import org.apache.camel.CamelAuthorizationException;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.spring.security.SpringSecurityAccessPolicy;
@@ -36,8 +37,8 @@ import org.apache.camel.model.rest.RestParamType;
 import org.apache.camel.model.rest.RestPropertyDefinition;
 import org.entur.jwt.spring.camel.JwtAuthenticationProcessor;
 import org.entur.jwt.spring.camel.JwtAuthenticationRoutePolicyFactory;
-import org.rutebanken.helper.organisation.AuthorizationClaim;
-import org.rutebanken.helper.organisation.AuthorizationConstants;
+import org.entur.jwt.spring.entur.organisation.AuthorizationClaim;
+import org.entur.jwt.spring.entur.organisation.AuthorizationConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
@@ -100,6 +101,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         
         restConfiguration().setCorsHeaders(Collections.singletonList(corsAllowedHeaders));
 
+        
+        onException(CamelAuthorizationException.class)
+	        .handled(true)
+	        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(401))
+	        .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+	        .transform(exceptionMessage());
 
         onException(AccessDeniedException.class)
                 .handled(true)

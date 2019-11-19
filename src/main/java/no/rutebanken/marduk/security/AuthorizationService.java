@@ -18,10 +18,10 @@ package no.rutebanken.marduk.security;
 
 import java.util.List;
 
-import org.rutebanken.helper.organisation.AbstractAuthorizationService;
-import org.rutebanken.helper.organisation.AuthorizationClaim;
-import org.rutebanken.helper.organisation.RoleAssignment;
-import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
+import org.entur.jwt.spring.entur.organisation.AbstractAuthorizationService;
+import org.entur.jwt.spring.entur.organisation.AuthorizationClaim;
+import org.entur.jwt.spring.entur.organisation.RoleAssignment;
+import org.entur.jwt.spring.entur.organisation.RoleAssignmentExtractor;
 
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.ProviderRepository;
