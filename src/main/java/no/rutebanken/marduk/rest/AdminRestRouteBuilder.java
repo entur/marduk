@@ -103,10 +103,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         
         onException(CamelAuthorizationException.class)
-	        .handled(true)
-	        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(401))
-	        .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
-	        .transform(exceptionMessage());
+            .handled(true)
+            .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(401))
+            .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+            .transform(exceptionMessage());
 
         onException(AccessDeniedException.class)
                 .handled(true)
@@ -127,13 +127,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .transform(exceptionMessage());
 
         restConfiguration()
-	        .component("servlet")
-	        .contextPath("/services")
-	        .bindingMode(RestBindingMode.json)
-	        .endpointProperty("matchOnUriPrefix", "true")
-	        .enableCORS(true)
-	        .apiContextPath("/swagger.json")
-	        .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0");
+            .component("servlet")
+            .contextPath("/services")
+            .bindingMode(RestBindingMode.json)
+            .endpointProperty("matchOnUriPrefix", "true")
+            .enableCORS(true)
+            .apiContextPath("/swagger.json")
+            .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0");
 
 
         rest("/timetable_admin")

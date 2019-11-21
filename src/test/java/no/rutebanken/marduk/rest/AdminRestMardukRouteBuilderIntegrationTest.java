@@ -72,10 +72,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
-	// "{\"r\":\"adminEditRouteData\",\"o\":\"RB\"}")
-	// RoleAssignment.builder().withOrganisation("RB").withRole("adminEditRouteData").build().toJson();
-	private static final String adminEditRouteDataForRB = "{\"r\":\"adminEditRouteData\",\"o\":\"RB\"}";
-	
+    // "{\"r\":\"adminEditRouteData\",\"o\":\"RB\"}")
+    // RoleAssignment.builder().withOrganisation("RB").withRole("adminEditRouteData").build().toJson();
+    private static final String adminEditRouteDataForRB = "{\"r\":\"adminEditRouteData\",\"o\":\"RB\"}";
+    
     @LocalServerPort
     public int port;
 
@@ -280,39 +280,39 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         exportFileStaticPrefixes.forEach(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName())));
     }
 
-	@Test
-	public void testThatSwaggerSpecificationIsAvailableWithoutAuthentication() throws Exception {
-		context.start();
-		
-		URI uri = new URI("http://localhost:" + port + "/services/swagger.json");
+    @Test
+    public void testThatSwaggerSpecificationIsAvailableWithoutAuthentication() throws Exception {
+        context.start();
+        
+        URI uri = new URI("http://localhost:" + port + "/services/swagger.json");
 
-	    when()
-	    	.get(uri)
-	    .then()
-	    	.log().all()
-	       	.assertThat()
-	       	.statusCode(200);
-	}
+        when()
+            .get(uri)
+        .then()
+            .log().all()
+               .assertThat()
+               .statusCode(200);
+    }
 
-	@Test
-	public void testTimeTableAdmin(@OrganisationToken(roles = adminEditRouteDataForRB) String token) throws Exception {
-		context.start();
-		
-		URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
+    @Test
+    public void testTimeTableAdmin(@OrganisationToken(roles = adminEditRouteDataForRB) String token) throws Exception {
+        context.start();
+        
+        URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
 
-		 given()
-		 	.header("Authorization", token)
-	    .when()
-	    	.get(uri)
-	    .then()
-        	.assertThat()
-        	.statusCode(200);
-	    
-	}
-	
+         given()
+             .header("Authorization", token)
+        .when()
+            .get(uri)
+        .then()
+            .assertThat()
+            .statusCode(200);
+        
+    }
+    
     @Test
     public void testTimeTableAdminWithInvalidToken() throws Exception {
-		context.start();
+        context.start();
 
         URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
 
@@ -325,52 +325,52 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         .then()
             .assertThat()
             .statusCode(401);
-    }    	
+    }        
 
-	@Test
-	public void testTimeTableAdminWithoutToken() throws Exception {
+    @Test
+    public void testTimeTableAdminWithoutToken() throws Exception {
         context.start();
         
-		URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
+        URI uri = new URI("http://localhost:" + port + "/services/timetable_admin/export/files");
 
-	    when()
-	        .get(uri)
-	    .then()
-	        .assertThat()
-	        .statusCode(401);
-	}
-	
-	@Test
-	public void testPartnerRouteWithPartnerToken(@PartnerAuth0Token(organisationId = 1) String token) throws Exception {
+        when()
+            .get(uri)
+        .then()
+            .assertThat()
+            .statusCode(401);
+    }
+    
+    @Test
+    public void testPartnerRouteWithPartnerToken(@PartnerAuth0Token(organisationId = 1) String token) throws Exception {
         context.start();
         
-		URI uri = new URI("http://localhost:" + port + "/services/myPath/myCodeSpace");
+        URI uri = new URI("http://localhost:" + port + "/services/myPath/myCodeSpace");
 
         given()
-        	.header("Authorization", token)
-        	.log().all()
-	    .when()
-	        .get(uri)
-	    .then()
-	    	.log().all()
-	        .assertThat()
-	        .statusCode(200);
-	}
-	
-	@Test
-	public void testPartnerRouteWithoutToken() throws Exception {
+            .header("Authorization", token)
+            .log().all()
+        .when()
+            .get(uri)
+        .then()
+            .log().all()
+            .assertThat()
+            .statusCode(200);
+    }
+    
+    @Test
+    public void testPartnerRouteWithoutToken() throws Exception {
         context.start();
         
-		URI uri = new URI("http://localhost:" + port + "/services/myPath/myCodeSpace");
+        URI uri = new URI("http://localhost:" + port + "/services/myPath/myCodeSpace");
 
         given()
-        	.log().all()
-	    .when()
-	        .get(uri)
-	    .then()
-	    	.log().all()
-	        .assertThat()
-	        .statusCode(403);
-	}
+            .log().all()
+        .when()
+            .get(uri)
+        .then()
+            .log().all()
+            .assertThat()
+            .statusCode(403);
+    }
 
 }

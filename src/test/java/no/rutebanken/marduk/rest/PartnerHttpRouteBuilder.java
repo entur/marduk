@@ -68,10 +68,10 @@ public class PartnerHttpRouteBuilder extends BaseRouteBuilder {
         getContext().addRoutePolicyFactory(factory);
         
         onException(CamelAuthorizationException.class)
-	        .handled(true)
-	        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(401))
-	        .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
-	        .transform(exceptionMessage());
+        .handled(true)
+        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(401))
+        .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+        .transform(exceptionMessage());
 
         onException(AccessDeniedException.class)
                 .handled(true)
@@ -92,28 +92,28 @@ public class PartnerHttpRouteBuilder extends BaseRouteBuilder {
                 .transform(exceptionMessage());
 
         rest("/myPath")
-	        .get("/{codespace}")
-	        .description("Test route")
-	        .param().name("codespace").type(RestParamType.path).description("Provider Codespace").dataType("string").endParam()
-	        .produces(PLAIN)
-	        .bindingMode(RestBindingMode.off)
-	        .responseMessage().code(200).endResponseMessage()
-	        .responseMessage().code(400).message("Invalid codespace").endResponseMessage()
-	        .route()
-            .policy(springSecurityAuthorizationPolicy)
-	        .process(e -> {
-	            try {
-	            	Long organsiationId = ExchangeJwtClaimExtractor.extract(e, "organisationID", Long.class);
-	            	e.getOut().setBody("My message for organsiation " + organsiationId);
-	            } catch(JwtClaimException e1) {
-	            	// whoops, no organisation id
-	            	throw new AccessDeniedException("Expected token with organisation id");
-	            }
-	        })
-	        .log(LoggingLevel.INFO, "Return simple response")
-	        .removeHeaders("CamelHttp*")
-	        .routeId("test-my-path")
-	        .endRest();
+            .get("/{codespace}")
+            .description("Test route")
+            .param().name("codespace").type(RestParamType.path).description("Provider Codespace").dataType("string").endParam()
+            .produces(PLAIN)
+            .bindingMode(RestBindingMode.off)
+            .responseMessage().code(200).endResponseMessage()
+            .responseMessage().code(400).message("Invalid codespace").endResponseMessage()
+            .route()
+                .policy(springSecurityAuthorizationPolicy)
+            .process(e -> {
+                try {
+                    Long organsiationId = ExchangeJwtClaimExtractor.extract(e, "organisationID", Long.class);
+                    e.getOut().setBody("My message for organsiation " + organsiationId);
+                } catch(JwtClaimException e1) {
+                    // whoops, no organisation id
+                    throw new AccessDeniedException("Expected token with organisation id");
+                }
+            })
+            .log(LoggingLevel.INFO, "Return simple response")
+            .removeHeaders("CamelHttp*")
+            .routeId("test-my-path")
+            .endRest();
 
     }
 }
