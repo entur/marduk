@@ -45,17 +45,23 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
@@ -63,8 +69,6 @@ import static no.rutebanken.marduk.Constants.*;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@OrganisationAuthorizationServer
-@PartnerAuth0AuthorizationServer
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = AdminRestRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
@@ -285,6 +289,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 	    when()
 	    	.get(uri)
 	    .then()
+	    	.log().all()
 	       	.assertThat()
 	       	.statusCode(200);
 	}
@@ -333,6 +338,39 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 	    .then()
 	        .assertThat()
 	        .statusCode(401);
-	}	
+	}
+	
+	@Test
+	public void testPartnerRouteWithPartnerToken(@PartnerAuth0Token(organisationId = 1) String token) throws Exception {
+        context.start();
+        
+		URI uri = new URI("http://localhost:" + port + "/services/myPath/myCodeSpace");
+
+        given()
+        	.header("Authorization", token)
+        	.log().all()
+	    .when()
+	        .get(uri)
+	    .then()
+	    	.log().all()
+	        .assertThat()
+	        .statusCode(200);
+	}
+	
+	@Test
+	public void testPartnerRouteWithoutToken() throws Exception {
+        context.start();
+        
+		URI uri = new URI("http://localhost:" + port + "/services/myPath/myCodeSpace");
+
+        given()
+        	.log().all()
+	    .when()
+	        .get(uri)
+	    .then()
+	    	.log().all()
+	        .assertThat()
+	        .statusCode(403);
+	}
 
 }

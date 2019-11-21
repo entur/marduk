@@ -19,6 +19,8 @@ package no.rutebanken.marduk;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
+import no.rutebanken.marduk.rest.AdminRestRouteBuilder;
+
 import org.apache.camel.EndpointInject;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -26,10 +28,13 @@ import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.spring.SpringCamelContext;
 import org.apache.camel.test.spring.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
+import org.entur.jwt.junit5.entur.test.auth0.PartnerAuth0AuthorizationServer;
+import org.entur.jwt.junit5.entur.test.organsation.OrganisationAuthorizationServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
 import org.springframework.test.annotation.DirtiesContext;
@@ -42,6 +47,8 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.when;
 
+@OrganisationAuthorizationServer
+@PartnerAuth0AuthorizationServer
 @ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @UseAdviceWith

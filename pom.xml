@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-        <version>0.0.11-SNAPSHOT</version>
+        <version>0.0.10-SNAPSHOT</version>
     </parent>
 
 
@@ -41,6 +41,7 @@
 
         <junit-jupiter.version>5.5.2</junit-jupiter.version>
         <mockito.version>3.1.0</mockito.version>
+        <jwt-resource-server.version>1.0.0-SNAPSHOT</jwt-resource-server.version>
 
     </properties>
 
@@ -94,45 +95,39 @@
         <dependency>
             <groupId>org.entur.jwt-rs</groupId>
             <artifactId>jwt-spring-camel</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${jwt-resource-server.version}</version>
         </dependency>
         <dependency>
             <groupId>org.entur.jwt-rs</groupId>
             <artifactId>jwt-spring-auth0</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${jwt-resource-server.version}</version>
         </dependency>
         <dependency>
             <groupId>org.entur.jwt-rs</groupId>
             <artifactId>jwt-client-spring</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${jwt-resource-server.version}</version>
         </dependency>
         <dependency>
             <groupId>org.entur.jwt-rs</groupId>
-            <artifactId>jwt-spring-test</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <artifactId>jwt-junit5-spring</artifactId>
+            <version>${jwt-resource-server.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
 			<groupId>org.entur.jwt-rs</groupId>
 			<artifactId>jwt-junit5-entur</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>${jwt-resource-server.version}</version>
 			<scope>test</scope>
         </dependency>
         <dependency>
 			<groupId>org.entur.jwt-rs</groupId>
 			<artifactId>jwt-spring-entur-organisation</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>${jwt-resource-server.version}</version>
         </dependency>
         <dependency>
 			<groupId>org.entur.jwt-rs</groupId>
 			<artifactId>jwt-junit5-entur-organisation</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
-			<scope>test</scope>
-        </dependency>
-        <dependency>
-			<groupId>org.entur.jwt-rs</groupId>
-			<artifactId>jwt-junit5-entur</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>${jwt-resource-server.version}</version>
 			<scope>test</scope>
         </dependency>
         
@@ -311,7 +306,6 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
             <scope>runtime</scope>
         </dependency>
-
         <dependency>
               <groupId>io.rest-assured</groupId>
               <artifactId>rest-assured</artifactId>
