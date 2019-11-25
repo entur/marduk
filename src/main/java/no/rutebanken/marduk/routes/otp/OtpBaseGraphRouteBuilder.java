@@ -97,7 +97,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.WARN, getClass().getName(), correlation() + "Using overridden otp build config from property")
                 .setBody(constant(otpGraphBuildConfig))
                 .end()
-                .toD("file:?fileName=${property." + OTP_GRAPH_DIR + "}/" + BUILD_CONFIG_JSON)
+                .toD("file:.?fileName=${property." + OTP_GRAPH_DIR + "}/" + BUILD_CONFIG_JSON)
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + BUILD_CONFIG_JSON + " fetched.")
                 .routeId("otp-base-graph-build-fetch-config");
 
@@ -106,7 +106,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm + "/" + osmNorwayMapFileName))
                 .to("direct:getBlob")
                 // Should really store to osmNorwayMapFileName, but store to NORWAY_LATEST in fear of side effects later in the build
-                .toD("file:?fileName=${property." + OTP_GRAPH_DIR + "}/" + NORWAY_LATEST_OSM_PBF)
+                .toD("file:.?fileName=${property." + OTP_GRAPH_DIR + "}/" + NORWAY_LATEST_OSM_PBF)
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + NORWAY_LATEST_OSM_PBF + " fetched (original name: " + osmNorwayMapFileName + ").")
                 .routeId("otp-base-graph-build-fetch-map");
 
@@ -121,7 +121,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .filter(simple("${body.fileNameOnly}"))
                 .setHeader(FILE_HANDLE, simple("${body.name}"))
                 .to("direct:getBlob")
-                .toD("file:?fileName=${property." + OTP_GRAPH_DIR + "}/${exchangeProperty.tmpFileName}")
+                .toD("file:.?fileName=${property." + OTP_GRAPH_DIR + "}/${exchangeProperty.tmpFileName}")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetched additional map file:${header." + FILE_HANDLE + "}")
                 .routeId("otp-base-graph-build-fetch-map-additional");
 

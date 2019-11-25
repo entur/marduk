@@ -80,7 +80,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
 
                 .to("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
-                .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/" + UUID.randomUUID().toString() + "_${property." + TIMESTAMP + "}"))
+                .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:fetchBaseGraph")
                 .to("direct:fetchLatestNetex")
@@ -115,7 +115,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .toD("file:?fileName=${property." + OTP_GRAPH_DIR + "}/" + otpGraphImportFileName)
+                .toD("file:.?fileName=${property." + OTP_GRAPH_DIR + "}/" + otpGraphImportFileName)
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${property.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("otp-netex-graph-get-netex");
@@ -128,7 +128,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.WARN, getClass().getName(), correlation() + "Using overridden otp build config from property")
                 .setBody(constant(otpGraphBuildConfig))
                 .end()
-                .toD("file:?fileName=${property." + OTP_GRAPH_DIR + "}/" + BUILD_CONFIG_JSON)
+                .toD("file:.?fileName=${property." + OTP_GRAPH_DIR + "}/" + BUILD_CONFIG_JSON)
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + BUILD_CONFIG_JSON + " fetched.")
                 .routeId("otp-netex-graph-fetch-config");
 
@@ -136,7 +136,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Fetching base graph ...")
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory + "/" + Constants.BASE_GRAPH_OBJ))
                 .to("direct:getBlob")
-                .toD("file:?fileName=${property." + OTP_GRAPH_DIR + "}/" + Constants.BASE_GRAPH_OBJ)
+                .toD("file:.?fileName=${property." + OTP_GRAPH_DIR + "}/" + Constants.BASE_GRAPH_OBJ)
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + " fetched base graph")
                 .routeId("otp-netex-graph-fetch-base-graph");
 
@@ -159,7 +159,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:buildNetexGraph")
                 .process(new GraphBuilderProcessor())
                 .setBody(constant(""))
-                .toD("file:?fileName=${property." + OTP_GRAPH_DIR + "}/" + GRAPH_OBJ + ".done")
+                .toD("file:.?fileName=${property." + OTP_GRAPH_DIR + "}/" + GRAPH_OBJ + ".done")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP graph.")
                 .routeId("otp-netex-graph-build-otp");
@@ -176,7 +176,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .filter(simple("${body.fileNameOnly}"))
                 .setHeader(FILE_HANDLE, simple("${body.name}"))
                 .to("direct:getBlob")
-                .toD("file:?fileName=${property." + OTP_GRAPH_DIR + "}/${exchangeProperty.tmpFileName}")
+                .toD("file:.?fileName=${property." + OTP_GRAPH_DIR + "}/${exchangeProperty.tmpFileName}")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetched additional file:${header." + FILE_HANDLE + "}")
                 .routeId("otp-graph-build-fetch-additional-files");
     }

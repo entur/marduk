@@ -18,24 +18,34 @@ package no.rutebanken.marduk.routes.otp.netex;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import static org.junit.jupiter.api.Assertions.*;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = OtpNetexGraphRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+
+
+    @Autowired
+    private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
+
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
@@ -52,6 +62,10 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
     @Test
     public void testStatusEventReporting() throws Exception {
 
+        //populate fake blob repo
+        inMemoryBlobStoreRepository.uploadBlob(  blobStoreSubdirectory+"/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+
+
         context.getRouteDefinition("otp-netex-graph-send-started-events").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -66,6 +80,13 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
             }
         });
 
+        context.getRouteDefinition("otp-netex-graph-get-netex").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveByToUri("direct:exportMergedNetex").replace().to("mock:sink");
+            }
+        });
+
         context.getRouteDefinition("otp-netex-graph-build-and-send-status").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -73,17 +94,6 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
                 weaveByToUri("direct:buildNetexGraph").replace().to("mock:sink");
             }
         });
-
-        context.getRouteDefinition("otp-netex-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                weaveByToUri("direct:fetchBuildConfigForOtpNetexGraph").replace().to("mock:sink");
-                weaveByToUri("direct:fetchBaseGraph").replace().to("mock:sink");
-                weaveByToUri("direct:fetchLatestNetex").replace().to("mock:sink");
-                //weaveByToUri("direct:mergeNetex").replace().to("mock:sink");
-            }
-        });
-
 
         updateStatus.expectedMessageCount(3);
 
