@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.otp;
 
+import com.google.common.base.Joiner;
 import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -83,7 +84,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .convertBodyTo(InputStream.class)
                 .process(e -> {
-                            e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-"));
+                            e.getIn().setHeader(FILE_HANDLE, blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + getGraphFilename(e.getIn().getHeader(Exchange.FILE_NAME, String.class)));
                             String timestamp = getBuildTimestamp(e);
                             e.setProperty(TIMESTAMP, timestamp);
                             e.setProperty(GRAPH_VERSION, Utils.getOtpVersion() + "/" + timestamp + "-report");
@@ -151,6 +152,11 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
                 .process(e -> deleteDirectory(new File(e.getIn().getExchange().getProperty(Exchange.FILE_PARENT, String.class))))
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Build folder ${property." + Exchange.FILE_PARENT + "} cleanup done.")
                 .routeId("otp-graph-cleanup");
+    }
+
+    String getGraphFilename(String tmpFileName) {
+        String[] parts = tmpFileName.split("/");
+        return Joiner.on("-").join(parts[0], parts[2], parts[3]);
     }
 
     private String getBuildTimestamp(Exchange e) {
