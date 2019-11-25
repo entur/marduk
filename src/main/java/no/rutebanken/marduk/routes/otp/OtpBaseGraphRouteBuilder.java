@@ -28,8 +28,10 @@ import java.io.File;
 import java.util.List;
 
 import static no.rutebanken.marduk.Constants.BASE_GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_PARENT_COLLECTION;
+import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static org.apache.camel.Exchange.FILE_PARENT;
@@ -67,9 +69,9 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("direct:buildOtpBaseGraph")
-                .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
+                .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtpBaseGraphStartedEventsInNewTransaction")
-                .setProperty(OTP_GRAPH_DIR, simple(otpBaseGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
+                .setProperty(OTP_GRAPH_DIR, simple(otpBaseGraphBuildDirectory + "/${header." + CORRELATION_ID + "}_${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP base graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:fetchAdditionalMapDataForOtpGraphBaseBuild")
                 .to("direct:fetchBuildConfigForOtpGraphBaseBuild")
@@ -94,7 +96,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.WARN, getClass().getName(), correlation() + "Using overridden otp build config from property")
                 .setBody(constant(otpGraphBuildConfig))
                 .end()
-                .toD("file:" + otpBaseGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + BUILD_CONFIG_JSON)
+                .toD("file:${property." + OTP_GRAPH_DIR + "}/" + BUILD_CONFIG_JSON)
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + BUILD_CONFIG_JSON + " fetched.")
                 .routeId("otp-base-graph-build-fetch-config");
 
@@ -103,7 +105,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm + "/" + osmNorwayMapFileName))
                 .to("direct:getBlob")
                 // Should really store to osmNorwayMapFileName, but store to NORWAY_LATEST in fear of side effects later in the build
-                .toD("file:" + otpBaseGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + NORWAY_LATEST_OSM_PBF)
+                .toD("file:${property." + OTP_GRAPH_DIR + "}/" + NORWAY_LATEST_OSM_PBF)
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + NORWAY_LATEST_OSM_PBF + " fetched (original name: " + osmNorwayMapFileName + ").")
                 .routeId("otp-base-graph-build-fetch-map");
 
@@ -118,7 +120,7 @@ public class OtpBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .filter(simple("${body.fileNameOnly}"))
                 .setHeader(FILE_HANDLE, simple("${body.name}"))
                 .to("direct:getBlob")
-                .toD("file:" + otpBaseGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/${exchangeProperty.tmpFileName}")
+                .toD("file:${property." + OTP_GRAPH_DIR + "}/${exchangeProperty.tmpFileName}")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetched additional map file:${header." + FILE_HANDLE + "}")
                 .routeId("otp-base-graph-build-fetch-map-additional");
 

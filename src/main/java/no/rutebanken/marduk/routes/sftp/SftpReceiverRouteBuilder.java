@@ -83,7 +83,7 @@ public class SftpReceiverRouteBuilder extends TransactionalBaseRouteBuilder {
                 .to("direct:filterDuplicateFile")
                 .log(LoggingLevel.INFO, correlation() + "Received new file on sftp route. Storing file ${header." + Exchange.FILE_NAME + "}'")
 
-                .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_INBOUND + "${header." + CHOUETTE_REFERENTIAL + "}/${header." + CHOUETTE_REFERENTIAL + "}-${date:now:yyyyMMddHHmmss}-${header.CamelFileNameOnly}"))
+                .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_INBOUND + "${header." + CHOUETTE_REFERENTIAL + "}/${header." + CHOUETTE_REFERENTIAL + "}-${date:now:yyyyMMddHHmmssSSS}-${header.CamelFileNameOnly}"))
                 .log(LoggingLevel.INFO, correlation() + "File handle is: ${header." + FILE_HANDLE + "}")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .to("direct:uploadBlob")

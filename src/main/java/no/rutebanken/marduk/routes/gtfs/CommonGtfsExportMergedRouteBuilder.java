@@ -59,7 +59,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action(e.getIn().getHeader(JOB_ACTION, String.class)).state(JobEvent.State.STARTED).newCorrelationId().build())
                 .inOnly("direct:updateStatus")
-                .setHeader(FILE_PARENT, simple(localWorkingDirectory + "/${header." + JOB_ACTION + "}/${date:now:yyyyMMddHHmmss}"))
+                .setHeader(FILE_PARENT, simple(localWorkingDirectory + "/${header." + JOB_ACTION + "}/${date:now:yyyyMMddHHmmssSSS}"))
                 .doTry()
                 .to("direct:fetchLatestGtfs")
                 .to("direct:mergeGtfs")

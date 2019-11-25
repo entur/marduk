@@ -30,8 +30,10 @@ import java.util.List;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_PARENT_COLLECTION;
+import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
@@ -76,9 +78,10 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:buildOtpGraph")
                 .setProperty(PROP_MESSAGES, simple("${body}"))
-                .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmss}"))
+                .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
+
                 .to("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
-                .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${property." + TIMESTAMP + "}"))
+                .setProperty(OTP_GRAPH_DIR, simple(otpGraphBuildDirectory + "/${header." + CORRELATION_ID + "}_${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:fetchBaseGraph")
                 .to("direct:fetchLatestNetex")
@@ -113,7 +116,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + otpGraphImportFileName)
+                .toD("file:${property." + OTP_GRAPH_DIR + "}/" + otpGraphImportFileName)
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${property.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("otp-netex-graph-get-netex");
@@ -126,7 +129,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.WARN, getClass().getName(), correlation() + "Using overridden otp build config from property")
                 .setBody(constant(otpGraphBuildConfig))
                 .end()
-                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + BUILD_CONFIG_JSON)
+                .toD("file:${property." + OTP_GRAPH_DIR + "}/" + BUILD_CONFIG_JSON)
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + BUILD_CONFIG_JSON + " fetched.")
                 .routeId("otp-netex-graph-fetch-config");
 
@@ -134,7 +137,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Fetching base graph ...")
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory + "/" + Constants.BASE_GRAPH_OBJ))
                 .to("direct:getBlob")
-                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + Constants.BASE_GRAPH_OBJ)
+                .toD("file:${property." + OTP_GRAPH_DIR + "}/" + Constants.BASE_GRAPH_OBJ)
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + " fetched base graph")
                 .routeId("otp-netex-graph-fetch-base-graph");
 
@@ -157,7 +160,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:buildNetexGraph")
                 .process(new GraphBuilderProcessor())
                 .setBody(constant(""))
-                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/" + GRAPH_OBJ + ".done")
+                .toD("file:${property." + OTP_GRAPH_DIR + "}/" + GRAPH_OBJ + ".done")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP graph.")
                 .routeId("otp-netex-graph-build-otp");
@@ -174,7 +177,7 @@ public class OtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .filter(simple("${body.fileNameOnly}"))
                 .setHeader(FILE_HANDLE, simple("${body.name}"))
                 .to("direct:getBlob")
-                .toD("file:" + otpGraphBuildDirectory + "?fileName=${property." + TIMESTAMP + "}/${exchangeProperty.tmpFileName}")
+                .toD("file:${property." + OTP_GRAPH_DIR + "}/${exchangeProperty.tmpFileName}")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetched additional file:${header." + FILE_HANDLE + "}")
                 .routeId("otp-graph-build-fetch-additional-files");
     }

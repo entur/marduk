@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FOLDER_NAME;
@@ -64,7 +65,8 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
         from("direct:exportMergedNetex")
                 .log(LoggingLevel.INFO, getClass().getName(), "Start export of merged Netex file for Norway")
 
-                .setProperty(FOLDER_NAME, simple(localWorkingDirectory + "/${date:now:yyyyMMddHHmmss}"))
+                .setProperty(FOLDER_NAME, simple(localWorkingDirectory + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}"))
+
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action("EXPORT_NETEX_MERGED").fileName(netexExportStopsFilePrefix).state(JobEvent.State.STARTED).newCorrelationId().build())
                 .inOnly("direct:updateStatus")
 
