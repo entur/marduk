@@ -103,8 +103,8 @@ public class PartnerHttpRouteBuilder extends BaseRouteBuilder {
                 .policy(springSecurityAuthorizationPolicy)
             .process(e -> {
                 try {
-                    Long organsiationId = ExchangeJwtClaimExtractor.extract(e, "organisationID", Long.class);
-                    e.getOut().setBody("My message for organsiation " + organsiationId);
+                    Number organsiationId = ExchangeJwtClaimExtractor.extract(e, "organisationID", Number.class);
+                    e.getOut().setBody("My message for organsiation " + organsiationId.longValue());
                 } catch(JwtClaimException e1) {
                     // whoops, no organisation id
                     throw new AccessDeniedException("Expected token with organisation id");

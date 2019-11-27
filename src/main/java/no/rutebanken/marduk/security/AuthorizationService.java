@@ -44,7 +44,7 @@ public class AuthorizationService extends AbstractAuthorizationService {
         }
 
         return roleAssignments.stream()
-                       .filter(ra -> claim.getRequiredRole().equals(ra.r)).anyMatch(ra -> provider.chouetteInfo.xmlns.equals(ra.o));
+                       .filter(ra -> claim.getRequiredRole().equals(ra.getRole())).anyMatch(ra -> provider.chouetteInfo.xmlns.equals(ra.getOrganisation()));
 
     }
 }
