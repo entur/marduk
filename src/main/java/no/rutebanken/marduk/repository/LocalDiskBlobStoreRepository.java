@@ -115,6 +115,19 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void copyBlob(String sourceObjectName, String targetObjectName, boolean makePublic) {
+        Path sourceLocalPath = Paths.get(sourceObjectName);
+        Path sourceFullPath = Paths.get(baseFolder).resolve(sourceLocalPath);
+        Path targetLocalPath = Paths.get(targetObjectName);
+        Path targetFullPath = Paths.get(baseFolder).resolve(targetLocalPath);
+        try {
+            Files.copy(sourceFullPath, targetFullPath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 

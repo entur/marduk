@@ -19,7 +19,9 @@ package no.rutebanken.marduk.repository;
 import com.google.cloud.storage.Acl;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.Storage;
+import com.google.common.collect.ImmutableList;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.Provider;
 import org.apache.commons.lang3.StringUtils;
@@ -32,10 +34,12 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Blob store repository targeting Google Cloud Storage.
@@ -111,6 +115,22 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
     @Override
     public void uploadBlob(String name, InputStream inputStream, boolean makePublic, String contentType) {
         BlobStoreHelper.uploadBlobWithRetry(storage, containerName, name, inputStream, makePublic, contentType);
+    }
+
+    @Override
+    public void copyBlob(String sourceObjectName, String targetObjectName, boolean makePublic) {
+
+        List<Storage.BlobTargetOption> blobTargetOptions = new ArrayList<>();
+        if (makePublic) {
+            blobTargetOptions.add(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ));
+        }
+
+        Storage.CopyRequest request =
+                Storage.CopyRequest.newBuilder()
+                        .setSource(BlobId.of(containerName, sourceObjectName))
+                        .setTarget(BlobId.of(containerName, targetObjectName),  blobTargetOptions)
+                        .build();
+        storage.copy(request).getResult();
     }
 
     @Override
