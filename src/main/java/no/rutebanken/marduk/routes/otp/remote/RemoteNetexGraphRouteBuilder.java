@@ -14,41 +14,35 @@
  *
  */
 
-package no.rutebanken.marduk.routes.otp.netex;
+package no.rutebanken.marduk.routes.otp.remote;
 
 import com.google.common.base.Joiner;
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.otp.GraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
-import java.util.List;
 import java.util.UUID;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
-import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.FILE_PARENT_COLLECTION;
 import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
-import static org.apache.camel.Exchange.FILE_PARENT;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
 
 /**
  * Trigger OTP graph building based on NeTEx data.
  */
 @Component
-public class RemoteOtpNetexGraphRouteBuilder extends BaseRouteBuilder {
+@Profile({"otp-invm-graph-builder", "otp-kubernetes-job-graph-builder"})
+public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
@@ -66,7 +60,8 @@ public class RemoteOtpNetexGraphRouteBuilder extends BaseRouteBuilder {
 
     private static final String GRAPH_VERSION = "RutebankenGraphVersion";
 
-
+    @Autowired
+    private RemoteNetexGraphBuilderProcessor remoteGraphBuilderProcessor;
 
 
     @Override
@@ -99,7 +94,7 @@ public class RemoteOtpNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-remote-netex-graph-build-and-send-status");
 
         from("direct:remoteBuildNetexGraph")
-                .process(new RemoteGraphBuilderProcessor())
+                .process(remoteGraphBuilderProcessor)
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP graph.")
                 .routeId("otp-remote-netex-graph-build-otp");

@@ -42,7 +42,7 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.when;
 
-@ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator"})
+@ActiveProfiles({"default", "in-memory-blobstore", "google-pubsub-emulator", "otp-invm-graph-builder"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public abstract class MardukRouteBuilderIntegrationTestBase {
 
