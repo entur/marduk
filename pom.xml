@@ -48,16 +48,7 @@
     <dependencyManagement>
         <dependencies>
 
-            <!--dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-gcp-dependencies</artifactId>
-                <version>1.2.0.RC2</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency-->
-
-
-             <dependency>
+            <dependency>
                 <groupId>com.google.inject</groupId>
                 <artifactId>guice</artifactId>
                 <version>4.1.0</version>
@@ -427,7 +418,7 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
-           <dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>

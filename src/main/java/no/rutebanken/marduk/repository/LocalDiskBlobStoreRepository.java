@@ -124,6 +124,12 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
         Path targetLocalPath = Paths.get(targetObjectName);
         Path targetFullPath = Paths.get(baseFolder).resolve(targetLocalPath);
         try {
+
+            // create target parent directories if missing
+            Path parentDirectory = targetLocalPath.getParent();
+            Path folder = parentDirectory == null ? Paths.get(baseFolder) : Paths.get(baseFolder).resolve(parentDirectory);
+            Files.createDirectories(folder);
+
             Files.copy(sourceFullPath, targetFullPath);
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -16,11 +16,9 @@
 
 package no.rutebanken.marduk.routes.otp.remote;
 
-import com.google.common.base.Joiner;
 import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,8 +29,9 @@ import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.OTP_BUILD_BASE_GRAPH;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
-import static no.rutebanken.marduk.Constants.OTP_WORK_DIR;
+import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
@@ -61,8 +60,7 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
     private static final String GRAPH_VERSION = "RutebankenGraphVersion";
 
     @Autowired
-    private RemoteNetexGraphBuilderProcessor remoteGraphBuilderProcessor;
-
+    private RemoteGraphBuilderProcessor remoteGraphBuilderProcessor;
 
     @Override
     public void configure() throws Exception {
@@ -72,7 +70,8 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(PROP_MESSAGES, simple("${body}"))
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
-                .setProperty(OTP_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
+                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
+                .setProperty(OTP_BUILD_BASE_GRAPH, constant(false))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting graph building in remote directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:remoteBuildNetexGraphAndSendStatus")
                 .to("direct:remoteGraphPublishing")
@@ -101,16 +100,17 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:remoteGraphPublishing")
 
-                // copy the new graph from the OTP work directory to the graphs directory in GCS
+                // copy the new graph from the OTP remote work directory to the graphs directory in GCS
                 .process(e -> {
-                            e.getIn().setHeader(TARGET_FILE_HANDLE, blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + getGraphFilename(e.getIn().getHeader(Exchange.FILE_NAME, String.class)));
-                            String timestamp = getBuildTimestamp(e);
-                            e.setProperty(TIMESTAMP, timestamp);
-                            e.setProperty(GRAPH_VERSION, Utils.getOtpVersion() + "/" + timestamp + "-report");
-                        }
-        )
+                            String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ;
+                            String publishedGraphPath = blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + GRAPH_OBJ;
+                            String publishedGraphVersion = Utils.getOtpVersion() + "/" + e.getProperty(TIMESTAMP, String.class) + "-report";
 
-                .setHeader(FILE_HANDLE, constant(exchangeProperty(OTP_WORK_DIR) + "/" + GRAPH_OBJ))
+                            e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
+                            e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
+                            e.setProperty(GRAPH_VERSION, publishedGraphVersion);
+                        }
+                )
                 .to("direct:copyBlob")
 
                 // update file containing the reference to the latest graph
@@ -122,12 +122,4 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
 
     }
 
-    String getGraphFilename(String tmpFileName) {
-        String[] parts = tmpFileName.split("/");
-        return Joiner.on("-").join(parts[0], parts[2], parts[3]);
-    }
-
-    private String getBuildTimestamp(Exchange e) {
-        return e.getIn().getHeader(Exchange.FILE_NAME, String.class).replace("/", "-").replace("-" + GRAPH_OBJ, "");
-    }
 }

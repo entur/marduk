@@ -29,8 +29,9 @@ import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BASE_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.OTP_BUILD_BASE_GRAPH;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
-import static no.rutebanken.marduk.Constants.OTP_WORK_DIR;
+import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
@@ -49,7 +50,7 @@ public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
     private String blobStoreSubdirectory;
 
     @Autowired
-    private RemoteBaseGraphBuilderProcessor remoteGraphBuilderProcessor;
+    private RemoteGraphBuilderProcessor remoteGraphBuilderProcessor;
 
     @Override
     public void configure() throws Exception {
@@ -58,7 +59,9 @@ public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:remoteBuildOtpBaseGraph")
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtpBaseGraphStartedEventsInNewTransaction")
-                .process(e -> e.setProperty(OTP_WORK_DIR, otpBaseGraphBuildDirectory + "/" + UUID.randomUUID().toString() + "/" + e.getProperty(TIMESTAMP)))
+                .process(e -> e.setProperty(OTP_REMOTE_WORK_DIR, otpBaseGraphBuildDirectory + "/" + UUID.randomUUID().toString() + "/" + e.getProperty(TIMESTAMP)))
+                .setProperty(OTP_BUILD_BASE_GRAPH, constant(true))
+
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP base graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:remoteBuildBaseGraphAndSendStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP base graph building route.")
@@ -73,14 +76,14 @@ public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.ERROR, correlation() + "Graph building failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_BASE").state(JobEvent.State.FAILED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
                 .end()
-                .routeId("otp-remote-base-graph-build-build-and-send-status");
+                .routeId("otp-remote-base-graph-build-and-send-status");
 
         from("direct:remoteBuildBaseGraph")
                 .process(remoteGraphBuilderProcessor)
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP base graph.")
                 .process(e -> e.getIn().setBody(new File(e.getProperty(OTP_GRAPH_DIR) + "/" + BASE_GRAPH_OBJ)))
 
-                .setHeader(FILE_HANDLE, constant(exchangeProperty(OTP_WORK_DIR) + "/" + BASE_GRAPH_OBJ))
+                .setHeader(FILE_HANDLE, constant(exchangeProperty(OTP_REMOTE_WORK_DIR) + "/" + BASE_GRAPH_OBJ))
                 .setHeader(TARGET_FILE_HANDLE, constant(blobStoreSubdirectory + "/" + BASE_GRAPH_OBJ))
                 .to("direct:copyBlob")
 

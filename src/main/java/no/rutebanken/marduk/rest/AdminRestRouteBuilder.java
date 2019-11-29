@@ -457,7 +457,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "Triggered build of OTP base graph with map data")
                 .removeHeaders("CamelHttp*")
                 .setBody(simple(""))
-                .setHeader(Constants.OTP_BASE_GRAPH_BUILD, constant(true))
+                .setHeader(Constants.ADMIN_REST_OTP_BASE_GRAPH_BUILD_REQUESTED, constant(true))
                 .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
                 .routeId("admin-build-base-graph")
                 .endRest()

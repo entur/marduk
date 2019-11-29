@@ -85,7 +85,7 @@ public class OtpGraphBuilderControlRoute extends BaseRouteBuilder {
 
     private boolean isBaseGraphBuild(Message message) {
         try {
-            return message.getHeader(Constants.OTP_BASE_GRAPH_BUILD) != null;
+            return message.getHeader(Constants.ADMIN_REST_OTP_BASE_GRAPH_BUILD_REQUESTED) != null;
         } catch (Exception e) {
             return false;
         }
