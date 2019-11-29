@@ -103,7 +103,10 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
                 // copy the new graph from the OTP remote work directory to the graphs directory in GCS
                 .process(e -> {
                             String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ;
-                            String publishedGraphPath = blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + GRAPH_OBJ;
+                            String publishedGraphPath = blobStoreSubdirectory
+                                                        + "/" + Utils.getOtpVersion()
+                                                        + "/" + e.getProperty(TIMESTAMP, String.class)
+                                                        + '-' + GRAPH_OBJ;
                             String publishedGraphVersion = Utils.getOtpVersion() + "/" + e.getProperty(TIMESTAMP, String.class) + "-report";
 
                             e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);

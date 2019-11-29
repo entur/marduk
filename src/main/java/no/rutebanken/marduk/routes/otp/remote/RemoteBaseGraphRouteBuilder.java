@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.otp.remote;
 
+import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
@@ -29,6 +30,7 @@ import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BASE_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP_BUILD_BASE_GRAPH;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
@@ -81,14 +83,19 @@ public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:remoteBuildBaseGraph")
                 .process(remoteGraphBuilderProcessor)
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP base graph.")
-                .process(e -> e.getIn().setBody(new File(e.getProperty(OTP_GRAPH_DIR) + "/" + BASE_GRAPH_OBJ)))
+                // copy new base graph in remote storage
+                .process(e -> {
+                            String builtBaseGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + BASE_GRAPH_OBJ;
+                            String publishedBaseGraphPath = blobStoreSubdirectory + "/" + BASE_GRAPH_OBJ;
 
-                .setHeader(FILE_HANDLE, constant(exchangeProperty(OTP_REMOTE_WORK_DIR) + "/" + BASE_GRAPH_OBJ))
-                .setHeader(TARGET_FILE_HANDLE, constant(blobStoreSubdirectory + "/" + BASE_GRAPH_OBJ))
+                            e.getIn().setHeader(FILE_HANDLE, builtBaseGraphPath);
+                            e.getIn().setHeader(TARGET_FILE_HANDLE, publishedBaseGraphPath);
+                        }
+                )
                 .to("direct:copyBlob")
 
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .log(LoggingLevel.INFO, correlation() + "Uploaded new OTP base graph, triggering full OTP graph build")
+                .log(LoggingLevel.INFO, correlation() + "Copied new OTP base graph, triggering full OTP graph build")
                 .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
                 .routeId("otp-remote-base-graph-build-build-otp");
 
