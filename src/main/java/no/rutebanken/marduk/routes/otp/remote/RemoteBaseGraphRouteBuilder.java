@@ -39,14 +39,11 @@ import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
 
 /**
- * Prepare half baked otp base graph object, containing all data except transit data (osm, height)
+ * Build remotely a base OTP graph containing OSM data and elevation data (but not transit data)
  */
 @Component
 @Profile({"otp-invm-graph-builder", "otp-kubernetes-job-graph-builder"})
 public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
-
-    @Value("${otp.base.graph.build.directory:files/otpgraph/base}")
-    private String otpBaseGraphBuildDirectory;
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;

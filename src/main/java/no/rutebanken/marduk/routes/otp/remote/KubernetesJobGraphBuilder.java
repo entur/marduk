@@ -25,6 +25,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 
+/**
+ * Build the OTP graph in a standalone pod and wait until the pod terminates.
+ * The pod is created by a Kubernetes job.
+ * A Kubernetes CronJob is used as a template for the job.
+ */
 @Component
 @Profile("otp-kubernetes-job-graph-builder")
 public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
