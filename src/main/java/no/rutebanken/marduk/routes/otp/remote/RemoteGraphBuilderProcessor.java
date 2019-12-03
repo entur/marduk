@@ -12,6 +12,9 @@ import static no.rutebanken.marduk.Constants.OTP_BUILD_BASE_GRAPH;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 
+/**
+ * Camel processor that triggers the build process,
+ */
 @Component
 @Profile({"otp-invm-graph-builder", "otp-kubernetes-job-graph-builder"})
 public class RemoteGraphBuilderProcessor implements Processor {

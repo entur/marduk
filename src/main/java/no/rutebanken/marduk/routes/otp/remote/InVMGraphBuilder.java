@@ -13,6 +13,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+/**
+ * Build the OTP graph in-vm, for testing purpose.
+ */
 @Component
 @Profile("otp-invm-graph-builder")
 public class InVMGraphBuilder implements OtpGraphBuilder {

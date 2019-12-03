@@ -37,7 +37,7 @@ import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
 
 /**
- * Trigger OTP graph building based on NeTEx data.
+ * Build remotely a full OTP graph (containing OSM data, elevation data and NeTEx data).
  */
 @Component
 @Profile({"otp-invm-graph-builder", "otp-kubernetes-job-graph-builder"})
