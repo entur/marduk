@@ -43,6 +43,18 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Stored file ${header." + FILE_HANDLE + "} in blob store.")
                 .routeId("blobstore-upload");
 
+        from("direct:copyBlob")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .choice()
+                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))     //defaulting to false if not specified
+                .end()
+                .bean("blobStoreService", "copyBlob")
+                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .log(LoggingLevel.INFO, correlation() + "Returning from copying file ${header." + FILE_HANDLE + "} in blob store.")
+                .routeId("blobstore-copy");
+
+
         from("direct:getBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .bean("blobStoreService", "getBlob")
