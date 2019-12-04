@@ -70,7 +70,6 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
                     String podName = pod.getMetadata().getName();
                     logger.info("The Graph Builder pod {} is in phase {}.", podName, pod.getStatus().getPhase());
                     if (pod.getStatus().getPhase().equals("Succeeded")) {
-                        logger.info("Log message received from Graph Builder pod {}: {}", podName, client.pods().inNamespace(kubernetesNamespace).withName(podName).getLog());
                         watchLatch.countDown();
                     }
                 }
@@ -90,12 +89,12 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
     }
 
     protected CronJobSpec getCronJobSpecTemplate(KubernetesClient client) {
-        List<CronJob> matchingJobs = client.batch().cronjobs().inNamespace(kubernetesNamespace).withLabel("name", graphBuilderCronJobName).list().getItems();
+        List<CronJob> matchingJobs = client.batch().cronjobs().inNamespace(kubernetesNamespace).withLabel("app", graphBuilderCronJobName).list().getItems();
         if (matchingJobs.isEmpty()) {
-            throw new RuntimeException("Job " + graphBuilderCronJobName + " not found");
+            throw new RuntimeException("Job with label=" + graphBuilderCronJobName + " not found in namespace " + kubernetesNamespace);
         }
         if (matchingJobs.size() > 1) {
-            throw new RuntimeException("Found multiple jobs matching name=" + graphBuilderCronJobName);
+            throw new RuntimeException("Found multiple jobs matching label app=" + graphBuilderCronJobName + " in namespace " + kubernetesNamespace);
         }
         return matchingJobs.get(0).getSpec();
     }
@@ -107,8 +106,8 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
 
         List<EnvVar> envVars = new ArrayList<>();
         envVars.add(new EnvVar(OTP_GCS_WORK_DIR_ENV_VAR, otpWorkDir, null));
-        envVars.add(new EnvVar(OTP_SKIP_TRANSIT_ENV_VAR, buildBaseGraph ? "true" : "false", null));
-        envVars.add(new EnvVar(OTP_LOAD_BASE_GRAPH_ENV_VAR, buildBaseGraph ? "false" : "true", null));
+        envVars.add(new EnvVar(OTP_SKIP_TRANSIT_ENV_VAR, buildBaseGraph ? "--skipTransit" : "", null));
+        envVars.add(new EnvVar(OTP_LOAD_BASE_GRAPH_ENV_VAR, buildBaseGraph ? "" : "--loadBaseGraph", null));
 
         if (buildBaseGraph) {
             envVars.add(new EnvVar(OTP_GCS_BASE_GRAPH_DIR_ENV_VAR, otpWorkDir, null));
