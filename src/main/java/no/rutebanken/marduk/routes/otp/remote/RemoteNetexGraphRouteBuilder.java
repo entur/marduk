@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.otp.remote;
 import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,11 +54,16 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.current.file:graphs/current}")
     private String otpGraphCurrentFile;
 
+    @Value("${otp.graph.build.remote.work.dir.cleanup:true}")
+    private boolean deleteOtpRemoteWorkDir;
+
     private static final String PROP_MESSAGES = "RutebankenPropMessages";
 
     private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
 
     private static final String GRAPH_VERSION = "RutebankenGraphVersion";
+
+    private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
 
     @Autowired
     private RemoteGraphBuilderProcessor remoteGraphBuilderProcessor;
@@ -115,13 +121,50 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
                         }
                 )
                 .to("direct:copyBlob")
+                .log(LoggingLevel.INFO, "Done copying new OTP graph: ${header." + FILE_HANDLE + "}")
+
+                .setProperty(GRAPH_PATH_PROPERTY, header(FILE_HANDLE))
 
                 // update file containing the reference to the latest graph
                 .setBody(header(TARGET_FILE_HANDLE))
                 .setHeader(FILE_HANDLE, constant(otpGraphCurrentFile))
                 .to("direct:uploadBlob")
+                .log(LoggingLevel.INFO, "Done uploading reference to current graph: ${header." + FILE_HANDLE + "}")
+
+                // copy the graph build report and update the reference to the current report
+                .setHeader(FILE_HANDLE, exchangeProperty(GRAPH_PATH_PROPERTY))
+                .to("direct:remoteCopyVersionedGraphBuildReport")
+                .to("direct:remoteUpdateCurrentGraphReportVersion")
+                .log(LoggingLevel.INFO, "Done uploading OTP graph build reports.")
+
+                .to("direct:notify")
+
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
+                .to("direct:updateStatus")
+
+                .to("direct:remoteCleanUp")
+
 
                 .routeId("otp-remote-netex-graph-publish");
+
+
+        from("direct:remoteCopyVersionedGraphBuildReport")
+                .log(LoggingLevel.INFO, "Uploading OTP graph build reports.")
+                .routeId("otp-remote-graph-build-report-versioned-upload");
+
+        from("direct:remoteUpdateCurrentGraphReportVersion")
+                .log(LoggingLevel.INFO, "Uploading OTP graph build reports current version.")
+                .routeId("otp-remote-graph-report-update-current");
+
+        from("direct:remoteCleanUp")
+                .choice()
+                .when(constant(deleteOtpRemoteWorkDir))
+                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP remote work directory ${property." + Exchange.FILE_PARENT + "} ...")
+                .setHeader(Exchange.FILE_PARENT, exchangeProperty(OTP_REMOTE_WORK_DIR))
+                .to("direct:deleteAllBlobsInFolder")
+                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP remote work directory ${property." + Exchange.FILE_PARENT + "} cleanup done.")
+                .end()
+                .routeId("otp-remote-graph-cleanup");
 
     }
 

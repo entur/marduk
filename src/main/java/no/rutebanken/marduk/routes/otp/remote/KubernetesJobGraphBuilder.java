@@ -48,6 +48,9 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
     @Value("${otp.graph.build.remote.kubernetes.cronjob:graph-builder}")
     private String graphBuilderCronJobName;
 
+    @Value("${otp.graph.build.remote.kubernetes.job.cleanup:true}")
+    private boolean deleteJobAfterCompletion;
+
 
     private static final Logger logger = LoggerFactory.getLogger(KubernetesJobGraphBuilder.class);
 
@@ -80,6 +83,15 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
                 }
             })) {
                 watchLatch.await(120, TimeUnit.MINUTES);
+
+                // Delete job after completion
+                if (deleteJobAfterCompletion) {
+                    logger.info("Deleting job {} after completion.", jobName);
+                    client.batch().jobs().inNamespace(kubernetesNamespace).delete(job);
+                    logger.info("Deleted job {} after completion.", jobName);
+
+
+                }
             } catch (KubernetesClientException | InterruptedException e) {
                 logger.info("Could not watch pod", e);
             }

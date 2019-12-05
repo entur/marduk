@@ -92,7 +92,7 @@ public class BlobStoreService {
 		return repository.delete(name);
 	}
 
-	public boolean deleteAllBlobsInFolder(String folder, Exchange exchange) {
+	public boolean deleteAllBlobsInFolder(@Header(value = Exchange.FILE_PARENT) String folder, Exchange exchange) {
 		ExchangeUtils.addHeadersAndAttachments(exchange);
 		return repository.deleteAllFilesInFolder(folder);
 	}
