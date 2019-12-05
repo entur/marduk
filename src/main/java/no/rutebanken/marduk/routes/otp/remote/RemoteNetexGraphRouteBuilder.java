@@ -54,6 +54,9 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.current.file:graphs/current}")
     private String otpGraphCurrentFile;
 
+    @Value("${otp.graph.build.remote.work.dir.cleanup:true}")
+    private boolean deleteOtpRemoteWorkDir;
+
     private static final String PROP_MESSAGES = "RutebankenPropMessages";
 
     private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
@@ -154,10 +157,13 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-remote-graph-report-update-current");
 
         from("direct:remoteCleanUp")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Deleting build folder ${property." + Exchange.FILE_PARENT + "} ...")
+                .choice()
+                .when(constant(deleteOtpRemoteWorkDir))
+                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP remote work directory ${property." + Exchange.FILE_PARENT + "} ...")
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(OTP_REMOTE_WORK_DIR))
                 .to("direct:deleteAllBlobsInFolder")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Build folder ${property." + Exchange.FILE_PARENT + "} cleanup done.")
+                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP remote work directory ${property." + Exchange.FILE_PARENT + "} cleanup done.")
+                .end()
                 .routeId("otp-remote-graph-cleanup");
 
     }

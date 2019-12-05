@@ -85,13 +85,12 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store for multiple folders.")
                 .routeId("blobstore-list-in-folders");
 
-
         from("direct:deleteAllBlobsInFolder")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .bean("blobStoreService", "deleteAllBlobsInFolder")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
-                .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store for multiple folders.")
-                .routeId("blobstore-delete-in-folders");
+                .log(LoggingLevel.INFO, correlation() + "Returning from deleting blobs in folder.")
+                .routeId("blobstore-delete-in-folder");
 
 
     }
