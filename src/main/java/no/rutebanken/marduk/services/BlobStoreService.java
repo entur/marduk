@@ -87,6 +87,11 @@ public class BlobStoreService {
 		repository.copyBlob(sourceName, targetName, makePublic);
 	}
 
+	public void copyAllBlobs(@Header(value = Exchange.FILE_PARENT) String sourceFolder, @Header(value = Constants.TARGET_CONTAINER) String targetContainerName,  @Header(value = Constants.TARGET_FILE_PARENT) String targetFolder,  @Header(value = Constants.BLOBSTORE_MAKE_BLOB_PUBLIC) boolean makePublic, Exchange exchange) {
+		ExchangeUtils.addHeadersAndAttachments(exchange);
+		repository.copyAllBlobs(containerName, sourceFolder, targetContainerName, targetFolder, makePublic);
+	}
+
 	public boolean deleteBlob(@Header(value = FILE_HANDLE) String name, Exchange exchange) {
 		ExchangeUtils.addHeadersAndAttachments(exchange);
 		return repository.delete(name);

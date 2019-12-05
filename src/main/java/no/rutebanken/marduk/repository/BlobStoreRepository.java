@@ -43,6 +43,8 @@ public interface BlobStoreRepository {
 
     void copyBlob(String sourceObjectName, String targetObjectName, boolean makePublic);
 
+    void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic);
+
     void setStorage(Storage storage);
 
     void setContainerName(String containerName);
