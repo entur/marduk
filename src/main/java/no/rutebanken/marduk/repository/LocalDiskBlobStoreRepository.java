@@ -138,6 +138,11 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
+    public void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic) {
+
+    }
+
+    @Override
     public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType) {
         uploadBlob(objectName, inputStream, makePublic);
     }

@@ -105,6 +105,11 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
+    public void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic) {
+
+    }
+
+    @Override
     public boolean delete(String objectName) {
         blobs.remove(objectName);
         return true;

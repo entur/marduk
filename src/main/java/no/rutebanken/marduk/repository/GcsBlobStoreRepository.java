@@ -119,6 +119,10 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void copyBlob(String sourceObjectName, String targetObjectName, boolean makePublic) {
+        copyBlob(containerName, sourceObjectName, containerName, targetObjectName, makePublic);
+    }
+
+    public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
 
         List<Storage.BlobTargetOption> blobTargetOptions = new ArrayList<>();
         if (makePublic) {
@@ -127,10 +131,31 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
         Storage.CopyRequest request =
                 Storage.CopyRequest.newBuilder()
-                        .setSource(BlobId.of(containerName, sourceObjectName))
-                        .setTarget(BlobId.of(containerName, targetObjectName),  blobTargetOptions)
+                        .setSource(BlobId.of(sourceContainerName, sourceObjectName))
+                        .setTarget(BlobId.of(targetContainerName, targetObjectName),  blobTargetOptions)
                         .build();
         storage.copy(request).getResult();
+    }
+
+    @Override
+    public void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic) {
+        Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage, sourceContainerName, prefix);
+        while (blobIterator.hasNext()) {
+            Blob blob = blobIterator.next();
+
+            List<Storage.BlobTargetOption> blobTargetOptions = new ArrayList<>();
+            if (makePublic) {
+                blobTargetOptions.add(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ));
+            }
+
+            Storage.CopyRequest request =
+                    Storage.CopyRequest.newBuilder()
+                            .setSource(blob.getBlobId())
+                            .setTarget(BlobId.of(targetContainerName, blob.getName().replace(prefix,targetPrefix)),  blobTargetOptions)
+                            .build();
+            storage.copy(request).getResult();
+
+        }
     }
 
     @Override
