@@ -19,9 +19,8 @@ package no.rutebanken.marduk.repository;
 import com.google.cloud.storage.Acl;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
-import com.google.cloud.storage.Bucket;
+import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
-import com.google.common.collect.ImmutableList;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.Provider;
 import org.apache.commons.lang3.StringUtils;
@@ -132,7 +131,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
         Storage.CopyRequest request =
                 Storage.CopyRequest.newBuilder()
                         .setSource(BlobId.of(sourceContainerName, sourceObjectName))
-                        .setTarget(BlobId.of(targetContainerName, targetObjectName),  blobTargetOptions)
+                        .setTarget(BlobId.of(targetContainerName, targetObjectName), blobTargetOptions)
                         .build();
         storage.copy(request).getResult();
     }
@@ -148,10 +147,16 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
                 blobTargetOptions.add(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ));
             }
 
+            BlobInfo.Builder targetBlobInfoBuilder = BlobInfo.newBuilder(targetContainerName, blob.getName().replace(prefix, targetPrefix));
+            if (blob.getName().endsWith(".html")) {
+                targetBlobInfoBuilder.setContentType("text/html");
+            }
+            BlobId targetBlobId = targetBlobInfoBuilder.build().getBlobId();
+
             Storage.CopyRequest request =
                     Storage.CopyRequest.newBuilder()
                             .setSource(blob.getBlobId())
-                            .setTarget(BlobId.of(targetContainerName, blob.getName().replace(prefix,targetPrefix)),  blobTargetOptions)
+                            .setTarget(targetBlobId, blobTargetOptions)
                             .build();
             storage.copy(request).getResult();
 

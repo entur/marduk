@@ -79,10 +79,17 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
 
                 @Override
                 public void onClose(KubernetesClientException e) {
-                    // Ignore
+                    if(e != null) {
+                        logger.error("The Graph Builder job ended with error", e);
+                    }
                 }
             })) {
-                watchLatch.await(120, TimeUnit.MINUTES);
+                boolean success= watchLatch.await(120, TimeUnit.MINUTES);
+                if(success) {
+                    logger.info("The Graph Builder job {} completed successfully.", jobName);
+                } else {
+                    logger.error("Timeout while waiting for the Graph Builder job {} to complete.", jobName);
+                }
 
                 // Delete job after completion
                 if (deleteJobAfterCompletion) {
