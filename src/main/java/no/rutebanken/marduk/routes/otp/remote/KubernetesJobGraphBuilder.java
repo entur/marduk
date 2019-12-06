@@ -82,7 +82,7 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
                     if (pod.getStatus().getPhase().equals("Failed")) {
                         podFailureCounter++;
                         if (podFailureCounter > backoffLimit) {
-                            throw new KubernetesJobGraphBuilderException("The Graph Builder job failed after " + backoffLimit + " retry attempts");
+                            watchLatch.countDown();
                         }
                     }
                 }
@@ -94,11 +94,18 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
                     }
                 }
             })) {
-                boolean success = watchLatch.await(120, TimeUnit.MINUTES);
-                if (success) {
+
+                boolean jobCompletedBeforeTimeout = watchLatch.await(120, TimeUnit.MINUTES);
+                if (!jobCompletedBeforeTimeout) {
+                    throw new KubernetesJobGraphBuilderException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
+                }
+
+                Integer succeeded = client.batch().jobs().inNamespace(kubernetesNamespace).withName(jobName).get().getStatus().getSucceeded();
+                boolean jobSucceeded = succeeded != null && succeeded > 0;
+                if (jobSucceeded) {
                     logger.info("The Graph Builder job {} completed successfully.", jobName);
                 } else {
-                    throw new KubernetesJobGraphBuilderException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
+                    throw new KubernetesJobGraphBuilderException("The Graph Builder job " + jobName + " failed.");
                 }
 
 
