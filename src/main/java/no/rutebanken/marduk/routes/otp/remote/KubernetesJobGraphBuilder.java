@@ -7,7 +7,6 @@ import io.fabric8.kubernetes.api.model.batch.CronJob;
 import io.fabric8.kubernetes.api.model.batch.CronJobSpec;
 import io.fabric8.kubernetes.api.model.batch.Job;
 import io.fabric8.kubernetes.api.model.batch.JobBuilder;
-import io.fabric8.kubernetes.api.model.batch.JobCondition;
 import io.fabric8.kubernetes.api.model.batch.JobSpec;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -69,12 +68,22 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
 
             final CountDownLatch watchLatch = new CountDownLatch(1);
             try (Watch watch = client.pods().inNamespace(kubernetesNamespace).withLabel("job-name", jobName).watch(new Watcher<Pod>() {
+
+                int backoffLimit = job.getSpec().getBackoffLimit();
+                int podFailureCounter = 0;
+
                 @Override
                 public void eventReceived(Action action, Pod pod) {
                     String podName = pod.getMetadata().getName();
                     logger.info("The Graph Builder pod {} is in phase {} (Action: {}).", podName, pod.getStatus().getPhase(), action.name());
                     if (pod.getStatus().getPhase().equals("Succeeded")) {
                         watchLatch.countDown();
+                    }
+                    if (pod.getStatus().getPhase().equals("Failed")) {
+                        podFailureCounter++;
+                        if (podFailureCounter > backoffLimit) {
+                            throw new KubernetesJobGraphBuilderException("The Graph Builder job failed after " + backoffLimit + " retry attempts");
+                        }
                     }
                 }
 
@@ -89,7 +98,7 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
                 if (success) {
                     logger.info("The Graph Builder job {} completed successfully.", jobName);
                 } else {
-                    throw new KubernetesJobGraphBuilderException("Timeout while waiting for the Graph Builder job "+ jobName + " to complete.");
+                    throw new KubernetesJobGraphBuilderException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
                 }
 
 
