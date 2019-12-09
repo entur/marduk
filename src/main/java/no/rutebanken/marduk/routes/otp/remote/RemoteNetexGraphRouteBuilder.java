@@ -169,8 +169,9 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(TARGET_FILE_PARENT, e.getProperty(GRAPH_VERSION, String.class));
                     e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, "true");
                 })
+                .log(LoggingLevel.INFO, "Copying OTP graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
                 .to("direct:copyAllBlobs")
-                .log(LoggingLevel.INFO, "Uploading OTP graph build reports.")
+                .log(LoggingLevel.INFO, "Done copying OTP graph build reports.")
                 .routeId("otp-remote-graph-build-report-versioned-upload");
 
         from("direct:remoteUpdateCurrentGraphReportVersion")
