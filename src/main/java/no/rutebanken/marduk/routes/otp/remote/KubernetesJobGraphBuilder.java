@@ -68,35 +68,57 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
 
             final CountDownLatch watchLatch = new CountDownLatch(1);
             try (Watch watch = client.pods().inNamespace(kubernetesNamespace).withLabel("job-name", jobName).watch(new Watcher<Pod>() {
+
+                int backoffLimit = job.getSpec().getBackoffLimit();
+                int podFailureCounter = 0;
+
                 @Override
                 public void eventReceived(Action action, Pod pod) {
                     String podName = pod.getMetadata().getName();
-                    logger.info("The Graph Builder pod {} is in phase {}.", podName, pod.getStatus().getPhase());
+                    logger.info("The Graph Builder pod {} is in phase {} (Action: {}).", podName, pod.getStatus().getPhase(), action.name());
                     if (pod.getStatus().getPhase().equals("Succeeded")) {
                         watchLatch.countDown();
+                    }
+                    if (pod.getStatus().getPhase().equals("Failed")) {
+                        podFailureCounter++;
+                        if (podFailureCounter > backoffLimit) {
+                            watchLatch.countDown();
+                        }
                     }
                 }
 
                 @Override
                 public void onClose(KubernetesClientException e) {
-                    // Ignore
+                    if (e != null) {
+                        throw new KubernetesJobGraphBuilderException("The Graph Builder job ended with an error", e);
+                    }
                 }
             })) {
-                watchLatch.await(120, TimeUnit.MINUTES);
 
+                boolean jobCompletedBeforeTimeout = watchLatch.await(120, TimeUnit.MINUTES);
+                if (!jobCompletedBeforeTimeout) {
+                    throw new KubernetesJobGraphBuilderException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
+                }
+
+                Integer succeeded = client.batch().jobs().inNamespace(kubernetesNamespace).withName(jobName).get().getStatus().getSucceeded();
+                boolean jobSucceeded = succeeded != null && succeeded > 0;
+                if (jobSucceeded) {
+                    logger.info("The Graph Builder job {} completed successfully.", jobName);
+                } else {
+                    throw new KubernetesJobGraphBuilderException("The Graph Builder job " + jobName + " failed.");
+                }
+
+
+            } catch (KubernetesClientException | InterruptedException e) {
+                throw new KubernetesJobGraphBuilderException("Could not watch pod", e);
+            } finally {
                 // Delete job after completion
                 if (deleteJobAfterCompletion) {
                     logger.info("Deleting job {} after completion.", jobName);
                     client.batch().jobs().inNamespace(kubernetesNamespace).delete(job);
                     logger.info("Deleted job {} after completion.", jobName);
-
-
                 }
-            } catch (KubernetesClientException | InterruptedException e) {
-                logger.info("Could not watch pod", e);
             }
-
-
         }
     }
 
