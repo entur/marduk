@@ -148,9 +148,6 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
             }
 
             BlobInfo.Builder targetBlobInfoBuilder = BlobInfo.newBuilder(targetContainerName, blob.getName().replace(prefix, targetPrefix));
-            if (blob.getName().endsWith(".html")) {
-                targetBlobInfoBuilder.setContentType("text/html");
-            }
             BlobId targetBlobId = targetBlobInfoBuilder.build().getBlobId();
 
             Storage.CopyRequest request =
@@ -158,8 +155,12 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
                             .setSource(blob.getBlobId())
                             .setTarget(targetBlobId, blobTargetOptions)
                             .build();
-            storage.copy(request).getResult();
+            Blob targetBlob = storage.copy(request).getResult();
 
+            if (targetBlob.getName().endsWith(".html")) {
+                BlobInfo updatedInfo = targetBlob.toBuilder().setContentType("text/html").build();
+                storage.update(updatedInfo);
+            }
         }
     }
 
