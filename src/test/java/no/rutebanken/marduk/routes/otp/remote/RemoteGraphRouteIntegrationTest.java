@@ -86,6 +86,13 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
             }
         });
 
+        context.getRouteDefinition("otp-remote-netex-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                weaveByToUri("direct:exportMergedNetex").replace().to("mock:sink");
+            }
+        });
+
 
         context.getRouteDefinition("otp-remote-netex-graph-build-and-send-status").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
