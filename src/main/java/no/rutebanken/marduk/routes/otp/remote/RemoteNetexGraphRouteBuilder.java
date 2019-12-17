@@ -112,6 +112,8 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.FAILED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
                 .setProperty(PROP_STATUS, constant(JobEvent.State.FAILED))
                 .to("direct:sendStatusForOtpNetexJobs")
+                .to("direct:remoteCleanUp")
+                .stop()
                 .end()
                 .routeId("otp-remote-netex-graph-build-and-send-status");
 
