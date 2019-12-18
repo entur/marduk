@@ -176,7 +176,6 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
     protected void deleteDirectoryRecursively(String directory) {
 
         log.debug("Deleting local directory {} ...", directory);
-
         try {
             Path pathToDelete = Paths.get(directory);
             boolean deleted = FileSystemUtils.deleteRecursively(pathToDelete);
