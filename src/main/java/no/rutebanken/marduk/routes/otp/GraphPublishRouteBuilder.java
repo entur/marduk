@@ -149,7 +149,7 @@ public class GraphPublishRouteBuilder extends BaseRouteBuilder {
 
         from("direct:cleanUp")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Deleting build folder ${property." + Exchange.FILE_PARENT + "} ...")
-                .process(e -> deleteDirectory(new File(e.getIn().getExchange().getProperty(Exchange.FILE_PARENT, String.class))))
+                .process(e -> deleteDirectoryRecursively(e.getIn().getExchange().getProperty(Exchange.FILE_PARENT, String.class)))
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Build folder ${property." + Exchange.FILE_PARENT + "} cleanup done.")
                 .routeId("otp-graph-cleanup");
     }

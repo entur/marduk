@@ -33,7 +33,11 @@ import org.quartz.CronExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gcp.pubsub.support.BasicAcknowledgeablePubsubMessage;
+import org.springframework.util.FileSystemUtils;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
@@ -169,5 +173,21 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
         return false;
     }
 
+    protected void deleteDirectoryRecursively(String directory) {
+
+        log.debug("Deleting local directory {} ...", directory);
+
+        try {
+            Path pathToDelete = Paths.get(directory);
+            boolean deleted = FileSystemUtils.deleteRecursively(pathToDelete);
+            if (deleted) {
+                log.debug("Local directory {} cleanup done.", directory);
+            } else {
+                log.warn("Failed to delete non-existing directory {}", directory);
+            }
+        } catch (IOException e) {
+            log.warn("Failed to delete directory " + directory, e);
+        }
+    }
 
 }

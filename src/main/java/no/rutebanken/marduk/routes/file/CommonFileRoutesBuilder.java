@@ -18,12 +18,7 @@ package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
-
-import java.io.File;
-
-import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 @Component
 public class CommonFileRoutesBuilder extends BaseRouteBuilder {
@@ -33,9 +28,7 @@ public class CommonFileRoutesBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("direct:cleanUpLocalDirectory")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Deleting local directory ${property." + Exchange.FILE_PARENT + "} ...")
-                .process(e -> deleteDirectory(new File(e.getIn().getHeader(Exchange.FILE_PARENT, String.class))))
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Local directory ${property." + Exchange.FILE_PARENT + "} cleanup done.")
+                .process(e -> deleteDirectoryRecursively(e.getIn().getHeader(Exchange.FILE_PARENT, String.class)))
                 .routeId("cleanup-local-dir");
     }
 }
