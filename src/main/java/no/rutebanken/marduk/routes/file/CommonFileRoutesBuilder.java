@@ -33,9 +33,9 @@ public class CommonFileRoutesBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("direct:cleanUpLocalDirectory")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Deleting local directory ${property." + Exchange.FILE_PARENT + "} ...")
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Deleting local directory ${header." + Exchange.FILE_PARENT + "} ...")
                 .process(e -> deleteDirectory(new File(e.getIn().getHeader(Exchange.FILE_PARENT, String.class))))
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Local directory ${property." + Exchange.FILE_PARENT + "} cleanup done.")
+                .log(LoggingLevel.DEBUG, getClass().getName(), "Local directory ${header." + Exchange.FILE_PARENT + "} cleanup done.")
                 .routeId("cleanup-local-dir");
     }
 }
