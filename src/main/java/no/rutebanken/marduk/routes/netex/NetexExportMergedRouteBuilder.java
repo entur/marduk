@@ -73,16 +73,17 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.FILE_PARENT, simple("${exchangeProperty."+FOLDER_NAME+"}"))
                 .to("direct:cleanUpLocalDirectory")
 
+                .doTry()
                 .to("direct:fetchLatestProviderNetexExports")
                 .to("direct:fetchStopsNetexExport")
-
                 .to("direct:mergeNetex")
-
-                .to("direct:cleanUpLocalDirectory")
                 // Use wire tap to avoid replacing body
                 .wireTap("direct:reportExportMergedNetexOK")
-
+                .end()
                 .log(LoggingLevel.INFO, getClass().getName(), "Completed export of merged Netex file for Norway")
+                .doFinally()
+                .to("direct:cleanUpLocalDirectory")
+                .end()
                 .routeId("netex-export-merged-route");
 
         from("direct:reportExportMergedNetexOK")
