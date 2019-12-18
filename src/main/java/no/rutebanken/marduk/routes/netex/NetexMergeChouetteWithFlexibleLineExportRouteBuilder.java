@@ -20,6 +20,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -68,11 +69,14 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
 
                 .setProperty(FOLDER_NAME, simple(localWorkingDirectory + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}"))
-
+                .doTry()
                 .to("direct:unpackChouetteExportToWorkingFolder")
                 .to("direct:unpackFlexibleLinesExportToWorkingFolder")
-
                 .to("direct:uploadWorkingFolderContent")
+                .doFinally()
+                .process(e -> e.getIn().setHeader(Exchange.FILE_PARENT, e.getProperty(FOLDER_NAME)))
+                .to("direct:cleanUpLocalDirectory")
+                .end()
 
                 .setBody(constant(null))
                 .process(e -> e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString())))
