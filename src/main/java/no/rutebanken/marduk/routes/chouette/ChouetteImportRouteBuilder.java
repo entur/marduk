@@ -129,6 +129,9 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-import-addToExchange-parameters");
 
         from("direct:sendImportJobRequest")
+                // remove the error handler so that the whole route is retried in case of error
+                // to ensure that multipart input streams are reset before retrying the web service call to chouette.
+                .errorHandler(noErrorHandler())
                 .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
                 .process(e -> toImportMultipart(e))
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
