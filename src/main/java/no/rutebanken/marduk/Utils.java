@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk;
 
-import org.opentripplanner.common.MavenVersion;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -40,10 +39,6 @@ public class Utils {
             throw new IllegalArgumentException("Url is null");
         }
         return Long.valueOf(url.substring(url.lastIndexOf('/') + 1, url.length()));
-    }
-
-    public static String getOtpVersion() {
-        return MavenVersion.VERSION.version;
     }
 
     public static String getUsername() {

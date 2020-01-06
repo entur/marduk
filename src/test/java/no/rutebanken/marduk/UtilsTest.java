@@ -49,9 +49,4 @@ public class UtilsTest {
         });
     }
 
-    @Test
-    public void getOtpVersion(){
-        assertThat(Utils.getOtpVersion()).matches("\\d+\\.\\d+\\.\\d+.*");
-    }
-
 }

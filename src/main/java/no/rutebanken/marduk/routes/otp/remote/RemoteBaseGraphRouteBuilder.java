@@ -16,21 +16,17 @@
 
 package no.rutebanken.marduk.routes.otp.remote;
 
-import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BASE_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP_BUILD_BASE_GRAPH;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
@@ -42,7 +38,6 @@ import static org.apache.camel.builder.Builder.exceptionStackTrace;
  * Build remotely a base OTP graph containing OSM data and elevation data (but not transit data)
  */
 @Component
-@Profile({"otp-invm-graph-builder", "otp-kubernetes-job-graph-builder"})
 public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
@@ -95,6 +90,11 @@ public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP base graph, triggering full OTP graph build")
                 .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
                 .routeId("otp-remote-base-graph-build-build-otp");
+
+        from("direct:sendOtpBaseGraphStartedEventsInNewTransaction")
+
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_BASE").state(JobEvent.State.STARTED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
+                .routeId("otp-base-graph-build-send-started-events");
 
     }
 }

@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.otp.netex;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
+import no.rutebanken.marduk.routes.otp.remote.RemoteNetexGraphRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = OtpNetexGraphRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = RemoteNetexGraphRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
 public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 
@@ -80,18 +81,18 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
             }
         });
 
-        context.getRouteDefinition("otp-netex-graph-get-netex").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("otp-remote-netex-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveByToUri("direct:exportMergedNetex").replace().to("mock:sink");
             }
         });
 
-        context.getRouteDefinition("otp-netex-graph-build-and-send-status").adviceWith(context, new AdviceWithRouteBuilder() {
+        context.getRouteDefinition("otp-remote-netex-graph-build-and-send-status").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-                weaveByToUri("direct:buildNetexGraph").replace().to("mock:sink");
+                weaveByToUri("direct:remoteBuildNetexGraph").replace().to("mock:sink");
             }
         });
 
