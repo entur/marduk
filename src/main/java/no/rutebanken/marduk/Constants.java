@@ -40,6 +40,7 @@ public class Constants {
     public static final String CURRENT_FLEXIBLE_LINES_NETEX_FILENAME = "flexible-lines.zip";
     public static final String GRAPH_OBJ = "Graph.obj";
     public static final String BASE_GRAPH_OBJ = "baseGraph.obj";
+    public static final String NETEX_GRAPH_DIR = "netex";
 
     public static final String METADATA_DESCRIPTION = "MetadataDescription";
     public static final String METADATA_FILE = "MetadataFile";
@@ -83,5 +84,6 @@ public class Constants {
 
 
     public static final String INCLUDE_SHAPES = "IncludeShapes";
+
 }
 

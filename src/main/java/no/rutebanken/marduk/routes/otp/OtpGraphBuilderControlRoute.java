@@ -22,9 +22,8 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
-import org.apache.commons.collections.CollectionUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Collection;
 import java.util.List;
@@ -35,9 +34,6 @@ public class OtpGraphBuilderControlRoute extends BaseRouteBuilder {
     private enum Mode {BASE, FULL, BOTH}
 
     private static final String MODE_PROP_NAME="otpMode";
-
-    @Value("${otp.graph.build.remote:false}")
-    private boolean remoteOtpGraphBuild;
 
     @Override
     public void configure() throws Exception {
@@ -52,11 +48,11 @@ public class OtpGraphBuilderControlRoute extends BaseRouteBuilder {
                 .choice()
                 .when(exchangeProperty(MODE_PROP_NAME).isEqualTo(Mode.FULL))
                     // Build full graph (step2)
-                    .to(remoteOtpGraphBuild?"direct:remoteBuildOtpGraph":"direct:buildOtpGraph")
+                    .to("direct:remoteBuildOtpGraph")
                 .otherwise()
                 .doTry()
                     // Build base graph (step1)
-                    .to(remoteOtpGraphBuild?"direct:remoteBuildOtpBaseGraph":"direct:buildOtpBaseGraph")
+                    .to("direct:remoteBuildOtpBaseGraph")
                     .doFinally()
                         .choice().when(exchangeProperty(MODE_PROP_NAME).isEqualTo(Mode.BOTH))
                             // Trigger build of full graph (step2). This may already have been done if base graph build was successful, any duplicates will be discarded.

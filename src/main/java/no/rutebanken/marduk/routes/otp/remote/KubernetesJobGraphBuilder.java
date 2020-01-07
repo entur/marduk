@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
  * A Kubernetes CronJob is used as a template for the job.
  */
 @Component
-@Profile("otp-kubernetes-job-graph-builder")
 public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
 
     private static final String OTP_GCS_WORK_DIR_ENV_VAR = "OTP_GCS_WORK_DIR";

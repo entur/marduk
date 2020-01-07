@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.otp.netex;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.routes.otp.remote.RemoteNetexGraphRouteBuilder;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -29,7 +30,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.HashMap;
 import java.util.Map;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = OtpNetexGraphRouteBuilder.class,
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = RemoteNetexGraphRouteBuilder.class,
         properties = {
                 "spring.main.sources=no.rutebanken.marduk.test",
                 "marduk.camel.redelivery.max=1",
@@ -53,8 +54,8 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
         context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveByToUri("direct:buildOtpGraph").replace().to("mock:buildOtpGraph");
-                weaveByToUri("direct:buildOtpBaseGraph").replace().to("mock:sink");
+                weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph");
+                weaveByToUri("direct:remoteBuildOtpBaseGraph").replace().to("mock:sink");
                 weaveByToUri("entur-google-pubsub:OtpGraphBuildQueue").replace().to("mock:sink");
             }
         });
@@ -76,8 +77,8 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
         context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
-                weaveByToUri("direct:buildOtpGraph").replace().to("mock:buildOtpGraph");
-                weaveByToUri("direct:buildOtpBaseGraph").replace().to("mock:sink");
+                weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph");
+                weaveByToUri("direct:remoteBuildOtpBaseGraph").replace().to("mock:sink");
                 weaveByToUri("entur-google-pubsub:OtpGraphBuildQueue").replace().to("mock:sink");
             }
         });
@@ -103,8 +104,8 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
             @Override
             public void configure() throws Exception {
 
-                weaveByToUri("direct:buildOtpGraph").replace().to("mock:buildOtpGraph");
-                weaveByToUri("direct:buildOtpBaseGraph").replace().to("mock:sink");
+                weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph");
+                weaveByToUri("direct:remoteBuildOtpBaseGraph").replace().to("mock:sink");
                 weaveByToUri("entur-google-pubsub:OtpGraphBuildQueue").replace().to("mock:sink");
             }
         });

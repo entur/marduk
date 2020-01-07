@@ -16,7 +16,6 @@ import static no.rutebanken.marduk.Constants.TIMESTAMP;
  * Camel processor that triggers the build process,
  */
 @Component
-@Profile({"otp-invm-graph-builder", "otp-kubernetes-job-graph-builder"})
 public class RemoteGraphBuilderProcessor implements Processor {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());

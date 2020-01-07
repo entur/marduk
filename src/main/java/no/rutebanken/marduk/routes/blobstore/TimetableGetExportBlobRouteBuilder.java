@@ -62,7 +62,7 @@ public class TimetableGetExportBlobRouteBuilder extends BaseRouteBuilder {
 
         while (monthsAgo < noOfMonthsToFetchGraphBlobsFor) {
             String graphPrefixForMonth = today.minusMonths(monthsAgo).format(graphPrefixFormatter);
-            prefixes.add(blobStoreSubdirectory + "/" + Utils.getOtpVersion() + "/" + graphPrefixForMonth);
+            prefixes.add(blobStoreSubdirectory + "/" + Constants.NETEX_GRAPH_DIR + "/" + graphPrefixForMonth);
             monthsAgo++;
         }
 

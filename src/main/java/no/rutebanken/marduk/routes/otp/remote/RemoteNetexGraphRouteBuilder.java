@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.otp.remote;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -34,6 +35,7 @@ import java.io.InputStream;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP_BUILD_BASE_GRAPH;
@@ -49,7 +51,6 @@ import static org.apache.camel.builder.Builder.exceptionStackTrace;
  * Build remotely a full OTP graph (containing OSM data, elevation data and NeTEx data).
  */
 @Component
-@Profile({"otp-invm-graph-builder", "otp-kubernetes-job-graph-builder"})
 public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
@@ -129,10 +130,10 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .process(e -> {
                             String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ;
                             String publishedGraphPath = blobStoreSubdirectory
-                                                        + "/" + Utils.getOtpVersion()
+                                                        + "/" + Constants.NETEX_GRAPH_DIR
                                                         + "/" + e.getProperty(TIMESTAMP, String.class)
                                                         + '-' + GRAPH_OBJ;
-                            String publishedGraphVersion = Utils.getOtpVersion() + "/" + e.getProperty(TIMESTAMP, String.class) + "-report";
+                            String publishedGraphVersion = Constants.NETEX_GRAPH_DIR + "/" + e.getProperty(TIMESTAMP, String.class) + "-report";
 
                             e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
                             e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
@@ -155,8 +156,6 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:remoteCopyVersionedGraphBuildReport")
                 .to("direct:remoteUpdateCurrentGraphReportVersion")
                 .log(LoggingLevel.INFO, "Done uploading OTP graph build reports.")
-
-                .to("direct:notify")
 
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
                 .to("direct:updateStatus")
@@ -194,6 +193,24 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP remote work directory ${property." + Exchange.FILE_PARENT + "} cleanup done.")
                 .end()
                 .routeId("otp-remote-graph-cleanup");
+
+        from("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
+
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.STARTED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
+                .setProperty(PROP_STATUS, constant(JobEvent.State.STARTED))
+                .to("direct:sendStatusForOtpNetexJobs")
+                .routeId("otp-netex-graph-send-started-events");
+
+        from("direct:sendStatusForOtpNetexJobs")
+                .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
+                .split().exchangeProperty(PROP_MESSAGES)
+                .filter(simple("${headers[" + CHOUETTE_REFERENTIAL + "]}"))
+                .process(e -> {
+                    JobEvent.State state = e.getProperty(PROP_STATUS, JobEvent.State.class);
+                    JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(state).build();
+                })
+                .to("direct:updateStatus")
+                .routeId("otp-netex-graph-send-status-for-timetable-jobs");
 
     }
 

@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-        <version>0.0.10-SNAPSHOT</version>
+        <version>0.0.12-SNAPSHOT</version>
     </parent>
 
 
@@ -29,9 +29,8 @@
         </repository>
     </repositories>
     <properties>
-
-        <otp.version>1.3.9.RB-SNAPSHOT</otp.version>
-        <camel.version>2.24.2</camel.version>
+        <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
+        <camel.version>2.24.3</camel.version>
         <keycloak.version>4.8.3.Final</keycloak.version>
         <onebusaway.gtfs.version>1.3.4</onebusaway.gtfs.version>
         <netex-java-model.version>1.0.9-SNAPSHOT</netex-java-model.version>
@@ -291,49 +290,10 @@
             <scope>runtime</scope>
         </dependency>
 
-
-
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.opentripplanner</groupId>
-            <artifactId>otp</artifactId>
-            <version>${otp.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-simple</artifactId>
-                </exclusion>
-                <!-- axis contains additional copies of javax.xml -->
-                <exclusion>
-                    <groupId>org.apache.axis</groupId>
-                    <artifactId>axis</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.axis</groupId>
-                    <artifactId>axis-jaxrpc</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.glassfish.jersey.core</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.glassfish.jersey.media</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.glassfish.jersey.containers</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -477,32 +437,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-pubsub-emulator</id>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <artifactItems>
-                        <artifactItem>
-                            <groupId>com.google.cloud</groupId>
-                            <artifactId>pubsub-emulator</artifactId>
-                            <version>0.1-SNAPSHOT</version>
-                            <type>jar</type>
-                            <overWrite>true</overWrite>
-                            <outputDirectory>${project.build.directory}/pubsub-emulator</outputDirectory>
-                        </artifactItem>
-                    </artifactItems>
-                </configuration>
-            </plugin>
-
         </plugins>
     </build>
 
