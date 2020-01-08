@@ -61,20 +61,6 @@ public class GtfsFileUtilsTest {
         assertTrue(new ZipFileUtils().listFilesInZip(merged).stream().anyMatch(n -> "feed_info.txt".equals(n)));
     }
 
-
-    @Test
-    public void replaceIdSeparatorInFile() throws Exception {
-        File out = GtfsFileUtils.transformIdsToOTPFormat(new File(GTFS_FILE_2));
-
-        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()), StandardCharsets.UTF_8);
-
-        assertEquals("RUT.StopArea.7600100,Oslo S,59.910200,10.755330,RUT.StopArea.7600207", stopLines.get(1));
-
-        List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "feed_info.txt").toByteArray()), StandardCharsets.UTF_8);
-
-        assertThat(feedInfoLines.get(1)).as("Feed info should be unchanged").isEqualTo("RB,Rutebanken,http://www.rutebanken.org,no");
-    }
-
     @Test
     public void mergeWithTransfers() throws Exception {
         File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(new File(GTFS_FILE_1), new File(GTFS_FILE_1)));

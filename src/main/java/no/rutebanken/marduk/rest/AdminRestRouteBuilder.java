@@ -738,26 +738,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders("CamelHttp*")
                 .to("direct:considerToFetchOsmMapOverNorway")
                 .routeId("admin-fetch-osm")
-                .endRest()
-
-                .post("/mapbox_update")
-                .description("Triggers update of mapbox tileset from tiamat data")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
-                .log(LoggingLevel.INFO, "Mapbox update with data from tiamat")
-                .removeHeaders("CamelHttp*")
-                .to("direct:runMapboxUpdate")
-                .routeId("admin-update-mapbox")
-                .endRest()
-
-                .get("/swagger.json")
-                .apiDocs(false)
-                .bindingMode(RestBindingMode.off)
-                .route()
-                .to(commonApiDocEndpoint)
                 .endRest();
 
         from("direct:authorizeRequest")

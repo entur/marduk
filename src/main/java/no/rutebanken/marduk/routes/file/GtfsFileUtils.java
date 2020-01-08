@@ -17,26 +17,16 @@
 package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.routes.file.beans.CustomGtfsFileTransformer;
 import org.apache.commons.io.FileUtils;
-import org.onebusaway.gtfs.model.AgencyAndId;
-import org.onebusaway.gtfs.model.IdentityBean;
-import org.onebusaway.gtfs.model.ServiceCalendar;
-import org.onebusaway.gtfs.model.ServiceCalendarDate;
-import org.onebusaway.gtfs.model.Stop;
-import org.onebusaway.gtfs.model.Trip;
 import org.onebusaway.gtfs.serialization.GtfsEntitySchemaFactory;
-import org.onebusaway.gtfs.services.GtfsMutableRelationalDao;
 import org.onebusaway.gtfs_merge.GtfsMerger;
 import org.onebusaway.gtfs_merge.strategies.AbstractEntityMergeStrategy;
 import org.onebusaway.gtfs_merge.strategies.EDuplicateDetectionStrategy;
 import org.onebusaway.gtfs_merge.strategies.EntityMergeStrategy;
-import org.onebusaway.gtfs_transformer.GtfsTransformer;
 import org.onebusaway.gtfs_transformer.factory.EntitiesTransformStrategy;
 import org.onebusaway.gtfs_transformer.match.AlwaysMatch;
 import org.onebusaway.gtfs_transformer.match.TypedEntityMatch;
 import org.onebusaway.gtfs_transformer.services.EntityTransformStrategy;
-import org.onebusaway.gtfs_transformer.services.TransformContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +35,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -53,15 +42,6 @@ public class GtfsFileUtils {
     private static Logger logger = LoggerFactory.getLogger(GtfsFileUtils.class);
 
     public static final String FEED_INFO_FILE_NAME = "feed_info.txt";
-
-    private static final CustomGtfsFileTransformer IDS_TOP_OTP_FORMAT_TRANSFORMER = new CustomGtfsFileTransformer() {
-
-        @Override
-        protected void addCustomTransformations(GtfsTransformer transformer) {
-            GtfsEntitySchemaFactory.getEntityClasses()
-                    .forEach(ec -> transformer.addTransform(createEntitiesTransformStrategy(ec, new IdSeparatorTransformer())));
-        }
-    };
 
     public static File mergeGtfsFilesInDirectory(String path) {
         return mergeGtfsFiles(FileUtils.listFiles(new File(path), new String[]{"zip"}, false));
@@ -87,70 +67,11 @@ public class GtfsFileUtils {
 
     }
 
-    /**
-     * OTP requires ids with '.' as separator instead of ':'.
-     * <p>
-     * Create a copy of a GTFS file with all ids transformed to replace id separator chars.
-     */
-    public static File transformIdsToOTPFormat(File inputFile) throws Exception {
-
-        logger.debug("Replacing id separator in inputfile: " + inputFile.getPath());
-        long t1 = System.currentTimeMillis();
-
-
-        File outputFile = IDS_TOP_OTP_FORMAT_TRANSFORMER.transform(inputFile);
-
-        logger.debug("Replaced id separator in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
-
-        return outputFile;
-    }
-
 
     public static EntitiesTransformStrategy createEntitiesTransformStrategy(Class<?> entityClass, EntityTransformStrategy strategy) {
         EntitiesTransformStrategy transformStrategy = new EntitiesTransformStrategy();
         transformStrategy.addModification(new TypedEntityMatch(entityClass, new AlwaysMatch()), strategy);
         return transformStrategy;
-    }
-
-    private static class IdSeparatorTransformer implements EntityTransformStrategy {
-
-        protected static final String OTP_ID_SEPARATOR = "\\.";
-        protected static final String EXTERNAL_ID_SEPARATOR = "\\:";
-
-        @Override
-        public void run(TransformContext context, GtfsMutableRelationalDao dao, Object entity) {
-            if (entity instanceof ServiceCalendar) {
-                transformAgencyAndId(((ServiceCalendar) entity).getServiceId());
-            } else if (entity instanceof ServiceCalendarDate) {
-                transformAgencyAndId(((ServiceCalendarDate) entity).getServiceId());
-            } else if (entity instanceof Trip) {
-                transformAgencyAndId(((Trip) entity).getServiceId());
-            } else if (entity instanceof Stop) {
-                Stop stop = (Stop) entity;
-                stop.setParentStation(transform(stop.getParentStation()));
-            }
-            if (entity instanceof IdentityBean) {
-                IdentityBean identityBean = (IdentityBean) entity;
-                Serializable id = identityBean.getId();
-
-                if (id instanceof AgencyAndId) {
-                    transformAgencyAndId((AgencyAndId) id);
-                } else if (id instanceof String) {
-                    identityBean.setId(transform((String) id));
-                }
-            }
-        }
-
-        private void transformAgencyAndId(AgencyAndId agencyAndId) {
-            agencyAndId.setId(transform(agencyAndId.getId()));
-        }
-
-        private String transform(String id) {
-            if (id == null) {
-                return null;
-            }
-            return id.replaceFirst(EXTERNAL_ID_SEPARATOR, OTP_ID_SEPARATOR).replaceFirst(EXTERNAL_ID_SEPARATOR, OTP_ID_SEPARATOR);
-        }
     }
 
     private static void addFeedInfoFromFirstGtfsFile(Collection<File> files, File outputFile) throws IOException {
