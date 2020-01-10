@@ -27,6 +27,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -43,51 +44,55 @@ public class GtfsTransformationServiceTest {
 
     @Test
     public void transformToGoogleFormatExcludeShapes() throws Exception {
-        File out = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), false);
+        InputStream stream  = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), false);
 
-        FileUtils.copyFile(out, new File("target/test.zip"));
+        File target = new File("target/test.zip");
+        FileUtils.copyInputStreamToFile(stream, target);
 
-        assertRouteRouteTypesAreConvertedToGoogleSupportedValues(out);
-        assertStopVehicleTypesAreConvertedToGoogleSupportedValues(out);
+        assertRouteRouteTypesAreConvertedToGoogleSupportedValues(target);
+        assertStopVehicleTypesAreConvertedToGoogleSupportedValues(target);
 
-        assertShapesAreRemoved(out);
+        assertShapesAreRemoved(target);
     }
 
     @Test
     public void transformToGoogleFormatIncludeShapes() throws Exception {
-        File out = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), true);
+        InputStream stream  = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), true);
 
-        FileUtils.copyFile(out, new File("target/test.zip"));
+        File target = new File("target/test.zip");
+        FileUtils.copyInputStreamToFile(stream, target);
 
-        assertRouteRouteTypesAreConvertedToGoogleSupportedValues(out);
-        assertStopVehicleTypesAreConvertedToGoogleSupportedValues(out);
+        assertRouteRouteTypesAreConvertedToGoogleSupportedValues(target);
+        assertStopVehicleTypesAreConvertedToGoogleSupportedValues(target);
 
-        assertShapesAreIncluded(out);
+        assertShapesAreIncluded(target);
     }
 
 
     @Test
     public void transformToBasicGTFSFormatExcludeShapes() throws Exception {
-        File out = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), false);
+        InputStream stream = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), false);
 
-        FileUtils.copyFile(out, new File("target/test.zip"));
+        File target = new File("target/test.zip");
+        FileUtils.copyInputStreamToFile(stream, target);
 
-        assertRouteRouteTypesAreConvertedToBasicGtfsValues(out);
-        assertStopVehicleTypesAreConvertedToBasicGtfsValues(out);
+        assertRouteRouteTypesAreConvertedToBasicGtfsValues(target);
+        assertStopVehicleTypesAreConvertedToBasicGtfsValues(target);
 
-        assertShapesAreRemoved(out);
+        assertShapesAreRemoved(target);
     }
 
     @Test
     public void transformToBasicGTFSFormatIncludeShapes() throws Exception {
-        File out = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), true);
+        InputStream stream  = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), true);
 
-        FileUtils.copyFile(out, new File("target/test.zip"));
+        File target = new File("target/test.zip");
+        FileUtils.copyInputStreamToFile(stream, target);
 
-        assertRouteRouteTypesAreConvertedToBasicGtfsValues(out);
-        assertStopVehicleTypesAreConvertedToBasicGtfsValues(out);
+        assertRouteRouteTypesAreConvertedToBasicGtfsValues(target);
+        assertStopVehicleTypesAreConvertedToBasicGtfsValues(target);
 
-        assertShapesAreIncluded(out);
+        assertShapesAreIncluded(target);
     }
 
     public static void assertRouteRouteTypesAreConvertedToGoogleSupportedValues(File out) throws IOException {

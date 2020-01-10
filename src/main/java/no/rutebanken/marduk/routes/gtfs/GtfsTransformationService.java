@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.InputStream;
 
 import static no.rutebanken.marduk.routes.file.GtfsFileUtils.createEntitiesTransformStrategy;
 
@@ -57,15 +58,15 @@ public class GtfsTransformationService {
      * <p>
      * * @param includeShapes whether shape data from input file should be included in transformed output
      */
-    public File transformToGoogleFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) throws Exception {
+    public InputStream transformToGoogleFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) throws Exception {
         long t1 = System.currentTimeMillis();
         boolean removeShapes = !Boolean.TRUE.equals(includeShapes);
 
-        File outputFile = new GoogleGtfsFileTransformer(removeShapes).transform(inputFile);
+        InputStream stream = new GoogleGtfsFileTransformer(removeShapes).transform(inputFile);
 
         logger.debug("Replaced Extended Route Types with google supported values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
 
-        return outputFile;
+        return stream;
     }
 
     /**
@@ -73,15 +74,15 @@ public class GtfsTransformationService {
      *
      * @param includeShapes whether shape data from input file should be included in transformed output
      */
-    public File transformToBasicGTFSFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) throws Exception {
+    public InputStream transformToBasicGTFSFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) throws Exception {
         long t1 = System.currentTimeMillis();
 
         boolean removeShapes = !Boolean.TRUE.equals(includeShapes);
-        File outputFile = new BasicGtfsFileTransformer(removeShapes).transform(inputFile);
+        InputStream stream = new BasicGtfsFileTransformer(removeShapes).transform(inputFile);
 
         logger.debug("Replaced Extended Route Types with basic values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
 
-        return outputFile;
+        return stream;
     }
 
 
