@@ -104,7 +104,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${property.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("gtfs-export-get-latest-for-provider");
 
-        from("direct:mergeGtfs")
+        from("direct:mergeGtfs").streamCaching()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Merging gtfs files for all providers.")
                 .setBody(simple("${header." + FILE_PARENT + "}/org"))
                 .bean(method(GtfsFileUtils.class, "mergeGtfsFilesInDirectory"))

@@ -17,38 +17,52 @@
 package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import org.apache.commons.io.FileUtils;
 import org.onebusaway.gtfs.serialization.GtfsEntitySchemaFactory;
 import org.onebusaway.gtfs_merge.GtfsMerger;
 import org.onebusaway.gtfs_merge.strategies.AbstractEntityMergeStrategy;
 import org.onebusaway.gtfs_merge.strategies.EDuplicateDetectionStrategy;
 import org.onebusaway.gtfs_merge.strategies.EntityMergeStrategy;
+import org.onebusaway.gtfs_transformer.GtfsTransformer;
 import org.onebusaway.gtfs_transformer.factory.EntitiesTransformStrategy;
 import org.onebusaway.gtfs_transformer.match.AlwaysMatch;
 import org.onebusaway.gtfs_transformer.match.TypedEntityMatch;
 import org.onebusaway.gtfs_transformer.services.EntityTransformStrategy;
+import org.onebusaway.gtfs_transformer.updates.EnsureStopTimesIncreaseUpdateStrategy;
+import org.onebusaway.gtfs_transformer.updates.LocalVsExpressUpdateStrategy;
+import org.onebusaway.gtfs_transformer.updates.RemoveDuplicateTripsStrategy;
+import org.onebusaway.gtfs_transformer.updates.RemoveRepeatedStopTimesStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.zeroturnaround.zip.ByteSource;
+import org.zeroturnaround.zip.ZipEntrySource;
+import org.zeroturnaround.zip.ZipUtil;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Set;
 
 public class GtfsFileUtils {
     private static Logger logger = LoggerFactory.getLogger(GtfsFileUtils.class);
 
     public static final String FEED_INFO_FILE_NAME = "feed_info.txt";
+    private static final String FEED_INFO_FILE_CONTENT = "feed_id,feed_publisher_name,feed_publisher_url,feed_lang\nENTUR,Entur,https://www.entur.org,no";
 
-    public static File mergeGtfsFilesInDirectory(String path) {
+    public static InputStream mergeGtfsFilesInDirectory(String path) {
         return mergeGtfsFiles(FileUtils.listFiles(new File(path), new String[]{"zip"}, false));
     }
 
 
-    public static File mergeGtfsFiles(Collection<File> files) {
+    public static InputStream mergeGtfsFiles(Collection<File> files) {
 
         try {
             long t1 = System.currentTimeMillis();
@@ -57,10 +71,10 @@ public class GtfsFileUtils {
             File outputFile = File.createTempFile("marduk-merge", ".zip");
             buildGtfsMerger(EDuplicateDetectionStrategy.IDENTITY).run(new ArrayList<>(files), outputFile);
 
-            addFeedInfoFromFirstGtfsFile(files, outputFile);
+            addOrReplaceFeedInfo(outputFile);
 
             logger.debug("Merged GTFS-files - spent {} ms", (System.currentTimeMillis() - t1));
-            return outputFile;
+            return TempFileUtils.createDeleteOnCloseInputStream(outputFile);
         } catch (IOException ioException) {
             throw new MardukException("Merging of GTFS files failed", ioException);
         }
@@ -73,21 +87,6 @@ public class GtfsFileUtils {
         transformStrategy.addModification(new TypedEntityMatch(entityClass, new AlwaysMatch()), strategy);
         return transformStrategy;
     }
-
-    private static void addFeedInfoFromFirstGtfsFile(Collection<File> files, File outputFile) throws IOException {
-        ByteArrayOutputStream feedInfoStream = extractFeedInfoFile(files);
-        addFeedInfoToArchive(outputFile, feedInfoStream);
-    }
-
-    private static void addFeedInfoToArchive(File outputFile, ByteArrayOutputStream feedInfoStream) throws IOException {
-        if (feedInfoStream != null) {
-            File tmp = new File(FEED_INFO_FILE_NAME);
-            feedInfoStream.writeTo(new FileOutputStream(tmp));
-            FileUtils.copyInputStreamToFile(ZipFileUtils.addFilesToZip(new FileInputStream(outputFile), tmp), outputFile);
-            tmp.delete();
-        }
-    }
-
 
     private static GtfsMerger buildGtfsMerger(EDuplicateDetectionStrategy duplicateDetectionStrategy) {
         GtfsMerger merger = new GtfsMerger();
@@ -102,16 +101,63 @@ public class GtfsFileUtils {
         return merger;
     }
 
+    private static File transformGtfsFiles(File inputFile) throws Exception {
 
-    private static ByteArrayOutputStream extractFeedInfoFile(Collection<File> files) throws IOException {
-        ZipFileUtils zipFileUtils = new ZipFileUtils();
-        for (File file : files) {
-            if (zipFileUtils.listFilesInZip(file).stream().anyMatch(f -> FEED_INFO_FILE_NAME.equals(f))) {
-                return zipFileUtils.extractFileFromZipFile(new FileInputStream(file), FEED_INFO_FILE_NAME);
+        logger.info("Transforming GTFS-file");
+        long t1 = System.currentTimeMillis();
+
+        GtfsTransformer transformer = new GtfsTransformer();
+        File outputFile = File.createTempFile("marduk-cleanup", ".zip");
+
+        transformer.setGtfsInputDirectories(Arrays.asList(inputFile));
+
+        transformer.setOutputDirectory(outputFile);
+        transformer.addTransform(new RemoveRepeatedStopTimesStrategy());
+        transformer.addTransform(new RemoveDuplicateTripsStrategy());
+        transformer.addTransform(new EnsureStopTimesIncreaseUpdateStrategy());
+        transformer.addTransform(new LocalVsExpressUpdateStrategy());
+        transformer.getReader().setOverwriteDuplicates(true);
+
+        transformer.run();
+
+        logger.info("Transformed GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
+        return outputFile;
+    }
+
+    private static File getFile(byte[] data) throws IOException {
+        File inputFile = File.createTempFile("marduk-input", ".zip");
+
+        FileOutputStream fos = new FileOutputStream(inputFile);
+        fos.write(data);
+        fos.close();
+        return inputFile;
+    }
+
+    public static File transformGtfsFile(byte[] data) throws IOException {
+        File file = getFile(data);
+        if (file.exists() && file.length() > 0) {
+            Set<String> filenames = ZipFileUtils.listFilesInZip(file);
+            if (FileTypeClassifierBean.isGtfsZip(filenames)) {
+                try {
+                    file = transformGtfsFiles(file);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
-
         }
-        return null;
+        return file;
+    }
+
+    public static void addOrReplaceFeedInfo(File gtfsZipFile) {
+        ZipEntrySource feedInfoEntry = new ByteSource(FEED_INFO_FILE_NAME, FEED_INFO_FILE_CONTENT.getBytes(StandardCharsets.UTF_8));
+        ZipUtil.addOrReplaceEntries(gtfsZipFile, new ZipEntrySource[]{feedInfoEntry});
+    }
+
+    public static InputStream addOrReplaceFeedInfo(InputStream source) throws IOException {
+        File tmpZip = File.createTempFile("marduk-add-files-to-zip", ".zip");
+        Files.copy(source, tmpZip.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        addOrReplaceFeedInfo(tmpZip);
+        return TempFileUtils.createDeleteOnCloseInputStream(tmpZip);
     }
 
 }

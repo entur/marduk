@@ -17,14 +17,18 @@
 package no.rutebanken.marduk.routes.file.beans;
 
 import no.rutebanken.marduk.exceptions.FileValidationException;
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.camel.Exchange;
 import org.apache.commons.codec.CharEncoding;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Set;
@@ -51,8 +55,6 @@ public class FileTypeClassifierBean {
 
     public static final String NON_XML_FILE_XML=".*\\.(?!XML$|xml$)[^.]+";
 
-    private final static ZipFileUtils zipFileUtils = new ZipFileUtils();
-
     public boolean validateFile(byte[] data, Exchange exchange) {
         String relativePath = exchange.getIn().getHeader(FILE_HANDLE, String.class);
         logger.debug("Validating file with path '" + relativePath + "'.");
@@ -76,24 +78,28 @@ public class FileTypeClassifierBean {
     }
 
     public FileType classifyFile(String relativePath, byte[] data) {
-        if (relativePath.toUpperCase().endsWith(".ZIP")) {
-            Set<String> filesNamesInZip = zipFileUtils.listFilesInZip(new ByteArrayInputStream(data));
-            if (!isValidFileName(relativePath)) {
-                return INVALID_FILE_NAME;
-            } else if (isRegtoppZip(filesNamesInZip)) {
-                return REGTOPP;
-            } else if (isGtfsZip(filesNamesInZip)) {
-                return GTFS;
-            } else if (isNetexZip(filesNamesInZip, new ByteArrayInputStream(data))) {
-                return NETEXPROFILE;
-            } else if (isNeptuneZip(filesNamesInZip)) {
-                return NEPTUNE;
-            } else if (ZipFileUtils.zipFileContainsSingleFolder(data)) {
-                return ZIP_WITH_SINGLE_FOLDER;
+        try {
+            if (relativePath.toUpperCase().endsWith(".ZIP")) {
+                Set<String> filesNamesInZip = ZipFileUtils.listFilesInZip(data);
+                if (!isValidFileName(relativePath)) {
+                    return INVALID_FILE_NAME;
+                } else if (isRegtoppZip(filesNamesInZip)) {
+                    return REGTOPP;
+                } else if (isGtfsZip(filesNamesInZip)) {
+                    return GTFS;
+                } else if (isNetexZip(filesNamesInZip, new ByteArrayInputStream(data))) {
+                    return NETEXPROFILE;
+                } else if (isNeptuneZip(filesNamesInZip)) {
+                    return NEPTUNE;
+                } else if (ZipFileUtils.zipFileContainsSingleFolder(data)) {
+                    return ZIP_WITH_SINGLE_FOLDER;
+                }
+                throw new FileValidationException("Could not classify zip file '" + relativePath + "'.");
             }
-            throw new FileValidationException("Could not classify zip file '" + relativePath + "'.");
+            throw new FileValidationException("Could not classify file '" + relativePath + "'.");
+        } catch (IOException e) {
+            throw new MardukException("Exception while classifying file", e);
         }
-        throw new FileValidationException("Could not classify file '" + relativePath + "'.");
     }
 
     public static boolean isRegtoppZip(Set<String> filesInZip) {

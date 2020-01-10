@@ -79,7 +79,6 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("entur-google-pubsub:ChouetteImportQueue")
                 .end()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build()).to("direct:updateStatus")
-                .to("direct:getBlob")
                 .routeId("file-classify");
 
 
@@ -87,7 +86,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .choice().when(simple("{{gtfs.transform.skip:false}}"))
                 .log(LoggingLevel.INFO, getClass().getName(), "Skipping gtfs transformation for ${header." + FILE_HANDLE + "}")
                 .otherwise()
-                .bean(method(ZipFileUtils.class, "transformGtfsFile"))
+                .bean(method(GtfsFileUtils.class, "transformGtfsFile"))
                 .log(LoggingLevel.INFO, correlation() + "ZIP-file transformed ${header." + FILE_HANDLE + "}")
                 .to("direct:uploadBlob")
                 .endChoice()

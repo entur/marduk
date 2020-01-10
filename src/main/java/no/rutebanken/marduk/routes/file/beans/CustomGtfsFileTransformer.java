@@ -16,18 +16,17 @@
 
 package no.rutebanken.marduk.routes.file.beans;
 
-import no.rutebanken.marduk.routes.file.ZipFileUtils;
+import no.rutebanken.marduk.routes.file.GtfsFileUtils;
 import org.onebusaway.gtfs_transformer.GtfsTransformer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.Arrays;
 
-import static no.rutebanken.marduk.routes.file.GtfsFileUtils.FEED_INFO_FILE_NAME;
+
 
 public abstract class CustomGtfsFileTransformer {
 
-    public File transform(File inputFile, ByteArrayOutputStream feedInfo) {
+    public File transform(File inputFile) {
         try {
             GtfsTransformer transformer = new GtfsTransformer();
             File outputFile = File.createTempFile("marduk-cleanup", ".zip");
@@ -40,7 +39,7 @@ public abstract class CustomGtfsFileTransformer {
             transformer.getReader().setOverwriteDuplicates(true);
             transformer.run();
 
-            ZipFileUtils.replaceFileInZipFile(outputFile, FEED_INFO_FILE_NAME, feedInfo);
+            GtfsFileUtils.addOrReplaceFeedInfo(outputFile);
             return outputFile;
         } catch (Exception e) {
             throw new RuntimeException("Gtfs transformation failed with exception: " + e.getMessage(), e);

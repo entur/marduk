@@ -20,7 +20,6 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.file.beans.CustomGtfsFileTransformer;
 import no.rutebanken.marduk.routes.google.GoogleRouteTypeCode;
 import org.apache.camel.Header;
-import org.apache.commons.io.IOUtils;
 import org.onebusaway.gtfs.model.Route;
 import org.onebusaway.gtfs.model.ShapePoint;
 import org.onebusaway.gtfs.model.Stop;
@@ -37,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 
 import static no.rutebanken.marduk.routes.file.GtfsFileUtils.createEntitiesTransformStrategy;
@@ -61,14 +59,9 @@ public class GtfsTransformationService {
      */
     public File transformToGoogleFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) throws Exception {
         long t1 = System.currentTimeMillis();
-        // Add feed info for google export
-        byte[] feedBytes = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("no/rutebanken/marduk/routes/google/feed_info.txt"));
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(feedBytes.length);
-        baos.write(feedBytes, 0, feedBytes.length);
-
         boolean removeShapes = !Boolean.TRUE.equals(includeShapes);
 
-        File outputFile = new GoogleGtfsFileTransformer(removeShapes).transform(inputFile, baos);
+        File outputFile = new GoogleGtfsFileTransformer(removeShapes).transform(inputFile);
 
         logger.debug("Replaced Extended Route Types with google supported values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
 
@@ -82,13 +75,9 @@ public class GtfsTransformationService {
      */
     public File transformToBasicGTFSFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) throws Exception {
         long t1 = System.currentTimeMillis();
-        // Add feed info export
-        byte[] feedBytes = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream("no/rutebanken/marduk/routes/google/feed_info.txt"));
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(feedBytes.length);
-        baos.write(feedBytes, 0, feedBytes.length);
 
         boolean removeShapes = !Boolean.TRUE.equals(includeShapes);
-        File outputFile = new BasicGtfsFileTransformer(removeShapes).transform(inputFile, baos);
+        File outputFile = new BasicGtfsFileTransformer(removeShapes).transform(inputFile);
 
         logger.debug("Replaced Extended Route Types with basic values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
 
