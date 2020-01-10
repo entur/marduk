@@ -36,8 +36,7 @@ public class TempFileUtils {
 
 
     public static InputStream createDeleteOnCloseInputStream(File tmpFile) throws IOException {
-        //return Files.newInputStream(tmpFile.toPath(), StandardOpenOption.DELETE_ON_CLOSE);
-        return Files.newInputStream(tmpFile.toPath());
+        return Files.newInputStream(tmpFile.toPath(), StandardOpenOption.DELETE_ON_CLOSE);
     }
 
 

@@ -29,7 +29,7 @@ public abstract class CustomGtfsFileTransformer {
     public File transform(File inputFile) {
         try {
             GtfsTransformer transformer = new GtfsTransformer();
-            File outputFile = File.createTempFile("marduk-cleanup", ".zip");
+            File outputFile = File.createTempFile("marduk-gtfs-custom-transform-", ".zip");
 
             transformer.setGtfsInputDirectories(Arrays.asList(inputFile));
             transformer.setOutputDirectory(outputFile);

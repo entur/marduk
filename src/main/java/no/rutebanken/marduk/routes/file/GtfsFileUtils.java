@@ -124,28 +124,11 @@ public class GtfsFileUtils {
         return outputFile;
     }
 
-    private static File getFile(byte[] data) throws IOException {
-        File inputFile = File.createTempFile("marduk-input", ".zip");
-
-        FileOutputStream fos = new FileOutputStream(inputFile);
-        fos.write(data);
-        fos.close();
-        return inputFile;
-    }
-
-    public static File transformGtfsFile(byte[] data) throws IOException {
-        File file = getFile(data);
-        if (file.exists() && file.length() > 0) {
-            Set<String> filenames = ZipFileUtils.listFilesInZip(file);
-            if (FileTypeClassifierBean.isGtfsZip(filenames)) {
-                try {
-                    file = transformGtfsFiles(file);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return file;
+    public static File transformGtfsFile(byte[] data) throws Exception {
+        File tmpZip = TempFileUtils.createTempFile(data, "marduk-transform-gtfs-tmpZip-", "-zip");
+        File output = transformGtfsFiles(tmpZip);
+        tmpZip.delete();
+        return output;
     }
 
     public static void addOrReplaceFeedInfo(File gtfsZipFile) {

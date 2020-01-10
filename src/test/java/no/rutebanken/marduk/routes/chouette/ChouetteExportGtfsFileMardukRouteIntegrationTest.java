@@ -113,8 +113,8 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 			public <T> T evaluate(Exchange ex, Class<T> arg1) {
 				try {
 					// Should be GTFS contnet
-					return (T) IOUtils.toString(getClass()
-							.getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"));
+					return (T) IOUtils.toByteArray(getClass()
+							.getResourceAsStream("/no/rutebanken/marduk/chouette/empty-chouette-gtfs-export.zip"));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
