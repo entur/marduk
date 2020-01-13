@@ -50,7 +50,6 @@ public class FileTypeClassifierBean {
 
     private static final String requiredRegtoppFilesExtensionsRegex = "(?i).+\\.tix|(?i).+\\.hpl|(?i).+\\.dko";
     private static final String requiredGtfsFilesRegex = "agency.txt|stops.txt|routes.txt|trips.txt|stop_times.txt";
-    private static final String requiredNeptuneFilesRegex = "[A-Z]{1,}\\-Line\\-[0-9].*\\.xml";
     private static final String xmlFilesRegex = ".+\\.xml";    //TODO can we be more specific?
 
     public static final String NON_XML_FILE_XML=".*\\.(?!XML$|xml$)[^.]+";
@@ -89,8 +88,6 @@ public class FileTypeClassifierBean {
                     return GTFS;
                 } else if (isNetexZip(filesNamesInZip, new ByteArrayInputStream(data))) {
                     return NETEXPROFILE;
-                } else if (isNeptuneZip(filesNamesInZip)) {
-                    return NEPTUNE;
                 } else if (ZipFileUtils.zipFileContainsSingleFolder(data)) {
                     return ZIP_WITH_SINGLE_FOLDER;
                 }
@@ -108,10 +105,6 @@ public class FileTypeClassifierBean {
 
     public static boolean isGtfsZip(final Set<String> filesInZip) {
         return filesInZip.stream().anyMatch(p -> p.matches(requiredGtfsFilesRegex));
-    }
-
-    public static boolean isNeptuneZip(final Set<String> filesInZip) {
-        return filesInZip.stream().anyMatch(p -> p.matches(requiredNeptuneFilesRegex));
     }
 
     public static boolean isNetexZip(final Set<String> filesInZip, InputStream inputStream) {
