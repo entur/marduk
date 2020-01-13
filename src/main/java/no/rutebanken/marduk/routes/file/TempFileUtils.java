@@ -23,6 +23,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 
+/**
+ * Utility class for creating and using temporary files.
+ */
 public class TempFileUtils {
 
 
@@ -35,12 +38,14 @@ public class TempFileUtils {
     }
 
 
+    /**
+     * Open an input stream on a temporary file with the guarantee that the file will be delete when the stream is closed.
+     * @param tmpFile
+     * @return
+     * @throws IOException
+     */
     public static InputStream createDeleteOnCloseInputStream(File tmpFile) throws IOException {
         return Files.newInputStream(tmpFile.toPath(), StandardOpenOption.DELETE_ON_CLOSE);
     }
-
-
-
-
 
 }

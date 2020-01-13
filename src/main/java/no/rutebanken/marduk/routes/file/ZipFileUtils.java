@@ -84,6 +84,7 @@ public class ZipFileUtils {
         out.close();
 
         logger.info("File written to : " + tmpFile.getAbsolutePath());
+        zipFile.close();
         tmpSingleFolderzip.delete();
 
         return TempFileUtils.createDeleteOnCloseInputStream(tmpFile);
@@ -101,7 +102,7 @@ public class ZipFileUtils {
     }
 
     public static boolean zipFileContainsSingleFolder(byte[] data) throws IOException {
-        File tmpFile = TempFileUtils.createTempFile(data, "marduk-zip-file-contains-single-folder", ".zip");
+        File tmpFile = TempFileUtils.createTempFile(data, "marduk-zip-file-contains-single-folder-", ".zip");
         boolean singleFolder = zipFileContainsSingleFolder(tmpFile);
         tmpFile.delete();
         return singleFolder;

@@ -64,7 +64,7 @@ public class GtfsFileUtilsTest {
     @Test
     public void mergeWithTransfers() throws Exception {
         InputStream merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(new File(GTFS_FILE_1), new File(GTFS_FILE_1)));
-        File tmpZip = TempFileUtils.createTempFile(merged.readAllBytes(), "marduk-test-mergeWithTransfers", ".zip");
+        File tmpZip = TempFileUtils.createTempFile(merged.readAllBytes(), "marduk-test-mergeWithTransfers-", ".zip");
 
         List<String> transferLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(tmpZip, "transfers.txt")), StandardCharsets.UTF_8);
         assertThat(transferLines.size()).as("Expected file two duplicates and one other transfer to be merged to two (+ header)").isEqualTo(3);

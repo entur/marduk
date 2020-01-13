@@ -58,7 +58,7 @@ public class GtfsFileUtils {
             long t1 = System.currentTimeMillis();
             logger.debug("Merging GTFS-files");
 
-            File outputFile = File.createTempFile("marduk-merge", ".zip");
+            File outputFile = File.createTempFile("marduk-merge-gtfs-", ".zip");
             buildGtfsMerger(EDuplicateDetectionStrategy.IDENTITY).run(new ArrayList<>(files), outputFile);
 
             addOrReplaceFeedInfo(outputFile);
@@ -96,7 +96,7 @@ public class GtfsFileUtils {
     }
 
     public static InputStream addOrReplaceFeedInfo(InputStream source) throws IOException {
-        File tmpZip = File.createTempFile("marduk-add-files-to-zip", ".zip");
+        File tmpZip = File.createTempFile("marduk-add-or-replace-feed-info-", ".zip");
         Files.copy(source, tmpZip.toPath(), StandardCopyOption.REPLACE_EXISTING);
         addOrReplaceFeedInfo(tmpZip);
         return TempFileUtils.createDeleteOnCloseInputStream(tmpZip);
