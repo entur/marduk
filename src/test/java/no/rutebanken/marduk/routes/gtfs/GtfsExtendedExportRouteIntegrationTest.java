@@ -83,7 +83,7 @@ public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderI
     }
 
    private void assertStopVehicleTypesAreNotConverted(File out) throws IOException {
-        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(out), "stops.txt").toByteArray()), StandardCharsets.UTF_8);
+        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, "stops.txt")), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
         
         assertThat(stopLines.get(0)).as("Line without vehicle type should not be changed").endsWith(",");

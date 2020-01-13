@@ -34,9 +34,5 @@
         "access_point_count": 0,
         "vehicle_journey_count": 0,
         "journey_pattern_count": 0
-    },
-    "failure": {
-        "code": "NO_DATA_FOUND",
-        "description": "no data to import"
     }
 }}

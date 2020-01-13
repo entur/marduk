@@ -20,16 +20,15 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GtfsFileUtilsTest {
 
@@ -40,12 +39,12 @@ public class GtfsFileUtilsTest {
     public void mergeGtfsFiles_identicalFilesShouldYieldMergedFileIdenticalToOrg() throws Exception {
 
         File input1 = new File(GTFS_FILE_1);
-        File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(input1, input1));
+        InputStream merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(input1, input1));
 
         // Should assert content, but no exceptions must do for now
         // assertTrue(FileUtils.sizeOf(merged) <= FileUtils.sizeOf(input1));
 
-        assertTrue(new ZipFileUtils().listFilesInZip(merged).stream().anyMatch(n -> "feed_info.txt".equals(n)));
+        assertTrue(ZipFileUtils.listFilesInZip(merged.readAllBytes()).stream().anyMatch(n -> GtfsFileUtils.FEED_INFO_FILE_NAME.equals(n)));
     }
 
     @Test
@@ -53,19 +52,21 @@ public class GtfsFileUtilsTest {
 
         File input1 = new File(GTFS_FILE_1);
         File input2 = new File(GTFS_FILE_2);
-        File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(input1, input2));
+        InputStream merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(input1, input2));
 
-        assertTrue(FileUtils.sizeOf(merged) >= FileUtils.sizeOf(input1));
-        assertTrue(FileUtils.sizeOf(merged) >= FileUtils.sizeOf(input2));
+        byte[] data = merged.readAllBytes();
+        assertTrue(data.length >= FileUtils.sizeOf(input1));
+        assertTrue(data.length >= FileUtils.sizeOf(input2));
 
-        assertTrue(new ZipFileUtils().listFilesInZip(merged).stream().anyMatch(n -> "feed_info.txt".equals(n)));
+        assertTrue(ZipFileUtils.listFilesInZip(data).stream().anyMatch(n -> GtfsFileUtils.FEED_INFO_FILE_NAME.equals(n)));
     }
 
     @Test
     public void mergeWithTransfers() throws Exception {
-        File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(new File(GTFS_FILE_1), new File(GTFS_FILE_1)));
+        InputStream merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(new File(GTFS_FILE_1), new File(GTFS_FILE_1)));
+        File tmpZip = TempFileUtils.createTempFile(merged.readAllBytes(), "marduk-test-mergeWithTransfers-", ".zip");
 
-        List<String> transferLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(new FileInputStream(merged), "transfers.txt").toByteArray()), StandardCharsets.UTF_8);
+        List<String> transferLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(tmpZip, "transfers.txt")), StandardCharsets.UTF_8);
         assertThat(transferLines.size()).as("Expected file two duplicates and one other transfer to be merged to two (+ header)").isEqualTo(3);
     }
 

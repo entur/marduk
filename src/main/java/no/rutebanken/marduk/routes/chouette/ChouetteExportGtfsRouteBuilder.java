@@ -18,7 +18,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
-import no.rutebanken.marduk.routes.file.ZipFileUtils;
+import no.rutebanken.marduk.routes.file.GtfsFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEvent.State;
 import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
@@ -27,9 +27,7 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
@@ -122,26 +120,9 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
         from("direct:addGtfsFeedInfo")
                 .log(LoggingLevel.INFO, correlation() + "Adding feed_info.txt to GTFS file")
                 .process(e -> {
-                    // Add feed info
-                    String feedInfoContent = "feed_id,feed_publisher_name,feed_publisher_url,feed_lang\nENT,Entur,www.entur.org,no";
-
-                    File tmpFolder = new File(System.getProperty("java.io.tmpdir"));
-                    File tmpFolder2 = new File(tmpFolder, UUID.randomUUID().toString());
-                    tmpFolder2.mkdirs();
-                    File feedInfoFile = new File(tmpFolder2, "feed_info.txt");
-
-                    PrintWriter writer = new PrintWriter(feedInfoFile);
-                    writer.write(feedInfoContent);
-                    writer.close();
-
-                    e.getIn().setBody(ZipFileUtils.addFilesToZip(e.getIn().getBody(InputStream.class), new File[]{feedInfoFile}));
-                    feedInfoFile.delete();
-                    tmpFolder2.delete();
+                    e.getIn().setBody(GtfsFileUtils.addOrReplaceFeedInfo(e.getIn().getBody(InputStream.class)));
                 })
                 .routeId("chouette-process-export-gtfs-feedinfo");
     }
 
-
 }
-
-

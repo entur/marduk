@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+
 import static no.rutebanken.marduk.routes.file.FileType.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,8 +51,8 @@ public class FileTypeClassifierBeanTest {
     @Test
     public void classifyGtfsFileContainingFolder() throws Exception {
         // The file is known to be invalid - repack zip
-        File rePackedZipFile = ZipFileUtils.rePackZipFile(IOUtils.toByteArray(this.getClass().getResourceAsStream("gtfs-folder.zip")));
-        assertFileType(rePackedZipFile, GTFS);
+        InputStream rePackedZipFile = ZipFileUtils.rePackZipFile(IOUtils.toByteArray(this.getClass().getResourceAsStream("gtfs-folder.zip")));
+        assertFileType("repackaged.zip", rePackedZipFile.readAllBytes(), GTFS);
     }
 
     @Test
@@ -116,10 +118,6 @@ public class FileTypeClassifierBeanTest {
         assertFileType(fileName, data, expectedFileType);
     }
 
-    private void assertFileType(File file, FileType expectedFileType) throws IOException {
-        byte[] data = IOUtils.toByteArray(new FileInputStream(file));
-        assertFileType(file.getName(), data, expectedFileType);
-    }
 
     private void assertFileType(String fileName, byte[] data, FileType expectedFileType) {
         FileType resultType = bean.classifyFile(fileName, data);
