@@ -66,31 +66,15 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.WARN, correlation() + "File with invalid characters in file name ${header." + FILE_HANDLE + "}")
                 .to("direct:sanitizeFileName")
                 .when(header(FILE_TYPE).isEqualTo(FileType.ZIP_WITH_SINGLE_FOLDER.name()))
-                .log(LoggingLevel.WARN, correlation() + "Unexpected file type or invalid file ${header." + FILE_HANDLE + "}")
+                .log(LoggingLevel.WARN, correlation() + "Archive containing a single folder ${header." + FILE_HANDLE + "}")
                 .to("direct:repackZipFile")
                 .otherwise()
-                .choice()
-                .when(header(FILE_TYPE).isEqualTo(FileType.GTFS.name()))
-                .log(LoggingLevel.INFO, correlation() + "Transforming GTFS file ${header." + FILE_HANDLE + "}")
-                .to("direct:transformGtfsFile")
-                .end()
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .setBody(simple(""))   //remove file data from body since this is in blobstore
                 .to("entur-google-pubsub:ChouetteImportQueue")
                 .end()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .routeId("file-classify");
-
-
-        from("direct:transformGtfsFile")
-                .choice().when(simple("{{gtfs.transform.skip:false}}"))
-                .log(LoggingLevel.INFO, getClass().getName(), "Skipping gtfs transformation for ${header." + FILE_HANDLE + "}")
-                .otherwise()
-                .bean(method(GtfsFileUtils.class, "transformGtfsFile"))
-                .log(LoggingLevel.INFO, correlation() + "ZIP-file transformed ${header." + FILE_HANDLE + "}")
-                .to("direct:uploadBlob")
-                .endChoice()
-                .routeId("file-transform-gtfs");
 
         from("direct:repackZipFile")
                 .bean(method(ZipFileUtils.class, "rePackZipFile"))

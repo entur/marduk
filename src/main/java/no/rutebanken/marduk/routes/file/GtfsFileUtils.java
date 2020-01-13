@@ -17,22 +17,16 @@
 package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import org.apache.commons.io.FileUtils;
 import org.onebusaway.gtfs.serialization.GtfsEntitySchemaFactory;
 import org.onebusaway.gtfs_merge.GtfsMerger;
 import org.onebusaway.gtfs_merge.strategies.AbstractEntityMergeStrategy;
 import org.onebusaway.gtfs_merge.strategies.EDuplicateDetectionStrategy;
 import org.onebusaway.gtfs_merge.strategies.EntityMergeStrategy;
-import org.onebusaway.gtfs_transformer.GtfsTransformer;
 import org.onebusaway.gtfs_transformer.factory.EntitiesTransformStrategy;
 import org.onebusaway.gtfs_transformer.match.AlwaysMatch;
 import org.onebusaway.gtfs_transformer.match.TypedEntityMatch;
 import org.onebusaway.gtfs_transformer.services.EntityTransformStrategy;
-import org.onebusaway.gtfs_transformer.updates.EnsureStopTimesIncreaseUpdateStrategy;
-import org.onebusaway.gtfs_transformer.updates.LocalVsExpressUpdateStrategy;
-import org.onebusaway.gtfs_transformer.updates.RemoveDuplicateTripsStrategy;
-import org.onebusaway.gtfs_transformer.updates.RemoveRepeatedStopTimesStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.zip.ByteSource;
@@ -40,16 +34,13 @@ import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Set;
 
 public class GtfsFileUtils {
     private static Logger logger = LoggerFactory.getLogger(GtfsFileUtils.class);
@@ -60,7 +51,6 @@ public class GtfsFileUtils {
     public static InputStream mergeGtfsFilesInDirectory(String path) {
         return mergeGtfsFiles(FileUtils.listFiles(new File(path), new String[]{"zip"}, false));
     }
-
 
     public static InputStream mergeGtfsFiles(Collection<File> files) {
 
@@ -81,7 +71,6 @@ public class GtfsFileUtils {
 
     }
 
-
     public static EntitiesTransformStrategy createEntitiesTransformStrategy(Class<?> entityClass, EntityTransformStrategy strategy) {
         EntitiesTransformStrategy transformStrategy = new EntitiesTransformStrategy();
         transformStrategy.addModification(new TypedEntityMatch(entityClass, new AlwaysMatch()), strategy);
@@ -101,36 +90,6 @@ public class GtfsFileUtils {
         return merger;
     }
 
-    private static File transformGtfsFiles(File inputFile) throws Exception {
-
-        logger.info("Transforming GTFS-file");
-        long t1 = System.currentTimeMillis();
-
-        GtfsTransformer transformer = new GtfsTransformer();
-        File outputFile = File.createTempFile("marduk-cleanup", ".zip");
-
-        transformer.setGtfsInputDirectories(Arrays.asList(inputFile));
-
-        transformer.setOutputDirectory(outputFile);
-        transformer.addTransform(new RemoveRepeatedStopTimesStrategy());
-        transformer.addTransform(new RemoveDuplicateTripsStrategy());
-        transformer.addTransform(new EnsureStopTimesIncreaseUpdateStrategy());
-        transformer.addTransform(new LocalVsExpressUpdateStrategy());
-        transformer.getReader().setOverwriteDuplicates(true);
-
-        transformer.run();
-
-        logger.info("Transformed GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
-        return outputFile;
-    }
-
-    public static File transformGtfsFile(byte[] data) throws Exception {
-        File tmpZip = TempFileUtils.createTempFile(data, "marduk-transform-gtfs-tmpZip-", "-zip");
-        File output = transformGtfsFiles(tmpZip);
-        tmpZip.delete();
-        return output;
-    }
-
     public static void addOrReplaceFeedInfo(File gtfsZipFile) {
         ZipEntrySource feedInfoEntry = new ByteSource(FEED_INFO_FILE_NAME, FEED_INFO_FILE_CONTENT.getBytes(StandardCharsets.UTF_8));
         ZipUtil.addOrReplaceEntries(gtfsZipFile, new ZipEntrySource[]{feedInfoEntry});
@@ -142,5 +101,4 @@ public class GtfsFileUtils {
         addOrReplaceFeedInfo(tmpZip);
         return TempFileUtils.createDeleteOnCloseInputStream(tmpZip);
     }
-
 }

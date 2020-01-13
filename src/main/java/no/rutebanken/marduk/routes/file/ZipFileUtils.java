@@ -39,7 +39,7 @@ public class ZipFileUtils {
     private static Logger logger = LoggerFactory.getLogger(ZipFileUtils.class);
 
     public static Set<String> listFilesInZip(byte[] data) throws IOException {
-        File tmpFile = TempFileUtils.createTempFile(data, "marduk-list-files-in-zip", ".zip");
+        File tmpFile = TempFileUtils.createTempFile(data, "marduk-list-files-in-zip-", ".zip");
         Set<String> fileList = listFilesInZip(tmpFile);
         tmpFile.delete();
         return fileList;
@@ -56,7 +56,11 @@ public class ZipFileUtils {
     public static InputStream rePackZipFile(byte[] data) throws IOException {
 
         logger.info("Repacking zipfile");
-        File tmpFile = File.createTempFile("marduk-repackaged", ".zip");
+        File tmpSingleFolderzip = TempFileUtils.createTempFile(data, "marduk-single-folder-", ".zip");
+
+        ZipFile zipFile = new ZipFile(tmpSingleFolderzip);
+
+        File tmpFile = File.createTempFile("marduk-removed-single-folder-", ".zip");
         ZipOutputStream out = new ZipOutputStream(new FileOutputStream(tmpFile));
 
         String directoryName = "";
@@ -66,10 +70,11 @@ public class ZipFileUtils {
         ZipEntry zipEntry = zipInputStream.getNextEntry();
         while (zipEntry != null) {
             if (!zipEntry.isDirectory()) {
+                InputStream inputStream = zipFile.getInputStream(zipEntry);
                 ZipEntry outEntry = new ZipEntry(zipEntry.getName().replace(directoryName, ""));
                 out.putNextEntry(outEntry);
-                byte[] buf = new byte[zipInputStream.available()];
-                IOUtils.readFully(zipInputStream, buf);
+                byte[] buf = new byte[inputStream.available()];
+                IOUtils.readFully(inputStream, buf);
                 out.write(buf);
             } else {
                 directoryName = zipEntry.getName();
@@ -79,6 +84,7 @@ public class ZipFileUtils {
         out.close();
 
         logger.info("File written to : " + tmpFile.getAbsolutePath());
+        tmpSingleFolderzip.delete();
 
         return TempFileUtils.createDeleteOnCloseInputStream(tmpFile);
     }
