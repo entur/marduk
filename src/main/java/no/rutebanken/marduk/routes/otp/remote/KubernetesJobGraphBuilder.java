@@ -50,6 +50,9 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
     @Value("${otp.graph.build.remote.kubernetes.job.cleanup:true}")
     private boolean deleteJobAfterCompletion;
 
+    @Value("${otp.graph.build.remote.kubernetes.timeout:9000}")
+    private long jobTimeoutSecond;
+
 
     private static final Logger logger = LoggerFactory.getLogger(KubernetesJobGraphBuilder.class);
 
@@ -94,7 +97,7 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
                 }
             })) {
 
-                boolean jobCompletedBeforeTimeout = watchLatch.await(120, TimeUnit.MINUTES);
+                boolean jobCompletedBeforeTimeout = watchLatch.await(jobTimeoutSecond, TimeUnit.SECONDS);
                 if (!jobCompletedBeforeTimeout) {
                     throw new KubernetesJobGraphBuilderException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
                 }
