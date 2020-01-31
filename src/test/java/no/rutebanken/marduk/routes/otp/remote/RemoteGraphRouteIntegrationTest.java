@@ -43,8 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = RemoteBaseGraphRouteBuilder.class,
         properties = {
-                "spring.main.sources=no.rutebanken.marduk.test",
-                "otp.graph.build.remote=true"
+                "spring.main.sources=no.rutebanken.marduk.test"
         })
 public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 

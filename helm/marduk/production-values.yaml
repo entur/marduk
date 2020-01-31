@@ -1,0 +1,34 @@
+env: production
+replicas: 2
+gcpProjectId: neon-1287
+gcpDatabaseInstance: neon-1287:europe-west1:marduk-db-1=tcp:5432
+gcpKeyName: marduk-neon-storage-key
+gcpExchangeKeyName: marduk-exchange-neon-storage-key
+gcpBucketName: marduk-production
+gcpExchangeBucketName: marduk-exchange-production
+gcpOtpReportBucketName: otpreport.entur.org
+
+chouette:
+  validateLevel1CronSchedule: 0+30+23+?+*+*
+
+osm:
+  fetchCronSchedule: 0+11+*+*+*+?
+
+google:
+  publish:
+    autoStartup: true
+    cronSchedule: 0+0+4+?+*+*
+  publishQA:
+    autoStartup: true
+    cronSchedule: 0+30+4+?+*+*
+    includeShapes: false
+
+keycloakUrl: https://auth.entur.org/auth
+
+resources:
+  cpuLimit: "5"
+  memLimit: 20000Mi
+  cpuRequest: "3"
+  memRequest: 18000Mi
+  xmx: 16g
+

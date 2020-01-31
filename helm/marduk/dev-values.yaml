@@ -1,0 +1,35 @@
+env: dev
+replicas: 2
+gcpProjectId: carbon-1287
+gcpDatabaseInstance: carbon-1287:europe-west1:marduk-db-1=tcp:5432
+gcpKeyName: marduk-carbon-storage-key
+gcpExchangeKeyName: marduk-exchange-carbon-storage-key
+gcpBucketName: marduk-production
+gcpExchangeBucketName: marduk-exchange
+gcpOtpReportBucketName: otpreport-test.entur.org
+
+chouette:
+  validateLevel1CronSchedule: 0+30+23+?+*+MON-FRI
+
+osm:
+  fetchCronSchedule: 0+11+*+*+*+?
+
+google:
+  publish:
+    autoStartup: false
+    cronSchedule: 0+0+4+?+*+*
+  publishQA:
+    autoStartup: false
+    cronSchedule: 0+30+4+?+*+*
+    includeShapes: true
+
+
+
+keycloakUrl: https://kc-dev.devstage.entur.io/auth
+
+resources:
+  cpuLimit: "3"
+  memLimit: 14000Mi
+  cpuRequest: "1"
+  memRequest: 12000Mi
+  xmx: 10g
