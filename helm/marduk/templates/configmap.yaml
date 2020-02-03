@@ -21,7 +21,7 @@ data:
     chouette.stats.days=180
     sftp.known.hosts.file=/root/.ssh/known_hosts
     blobstore.gcs.container.name={{ .Values.gcpBucketName }}
-    chouette.url=http4://chouette:8080
+    chouette.url=http4://chouette.default:8080
     sftp.keyfile=/etc/secret-volume/id-rsa
     spring.datasource.url=jdbc:postgresql://localhost:5432/marduk
     google.publish.qa.scheduler.autoStartup={{ .Values.google.publishQA.autoStartup }}
@@ -31,7 +31,9 @@ data:
     logging.level.no.rutebanken=INFO
     server.host=0.0.0.0
     keycloak.auth-server-url={{ .Values.keycloakUrl}}
+    keycloak.realm=rutebanken
     blobstore.gcs.credential.path=/etc/marduk/marduk-blobstore-credentials.json
+    keycloak.resource=marduk
     server.admin.host=0.0.0.0
     chouette.validate.level2.autoStartup=false
     sftp.host=lamassu:22

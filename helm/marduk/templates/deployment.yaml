@@ -102,16 +102,6 @@ spec:
                   key: password
                   name: marduk-google-qa-sftp-password
             {{- end}}
-            - name: KEYCLOAK_REALM
-              valueFrom:
-                secretKeyRef:
-                  key: realm
-                  name: marduk-keycloak-secret
-            - name: KEYCLOAK_RESOURCE
-              valueFrom:
-                  secretKeyRef:
-                    key: resource
-                    name: marduk-keycloak-secret
             - name: IAM_KEYCLOAK_CLIENT_SECRET
               valueFrom:
                   secretKeyRef:
