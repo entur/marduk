@@ -36,7 +36,7 @@ data:
     keycloak.resource=marduk
     server.admin.host=0.0.0.0
     chouette.validate.level2.autoStartup=false
-    sftp.host=lamassu:22
+    sftp.host=lamassu.default:22
     logging.level.org.apache=INFO
     logging.config=classpath:logback.xml
     spring.datasource.driver-class-name=org.postgresql.Driver
