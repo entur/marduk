@@ -80,7 +80,6 @@ spec:
                 secretKeyRef:
                   key: password
                   name: marduk-db-password
-            {{- if eq .Values.env "production"}}
             - name: GOOGLE_PUBLISH_SFTP_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -101,7 +100,6 @@ spec:
                 secretKeyRef:
                   key: password
                   name: marduk-google-qa-sftp-password
-            {{- end}}
             - name: IAM_KEYCLOAK_CLIENT_SECRET
               valueFrom:
                   secretKeyRef:
