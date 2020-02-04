@@ -1,0 +1,77 @@
+apiVersion: v1
+data:
+  application.properties: |+
+    chouette.stats.validity.categories=-1;INVALID,0;EXPIRING,120;VALID
+    blobstore.gcs.project.id={{ .Values.gcpProjectId }}
+    chouette.validate.level1.cron.schedule={{ .Values.chouette.validateLevel1CronSchedule }}
+    sftp.delay=60s
+    providers.api.url=http://baba/services/providers/
+    fetch.osm.cron.schedule={{ .Values.osm.fetchCronSchedule }}
+    google.publish.cron.schedule={{ .Values.google.publish.cronSchedule }}
+    keycloak.bearer-only=true
+    spring.datasource.platform=postgresql
+    blobstore.gcs.exchange.credential.path=/etc/exchange/marduk-exchange-blobstore-credentials.json
+    spring.cloud.gcp.pubsub.project-id={{ .Values.gcpProjectId }}
+    spring.cloud.gcp.pubsub.credentials.location=file:/etc/marduk-pubsub-account/marduk-pubsub-credentials.json
+    spring.cloud.gcp.pubsub.subscriber.parallel-pull-count=1
+    spring.cloud.gcp.pubsub.subscriber.executor-threads=30
+    spring.cloud.gcp.pubsub.subscriber.max-ack-extension-period=36000
+    chouette.validate.level1.autoStartup=true
+    chouette.retry.delay=60000
+    chouette.stats.days=180
+    sftp.known.hosts.file=/root/.ssh/known_hosts
+    blobstore.gcs.container.name={{ .Values.gcpBucketName }}
+    chouette.url=http4://chouette.default:8080
+    sftp.keyfile=/etc/secret-volume/id-rsa
+    spring.datasource.url=jdbc:postgresql://localhost:5432/marduk
+    google.publish.qa.scheduler.autoStartup={{ .Values.google.publishQA.autoStartup }}
+    chouette.remove.old.jobs.keep.days=100
+    google.publish.qa.cron.schedule={{ .Values.google.publishQA.cronSchedule }}
+    google.export.qa.includes.shapes={{ .Values.google.publishQA.includeShapes }}
+    logging.level.no.rutebanken=INFO
+    server.host=0.0.0.0
+    keycloak.auth-server-url={{ .Values.keycloakUrl}}
+    keycloak.realm=rutebanken
+    blobstore.gcs.credential.path=/etc/marduk/marduk-blobstore-credentials.json
+    keycloak.resource=marduk
+    server.admin.host=0.0.0.0
+    chouette.validate.level2.autoStartup=false
+    sftp.host=lamassu.default:22
+    logging.level.org.apache=INFO
+    logging.config=classpath:logback.xml
+    spring.datasource.driver-class-name=org.postgresql.Driver
+    spring.main.sources=no.rutebanken.marduk
+    blobstore.delete.external.blobs=false
+    camel.springboot.name=Marduk
+    chouette.export.days.forward=365
+    blobstore.gcs.otpreport.container.name={{ .Values.gcpOtpReportBucketName }}
+    server.port={{ .Values.service.http.internalPort }}
+    chouette.remove.old.jobs.keep.jobs=100
+    blobstore.gcs.otpreport.credential.path=/etc/marduk/marduk-blobstore-credentials.json
+    chouette.max.retries=3000
+    google.publish.autoStartup={{ .Values.google.publish.autoStartup }}
+    spring.profiles.active=gcs-blobstore
+    spring.datasource.maxActive=30
+    server.admin.port={{ .Values.service.httpAdmin.internalPort }}
+    chouette.export.days.back=365
+    sftp.autoStartup=true
+    blobstore.container.name={{ .Values.gcpBucketName }}
+    blobstore.gcs.exchange.container.name={{ .Values.gcpExchangeBucketName }}
+    keycloak.principal-attribute=preferred_username
+    netex.export.merge.flexible.lines.enabled=true
+    # Temporary setting until bug in KeycloakWebSecurityConfigurerAdapter is fixed (The bean 'httpSessionManager', defined in class path resource [XXXSecurityConfiguration.class], could not be registered. A bean with that name has already been defined in URL)
+    spring.main.allow-bean-definition-overriding=true
+    management.server.port=9001
+    management.endpoints.enabled-by-default=false
+    management.endpoint.info.enabled=true
+    management.endpoint.health.enabled=true
+    management.endpoint.prometheus.enabled=true
+    management.endpoints.web.base-path=/
+    management.endpoints.web.exposure.include=info,health,prometheus
+    otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
+kind: ConfigMap
+metadata:
+  name: {{ template "marduk.name" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "common.labels" . | indent 4 }}

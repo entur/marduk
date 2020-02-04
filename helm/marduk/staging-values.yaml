@@ -1,0 +1,33 @@
+env: staging
+replicas: 2
+gcpProjectId: radon-1287
+gcpDatabaseInstance: radon-1287:europe-west1:marduk-db-1=tcp:5432
+gcpKeyName: marduk-neon-storage-key
+gcpExchangeKeyName: marduk-exchange-radon-storage-key
+gcpBucketName: marduk
+gcpExchangeBucketName: marduk-exchange-stage
+gcpOtpReportBucketName: otpreport-stage.entur.org
+
+chouette:
+  validateLevel1CronSchedule: 0+45+2+?+*+*
+
+osm:
+  fetchCronSchedule: 0+11+*+*+*+?
+
+google:
+  publish:
+    autoStartup: false
+    cronSchedule: 0+0+4+?+*+*
+  publishQA:
+    autoStartup: false
+    cronSchedule: 0+30+4+?+*+*
+    includeShapes: false
+
+keycloakUrl: https://kc-stage.devstage.entur.io/auth
+
+resources:
+  cpuLimit: 2500m
+  memLimit: 6000Mi
+  cpuRequest: "1"
+  memRequest: 4500Mi
+  xmx: 4g
