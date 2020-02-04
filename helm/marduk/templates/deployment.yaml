@@ -36,7 +36,7 @@ spec:
             }
           }
       labels:
-        {- include "common.labels" . | indent 8 }}
+        {{- include "common.labels" . | indent 8 }}
     spec:
       containers:
         - command:
@@ -107,7 +107,7 @@ spec:
                   secretKeyRef:
                     key: password
                     name: marduk-keycloak-secret
-          image: image: eu.gcr.io/entur-system-1287/marduk:{{ .Chart.AppVersion }}
+          image: eu.gcr.io/entur-system-1287/marduk:{{ .Chart.AppVersion }}
           imagePullPolicy: Always
           livenessProbe:
             failureThreshold: 3
