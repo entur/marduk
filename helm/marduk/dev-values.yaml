@@ -4,7 +4,7 @@ gcpProjectId: carbon-1287
 gcpDatabaseInstance: carbon-1287:europe-west1:marduk-db-1=tcp:5432
 gcpKeyName: marduk-carbon-storage-key
 gcpExchangeKeyName: marduk-exchange-carbon-storage-key
-gcpBucketName: marduk-production
+gcpBucketName: marduk
 gcpExchangeBucketName: marduk-exchange
 gcpOtpReportBucketName: otpreport-test.entur.org
 
