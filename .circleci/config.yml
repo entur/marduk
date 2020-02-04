@@ -180,9 +180,9 @@ workflows:
              - build-release
            post-steps:
              - save-image-name
-           #filters:
-           #  branches:
-           #    only: master
+           filters:
+             branches:
+               only: master
       - deploy-helm:
           name: deploy-dev-release
           context: dev
