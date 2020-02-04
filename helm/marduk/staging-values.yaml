@@ -2,9 +2,9 @@ env: staging
 replicas: 2
 gcpProjectId: radon-1287
 gcpDatabaseInstance: radon-1287:europe-west1:marduk-db-1=tcp:5432
-gcpKeyName: marduk-neon-storage-key
+gcpKeyName: marduk-radon-storage-key
 gcpExchangeKeyName: marduk-exchange-radon-storage-key
-gcpBucketName: marduk
+gcpBucketName: marduk-stage
 gcpExchangeBucketName: marduk-exchange-stage
 gcpOtpReportBucketName: otpreport-stage.entur.org
 
