@@ -49,7 +49,7 @@ data:
     chouette.remove.old.jobs.keep.jobs=100
     blobstore.gcs.otpreport.credential.path=/etc/marduk/marduk-blobstore-credentials.json
     chouette.max.retries=3000
-    google.publish.autoStartup={{ .Values.google.publish.autoStartup }}
+    google.publish.scheduler.autoStartup={{ .Values.google.publish.autoStartup }}
     spring.profiles.active=gcs-blobstore
     spring.datasource.maxActive=30
     server.admin.port={{ .Values.service.httpAdmin.internalPort }}
