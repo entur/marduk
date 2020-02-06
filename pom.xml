@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-        <version>0.0.13-SNAPSHOT</version>
+        <version>0.0.14-SNAPSHOT</version>
     </parent>
 
 
@@ -77,11 +77,6 @@
             <artifactId>zt-zip</artifactId>
             <version>1.13</version>
             <type>jar</type>
-        </dependency>
-
-        <dependency>
-            <groupId>com.sun.activation</groupId>
-            <artifactId>javax.activation</artifactId>
         </dependency>
 
         <dependency>
@@ -359,6 +354,10 @@
                 <exclusion>
                     <groupId>junit</groupId>
                     <artifactId>junit</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
