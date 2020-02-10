@@ -21,7 +21,7 @@ data:
     chouette.stats.days=180
     sftp.known.hosts.file=/root/.ssh/known_hosts
     blobstore.gcs.container.name={{ .Values.gcpBucketName }}
-    chouette.url=http4://chouette.default:8080
+    chouette.url=http4://chouette:8080
     sftp.keyfile=/etc/secret-volume/id-rsa
     spring.datasource.url=jdbc:postgresql://localhost:5432/marduk
     google.publish.qa.scheduler.autoStartup={{ .Values.google.publishQA.autoStartup }}
