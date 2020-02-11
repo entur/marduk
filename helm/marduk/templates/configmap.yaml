@@ -69,6 +69,7 @@ data:
     management.endpoints.web.base-path=/
     management.endpoints.web.exposure.include=info,health,prometheus
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
+    rutebanken.kubernetes.namespace={{ .Release.Namespace }}
 kind: ConfigMap
 metadata:
   name: {{ template "marduk.name" . }}-config
