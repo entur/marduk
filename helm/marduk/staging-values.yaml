@@ -26,8 +26,8 @@ google:
 keycloakUrl: https://kc-stage.devstage.entur.io/auth
 
 resources:
-  cpuLimit: 2500m
-  memLimit: 6000Mi
-  cpuRequest: "1"
-  memRequest: 4500Mi
-  xmx: 4g
+  cpuLimit: "5"
+  memLimit: 20000Mi
+  cpuRequest: "3"
+  memRequest: 18000Mi
+  xmx: 16g
