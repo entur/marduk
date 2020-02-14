@@ -106,7 +106,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         restConfiguration()
                 .component("jetty")
                 .bindingMode(RestBindingMode.json)
-                .endpointProperty("filtersRef", "keycloakPreAuthActionsFilter,keycloakAuthenticationProcessingFilter")
+                //.endpointProperty("filtersRef", "keycloakPreAuthActionsFilter,keycloakAuthenticationProcessingFilter")
                 .endpointProperty("sessionSupport", "true")
                 .endpointProperty("matchOnUriPrefix", "true")
                 .enableCORS(true)
