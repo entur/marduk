@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class TenantAuthenticationManagerResolver
+public class MultiIssuerAuthenticationManagerResolver
         implements AuthenticationManagerResolver<HttpServletRequest> {
 
     @Value("${marduk.oauth2.resourceserver.auth0.jwt.audience}")
@@ -32,9 +32,6 @@ public class TenantAuthenticationManagerResolver
 
     @Value("${marduk.oauth2.resourceserver.auth0.jwt.issuer-uri}")
     private String auth0Issuer;
-
-    @Value("${marduk.oauth2.resourceserver.auth0.jwt.jwkset-uri}")
-    private String auth0JwksetUri;
 
     @Value("${marduk.oauth2.resourceserver.keycloak.jwt.audience}")
     private String keycloakAudience;
@@ -50,9 +47,6 @@ public class TenantAuthenticationManagerResolver
     private final BearerTokenResolver resolver = new DefaultBearerTokenResolver();
 
     private final Map<String, AuthenticationManager> authenticationManagers = new ConcurrentHashMap<>();
-
-    private Map<String, String> tenants = Map.of("https://kc-dev.devstage.entur.io/auth/realms/rutebanken", "keycloack", "https://partner.dev.entur.org/", "auth0");
-
 
     JwtDecoder auth0JwtDecoder() {
         NimbusJwtDecoder jwtDecoder = (NimbusJwtDecoder)
@@ -80,39 +74,38 @@ public class TenantAuthenticationManagerResolver
         return jwtDecoder;
     }
 
-    private JwtDecoder jwtDecoder(String tenant) {
-        if ("auth0".equals(tenant)) {
+    private JwtDecoder jwtDecoder(String issuer) {
+        if (auth0Issuer.equals(issuer)) {
             return auth0JwtDecoder();
-        } else if ("keycloack".equals(tenant)) {
+        } else if (keycloakIssuer.equals(issuer)) {
             return keycloakJwtDecoder();
         } else {
-            throw new IllegalArgumentException("unknown tenant");
+            throw new IllegalArgumentException("unknown issuer");
         }
     }
 
 
-    private String toTenant(HttpServletRequest request) {
+    private String toIssuer(HttpServletRequest request) {
         try {
             String token = this.resolver.resolve(request);
             String issuer = JWTParser.parse(token).getJWTClaimsSet().getIssuer();
             logger.debug("Received JWT token from issuer {}", issuer);
-            return tenants.get(issuer);
+            return issuer;
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }
     }
 
-    private AuthenticationManager fromTenant(String tenant) {
-        return Optional.ofNullable(tenant)
+    private AuthenticationManager fromIssuer(String issuer) {
+        return Optional.ofNullable(issuer)
                 .map(this::jwtDecoder)
                 .map(JwtAuthenticationProvider::new)
-                .orElseThrow(() -> new IllegalArgumentException("unknown tenant"))::authenticate;
+                .orElseThrow(() -> new IllegalArgumentException("unknown issuer"))::authenticate;
     }
-
 
     @Override
     public AuthenticationManager resolve(HttpServletRequest request) {
-        return this.authenticationManagers.computeIfAbsent(toTenant(request), this::fromTenant);
+        return this.authenticationManagers.computeIfAbsent(toIssuer(request), this::fromIssuer);
     }
 
 

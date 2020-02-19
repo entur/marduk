@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -14,11 +15,12 @@ import java.util.Arrays;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @EnableWebSecurity
+@Component("MardukSecurityConfig")
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 
     @Autowired
-    TenantAuthenticationManagerResolver tenantAuthenticationManagerResolver;
+    MultiIssuerAuthenticationManagerResolver multiIssuerAuthenticationManagerResolver;
 
 
     @Bean
@@ -39,7 +41,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/services/**").authenticated()
                 .and()
-                .oauth2ResourceServer().authenticationManagerResolver(this.tenantAuthenticationManagerResolver);
+                .oauth2ResourceServer().authenticationManagerResolver(this.multiIssuerAuthenticationManagerResolver);
 
     }
 
