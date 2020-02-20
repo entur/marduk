@@ -48,29 +48,27 @@ public class MultiIssuerAuthenticationManagerResolver
 
     private final Map<String, AuthenticationManager> authenticationManagers = new ConcurrentHashMap<>();
 
-    JwtDecoder auth0JwtDecoder() {
+    private JwtDecoder auth0JwtDecoder() {
         NimbusJwtDecoder jwtDecoder = (NimbusJwtDecoder)
                 JwtDecoders.fromOidcIssuerLocation(auth0Issuer);
 
         OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(auth0Audience);
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(auth0Issuer);
         OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
-
         jwtDecoder.setJwtValidator(withAudience);
-
+        jwtDecoder.setClaimSetConverter(new RolesClaimAdapter());
         return jwtDecoder;
     }
 
-    JwtDecoder keycloakJwtDecoder() {
+
+    private JwtDecoder keycloakJwtDecoder() {
 
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(keycloakJwksetUri).build();
 
         OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(keycloakAudience);
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(keycloakIssuer);
         OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
-
         jwtDecoder.setJwtValidator(withAudience);
-
         return jwtDecoder;
     }
 
@@ -107,6 +105,5 @@ public class MultiIssuerAuthenticationManagerResolver
     public AuthenticationManager resolve(HttpServletRequest request) {
         return this.authenticationManagers.computeIfAbsent(toIssuer(request), this::fromIssuer);
     }
-
 
 }

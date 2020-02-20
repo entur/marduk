@@ -80,6 +80,7 @@ public class HttpRouteBuilder extends BaseRouteBuilder {
         .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
         .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null)
         .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
+        .to("direct:authorizeRequest")
         .log(LoggingLevel.INFO, correlation() + "upload files and start import pipeline")
         .removeHeaders("CamelHttp*")
         .to("direct:uploadFilesAndStartImport")
