@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.camel.Produce;
@@ -42,7 +43,7 @@ import java.util.List;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static org.mockito.Mockito.when;
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = GtfsExtendedMergedExportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderIntegrationTestBase {
 
 

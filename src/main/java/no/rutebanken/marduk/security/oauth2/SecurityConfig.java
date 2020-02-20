@@ -2,6 +2,7 @@ package no.rutebanken.marduk.security.oauth2;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -14,6 +15,7 @@ import java.util.Arrays;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
+@Profile("!dev")
 @EnableWebSecurity
 @Component("MardukSecurityConfig")
 public class SecurityConfig extends WebSecurityConfigurerAdapter {

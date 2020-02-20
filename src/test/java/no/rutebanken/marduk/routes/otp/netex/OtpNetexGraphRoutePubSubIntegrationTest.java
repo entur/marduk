@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.otp.netex;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.routes.otp.remote.RemoteNetexGraphRouteBuilder;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
@@ -30,9 +31,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.HashMap;
 import java.util.Map;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = RemoteNetexGraphRouteBuilder.class,
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class,
         properties = {
-                "spring.main.sources=no.rutebanken.marduk.test",
                 "marduk.camel.redelivery.max=1",
                 "marduk.camel.redelivery.delay=0",
                 "marduk.camel.redelivery.backoff.multiplier=1",

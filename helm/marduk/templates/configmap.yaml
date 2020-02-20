@@ -68,6 +68,15 @@ data:
     management.endpoints.web.exposure.include=info,health,prometheus
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
+    camel.component.servlet.mapping.context-path=/services/*
+    marduk.oauth2.resourceserver.keycloak.jwt.issuer-uri={{ .Values.keycloakUrl }}/realms/rutebanken
+    marduk.oauth2.resourceserver.keycloak.jwt.jwkset-uri={{ .Values.keycloakUrl }}/realms/rutebanken/protocol/openid-connect/certs
+    marduk.oauth2.resourceserver.keycloak.jwt.audience=account
+    marduk.oauth2.resourceserver.auth0.jwt.issuer-uri={{ .Values.auth0Url }}/
+    marduk.oauth2.resourceserver.auth0.jwt.jwkset-uri={{ .Values.auth0Url }}/.well-known/jwks.json
+    marduk.oauth2.resourceserver.auth0.jwt.audience=https://api.dev.entur.io
+
+
 kind: ConfigMap
 metadata:
   name: {{ template "marduk.name" . }}-config
