@@ -16,22 +16,21 @@
 
 package no.rutebanken.marduk.security.oauth2;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.rutebanken.helper.organisation.RoleAssignment;
+import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import org.rutebanken.helper.organisation.RoleAssignment;
-import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 /**
  * Extract RoleAssignments from JwtAuthenticationToken.
