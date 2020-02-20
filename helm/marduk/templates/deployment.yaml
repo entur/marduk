@@ -21,7 +21,7 @@ spec:
     metadata:
       annotations:
         prometheus.io/path: /prometheus
-        prometheus.io/port: "{{ .Values.service.http.internalPort }}"
+        prometheus.io/port: "9001"
         prometheus.io/scrape: "true"
         scheduler.alpha.kubernetes.io/affinity: |
           {
@@ -110,8 +110,8 @@ spec:
           livenessProbe:
             failureThreshold: 3
             httpGet:
-              path: /actuator/health
-              port: {{ .Values.service.http.internalPort }}
+              path: /health
+              port: 9001
               scheme: HTTP
             initialDelaySeconds: 140
             periodSeconds: 10
@@ -128,8 +128,8 @@ spec:
           readinessProbe:
             failureThreshold: 3
             httpGet:
-              path: /actuator/health
-              port: {{ .Values.service.http.internalPort }}
+              path: /health
+              port: 9001
               scheme: HTTP
             initialDelaySeconds: 30
             periodSeconds: 10
