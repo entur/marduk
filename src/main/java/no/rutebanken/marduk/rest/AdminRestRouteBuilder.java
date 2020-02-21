@@ -711,6 +711,28 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-fetch-osm")
                 .endRest();
 
+        rest("/upload")
+                .post("{codespace}")
+                .description("Upload NeTEx file")
+                .param().name("codespace").type(RestParamType.path).description("Provider Codespace").dataType("string").endParam()
+                .consumes(MULTIPART_FORM_DATA)
+                .produces(PLAIN)
+                .bindingMode(RestBindingMode.off)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
+                .route()
+                .streamCaching()
+                .log(LoggingLevel.INFO, correlation() + "Uploading file from provider " + header("codespace"))
+                .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
+                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null)
+                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
+                .to("direct:authorizeRequest")
+                .log(LoggingLevel.INFO, correlation() + "upload files and start import pipeline")
+                .removeHeaders("CamelHttp*")
+                .to("direct:uploadFilesAndStartImport")
+                .routeId("admin-upload-file")
+                .endRest();
+
         from("direct:authorizeRequest")
                 .doTry()
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
