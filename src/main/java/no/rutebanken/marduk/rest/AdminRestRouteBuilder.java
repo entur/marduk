@@ -106,10 +106,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .put().route().routeId("admin-route-authorize-put").throwException(new NotFoundException()).endRest()
                 .delete().route().routeId("admin-route-authorize-delete").throwException(new NotFoundException()).endRest();
 
-
-        String commonApiDocEndpoint = "rest:get:/services/swagger.json?host=localhost&bridgeEndpoint=true";
-
-        rest("/timetable_admin")
+    rest("/timetable_admin")
                 .post("/idempotentfilter/clean")
                 .description("Clean unique filename and digest Idempotent Stores")
                 .responseMessage().code(200).endResponseMessage()
@@ -421,13 +418,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-timetable-netex-merged-export")
                 .endRest()
 
-/*                .get("/swagger.json")
-                .apiDocs(false)
-                .bindingMode(RestBindingMode.off)
-                .route()
-                .to(commonApiDocEndpoint)
-                .endRest()*/
-
                 .post("routing_graph/build_base")
                 .description("Triggers building of the OTP base graph using map data (osm + height)")
                 .consumes(PLAIN)
@@ -726,7 +716,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
                         new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT, e.getIn().getHeader(PROVIDER_ID, Long.class))))
                 .routeId("admin-authorize-request");
-
 
     }
 

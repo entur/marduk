@@ -15,15 +15,18 @@ import java.util.Arrays;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
-@Profile("!dev")
+/**
+ * Authentication and authorization configuration for Marduk.
+ * All requests must be authenticated except for the Swagger endpoint.
+ * The Oauth2 ID-provider (Keycloak or Auth0) is identified thanks to {@link MultiIssuerAuthenticationManagerResolver}.
+ */
+@Profile("!test")
 @EnableWebSecurity
-@Component("MardukSecurityConfig")
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
-
+@Component
+public class MardukWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
 
     @Autowired
     MultiIssuerAuthenticationManagerResolver multiIssuerAuthenticationManagerResolver;
-
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
@@ -41,10 +44,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http.cors(withDefaults())
                 .csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/services/**").authenticated()
+                .antMatchers("/services/swagger.json").permitAll()
+                .anyRequest().authenticated()
                 .and()
                 .oauth2ResourceServer().authenticationManagerResolver(this.multiIssuerAuthenticationManagerResolver);
-
     }
 
 }

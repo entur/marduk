@@ -33,7 +33,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Extract RoleAssignments from JwtAuthenticationToken.
+ * Extract @{@link RoleAssignment}s from @{@link JwtAuthenticationToken}.
+ * Roles are expected to be defined in the "roles" claim, in JSON format.
  */
 public class JwtRoleAssignmentExtractor implements RoleAssignmentExtractor {
 
@@ -70,7 +71,6 @@ public class JwtRoleAssignmentExtractor implements RoleAssignmentExtractor {
     }
 
     private static RoleAssignment parse(Object roleAssignment) {
-        // dual value support because of corresponding legacy code
         if (roleAssignment instanceof Map) {
             return mapper.convertValue(roleAssignment, RoleAssignment.class);
         }

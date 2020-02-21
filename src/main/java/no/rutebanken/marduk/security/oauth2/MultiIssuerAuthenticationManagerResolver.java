@@ -23,15 +23,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Resolve the @{@link AuthenticationManager} that should authenticate the current JWT token.
+ * This is achieved by extracting the issuer from the token and matching it against either the Keycloack
+ * issuer URI or the Auth0 issuer URI.
+ * The two @{@link AuthenticationManager}s (one for Keycloak, one for Auth0) are instantiated during the first request and then cached.
+ *
+ */
 @Component
 public class MultiIssuerAuthenticationManagerResolver
         implements AuthenticationManagerResolver<HttpServletRequest> {
-
-    @Value("${marduk.oauth2.resourceserver.auth0.jwt.audience}")
-    private String auth0Audience;
-
-    @Value("${marduk.oauth2.resourceserver.auth0.jwt.issuer-uri}")
-    private String auth0Issuer;
 
     @Value("${marduk.oauth2.resourceserver.keycloak.jwt.audience}")
     private String keycloakAudience;
@@ -42,12 +43,27 @@ public class MultiIssuerAuthenticationManagerResolver
     @Value("${marduk.oauth2.resourceserver.keycloak.jwt.jwkset-uri}")
     private String keycloakJwksetUri;
 
+    @Value("${marduk.oauth2.resourceserver.auth0.jwt.audience}")
+    private String auth0Audience;
+
+    @Value("${marduk.oauth2.resourceserver.auth0.jwt.issuer-uri}")
+    private String auth0Issuer;
+
+    @Value("${marduk.oauth2.resourceserver.auth0.admin.activated:false}")
+    private boolean administratorAccessActivated;
+
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final BearerTokenResolver resolver = new DefaultBearerTokenResolver();
 
     private final Map<String, AuthenticationManager> authenticationManagers = new ConcurrentHashMap<>();
 
+    /**
+     * Build a @{@link JwtDecoder} for Auth0.
+     * To ensure compatibility with the existing authorization process ({@link JwtRoleAssignmentExtractor}), a "roles"
+     * claim is inserted in the token thanks to @{@link Auth0RolesClaimAdapter}
+     * @return a @{@link JwtDecoder} for Auth0.
+     */
     private JwtDecoder auth0JwtDecoder() {
         NimbusJwtDecoder jwtDecoder = (NimbusJwtDecoder)
                 JwtDecoders.fromOidcIssuerLocation(auth0Issuer);
@@ -56,11 +72,15 @@ public class MultiIssuerAuthenticationManagerResolver
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(auth0Issuer);
         OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
         jwtDecoder.setJwtValidator(withAudience);
-        jwtDecoder.setClaimSetConverter(new RolesClaimAdapter());
+        jwtDecoder.setClaimSetConverter(new Auth0RolesClaimAdapter(administratorAccessActivated));
         return jwtDecoder;
     }
 
-
+    /**
+     * Build a @{@link JwtDecoder} for Keycloak.
+     * Keycloak exposes a non-standard JWK-Set URI that must be configured explicitly.
+     * @return a @{@link JwtDecoder} for Keycloak.
+     */
     private JwtDecoder keycloakJwtDecoder() {
 
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(keycloakJwksetUri).build();

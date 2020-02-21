@@ -3,6 +3,7 @@ package no.rutebanken.marduk.security.oauth2;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.RoleAssignment;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.oauth2.jwt.MappedJwtClaimSetConverter;
 
@@ -14,14 +15,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-class RolesClaimAdapter implements Converter<Map<String, Object>, Map<String, Object>> {
+
+/**
+ * Insert a "roles" claim in the JWT token based on the organisationID claim, for compatibility with the existing
+ * authorization process (@{@link JwtRoleAssignmentExtractor}).
+ */
+class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<String, Object>> {
+
+
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    private static final String ORG_RUTEBANKEN = "RB";
+    private static final String ORG_VY = "NSB";
+
+    private static final Map<Long, String> rutebankenOrganisations = Map.of(1L, ORG_RUTEBANKEN, 20L, ORG_VY);
 
     private final MappedJwtClaimSetConverter delegate =
             MappedJwtClaimSetConverter.withDefaults(Collections.emptyMap());
 
-    private static ObjectMapper mapper = new ObjectMapper();
+    private boolean administratorAccessActivated;
 
-    private static Map<Long, String> rutebankenOrganisations = Map.of(1L, "RB");
+    Auth0RolesClaimAdapter(boolean administratorAccessActivated) {
+        this.administratorAccessActivated = administratorAccessActivated;
+    }
 
 
     public Map<String, Object> convert(Map<String, Object> claims) {
@@ -29,9 +45,15 @@ class RolesClaimAdapter implements Converter<Map<String, Object>, Map<String, Ob
 
         Long enturOrganisationId = (Long) convertedClaims.get("https://entur.io/organisationID");
         String rutebankenOrganisationId = getRutebankenOrganisationId(enturOrganisationId);
+
+        String role = administratorAccessActivated && ORG_RUTEBANKEN.equals(rutebankenOrganisationId)
+                ? AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN
+                : AuthorizationConstants.ROLE_ROUTE_DATA_EDIT;
+
         RoleAssignment.Builder builder = RoleAssignment.builder();
-        builder.withRole(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN);
+        builder.withRole(role);
         builder.withOrganisation(rutebankenOrganisationId);
+
         List<String> roleAssignments = Arrays.asList(toJSON(builder.build()));
         convertedClaims.put("roles", roleAssignments);
         return convertedClaims;
