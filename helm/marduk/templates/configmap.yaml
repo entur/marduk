@@ -34,7 +34,6 @@ data:
     keycloak.realm=rutebanken
     blobstore.gcs.credential.path=/etc/marduk/marduk-blobstore-credentials.json
     keycloak.resource=marduk
-    server.admin.host=0.0.0.0
     chouette.validate.level2.autoStartup=false
     sftp.host=lamassu.default:22
     logging.level.org.apache=INFO
@@ -52,7 +51,6 @@ data:
     google.publish.scheduler.autoStartup={{ .Values.google.publish.autoStartup }}
     spring.profiles.active=gcs-blobstore
     spring.datasource.maxActive=30
-    server.admin.port={{ .Values.service.httpAdmin.internalPort }}
     chouette.export.days.back=365
     sftp.autoStartup=true
     blobstore.container.name={{ .Values.gcpBucketName }}

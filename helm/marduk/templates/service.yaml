@@ -11,10 +11,6 @@ spec:
       port: {{ .Values.service.http.externalPort }}
       protocol: TCP
       targetPort:  {{ .Values.service.http.internalPort }}
-    - name: admin
-      port: {{ .Values.service.httpAdmin.externalPort }}
-      protocol: TCP
-      targetPort: {{ .Values.service.httpAdmin.internalPort }}
   selector:
     app: {{ template "marduk.name" . }}
   sessionAffinity: None

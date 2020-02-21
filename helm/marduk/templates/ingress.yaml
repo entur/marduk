@@ -25,7 +25,7 @@ spec:
       paths:
         - backend:
             serviceName: {{ template "marduk.name" . }}
-            servicePort: {{ .Values.service.httpAdmin.externalPort }}
+            servicePort: {{ .Values.service.http.externalPort }}
 ---
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -54,5 +54,5 @@ spec:
         paths:
           - backend:
               serviceName: {{ template "marduk.name" . }}
-              servicePort: {{ .Values.service.httpAdmin.externalPort }}
+              servicePort: {{ .Values.service.http.externalPort }}
 ---

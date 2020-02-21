@@ -119,9 +119,6 @@ spec:
             timeoutSeconds: 30
           name: marduk
           ports:
-            - containerPort: {{ .Values.service.httpAdmin.internalPort }}
-              name: http-admin
-              protocol: TCP
             - containerPort: {{ .Values.service.http.internalPort }}
               name: http
               protocol: TCP
