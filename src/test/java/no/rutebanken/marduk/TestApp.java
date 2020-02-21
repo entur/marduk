@@ -14,20 +14,28 @@
  *
  */
 
-package no.rutebanken.marduk.test;
+package no.rutebanken.marduk;
 
-import no.rutebanken.marduk.App;
+import no.rutebanken.marduk.config.MardukSecurityConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = { SecurityAutoConfiguration.class })
+@ComponentScan(excludeFilters = {
+        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = MardukSecurityConfig.class),
+        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = App.class),
+})
 public class TestApp extends App {
 
     private static Logger logger = LoggerFactory.getLogger(TestApp.class);
 
-    public static void main(String... args){
-        App.main(args);
+    public static void main(String[] args) {
+        SpringApplication.run(TestApp.class, args);
     }
 
     @Override
