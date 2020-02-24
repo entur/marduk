@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestApp;
 import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -33,7 +34,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = ChouetteExportGtfsRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TestApp.class)
 public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired

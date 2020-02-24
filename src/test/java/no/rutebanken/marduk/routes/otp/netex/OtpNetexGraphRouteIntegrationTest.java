@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.otp.netex;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import no.rutebanken.marduk.routes.otp.remote.RemoteNetexGraphRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -40,7 +41,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = RemoteNetexGraphRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes =  TestApp.class)
 public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 

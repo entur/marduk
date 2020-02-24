@@ -35,6 +35,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -77,9 +78,12 @@ public class App extends RouteBuilder {
 
 	protected void waitForProviderRepository() throws InterruptedException {
 		while (!providerRepository.isReady()){
-			logger.warn("Provider Repository not available. Waiting " + providerRetryInterval/1000 + " secs before retrying...");
-			Thread.sleep(providerRetryInterval);
-            providerRepository.populate();
+			try {
+				providerRepository.populate();
+			} catch (ResourceAccessException e) {
+				logger.warn("Provider Repository not available. Waiting " + providerRetryInterval/1000 + " secs before retrying...", e);
+				Thread.sleep(providerRetryInterval);
+			}
         }
 		logger.info("Provider Repository available. Starting camel routes...");
 	}

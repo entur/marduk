@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -37,7 +38,7 @@ import java.util.Arrays;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = GtfsBasicMergedExportRouteBuilder.class, properties = "spring.main.sources=no.rutebanken.marduk.test")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 public class GtfsBasicExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 

@@ -67,9 +67,7 @@ public class CacheProviderRepository implements ProviderRepository {
             logger.info("Updated provider cache with result from REST Provider Service. Cache now has " + cache.size() + " elements");
         } catch (ResourceAccessException re) {
             if (re.getCause() instanceof ConnectException) {
-
                 if (isEmpty()) {
-                    logger.warn("REST Provider Service is unavailable and provider cache is empty. Trying to populate from file.");
                     throw re;
                 } else {
                     logger.warn("REST Provider Service is unavailable. Could not update provider cache, but keeping " + cache.size() + " existing elements.");
