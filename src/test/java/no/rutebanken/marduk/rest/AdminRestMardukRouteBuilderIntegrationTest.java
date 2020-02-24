@@ -263,7 +263,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         String testFileName = "testFile";
         //populate fake blob repo
         for (String prefix : exportFileStaticPrefixes) {
-            inMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, new FileInputStream(new File( "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")), false);
+            inMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")), false);
         }
         camelContext.start();
 
