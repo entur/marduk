@@ -30,18 +30,15 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
-import org.apache.camel.model.rest.RestPropertyDefinition;
 import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.net.URLDecoder;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -65,25 +62,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     private static final String X_OCTET_STREAM = "application/x-octet-stream";
     private static final String PLAIN = "text/plain";
 
-    @Value("${server.admin.port}")
-    public String port;
-
-    @Value("${server.admin.host}")
-    public String host;
-
     @Autowired
     private AuthorizationService authorizationService;
 
     @Override
     public void configure() throws Exception {
         super.configure();
-
-        RestPropertyDefinition corsAllowedHeaders = new RestPropertyDefinition();
-        corsAllowedHeaders.setKey("Access-Control-Allow-Headers");
-        corsAllowedHeaders.setValue("Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
-
-        restConfiguration().setCorsHeaders(Collections.singletonList(corsAllowedHeaders));
-
 
         onException(AccessDeniedException.class)
                 .handled(true)
@@ -103,19 +87,16 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
                 .transform(exceptionMessage());
 
+
         restConfiguration()
-                .component("jetty")
+                .component("servlet")
+                .contextPath("/services")
                 .bindingMode(RestBindingMode.json)
-                .endpointProperty("filtersRef", "keycloakPreAuthActionsFilter,keycloakAuthenticationProcessingFilter")
-                .endpointProperty("sessionSupport", "true")
                 .endpointProperty("matchOnUriPrefix", "true")
-                .enableCORS(true)
-                .dataFormatProperty("prettyPrint", "true")
-                .host(host)
-                .port(port)
                 .apiContextPath("/swagger.json")
                 .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0")
-                .contextPath("/services");
+                .apiContextRouteId("doc-api")
+        ;
 
         rest("")
                 .apiDocs(false)
@@ -125,10 +106,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .put().route().routeId("admin-route-authorize-put").throwException(new NotFoundException()).endRest()
                 .delete().route().routeId("admin-route-authorize-delete").throwException(new NotFoundException()).endRest();
 
-
-        String commonApiDocEndpoint = "rest:get:/services/swagger.json?bridgeEndpoint=true";
-
-        rest("/timetable_admin")
+    rest("/timetable_admin")
                 .post("/idempotentfilter/clean")
                 .description("Clean unique filename and digest Idempotent Stores")
                 .responseMessage().code(200).endResponseMessage()
@@ -440,13 +418,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-timetable-netex-merged-export")
                 .endRest()
 
-                .get("/swagger.json")
-                .apiDocs(false)
-                .bindingMode(RestBindingMode.off)
-                .route()
-                .to(commonApiDocEndpoint)
-                .endRest()
-
                 .post("routing_graph/build_base")
                 .description("Triggers building of the OTP base graph using map data (osm + height)")
                 .consumes(PLAIN)
@@ -740,12 +711,33 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-fetch-osm")
                 .endRest();
 
+        rest("/upload")
+                .post("{codespace}")
+                .description("Upload NeTEx file")
+                .param().name("codespace").type(RestParamType.path).description("Provider Codespace").dataType("string").endParam()
+                .consumes(MULTIPART_FORM_DATA)
+                .produces(PLAIN)
+                .bindingMode(RestBindingMode.off)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
+                .route()
+                .streamCaching()
+                .log(LoggingLevel.INFO, correlation() + "Uploading file from provider " + header("codespace"))
+                .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
+                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null)
+                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
+                .to("direct:authorizeRequest")
+                .log(LoggingLevel.INFO, correlation() + "upload files and start import pipeline")
+                .removeHeaders("CamelHttp*")
+                .to("direct:uploadFilesAndStartImport")
+                .routeId("admin-upload-file")
+                .endRest();
+
         from("direct:authorizeRequest")
                 .doTry()
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
                         new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT, e.getIn().getHeader(PROVIDER_ID, Long.class))))
                 .routeId("admin-authorize-request");
-
 
     }
 

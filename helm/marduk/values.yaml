@@ -1,8 +1,5 @@
 service:
   http:
-    externalPort: 80
-    internalPort: 8776
-  httpAdmin:
     externalPort: 8080
     internalPort: 8080
 

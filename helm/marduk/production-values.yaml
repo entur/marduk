@@ -24,6 +24,7 @@ google:
     includeShapes: false
 
 keycloakUrl: https://auth.entur.org/auth
+auth0Url: https://partner.entur.org
 
 resources:
   cpuLimit: "5"

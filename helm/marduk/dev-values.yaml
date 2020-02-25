@@ -26,6 +26,7 @@ google:
 
 
 keycloakUrl: https://kc-dev.devstage.entur.io/auth
+auth0Url: https://partner.dev.entur.org
 
 resources:
   cpuLimit: "3"

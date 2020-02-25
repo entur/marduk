@@ -16,6 +16,7 @@ data:
     spring.cloud.gcp.pubsub.subscriber.parallel-pull-count=1
     spring.cloud.gcp.pubsub.subscriber.executor-threads=30
     spring.cloud.gcp.pubsub.subscriber.max-ack-extension-period=36000
+    entur.pubsub.subscriber.autocreate=false
     chouette.validate.level1.autoStartup=true
     chouette.retry.delay=60000
     chouette.stats.days=180
@@ -34,7 +35,6 @@ data:
     keycloak.realm=rutebanken
     blobstore.gcs.credential.path=/etc/marduk/marduk-blobstore-credentials.json
     keycloak.resource=marduk
-    server.admin.host=0.0.0.0
     chouette.validate.level2.autoStartup=false
     sftp.host=lamassu.default:22
     logging.level.org.apache=INFO
@@ -52,7 +52,6 @@ data:
     google.publish.scheduler.autoStartup={{ .Values.google.publish.autoStartup }}
     spring.profiles.active=gcs-blobstore
     spring.datasource.maxActive=30
-    server.admin.port={{ .Values.service.httpAdmin.internalPort }}
     chouette.export.days.back=365
     sftp.autoStartup=true
     blobstore.container.name={{ .Values.gcpBucketName }}
@@ -70,6 +69,15 @@ data:
     management.endpoints.web.exposure.include=info,health,prometheus
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
+    camel.component.servlet.mapping.context-path=/services/*
+    marduk.oauth2.resourceserver.keycloak.jwt.issuer-uri={{ .Values.keycloakUrl }}/realms/rutebanken
+    marduk.oauth2.resourceserver.keycloak.jwt.jwkset-uri={{ .Values.keycloakUrl }}/realms/rutebanken/protocol/openid-connect/certs
+    marduk.oauth2.resourceserver.keycloak.jwt.audience=account
+    marduk.oauth2.resourceserver.auth0.jwt.issuer-uri={{ .Values.auth0Url }}/
+    marduk.oauth2.resourceserver.auth0.jwt.jwkset-uri={{ .Values.auth0Url }}/.well-known/jwks.json
+    marduk.oauth2.resourceserver.auth0.jwt.audience=https://api.dev.entur.io
+
+
 kind: ConfigMap
 metadata:
   name: {{ template "marduk.name" . }}-config

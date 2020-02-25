@@ -24,6 +24,7 @@ google:
     includeShapes: false
 
 keycloakUrl: https://kc-stage.devstage.entur.io/auth
+auth0Url: https://partner.staging.entur.org
 
 resources:
   cpuLimit: "5"
