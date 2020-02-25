@@ -26,9 +26,15 @@ class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<Strin
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private static final String ORG_RUTEBANKEN = "RB";
-    private static final String ORG_VY = "NSB";
 
-    private static final Map<Long, String> rutebankenOrganisations = Map.of(1L, ORG_RUTEBANKEN, 20L, ORG_VY);
+
+    private static final Map<Long, String> rutebankenOrganisations = Map.of(
+            1L, ORG_RUTEBANKEN,
+            14L, "MOR",
+            20L, "NSB",
+            35L, "GOA",
+            41L, "SJN"
+    );
 
     private final MappedJwtClaimSetConverter delegate =
             MappedJwtClaimSetConverter.withDefaults(Collections.emptyMap());
