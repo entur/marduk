@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-        <version>0.0.15-SNAPSHOT</version>
+        <version>1.0.1</version>
     </parent>
 
 
@@ -30,11 +30,11 @@
     </repositories>
     <properties>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
-        <camel.version>2.24.3</camel.version>
+        <camel.version>2.25.0</camel.version>
         <keycloak.version>4.8.3.Final</keycloak.version>
         <onebusaway.gtfs.version>1.3.4</onebusaway.gtfs.version>
         <netex-java-model.version>1.0.9-SNAPSHOT</netex-java-model.version>
-        <entur.helpers.version>0.0.10-SNAPSHOT</entur.helpers.version>
+        <entur.helpers.version>1.0.1</entur.helpers.version>
         <guava.version>28.1-jre</guava.version>
         <commons-io.version>2.6</commons-io.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
@@ -42,6 +42,9 @@
         <junit-jupiter.version>5.5.2</junit-jupiter.version>
         <mockito.version>3.1.0</mockito.version>
 
+        <!-- temporary security-related dependency management -->
+        <!-- should be removed when transitive dependencies are fixed in onebusaway-gtfs-* -->
+        <commons-beanutils.version>1.8.3</commons-beanutils.version>
     </properties>
 
     <dependencyManagement>
@@ -66,6 +69,16 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!-- temporary security-related dependency management -->
+            <!-- should be removed when transitive dependencies are fixed in onebusaway-gtfs -->
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>${commons-beanutils.version}</version>
+            </dependency>
+
+
 
         </dependencies>
     </dependencyManagement>
