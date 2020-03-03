@@ -42,9 +42,6 @@
         <junit-jupiter.version>5.5.2</junit-jupiter.version>
         <mockito.version>3.1.0</mockito.version>
 
-        <!-- temporary security-related dependency management -->
-        <!-- should be removed when transitive dependencies are fixed in onebusaway-gtfs-* -->
-        <commons-beanutils.version>1.8.3</commons-beanutils.version>
     </properties>
 
     <dependencyManagement>
@@ -69,16 +66,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
-            <!-- temporary security-related dependency management -->
-            <!-- should be removed when transitive dependencies are fixed in onebusaway-gtfs -->
-            <dependency>
-                <groupId>commons-beanutils</groupId>
-                <artifactId>commons-beanutils</artifactId>
-                <version>${commons-beanutils.version}</version>
-            </dependency>
-
-
 
         </dependencies>
     </dependencyManagement>
