@@ -1,4 +1,4 @@
-FROM openjdk:11-jre
+FROM adoptopenjdk/openjdk11:alpine-jre
 WORKDIR /deployments
 COPY target/marduk-*-SNAPSHOT.jar marduk.jar
 RUN mkdir /root/.ssh \
