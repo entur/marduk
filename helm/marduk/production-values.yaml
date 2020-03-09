@@ -19,7 +19,7 @@ google:
     autoStartup: true
     cronSchedule: 0+0+4+?+*+*
   publishQA:
-    autoStartup: true
+    autoStartup: false
     cronSchedule: 0+30+4+?+*+*
     includeShapes: false
 
