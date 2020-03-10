@@ -74,14 +74,6 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-
-//        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
-//                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
-//                .process(e -> Status.addStatus(e, TimetableAction.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.FAILED))
-//                .to("direct:updateStatus")
-//                .log(LoggingLevel.ERROR,correlation()+"Failed while polling chouette.")
-//                .handled(true);
-
         from("direct:chouetteGetJobsForProvider")
                 .log(LoggingLevel.DEBUG, correlation() + "Fetching jobs for provider id '${header." + PROVIDER_ID + "}'")
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
@@ -183,9 +175,9 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-validate-job-status-parameters");
 
         from("direct:checkJobStatus")
-                .process(e -> {
-                    e.getIn().setHeader("loopCounter", e.getIn().getHeader("loopCounter", 0, Integer.class) + 1);
-                })
+                .process(e ->
+                    e.getIn().setHeader("loopCounter", e.getIn().getHeader("loopCounter", 0, Integer.class) + 1)
+                )
                 .setProperty(Constants.CHOUETTE_REFERENTIAL, header(Constants.CHOUETTE_REFERENTIAL))
                 .setProperty("url", header(Constants.CHOUETTE_JOB_STATUS_URL))
                 .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
@@ -280,9 +272,9 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .end()
 
 
-                .process(e -> {
-                    e.getIn().setHeader("action_report_result", e.getIn().getBody(ActionReportWrapper.class).actionReport.result);
-                })
+                .process(e ->
+                    e.getIn().setHeader("action_report_result", e.getIn().getBody(ActionReportWrapper.class).actionReport.result)
+                )
 
 
 

@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.routes.blobstore;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

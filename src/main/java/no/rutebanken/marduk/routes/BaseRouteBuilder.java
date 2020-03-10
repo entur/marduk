@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
@@ -72,7 +73,7 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
         errorHandler(defaultErrorHandler()
                 .redeliveryDelay(redeliveryDelay)
                 .maximumRedeliveries(maxRedelivery)
-                .onRedelivery(exchange -> logRedelivery(exchange))
+                .onRedelivery(this::logRedelivery)
                 .useExponentialBackOff()
                 .backOffMultiplier(backOffMultiplier)
                 .logExhausted(true)
@@ -93,7 +94,7 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
      */
     protected void addOnCompletionForAggregatedExchange(Exchange exchange) {
 
-        List<Message> messages = (List<Message>) exchange.getIn().getBody(List.class);
+        List<Message> messages = exchange.getIn().getBody(List.class);
         List<BasicAcknowledgeablePubsubMessage> ackList = messages.stream()
                 .map(m->m.getHeader(EnturGooglePubSubConstants.ACK_ID, BasicAcknowledgeablePubsubMessage.class))
                 .collect(Collectors.toList());
@@ -102,12 +103,12 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
 
             @Override
             public void onComplete(Exchange exchange) {
-                ackList.stream().forEach(e->e.ack());
+                ackList.stream().forEach(BasicAcknowledgeablePubsubMessage::ack);
             }
 
             @Override
             public void onFailure(Exchange exchange) {
-                ackList.stream().forEach(e->e.nack());
+                ackList.stream().forEach(BasicAcknowledgeablePubsubMessage::nack);
             }
         });
     }
@@ -139,7 +140,7 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
         try {
             cronExpression = new CronExpression(cleanCron);
         } catch (ParseException pe) {
-            throw new RuntimeException("Invalid cron: " + cleanCron, pe);
+            throw new MardukException("Invalid cron: " + cleanCron, pe);
         }
         return isStarted(e.getFromRouteId()) && isLeader(e.getFromRouteId()) && isScheduledQuartzFiring(e, cronExpression);
     }

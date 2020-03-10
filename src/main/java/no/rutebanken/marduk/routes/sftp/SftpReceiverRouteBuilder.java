@@ -116,7 +116,7 @@ public class SftpReceiverRouteBuilder extends TransactionalBaseRouteBuilder {
             e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.getChouetteInfo().referential);
             e.getIn().setHeader(USERNAME, provider.sftpAccount);
         } else {
-            logger.warn("Found timetable file for unknown provider: " + fullFilePath);
+            logger.warn("Found timetable file for unknown provider: {} ", fullFilePath);
         }
     }
 

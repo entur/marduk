@@ -49,20 +49,6 @@ public class ParametersTest {
     }
 
     @Test
-    public void createRegtoppImportParameters() throws Exception {
-        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", "R12", "EPSG:32632","ADD",false,false,false,false,false,true, Sets.newHashSet("water","bus"));
-        System.out.println(importParameters.toJsonString());
-        assertJsonEquals(regtoppReferenceJson, importParameters.toJsonString());
-    }
-
-    @Test
-    public void createRegtoppImportParametersWithValidation() throws Exception {
-        RegtoppImportParameters importParameters = RegtoppImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette", "R12", "EPSG:32632","ADD",false,false,true,true,false,true, Sets.newHashSet("water","bus"));
-        System.out.println(importParameters.toJsonString());
-
-    }
-
-    @Test
     public void getNeptuneExportParameters() throws Exception {
         Provider provider = getProvider();
         Provider destProvider = new Provider();

@@ -25,8 +25,6 @@ import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.Provider;
 import org.apache.commons.lang3.StringUtils;
 import org.rutebanken.helper.gcp.BlobStoreHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
@@ -47,8 +45,6 @@ import java.util.List;
 @Profile("gcs-blobstore")
 @Scope("prototype")
 public class GcsBlobStoreRepository implements BlobStoreRepository {
-
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private Storage storage;
 

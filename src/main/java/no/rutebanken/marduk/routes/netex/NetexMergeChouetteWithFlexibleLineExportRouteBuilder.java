@@ -50,7 +50,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     @Value("${netex.export.merge.flexible.lines.enabled:false}")
     private String mergeFlexibleLinesEnabled;
 
-    private static String EXPORT_FILE_NAME = "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+    private static final String EXPORT_FILE_NAME = "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
 
     @Override
     public void configure() throws Exception {

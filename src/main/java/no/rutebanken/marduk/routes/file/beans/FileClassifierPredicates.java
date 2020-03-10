@@ -17,16 +17,18 @@
 package no.rutebanken.marduk.routes.file.beans;
 
 import no.rutebanken.marduk.exceptions.FileValidationException;
+import no.rutebanken.marduk.exceptions.MardukException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StreamUtils;
 
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Date;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
@@ -57,15 +59,15 @@ public class FileClassifierPredicates {
             streamReader = xmlInputFactory.createXMLStreamReader(inputStream);
             while (streamReader.hasNext()) {
                 int eventType = streamReader.next();
-                if (eventType == XMLStreamReader.START_ELEMENT) {
+                if (eventType == XMLStreamConstants.START_ELEMENT) {
                     return Optional.of(streamReader.getName());
-                } else if (eventType != XMLStreamReader.COMMENT) {
+                } else if (eventType != XMLStreamConstants.COMMENT) {
                     // If event is neither start of element or a comment, then this is probably not a xml file.
                     break;
                 }
             }
         } catch (XMLStreamException e) {
-            throw new RuntimeException(e);
+            throw new MardukException(e);
         } finally {
             try {
                 streamReader.close();
@@ -96,49 +98,27 @@ public class FileClassifierPredicates {
                 if (!entry.getName().matches(skipFileRegex)) {
                     if (testPredicate(predicate, stream, entry)) return false;
                 } else {
-                    logger.info("Skipped file with name " + entry.getName());
+                    logger.info("Skipped file with name {}", entry.getName());
                 }
             }
             return true;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new MardukException(e);
         }
     }
 
     private static boolean testPredicate(Predicate<InputStream> predicate, ZipInputStream stream, ZipEntry entry) {
     	try {
-			if (!predicate.test(new CloseIgnoringInputStream(stream))) {
-			    String s = String.format("Entry %s with size %d is invalid.",
-			            entry.getName(), entry.getSize(),
-			            new Date(entry.getTime()));
+			if (!predicate.test(StreamUtils.nonClosing(stream))) {
+			    String s = String.format("Entry %s with size %d is invalid.", entry.getName(), entry.getSize());
 			    logger.info(s);
 			    return true;
 			}
 		} catch (Exception e) {
-			throw new RuntimeException("Exception while trying to classify file "+entry.getName()+" in zip file", e);
+			throw new MardukException("Exception while trying to classify file "+entry.getName()+" in zip file", e);
 		}
         return false;
     }
 }
 
 
-class CloseIgnoringInputStream extends InputStream {
-
-    private ZipInputStream stream;
-
-    public CloseIgnoringInputStream(ZipInputStream inStream) {
-        stream = inStream;
-    }
-
-    public int read() throws IOException {
-        return stream.read();
-    }
-
-    public void close() {
-        //ignore
-    }
-
-    public void reallyClose() throws IOException {
-        stream.close();
-    }
-}

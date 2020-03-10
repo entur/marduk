@@ -164,15 +164,6 @@
         "inter_stop_duration_variation_max": "10",
         "route_section_stop_area_distance_max": "100"
     },
-    "mode_funicular": {
-        "allowed_transport": "1",
-        "inter_stop_area_distance_min": "100",
-        "inter_stop_area_distance_max": "2000",
-        "speed_max": "50",
-        "speed_min": "1",
-        "inter_stop_duration_variation_max": "10",
-        "route_section_stop_area_distance_max": "100"
-    },
     "mode_other": {
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "300",

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import no.rutebanken.marduk.exceptions.MardukException;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -45,11 +46,10 @@ public abstract class ChouetteJobParameters {
 			} else {
 				StringWriter writer = new StringWriter();
 				mapper.writeValue(writer, this);
-				String importJson = writer.toString();
-				return importJson;
+				return writer.toString();
 			}
 		} catch (IOException e) {
-			throw new RuntimeException(e);
+			throw new MardukException(e);
 		}
 
 	}

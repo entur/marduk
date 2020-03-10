@@ -144,7 +144,6 @@ public class GtfsTransformationServiceTest {
 
     public static void assertShapesAreRemoved(File out) throws IOException {
         assertThat(ZipFileUtils.extractFileFromZipFile(out, "shapes.txt")).as("All Shapes should have been removed").isNull();
-        ;
 
         List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, "trips.txt")), StandardCharsets.UTF_8);
         String tripWithShape = trips.stream().filter(t -> t.startsWith("9797,262919,")).findFirst().get();
@@ -154,7 +153,6 @@ public class GtfsTransformationServiceTest {
 
     public static void assertShapesAreIncluded(File out) throws IOException {
         assertThat(ZipFileUtils.extractFileFromZipFile(out, "shapes.txt")).as("All Shapes should be present").isNotNull();
-        ;
 
         List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, "trips.txt")), StandardCharsets.UTF_8);
         String tripWithShape = trips.stream().filter(t -> t.startsWith("9797,262919,")).findFirst().get();

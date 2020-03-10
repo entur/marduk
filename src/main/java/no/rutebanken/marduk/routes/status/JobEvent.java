@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.Utils;
+import no.rutebanken.marduk.exceptions.MardukException;
 import org.apache.camel.Exchange;
 
 import java.io.IOException;
@@ -75,7 +76,7 @@ public class JobEvent {
             mapper.writeValue(writer, this);
             return writer.toString();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new MardukException(e);
         }
     }
 
@@ -86,7 +87,7 @@ public class JobEvent {
             mapper.registerModule(new JavaTimeModule());
             return mapper.readValue(string, JobEvent.class);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new MardukException(e);
         }
     }
 
@@ -239,8 +240,8 @@ public class JobEvent {
             }
 
             exchange.getIn().setHeader(SYSTEM_STATUS, jobEvent.toString());
-            exchange.getOut().setBody(jobEvent.toString());
-            exchange.getOut().setHeaders(exchange.getIn().getHeaders());
+            exchange.getMessage().setBody(jobEvent.toString());
+            exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
             return jobEvent;
         }
     }

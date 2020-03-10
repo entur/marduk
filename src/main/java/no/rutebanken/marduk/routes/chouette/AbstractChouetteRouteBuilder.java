@@ -59,10 +59,10 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 	    MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
 	    entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
 	
-	    exchange.getOut().setBody(entityBuilder.build());
-	    exchange.getOut().setHeaders(exchange.getIn().getHeaders());
-	    exchange.getOut().setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"));
-		exchange.getOut().setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST));
+	    exchange.getMessage().setBody(entityBuilder.build());
+	    exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
+	    exchange.getMessage().setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"));
+		exchange.getMessage().setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST));
 	}
 
 	protected void toImportMultipart(Exchange exchange) {
@@ -85,9 +85,9 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 	    entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
 	    entityBuilder.addBinaryBody("feed", inputStream, ContentType.DEFAULT_BINARY, fileName);
 	
-	    exchange.getOut().setBody(entityBuilder.build());
-	    exchange.getOut().setHeaders(exchange.getIn().getHeaders());
-	    exchange.getOut().setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"));
+	    exchange.getMessage().setBody(entityBuilder.build());
+	    exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
+	    exchange.getMessage().setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"));
 	}
 	
 	

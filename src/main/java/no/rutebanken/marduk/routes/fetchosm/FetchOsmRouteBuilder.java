@@ -20,16 +20,13 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.exceptions.Md5ChecksumValidationException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.otp.Metadata;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.component.http4.HttpMethods;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
-import java.util.Date;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
@@ -118,8 +115,8 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .process(p -> {
                     String body = (String) p.getIn().getBody();
                     String md5 = body.split(" ")[0];
-                    p.getOut().setHeader(Constants.FILE_TARGET_MD5, md5);
-                    p.getOut().setBody(body);
+                    p.getMessage().setHeader(Constants.FILE_TARGET_MD5, md5);
+                    p.getMessage().setBody(body);
                 })
                 .log(LoggingLevel.DEBUG, getClass().getName(), "MD5 sum fetched and set in header")
                 .routeId("osm-fetch-md5sum");

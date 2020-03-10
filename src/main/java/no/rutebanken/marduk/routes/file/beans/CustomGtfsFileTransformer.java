@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.file.beans;
 
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.file.GtfsFileUtils;
 import no.rutebanken.marduk.routes.file.TempFileUtils;
 import org.onebusaway.gtfs_transformer.GtfsTransformer;
@@ -46,7 +47,7 @@ public abstract class CustomGtfsFileTransformer {
 
             return TempFileUtils.createDeleteOnCloseInputStream(outputFile);
         } catch (Exception e) {
-            throw new RuntimeException("Gtfs transformation failed with exception: " + e.getMessage(), e);
+            throw new MardukException("Gtfs transformation failed with exception: " + e.getMessage(), e);
         }
     }
 

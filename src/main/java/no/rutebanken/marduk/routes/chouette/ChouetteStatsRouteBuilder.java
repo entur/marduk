@@ -19,7 +19,6 @@ package no.rutebanken.marduk.routes.chouette;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Joiner;
 import no.rutebanken.marduk.domain.Provider;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -123,7 +122,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
         List<String> referentials = getProviderRepository().getProviders().stream()
                                             .filter(provider -> provider.chouetteInfo!=null && provider.chouetteInfo.referential!=null)
                                             .map(provider -> provider.chouetteInfo.referential).collect(Collectors.toList());
-        return "&referentials=" + Joiner.on(",").join(referentials);
+        return "&referentials=" +  String.join(",",referentials);
     }
 
     private List<Provider> getMatchingProviders(Exchange e) {

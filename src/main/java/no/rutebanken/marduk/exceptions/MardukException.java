@@ -22,18 +22,23 @@ package no.rutebanken.marduk.exceptions;
 public class MardukException extends RuntimeException {
 
     /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+     *
+     */
+    private static final long serialVersionUID = 1L;
 
-    public MardukException(){ super(); }
+    public MardukException() {
+        super();
+    }
 
-	public MardukException(String message) {
-        super( message );
+    public MardukException(String message) {
+        super(message);
     }
 
     public MardukException(String message, Throwable throwable) {
-        super( message, throwable );
+        super(message, throwable);
     }
 
+    public MardukException(Throwable throwable) {
+        super(throwable);
+    }
 }

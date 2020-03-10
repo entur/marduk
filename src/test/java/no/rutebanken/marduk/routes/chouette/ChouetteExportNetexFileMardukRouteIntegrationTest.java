@@ -32,6 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -125,7 +126,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 				try {
 					// Should be GTFS contnet
 					return (T) IOUtils.toString(getClass()
-							                            .getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"));
+							                            .getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"), StandardCharsets.UTF_8);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

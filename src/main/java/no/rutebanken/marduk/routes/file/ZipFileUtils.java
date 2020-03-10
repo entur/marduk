@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Set;
@@ -41,7 +42,7 @@ public class ZipFileUtils {
     public static Set<String> listFilesInZip(byte[] data) throws IOException {
         File tmpFile = TempFileUtils.createTempFile(data, "marduk-list-files-in-zip-", ".zip");
         Set<String> fileList = listFilesInZip(tmpFile);
-        tmpFile.delete();
+        Files.delete(tmpFile.toPath());
         return fileList;
     }
 
@@ -83,9 +84,9 @@ public class ZipFileUtils {
         }
         out.close();
 
-        logger.info("File written to : " + tmpFile.getAbsolutePath());
+        logger.info("File written to : {}", tmpFile.getAbsolutePath());
         zipFile.close();
-        tmpSingleFolderzip.delete();
+        Files.delete(tmpSingleFolderzip.toPath());
 
         return TempFileUtils.createDeleteOnCloseInputStream(tmpFile);
     }
@@ -104,7 +105,7 @@ public class ZipFileUtils {
     public static boolean zipFileContainsSingleFolder(byte[] data) throws IOException {
         File tmpFile = TempFileUtils.createTempFile(data, "marduk-zip-file-contains-single-folder-", ".zip");
         boolean singleFolder = zipFileContainsSingleFolder(tmpFile);
-        tmpFile.delete();
+        Files.delete(tmpFile.toPath());
         return singleFolder;
     }
 
@@ -127,10 +128,7 @@ public class ZipFileUtils {
                 }
             }
 
-            if (allFilesInSingleDirectory) {
-            return true;
-            }
-        return false;
+        return allFilesInSingleDirectory;
     }
 
     public static void unzipFile(InputStream inputStream, String targetFolder) {

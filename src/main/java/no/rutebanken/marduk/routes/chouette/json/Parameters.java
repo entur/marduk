@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.chouette.json;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.chouette.json.exporter.GtfsExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.exporter.NetexExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.exporter.TransferExportParameters;
@@ -85,7 +86,7 @@ public class Parameters {
             mapper.writeValue(writer, importParameters);
             return writer.toString();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new MardukException(e);
         }
     }
 
@@ -101,7 +102,7 @@ public class Parameters {
             mapper.writeValue(writer, exportParameters);
             return writer.toString();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new MardukException(e);
         }
     }
 
@@ -116,7 +117,7 @@ public class Parameters {
             mapper.writeValue(writer, importParameters);
             return writer.toString();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new MardukException(e);
         }
     }
 

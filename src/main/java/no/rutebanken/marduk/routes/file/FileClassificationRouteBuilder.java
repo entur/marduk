@@ -23,14 +23,10 @@ import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
-import org.apache.commons.codec.CharEncoding;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.Charset;
-import java.util.UUID;
+import java.nio.charset.StandardCharsets;
 
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
@@ -105,7 +101,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
         StringBuilder result = new StringBuilder();
         for (char val : value.toCharArray()) {
 
-            if (Charset.forName(CharEncoding.ISO_8859_1).newEncoder().canEncode(val)) result.append(val);
+            if (StandardCharsets.ISO_8859_1.newEncoder().canEncode(val)) result.append(val);
         }
         return result.toString();
     }
