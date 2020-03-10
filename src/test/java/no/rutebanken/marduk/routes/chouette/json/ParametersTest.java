@@ -16,12 +16,13 @@
 
 package no.rutebanken.marduk.routes.chouette.json;
 
-import com.google.common.collect.Sets;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.importer.GtfsImportParameters;
 
 import org.junit.jupiter.api.Test;
+
+import java.util.Set;
 
 import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
 
@@ -43,7 +44,7 @@ public class ParametersTest {
 
     @Test
     public void createGtfsImportParameters() {
-        GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette",false,false,true, true, Sets.newHashSet("water","bus"));
+        GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette",false,false,true, true, Set.of("water","bus"));
         assertJsonEquals(gtfsReferenceJson, importParameters.toJsonString());
     }
 
