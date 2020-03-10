@@ -54,11 +54,11 @@ public class SftpReceiverRouteBuilder extends TransactionalBaseRouteBuilder {
     @Value("${sftp.keyfile}")
     private String sftpKeyFile;
 
-    @Value("${sftp.known.hosts.file}")
-    private String knownHostsFile;
-
     @Value("${sftp.timetable.path:/incoming/timetable/}")
     private String timetablePath;
+
+    @Value("${sftp.localworkdir:files/tmp}")
+    private String localWorkDirectory;
 
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -71,7 +71,7 @@ public class SftpReceiverRouteBuilder extends TransactionalBaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("sftp://" + sftpUser + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&knownHostsFile=" + knownHostsFile + "&recursive=true&sorter=#caseIdSftpSorter&delay={{sftp.delay}}&delete={{idempotent.skip:false}}&localWorkDirectory=files/tmp&connectTimeout=1000")
+        singletonFrom("sftp://" + sftpUser + "@" + sftpHost + "?privateKeyFile=" + sftpKeyFile + "&recursive=true&sorter=#caseIdSftpSorter&delay={{sftp.delay}}&delete={{idempotent.skip:false}}&localWorkDirectory=" + localWorkDirectory + "&connectTimeout=1000")
                 .autoStartup("{{sftp.autoStartup:true}}")
                 .transacted()
                 .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
