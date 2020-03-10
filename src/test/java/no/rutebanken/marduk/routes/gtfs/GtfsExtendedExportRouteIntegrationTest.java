@@ -15,7 +15,6 @@
  */
 
 package no.rutebanken.marduk.routes.gtfs;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;

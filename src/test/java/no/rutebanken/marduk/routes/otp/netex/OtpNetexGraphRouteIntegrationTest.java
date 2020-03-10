@@ -20,7 +20,6 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
-import no.rutebanken.marduk.routes.otp.remote.RemoteNetexGraphRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
@@ -70,28 +69,28 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
 
         context.getRouteDefinition("otp-netex-graph-send-started-events").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
             }
         });
 
         context.getRouteDefinition("otp-netex-graph-send-status-for-timetable-jobs").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
             }
         });
 
         context.getRouteDefinition("otp-remote-netex-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:exportMergedNetex").replace().to("mock:sink");
             }
         });
 
         context.getRouteDefinition("otp-remote-netex-graph-build-and-send-status").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
                 weaveByToUri("direct:remoteBuildNetexGraph").replace().to("mock:sink");
             }

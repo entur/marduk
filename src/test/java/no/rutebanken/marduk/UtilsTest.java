@@ -16,8 +16,6 @@
 
 package no.rutebanken.marduk;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
@@ -31,9 +29,7 @@ public class UtilsTest {
 
     @Test
     public void testGetJobIdWithNull(){
-        assertThrows(IllegalArgumentException.class, () -> {
-            Utils.getLastPathElementOfUrl(null);
-        });
+        assertThrows(IllegalArgumentException.class, () -> Utils.getLastPathElementOfUrl(null));
     }
 
     @Test
@@ -44,9 +40,7 @@ public class UtilsTest {
 
     @Test
     public void testGetHttp4WithNull(){
-        assertThrows(IllegalArgumentException.class, () -> {
-            Utils.getHttp4(null);
-        });
+        assertThrows(IllegalArgumentException.class, () -> Utils.getHttp4(null));
     }
 
 }

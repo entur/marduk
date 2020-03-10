@@ -145,7 +145,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
         // Do rest call
 
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "POST");
         importTemplate.sendBodyAndHeaders(importJson, headers);
 
@@ -167,7 +167,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
         camelContext.getRouteDefinition("admin-chouette-export").adviceWith(camelContext, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportNetexQueue");
 
             }
@@ -177,7 +177,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         camelContext.start();
 
         // Do rest call
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "POST");
         exportTemplate.sendBodyAndHeaders(null, headers);
 
@@ -207,7 +207,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         camelContext.start();
 
         // Do rest call
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "GET");
         InputStream response = (InputStream) listFilesTemplate.requestBodyAndHeaders(null, headers);
         // Parse response
@@ -234,7 +234,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
         camelContext.start();
 
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "GET");
         InputStream response = (InputStream) getFileTemplate.requestBodyAndHeaders(null, headers);
 
@@ -249,7 +249,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
         assertThrows(CamelExecutionException.class, () -> {
             // Do rest call
-            Map<String, Object> headers = new HashMap<String, Object>();
+            Map<String, Object> headers = new HashMap<>();
             headers.put(Exchange.HTTP_METHOD, "GET");
             getUnknownFileTemplate.requestBodyAndHeaders(null, headers);
         });
@@ -266,7 +266,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         camelContext.start();
 
         // Do rest call
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "GET");
         InputStream response = (InputStream) listExportFilesTemplate.requestBodyAndHeaders(null, headers);
         // Parse response

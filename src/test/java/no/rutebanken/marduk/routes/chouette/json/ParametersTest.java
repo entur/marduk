@@ -20,7 +20,6 @@ import com.google.common.collect.Sets;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.importer.GtfsImportParameters;
-import no.rutebanken.marduk.routes.chouette.json.importer.RegtoppImportParameters;
 
 import org.junit.jupiter.api.Test;
 
@@ -43,13 +42,13 @@ public class ParametersTest {
             "\"references_type\":\"\",\"version\":\"R12\",\"coordinate_projection\":\"EPSG:32632\",\"calendar_strategy\":\"ADD\", \"test\": false, \"stop_area_remote_id_mapping\": false, \"stop_area_import_mode\": \"READ_ONLY\", \"keep_obsolete_lines\": false, \"batch_parse\": true, \"generate_missing_route_sections_for_modes\": [\"water\",\"bus\"] }}}";
 
     @Test
-    public void createGtfsImportParameters() throws Exception {
+    public void createGtfsImportParameters() {
         GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette",false,false,true, true, Sets.newHashSet("water","bus"));
         assertJsonEquals(gtfsReferenceJson, importParameters.toJsonString());
     }
 
     @Test
-    public void getNeptuneExportParameters() throws Exception {
+    public void getNeptuneExportParameters() {
         Provider provider = getProvider();
         Provider destProvider = new Provider();
         destProvider.chouetteInfo = new ChouetteInfo();

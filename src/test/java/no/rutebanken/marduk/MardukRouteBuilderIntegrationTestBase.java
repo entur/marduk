@@ -90,18 +90,18 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
     protected void replaceEndpoint(String routeId, String originalEndpoint, String replacementEndpoint) throws Exception {
         context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 interceptSendToEndpoint(originalEndpoint)
                         .skipSendToOriginalEndpoint().to(replacementEndpoint);
             }
         });
     }
 
-    protected Provider provider(String ref, long id, Long migrateToProvider) throws Exception {
+    protected Provider provider(String ref, long id, Long migrateToProvider) {
         return provider(ref, id, migrateToProvider, false, false);
     }
 
-    protected Provider provider(String ref, long id, Long migrateToProvider, boolean googleUpload, boolean googleQAUpload) throws Exception {
+    protected Provider provider(String ref, long id, Long migrateToProvider, boolean googleUpload, boolean googleQAUpload) {
         Provider provider = new Provider();
         provider.chouetteInfo = new ChouetteInfo();
         provider.chouetteInfo.referential = ref;

@@ -27,7 +27,7 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 public class ExternalBlobStoreRoute extends BaseRouteBuilder {
 
     @Override
-    public void configure() throws Exception {
+    public void configure() {
 
         from("direct:uploadExternalBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")

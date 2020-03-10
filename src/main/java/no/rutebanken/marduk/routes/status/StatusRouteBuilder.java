@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 public class StatusRouteBuilder extends RouteBuilder {
 
 	@Override
-	public void configure() throws Exception {
+	public void configure() {
 		from("direct:updateStatus")
 				.log(LoggingLevel.INFO, getClass().getName(), "Sending off job status event: ${body}")
 				.to("entur-google-pubsub:JobEventQueue")

@@ -70,7 +70,7 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 		// Mock initial call to Chouette to import job
 		context.getRouteDefinition("chouette-send-export-job").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/gtfs")
 						.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
@@ -81,7 +81,7 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 		// Mock update status calls
 		context.getRouteDefinition("chouette-process-export-status").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 						.to("mock:updateStatus");
 			}
@@ -90,7 +90,7 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
 		context.getRouteDefinition("chouette-validate-job-status-parameters").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
 				.to("mock:pollJobStatus");
 			}
@@ -98,7 +98,7 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 
 		context.getRouteDefinition("chouette-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
 						.skipSendToOriginalEndpoint().to("mock:chouetteGetData");
 
@@ -138,7 +138,7 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 		updateStatus.expectedMessageCount(2);
 
 
-		Map<String, Object> headers = new HashMap<String, Object>();
+		Map<String, Object> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
 	
 		importTemplate.sendBodyAndHeaders(null, headers);

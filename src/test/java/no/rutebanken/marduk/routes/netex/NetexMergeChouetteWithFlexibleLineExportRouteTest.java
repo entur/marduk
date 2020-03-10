@@ -62,7 +62,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRou
         // Mock status update
         context.getRouteDefinition("netex-export-merge-chouette-with-flexible-lines").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
 
                 interceptSendToEndpoint("entur-google-pubsub:OtpGraphBuildQueue").skipSendToOriginalEndpoint()
                         .to("mock:OtpGraphBuildQueue");

@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -101,7 +100,7 @@ public class GtfsTransformationServiceTest {
         assertEquals(10, routeLines.size());
 
         List<String> transformedRouteTypes = routeLines.stream().map(routeLine -> routeLine.split(",")[4]).collect(Collectors.toList());
-        assertThat(transformedRouteTypes.stream().allMatch(routeType -> GoogleRouteTypeCode.fromCode(Integer.valueOf(routeType)) != null)).as("Expected all route types to have been converted to google valid codes").isTrue();
+        assertThat(transformedRouteTypes.stream().allMatch(routeType -> GoogleRouteTypeCode.fromCode(Integer.parseInt(routeType)) != null)).as("Expected all route types to have been converted to google valid codes").isTrue();
         assertEquals("200", transformedRouteTypes.get(0));
         assertEquals("201", transformedRouteTypes.get(1));
         assertEquals("200", transformedRouteTypes.get(2));

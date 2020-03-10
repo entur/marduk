@@ -23,7 +23,7 @@ public class RemoteGraphBuilderProcessor implements Processor {
     private OtpGraphBuilder otpGraphBuilder;
 
     @Override
-    public void process(Exchange exchange) throws Exception {
+    public void process(Exchange exchange) {
 
         try {
             String otpGraphDirectory = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class);

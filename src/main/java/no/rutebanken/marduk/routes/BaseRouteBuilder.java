@@ -103,12 +103,12 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
 
             @Override
             public void onComplete(Exchange exchange) {
-                ackList.stream().forEach(BasicAcknowledgeablePubsubMessage::ack);
+                ackList.forEach(BasicAcknowledgeablePubsubMessage::ack);
             }
 
             @Override
             public void onFailure(Exchange exchange) {
-                ackList.stream().forEach(BasicAcknowledgeablePubsubMessage::nack);
+                ackList.forEach(BasicAcknowledgeablePubsubMessage::nack);
             }
         });
     }

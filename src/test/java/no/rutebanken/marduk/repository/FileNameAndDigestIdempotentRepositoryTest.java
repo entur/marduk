@@ -19,7 +19,6 @@ package no.rutebanken.marduk.repository;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
-import no.rutebanken.marduk.config.IdempotentRepositoryConfig;
 import no.rutebanken.marduk.domain.FileNameAndDigest;
 import org.apache.commons.lang3.time.DateUtils;
 import static org.junit.jupiter.api.Assertions.*;

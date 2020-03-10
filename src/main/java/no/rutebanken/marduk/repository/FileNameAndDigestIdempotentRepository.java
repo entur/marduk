@@ -54,7 +54,7 @@ public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageId
 
     protected int queryForInt(String keyAsString) {
         FileNameAndDigest key = FileNameAndDigest.fromString(keyAsString);
-        return (this.jdbcTemplate.queryForObject(this.queryString, Integer.class, new Object[]{this.processorName, key.getDigest(), key.getFileName()})).intValue();
+        return this.jdbcTemplate.queryForObject(this.queryString, Integer.class, new Object[]{this.processorName, key.getDigest(), key.getFileName()});
     }
 
     protected int insert(String keyAsString) {

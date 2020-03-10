@@ -71,21 +71,21 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
 
         context.getRouteDefinition("otp-netex-graph-send-started-events").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
             }
         });
 
         context.getRouteDefinition("otp-netex-graph-send-status-for-timetable-jobs").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
             }
         });
 
         context.getRouteDefinition("otp-remote-netex-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:exportMergedNetex").replace().to("mock:sink");
             }
         });
@@ -93,7 +93,7 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
 
         context.getRouteDefinition("otp-remote-netex-graph-build-and-send-status").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
 
                 // create a dummy graph object in the remote graph builder work directory
@@ -127,14 +127,14 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
 
         context.getRouteDefinition("otp-netex-graph-send-started-events").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
             }
         });
 
         context.getRouteDefinition("otp-netex-graph-send-status-for-timetable-jobs").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
             }
         });
@@ -142,7 +142,7 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
 
         context.getRouteDefinition("otp-remote-base-graph-build-and-send-status").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
                 weaveByToUri("direct:remoteBuildBaseGraph").replace().to("mock:sink");
             }
@@ -150,7 +150,7 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
 
         context.getRouteDefinition("otp-remote-netex-graph-build-and-send-status").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
                 // create a dummy graph object in the remote graph builder work directory
                 weaveByToUri("direct:remoteBuildNetexGraph")

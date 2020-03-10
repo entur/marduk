@@ -163,7 +163,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     }
 
     private String getValidityCategories() {
-        return Arrays.asList(validityCategories).stream().map(s -> "minDaysValidityCategory=" + s).collect(Collectors.joining("&"));
+        return Arrays.stream(validityCategories).map(s -> "minDaysValidityCategory=" + s).collect(Collectors.joining("&"));
     }
 
 }

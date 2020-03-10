@@ -21,7 +21,6 @@ import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

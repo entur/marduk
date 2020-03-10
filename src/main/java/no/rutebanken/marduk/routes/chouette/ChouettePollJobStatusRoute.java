@@ -250,7 +250,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 
                 .doTry()
-                .unmarshal().json(JsonLibrary.Jackson, ActionReportWrapper.class).process(e -> { /** Dummy line to make doCatch available */})
+                .unmarshal().json(JsonLibrary.Jackson, ActionReportWrapper.class).process(e -> { /* Dummy line to make doCatch available */})
                 .doCatch(JsonMappingException.class)
                 .log(LoggingLevel.WARN, correlation() + "Received invalid (empty?) action report for terminated job. Giving up.")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.FAILED).build())
