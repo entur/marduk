@@ -79,8 +79,6 @@ data:
     netex.export.download.directory=/tmp/marduk/files/netex/merged
     sftp.localworkdir=/tmp/marduk/sftp
 
-
-
 kind: ConfigMap
 metadata:
   name: {{ template "marduk.name" . }}-config
