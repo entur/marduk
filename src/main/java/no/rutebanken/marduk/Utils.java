@@ -41,11 +41,11 @@ public class Utils {
     }
 
     public static String getUsername() {
-        String user = "unknown";
+        String user = null;
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() != null && auth.getPrincipal() instanceof Jwt) {
             user = ((Jwt) auth.getPrincipal()).getClaimAsString("preferred_username");
         }
-        return user;
+        return (user == null) ? "unknown" : user;
     }
 }
