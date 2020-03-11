@@ -157,6 +157,7 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
             for (File stopFile : FileUtils.listFiles(new File(sourceDir), null, false)) {
                 String targetFileName = netexExportStopsFilePrefix + (i > 0 ? i : "") + ".xml";
                 FileUtils.copyFile(stopFile, new File(targetDir + "/" + targetFileName));
+                i++;
             }
         } catch (IOException ioe) {
             throw new MardukException("Failed to copy/rename stop files from NSR: " + ioe.getMessage(), ioe);
