@@ -46,6 +46,6 @@ public class Utils {
         if (auth != null && auth.getPrincipal() != null && auth.getPrincipal() instanceof Jwt) {
             user = ((Jwt) auth.getPrincipal()).getClaimAsString("preferred_username");
         }
-        return (user== null)? "unknown": user;
+        return (user == null) ? "unknown" : user;
     }
 }
