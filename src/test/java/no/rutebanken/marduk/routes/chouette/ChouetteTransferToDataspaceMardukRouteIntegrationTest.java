@@ -65,7 +65,7 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 		// Mock initial call to Chouette to export job
 		context.getRouteDefinition("chouette-send-transfer-job").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/transfer")
 					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
 				
@@ -82,7 +82,7 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 		// Mock update status calls
 		context.getRouteDefinition("chouette-process-transfer-status").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 				.to("mock:updateStatus");
 				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation").skipSendToOriginalEndpoint()
@@ -107,12 +107,12 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 		checkScheduledJobsBeforeTriggeringNextAction.expectedMessageCount(1);
 		
 		
-		Map<String, Object> headers = new HashMap<String, Object>();
+		Map<String, Object> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
 		transferTemplate.sendBodyAndHeaders(null, headers);
 		
 
-		Map<String, Object> importJobCompletedHeaders = new HashMap<String, Object>();
+		Map<String, Object> importJobCompletedHeaders = new HashMap<>();
 		importJobCompletedHeaders.put(Constants.PROVIDER_ID, "2");
 		importJobCompletedHeaders.put("action_report_result", "OK");
 		importJobCompletedHeaders.put("validation_report_result", "OK");

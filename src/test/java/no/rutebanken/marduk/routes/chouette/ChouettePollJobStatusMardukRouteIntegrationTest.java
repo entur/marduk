@@ -80,7 +80,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 		// Mock get status call to chouette
 		context.getRouteDefinition("chouette-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/scheduled_jobs/1")
 						.skipSendToOriginalEndpoint().to("mock:chouetteGetJobStatus");
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
@@ -90,7 +90,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 
 		context.getRouteDefinition("chouette-process-job-reports").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/action_report.json")
 						.skipSendToOriginalEndpoint().to("mock:chouetteGetActionReport");
 
@@ -102,7 +102,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 
 		context.getRouteDefinition("chouette-reschedule-job").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
 
@@ -183,7 +183,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 
 		updateStatus.expectedMessageCount(1);
 
-		Map<String, Object> headers = new HashMap<String, Object>();
+		Map<String, Object> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
 		headers.put(Constants.FILE_NAME, "file_name");
 		headers.put(Constants.CORRELATION_ID, "corr_id");
@@ -229,7 +229,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 
 		context.getRouteDefinition("chouette-list-jobs").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?addActionParameters=false")
 				.skipSendToOriginalEndpoint()
 				.to("mock:chouetteGetJobsForProvider");
@@ -256,13 +256,13 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 
 		
 		// Do rest call
-		Map<String, Object> headers = new HashMap<String, Object>();
+		Map<String, Object> headers = new HashMap<>();
 		headers.put(Exchange.HTTP_METHOD, "GET");
 		headers.put(Constants.PROVIDER_ID, "2");
 		JobResponse[] rsp =  (JobResponse[]) getJobsTemplate.requestBodyAndHeaders(null, headers);
 		// Parse response
 
-		assertFalse(rsp.length == 0);
+		assertNotEquals(0, rsp.length);
 	
 
 	}

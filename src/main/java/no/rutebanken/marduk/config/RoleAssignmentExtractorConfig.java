@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.config;
 
 import no.rutebanken.marduk.security.oauth2.JwtRoleAssignmentExtractor;
-import org.rutebanken.helper.organisation.KeycloakRoleAssignmentExtractor;
 import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

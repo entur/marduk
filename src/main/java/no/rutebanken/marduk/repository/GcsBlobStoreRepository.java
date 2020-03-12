@@ -25,8 +25,6 @@ import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.Provider;
 import org.apache.commons.lang3.StringUtils;
 import org.rutebanken.helper.gcp.BlobStoreHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
@@ -34,8 +32,8 @@ import org.springframework.stereotype.Repository;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -47,8 +45,6 @@ import java.util.List;
 @Profile("gcs-blobstore")
 @Scope("prototype")
 public class GcsBlobStoreRepository implements BlobStoreRepository {
-
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private Storage storage;
 
@@ -82,7 +78,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public BlobStoreFiles listBlobs(String prefix) {
-        return listBlobs(Arrays.asList(prefix));
+        return listBlobs(Collections.singletonList(prefix));
     }
 
 

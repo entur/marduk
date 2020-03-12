@@ -17,8 +17,6 @@
 package no.rutebanken.marduk.routes.otp.remote;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.Utils;
-import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
@@ -27,11 +25,10 @@ import org.apache.camel.LoggingLevel;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
@@ -216,7 +213,6 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
 
 
     private InputStream createRedirectPage(String version) {
-        try {
             String url = "http://" + otpReportContainerName + "/" + version + "/index.html";
             String html = "<html>\n" +
                     "<head>\n" +
@@ -224,10 +220,7 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
                     "</head>\n" +
                     "</html>";
 
-            return IOUtils.toInputStream(html, "UTF-8");
-        } catch (IOException ioE) {
-            throw new MardukException("Failed to create input stream for redirect page: " + ioE.getMessage(), ioE);
-        }
+            return IOUtils.toInputStream(html, StandardCharsets.UTF_8);
     }
 
 }

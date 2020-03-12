@@ -42,7 +42,7 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
         errorHandler(transactionErrorHandler()
                 .redeliveryDelay(redeliveryDelay)
                 .maximumRedeliveries(maxRedelivery)
-                .onRedelivery(exchange -> logRedelivery(exchange))
+                .onRedelivery(this::logRedelivery)
                 .useExponentialBackOff()
                 .backOffMultiplier(backOffMultiplier)
                 .logExhausted(true)

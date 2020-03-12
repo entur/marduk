@@ -83,25 +83,25 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
         when(providerRepository.getProvider(2L)).thenReturn(Provider.create(IOUtils.toString(new FileReader(
                 "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json"))));
 
-        when(providerRepository.getProviderId("rb_rut")).thenReturn(2l);
+        when(providerRepository.getProviderId("rb_rut")).thenReturn(2L);
 
     }
 
     protected void replaceEndpoint(String routeId, String originalEndpoint, String replacementEndpoint) throws Exception {
         context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 interceptSendToEndpoint(originalEndpoint)
                         .skipSendToOriginalEndpoint().to(replacementEndpoint);
             }
         });
     }
 
-    protected Provider provider(String ref, long id, Long migrateToProvider) throws Exception {
+    protected Provider provider(String ref, long id, Long migrateToProvider) {
         return provider(ref, id, migrateToProvider, false, false);
     }
 
-    protected Provider provider(String ref, long id, Long migrateToProvider, boolean googleUpload, boolean googleQAUpload) throws Exception {
+    protected Provider provider(String ref, long id, Long migrateToProvider, boolean googleUpload, boolean googleQAUpload) {
         Provider provider = new Provider();
         provider.chouetteInfo = new ChouetteInfo();
         provider.chouetteInfo.referential = ref;

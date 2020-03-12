@@ -15,7 +15,6 @@
  */
 
 package no.rutebanken.marduk.routes.gtfs;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
@@ -59,8 +58,8 @@ public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderI
 
 
     @BeforeEach
-    public void prepare() throws Exception {
-        when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null), provider("rb_rut", 2, null), provider("opp", 3, 4l)));
+    public void prepare() {
+        when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null), provider("rb_rut", 2, null), provider("opp", 3, 4L)));
     }
 
 

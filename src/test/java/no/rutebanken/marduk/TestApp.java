@@ -39,7 +39,7 @@ public class TestApp extends App {
     }
 
     @Override
-    protected void waitForProviderRepository() throws InterruptedException {
+    protected void waitForProviderRepository() {
     	
     }
 }

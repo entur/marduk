@@ -1,15 +1,14 @@
 package no.rutebanken.marduk.security.oauth2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import no.rutebanken.marduk.exceptions.MardukException;
 import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.RoleAssignment;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.oauth2.jwt.MappedJwtClaimSetConverter;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +45,7 @@ class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<Strin
         this.administratorAccessActivated = administratorAccessActivated;
     }
 
-
+    @Override
     public Map<String, Object> convert(Map<String, Object> claims) {
         Map<String, Object> convertedClaims = this.delegate.convert(claims);
 
@@ -61,7 +60,7 @@ class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<Strin
         builder.withRole(role);
         builder.withOrganisation(rutebankenOrganisationId);
 
-        List<String> roleAssignments = Arrays.asList(toJSON(builder.build()));
+        List<String> roleAssignments = Collections.singletonList(toJSON(builder.build()));
         convertedClaims.put("roles", roleAssignments);
         return convertedClaims;
     }
@@ -78,7 +77,7 @@ class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<Strin
             mapper.writeValue(writer, roleAssignment);
             return writer.toString();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new MardukException(e);
         }
 
     }

@@ -13,10 +13,10 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
+import no.rutebanken.marduk.exceptions.MardukException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -111,9 +111,13 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
                 }
 
 
-            } catch (KubernetesClientException | InterruptedException e) {
+            } catch (KubernetesClientException e) {
                 throw new KubernetesJobGraphBuilderException("Could not watch pod", e);
-            } finally {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new KubernetesJobGraphBuilderException("Interrupted while watching pod", e);
+            }
+            finally {
                 // Delete job after completion
                 if (deleteJobAfterCompletion) {
                     logger.info("Deleting job {} after completion.", jobName);
@@ -127,10 +131,10 @@ public class KubernetesJobGraphBuilder implements OtpGraphBuilder {
     protected CronJobSpec getCronJobSpecTemplate(KubernetesClient client) {
         List<CronJob> matchingJobs = client.batch().cronjobs().inNamespace(kubernetesNamespace).withLabel("app", graphBuilderCronJobName).list().getItems();
         if (matchingJobs.isEmpty()) {
-            throw new RuntimeException("Job with label=" + graphBuilderCronJobName + " not found in namespace " + kubernetesNamespace);
+            throw new MardukException("Job with label=" + graphBuilderCronJobName + " not found in namespace " + kubernetesNamespace);
         }
         if (matchingJobs.size() > 1) {
-            throw new RuntimeException("Found multiple jobs matching label app=" + graphBuilderCronJobName + " in namespace " + kubernetesNamespace);
+            throw new MardukException("Found multiple jobs matching label app=" + graphBuilderCronJobName + " in namespace " + kubernetesNamespace);
         }
         return matchingJobs.get(0).getSpec();
     }

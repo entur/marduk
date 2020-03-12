@@ -21,23 +21,19 @@ import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.camel.Exchange;
-import org.apache.commons.codec.CharEncoding;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
 import static no.rutebanken.marduk.routes.file.FileType.GTFS;
 import static no.rutebanken.marduk.routes.file.FileType.INVALID_FILE_NAME;
-import static no.rutebanken.marduk.routes.file.FileType.NEPTUNE;
 import static no.rutebanken.marduk.routes.file.FileType.NETEXPROFILE;
 import static no.rutebanken.marduk.routes.file.FileType.REGTOPP;
 import static no.rutebanken.marduk.routes.file.FileType.ZIP_WITH_SINGLE_FOLDER;
@@ -56,14 +52,14 @@ public class FileTypeClassifierBean {
 
     public boolean validateFile(byte[] data, Exchange exchange) {
         String relativePath = exchange.getIn().getHeader(FILE_HANDLE, String.class);
-        logger.debug("Validating file with path '" + relativePath + "'.");
+        logger.debug("Validating file with path '{}'.", relativePath);
         try {
             if (relativePath == null || relativePath.trim().equals("")) {
                 throw new IllegalArgumentException("Could not get file path from " + FILE_HANDLE + " header.");
             }
 
             FileType fileType = classifyFile(relativePath, data);
-            logger.debug("File is classified as " + fileType);
+            logger.debug("File is classified as {}", fileType);
             exchange.getIn().setHeader(FILE_TYPE, fileType.name());
             return true;
         } catch (RuntimeException e) {
@@ -73,7 +69,7 @@ public class FileTypeClassifierBean {
     }
 
     boolean isValidFileName(String fileName) {
-        return Charset.forName(CharEncoding.ISO_8859_1).newEncoder().canEncode(fileName);
+        return StandardCharsets.ISO_8859_1.newEncoder().canEncode(fileName);
     }
 
     public FileType classifyFile(String relativePath, byte[] data) {
@@ -116,7 +112,7 @@ public class FileTypeClassifierBean {
         try {
             return validateZipContent(inputStream, firstElementQNameMatchesNetex(), NON_XML_FILE_XML);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new MardukException(e);
         }
     }
 

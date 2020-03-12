@@ -29,7 +29,7 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 public class BlobStoreRoute extends BaseRouteBuilder {
 
     @Override
-    public void configure() throws Exception {
+    public void configure() {
 
         from("direct:uploadBlob")
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")

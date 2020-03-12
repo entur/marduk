@@ -32,6 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -78,7 +79,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 		// Mock initial call to Chouette to import job
 		context.getRouteDefinition("chouette-start-export-netex").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/netexprofile")
 						.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
@@ -89,7 +90,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
 		context.getRouteDefinition("chouette-validate-job-status-parameters").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
 						.to("mock:pollJobStatus");
 			}
@@ -98,7 +99,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 		// Mock update status calls
 		context.getRouteDefinition("chouette-process-export-netex-status").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 						.to("mock:updateStatus");
 				interceptSendToEndpoint("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue").skipSendToOriginalEndpoint().to("mock:ChouetteMergeWithFlexibleLinesQueue");
@@ -108,7 +109,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 
 		context.getRouteDefinition("chouette-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
 						.skipSendToOriginalEndpoint().to("mock:chouetteGetData");
 			}
@@ -125,7 +126,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 				try {
 					// Should be GTFS contnet
 					return (T) IOUtils.toString(getClass()
-							                            .getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"));
+							                            .getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"), StandardCharsets.UTF_8);
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

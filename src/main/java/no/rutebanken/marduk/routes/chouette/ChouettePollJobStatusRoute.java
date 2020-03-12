@@ -74,14 +74,6 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-
-//        onException(HttpOperationFailedException.class, NoRouteToHostException.class)
-//                .setHeader(Constants.FILE_NAME, exchangeProperty(Constants.FILE_NAME))
-//                .process(e -> Status.addStatus(e, TimetableAction.valueOf( (String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE)), State.FAILED))
-//                .to("direct:updateStatus")
-//                .log(LoggingLevel.ERROR,correlation()+"Failed while polling chouette.")
-//                .handled(true);
-
         from("direct:chouetteGetJobsForProvider")
                 .log(LoggingLevel.DEBUG, correlation() + "Fetching jobs for provider id '${header." + PROVIDER_ID + "}'")
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
@@ -118,13 +110,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                         }
                     }
                     b.addParameter("addActionParameters", Boolean.FALSE.toString());
-                    String newUri = b.toString();
-                    if (dynamicEndpointNotation) {
-                        // Convert url (http://xxx) back to camel dynamic endpoint format (http4:xxxx). Needed as interception
-                        // does not seem to work with // in target anymore (as of camel 2.22.0)
-                        newUri.replace("://", ":");
-                    }
-                    e.setProperty("chouette_url", newUri);
+                    e.setProperty("chouette_url", b.toString());
                 })
                 .toD("${exchangeProperty.chouette_url}")
                 .unmarshal().json(JsonLibrary.Jackson, JobResponse[].class)
@@ -183,9 +169,9 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-validate-job-status-parameters");
 
         from("direct:checkJobStatus")
-                .process(e -> {
-                    e.getIn().setHeader("loopCounter", e.getIn().getHeader("loopCounter", 0, Integer.class) + 1);
-                })
+                .process(e ->
+                    e.getIn().setHeader("loopCounter", e.getIn().getHeader("loopCounter", 0, Integer.class) + 1)
+                )
                 .setProperty(Constants.CHOUETTE_REFERENTIAL, header(Constants.CHOUETTE_REFERENTIAL))
                 .setProperty("url", header(Constants.CHOUETTE_JOB_STATUS_URL))
                 .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
@@ -258,7 +244,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
 
                 .doTry()
-                .unmarshal().json(JsonLibrary.Jackson, ActionReportWrapper.class).process(e -> { /** Dummy line to make doCatch available */})
+                .unmarshal().json(JsonLibrary.Jackson, ActionReportWrapper.class).process(e -> { /* Dummy line to make doCatch available */})
                 .doCatch(JsonMappingException.class)
                 .log(LoggingLevel.WARN, correlation() + "Received invalid (empty?) action report for terminated job. Giving up.")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.FAILED).build())
@@ -280,9 +266,9 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .end()
 
 
-                .process(e -> {
-                    e.getIn().setHeader("action_report_result", e.getIn().getBody(ActionReportWrapper.class).actionReport.result);
-                })
+                .process(e ->
+                    e.getIn().setHeader("action_report_result", e.getIn().getBody(ActionReportWrapper.class).actionReport.result)
+                )
 
 
 

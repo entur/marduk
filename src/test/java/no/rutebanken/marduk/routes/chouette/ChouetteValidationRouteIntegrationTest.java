@@ -96,7 +96,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 		// Mock initial call to Chouette to validation job
 		context.getRouteDefinition("chouette-send-validation-job").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/validator")
 						.skipSendToOriginalEndpoint().to("mock:chouetteCreateValidation");
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
@@ -107,7 +107,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well)
 		context.getRouteDefinition("chouette-validate-job-status-parameters").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
 				.to("mock:pollJobStatus");
 			}
@@ -116,7 +116,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 		// Mock update status calls
 		context.getRouteDefinition("chouette-process-validation-status").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 				.to("mock:updateStatus");
 				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringExport").skipSendToOriginalEndpoint()
@@ -140,7 +140,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 		chouetteCheckScheduledJobs.expectedMessageCount(1);
 		
 		
-		Map<String, Object> headers = new HashMap<String, Object>();
+		Map<String, Object> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
 		headers.put(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.VALIDATION_LEVEL_2.toString());
 		validationTemplate.sendBodyAndHeaders(null, headers);
@@ -174,7 +174,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 
 		context.getRouteDefinition("chouette-process-job-list-after-validation").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
-			public void configure() throws Exception {
+			public void configure() {
 				interceptSendToEndpoint(chouetteUrl + "/*")
 						.skipSendToOriginalEndpoint()
 						.to("mock:chouetteGetJobsForProvider");
@@ -201,7 +201,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 			}
 		});
 
-		Map<String, Object> headers = new HashMap<String,Object>();
+		Map<String, Object> headers = new HashMap<>();
 		headers.put(Constants.CHOUETTE_REFERENTIAL, "rut");
 		headers.put(Constants.PROVIDER_ID,2);
 		

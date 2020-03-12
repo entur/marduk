@@ -20,13 +20,10 @@ import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.IOUtils;
-import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -61,7 +58,7 @@ public class FileTypeClassifierBeanTest {
     }
 
     @Test
-    public void classifyNetexFileFromRuter() throws Exception {
+    public void classifyNetexFileFromRuter() {
     	assertThrows(RuntimeException.class, () ->
     		assertFileType("AOR.zip", NETEXPROFILE)
    		);
@@ -78,7 +75,7 @@ public class FileTypeClassifierBeanTest {
     }
 
     @Test
-    public void classifyNetexWithTwoFilesOneInvalid() throws Exception {
+    public void classifyNetexWithTwoFilesOneInvalid() {
     	assertThrows(FileValidationException.class, () ->
         	assertFileType("netex_with_two_files_one_invalid.zip", NETEXPROFILE)
         );

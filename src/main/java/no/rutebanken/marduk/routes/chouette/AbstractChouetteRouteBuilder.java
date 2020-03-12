@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.routes.chouette;
 
-import com.google.common.base.Strings;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -25,6 +24,7 @@ import org.apache.camel.builder.ThreadPoolBuilder;
 import org.apache.camel.component.http4.HttpMethods;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
 import java.util.concurrent.ExecutorService;
@@ -52,27 +52,27 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 
 	protected void toGenericChouetteMultipart(Exchange exchange) {
 	    String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);
-	    if (Strings.isNullOrEmpty(jsonPart)) {
+	    if (StringUtils.isEmpty(jsonPart)) {
 	        throw new IllegalArgumentException("No json data");
 	    }
 	
 	    MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
 	    entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
 	
-	    exchange.getOut().setBody(entityBuilder.build());
-	    exchange.getOut().setHeaders(exchange.getIn().getHeaders());
-	    exchange.getOut().setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"));
-		exchange.getOut().setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST));
+	    exchange.getMessage().setBody(entityBuilder.build());
+	    exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
+	    exchange.getMessage().setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"));
+		exchange.getMessage().setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST));
 	}
 
 	protected void toImportMultipart(Exchange exchange) {
 	    String fileName = exchange.getIn().getHeader(FILE_NAME, String.class);
-	    if (Strings.isNullOrEmpty(fileName)) {
+	    if (StringUtils.isEmpty(fileName)) {
 	        throw new IllegalArgumentException("No file handle");
 	    }
 	
 	    String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);
-	    if (Strings.isNullOrEmpty(jsonPart)) {
+	    if (StringUtils.isEmpty(jsonPart)) {
 	        throw new IllegalArgumentException("No json data");
 	    }
 	
@@ -85,9 +85,9 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 	    entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
 	    entityBuilder.addBinaryBody("feed", inputStream, ContentType.DEFAULT_BINARY, fileName);
 	
-	    exchange.getOut().setBody(entityBuilder.build());
-	    exchange.getOut().setHeaders(exchange.getIn().getHeaders());
-	    exchange.getOut().setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"));
+	    exchange.getMessage().setBody(entityBuilder.build());
+	    exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
+	    exchange.getMessage().setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"));
 	}
 	
 	

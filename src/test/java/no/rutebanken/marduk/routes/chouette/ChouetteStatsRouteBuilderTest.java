@@ -21,48 +21,48 @@ import no.rutebanken.marduk.domain.Provider;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class ChouetteStatsRouteBuilderTest {
 
     @Test
     public void testProviderMatchingLevelFilterAndProviderId() {
-        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(1l, 3l), "level1", Arrays.asList("1", "2")));
-        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(1l, null), "level2", Arrays.asList("1", "2")));
-        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(2l, null), "all", Arrays.asList("1", "2")));
+        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(1L, 3L), "level1", List.of("1", "2")));
+        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(1L, null), "level2", List.of("1", "2")));
+        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(2L, null), "all", List.of("1", "2")));
     }
 
 
     @Test
     public void testProviderMatchingLevelFilter() {
-        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(1l, 3l), "level1", new ArrayList<>()));
-        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(2l, null), "level2", null));
-        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(1l, null), "all", null));
+        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(1L, 3L), "level1", Collections.emptyList()));
+        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(2L, null), "level2", null));
+        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(1L, null), "all", null));
     }
 
     @Test
     public void testProviderMatchingProviderId() {
-        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(1l, null), null, Arrays.asList("1", "2")));
-        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(2l, null), "all", Arrays.asList("1", "2")));
+        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(1L, null), null, List.of("1", "2")));
+        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(2L, null), "all", List.of("1", "2")));
     }
 
     @Test
     public void testProviderMatchingWhenNoFiltering() {
-        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(1l, null), null, null));
-        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(2l, null), "all", new ArrayList<>()));
+        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(1L, null), null, null));
+        assertTrue(new ChouetteStatsRouteBuilder().isMatch(provider(2L, null), "all", Collections.emptyList()));
     }
 
     @Test
     public void testProviderNotMatchingWhenWrongLevelFiltering() {
-        assertFalse(new ChouetteStatsRouteBuilder().isMatch(provider(1l, 3l), "level2", null));
-        assertFalse(new ChouetteStatsRouteBuilder().isMatch(provider(2l, null), "level1", Arrays.asList("1", "2")));
+        assertFalse(new ChouetteStatsRouteBuilder().isMatch(provider(1L, 3L), "level2", null));
+        assertFalse(new ChouetteStatsRouteBuilder().isMatch(provider(2L, null), "level1", List.of("1", "2")));
     }
 
     @Test
     public void testProviderNotMatchingNotInProviderIdList() {
-        assertFalse(new ChouetteStatsRouteBuilder().isMatch(provider(1l, 4l), "all", Arrays.asList("2")));
-        assertFalse(new ChouetteStatsRouteBuilder().isMatch(provider(3l, null), "level2", Arrays.asList("1", "2")));
+        assertFalse(new ChouetteStatsRouteBuilder().isMatch(provider(1L, 4L), "all", List.of("2")));
+        assertFalse(new ChouetteStatsRouteBuilder().isMatch(provider(3L, null), "level2", List.of("1", "2")));
     }
 
 

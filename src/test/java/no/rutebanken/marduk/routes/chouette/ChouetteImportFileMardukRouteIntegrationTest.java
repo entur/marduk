@@ -111,7 +111,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         // Mock initial call to Chouette to import job
         context.getRouteDefinition("chouette-send-import-job").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/regtopp")
                         .skipSendToOriginalEndpoint().to("mock:chouetteCreateImport");
             }
@@ -120,7 +120,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         // Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
         context.getRouteDefinition("chouette-validate-job-status-parameters").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
                         .to("mock:pollJobStatus");
             }
@@ -129,7 +129,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         // Mock update status calls
         context.getRouteDefinition("chouette-process-import-status").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
                 weaveByToUri("direct:checkScheduledJobsBeforeTriggeringNextAction").replace().to("mock:checkScheduledJobsBeforeTriggeringNextAction");
             }
@@ -151,7 +151,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         checkScheduledJobsBeforeTriggeringNextAction.expectedMessageCount(1);
 
 
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(Constants.PROVIDER_ID, "2");
         headers.put(Constants.FILE_NAME, filename);
         headers.put(Constants.CORRELATION_ID, "corr_id");
@@ -184,7 +184,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         // Mock initial call to Chouette to import job
         context.getRouteDefinition("chouette-send-import-job").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/gtfs")
                         .skipSendToOriginalEndpoint().to("mock:chouetteCreateImport");
             }
@@ -193,7 +193,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         // Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
         context.getRouteDefinition("chouette-validate-job-status-parameters").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
                         .to("mock:pollJobStatus");
             }
@@ -202,7 +202,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         // Mock update status calls
         context.getRouteDefinition("chouette-process-import-status").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
                 weaveByToUri("direct:checkScheduledJobsBeforeTriggeringNextAction").replace().to("mock:checkScheduledJobsBeforeTriggeringNextAction");
             }
@@ -224,7 +224,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
         checkScheduledJobsBeforeTriggeringNextAction.expectedMessageCount(1);
 
 
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(Constants.PROVIDER_ID, "2");
         headers.put(Constants.FILE_NAME, filename);
         headers.put(Constants.CORRELATION_ID, "corr_id");
@@ -262,7 +262,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 
         context.getRouteDefinition("chouette-process-job-list-after-import").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 interceptSendToEndpoint(chouetteUrl + "/*")
                         .skipSendToOriginalEndpoint()
                         .to("mock:chouetteGetJobsForProvider");
@@ -289,7 +289,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
             }
         });
 
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(Constants.PROVIDER_ID, "2");
         headers.put(Constants.CHOUETTE_REFERENTIAL, "rut");
         headers.put(Constants.ENABLE_VALIDATION, true);

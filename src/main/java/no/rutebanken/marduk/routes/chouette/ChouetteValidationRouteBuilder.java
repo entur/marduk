@@ -122,9 +122,9 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processValidationResult"))
-                .process(e -> {
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL));
-                })
+                .process(e ->
+                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL))
+                )
                 .removeHeader("loopCounter")
                 .setBody(constant(null))
                 .to("entur-google-pubsub:ChouettePollStatusQueue")

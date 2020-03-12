@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.routes.blobstore;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -53,8 +52,7 @@ public class TimetableGetExportBlobRouteBuilder extends BaseRouteBuilder {
     }
 
     private Set<String> calculatePrefixes() {
-        Set<String> prefixes = new HashSet<>();
-        prefixes.addAll(staticPrefixes);
+        Set<String> prefixes = new HashSet<>(staticPrefixes);
 
         DateTimeFormatter graphPrefixFormatter = DateTimeFormatter.ofPattern("yyyyMM");
         int monthsAgo = 0;

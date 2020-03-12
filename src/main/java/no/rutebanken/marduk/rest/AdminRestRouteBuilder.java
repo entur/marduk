@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -72,19 +73,19 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         onException(AccessDeniedException.class)
                 .handled(true)
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(403))
-                .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
                 .transform(exceptionMessage());
 
         onException(NotAuthenticatedException.class)
                 .handled(true)
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(401))
-                .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
                 .transform(exceptionMessage());
 
         onException(NotFoundException.class)
                 .handled(true)
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404))
-                .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
                 .transform(exceptionMessage());
 
 
@@ -154,7 +155,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .name("status")
                 .type(RestParamType.query)
                 .description("Chouette job statuses")
-                .allowableValues(Arrays.asList(Status.values()).stream().map(Status::name).collect(Collectors.toList()))
+                .allowableValues(Arrays.stream(Status.values()).map(Status::name).collect(Collectors.toList()))
                 .endParam()
                 .param()
                 .required(Boolean.FALSE)
@@ -551,7 +552,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeRequest")
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
-                .process(e -> e.getIn().setHeader("fileName", URLDecoder.decode(e.getIn().getHeader("fileName", String.class), "utf-8")))
+                .process(e -> e.getIn().setHeader("fileName", URLDecoder.decode(e.getIn().getHeader("fileName", String.class), StandardCharsets.UTF_8)))
                 .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
                                                                        + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
                                                                        + "/" + e.getIn().getHeader("fileName", String.class)))
@@ -588,7 +589,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .name("status")
                 .type(RestParamType.query)
                 .description("Chouette job statuses")
-                .allowableValues(Arrays.asList(Status.values()).stream().map(Status::name).collect(Collectors.toList()))
+                .allowableValues(Arrays.stream(Status.values()).map(Status::name).collect(Collectors.toList()))
                 .endParam()
                 .param()
                 .required(Boolean.FALSE)

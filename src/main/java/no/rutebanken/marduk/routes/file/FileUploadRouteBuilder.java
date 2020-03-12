@@ -32,7 +32,6 @@ import org.apache.commons.io.input.CloseShieldInputStream;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -99,7 +98,7 @@ public class FileUploadRouteBuilder extends BaseRouteBuilder {
     /**
      * Wrapper class for passing form multipart body to ServletFileUpload parser.
      */
-    public class SimpleUploadContext implements UploadContext {
+    public static class SimpleUploadContext implements UploadContext {
         private final Charset charset;
         private final String contentType;
         private final byte[] content;
@@ -123,7 +122,7 @@ public class FileUploadRouteBuilder extends BaseRouteBuilder {
             return content.length;
         }
 
-        public InputStream getInputStream() throws IOException {
+        public InputStream getInputStream() {
             return new ByteArrayInputStream(content);
         }
 

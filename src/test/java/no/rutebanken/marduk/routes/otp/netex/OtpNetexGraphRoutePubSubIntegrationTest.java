@@ -19,7 +19,6 @@ package no.rutebanken.marduk.routes.otp.netex;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
-import no.rutebanken.marduk.routes.otp.remote.RemoteNetexGraphRouteBuilder;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -53,7 +52,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
 
         context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph");
                 weaveByToUri("direct:remoteBuildOtpBaseGraph").replace().to("mock:sink");
                 weaveByToUri("entur-google-pubsub:OtpGraphBuildQueue").replace().to("mock:sink");
@@ -64,7 +63,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
 
         context.start();
 
-        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2l, "ref", "corr-id"));
+        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2L, "ref", "corr-id"));
 
         buildOtpGraph.assertIsSatisfied(20000);
 
@@ -76,7 +75,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
 
         context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
                 weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph");
                 weaveByToUri("direct:remoteBuildOtpBaseGraph").replace().to("mock:sink");
                 weaveByToUri("entur-google-pubsub:OtpGraphBuildQueue").replace().to("mock:sink");
@@ -91,7 +90,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
         producerTemplate.sendBody("");
         producerTemplate.sendBody("");
         producerTemplate.sendBody("");
-        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2l, "ref", "corr-id"));
+        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2L, "ref", "corr-id"));
 
         buildOtpGraph.assertIsSatisfied(20000);
 
@@ -102,7 +101,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
 
         context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
-            public void configure() throws Exception {
+            public void configure() {
 
                 weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph");
                 weaveByToUri("direct:remoteBuildOtpBaseGraph").replace().to("mock:sink");
@@ -123,7 +122,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
         producerTemplate.sendBody("");
         producerTemplate.sendBody("");
         producerTemplate.sendBody("");
-        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2l, "ref", "corr-id"));
+        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2L, "ref", "corr-id"));
 
         buildOtpGraph.assertIsSatisfied(20000);
 

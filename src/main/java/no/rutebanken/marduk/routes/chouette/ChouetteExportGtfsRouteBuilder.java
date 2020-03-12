@@ -119,9 +119,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
 
         from("direct:addGtfsFeedInfo")
                 .log(LoggingLevel.INFO, correlation() + "Adding feed_info.txt to GTFS file")
-                .process(e -> {
-                    e.getIn().setBody(GtfsFileUtils.addOrReplaceFeedInfo(e.getIn().getBody(InputStream.class)));
-                })
+                .process(e -> e.getIn().setBody(GtfsFileUtils.addOrReplaceFeedInfo(e.getIn().getBody(InputStream.class))))
                 .routeId("chouette-process-export-gtfs-feedinfo");
     }
 

@@ -60,7 +60,7 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
     private String testFile = "src/test/resources/no/rutebanken/marduk/routes/gtfs/extended_gtfs.zip";
 
     @BeforeEach
-    public void prepare() throws Exception {
+    public void prepare() {
         Provider rbOppProvider = provider("rb_opp", 4, null, false, false);
         when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null, false, false), provider("rb_rut", 2, null, true, false),
                 provider("opp", 3, rbOppProvider.id, false, true), rbOppProvider));

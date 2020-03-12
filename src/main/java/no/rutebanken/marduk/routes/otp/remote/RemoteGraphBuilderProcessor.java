@@ -5,7 +5,6 @@ import org.apache.camel.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.OTP_BUILD_BASE_GRAPH;
@@ -24,7 +23,7 @@ public class RemoteGraphBuilderProcessor implements Processor {
     private OtpGraphBuilder otpGraphBuilder;
 
     @Override
-    public void process(Exchange exchange) throws Exception {
+    public void process(Exchange exchange) {
 
         try {
             String otpGraphDirectory = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class);

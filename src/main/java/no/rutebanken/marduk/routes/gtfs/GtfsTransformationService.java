@@ -58,7 +58,7 @@ public class GtfsTransformationService {
      * <p>
      * * @param includeShapes whether shape data from input file should be included in transformed output
      */
-    public InputStream transformToGoogleFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) throws Exception {
+    public InputStream transformToGoogleFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes)  {
         long t1 = System.currentTimeMillis();
         boolean removeShapes = !Boolean.TRUE.equals(includeShapes);
 
@@ -74,7 +74,7 @@ public class GtfsTransformationService {
      *
      * @param includeShapes whether shape data from input file should be included in transformed output
      */
-    public InputStream transformToBasicGTFSFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) throws Exception {
+    public InputStream transformToBasicGTFSFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) {
         long t1 = System.currentTimeMillis();
 
         boolean removeShapes = !Boolean.TRUE.equals(includeShapes);
