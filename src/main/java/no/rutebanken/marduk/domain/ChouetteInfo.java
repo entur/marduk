@@ -29,9 +29,6 @@ public class ChouetteInfo {
     public String referential;
     public String organisation;
     public String user;
-    public String regtoppVersion;
-    public String regtoppCoordinateProjection;
-    public String regtoppCalendarStrategy;
     public String dataFormat;
     public boolean enableValidation = false;
     public boolean allowCreateMissingStopPlace = false;
@@ -59,9 +56,6 @@ public class ChouetteInfo {
                        ", referential='" + referential + '\'' +
                        ", organisation='" + organisation + '\'' +
                        ", user='" + user + '\'' +
-                       ", regtoppVersion='" + regtoppVersion + '\'' +
-                       ", regtoppCoordinateProjection='" + regtoppCoordinateProjection + '\'' +
-                       ", regtoppCalendarStrategy='" + regtoppCalendarStrategy + '\'' +
                        ", dataFormat='" + dataFormat + '\'' +
                        ", enableValidation='" + enableValidation + '\'' +
                        ", allowCreateMissingStopPlace='" + allowCreateMissingStopPlace + '\'' +
@@ -75,10 +69,6 @@ public class ChouetteInfo {
                        ", googleUpload='" + googleUpload + '\'' +
                        ", googleQAUpload='" + googleQAUpload + '\'' +
                        '}';
-    }
-
-    public boolean usesRegtopp() {
-        return "regtopp".equals(dataFormat);
     }
 
     public Long getId() {
@@ -103,18 +93,6 @@ public class ChouetteInfo {
 
     public String getUser() {
         return user;
-    }
-
-    public String getRegtoppVersion() {
-        return regtoppVersion;
-    }
-
-    public String getRegtoppCoordinateProjection() {
-        return regtoppCoordinateProjection;
-    }
-
-    public String getRegtoppCalendarStrategy() {
-        return regtoppCalendarStrategy;
     }
 
     public String getDataFormat() {

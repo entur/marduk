@@ -35,35 +35,33 @@ import static no.rutebanken.marduk.Constants.FILE_TYPE;
 import static no.rutebanken.marduk.routes.file.FileType.GTFS;
 import static no.rutebanken.marduk.routes.file.FileType.INVALID_FILE_NAME;
 import static no.rutebanken.marduk.routes.file.FileType.NETEXPROFILE;
-import static no.rutebanken.marduk.routes.file.FileType.REGTOPP;
 import static no.rutebanken.marduk.routes.file.FileType.ZIP_WITH_SINGLE_FOLDER;
 import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.firstElementQNameMatchesNetex;
 import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.validateZipContent;
 
 public class FileTypeClassifierBean {
 
-    private static final Logger logger = LoggerFactory.getLogger(FileTypeClassifierBean.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileTypeClassifierBean.class);
 
-    private static final String requiredRegtoppFilesExtensionsRegex = "(?i).+\\.tix|(?i).+\\.hpl|(?i).+\\.dko";
-    private static final String requiredGtfsFilesRegex = "agency.txt|stops.txt|routes.txt|trips.txt|stop_times.txt";
-    private static final String xmlFilesRegex = ".+\\.xml";    //TODO can we be more specific?
+    private static final String REQUIRED_GTFS_FILES_REGEX = "agency.txt|stops.txt|routes.txt|trips.txt|stop_times.txt";
+    private static final String XML_FILES_REGEX = ".+\\.xml";    //TODO can we be more specific?
 
     public static final String NON_XML_FILE_XML=".*\\.(?!XML$|xml$)[^.]+";
 
     public boolean validateFile(byte[] data, Exchange exchange) {
         String relativePath = exchange.getIn().getHeader(FILE_HANDLE, String.class);
-        logger.debug("Validating file with path '{}'.", relativePath);
+        LOGGER.debug("Validating file with path '{}'.", relativePath);
         try {
             if (relativePath == null || relativePath.trim().equals("")) {
                 throw new IllegalArgumentException("Could not get file path from " + FILE_HANDLE + " header.");
             }
 
             FileType fileType = classifyFile(relativePath, data);
-            logger.debug("File is classified as {}", fileType);
+            LOGGER.debug("File is classified as {}", fileType);
             exchange.getIn().setHeader(FILE_TYPE, fileType.name());
             return true;
         } catch (RuntimeException e) {
-            logger.warn("Exception while trying to classify file '" + relativePath + "'", e);
+            LOGGER.warn("Exception while trying to classify file '" + relativePath + "'", e);
             return false;
         }
     }
@@ -78,8 +76,6 @@ public class FileTypeClassifierBean {
                 Set<String> filesNamesInZip = ZipFileUtils.listFilesInZip(data);
                 if (!isValidFileName(relativePath)) {
                     return INVALID_FILE_NAME;
-                } else if (isRegtoppZip(filesNamesInZip)) {
-                    return REGTOPP;
                 } else if (isGtfsZip(filesNamesInZip)) {
                     return GTFS;
                 } else if (isNetexZip(filesNamesInZip, new ByteArrayInputStream(data))) {
@@ -95,16 +91,12 @@ public class FileTypeClassifierBean {
         }
     }
 
-    public static boolean isRegtoppZip(Set<String> filesInZip) {
-        return filesInZip.stream().anyMatch(p -> p.matches(requiredRegtoppFilesExtensionsRegex));
-    }
-
     public static boolean isGtfsZip(final Set<String> filesInZip) {
-        return filesInZip.stream().anyMatch(p -> p.matches(requiredGtfsFilesRegex));
+        return filesInZip.stream().anyMatch(p -> p.matches(REQUIRED_GTFS_FILES_REGEX));
     }
 
     public static boolean isNetexZip(final Set<String> filesInZip, InputStream inputStream) {
-        return filesInZip.stream().anyMatch(p -> p.matches(xmlFilesRegex)) //TODO skip file extension check unless it can be more specific?
+        return filesInZip.stream().anyMatch(p -> p.matches(XML_FILES_REGEX)) //TODO skip file extension check unless it can be more specific?
                        && isNetexXml(inputStream);
     }
 

@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -102,17 +103,17 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
     @Test
     public void testImportFileToDataspace() throws Exception {
 
-        String filename = "ruter_fake_data.zip";
-        String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
+        String testFilename = "netex.zip";
+        InputStream testFile = getTestNetexArchiveAsStream();
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob("rut/" + filename, new FileInputStream(new File(pathname)), false);
+        inMemoryBlobStoreRepository.uploadBlob("rut/" + testFilename, testFile, false);
 
         // Mock initial call to Chouette to import job
         context.getRouteDefinition("chouette-send-import-job").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() {
-                interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/regtopp")
+                interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/netexprofile")
                         .skipSendToOriginalEndpoint().to("mock:chouetteCreateImport");
             }
         });
@@ -153,9 +154,9 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 
         Map<String, Object> headers = new HashMap<>();
         headers.put(Constants.PROVIDER_ID, "2");
-        headers.put(Constants.FILE_NAME, filename);
+        headers.put(Constants.FILE_NAME, testFilename);
         headers.put(Constants.CORRELATION_ID, "corr_id");
-        headers.put(Constants.FILE_HANDLE, "rut/" + filename);
+        headers.put(Constants.FILE_HANDLE, "rut/" + testFilename);
         importTemplate.sendBodyAndHeaders(null, headers);
 
         chouetteCreateImport.assertIsSatisfied();

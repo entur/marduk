@@ -100,7 +100,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files")
     protected ProducerTemplate listFilesTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files/existing_regtopp-file.zip")
+    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files/netex.zip")
     protected ProducerTemplate getFileTemplate;
 
     @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files/unknown-file.zip")
@@ -196,13 +196,12 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     public void getBlobStoreFiles() throws Exception {
 
         // Preparations
-        String filename = "ruter_fake_data.zip";
-        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
-        String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
+        String testFileName = "ruter_fake_data.zip";
+        String testFileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
+        InputStream testFile = getTestNetexArchiveAsStream();
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, new FileInputStream(new File(pathname)), false);
-//        BlobStoreFiles blobStoreFiles = inMemoryBlobStoreRepository.listBlobs(fileStorePath);
+        inMemoryBlobStoreRepository.uploadBlob(testFileStorePath + testFileName, testFile, false);
 
         camelContext.start();
 
@@ -217,7 +216,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         ObjectMapper mapper = new ObjectMapper();
         BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
         assertEquals(1, rsp.getFiles().size());
-        assertEquals(fileStorePath + filename, rsp.getFiles().get(0).getName());
+        assertEquals(testFileStorePath + testFileName, rsp.getFiles().get(0).getName());
 
     }
 
@@ -225,12 +224,11 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     @Test
     public void getBlobStoreFile() throws Exception {
         // Preparations
-        String filename = "existing_regtopp-file.zip";
+        String filename = "netex.zip";
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
-        String pathname = "src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip";
-        File testFile = new File(pathname);
+        InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, new FileInputStream(testFile), false);
+        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
 
         camelContext.start();
 
@@ -238,7 +236,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         headers.put(Exchange.HTTP_METHOD, "GET");
         InputStream response = (InputStream) getFileTemplate.requestBodyAndHeaders(null, headers);
 
-		assertTrue(org.apache.commons.io.IOUtils.contentEquals(new FileInputStream(testFile), response));
+		assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
     }
 
 
@@ -258,10 +256,11 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
     @Test
     public void getBlobStoreExportFiles() throws Exception {
-        String testFileName = "testFile";
+        String testFileName = "netex.zip";
+        InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
         for (String prefix : exportFileStaticPrefixes) {
-            inMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/chouette/empty_regtopp.zip")), false);
+            inMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, testFile, false);
         }
         camelContext.start();
 
