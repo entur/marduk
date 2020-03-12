@@ -80,14 +80,14 @@ public enum GoogleRouteTypeCode {
     Ferry_Service(1200, Water_Transport_Service),
     Taxi_Service(1500, Communal_Taxi_Service);
 
-    private static Logger LOGGER = LoggerFactory.getLogger(GoogleRouteTypeCode.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GoogleRouteTypeCode.class);
 
     private int code;
     private GoogleRouteTypeCode mapsTo;
 
 
     // Default to misc
-    private static GoogleRouteTypeCode FALLBACK_CODE = Miscellaneous_Service;
+    private static final GoogleRouteTypeCode FALLBACK_CODE = Miscellaneous_Service;
 
     GoogleRouteTypeCode(int code) {
         this.code = code;

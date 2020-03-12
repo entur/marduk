@@ -31,10 +31,10 @@ import java.sql.Timestamp;
  */
 public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageIdRepository<String> {
 
-    private static final String queryString = "SELECT COUNT(*) FROM CAMEL_UNIQUE_FILENAME_AND_DIGEST WHERE processorName = ? AND (digest = ? or fileName=?)";
-    private static final String insertString = "INSERT INTO CAMEL_UNIQUE_FILENAME_AND_DIGEST (processorName, digest,fileName, createdAt) VALUES (?,?, ?, ?)";
-    private static final String deleteString = "DELETE FROM CAMEL_UNIQUE_FILENAME_AND_DIGEST WHERE processorName = ? AND digest = ? and fileName=? and createdAt >= ?";
-    private static final String clearString = "DELETE FROM CAMEL_UNIQUE_FILENAME_AND_DIGEST WHERE processorName = ?";
+    private static final String QUERY_STRING = "SELECT COUNT(*) FROM CAMEL_UNIQUE_FILENAME_AND_DIGEST WHERE processorName = ? AND (digest = ? or fileName=?)";
+    private static final String INSERT_STRING = "INSERT INTO CAMEL_UNIQUE_FILENAME_AND_DIGEST (processorName, digest,fileName, createdAt) VALUES (?,?, ?, ?)";
+    private static final String DELETE_STRING = "DELETE FROM CAMEL_UNIQUE_FILENAME_AND_DIGEST WHERE processorName = ? AND digest = ? and fileName=? and createdAt >= ?";
+    private static final String CLEAR_STRING = "DELETE FROM CAMEL_UNIQUE_FILENAME_AND_DIGEST WHERE processorName = ?";
 
     /**
      * Max no of seconds transactions may last and still be cleaned up if it fails.
@@ -54,7 +54,7 @@ public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageId
 
     protected int queryForInt(String keyAsString) {
         FileNameAndDigest key = FileNameAndDigest.fromString(keyAsString);
-        return this.jdbcTemplate.queryForObject(this.queryString, Integer.class, new Object[]{this.processorName, key.getDigest(), key.getFileName()});
+        return this.jdbcTemplate.queryForObject(QUERY_STRING, Integer.class, new Object[]{this.processorName, key.getDigest(), key.getFileName()});
     }
 
     protected int insert(String keyAsString) {
@@ -63,7 +63,7 @@ public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageId
 
     protected int insert(String keyAsString, Timestamp timestamp) {
         FileNameAndDigest key = FileNameAndDigest.fromString(keyAsString);
-        return this.jdbcTemplate.update(this.insertString, new Object[]{this.processorName, key.getDigest(), key.getFileName(), timestamp});
+        return this.jdbcTemplate.update(INSERT_STRING, new Object[]{this.processorName, key.getDigest(), key.getFileName(), timestamp});
     }
 
     protected int delete(String keyAsString) {
@@ -74,11 +74,11 @@ public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageId
         } else {
             minCreatedAt = new java.util.Date(0);
         }
-        return this.jdbcTemplate.update(this.deleteString, new Object[]{this.processorName, key.getDigest(), key.getFileName(), minCreatedAt});
+        return this.jdbcTemplate.update(DELETE_STRING, new Object[]{this.processorName, key.getDigest(), key.getFileName(), minCreatedAt});
     }
 
     protected int delete() {
-        return this.jdbcTemplate.update(this.clearString, new Object[]{this.processorName});
+        return this.jdbcTemplate.update(CLEAR_STRING, new Object[]{this.processorName});
     }
 
 }
