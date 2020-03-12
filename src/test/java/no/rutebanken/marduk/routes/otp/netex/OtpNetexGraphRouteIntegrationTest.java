@@ -101,7 +101,7 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
         context.start();
 
         producerTemplate.sendBody(null);
-        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2l, "ref", "corr-id"));
+        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2L, "ref", "corr-id"));
 
         updateStatus.assertIsSatisfied(20000);
 

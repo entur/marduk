@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -78,7 +79,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public BlobStoreFiles listBlobs(String prefix) {
-        return listBlobs(Arrays.asList(prefix));
+        return listBlobs(Collections.singletonList(prefix));
     }
 
 

@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -49,7 +50,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public BlobStoreFiles listBlobs(String prefix) {
-        return listBlobs(Arrays.asList(prefix));
+        return listBlobs(Collections.singletonList(prefix));
     }
 
     @Override

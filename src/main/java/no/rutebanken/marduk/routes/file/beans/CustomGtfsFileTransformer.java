@@ -24,7 +24,7 @@ import org.onebusaway.gtfs_transformer.GtfsTransformer;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Arrays;
-
+import java.util.Collections;
 
 
 public abstract class CustomGtfsFileTransformer {
@@ -34,7 +34,7 @@ public abstract class CustomGtfsFileTransformer {
             GtfsTransformer transformer = new GtfsTransformer();
             File outputFile = File.createTempFile("marduk-gtfs-custom-transform-", ".zip");
 
-            transformer.setGtfsInputDirectories(Arrays.asList(inputFile));
+            transformer.setGtfsInputDirectories(Collections.singletonList(inputFile));
             transformer.setOutputDirectory(outputFile);
 
             addCustomTransformations(transformer);

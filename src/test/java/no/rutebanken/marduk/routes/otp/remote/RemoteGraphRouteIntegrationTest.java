@@ -111,7 +111,7 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
         context.start();
 
         producerTemplate.sendBody(null);
-        producerTemplate.sendBodyAndHeaders(null, createMessageHeaders(2l, "ref", "corr-id", false));
+        producerTemplate.sendBodyAndHeaders(null, createMessageHeaders(2L, "ref", "corr-id", false));
 
         updateStatus.assertIsSatisfied(20000);
 
@@ -167,7 +167,7 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
         context.start();
 
         producerTemplate.sendBody(null);
-        producerTemplate.sendBodyAndHeaders(null, createMessageHeaders(2l, "ref", "corr-id", true));
+        producerTemplate.sendBodyAndHeaders(null, createMessageHeaders(2L, "ref", "corr-id", true));
 
         updateStatus.assertIsSatisfied(20000);
 

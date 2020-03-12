@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.chouette.json;
 
+import net.javacrumbs.jsonunit.core.Option;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.importer.GtfsImportParameters;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 
 import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
+import static net.javacrumbs.jsonunit.JsonAssert.when;
 
 public class ParametersTest {
 
@@ -36,16 +38,10 @@ public class ParametersTest {
             "\"route_type_id_scheme\": \"any\"," +
             "\"parse_connection_links\": false," +
                 " \"max_distance_for_connection_link\": \"0\", \"test\": false, \"stop_area_remote_id_mapping\": true, \"stop_area_import_mode\": \"CREATE_NEW\", \"keep_obsolete_lines\": true, \"generate_missing_route_sections_for_modes\": [\"water\",\"bus\"] } } }";
-
-    final String regtoppReferenceJson =  "{\"parameters\":{\"regtopp-import\":{\"name\":\"test\",\"clean_repository\":\"0\",\"no_save\":\"0\"," +
-            "\"user_name\":\"Chouette\",\"organisation_name\":\"Rutebanken\",\"referential_name\":\"testDS\",\"object_id_prefix\":\"tds\"," +
-
-            "\"references_type\":\"\",\"version\":\"R12\",\"coordinate_projection\":\"EPSG:32632\",\"calendar_strategy\":\"ADD\", \"test\": false, \"stop_area_remote_id_mapping\": false, \"stop_area_import_mode\": \"READ_ONLY\", \"keep_obsolete_lines\": false, \"batch_parse\": true, \"generate_missing_route_sections_for_modes\": [\"water\",\"bus\"] }}}";
-
     @Test
     public void createGtfsImportParameters() {
         GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette",false,false,true, true, Set.of("water","bus"));
-        assertJsonEquals(gtfsReferenceJson, importParameters.toJsonString());
+        assertJsonEquals(gtfsReferenceJson, importParameters.toJsonString(), when(Option.IGNORING_ARRAY_ORDER));
     }
 
     @Test

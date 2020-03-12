@@ -83,7 +83,7 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
         when(providerRepository.getProvider(2L)).thenReturn(Provider.create(IOUtils.toString(new FileReader(
                 "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json"))));
 
-        when(providerRepository.getProviderId("rb_rut")).thenReturn(2l);
+        when(providerRepository.getProviderId("rb_rut")).thenReturn(2L);
 
     }
 

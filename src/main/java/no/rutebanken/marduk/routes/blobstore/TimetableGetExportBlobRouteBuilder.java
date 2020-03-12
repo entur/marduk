@@ -52,8 +52,7 @@ public class TimetableGetExportBlobRouteBuilder extends BaseRouteBuilder {
     }
 
     private Set<String> calculatePrefixes() {
-        Set<String> prefixes = new HashSet<>();
-        prefixes.addAll(staticPrefixes);
+        Set<String> prefixes = new HashSet<>(staticPrefixes);
 
         DateTimeFormatter graphPrefixFormatter = DateTimeFormatter.ofPattern("yyyyMM");
         int monthsAgo = 0;
