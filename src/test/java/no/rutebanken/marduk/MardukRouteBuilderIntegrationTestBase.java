@@ -36,6 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -113,4 +114,7 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
         return provider;
     }
 
+    protected InputStream getTestNetexArchiveAsStream() {
+        return getClass().getResourceAsStream("/no/rutebanken/marduk/routes/file/beans/netex.zip");
+    }
 }

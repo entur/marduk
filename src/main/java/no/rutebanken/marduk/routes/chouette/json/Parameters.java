@@ -25,7 +25,6 @@ import no.rutebanken.marduk.routes.chouette.json.exporter.NetexExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.exporter.TransferExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.importer.GtfsImportParameters;
 import no.rutebanken.marduk.routes.chouette.json.importer.NetexImportParameters;
-import no.rutebanken.marduk.routes.chouette.json.importer.RegtoppImportParameters;
 import no.rutebanken.marduk.routes.file.FileType;
 
 import java.io.IOException;
@@ -34,28 +33,13 @@ import java.io.StringWriter;
 public class Parameters {
 
     public static String createImportParameters(String fileName, String fileType, Provider provider) {
-        if (FileType.REGTOPP.name().equals(fileType)) {
-            return getRegtoppImportParameters(fileName, provider);
-        } else if (FileType.GTFS.name().equals(fileType)) {
+        if (FileType.GTFS.name().equals(fileType)) {
             return getGtfsImportParameters(fileName, provider);
         } else if (FileType.NETEXPROFILE.name().equals(fileType)) {
             return getNetexImportParameters(fileName, provider);
         } else {
             throw new IllegalArgumentException("Cannot create import parameters from file type '" + fileType + "'");
         }
-    }
-
-    static String getRegtoppImportParameters(String importName, Provider provider) {
-        ChouetteInfo chouetteInfo = provider.chouetteInfo;
-        if (!chouetteInfo.usesRegtopp()) {
-            throw new IllegalArgumentException("Could not get regtopp information about provider '" + provider.id + "'.");
-        }
-        RegtoppImportParameters regtoppImportParameters = RegtoppImportParameters.create(importName, chouetteInfo.xmlns,
-                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.regtoppVersion,
-                chouetteInfo.regtoppCoordinateProjection, chouetteInfo.regtoppCalendarStrategy, chouetteInfo.enableCleanImport,
-                chouetteInfo.enableValidation, chouetteInfo.allowCreateMissingStopPlace,
-                chouetteInfo.enableStopPlaceIdMapping,false, true, chouetteInfo.generateMissingServiceLinksForModes);
-        return regtoppImportParameters.toJsonString();
     }
 
     static String getGtfsImportParameters(String importName, Provider provider) {

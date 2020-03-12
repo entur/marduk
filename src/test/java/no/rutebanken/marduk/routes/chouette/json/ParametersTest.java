@@ -59,7 +59,6 @@ public class ParametersTest {
         ChouetteInfo chouetteInfo = new ChouetteInfo();
         chouetteInfo.id = 3L;
         chouetteInfo.organisation = "Ruter";
-        chouetteInfo.regtoppVersion = "1.3";
         chouetteInfo.user = "rut";
 
         Provider provider = new Provider();
