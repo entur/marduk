@@ -54,8 +54,6 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
             @Override
             public void configure() {
                 weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph");
-                weaveByToUri("direct:remoteBuildOtpBaseGraph").replace().to("mock:sink");
-                weaveByToUri("entur-google-pubsub:OtpGraphBuildQueue").replace().to("mock:sink");
             }
         });
 
@@ -77,8 +75,6 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
             @Override
             public void configure() {
                 weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph");
-                weaveByToUri("direct:remoteBuildOtpBaseGraph").replace().to("mock:sink");
-                weaveByToUri("entur-google-pubsub:OtpGraphBuildQueue").replace().to("mock:sink");
             }
         });
 
@@ -104,8 +100,6 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
             public void configure() {
 
                 weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph");
-                weaveByToUri("direct:remoteBuildOtpBaseGraph").replace().to("mock:sink");
-                weaveByToUri("entur-google-pubsub:OtpGraphBuildQueue").replace().to("mock:sink");
             }
         });
 
