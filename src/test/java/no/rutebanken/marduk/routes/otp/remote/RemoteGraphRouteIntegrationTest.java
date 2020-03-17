@@ -45,7 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
-
     @Autowired
     private BlobStoreRepository blobStoreRepository;
 
@@ -60,7 +59,10 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
     protected MockEndpoint updateStatus;
 
     @Produce(uri = "entur-google-pubsub:OtpGraphBuildQueue")
-    protected ProducerTemplate producerTemplate;
+    protected ProducerTemplate graphProducerTemplate;
+
+    @Produce(uri = "entur-google-pubsub:OtpBaseGraphBuildQueue")
+    protected ProducerTemplate baseGraphProducerTemplate;
 
     @Test
     public void testRemoteNetexGraphBuildStatusEventReporting() throws Exception {
@@ -110,8 +112,8 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
 
         context.start();
 
-        producerTemplate.sendBody(null);
-        producerTemplate.sendBodyAndHeaders(null, createMessageHeaders(2L, "ref", "corr-id", false));
+        graphProducerTemplate.sendBody(null);
+        graphProducerTemplate.sendBodyAndHeaders(null, createMessageHeaders(2L, "ref", "corr-id"));
 
         updateStatus.assertIsSatisfied(20000);
 
@@ -139,12 +141,19 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
             }
         });
 
+        context.getRouteDefinition("otp-base-graph-build-send-started-events").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() {
+                weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
+            }
+        });
 
         context.getRouteDefinition("otp-remote-base-graph-build-and-send-status").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() {
                 weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
                 weaveByToUri("direct:remoteBuildBaseGraph").replace().to("mock:sink");
+
             }
         });
 
@@ -162,12 +171,15 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
             }
         });
 
+
+
+
         updateStatus.expectedMessageCount(2);
 
         context.start();
 
-        producerTemplate.sendBody(null);
-        producerTemplate.sendBodyAndHeaders(null, createMessageHeaders(2L, "ref", "corr-id", true));
+        baseGraphProducerTemplate.sendBody(null);
+        baseGraphProducerTemplate.sendBodyAndHeaders(null, createMessageHeaders(2L, "ref", "corr-id"));
 
         updateStatus.assertIsSatisfied(20000);
 
@@ -179,22 +191,17 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
         );
 
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.domain)
-                && "BUILD_GRAPH".equals(je.action)
+                && "BUILD_BASE".equals(je.action)
                 && JobEvent.State.STARTED.equals(je.state))
         );
     }
 
-    private Map<String, Object> createMessageHeaders(Long providerId, String ref, String correlationId, boolean buildBaseGraph) {
+    private Map<String, Object> createMessageHeaders(Long providerId, String ref, String correlationId) {
 
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Constants.PROVIDER_ID, providerId);
-        headers.put(Constants.CHOUETTE_REFERENTIAL, ref);
-        headers.put(Constants.CORRELATION_ID, correlationId);
-
-        if (buildBaseGraph) {
-            headers.put(Constants.ADMIN_REST_OTP_BASE_GRAPH_BUILD_REQUESTED, "true");
-        }
-
-        return headers;
+        return Map.of(
+                Constants.PROVIDER_ID, providerId,
+                Constants.CHOUETTE_REFERENTIAL, ref,
+                Constants.CORRELATION_ID, correlationId
+        );
     }
 }

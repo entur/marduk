@@ -78,7 +78,6 @@ public class Constants {
     public static final String PROVIDER_WHITE_LIST = "RutebankenProviderWhiteList";
     public static final String TRANSFORMATION_ROUTING_DESTINATION = "RutebankenTransformationRoutingDestination";
 
-    public static final String ADMIN_REST_OTP_BASE_GRAPH_BUILD_REQUESTED = "RutebankenOtpBaseGraphBuildRequested";
     public static final String OTP_BUILD_BASE_GRAPH = "RutebankenOtpBuildBaseGraph";
     public static final String OTP_REMOTE_WORK_DIR = "RutebankenOtpRemoteWorkDir";
 
