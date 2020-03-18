@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -176,6 +177,18 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public boolean deleteAllFilesInFolder(String folder) {
-        throw new UnsupportedOperationException();
+        try (Stream<Path> paths = Files.walk(Paths.get(baseFolder).resolve(folder))) {
+            paths.sorted(Comparator.reverseOrder())
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException e) {
+                            throw new MardukException(e);
+                        }
+                    });
+            return true;
+        } catch (IOException e) {
+            throw new MardukException(e);
+        }
     }
 }
