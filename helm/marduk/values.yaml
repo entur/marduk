@@ -1,3 +1,7 @@
+image:
+  identifier: ${artifact.metadata.image}
+  imagePullPolicy: Always
+
 service:
   http:
     externalPort: 8080
