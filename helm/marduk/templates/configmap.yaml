@@ -10,9 +10,9 @@ data:
     google.publish.cron.schedule={{ .Values.google.publish.cronSchedule }}
     keycloak.bearer-only=true
     spring.datasource.platform=postgresql
-    blobstore.gcs.exchange.credential.path=/etc/exchange/marduk-exchange-blobstore-credentials.json
+    blobstore.gcs.exchange.credential.path=/etc/marduk-service-account/credentials.json
     spring.cloud.gcp.pubsub.project-id={{ .Values.gcpProjectId }}
-    spring.cloud.gcp.pubsub.credentials.location=file:/etc/marduk-pubsub-account/marduk-pubsub-credentials.json
+    spring.cloud.gcp.pubsub.credentials.location=file:/etc/marduk-service-account/credentials.json
     spring.cloud.gcp.pubsub.subscriber.parallel-pull-count=1
     spring.cloud.gcp.pubsub.subscriber.executor-threads=30
     spring.cloud.gcp.pubsub.subscriber.max-ack-extension-period=36000
@@ -32,7 +32,7 @@ data:
     server.host=0.0.0.0
     keycloak.auth-server-url={{ .Values.keycloakUrl}}
     keycloak.realm=rutebanken
-    blobstore.gcs.credential.path=/etc/marduk/marduk-blobstore-credentials.json
+    blobstore.gcs.credential.path=/etc/marduk-service-account/credentials.json
     keycloak.resource=marduk
     chouette.validate.level2.autoStartup=false
     sftp.host=lamassu.default:22
@@ -46,7 +46,7 @@ data:
     blobstore.gcs.otpreport.container.name={{ .Values.gcpOtpReportBucketName }}
     server.port={{ .Values.service.http.internalPort }}
     chouette.remove.old.jobs.keep.jobs=100
-    blobstore.gcs.otpreport.credential.path=/etc/marduk/marduk-blobstore-credentials.json
+    blobstore.gcs.otpreport.credential.path=/etc/marduk-service-account/credentials.json
     chouette.max.retries=3000
     google.publish.scheduler.autoStartup={{ .Values.google.publish.autoStartup }}
     spring.profiles.active=gcs-blobstore

@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "marduk.name" . }}
@@ -42,7 +42,7 @@ spec:
         - command:
             - /cloud_sql_proxy
             - -instances={{ .Values.gcpDatabaseInstance}}
-            - -credential_file=/etc/marduk-service-account/marduk-blobstore-credentials.json
+            - -credential_file=/etc/marduk-service-account/credentials.json
             - -log_debug_stdout
           image: gcr.io/cloudsql-docker/gce-proxy:1.15
           imagePullPolicy: IfNotPresent
@@ -73,39 +73,39 @@ spec:
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
-                  key: username
-                  name: marduk-db-password
+                  key: marduk-db-username
+                  name: ror-marduk-secret
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  key: password
-                  name: marduk-db-password
+                  key: marduk-db-password
+                  name: ror-marduk-secret
             - name: GOOGLE_PUBLISH_SFTP_USERNAME
               valueFrom:
                 secretKeyRef:
-                  key: username
-                  name: marduk-google-sftp-password
+                  key: marduk-google-sftp-username
+                  name: ror-marduk-secret
             - name: GOOGLE_PUBLISH_SFTP_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  key: password
-                  name: marduk-google-sftp-password
+                  key: marduk-google-sftp-password
+                  name: ror-marduk-secret
             - name: GOOGLE_PUBLISH_QA_SFTP_USERNAME
               valueFrom:
                 secretKeyRef:
-                  key: username
-                  name: marduk-google-qa-sftp-password
+                  key: marduk-google-qa-sftp-username
+                  name: ror-marduk-secret
             - name: GOOGLE_PUBLISH_QA_SFTP_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  key: password
-                  name: marduk-google-qa-sftp-password
+                  key: marduk-google-qa-sftp-password
+                  name: ror-marduk-secret
             - name: IAM_KEYCLOAK_CLIENT_SECRET
               valueFrom:
                   secretKeyRef:
-                    key: password
-                    name: marduk-keycloak-secret
-          image: eu.gcr.io/entur-system-1287/marduk:{{ .Chart.AppVersion }}
+                    key: marduk-keycloak-secret
+                    name: ror-marduk-secret
+          image: {{ .Values.image.identifier }}
           imagePullPolicy: Always
           livenessProbe:
             failureThreshold: 3
@@ -142,44 +142,30 @@ spec:
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
+            - mountPath: /etc/marduk-service-account
+              name: marduk-service-account
+              readOnly: true
             - mountPath: /etc/secret-volume
               name: secret-volume
               readOnly: true
-            - mountPath: /etc/marduk/
-              name: marduk-key
-            - mountPath: /etc/exchange/
-              name: marduk-exchange-key
             - mountPath: /etc/application-config
               name: application-config
               readOnly: true
-            - mountPath: /etc/marduk-pubsub-account
-              name: marduk-pubsub-key
       dnsPolicy: ClusterFirst
-      imagePullSecrets:
-        - name: rutebanken-registry-key
-        - name: lamassu-private-key
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
       terminationGracePeriodSeconds: 30
       volumes:
+        - name: marduk-service-account
+          secret:
+            defaultMode: 420
+            secretName: ror-marduk-sa-key
         - name: secret-volume
           secret:
             defaultMode: 420
             secretName: lamassu-private-key
-        - name: marduk-key
-          secret:
-            defaultMode: 420
-            secretName: {{ .Values.gcpKeyName}}
-        - name: marduk-pubsub-key
-          secret:
-            defaultMode: 420
-            secretName: marduk-pubsub-key
-        - name: marduk-exchange-key
-          secret:
-            defaultMode: 420
-            secretName: {{ .Values.gcpExchangeKeyName}}
-        - configMap:
+        - name: application-config
+          configMap:
             defaultMode: 420
             name: marduk-config
-          name: application-config
