@@ -18,35 +18,35 @@ resource "google_service_account" "marduk_service_account" {
 }
 
 # add service account as member to the cloudsql client
-resource "google_project_iam_member" "project" {
+resource "google_project_iam_member" "cloudsql_iam_member" {
   project = var.gcp_project
   role    = var.service_account_cloudsql_role
   member = "serviceAccount:${google_service_account.marduk_service_account.email}"
 }
 
 # add service account as member to the main bucket
-resource "google_storage_bucket_iam_member" "storage_bucket_iam_member" {
+resource "google_storage_bucket_iam_member" "storage_main_bucket_iam_member" {
   bucket = var.bucket_marduk_instance_name
   role   = var.service_account_bucket_role
   member = "serviceAccount:${google_service_account.marduk_service_account.email}"
 }
 
 # add service account as member to the exchange bucket
-resource "google_storage_bucket_iam_member" "storage_bucket_iam_member" {
+resource "google_storage_bucket_iam_member" "storage_exchange_bucket_iam_member" {
   bucket = var.bucket_exchange_instance_name
   role   = var.service_account_bucket_role
   member = "serviceAccount:${google_service_account.marduk_service_account.email}"
 }
 
 # add service account as member to the otpreport bucket
-resource "google_storage_bucket_iam_member" "storage_bucket_iam_member" {
+resource "google_storage_bucket_iam_member" "storage_otpreport_bucket_iam_member" {
   bucket = var.bucket_otpreport_instance_name
   role   = var.service_account_bucket_role
   member = "serviceAccount:${google_service_account.marduk_service_account.email}"
 }
 
 # add service account as member to the pubsub
-resource "google_project_iam_member" "project" {
+resource "google_project_iam_member" "pubsub_iam_member" {
   project = var.gcp_project
   role    = var.service_account_pubsub_role
   member = "serviceAccount:${google_service_account.marduk_service_account.email}"
