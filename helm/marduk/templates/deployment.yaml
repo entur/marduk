@@ -62,7 +62,7 @@ spec:
           terminationMessagePolicy: File
           volumeMounts:
             - mountPath: /etc/marduk-service-account
-              name: marduk-key
+              name:  marduk-service-account
         - env:
             - name: JAVA_OPTIONS
               value: -server -Xms512m -Xmx{{ .Values.resources.xmx }} -XX:MaxGCPauseMillis=5000 -XX:ParallelGCThreads=3

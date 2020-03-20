@@ -64,30 +64,30 @@ variable "bucket_otpreport_instance_name" {
   description = "OTP report storage bucket name"
 }
 
-variable ror-marduk-db-username {
+variable "ror-marduk-db-username" {
   description = "marduk database username"
 }
 
-variable ror-marduk-db-password {
+variable "ror-marduk-db-password" {
   description = "marduk database password"
 }
 
-variable ror-marduk-google-sftp-username {
+variable "ror-marduk-google-sftp-username" {
   description = "marduk Google SFTP username"
 }
 
-variable ror-marduk-google-sftp-password {
+variable "ror-marduk-google-sftp-password" {
   description = "marduk Google SFTP password"
 }
 
-variable ror-marduk-google-qa-sftp-username {
+variable "ror-marduk-google-qa-sftp-username" {
   description = "marduk Google QA SFTP username"
 }
 
-variable ror-marduk-google-qa-sftp-password {
+variable "ror-marduk-google-qa-sftp-password" {
   description = "marduk Google QA SFTP password"
 }
 
-variable ror-marduk-keycloak-secret {
+variable "ror-marduk-keycloak-secret" {
   description = "marduk keycloak secret"
 }
