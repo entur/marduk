@@ -84,7 +84,11 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
     protected void logRedelivery(Exchange exchange) {
         int redeliveryCounter = exchange.getIn().getHeader("CamelRedeliveryCounter", Integer.class);
         int redeliveryMaxCounter = exchange.getIn().getHeader("CamelRedeliveryMaxCounter", Integer.class);
-        log.warn("Exchange failed. Redelivering the message locally, attempt {}/{}...", redeliveryCounter, redeliveryMaxCounter);
+        Throwable throwable = exchange.getProperty("CamelExceptionCaught", Throwable.class);
+        String throwableType = throwable != null ? throwable.getClass().getName() : "";
+        String throwableMessage = throwable != null ? throwable.getMessage() : "";
+
+        log.warn("Exchange failed ({}: {}) . Redelivering the message locally, attempt {}/{}...", throwableType, throwableMessage, redeliveryCounter, redeliveryMaxCounter);
     }
 
     /**
@@ -183,7 +187,7 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
             if (deleted) {
                 log.debug("Local directory {} cleanup done.", directory);
             } else {
-                log.warn("Failed to delete non-existing directory {}", directory);
+                log.info("The directory {} did not exist, ignoring deletion request", directory);
             }
         } catch (IOException e) {
             log.warn("Failed to delete directory " + directory, e);
