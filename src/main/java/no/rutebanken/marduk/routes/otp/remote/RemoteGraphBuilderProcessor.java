@@ -20,7 +20,7 @@ public class RemoteGraphBuilderProcessor implements Processor {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
-    private OtpGraphBuilder otpGraphBuilder;
+    private KubernetesJobGraphBuilder kubernetesJobGraphBuilder;
 
     @Override
     public void process(Exchange exchange) {
@@ -34,7 +34,7 @@ public class RemoteGraphBuilderProcessor implements Processor {
 
             boolean buildBaseGraph = exchange.getProperty(OTP_BUILD_BASE_GRAPH, Boolean.class);
             String timestamp = exchange.getProperty(TIMESTAMP, String.class);
-            otpGraphBuilder.build(otpGraphDirectory, buildBaseGraph, timestamp);
+            kubernetesJobGraphBuilder.build(otpGraphDirectory, buildBaseGraph, timestamp);
 
         } catch (RuntimeException e) {
             logger.warn("Got exception while trying to build new OTP graph.", e);

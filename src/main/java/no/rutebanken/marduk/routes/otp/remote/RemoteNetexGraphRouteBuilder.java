@@ -22,6 +22,7 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -83,6 +84,14 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
     @Override
     public void configure() throws Exception {
         super.configure();
+
+        // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
+        singletonFrom("entur-google-pubsub:OtpGraphBuildQueue?ackMode=NONE").autoStartup("{{otp.graph.build.autoStartup:true}}")
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .process(this::addOnCompletionForAggregatedExchange)
+                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .to("direct:remoteBuildOtpGraph")
+                .routeId("otp-graph-build");
 
         from("direct:remoteBuildOtpGraph")
                 .setProperty(PROP_MESSAGES, simple("${body}"))
