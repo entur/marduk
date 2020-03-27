@@ -19,7 +19,7 @@ package no.rutebanken.marduk.routes.otp.otp2;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.RemoteGraphBuilderProcessor;
-import no.rutebanken.marduk.routes.otp.otp1.KubernetesJobGraphBuilder;
+import no.rutebanken.marduk.routes.otp.otp1.NetexGraphBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.camel.Exchange;
@@ -45,7 +45,7 @@ import static org.apache.camel.builder.Builder.exceptionStackTrace;
  * Build remotely a full OTP graph (containing OSM data, elevation data and NeTEx data).
  */
 @Component
-public class Otp2RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
+public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
@@ -68,7 +68,7 @@ public class Otp2RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
     private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
 
     @Autowired
-    private KubernetesJobGraphBuilder kubernetesJobGraphBuilder;
+    private NetexGraphBuilder kubernetesJobGraphBuilder;
 
     @Autowired
     private OtpReportBlobStoreService otpReportBlobStoreService;

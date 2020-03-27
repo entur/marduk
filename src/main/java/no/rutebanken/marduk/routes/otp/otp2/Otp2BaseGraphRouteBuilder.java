@@ -40,13 +40,13 @@ import static org.apache.camel.builder.Builder.exceptionStackTrace;
  * Build remotely a base OTP graph containing OSM data and elevation data (but not transit data)
  */
 @Component
-public class Otp2RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
+public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
 
     @Autowired
-    private Otp2KubernetesJobGraphBuilder otp2KubernetesJobGraphBuilder;
+    private Otp2BaseGraphBuilder otp2KubernetesJobGraphBuilder;
 
     @Override
     public void configure() throws Exception {

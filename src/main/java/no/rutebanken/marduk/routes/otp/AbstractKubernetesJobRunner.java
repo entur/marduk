@@ -12,8 +12,6 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
-import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.routes.otp.remote.OtpGraphBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,9 +20,9 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public abstract class AbstractKubernetesJobGraphBuilder implements OtpGraphBuilder {
+public abstract class AbstractKubernetesJobRunner {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractKubernetesJobGraphBuilder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractKubernetesJobRunner.class);
 
     @Value("${otp.graph.build.remote.kubernetes.namespace:default}")
     private String kubernetesNamespace;
@@ -35,16 +33,13 @@ public abstract class AbstractKubernetesJobGraphBuilder implements OtpGraphBuild
     @Value("${otp.graph.build.remote.kubernetes.timeout:9000}")
     private long jobTimeoutSecond;
 
-    @Override
-    public void build(String otpWorkDir, boolean buildBaseGraph, String timestamp) {
+    public void runJob(List<EnvVar> envVars, String timestamp) {
         try (final KubernetesClient client = new DefaultKubernetesClient()) {
 
             CronJobSpec specTemplate = getCronJobSpecTemplate(client);
-            String jobName = getGraphBuilderCronJobName() + '-' + timestamp;
+            String jobName = getCronJobName() + '-' + timestamp;
 
             LOGGER.info("Creating Graph builder job with name {} ", jobName);
-
-            List<EnvVar> envVars = getEnvVars(otpWorkDir, buildBaseGraph);
 
             Job job = buildJobfromCronJobSpecTemplate(specTemplate, jobName, envVars);
             client.batch().jobs().inNamespace(kubernetesNamespace).create(job);
@@ -110,12 +105,12 @@ public abstract class AbstractKubernetesJobGraphBuilder implements OtpGraphBuild
     }
 
     protected CronJobSpec getCronJobSpecTemplate(KubernetesClient client) {
-        List<CronJob> matchingJobs = client.batch().cronjobs().inNamespace(kubernetesNamespace).withLabel("app", getGraphBuilderCronJobName()).list().getItems();
+        List<CronJob> matchingJobs = client.batch().cronjobs().inNamespace(kubernetesNamespace).withLabel("app", getCronJobName()).list().getItems();
         if (matchingJobs.isEmpty()) {
-            throw new MardukException("Job with label=" + getGraphBuilderCronJobName() + " not found in namespace " + kubernetesNamespace);
+            throw new KubernetesJobGraphBuilderException("Job with label=" + getCronJobName() + " not found in namespace " + kubernetesNamespace);
         }
         if (matchingJobs.size() > 1) {
-            throw new MardukException("Found multiple jobs matching label app=" + getGraphBuilderCronJobName() + " in namespace " + kubernetesNamespace);
+            throw new KubernetesJobGraphBuilderException("Found multiple jobs matching label app=" + getCronJobName() + " in namespace " + kubernetesNamespace);
         }
         return matchingJobs.get(0).getSpec();
     }
@@ -141,7 +136,6 @@ public abstract class AbstractKubernetesJobGraphBuilder implements OtpGraphBuild
     }
 
 
-    protected abstract String getGraphBuilderCronJobName();
+    protected abstract String getCronJobName();
 
-    protected abstract List<EnvVar> getEnvVars(String otpWorkDir, boolean buildBaseGraph);
 }

@@ -2,7 +2,8 @@
 package no.rutebanken.marduk.routes.otp.otp1;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
-import no.rutebanken.marduk.routes.otp.AbstractKubernetesJobGraphBuilder;
+import no.rutebanken.marduk.routes.otp.AbstractKubernetesJobRunner;
+import no.rutebanken.marduk.routes.otp.remote.OtpGraphBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -16,38 +17,31 @@ import java.util.List;
  * A Kubernetes CronJob is used as a template for the job.
  */
 @Component
-public class KubernetesJobGraphBuilder extends AbstractKubernetesJobGraphBuilder {
+public class BaseGraphBuilder extends AbstractKubernetesJobRunner implements OtpGraphBuilder {
 
     private static final String OTP_GCS_WORK_DIR_ENV_VAR = "OTP_GCS_WORK_DIR";
     private static final String OTP_GCS_BASE_GRAPH_DIR_ENV_VAR = "OTP_GCS_BASE_GRAPH_DIR";
     private static final String OTP_SKIP_TRANSIT_ENV_VAR = "OTP_SKIP_TRANSIT";
-    private static final String OTP_LOAD_BASE_GRAPH_ENV_VAR = "OTP_LOAD_BASE_GRAPH";
 
     @Value("${otp.graph.build.remote.kubernetes.cronjob:graph-builder}")
     private String graphBuilderCronJobName;
 
-    @Value("${otp.graph.blobstore.subdirectory:graphs}")
-    private String blobStoreGraphSubdirectory;
-
     @Override
-    public String getGraphBuilderCronJobName() {
+    public String getCronJobName() {
         return graphBuilderCronJobName;
     }
 
-    @Override
-    protected List<EnvVar> getEnvVars(String otpWorkDir, boolean buildBaseGraph) {
+    protected List<EnvVar> getEnvVars(String otpWorkDir) {
         List<EnvVar> envVars = new ArrayList<>();
         envVars.add(new EnvVar(OTP_GCS_WORK_DIR_ENV_VAR, otpWorkDir, null));
-        envVars.add(new EnvVar(OTP_SKIP_TRANSIT_ENV_VAR, buildBaseGraph ? "--skipTransit" : "", null));
-        envVars.add(new EnvVar(OTP_LOAD_BASE_GRAPH_ENV_VAR, buildBaseGraph ? "" : "--loadBaseGraph", null));
+        envVars.add(new EnvVar(OTP_SKIP_TRANSIT_ENV_VAR, "--skipTransit", null));
+        envVars.add(new EnvVar(OTP_GCS_BASE_GRAPH_DIR_ENV_VAR, otpWorkDir, null));
+        return  envVars;
 
-        if (buildBaseGraph) {
-            envVars.add(new EnvVar(OTP_GCS_BASE_GRAPH_DIR_ENV_VAR, otpWorkDir, null));
-        } else {
-            envVars.add(new EnvVar(OTP_GCS_BASE_GRAPH_DIR_ENV_VAR, blobStoreGraphSubdirectory, null));
-        }
-        return envVars;
     }
 
-
+    @Override
+    public void build(String otpWorkDir, String timestamp) {
+            runJob(getEnvVars(otpWorkDir), timestamp);
+    }
 }

@@ -50,7 +50,7 @@ import static org.apache.camel.builder.Builder.exceptionStackTrace;
  * Build remotely a full OTP graph (containing OSM data, elevation data and NeTEx data).
  */
 @Component
-public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
+public class NetexGraphRouteBuilder extends BaseRouteBuilder {
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
@@ -73,7 +73,7 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
     private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
 
     @Autowired
-    private KubernetesJobGraphBuilder kubernetesJobGraphBuilder;
+    private NetexGraphBuilder kubernetesJobGraphBuilder;
 
     @Autowired
     private OtpReportBlobStoreService otpReportBlobStoreService;
