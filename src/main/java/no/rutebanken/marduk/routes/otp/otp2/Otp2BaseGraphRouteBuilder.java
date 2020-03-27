@@ -99,6 +99,9 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP base graph, triggering full OTP graph build")
                 .inOnly("entur-google-pubsub:Otp2GraphBuildQueue")
+
+                .to("direct:remoteCleanUp")
+
                 .routeId("otp2-remote-base-graph-build-build-otp");
 
         from("direct:sendOtp2BaseGraphStartedEventsInNewTransaction")
