@@ -28,6 +28,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
@@ -127,13 +128,12 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
     }
 
-    String getAggregatedGtfsFiles(Collection<String> providerBlackList, Collection<String> providerWhiteList) {
-        String collect = getProviderRepository().getProviders().stream()
+    private List<String> getAggregatedGtfsFiles(Collection<String> providerBlackList, Collection<String> providerWhiteList) {
+        return getProviderRepository().getProviders().stream()
                                  .filter(p -> p.chouetteInfo.migrateDataToProvider == null)
                                  .filter(p -> isMatch(p, providerBlackList, providerWhiteList))
                                  .map(p -> p.chouetteInfo.referential + "-" + CURRENT_AGGREGATED_GTFS_FILENAME)
-                                 .collect(Collectors.joining(","));
-        return collect;
+                                 .collect(Collectors.toList());
     }
 
     private boolean isMatch(Provider p, Collection<String> providerBlackList, Collection<String> providerWhiteList) {
