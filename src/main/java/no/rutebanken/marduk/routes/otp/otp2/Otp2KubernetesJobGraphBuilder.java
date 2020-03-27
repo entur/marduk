@@ -1,7 +1,8 @@
 
-package no.rutebanken.marduk.routes.otp.remote;
+package no.rutebanken.marduk.routes.otp.otp2;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
+import no.rutebanken.marduk.routes.otp.AbstractKubernetesJobGraphBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +16,7 @@ import java.util.List;
  * A Kubernetes CronJob is used as a template for the job.
  */
 @Component
-public class KubernetesJobOtp2GraphBuilder extends AbstractKubernetesJobGraphBuilder {
+public class Otp2KubernetesJobGraphBuilder extends AbstractKubernetesJobGraphBuilder {
 
     private static final String OTP_GCS_WORK_DIR_ENV_VAR = "OTP_GCS_WORK_DIR";
     private static final String OTP_GCS_BASE_GRAPH_DIR_ENV_VAR = "OTP_GCS_BASE_GRAPH_DIR";

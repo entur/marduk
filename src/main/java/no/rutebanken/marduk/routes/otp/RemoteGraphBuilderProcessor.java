@@ -1,5 +1,7 @@
-package no.rutebanken.marduk.routes.otp.remote;
+package no.rutebanken.marduk.routes.otp;
 
+import no.rutebanken.marduk.routes.otp.otp1.KubernetesJobGraphBuilder;
+import no.rutebanken.marduk.routes.otp.remote.OtpGraphBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.slf4j.Logger;
@@ -14,13 +16,15 @@ import static no.rutebanken.marduk.Constants.TIMESTAMP;
 /**
  * Camel processor that triggers the build process,
  */
-@Component
 public class RemoteGraphBuilderProcessor implements Processor {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
-    private KubernetesJobGraphBuilder kubernetesJobGraphBuilder;
+    private OtpGraphBuilder otpGraphBuilder;
+
+    public RemoteGraphBuilderProcessor(OtpGraphBuilder otpGraphBuilder) {
+        this.otpGraphBuilder = otpGraphBuilder;
+    }
 
     @Override
     public void process(Exchange exchange) {
@@ -34,7 +38,7 @@ public class RemoteGraphBuilderProcessor implements Processor {
 
             boolean buildBaseGraph = exchange.getProperty(OTP_BUILD_BASE_GRAPH, Boolean.class);
             String timestamp = exchange.getProperty(TIMESTAMP, String.class);
-            kubernetesJobGraphBuilder.build(otpGraphDirectory, buildBaseGraph, timestamp);
+            otpGraphBuilder.build(otpGraphDirectory, buildBaseGraph, timestamp);
 
         } catch (RuntimeException e) {
             logger.warn("Got exception while trying to build new OTP graph.", e);

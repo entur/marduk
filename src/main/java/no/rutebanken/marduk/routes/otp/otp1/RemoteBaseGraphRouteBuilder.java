@@ -14,9 +14,10 @@
  *
  */
 
-package no.rutebanken.marduk.routes.otp.remote;
+package no.rutebanken.marduk.routes.otp.otp1;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.otp.RemoteGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
@@ -45,7 +46,7 @@ public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
     private String blobStoreSubdirectory;
 
     @Autowired
-    private RemoteGraphBuilderProcessor remoteGraphBuilderProcessor;
+    private KubernetesJobGraphBuilder kubernetesJobGraphBuilder;
 
     @Override
     public void configure() throws Exception {
@@ -65,9 +66,9 @@ public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
                 .setProperty(OTP_BUILD_BASE_GRAPH, constant(true))
 
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP base graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 base graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:remoteBuildBaseGraphAndSendStatus")
-                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP base graph building route.")
+                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP2 base graph building route.")
                 .routeId("otp-remote-base-graph-build");
 
         from("direct:remoteBuildBaseGraphAndSendStatus")
@@ -82,7 +83,7 @@ public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-remote-base-graph-build-and-send-status");
 
         from("direct:remoteBuildBaseGraph")
-                .process(remoteGraphBuilderProcessor)
+                .process(new RemoteGraphBuilderProcessor(kubernetesJobGraphBuilder))
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP base graph.")
                 // copy new base graph in remote storage
                 .process(e -> {

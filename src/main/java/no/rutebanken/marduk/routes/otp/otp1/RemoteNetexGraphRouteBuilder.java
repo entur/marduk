@@ -14,10 +14,11 @@
  *
  */
 
-package no.rutebanken.marduk.routes.otp.remote;
+package no.rutebanken.marduk.routes.otp.otp1;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.otp.RemoteGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.camel.Exchange;
@@ -54,10 +55,6 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
 
-    // File name for import. OTP requires specific file name pattern to parse file as netex (ends with netex_no.zip)
-    @Value("${otp.netex.import.file.name:netex_no.zip}")
-    private String otpGraphImportFileName;
-
     @Value("${otp.graph.current.file:graphs/current}")
     private String otpGraphCurrentFile;
 
@@ -76,7 +73,7 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
     private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
 
     @Autowired
-    private RemoteGraphBuilderProcessor remoteGraphBuilderProcessor;
+    private KubernetesJobGraphBuilder kubernetesJobGraphBuilder;
 
     @Autowired
     private OtpReportBlobStoreService otpReportBlobStoreService;
@@ -125,7 +122,7 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-remote-netex-graph-build-and-send-status");
 
         from("direct:remoteBuildNetexGraph")
-                .process(remoteGraphBuilderProcessor)
+                .process(new RemoteGraphBuilderProcessor(kubernetesJobGraphBuilder))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP graph.")
                 .routeId("otp-remote-netex-graph-build-otp");

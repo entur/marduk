@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.routes.otp.remote;
+package no.rutebanken.marduk.routes.otp;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -13,6 +13,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.routes.otp.remote.OtpGraphBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,8 +35,7 @@ public abstract class AbstractKubernetesJobGraphBuilder implements OtpGraphBuild
     @Value("${otp.graph.build.remote.kubernetes.timeout:9000}")
     private long jobTimeoutSecond;
 
-
-
+    @Override
     public void build(String otpWorkDir, boolean buildBaseGraph, String timestamp) {
         try (final KubernetesClient client = new DefaultKubernetesClient()) {
 
@@ -46,7 +46,7 @@ public abstract class AbstractKubernetesJobGraphBuilder implements OtpGraphBuild
 
             List<EnvVar> envVars = getEnvVars(otpWorkDir, buildBaseGraph);
 
-            Job job = buildJobfromCronJobSpecTemplate(specTemplate, jobName, otpWorkDir, envVars, buildBaseGraph);
+            Job job = buildJobfromCronJobSpecTemplate(specTemplate, jobName, envVars);
             client.batch().jobs().inNamespace(kubernetesNamespace).create(job);
 
 
@@ -98,8 +98,7 @@ public abstract class AbstractKubernetesJobGraphBuilder implements OtpGraphBuild
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new KubernetesJobGraphBuilderException("Interrupted while watching pod", e);
-            }
-            finally {
+            } finally {
                 // Delete job after completion
                 if (deleteJobAfterCompletion) {
                     LOGGER.info("Deleting job {} after completion.", jobName);
@@ -121,7 +120,7 @@ public abstract class AbstractKubernetesJobGraphBuilder implements OtpGraphBuild
         return matchingJobs.get(0).getSpec();
     }
 
-    protected Job buildJobfromCronJobSpecTemplate(CronJobSpec specTemplate, String jobName, String otpWorkDir, List<EnvVar> envVars, boolean buildBaseGraph) {
+    protected Job buildJobfromCronJobSpecTemplate(CronJobSpec specTemplate, String jobName, List<EnvVar> envVars) {
 
         JobSpec jobSpec = specTemplate.getJobTemplate().getSpec();
         return new JobBuilder()
