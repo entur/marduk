@@ -37,7 +37,6 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
-import static no.rutebanken.marduk.Constants.OTP_BUILD_BASE_GRAPH;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
@@ -95,7 +94,6 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
-                .setProperty(OTP_BUILD_BASE_GRAPH, constant(false))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting graph building in remote directory ${property." + OTP_GRAPH_DIR + "}.")
 
                 .to("direct:exportMergedNetex")

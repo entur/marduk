@@ -29,7 +29,6 @@ import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ;
-import static no.rutebanken.marduk.Constants.OTP_BUILD_BASE_GRAPH;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
@@ -64,7 +63,6 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtp2BaseGraphStartedEventsInNewTransaction")
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
-                .setProperty(OTP_BUILD_BASE_GRAPH, constant(true))
 
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP base graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:remoteBuildOtp2BaseGraphAndSendStatus")
