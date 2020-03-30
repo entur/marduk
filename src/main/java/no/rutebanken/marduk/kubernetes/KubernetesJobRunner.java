@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.routes.otp;
+package no.rutebanken.marduk.kubernetes;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -15,14 +15,16 @@ import io.fabric8.kubernetes.client.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public abstract class AbstractKubernetesJobRunner {
+@Component
+public class KubernetesJobRunner {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractKubernetesJobRunner.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesJobRunner.class);
 
     @Value("${otp.graph.build.remote.kubernetes.namespace:default}")
     private String kubernetesNamespace;
@@ -33,23 +35,23 @@ public abstract class AbstractKubernetesJobRunner {
     @Value("${otp.graph.build.remote.kubernetes.timeout:9000}")
     private long jobTimeoutSecond;
 
-    public void runJob(List<EnvVar> envVars, String timestamp) {
-        try (final KubernetesClient client = new DefaultKubernetesClient()) {
+    public void runJob(String cronJobName, List<EnvVar> envVars, String timestamp) {
+        try (final KubernetesClient kubernetesClient = new DefaultKubernetesClient()) {
 
-            CronJobSpec specTemplate = getCronJobSpecTemplate(client);
-            String jobName = getCronJobName() + '-' + timestamp;
+            CronJobSpec specTemplate = getCronJobSpecTemplate(cronJobName, kubernetesClient);
+            String jobName = cronJobName + '-' + timestamp;
 
             LOGGER.info("Creating Graph builder job with name {} ", jobName);
 
             Job job = buildJobfromCronJobSpecTemplate(specTemplate, jobName, envVars);
-            client.batch().jobs().inNamespace(kubernetesNamespace).create(job);
+            kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).create(job);
 
 
             final CountDownLatch watchLatch = new CountDownLatch(1);
-            try (Watch watch = client.pods().inNamespace(kubernetesNamespace).withLabel("job-name", jobName).watch(new Watcher<Pod>() {
+            try (Watch watch = kubernetesClient.pods().inNamespace(kubernetesNamespace).withLabel("job-name", jobName).watch(new Watcher<Pod>() {
 
-                int backoffLimit = job.getSpec().getBackoffLimit();
-                int podFailureCounter = 0;
+                private int backoffLimit = job.getSpec().getBackoffLimit();
+                private int podFailureCounter = 0;
 
                 @Override
                 public void eventReceived(Action action, Pod pod) {
@@ -69,48 +71,48 @@ public abstract class AbstractKubernetesJobRunner {
                 @Override
                 public void onClose(KubernetesClientException e) {
                     if (e != null) {
-                        throw new KubernetesJobGraphBuilderException("The Graph Builder job ended with an error", e);
+                        throw new KubernetesJobRunnerException("The Graph Builder job ended with an error", e);
                     }
                 }
             })) {
 
                 boolean jobCompletedBeforeTimeout = watchLatch.await(jobTimeoutSecond, TimeUnit.SECONDS);
                 if (!jobCompletedBeforeTimeout) {
-                    throw new KubernetesJobGraphBuilderException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
+                    throw new KubernetesJobRunnerException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
                 }
 
-                Integer succeeded = client.batch().jobs().inNamespace(kubernetesNamespace).withName(jobName).get().getStatus().getSucceeded();
+                Integer succeeded = kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).withName(jobName).get().getStatus().getSucceeded();
                 boolean jobSucceeded = succeeded != null && succeeded > 0;
                 if (jobSucceeded) {
                     LOGGER.info("The Graph Builder job {} completed successfully.", jobName);
                 } else {
-                    throw new KubernetesJobGraphBuilderException("The Graph Builder job " + jobName + " failed.");
+                    throw new KubernetesJobRunnerException("The Graph Builder job " + jobName + " failed.");
                 }
 
 
             } catch (KubernetesClientException e) {
-                throw new KubernetesJobGraphBuilderException("Could not watch pod", e);
+                throw new KubernetesJobRunnerException("Could not watch pod", e);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new KubernetesJobGraphBuilderException("Interrupted while watching pod", e);
+                throw new KubernetesJobRunnerException("Interrupted while watching pod", e);
             } finally {
                 // Delete job after completion
                 if (deleteJobAfterCompletion) {
                     LOGGER.info("Deleting job {} after completion.", jobName);
-                    client.batch().jobs().inNamespace(kubernetesNamespace).delete(job);
+                    kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).delete(job);
                     LOGGER.info("Deleted job {} after completion.", jobName);
                 }
             }
         }
     }
 
-    protected CronJobSpec getCronJobSpecTemplate(KubernetesClient client) {
-        List<CronJob> matchingJobs = client.batch().cronjobs().inNamespace(kubernetesNamespace).withLabel("app", getCronJobName()).list().getItems();
+    protected CronJobSpec getCronJobSpecTemplate(String cronJobName, KubernetesClient client) {
+        List<CronJob> matchingJobs = client.batch().cronjobs().inNamespace(kubernetesNamespace).withLabel("app", cronJobName).list().getItems();
         if (matchingJobs.isEmpty()) {
-            throw new KubernetesJobGraphBuilderException("Job with label=" + getCronJobName() + " not found in namespace " + kubernetesNamespace);
+            throw new KubernetesJobRunnerException("Job with label=" + cronJobName + " not found in namespace " + kubernetesNamespace);
         }
         if (matchingJobs.size() > 1) {
-            throw new KubernetesJobGraphBuilderException("Found multiple jobs matching label app=" + getCronJobName() + " in namespace " + kubernetesNamespace);
+            throw new KubernetesJobRunnerException("Found multiple jobs matching label app=" + cronJobName + " in namespace " + kubernetesNamespace);
         }
         return matchingJobs.get(0).getSpec();
     }
@@ -134,8 +136,4 @@ public abstract class AbstractKubernetesJobRunner {
                 .endSpec()
                 .build();
     }
-
-
-    protected abstract String getCronJobName();
-
 }

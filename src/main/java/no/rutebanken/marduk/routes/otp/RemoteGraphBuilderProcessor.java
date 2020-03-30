@@ -14,7 +14,7 @@ import static no.rutebanken.marduk.Constants.TIMESTAMP;
  */
 public class RemoteGraphBuilderProcessor implements Processor {
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private static final Logger LOGGER = LoggerFactory.getLogger(RemoteGraphBuilderProcessor.class);
 
     private OtpGraphBuilder otpGraphBuilder;
 
@@ -27,16 +27,10 @@ public class RemoteGraphBuilderProcessor implements Processor {
 
         try {
             String otpGraphDirectory = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class);
-            if (otpGraphDirectory == null || otpGraphDirectory.isEmpty()) {
-                logger.warn("Empty otp graph directory string.");
-                return;
-            }
-
             String timestamp = exchange.getProperty(TIMESTAMP, String.class);
             otpGraphBuilder.build(otpGraphDirectory, timestamp);
-
         } catch (RuntimeException e) {
-            logger.warn("Got exception while trying to build new OTP graph.", e);
+            LOGGER.warn("Got exception while trying to build new OTP graph.", e);
             throw e;
         }
     }
