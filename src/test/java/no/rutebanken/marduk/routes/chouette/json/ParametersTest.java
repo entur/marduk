@@ -31,7 +31,7 @@ import static net.javacrumbs.jsonunit.JsonAssert.when;
 public class ParametersTest {
 
 
-    final String gtfsReferenceJson =  "{ \"parameters\": { \"gtfs-import\": {\"clean_repository\":\"0\",\"no_save\": \"0\", " +
+    private static final String GTFS_REFERENCE_JSON =  "{ \"parameters\": { \"gtfs-import\": {\"clean_repository\":\"0\",\"no_save\": \"0\", " +
             "\"user_name\": \"Chouette\", \"name\": \"test\", \"organisation_name\": \"Rutebanken\", \"referential_name\": " +
             "\"testDS\", \"object_id_prefix\": \"tds\", \"max_distance_for_commercial\": \"0\", \"split_id_on_dot\": \"0\", " +
             "\"ignore_last_word\": \"0\", \"ignore_end_chars\": \"0\"," +
@@ -41,7 +41,7 @@ public class ParametersTest {
     @Test
     public void createGtfsImportParameters() {
         GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette",false,false,true, true, Set.of("water","bus"));
-        assertJsonEquals(gtfsReferenceJson, importParameters.toJsonString(), when(Option.IGNORING_ARRAY_ORDER));
+        assertJsonEquals(GTFS_REFERENCE_JSON, importParameters.toJsonString(), when(Option.IGNORING_ARRAY_ORDER));
     }
 
     @Test

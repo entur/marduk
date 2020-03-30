@@ -23,7 +23,7 @@ import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -85,7 +85,7 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
      */
     private List<String> createProviderBlackList() {
         if (agencyBlackList == null) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
 
         return agencyBlackList.stream().map(agency -> agency.startsWith("rb_") ? agency : "rb_" + agency).collect(Collectors.toList());

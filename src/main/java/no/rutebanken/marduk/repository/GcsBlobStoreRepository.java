@@ -31,7 +31,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -119,11 +118,8 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
     public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
 
-        List<Storage.BlobTargetOption> blobTargetOptions = new ArrayList<>();
-        if (makePublic) {
-            blobTargetOptions.add(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ));
-        }
-
+        List<Storage.BlobTargetOption> blobTargetOptions = makePublic ? List.of(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ))
+                                                                      : Collections.emptyList();
         Storage.CopyRequest request =
                 Storage.CopyRequest.newBuilder()
                         .setSource(BlobId.of(sourceContainerName, sourceObjectName))
@@ -138,10 +134,8 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
         while (blobIterator.hasNext()) {
             Blob blob = blobIterator.next();
 
-            List<Storage.BlobTargetOption> blobTargetOptions = new ArrayList<>();
-            if (makePublic) {
-                blobTargetOptions.add(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ));
-            }
+            List<Storage.BlobTargetOption> blobTargetOptions = makePublic ? List.of(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ))
+                                                                          : Collections.emptyList();
 
             BlobInfo.Builder targetBlobInfoBuilder = BlobInfo.newBuilder(targetContainerName, blob.getName().replace(prefix, targetPrefix));
             BlobId targetBlobId = targetBlobInfoBuilder.build().getBlobId();
