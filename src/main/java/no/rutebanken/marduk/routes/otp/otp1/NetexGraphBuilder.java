@@ -21,6 +21,7 @@ public class NetexGraphBuilder implements OtpGraphBuilder {
 
     private static final String OTP_GCS_WORK_DIR_ENV_VAR = "OTP_GCS_WORK_DIR";
     private static final String OTP_GCS_BASE_GRAPH_DIR_ENV_VAR = "OTP_GCS_BASE_GRAPH_DIR";
+    private static final String OTP_SKIP_TRANSIT_ENV_VAR = "OTP_SKIP_TRANSIT";
     private static final String OTP_LOAD_BASE_GRAPH_ENV_VAR = "OTP_LOAD_BASE_GRAPH";
 
     @Value("${otp.graph.build.remote.kubernetes.cronjob:graph-builder}")
@@ -35,6 +36,7 @@ public class NetexGraphBuilder implements OtpGraphBuilder {
     protected List<EnvVar> getEnvVars(String otpWorkDir) {
         return List.of(
                 new EnvVar(OTP_GCS_WORK_DIR_ENV_VAR, otpWorkDir, null),
+                new EnvVar(OTP_SKIP_TRANSIT_ENV_VAR, "", null),
                 new EnvVar(OTP_LOAD_BASE_GRAPH_ENV_VAR, "--loadBaseGraph", null),
                 new EnvVar(OTP_GCS_BASE_GRAPH_DIR_ENV_VAR, blobStoreGraphSubdirectory, null));
     }

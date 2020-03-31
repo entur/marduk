@@ -45,7 +45,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
     private String blobStoreSubdirectory;
 
     @Autowired
-    private Otp2BaseGraphBuilder otp2KubernetesJobGraphBuilder;
+    private Otp2BaseGraphBuilder otp2BaseGraphBuilder;
 
     @Override
     public void configure() throws Exception {
@@ -81,7 +81,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp2-remote-base-graph-build-and-send-status");
 
         from("direct:remoteOtp2BuildBaseGraph")
-                .process(new RemoteGraphBuilderProcessor(otp2KubernetesJobGraphBuilder))
+                .process(new RemoteGraphBuilderProcessor(otp2BaseGraphBuilder))
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP base graph.")
                 // copy new base graph in remote storage
                 .process(e -> {

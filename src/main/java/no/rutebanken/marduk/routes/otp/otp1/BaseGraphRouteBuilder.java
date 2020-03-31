@@ -45,7 +45,7 @@ public class BaseGraphRouteBuilder extends BaseRouteBuilder {
     private String blobStoreSubdirectory;
 
     @Autowired
-    private NetexGraphBuilder kubernetesJobGraphBuilder;
+    private BaseGraphBuilder baseGraphBuilder;
 
     @Override
     public void configure() throws Exception {
@@ -81,7 +81,7 @@ public class BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-remote-base-graph-build-and-send-status");
 
         from("direct:remoteBuildBaseGraph")
-                .process(new RemoteGraphBuilderProcessor(kubernetesJobGraphBuilder))
+                .process(new RemoteGraphBuilderProcessor(baseGraphBuilder))
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP base graph.")
                 // copy new base graph in remote storage
                 .process(e -> {

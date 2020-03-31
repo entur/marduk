@@ -72,7 +72,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
     private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
 
     @Autowired
-    private NetexGraphBuilder kubernetesJobGraphBuilder;
+    private NetexGraphBuilder netexGraphBuilder;
 
     @Autowired
     private OtpReportBlobStoreService otpReportBlobStoreService;
@@ -120,7 +120,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-remote-netex-graph-build-and-send-status");
 
         from("direct:remoteBuildNetexGraph")
-                .process(new RemoteGraphBuilderProcessor(kubernetesJobGraphBuilder))
+                .process(new RemoteGraphBuilderProcessor(netexGraphBuilder))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP graph.")
                 .routeId("otp-remote-netex-graph-build-otp");

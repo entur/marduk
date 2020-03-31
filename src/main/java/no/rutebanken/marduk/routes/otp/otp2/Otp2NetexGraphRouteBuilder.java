@@ -19,7 +19,6 @@ package no.rutebanken.marduk.routes.otp.otp2;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.RemoteGraphBuilderProcessor;
-import no.rutebanken.marduk.routes.otp.otp1.NetexGraphBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.camel.Exchange;
@@ -55,9 +54,6 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.build.remote.work.dir.cleanup:true}")
     private boolean deleteOtpRemoteWorkDir;
 
-    @Value("${blobstore.gcs.otpreport.container.name}")
-    String otpReportContainerName;
-
     private static final String PROP_MESSAGES = "RutebankenPropMessages";
 
     private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
@@ -67,10 +63,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
     private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
 
     @Autowired
-    private NetexGraphBuilder kubernetesJobGraphBuilder;
-
-    @Autowired
-    private OtpReportBlobStoreService otpReportBlobStoreService;
+    private Otp2NetexGraphBuilder otp2NetexGraphBuilder;
 
     @Override
     public void configure() throws Exception {
@@ -115,10 +108,10 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp2-remote-netex-graph-build-and-send-status");
 
         from("direct:remoteBuildOtp2NetexGraph")
-                .process(new RemoteGraphBuilderProcessor(kubernetesJobGraphBuilder))
+                .process(new RemoteGraphBuilderProcessor(otp2NetexGraphBuilder))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP2 graph.")
-                .routeId("otp-remote-netex-graph-build-otp");
+                .routeId("otp2-remote-netex-graph-build-otp");
 
         from("direct:remoteOtp2GraphPublishing")
 
