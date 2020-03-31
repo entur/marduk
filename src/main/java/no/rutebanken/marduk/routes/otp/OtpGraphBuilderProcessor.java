@@ -1,6 +1,5 @@
 package no.rutebanken.marduk.routes.otp;
 
-import no.rutebanken.marduk.routes.otp.remote.OtpGraphBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.slf4j.Logger;
@@ -10,15 +9,15 @@ import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 
 /**
- * Camel processor that triggers the build process,
+ * Camel processor that triggers the OTP graph build process,
  */
-public class RemoteGraphBuilderProcessor implements Processor {
+public class OtpGraphBuilderProcessor implements Processor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RemoteGraphBuilderProcessor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OtpGraphBuilderProcessor.class);
 
     private OtpGraphBuilder otpGraphBuilder;
 
-    public RemoteGraphBuilderProcessor(OtpGraphBuilder otpGraphBuilder) {
+    public OtpGraphBuilderProcessor(OtpGraphBuilder otpGraphBuilder) {
         this.otpGraphBuilder = otpGraphBuilder;
     }
 

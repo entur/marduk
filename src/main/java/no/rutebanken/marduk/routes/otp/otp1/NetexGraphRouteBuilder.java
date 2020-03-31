@@ -18,7 +18,7 @@ package no.rutebanken.marduk.routes.otp.otp1;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.otp.RemoteGraphBuilderProcessor;
+import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.camel.Exchange;
@@ -120,7 +120,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-remote-netex-graph-build-and-send-status");
 
         from("direct:remoteBuildNetexGraph")
-                .process(new RemoteGraphBuilderProcessor(netexGraphBuilder))
+                .process(new OtpGraphBuilderProcessor(netexGraphBuilder))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP graph.")
                 .routeId("otp-remote-netex-graph-build-otp");

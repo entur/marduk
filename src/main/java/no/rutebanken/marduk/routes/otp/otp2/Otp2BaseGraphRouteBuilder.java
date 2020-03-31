@@ -17,7 +17,7 @@
 package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.otp.RemoteGraphBuilderProcessor;
+import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
@@ -81,7 +81,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp2-remote-base-graph-build-and-send-status");
 
         from("direct:remoteOtp2BuildBaseGraph")
-                .process(new RemoteGraphBuilderProcessor(otp2BaseGraphBuilder))
+                .process(new OtpGraphBuilderProcessor(otp2BaseGraphBuilder))
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP base graph.")
                 // copy new base graph in remote storage
                 .process(e -> {
