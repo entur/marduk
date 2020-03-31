@@ -65,7 +65,7 @@ spec:
               name:  marduk-service-account
         - env:
             - name: JAVA_OPTIONS
-              value: -server -Xms512m -Xmx{{ .Values.resources.xmx }} -XX:MaxGCPauseMillis=5000 -XX:ParallelGCThreads=3
+              value: -server -Xms512m -Xmx{{ .Values.resources.xmx }} -Xss256k -XX:MaxGCPauseMillis=5000 -XX:ParallelGCThreads=3
                 -Dspring.config.location=/etc/application-config/application.properties
                 -Dfile.encoding=UTF-8
             - name: TZ

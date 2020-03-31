@@ -28,6 +28,7 @@ import org.apache.camel.spi.RouteContext;
 import org.apache.camel.spi.RoutePolicy;
 import org.apache.camel.spi.Synchronization;
 import org.apache.camel.spring.SpringRouteBuilder;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.quartz.CronExpression;
@@ -84,11 +85,13 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
     protected void logRedelivery(Exchange exchange) {
         int redeliveryCounter = exchange.getIn().getHeader("CamelRedeliveryCounter", Integer.class);
         int redeliveryMaxCounter = exchange.getIn().getHeader("CamelRedeliveryMaxCounter", Integer.class);
-        Throwable throwable = exchange.getProperty("CamelExceptionCaught", Throwable.class);
-        String throwableType = throwable != null ? throwable.getClass().getName() : "";
-        String throwableMessage = throwable != null ? throwable.getMessage() : "";
+        Throwable camelCaughtThrowable = exchange.getProperty("CamelExceptionCaught", Throwable.class);
+        Throwable rootCause = ExceptionUtils.getRootCause(camelCaughtThrowable);
 
-        log.warn("Exchange failed ({}: {}) . Redelivering the message locally, attempt {}/{}...", throwableType, throwableMessage, redeliveryCounter, redeliveryMaxCounter);
+        String rootCauseType = rootCause != null ? rootCause.getClass().getName() : "";
+        String rootCauseMessage = rootCause != null ? rootCause.getMessage() : "";
+
+        log.warn("Exchange failed ({}: {}) . Redelivering the message locally, attempt {}/{}...", rootCauseType, rootCauseMessage, redeliveryCounter, redeliveryMaxCounter);
     }
 
     /**
