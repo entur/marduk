@@ -12,9 +12,7 @@ import java.util.List;
 
 
 /**
- * Build the OTP graph in a standalone pod and wait until the pod terminates.
- * The pod is created by a Kubernetes job.
- * A Kubernetes CronJob is used as a template for the job.
+ * Build an OTP full graph (with transit data) based on NeTEx input data.
  */
 @Component
 public class NetexGraphBuilder implements OtpGraphBuilder {

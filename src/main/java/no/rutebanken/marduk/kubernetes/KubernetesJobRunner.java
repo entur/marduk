@@ -21,6 +21,13 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Run a Kubernetes job.
+ * Uses a Kubernetes CronJob as a template to instantiate the job.
+ * Assumptions:
+ * - the job contains only one container
+ * - all parameters can be passed as environment variables at job creation time.
+ */
 @Component
 public class KubernetesJobRunner {
 
@@ -35,6 +42,12 @@ public class KubernetesJobRunner {
     @Value("${otp.graph.build.remote.kubernetes.timeout:9000}")
     private long jobTimeoutSecond;
 
+    /**
+     * Run a Kubernetes job
+     * @param cronJobName name of the CronJob used as a template
+     * @param envVars environment variables to be provided to the job
+     * @param timestamp timestamp used to create a unique name for the Kubernetes job.
+     */
     public void runJob(String cronJobName, List<EnvVar> envVars, String timestamp) {
         try (final KubernetesClient kubernetesClient = new DefaultKubernetesClient()) {
 
