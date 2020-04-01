@@ -133,7 +133,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     }
                     md5 = md5.split(" ")[0];
                     String md5FromHead = (String) p.getIn().getHeader(Constants.FILE_TARGET_MD5);
-                    p.getIn().setHeader(NEED_TO_REFETCH, "" + (!md5.equals(md5FromHead)));
+                    p.getIn().setHeader(NEED_TO_REFETCH, Boolean.toString(!md5.equals(md5FromHead)));
                 })
                 .choice()
                 .when(header(NEED_TO_REFETCH).isEqualTo("false"))

@@ -52,7 +52,7 @@ public class FileTypeClassifierBean {
         String relativePath = exchange.getIn().getHeader(FILE_HANDLE, String.class);
         LOGGER.debug("Validating file with path '{}'.", relativePath);
         try {
-            if (relativePath == null || relativePath.trim().equals("")) {
+            if (relativePath == null || relativePath.isBlank()) {
                 throw new IllegalArgumentException("Could not get file path from " + FILE_HANDLE + " header.");
             }
 

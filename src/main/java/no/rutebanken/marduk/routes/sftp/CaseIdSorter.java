@@ -25,13 +25,14 @@ import java.util.regex.Pattern;
 
 @Component(value = "caseIdSftpSorter")
 public class CaseIdSorter<T> implements Comparator<GenericFile<T>> {
-	
+
+	private static final Pattern FILE_PATTERN = Pattern.compile(".*_([0-9]{3,4})_.*");
+
 	@Override
 	public int compare(GenericFile<T> o1, GenericFile<T> o2) {
 		
-		Pattern p = Pattern.compile(".*_([0-9]{3,4})_.*");
-		Matcher m1 = p.matcher(o1.getRelativeFilePath());
-		Matcher m2 = p.matcher(o2.getRelativeFilePath());
+		Matcher m1 = FILE_PATTERN.matcher(o1.getRelativeFilePath());
+		Matcher m2 = FILE_PATTERN.matcher(o2.getRelativeFilePath());
 		
 		if(m1.matches() && m2.matches()) {
 			String g1 = m1.group(1);

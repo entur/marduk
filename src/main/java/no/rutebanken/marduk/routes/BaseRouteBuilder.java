@@ -106,19 +106,29 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
                 .map(m->m.getHeader(EnturGooglePubSubConstants.ACK_ID, BasicAcknowledgeablePubsubMessage.class))
                 .collect(Collectors.toList());
 
-        exchange.addOnCompletion(new Synchronization() {
-
-            @Override
-            public void onComplete(Exchange exchange) {
-                ackList.forEach(BasicAcknowledgeablePubsubMessage::ack);
-            }
-
-            @Override
-            public void onFailure(Exchange exchange) {
-                ackList.forEach(BasicAcknowledgeablePubsubMessage::nack);
-            }
-        });
+        exchange.addOnCompletion(new AckSynchronization(ackList));
     }
+
+
+    private static class AckSynchronization implements Synchronization {
+
+        private final List<BasicAcknowledgeablePubsubMessage> ackList;
+
+        public AckSynchronization(List<BasicAcknowledgeablePubsubMessage> ackList) {
+            this.ackList = ackList;
+        }
+
+        @Override
+        public void onComplete(Exchange exchange) {
+            ackList.forEach(BasicAcknowledgeablePubsubMessage::ack);
+        }
+
+        @Override
+        public void onFailure(Exchange exchange) {
+            ackList.forEach(BasicAcknowledgeablePubsubMessage::nack);
+        }
+    }
+
 
     protected ProviderRepository getProviderRepository() {
         return providerRepository;

@@ -46,7 +46,7 @@ public class GtfsFileUtils {
     private static Logger logger = LoggerFactory.getLogger(GtfsFileUtils.class);
 
     public static final String FEED_INFO_FILE_NAME = "feed_info.txt";
-    private static final String FEED_INFO_FILE_CONTENT = "feed_id,feed_publisher_name,feed_publisher_url,feed_lang\nENTUR,Entur,https://www.entur.org,no";
+    private static final byte[] FEED_INFO_FILE_CONTENT = "feed_id,feed_publisher_name,feed_publisher_url,feed_lang\nENTUR,Entur,https://www.entur.org,no".getBytes(StandardCharsets.UTF_8);
 
     public static InputStream mergeGtfsFilesInDirectory(String path) {
         return mergeGtfsFiles(FileUtils.listFiles(new File(path), new String[]{"zip"}, false));
@@ -91,7 +91,7 @@ public class GtfsFileUtils {
     }
 
     public static void addOrReplaceFeedInfo(File gtfsZipFile) {
-        ZipEntrySource feedInfoEntry = new ByteSource(FEED_INFO_FILE_NAME, FEED_INFO_FILE_CONTENT.getBytes(StandardCharsets.UTF_8));
+        ZipEntrySource feedInfoEntry = new ByteSource(FEED_INFO_FILE_NAME, FEED_INFO_FILE_CONTENT);
         ZipUtil.addOrReplaceEntries(gtfsZipFile, new ZipEntrySource[]{feedInfoEntry});
     }
 
