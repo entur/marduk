@@ -43,7 +43,7 @@ public class Constants {
     public static final String NETEX_GRAPH_DIR = "netex";
 
     public static final String OTP2_GRAPH_OBJ = "Otp2Graph.obj";
-    public static final String OTP2_BASE_GRAPH_OBJ = "baseGraph-otp2.obj";
+    public static final String OTP2_BASE_GRAPH_OBJ = "streetGraph-otp2.obj";
     public static final String OTP2_NETEX_GRAPH_DIR = "netex-otp2";
 
     public static final String FILE_TARGET_MD5 = "RutebankenMd5SumRecordedForTargetFile";
