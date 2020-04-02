@@ -42,7 +42,7 @@ public class Constants {
     public static final String BASE_GRAPH_OBJ = "baseGraph.obj";
     public static final String NETEX_GRAPH_DIR = "netex";
 
-    public static final String OTP2_GRAPH_OBJ = "Otp2Graph.obj";
+    public static final String OTP2_GRAPH_OBJ = "Graph-otp2.obj";
     public static final String OTP2_BASE_GRAPH_OBJ = "streetGraph-otp2.obj";
     public static final String OTP2_NETEX_GRAPH_DIR = "netex-otp2";
 

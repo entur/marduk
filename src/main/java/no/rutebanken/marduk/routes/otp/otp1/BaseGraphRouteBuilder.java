@@ -55,7 +55,7 @@ public class BaseGraphRouteBuilder extends BaseRouteBuilder {
         singletonFrom("entur-google-pubsub:OtpBaseGraphBuildQueue?ackMode=NONE").autoStartup("{{otp.graph.build.autoStartup:true}}")
                 .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
-                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:remoteBuildOtpBaseGraph")
                 .routeId("otp-base-graph-build");
 
@@ -64,9 +64,9 @@ public class BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:sendOtpBaseGraphStartedEventsInNewTransaction")
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
 
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 base graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP base graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:remoteBuildBaseGraphAndSendStatus")
-                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP2 base graph building route.")
+                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP base graph building route.")
                 .routeId("otp-remote-base-graph-build");
 
         from("direct:remoteBuildBaseGraphAndSendStatus")
