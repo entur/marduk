@@ -26,8 +26,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -53,7 +53,7 @@ public class JwtRoleAssignmentExtractor implements RoleAssignmentExtractor {
             Jwt jwt = (Jwt) jwtAuthenticationToken.getPrincipal();
             Object claim = jwt.getClaim(ATTRIBUTE_NAME_ROLE_ASSIGNMENT);
             if (claim == null) {
-                return new ArrayList<>();
+                return Collections.emptyList();
             }
             List<Object> roleAssignmentList;
             if (claim instanceof List) {

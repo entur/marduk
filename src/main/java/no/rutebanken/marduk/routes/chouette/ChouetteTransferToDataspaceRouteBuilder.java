@@ -66,7 +66,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 .process(e -> toGenericChouetteMultipart(e))
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/transfer")
                 .process(e -> {
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
+                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location", String.class).replaceFirst("http", "http4"));
 	                e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,"direct:processTransferExportResult");
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, JobEvent.TimetableAction.DATASPACE_TRANSFER.name());

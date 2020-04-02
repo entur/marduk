@@ -57,7 +57,7 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 	    }
 	
 	    MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
-	    entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
+	    entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART,byte[].class), ContentType.DEFAULT_BINARY, "parameters.json");
 	
 	    exchange.getMessage().setBody(entityBuilder.build());
 	    exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
@@ -82,7 +82,7 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 	    }
 	
 	    MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
-	    entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, String.class).getBytes(), ContentType.DEFAULT_BINARY, "parameters.json");
+	    entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, byte[].class), ContentType.DEFAULT_BINARY, "parameters.json");
 	    entityBuilder.addBinaryBody("feed", inputStream, ContentType.DEFAULT_BINARY, fileName);
 	
 	    exchange.getMessage().setBody(entityBuilder.build());

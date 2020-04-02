@@ -118,7 +118,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/validator")
                 .process(e -> {
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location").toString().replaceFirst("http", "http4"));
+                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location", String.class).replaceFirst("http", "http4"));
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processValidationResult"))

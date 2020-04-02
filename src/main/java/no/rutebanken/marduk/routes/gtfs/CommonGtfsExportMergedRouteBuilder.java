@@ -26,9 +26,10 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
@@ -144,11 +145,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
     }
 
     private Collection<String> getProviderBlackList(Exchange e) {
-        Collection<String> providerBlackList = e.getProperty(PROVIDER_BLACK_LIST, Collection.class);
-        if (providerBlackList == null) {
-            providerBlackList = new ArrayList<>();
-        }
-        return providerBlackList;
+        return Optional.ofNullable(e.getProperty(PROVIDER_BLACK_LIST, Collection.class)).orElse(Collections.emptyList());
     }
 
     private Collection<String> getProviderWhiteList(Exchange e) {

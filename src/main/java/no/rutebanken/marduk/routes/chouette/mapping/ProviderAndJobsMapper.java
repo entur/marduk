@@ -33,11 +33,7 @@ public class ProviderAndJobsMapper {
 		Map<String, List<JobResponse>> jobsPerProvider = new HashMap<>();
 
 		for (JobResponse jobResponse : jobs) {
-			List<JobResponse> jobsForProvider = jobsPerProvider.get(jobResponse.referential);
-			if (jobsForProvider == null) {
-				jobsForProvider = new ArrayList<>();
-				jobsPerProvider.put(jobResponse.referential, jobsForProvider);
-			}
+			List<JobResponse> jobsForProvider = jobsPerProvider.computeIfAbsent(jobResponse.referential, k -> new ArrayList<>());
 			jobsForProvider.add(jobResponse);
 		}
 

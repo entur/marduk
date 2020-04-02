@@ -32,7 +32,7 @@ auth0:
 
 resources:
   cpuLimit: "3"
-  memLimit: 14000Mi
+  memLimit: 16000Mi
   cpuRequest: "1"
-  memRequest: 12000Mi
-  xmx: 10g
+  memRequest: 14000Mi
+  xmx: 12g

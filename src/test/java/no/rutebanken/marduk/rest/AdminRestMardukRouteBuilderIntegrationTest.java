@@ -41,8 +41,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.HashMap;
