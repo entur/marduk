@@ -14,11 +14,13 @@
  *
  */
 
-package no.rutebanken.marduk.routes.otp.remote;
+package no.rutebanken.marduk.routes.otp.otp1;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -27,7 +29,6 @@ import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BASE_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.OTP_BUILD_BASE_GRAPH;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
@@ -38,27 +39,34 @@ import static org.apache.camel.builder.Builder.exceptionStackTrace;
  * Build remotely a base OTP graph containing OSM data and elevation data (but not transit data)
  */
 @Component
-public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
+public class BaseGraphRouteBuilder extends BaseRouteBuilder {
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
 
     @Autowired
-    private RemoteGraphBuilderProcessor remoteGraphBuilderProcessor;
+    private BaseGraphBuilder baseGraphBuilder;
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
+        // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
+        singletonFrom("entur-google-pubsub:OtpBaseGraphBuildQueue?ackMode=NONE").autoStartup("{{otp.graph.build.autoStartup:true}}")
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .process(this::addOnCompletionForAggregatedExchange)
+                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .to("direct:remoteBuildOtpBaseGraph")
+                .routeId("otp-base-graph-build");
+
         from("direct:remoteBuildOtpBaseGraph")
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtpBaseGraphStartedEventsInNewTransaction")
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
-                .setProperty(OTP_BUILD_BASE_GRAPH, constant(true))
 
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP base graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 base graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
                 .to("direct:remoteBuildBaseGraphAndSendStatus")
-                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP base graph building route.")
+                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP2 base graph building route.")
                 .routeId("otp-remote-base-graph-build");
 
         from("direct:remoteBuildBaseGraphAndSendStatus")
@@ -73,7 +81,7 @@ public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-remote-base-graph-build-and-send-status");
 
         from("direct:remoteBuildBaseGraph")
-                .process(remoteGraphBuilderProcessor)
+                .process(new OtpGraphBuilderProcessor(baseGraphBuilder))
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP base graph.")
                 // copy new base graph in remote storage
                 .process(e -> {
@@ -89,6 +97,9 @@ public class RemoteBaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP base graph, triggering full OTP graph build")
                 .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
+
+                .to("direct:remoteCleanUp")
+
                 .routeId("otp-remote-base-graph-build-build-otp");
 
         from("direct:sendOtpBaseGraphStartedEventsInNewTransaction")

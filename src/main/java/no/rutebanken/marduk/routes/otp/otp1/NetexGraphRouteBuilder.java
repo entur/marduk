@@ -14,14 +14,16 @@
  *
  */
 
-package no.rutebanken.marduk.routes.otp.remote;
+package no.rutebanken.marduk.routes.otp.otp1;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,7 +37,6 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
-import static no.rutebanken.marduk.Constants.OTP_BUILD_BASE_GRAPH;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
@@ -48,14 +49,10 @@ import static org.apache.camel.builder.Builder.exceptionStackTrace;
  * Build remotely a full OTP graph (containing OSM data, elevation data and NeTEx data).
  */
 @Component
-public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
+public class NetexGraphRouteBuilder extends BaseRouteBuilder {
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
-
-    // File name for import. OTP requires specific file name pattern to parse file as netex (ends with netex_no.zip)
-    @Value("${otp.netex.import.file.name:netex_no.zip}")
-    private String otpGraphImportFileName;
 
     @Value("${otp.graph.current.file:graphs/current}")
     private String otpGraphCurrentFile;
@@ -75,7 +72,7 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
     private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
 
     @Autowired
-    private RemoteGraphBuilderProcessor remoteGraphBuilderProcessor;
+    private NetexGraphBuilder netexGraphBuilder;
 
     @Autowired
     private OtpReportBlobStoreService otpReportBlobStoreService;
@@ -84,12 +81,19 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
+        // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
+        singletonFrom("entur-google-pubsub:OtpGraphBuildQueue?ackMode=NONE").autoStartup("{{otp.graph.build.autoStartup:true}}")
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .process(this::addOnCompletionForAggregatedExchange)
+                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .to("direct:remoteBuildOtpGraph")
+                .routeId("otp-graph-build");
+
         from("direct:remoteBuildOtpGraph")
                 .setProperty(PROP_MESSAGES, simple("${body}"))
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
-                .setProperty(OTP_BUILD_BASE_GRAPH, constant(false))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting graph building in remote directory ${property." + OTP_GRAPH_DIR + "}.")
 
                 .to("direct:exportMergedNetex")
@@ -116,7 +120,7 @@ public class RemoteNetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-remote-netex-graph-build-and-send-status");
 
         from("direct:remoteBuildNetexGraph")
-                .process(remoteGraphBuilderProcessor)
+                .process(new OtpGraphBuilderProcessor(netexGraphBuilder))
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP graph.")
                 .routeId("otp-remote-netex-graph-build-otp");

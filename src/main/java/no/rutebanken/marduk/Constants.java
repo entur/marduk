@@ -42,8 +42,9 @@ public class Constants {
     public static final String BASE_GRAPH_OBJ = "baseGraph.obj";
     public static final String NETEX_GRAPH_DIR = "netex";
 
-    public static final String METADATA_DESCRIPTION = "MetadataDescription";
-    public static final String METADATA_FILE = "MetadataFile";
+    public static final String OTP2_GRAPH_OBJ = "Otp2Graph.obj";
+    public static final String OTP2_BASE_GRAPH_OBJ = "streetGraph-otp2.obj";
+    public static final String OTP2_NETEX_GRAPH_DIR = "netex-otp2";
 
     public static final String FILE_TARGET_MD5 = "RutebankenMd5SumRecordedForTargetFile";
     public static final String ENABLE_VALIDATION = "RutebankenEnableValidation";
@@ -78,7 +79,6 @@ public class Constants {
     public static final String PROVIDER_WHITE_LIST = "RutebankenProviderWhiteList";
     public static final String TRANSFORMATION_ROUTING_DESTINATION = "RutebankenTransformationRoutingDestination";
 
-    public static final String OTP_BUILD_BASE_GRAPH = "RutebankenOtpBuildBaseGraph";
     public static final String OTP_REMOTE_WORK_DIR = "RutebankenOtpRemoteWorkDir";
 
 
