@@ -14,9 +14,11 @@
  *
  */
 
-package no.rutebanken.marduk.routes.gtfs;
+package no.rutebanken.marduk.gtfs;
 
-import no.rutebanken.marduk.routes.file.GtfsFileUtils;
+import no.rutebanken.marduk.gtfs.BasicRouteTypeCode;
+import no.rutebanken.marduk.gtfs.GtfsFileUtils;
+import no.rutebanken.marduk.gtfs.GtfsTransformationService;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.google.GoogleRouteTypeCode;
 import org.apache.commons.io.FileUtils;

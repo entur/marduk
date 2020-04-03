@@ -14,10 +14,9 @@
  *
  */
 
-package no.rutebanken.marduk.routes.gtfs;
+package no.rutebanken.marduk.gtfs;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.routes.file.beans.CustomGtfsFileTransformer;
 import no.rutebanken.marduk.routes.google.GoogleRouteTypeCode;
 import org.apache.camel.Header;
 import org.onebusaway.gtfs.model.Route;
@@ -39,7 +38,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.InputStream;
 
-import static no.rutebanken.marduk.routes.file.GtfsFileUtils.createEntitiesTransformStrategy;
+import static no.rutebanken.marduk.gtfs.GtfsFileUtils.createEntitiesTransformStrategy;
 
 /**
  * For transforming GTFS files.

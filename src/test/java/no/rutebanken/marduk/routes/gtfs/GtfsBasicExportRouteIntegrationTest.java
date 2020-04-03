@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
+import no.rutebanken.marduk.gtfs.GtfsTransformationServiceTest;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;

@@ -14,9 +14,11 @@
  *
  */
 
-package no.rutebanken.marduk.routes.file;
+package no.rutebanken.marduk.gtfs;
 
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.routes.file.TempFileUtils;
+import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.FileUtils;
 import org.onebusaway.gtfs.serialization.GtfsEntitySchemaFactory;
 import org.onebusaway.gtfs_merge.GtfsMerger;
@@ -38,7 +40,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -49,10 +53,37 @@ public class GtfsFileUtils {
     private static final byte[] FEED_INFO_FILE_CONTENT = "feed_id,feed_publisher_name,feed_publisher_url,feed_lang\nENTUR,Entur,https://www.entur.org,no".getBytes(StandardCharsets.UTF_8);
 
     public static InputStream mergeGtfsFilesInDirectory(String path) {
-        return mergeGtfsFiles(FileUtils.listFiles(new File(path), new String[]{"zip"}, false));
+
+        Collection<File> zipFiles = FileUtils.listFiles(new File(path), new String[]{"zip"}, false);
+        zipFiles.stream().forEach(GtfsFileUtils::saveShapes);
+        zipFiles.stream().forEach(GtfsFileUtils::removeShapes);
+        File mergedGtfsWithoutShapes = mergeGtfsFiles(zipFiles);
+        ZipFileUtils.addOrReplaceFileInZip(mergedGtfsWithoutShapes, Path.of(path).resolve("shapes.txt").toFile());
+        try {
+            return TempFileUtils.createDeleteOnCloseInputStream(mergedGtfsWithoutShapes);
+        } catch (IOException ioException) {
+            throw new MardukException("Merging of GTFS files failed", ioException);
+        }
     }
 
-    public static InputStream mergeGtfsFiles(Collection<File> files) {
+    private static void removeShapes(File file) {
+        ZipFileUtils.removeFileFromZipFile(file, "shapes.txt");
+    }
+
+
+    private static void saveShapes(File zipFile) {
+        byte[] shapes = ZipFileUtils.extractFileFromZipFile(zipFile, "shapes.txt");
+        if(shapes != null) {
+            try {
+                Files.write(zipFile.toPath().getParent().resolve("shapes.txt"), shapes,  StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                throw new MardukException(e);
+            }
+        }
+
+    }
+
+    static File mergeGtfsFiles(Collection<File> files) {
 
         try {
             long t1 = System.currentTimeMillis();
@@ -64,7 +95,9 @@ public class GtfsFileUtils {
             addOrReplaceFeedInfo(outputFile);
 
             logger.debug("Merged GTFS-files - spent {} ms", (System.currentTimeMillis() - t1));
-            return TempFileUtils.createDeleteOnCloseInputStream(outputFile);
+
+            return outputFile;
+
         } catch (IOException ioException) {
             throw new MardukException("Merging of GTFS files failed", ioException);
         }
@@ -86,7 +119,15 @@ public class GtfsFileUtils {
             if (entityMergeStrategy instanceof AbstractEntityMergeStrategy) {
                 ((AbstractEntityMergeStrategy) entityMergeStrategy).setDuplicateDetectionStrategy(duplicateDetectionStrategy);
             }
+
+/*            if (entityMergeStrategy instanceof StopMergeStrategy) {
+                ((StopMergeStrategy) entityMergeStrategy).setDuplicateDetectionStrategy(EDuplicateDetectionStrategy.IDENTITY);
+            } else if (entityMergeStrategy instanceof AbstractEntityMergeStrategy) {
+                ((AbstractEntityMergeStrategy) entityMergeStrategy).setDuplicateDetectionStrategy(duplicateDetectionStrategy);
+            }*/
+
         }
+
         return merger;
     }
 

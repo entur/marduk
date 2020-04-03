@@ -14,10 +14,9 @@
  *
  */
 
-package no.rutebanken.marduk.routes.file.beans;
+package no.rutebanken.marduk.gtfs;
 
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.routes.file.GtfsFileUtils;
 import no.rutebanken.marduk.routes.file.TempFileUtils;
 import org.onebusaway.gtfs_transformer.GtfsTransformer;
 
