@@ -22,16 +22,17 @@ import org.onebusaway.gtfs_transformer.GtfsTransformer;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 
 
 public abstract class CustomGtfsFileTransformer {
 
-    public InputStream transform(File inputFile) {
+    public File transform(File inputFile) {
         try {
             GtfsTransformer transformer = new GtfsTransformer();
-            File outputFile = File.createTempFile("marduk-gtfs-custom-transform-", ".zip");
-
+            File outputFile = Path.of(inputFile.getParent()).resolve("transformed-" + inputFile.getName()).toFile();
             transformer.setGtfsInputDirectories(Collections.singletonList(inputFile));
             transformer.setOutputDirectory(outputFile);
 
@@ -40,10 +41,9 @@ public abstract class CustomGtfsFileTransformer {
             transformer.getReader().setOverwriteDuplicates(true);
             transformer.run();
 
-            GtfsFileUtils.addOrReplaceFeedInfo(outputFile);
+            Files.delete(inputFile.toPath());
 
-
-            return TempFileUtils.createDeleteOnCloseInputStream(outputFile);
+            return outputFile;
         } catch (Exception e) {
             throw new MardukException("Gtfs transformation failed with exception: " + e.getMessage(), e);
         }

@@ -20,6 +20,7 @@ import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.file.TempFileUtils;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.onebusaway.gtfs.serialization.GtfsEntitySchemaFactory;
 import org.onebusaway.gtfs_merge.GtfsMerger;
 import org.onebusaway.gtfs_merge.strategies.AbstractEntityMergeStrategy;
@@ -35,9 +36,13 @@ import org.zeroturnaround.zip.ByteSource;
 import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,37 +54,62 @@ import java.util.Collection;
 public class GtfsFileUtils {
     private static Logger logger = LoggerFactory.getLogger(GtfsFileUtils.class);
 
+    private static final String[] GTFS_FILE_NAMES = new String[] {"agency.txt", "calendar.txt", "calendar_dates.txt", "routes.txt", "shapes.txt", "stops.txt", "stop_times.txt", "trips.txt", "transfers.txt"};
+
     public static final String FEED_INFO_FILE_NAME = "feed_info.txt";
     private static final byte[] FEED_INFO_FILE_CONTENT = "feed_id,feed_publisher_name,feed_publisher_url,feed_lang\nENTUR,Entur,https://www.entur.org,no".getBytes(StandardCharsets.UTF_8);
 
-    public static InputStream mergeGtfsFilesInDirectory(String path) {
+    public static InputStream mergeGtfsFilesInDirectory(String sourceDirectory) {
 
-        Collection<File> zipFiles = FileUtils.listFiles(new File(path), new String[]{"zip"}, false);
-        zipFiles.stream().forEach(GtfsFileUtils::saveShapes);
-        zipFiles.stream().forEach(GtfsFileUtils::removeShapes);
-        File mergedGtfsWithoutShapes = mergeGtfsFiles(zipFiles);
-        ZipFileUtils.addOrReplaceFileInZip(mergedGtfsWithoutShapes, Path.of(path).resolve("shapes.txt").toFile());
+        Collection<File> zipFiles = FileUtils.listFiles(new File(sourceDirectory), new String[]{"zip"}, false);
+        zipFiles.forEach(GtfsFileUtils::appendGtfs);
+
+        String targetDirectory = Path.of(sourceDirectory).resolve("merged").toString();
         try {
-            return TempFileUtils.createDeleteOnCloseInputStream(mergedGtfsWithoutShapes);
-        } catch (IOException ioException) {
-            throw new MardukException("Merging of GTFS files failed", ioException);
+            IOUtils.write(FEED_INFO_FILE_CONTENT, new FileOutputStream(Path.of(targetDirectory).resolve(FEED_INFO_FILE_NAME).toFile()));
+        } catch (IOException e) {
+            throw new MardukException(e);
         }
+
+        File targetFile = Path.of(sourceDirectory).resolve("merged.zip").toFile();
+        ZipFileUtils.zipFilesInFolder(targetDirectory, targetFile.toString());
+        try {
+            return TempFileUtils.createDeleteOnCloseInputStream(targetFile);
+        } catch (IOException e) {
+            throw new MardukException(e);
+        }
+
     }
 
-    private static void removeShapes(File file) {
-        ZipFileUtils.removeFileFromZipFile(file, "shapes.txt");
-    }
+    private static void appendGtfs(File file) {
+        ZipUtil.iterate(file, GTFS_FILE_NAMES, (entryStream, zipEntry) -> {
+            Path destinationPath = file.toPath().getParent().resolve("merged");
+            if (!Files.exists(destinationPath)) {
+                Files.createDirectory(destinationPath);
+            }
 
+            String entryName = zipEntry.getName();
+            Path destinationFile = destinationPath.resolve(entryName);
+            boolean ignoreHeader = Files.exists(destinationFile);
 
-    private static void saveShapes(File zipFile) {
-        byte[] shapes = ZipFileUtils.extractFileFromZipFile(zipFile, "shapes.txt");
-        if(shapes != null) {
-            try {
-                Files.write(zipFile.toPath().getParent().resolve("shapes.txt"), shapes,  StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
+                 BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+                if(ignoreHeader) {
+                    bufferedReader.readLine();
+                }
+                // copy all remaining lines
+                bufferedReader.lines().forEach(line -> {
+                    try {
+                        writer.write(line);
+                        writer.newLine();
+                    } catch (IOException e) {
+                        throw new MardukException(e);
+                    }
+                });
             } catch (IOException e) {
                 throw new MardukException(e);
             }
-        }
+        });
 
     }
 

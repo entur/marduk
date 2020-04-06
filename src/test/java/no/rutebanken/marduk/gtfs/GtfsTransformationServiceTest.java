@@ -45,10 +45,7 @@ public class GtfsTransformationServiceTest {
 
     @Test
     public void transformToGoogleFormatExcludeShapes() throws Exception {
-        InputStream stream  = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), false);
-
-        File target = new File("target/test.zip");
-        FileUtils.copyInputStreamToFile(stream, target);
+        File target  = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), false);
 
         assertRouteRouteTypesAreConvertedToGoogleSupportedValues(target);
         assertStopVehicleTypesAreConvertedToGoogleSupportedValues(target);
@@ -58,10 +55,7 @@ public class GtfsTransformationServiceTest {
 
     @Test
     public void transformToGoogleFormatIncludeShapes() throws Exception {
-        InputStream stream  = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), true);
-
-        File target = new File("target/test.zip");
-        FileUtils.copyInputStreamToFile(stream, target);
+        File target  = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), true);
 
         assertRouteRouteTypesAreConvertedToGoogleSupportedValues(target);
         assertStopVehicleTypesAreConvertedToGoogleSupportedValues(target);
@@ -72,10 +66,7 @@ public class GtfsTransformationServiceTest {
 
     @Test
     public void transformToBasicGTFSFormatExcludeShapes() throws Exception {
-        InputStream stream = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), false);
-
-        File target = new File("target/test.zip");
-        FileUtils.copyInputStreamToFile(stream, target);
+        File target  = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), false);
 
         assertRouteRouteTypesAreConvertedToBasicGtfsValues(target);
         assertStopVehicleTypesAreConvertedToBasicGtfsValues(target);
@@ -85,10 +76,7 @@ public class GtfsTransformationServiceTest {
 
     @Test
     public void transformToBasicGTFSFormatIncludeShapes() throws Exception {
-        InputStream stream  = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), true);
-
-        File target = new File("target/test.zip");
-        FileUtils.copyInputStreamToFile(stream, target);
+        File target  = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), true);
 
         assertRouteRouteTypesAreConvertedToBasicGtfsValues(target);
         assertStopVehicleTypesAreConvertedToBasicGtfsValues(target);

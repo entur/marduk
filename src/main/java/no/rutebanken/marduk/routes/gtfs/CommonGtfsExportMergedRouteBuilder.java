@@ -23,9 +23,11 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -64,8 +66,8 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FILE_PARENT, simple(localWorkingDirectory + "/${header." + JOB_ACTION + "}/${date:now:yyyyMMddHHmmssSSS}"))
                 .doTry()
                 .to("direct:fetchLatestGtfs")
-                .to("direct:mergeGtfs")
                 .to("direct:transformGtfs")
+                .to("direct:mergeGtfs")
                 .to("direct:uploadMergedGtfs")
 
                 // Use wire tap to avoid replacing body
@@ -106,12 +108,10 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${property.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("gtfs-export-get-latest-for-provider");
 
-        from("direct:mergeGtfs").streamCaching()
+        from("direct:mergeGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Merging gtfs files for all providers.")
                 .setBody(simple("${header." + FILE_PARENT + "}/org"))
                 .bean(method(GtfsFileUtils.class, "mergeGtfsFilesInDirectory"))
-                .toD("file:${header." + FILE_PARENT + "}?fileName=merged.zip")
-
                 .routeId("gtfs-export-merge");
 
         from("direct:transformGtfs")
@@ -151,5 +151,6 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
     private Collection<String> getProviderWhiteList(Exchange e) {
         return e.getProperty(PROVIDER_WHITE_LIST, Collection.class);
     }
+
 }
 
