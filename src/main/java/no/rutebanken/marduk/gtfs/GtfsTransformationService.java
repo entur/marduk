@@ -38,7 +38,6 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.InputStream;
 
-import static no.rutebanken.marduk.gtfs.GtfsFileUtils.createEntitiesTransformStrategy;
 
 /**
  * For transforming GTFS files.
@@ -63,7 +62,7 @@ public class GtfsTransformationService {
 
         File transformedGtfsFile = new GoogleGtfsFileTransformer(removeShapes).transform(inputFile);
 
-        logger.debug("Replaced Extended Route Types with google supported values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
+        logger.debug("Replaced Extended Route Types with google supported values in GTFS-file {} - spent {} ms", inputFile.getName(),  (System.currentTimeMillis() - t1));
 
         return transformedGtfsFile;
     }
@@ -79,7 +78,7 @@ public class GtfsTransformationService {
         boolean removeShapes = !Boolean.TRUE.equals(includeShapes);
         File transformedGtfsFile  = new BasicGtfsFileTransformer(removeShapes).transform(inputFile);
 
-        logger.debug("Replaced Extended Route Types with basic values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
+        logger.debug("Replaced Extended Route Types with basic values in GTFS-file {} - spent {} ms", inputFile.getName(), (System.currentTimeMillis() - t1));
 
         return transformedGtfsFile;
     }
@@ -214,6 +213,12 @@ public class GtfsTransformationService {
             }
 
         }
+    }
+
+    public static EntitiesTransformStrategy createEntitiesTransformStrategy(Class<?> entityClass, EntityTransformStrategy strategy) {
+        EntitiesTransformStrategy transformStrategy = new EntitiesTransformStrategy();
+        transformStrategy.addModification(new TypedEntityMatch(entityClass, new AlwaysMatch()), strategy);
+        return transformStrategy;
     }
 
 }
