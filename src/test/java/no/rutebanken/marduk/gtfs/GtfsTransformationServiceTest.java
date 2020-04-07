@@ -30,6 +30,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,11 +44,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GtfsTransformationServiceTest {
 
-    private static final String GTFS_FILE_EXTENDED_ROUTE_TYPES = "src/test/resources/no/rutebanken/marduk/routes/gtfs/extended_gtfs.zip";
+    private File getExtendedGtfsTestFile() throws IOException {
+        Path extendedGTFSFile = Files.createTempFile("extendedGTFSFile", ".zip");
+        Files.copy(Path.of( "src/test/resources/no/rutebanken/marduk/routes/gtfs/extended_gtfs.zip"), extendedGTFSFile, StandardCopyOption.REPLACE_EXISTING);
+        return extendedGTFSFile.toFile();
+    }
 
     @Test
     public void transformToGoogleFormatExcludeShapes() throws Exception {
-        File target  = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), false);
+        File target  = new GtfsTransformationService().transformToGoogleFormat(getExtendedGtfsTestFile(), false);
 
         assertRouteRouteTypesAreConvertedToGoogleSupportedValues(target);
         assertStopVehicleTypesAreConvertedToGoogleSupportedValues(target);
@@ -55,7 +62,7 @@ public class GtfsTransformationServiceTest {
 
     @Test
     public void transformToGoogleFormatIncludeShapes() throws Exception {
-        File target  = new GtfsTransformationService().transformToGoogleFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), true);
+        File target  = new GtfsTransformationService().transformToGoogleFormat(getExtendedGtfsTestFile(), true);
 
         assertRouteRouteTypesAreConvertedToGoogleSupportedValues(target);
         assertStopVehicleTypesAreConvertedToGoogleSupportedValues(target);
@@ -66,7 +73,7 @@ public class GtfsTransformationServiceTest {
 
     @Test
     public void transformToBasicGTFSFormatExcludeShapes() throws Exception {
-        File target  = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), false);
+        File target  = new GtfsTransformationService().transformToBasicGTFSFormat(getExtendedGtfsTestFile(), false);
 
         assertRouteRouteTypesAreConvertedToBasicGtfsValues(target);
         assertStopVehicleTypesAreConvertedToBasicGtfsValues(target);
@@ -76,7 +83,7 @@ public class GtfsTransformationServiceTest {
 
     @Test
     public void transformToBasicGTFSFormatIncludeShapes() throws Exception {
-        File target  = new GtfsTransformationService().transformToBasicGTFSFormat(new File(GTFS_FILE_EXTENDED_ROUTE_TYPES), true);
+        File target  = new GtfsTransformationService().transformToBasicGTFSFormat(getExtendedGtfsTestFile(), true);
 
         assertRouteRouteTypesAreConvertedToBasicGtfsValues(target);
         assertStopVehicleTypesAreConvertedToBasicGtfsValues(target);
@@ -104,8 +111,6 @@ public class GtfsTransformationServiceTest {
         assertThat(stopLines.get(1)).as("Line with valid value 701 should be kept").endsWith(",701");
         assertThat(stopLines.get(2)).as("Line with extended value 1012 should be converted to 1000").endsWith(",1000");
         assertThat(stopLines.get(3)).as("Line with extended value 1601 should be converted to 1700 (default)").endsWith(",1700");
-        List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsFileUtils.FEED_INFO_FILE_NAME)), StandardCharsets.UTF_8);
-        assertThat(feedInfoLines.get(1)).as("Entur info should be used as feed info").isEqualTo("ENTUR,Entur,https://www.entur.org,no");
     }
 
     public static void assertRouteRouteTypesAreConvertedToBasicGtfsValues(File out) throws IOException {
@@ -128,7 +133,7 @@ public class GtfsTransformationServiceTest {
         assertThat(stopLines.get(2)).as("Line with extended value 1012 should be converted to 4").endsWith(",4");
         assertThat(stopLines.get(3)).as("Line with extended value 1601 should be converted to 3 (default)").endsWith(",3");
         List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsFileUtils.FEED_INFO_FILE_NAME)), StandardCharsets.UTF_8);
-        assertThat(feedInfoLines.get(1)).as("Entur info should be used as feed info").isEqualTo("ENTUR,Entur,https://www.entur.org,no");
+
     }
 
     public static void assertShapesAreRemoved(File out) throws IOException {

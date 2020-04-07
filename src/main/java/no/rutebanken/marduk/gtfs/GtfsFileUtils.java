@@ -50,6 +50,8 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class GtfsFileUtils {
     private static Logger logger = LoggerFactory.getLogger(GtfsFileUtils.class);
@@ -92,25 +94,63 @@ public class GtfsFileUtils {
             Path destinationFile = destinationPath.resolve(entryName);
             boolean ignoreHeader = Files.exists(destinationFile);
 
-            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
-                 BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
-                if(ignoreHeader) {
-                    bufferedReader.readLine();
-                }
-                // copy all remaining lines
-                bufferedReader.lines().forEach(line -> {
-                    try {
-                        writer.write(line);
-                        writer.newLine();
-                    } catch (IOException e) {
-                        throw new MardukException(e);
-                    }
-                });
-            } catch (IOException e) {
-                throw new MardukException(e);
+            if("stops.txt".equals(entryName)) {
+                appendStopEntry(entryStream, destinationFile, ignoreHeader);
+            } else {
+                appendEntry(entryStream, destinationFile, ignoreHeader);
             }
+
+
         });
 
+    }
+
+    private static Set<String> stopIds = new HashSet<>();
+
+    private static void appendStopEntry(InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
+        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
+             BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+            String header = bufferedReader.readLine();
+            if (! ignoreHeader) {
+                copyLine(writer, header);
+            }
+            // copy all remaining lines
+            bufferedReader.lines().forEach(line -> {
+                String stopId = line.substring(0, line.indexOf(','));
+                if(! stopIds.contains(stopId)) {
+                    stopIds.add(stopId);
+                    copyLine(writer, line);
+                }
+
+            });
+        } catch (IOException e) {
+            throw new MardukException(e);
+        }
+    }
+
+    private static void copyLine(BufferedWriter writer, String line) {
+        try {
+            writer.write(line);
+            writer.newLine();
+
+        } catch (IOException e) {
+            throw new MardukException(e);
+        }
+    }
+
+    private static void appendEntry(InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
+        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
+             BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+            if (ignoreHeader) {
+                bufferedReader.readLine();
+            }
+            // copy all remaining lines
+            bufferedReader.lines().forEach(line -> {
+                copyLine(writer, line);
+            });
+        } catch (IOException e) {
+            throw new MardukException(e);
+        }
     }
 
     static File mergeGtfsFiles(Collection<File> files) {

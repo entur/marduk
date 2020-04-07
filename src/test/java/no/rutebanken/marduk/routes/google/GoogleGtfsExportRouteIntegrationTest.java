@@ -31,6 +31,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
@@ -57,8 +61,6 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
     @Value("${google.export.qa.file.name:google/google_norway-aggregated-qa-gtfs.zip}")
     private String googleQaExportFileName;
 
-    private String testFile = "src/test/resources/no/rutebanken/marduk/routes/gtfs/extended_gtfs.zip";
-
     @BeforeEach
     public void prepare() {
         Provider rbOppProvider = provider("rb_opp", 4, null, false, false);
@@ -74,7 +76,7 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
         context.start();
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(new File(testFile)), false);
+        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
 
         startRoute.requestBody(null);
 
@@ -86,11 +88,17 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
         context.start();
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_opp-aggregated-gtfs.zip", new FileInputStream(new File(testFile)), false);
+        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_opp-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
 
         startQaRoute.requestBody(null);
 
         assertThat(inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName)).as("Expected transformed gtfs file to have been uploaded").isNotNull();
+    }
+
+    private File getExtendedGtfsTestFile() throws IOException {
+        Path extendedGTFSFile = Files.createTempFile("extendedGTFSFile", ".zip");
+        Files.copy(Path.of( "src/test/resources/no/rutebanken/marduk/routes/gtfs/extended_gtfs.zip"), extendedGTFSFile, StandardCopyOption.REPLACE_EXISTING);
+        return extendedGTFSFile.toFile();
     }
 
 
