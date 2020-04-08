@@ -13,8 +13,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class GtfsFileMerger {
 
@@ -36,7 +41,7 @@ public class GtfsFileMerger {
             if ("stops.txt".equals(entryName)) {
                 appendStopEntry(entryStream, destinationFile, ignoreHeader);
             } else {
-                appendEntry(entryStream, destinationFile, ignoreHeader);
+                appendEntry(entryName, entryStream, destinationFile, ignoreHeader);
             }
         });
     }
@@ -61,19 +66,27 @@ public class GtfsFileMerger {
         }
     }
 
-    private void appendEntry(InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
+    private void appendEntry(String entryName, InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
         try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
              BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
-            if (ignoreHeader) {
-                bufferedReader.readLine();
+
+            String[] sourceHeadersForEntry = bufferedReader.readLine().split(",");
+            String[] targetHeadersForEntry = getTargetHeader(entryName);
+            GtfsLineBuilder gtfsLineBuilder = new GtfsLineBuilder(sourceHeadersForEntry, targetHeadersForEntry);
+            if (!ignoreHeader) {
+                copyLine(writer, Arrays.asList(targetHeadersForEntry).stream().collect(Collectors.joining(",")));
             }
             // copy all remaining lines
             bufferedReader.lines().forEach(line -> {
-                copyLine(writer, line);
+                copyLine(writer, gtfsLineBuilder.getLine(line));
             });
         } catch (IOException e) {
             throw new MardukException(e);
         }
+    }
+
+    private String[] getTargetHeader(String entryName) {
+       return GtfsHeaders.GTFS_EXTENDED_HEADERS.get(entryName);
     }
 
     private void copyLine(BufferedWriter writer, String line) {
