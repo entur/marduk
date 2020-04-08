@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,11 +28,16 @@ public class GtfsFileMerger {
 
     private static final String[] GTFS_FILE_NAMES = new String[]{"agency.txt", "calendar.txt", "calendar_dates.txt", "routes.txt", "shapes.txt", "stops.txt", "stop_times.txt", "trips.txt", "transfers.txt"};
 
-    private Set<String> stopIds = new HashSet<>();
     private Path workingDirectory;
+    private Map<String,String[]> targetGtfsHeaders;
 
-    public GtfsFileMerger(Path workingDirectory) {
+    private Set<String> stopIds = new HashSet<>();
+    private Set<Integer> transferHashes = new HashSet<>();
+
+
+    public GtfsFileMerger(Path workingDirectory, GtfsExport gtfsExport) {
         this.workingDirectory = workingDirectory;
+        this.targetGtfsHeaders = gtfsExport.getHeaders();
     }
 
     public void appendGtfs(File gtfsFile) {
@@ -42,6 +48,8 @@ public class GtfsFileMerger {
 
             if ("stops.txt".equals(entryName)) {
                 appendStopEntry(entryStream, destinationFile, ignoreHeader);
+            } else if ("transfers.txt".equals(entryName)) {
+                appendTransferEntry(entryStream, destinationFile, ignoreHeader);
             } else {
                 appendEntry(entryName, entryStream, destinationFile, ignoreHeader);
             }
@@ -49,20 +57,56 @@ public class GtfsFileMerger {
     }
 
     private void appendStopEntry(InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
-        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
              BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
-            String header = bufferedReader.readLine();
-            if (!ignoreHeader) {
-                copyLine(writer, header);
-            }
-            // copy all remaining lines
-            bufferedReader.lines().forEach(line -> {
-                String stopId = line.substring(0, line.indexOf(','));
+
+            CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader()
+                    .withIgnoreHeaderCase()
+                    .withTrim());
+
+            String[] targetHeaders = getTargetHeaders("stops.txt");
+
+            CSVPrinter csvPrinter = ignoreHeader
+                    ? new CSVPrinter(writer, CSVFormat.DEFAULT)
+                    : new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(targetHeaders));
+
+            for (CSVRecord csvRecord : csvParser) {
+                String stopId = csvRecord.get("stop_id");
                 if (!stopIds.contains(stopId)) {
                     stopIds.add(stopId);
-                    copyLine(writer, line);
+                    List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).collect(Collectors.toList());
+                    csvPrinter.printRecord(targetValues);
                 }
-            });
+            }
+            csvPrinter.flush();
+        } catch (IOException e) {
+            throw new MardukException(e);
+        }
+    }
+
+    private void appendTransferEntry(InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
+             BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+
+            CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader()
+                    .withIgnoreHeaderCase()
+                    .withTrim());
+
+            String[] targetHeaders = getTargetHeaders("transfers.txt");
+
+            CSVPrinter csvPrinter = ignoreHeader
+                    ? new CSVPrinter(writer, CSVFormat.DEFAULT)
+                    : new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(targetHeaders));
+
+            for (CSVRecord csvRecord : csvParser) {
+                List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).collect(Collectors.toList());
+                int transferHash = targetValues.hashCode();
+                if (!transferHashes.contains(transferHash)) {
+                    transferHashes.add(transferHash);
+                    csvPrinter.printRecord(targetValues);
+                }
+            }
+            csvPrinter.flush();
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -76,12 +120,14 @@ public class GtfsFileMerger {
                     .withIgnoreHeaderCase()
                     .withTrim());
 
+            String[] targetHeaders = getTargetHeaders(entryName);
+
             CSVPrinter csvPrinter = ignoreHeader
                     ? new CSVPrinter(writer, CSVFormat.DEFAULT)
-                    : new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(getTargetHeader(entryName)));
+                    : new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(targetHeaders));
 
             for (CSVRecord csvRecord : csvParser) {
-                List<String> targetValues = Stream.of(getTargetHeader(entryName)).map(header -> csvRecord.get(header)).collect(Collectors.toList());
+                List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).collect(Collectors.toList());
                 csvPrinter.printRecord(targetValues);
             }
             csvPrinter.flush();
@@ -90,16 +136,29 @@ public class GtfsFileMerger {
         }
     }
 
-    private String[] getTargetHeader(String entryName) {
-        return GtfsHeaders.GTFS_EXTENDED_HEADERS.get(entryName);
+    private String convertValue(CSVRecord csvRecord, String header) {
+        if(!csvRecord.isSet(header)) {
+            return "";
+        }
+        String value = csvRecord.get(header);
+        if ("wheelchair_accessible".equals(header) && "0".equals(value)) {
+            return "";
+        }
+        if ("location_type".equals(header) && "0".equals(value)) {
+            return "";
+        }
+        if ("drop_off_type".equals(header) && "0".equals(value)) {
+            return "";
+        }
+        if ("pickup_type".equals(header) && "0".equals(value)) {
+            return "";
+        }
+
+        return value;
     }
 
-    private void copyLine(BufferedWriter writer, String line) {
-        try {
-            writer.write(line);
-            writer.newLine();
-        } catch (IOException e) {
-            throw new MardukException(e);
-        }
+    private String[] getTargetHeaders(String entryName) {
+        return targetGtfsHeaders.get(entryName);
     }
+
 }

@@ -18,16 +18,15 @@ package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.gtfs.GtfsExport;
 import no.rutebanken.marduk.gtfs.GtfsFileUtils;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -110,8 +109,25 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
         from("direct:mergeGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Merging gtfs files for all providers.")
-                .setBody(simple("${header." + FILE_PARENT + "}/org"))
-                .bean(method(GtfsFileUtils.class, "mergeGtfsFilesInDirectory"))
+
+                .process(exchange ->
+                        {
+                            String sourceDirectory = exchange.getIn().getHeader(FILE_PARENT, String.class) + "/org";
+                            String jobAction = exchange.getIn().getHeader(Constants.JOB_ACTION, String.class);
+                            GtfsExport gtfsExport = null;
+                            if ("EXPORT_GTFS_MERGED".equals(jobAction)) {
+                                gtfsExport = GtfsExport.GTFS_EXTENDED;
+                            } else if ("EXPORT_GTFS_BASIC_MERGED".equals(jobAction)) {
+                                gtfsExport = GtfsExport.GTFS_BASIC;
+                            } else if ("EXPORT_GOOGLE_GTFS".equals(jobAction)) {
+                                gtfsExport = GtfsExport.GTFS_GOOGLE;
+                            } else if ("EXPORT_GOOGLE_GTFS_QA".equals(jobAction)) {
+                                gtfsExport = GtfsExport.GTFS_GOOGLE;
+                            }
+
+                            exchange.getIn().setBody(GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, gtfsExport));
+                        }
+                )
                 .routeId("gtfs-export-merge");
 
         from("direct:transformGtfs")

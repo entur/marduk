@@ -42,25 +42,25 @@ public class GtfsFileUtils {
     public static final String FEED_INFO_FILE_NAME = "feed_info.txt";
     private static final byte[] FEED_INFO_FILE_CONTENT = "feed_id,feed_publisher_name,feed_publisher_url,feed_lang\nENTUR,Entur,https://www.entur.org,no".getBytes(StandardCharsets.UTF_8);
 
-    public static InputStream mergeGtfsFilesInDirectory(String sourceDirectory) {
+    public static InputStream mergeGtfsFilesInDirectory(String sourceDirectory, GtfsExport gtfsExport) {
 
         Collection<File> zipFiles = FileUtils.listFiles(new File(sourceDirectory), new String[]{"zip"}, false);
         try {
-            return TempFileUtils.createDeleteOnCloseInputStream(mergeGtfsFiles(zipFiles));
+            return TempFileUtils.createDeleteOnCloseInputStream(mergeGtfsFiles(zipFiles, gtfsExport));
         } catch (IOException e) {
             throw new MardukException(e);
         }
 
     }
 
-    static File mergeGtfsFiles(Collection<File> zipFiles) throws IOException {
+    static File mergeGtfsFiles(Collection<File> zipFiles, GtfsExport gtfsExport) throws IOException {
 
         long t1 = System.currentTimeMillis();
         logger.debug("Merging GTFS-files");
 
         Path workingDirectory = Files.createTempDirectory("marduk-merge-gtfs");
 
-        GtfsFileMerger gtfsFileMerger = new GtfsFileMerger(workingDirectory);
+        GtfsFileMerger gtfsFileMerger = new GtfsFileMerger(workingDirectory, gtfsExport);
 
         zipFiles.forEach(zipFile -> gtfsFileMerger.appendGtfs(zipFile));
         Files.write(workingDirectory.resolve(FEED_INFO_FILE_NAME), FEED_INFO_FILE_CONTENT);
