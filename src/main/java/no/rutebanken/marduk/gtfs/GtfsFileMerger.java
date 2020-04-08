@@ -1,6 +1,10 @@
 package no.rutebanken.marduk.gtfs;
 
 import no.rutebanken.marduk.exceptions.MardukException;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.BufferedReader;
@@ -13,13 +17,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class GtfsFileMerger {
 
@@ -67,26 +69,29 @@ public class GtfsFileMerger {
     }
 
     private void appendEntry(String entryName, InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
-        try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
              BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
 
-            String[] sourceHeadersForEntry = bufferedReader.readLine().split(",");
-            String[] targetHeadersForEntry = getTargetHeader(entryName);
-            GtfsLineBuilder gtfsLineBuilder = new GtfsLineBuilder(sourceHeadersForEntry, targetHeadersForEntry);
-            if (!ignoreHeader) {
-                copyLine(writer, Arrays.asList(targetHeadersForEntry).stream().collect(Collectors.joining(",")));
+            CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader()
+                    .withIgnoreHeaderCase()
+                    .withTrim());
+
+            CSVPrinter csvPrinter = ignoreHeader
+                    ? new CSVPrinter(writer, CSVFormat.DEFAULT)
+                    : new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(getTargetHeader(entryName)));
+
+            for (CSVRecord csvRecord : csvParser) {
+                List<String> targetValues = Stream.of(getTargetHeader(entryName)).map(header -> csvRecord.get(header)).collect(Collectors.toList());
+                csvPrinter.printRecord(targetValues);
             }
-            // copy all remaining lines
-            bufferedReader.lines().forEach(line -> {
-                copyLine(writer, gtfsLineBuilder.getLine(line));
-            });
+            csvPrinter.flush();
         } catch (IOException e) {
             throw new MardukException(e);
         }
     }
 
     private String[] getTargetHeader(String entryName) {
-       return GtfsHeaders.GTFS_EXTENDED_HEADERS.get(entryName);
+        return GtfsHeaders.GTFS_EXTENDED_HEADERS.get(entryName);
     }
 
     private void copyLine(BufferedWriter writer, String line) {
