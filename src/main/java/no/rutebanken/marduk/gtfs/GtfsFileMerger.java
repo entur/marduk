@@ -28,9 +28,9 @@ import java.util.stream.Stream;
 
 /**
  * Merge a collection of GTFS archives into a single zip.
- * Duplicates in stops.txt and transfers.txt are removed
+ * Duplicates in stops.txt and transfers.txt are removed.
  * All other GTFS entries are assumed to not overlap.
- * Stops duplicates are identiifed by stop/quay id
+ * Stops duplicates are identified by stop/quay id.
  * Transfers duplicates are identified by comparing hashcode of the whole CSV line.
  */
 public class GtfsFileMerger {
@@ -48,7 +48,7 @@ public class GtfsFileMerger {
 
 
     /**
-     * @param workingDirectory temporary directory where the GTFS files are merged.
+     * @param workingDirectory temporary directory inwhich the GTFS files are merged.
      * @param gtfsExport       the type of GTFS export.
      */
     public GtfsFileMerger(Path workingDirectory, GtfsExport gtfsExport) {
@@ -59,7 +59,7 @@ public class GtfsFileMerger {
     /**
      * Merge a GTFS file into the working directory.
      *
-     * @param gtfsFile
+     * @param gtfsFile the current GTFS archive being merged.
      */
     public void appendGtfs(File gtfsFile) {
 
@@ -83,9 +83,9 @@ public class GtfsFileMerger {
     /**
      * Append stop entries and remove duplicates.
      *
-     * @param entryStream
-     * @param destinationFile
-     * @param ignoreHeader
+     * @param entryStream the GTFS file entry inside the GTFS archive.
+     * @param destinationFile the temporary file where GTFS lines are merged.
+     * @param ignoreHeader ignore headers. Headers are created only when the destination file is first created.
      */
     private void appendStopEntry(InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
@@ -118,9 +118,9 @@ public class GtfsFileMerger {
     /**
      * Append transfer entries and remove duplicates.
      *
-     * @param entryStream
-     * @param destinationFile
-     * @param ignoreHeader
+     * @param entryStream the GTFS file entry inside the GTFS archive.
+     * @param destinationFile the temporary file where GTFS lines are merged.
+     * @param ignoreHeader ignore headers. Headers are created only when the destination file is first created.
      */
     private void appendTransferEntry(InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
@@ -153,10 +153,10 @@ public class GtfsFileMerger {
     /**
      * Append GTFS entries other than stops and transfers. No duplicate check is performed.
      *
-     * @param entryName
-     * @param entryStream
-     * @param destinationFile
-     * @param ignoreHeader
+     * @param entryName the GTFS file entry name inside the GTFS archive.
+     * @param entryStream the GTFS file entry inside the GTFS archive.
+     * @param destinationFile the temporary file where GTFS lines are merged.
+     * @param ignoreHeader ignore headers. Headers are created only when the destination file is first created.
      */
     private void appendEntry(String entryName, InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
@@ -182,6 +182,13 @@ public class GtfsFileMerger {
         }
     }
 
+    /**
+     * Convert default values. null values are inserted as empty string, as well as some default 0 values that are
+     * converted into empty string for compatibility with the original merge algorithm.
+     * @param csvRecord
+     * @param header
+     * @return
+     */
     private String convertValue(CSVRecord csvRecord, String header) {
         if(!csvRecord.isSet(header)) {
             return "";
