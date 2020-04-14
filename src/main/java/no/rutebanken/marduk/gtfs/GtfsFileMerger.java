@@ -5,6 +5,8 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.BufferedReader;
@@ -28,6 +30,9 @@ public class GtfsFileMerger {
 
     private static final String[] GTFS_FILE_NAMES = new String[]{"agency.txt", "calendar.txt", "calendar_dates.txt", "routes.txt", "shapes.txt", "stops.txt", "stop_times.txt", "trips.txt", "transfers.txt"};
 
+
+    private static Logger LOGGER = LoggerFactory.getLogger(GtfsFileMerger.class);
+
     private Path workingDirectory;
     private Map<String,String[]> targetGtfsHeaders;
 
@@ -41,6 +46,9 @@ public class GtfsFileMerger {
     }
 
     public void appendGtfs(File gtfsFile) {
+
+        LOGGER.debug("Merging file {}", gtfsFile.getName());
+
         ZipUtil.iterate(gtfsFile, GTFS_FILE_NAMES, (entryStream, zipEntry) -> {
             String entryName = zipEntry.getName();
             Path destinationFile = workingDirectory.resolve(entryName);
