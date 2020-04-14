@@ -135,7 +135,6 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
     private Collection<File> getGtfsFileList(String directory) {
         return FileUtils.listFiles(new File(directory), new String[]{"zip"}, false);
-
     }
 
 }

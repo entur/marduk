@@ -22,6 +22,7 @@ import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.FileSystemUtils;
 import org.zeroturnaround.zip.ByteSource;
 import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
@@ -53,24 +54,33 @@ public class GtfsFileUtils {
 
     }
 
+    /**
+     * merge GTFS file entries in a working directory, add the feed_info.txt entry and return the zipped content of
+     * the working directory
+     * @param zipFiles GTFS archives to be merged
+     * @param gtfsExport the type of export
+     * @return a zip file containing the merged GTFS data
+     * @throws IOException
+     */
     static File mergeGtfsFiles(Collection<File> zipFiles, GtfsExport gtfsExport) throws IOException {
 
         long t1 = System.currentTimeMillis();
-        logger.debug("Merging GTFS-files");
+        logger.debug("Merging GTFS files for export {}", gtfsExport);
 
         Path workingDirectory = Files.createTempDirectory("marduk-merge-gtfs");
+        try {
+            GtfsFileMerger gtfsFileMerger = new GtfsFileMerger(workingDirectory, gtfsExport);
+            zipFiles.forEach(zipFile -> gtfsFileMerger.appendGtfs(zipFile));
+            Files.write(workingDirectory.resolve(FEED_INFO_FILE_NAME), FEED_INFO_FILE_CONTENT);
+            File mergedFile = Files.createTempFile("marduk-merge-gtfs-merged", ".zip").toFile();
+            ZipFileUtils.zipFilesInFolder(workingDirectory.toString(), mergedFile.toString());
 
-        GtfsFileMerger gtfsFileMerger = new GtfsFileMerger(workingDirectory, gtfsExport);
+            logger.debug("Merged GTFS-files - spent {} ms", (System.currentTimeMillis() - t1));
 
-        zipFiles.forEach(zipFile -> gtfsFileMerger.appendGtfs(zipFile));
-        Files.write(workingDirectory.resolve(FEED_INFO_FILE_NAME), FEED_INFO_FILE_CONTENT);
-        File targetFile = Files.createTempFile("marduk-merge-gtfs-merged", ".zip").toFile();
-        ZipFileUtils.zipFilesInFolder(workingDirectory.toString(), targetFile.toString());
-
-        logger.debug("Merged GTFS-files - spent {} ms", (System.currentTimeMillis() - t1));
-
-        return targetFile;
-
+            return mergedFile;
+        } finally {
+            FileSystemUtils.deleteRecursively(workingDirectory);
+        }
     }
 
 

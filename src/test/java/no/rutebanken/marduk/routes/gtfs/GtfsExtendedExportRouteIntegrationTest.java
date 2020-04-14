@@ -105,11 +105,11 @@ public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderI
         List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, "stops.txt")), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
         
-        assertThat(stopLines.get(0)).as("Line without vehicle type should not be changed").endsWith(",");
-        assertThat(stopLines.get(1)).as("Line with valid value 701 should not be changed").endsWith(",701");
+        assertThat(stopLines.get(0)).as("Line without vehicle type should not be changed").endsWith(",,");
+        assertThat(stopLines.get(1)).as("Line with valid value 701 should not be changed").endsWith(",701,");
 
-        assertThat(stopLines.get(2)).as("Line with extended value 1012 should not be changed").endsWith(",1012");
-        assertThat(stopLines.get(3)).as("Line with extended value 1601 should not be changed").endsWith(",1601");
+        assertThat(stopLines.get(2)).as("Line with extended value 1012 should not be changed").endsWith(",1012,");
+        assertThat(stopLines.get(3)).as("Line with extended value 1601 should not be changed").endsWith(",1601,");
     }
 
     private File getExtendedGtfsTestFile() throws IOException {

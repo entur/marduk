@@ -167,6 +167,5 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
     private Collection<String> getProviderWhiteList(Exchange e) {
         return e.getProperty(PROVIDER_WHITE_LIST, Collection.class);
     }
-
 }
 

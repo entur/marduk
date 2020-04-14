@@ -19,9 +19,6 @@ package no.rutebanken.marduk.routes.file;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.zeroturnaround.zip.ByteSource;
-import org.zeroturnaround.zip.FileSource;
-import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.ByteArrayInputStream;
@@ -138,13 +135,9 @@ public class ZipFileUtils {
         ZipUtil.unpack(inputStream, new File(targetFolder));
     }
 
-    public static void addOrReplaceFileInZip(File zipFile, File addedFile) {
-        ZipEntrySource newEntry = new FileSource(addedFile.getName(), addedFile );
-        ZipUtil.addOrReplaceEntries(zipFile, new ZipEntrySource[]{newEntry});
-    }
 
-    public static void removeFileFromZipFile(File inputFile, String removedFileName) {
-        ZipUtil.removeEntry(inputFile, removedFileName);
-    }
+
+
+
 
 }
