@@ -14,7 +14,7 @@
  *
  */
 
-package no.rutebanken.marduk.routes.gtfs;
+package no.rutebanken.marduk.gtfs;
 
 /**
  * RouteTypes supported in the  basic GTFS specification.

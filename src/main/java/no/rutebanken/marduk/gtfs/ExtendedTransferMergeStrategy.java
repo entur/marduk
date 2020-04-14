@@ -14,7 +14,7 @@
  *
  */
 
-package no.rutebanken.marduk.routes.file;
+package no.rutebanken.marduk.gtfs;
 
 import org.onebusaway.gtfs.model.Transfer;
 import org.onebusaway.gtfs_merge.strategies.TransferMergeStrategy;

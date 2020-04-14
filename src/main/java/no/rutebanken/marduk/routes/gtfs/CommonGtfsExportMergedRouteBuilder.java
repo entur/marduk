@@ -18,8 +18,9 @@ package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.gtfs.GtfsExport;
+import no.rutebanken.marduk.gtfs.GtfsFileUtils;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.file.GtfsFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -64,8 +65,8 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FILE_PARENT, simple(localWorkingDirectory + "/${header." + JOB_ACTION + "}/${date:now:yyyyMMddHHmmssSSS}"))
                 .doTry()
                 .to("direct:fetchLatestGtfs")
-                .to("direct:mergeGtfs")
                 .to("direct:transformGtfs")
+                .to("direct:mergeGtfs")
                 .to("direct:uploadMergedGtfs")
 
                 // Use wire tap to avoid replacing body
@@ -106,12 +107,27 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${property.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("gtfs-export-get-latest-for-provider");
 
-        from("direct:mergeGtfs").streamCaching()
+        from("direct:mergeGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Merging gtfs files for all providers.")
-                .setBody(simple("${header." + FILE_PARENT + "}/org"))
-                .bean(method(GtfsFileUtils.class, "mergeGtfsFilesInDirectory"))
-                .toD("file:${header." + FILE_PARENT + "}?fileName=merged.zip")
 
+                .process(exchange ->
+                        {
+                            String sourceDirectory = exchange.getIn().getHeader(FILE_PARENT, String.class) + "/org";
+                            String jobAction = exchange.getIn().getHeader(Constants.JOB_ACTION, String.class);
+                            GtfsExport gtfsExport = null;
+                            if ("EXPORT_GTFS_MERGED".equals(jobAction)) {
+                                gtfsExport = GtfsExport.GTFS_EXTENDED;
+                            } else if ("EXPORT_GTFS_BASIC_MERGED".equals(jobAction)) {
+                                gtfsExport = GtfsExport.GTFS_BASIC;
+                            } else if ("EXPORT_GOOGLE_GTFS".equals(jobAction)) {
+                                gtfsExport = GtfsExport.GTFS_GOOGLE;
+                            } else if ("EXPORT_GOOGLE_GTFS_QA".equals(jobAction)) {
+                                gtfsExport = GtfsExport.GTFS_GOOGLE;
+                            }
+
+                            exchange.getIn().setBody(GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, gtfsExport));
+                        }
+                )
                 .routeId("gtfs-export-merge");
 
         from("direct:transformGtfs")

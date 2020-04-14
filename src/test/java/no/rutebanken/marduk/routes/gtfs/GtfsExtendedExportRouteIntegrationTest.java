@@ -21,8 +21,11 @@ import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
+import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +40,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
 
@@ -52,6 +58,9 @@ public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderI
     @Produce(uri = "direct:exportGtfsExtendedMerged")
     protected ProducerTemplate startRoute;
 
+    @EndpointInject(uri = "mock:updateStatus")
+    protected MockEndpoint updateStatus;
+
 
     @Value("${gtfs.norway.merged.file.name:rb_norway-aggregated-gtfs.zip}")
     private String exportFileName;
@@ -65,14 +74,24 @@ public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderI
 
     @Test
     public void testUploadExtendedGtfsMergedFile() throws Exception {
+        //populate fake blob repo
+        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
+        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_avi-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
+
+        context.getRouteDefinition("gtfs-export-merged-report-ok").adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() {
+                interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+                        .to("mock:updateStatus");
+            }
+        });
+        updateStatus.expectedMessageCount(2);
+
         context.start();
 
-        String pathname = "src/test/resources/no/rutebanken/marduk/routes/gtfs/extended_gtfs.zip";
-
-        //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(new File(pathname)), false);
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_avi-aggregated-gtfs.zip", new FileInputStream(new File(pathname)), false);
         startRoute.requestBody(null);
+
+        updateStatus.assertIsSatisfied();
 
         InputStream mergedIS = inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + exportFileName);
         assertThat(mergedIS).as("Expected transformed gtfs file to have been uploaded").isNotNull();
@@ -86,11 +105,17 @@ public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderI
         List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, "stops.txt")), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
         
-        assertThat(stopLines.get(0)).as("Line without vehicle type should not be changed").endsWith(",");
-        assertThat(stopLines.get(1)).as("Line with valid value 701 should not be changed").endsWith(",701");
+        assertThat(stopLines.get(0)).as("Line without vehicle type should not be changed").endsWith(",,");
+        assertThat(stopLines.get(1)).as("Line with valid value 701 should not be changed").endsWith(",701,");
 
-        assertThat(stopLines.get(2)).as("Line with extended value 1012 should not be changed").endsWith(",1012");
-        assertThat(stopLines.get(3)).as("Line with extended value 1601 should not be changed").endsWith(",1601");
+        assertThat(stopLines.get(2)).as("Line with extended value 1012 should not be changed").endsWith(",1012,");
+        assertThat(stopLines.get(3)).as("Line with extended value 1601 should not be changed").endsWith(",1601,");
+    }
+
+    private File getExtendedGtfsTestFile() throws IOException {
+        Path extendedGTFSFile = Files.createTempFile("extendedGTFSFile", ".zip");
+        Files.copy(Path.of( "src/test/resources/no/rutebanken/marduk/routes/gtfs/extended_gtfs.zip"), extendedGTFSFile, StandardCopyOption.REPLACE_EXISTING);
+        return extendedGTFSFile.toFile();
     }
 
 }

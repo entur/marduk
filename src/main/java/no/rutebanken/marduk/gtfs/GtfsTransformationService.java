@@ -14,10 +14,9 @@
  *
  */
 
-package no.rutebanken.marduk.routes.gtfs;
+package no.rutebanken.marduk.gtfs;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.routes.file.beans.CustomGtfsFileTransformer;
 import no.rutebanken.marduk.routes.google.GoogleRouteTypeCode;
 import org.apache.camel.Header;
 import org.onebusaway.gtfs.model.Route;
@@ -39,7 +38,6 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.InputStream;
 
-import static no.rutebanken.marduk.routes.file.GtfsFileUtils.createEntitiesTransformStrategy;
 
 /**
  * For transforming GTFS files.
@@ -58,15 +56,15 @@ public class GtfsTransformationService {
      * <p>
      * * @param includeShapes whether shape data from input file should be included in transformed output
      */
-    public InputStream transformToGoogleFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes)  {
+    public File transformToGoogleFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes)  {
         long t1 = System.currentTimeMillis();
         boolean removeShapes = !Boolean.TRUE.equals(includeShapes);
 
-        InputStream stream = new GoogleGtfsFileTransformer(removeShapes).transform(inputFile);
+        File transformedGtfsFile = new GoogleGtfsFileTransformer(removeShapes).transform(inputFile);
 
-        logger.debug("Replaced Extended Route Types with google supported values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
+        logger.debug("Replaced Extended Route Types with google supported values in GTFS-file {} - spent {} ms", inputFile.getName(),  (System.currentTimeMillis() - t1));
 
-        return stream;
+        return transformedGtfsFile;
     }
 
     /**
@@ -74,15 +72,15 @@ public class GtfsTransformationService {
      *
      * @param includeShapes whether shape data from input file should be included in transformed output
      */
-    public InputStream transformToBasicGTFSFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) {
+    public File transformToBasicGTFSFormat(File inputFile, @Header(value = Constants.INCLUDE_SHAPES) Boolean includeShapes) {
         long t1 = System.currentTimeMillis();
 
         boolean removeShapes = !Boolean.TRUE.equals(includeShapes);
-        InputStream stream = new BasicGtfsFileTransformer(removeShapes).transform(inputFile);
+        File transformedGtfsFile  = new BasicGtfsFileTransformer(removeShapes).transform(inputFile);
 
-        logger.debug("Replaced Extended Route Types with basic values in GTFS-file - spent {} ms", (System.currentTimeMillis() - t1));
+        logger.debug("Replaced Extended Route Types with basic values in GTFS-file {} - spent {} ms", inputFile.getName(), (System.currentTimeMillis() - t1));
 
-        return stream;
+        return transformedGtfsFile;
     }
 
 
@@ -215,6 +213,12 @@ public class GtfsTransformationService {
             }
 
         }
+    }
+
+    public static EntitiesTransformStrategy createEntitiesTransformStrategy(Class<?> entityClass, EntityTransformStrategy strategy) {
+        EntitiesTransformStrategy transformStrategy = new EntitiesTransformStrategy();
+        transformStrategy.addModification(new TypedEntityMatch(entityClass, new AlwaysMatch()), strategy);
+        return transformStrategy;
     }
 
 }

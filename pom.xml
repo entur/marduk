@@ -37,7 +37,9 @@
         <entur.helpers.version>1.0.11</entur.helpers.version>
         <guava.version>28.1-jre</guava.version>
         <commons-io.version>2.6</commons-io.version>
+        <commons-csv.version>1.5</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
+        <zt-zip.version>1.13</zt-zip.version>
 
         <junit-jupiter.version>5.5.2</junit-jupiter.version>
         <mockito.version>3.1.0</mockito.version>
@@ -73,9 +75,15 @@
     <dependencies>
 
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>${commons-csv.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.zeroturnaround</groupId>
             <artifactId>zt-zip</artifactId>
-            <version>1.13</version>
+            <version>${zt-zip.version}</version>
             <type>jar</type>
         </dependency>
 
