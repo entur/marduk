@@ -26,6 +26,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Merge a collection of GTFS archives into a single zip.
+ * Duplicates in stops.txt and transfers.txt are removed
+ * All other GTFS entries are assumed to not overlap.
+ * Stops duplicates are identiifed by stop/quay id
+ * Transfers duplicates are identified by comparing hashcode of the whole CSV line.
+ */
 public class GtfsFileMerger {
 
     private static final String[] GTFS_FILE_NAMES = new String[]{"agency.txt", "calendar.txt", "calendar_dates.txt", "routes.txt", "shapes.txt", "stops.txt", "stop_times.txt", "trips.txt", "transfers.txt"};
@@ -40,11 +47,20 @@ public class GtfsFileMerger {
     private Set<Integer> transferHashes = new HashSet<>();
 
 
+    /**
+     * @param workingDirectory temporary directory where the GTFS files are merged.
+     * @param gtfsExport       the type of GTFS export.
+     */
     public GtfsFileMerger(Path workingDirectory, GtfsExport gtfsExport) {
         this.workingDirectory = workingDirectory;
         this.targetGtfsHeaders = gtfsExport.getHeaders();
     }
 
+    /**
+     * Merge a GTFS file into the working directory.
+     *
+     * @param gtfsFile
+     */
     public void appendGtfs(File gtfsFile) {
 
         LOGGER.debug("Merging file {}", gtfsFile.getName());
@@ -64,6 +80,13 @@ public class GtfsFileMerger {
         });
     }
 
+    /**
+     * Append stop entries and remove duplicates.
+     *
+     * @param entryStream
+     * @param destinationFile
+     * @param ignoreHeader
+     */
     private void appendStopEntry(InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
              BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
@@ -92,6 +115,13 @@ public class GtfsFileMerger {
         }
     }
 
+    /**
+     * Append transfer entries and remove duplicates.
+     *
+     * @param entryStream
+     * @param destinationFile
+     * @param ignoreHeader
+     */
     private void appendTransferEntry(InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
              BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
@@ -120,6 +150,14 @@ public class GtfsFileMerger {
         }
     }
 
+    /**
+     * Append GTFS entries other than stops and transfers. No duplicate check is performed.
+     *
+     * @param entryName
+     * @param entryStream
+     * @param destinationFile
+     * @param ignoreHeader
+     */
     private void appendEntry(String entryName, InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
              BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
