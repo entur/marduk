@@ -24,7 +24,7 @@ public enum GtfsExport {
             "stops.txt", "stop_id,stop_name,stop_lat,stop_lon,stop_desc,location_type,parent_station,wheelchair_boarding,stop_timezone,vehicle_type,platform_code".split(","),
             "stop_times.txt", "trip_id,stop_id,arrival_time,departure_time,stop_sequence,stop_headsign,pickup_type,drop_off_type,shape_dist_traveled".split(","),
             "transfers.txt", "from_stop_id,from_trip_id,to_stop_id,to_trip_id,transfer_type".split(","),
-            "trips.txt", "route_id,trip_id,service_id,trip_headsign,direction_id,wheelchair_accessible".split(","))),
+            "trips.txt", "route_id,trip_id,service_id,trip_headsign,direction_id,shape_id,wheelchair_accessible".split(","))),
 
     GTFS_GOOGLE(Map.of(
             "agency.txt", "agency_id,agency_name,agency_url,agency_timezone,agency_phone".split(","),
@@ -35,7 +35,7 @@ public enum GtfsExport {
             "stops.txt", "stop_id,stop_name,stop_lat,stop_lon,stop_desc,location_type,parent_station,wheelchair_boarding,vehicle_type,platform_code".split(","),
             "stop_times.txt", "trip_id,stop_id,arrival_time,departure_time,stop_sequence,stop_headsign,pickup_type,drop_off_type,shape_dist_traveled".split(","),
             "transfers.txt", "from_stop_id,from_trip_id,to_stop_id,to_trip_id,transfer_type".split(","),
-            "trips.txt", "route_id,trip_id,service_id,trip_headsign,direction_id,wheelchair_accessible".split(",")));
+            "trips.txt", "route_id,trip_id,service_id,trip_headsign,direction_id,shape_id,wheelchair_accessible".split(",")));
 
     private Map<String, String[]> headers;
 

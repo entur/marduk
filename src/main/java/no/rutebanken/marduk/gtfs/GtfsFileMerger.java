@@ -43,12 +43,12 @@ public class GtfsFileMerger {
     private Path workingDirectory;
     private Map<String,String[]> targetGtfsHeaders;
 
-    private Set<String> stopIds = new HashSet<>();
-    private Set<Integer> transferHashes = new HashSet<>();
+    private Set<String> stopIds = new HashSet<>(150000);
+    private Set<Integer> transferHashes = new HashSet<>(15000);
 
 
     /**
-     * @param workingDirectory temporary directory inwhich the GTFS files are merged.
+     * @param workingDirectory temporary directory in which the GTFS files are merged.
      * @param gtfsExport       the type of GTFS export.
      */
     public GtfsFileMerger(Path workingDirectory, GtfsExport gtfsExport) {
