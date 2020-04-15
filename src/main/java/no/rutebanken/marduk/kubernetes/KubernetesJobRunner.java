@@ -75,8 +75,11 @@ public class KubernetesJobRunner {
                     }
                     if (pod.getStatus().getPhase().equals("Failed")) {
                         podFailureCounter++;
-                        if (podFailureCounter > backoffLimit) {
+                        if (podFailureCounter >= backoffLimit) {
+                            LOGGER.error("The Graph Builder job {} failed after {} retries, exceeding the backoff limit. Giving up.", jobName, podFailureCounter);
                             watchLatch.countDown();
+                        } else {
+                            LOGGER.warn("The Graph Builder job {} failed, retrying {}/{}", jobName, podFailureCounter, backoffLimit);
                         }
                     }
                 }
