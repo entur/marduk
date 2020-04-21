@@ -44,7 +44,7 @@ public class GtfsFileMerger {
     private Map<String,String[]> targetGtfsHeaders;
 
     private Set<String> stopIds = new HashSet<>(150000);
-    private Set<Integer> transferHashes = new HashSet<>(15000);
+    private Set<List<String>> transfers = new HashSet<>(15000);
 
 
     /**
@@ -138,9 +138,8 @@ public class GtfsFileMerger {
 
             for (CSVRecord csvRecord : csvParser) {
                 List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).collect(Collectors.toList());
-                int transferHash = targetValues.hashCode();
-                if (!transferHashes.contains(transferHash)) {
-                    transferHashes.add(transferHash);
+                if (!transfers.contains(targetValues)) {
+                    transfers.add(targetValues);
                     csvPrinter.printRecord(targetValues);
                 }
             }
