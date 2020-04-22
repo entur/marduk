@@ -19,6 +19,7 @@ package no.rutebanken.marduk.gtfs;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.file.TempFileUtils;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.FileSystemUtils;
@@ -58,19 +59,18 @@ public class GtfsFileUtils {
      */
     public static InputStream mergeGtfsFilesInDirectory(String sourceDirectory, GtfsExport gtfsExport) {
 
-        try (Stream<Path> walk = Files.walk(Paths.get(sourceDirectory))) {
+        Collection<File> zipFiles = FileUtils.listFiles(new File(sourceDirectory), new String[]{"zip"}, false);
 
-            List<File> zipfilesInDirectory = walk.filter(Files::isRegularFile)
-                    .filter(p -> p.endsWith(".zip"))
-                    .sorted(Comparator.naturalOrder())
-                    .map(Path::toFile)
-                    .collect(Collectors.toList());
+        List<File> sortedZipFiles = zipFiles.stream()
+                .sorted(Comparator.comparing(File::getName))
+                .collect(Collectors.toList());
 
-            return TempFileUtils.createDeleteOnCloseInputStream(mergeGtfsFiles(zipfilesInDirectory, gtfsExport));
-
+        try {
+            return TempFileUtils.createDeleteOnCloseInputStream(mergeGtfsFiles(sortedZipFiles, gtfsExport));
         } catch (IOException e) {
             throw new MardukException(e);
         }
+
     }
 
     /**
