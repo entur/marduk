@@ -52,13 +52,14 @@ public class GtfsFileUtils {
      * Merge all GTFS files in a given directory.
      * Files are merged in alphabetical order.
      *
-     * @param sourceDirectory the directory containing the GTFS archives
-     * @param gtfsExport      the type of GTFS export
+     * @param sourceDirectory the directory containing the GTFS archives.
+     * @param gtfsExport      the type of GTFS export.
      * @return a delete-on-close input stream refering to the resulting merged GTFS archive.
      */
     public static InputStream mergeGtfsFilesInDirectory(String sourceDirectory, GtfsExport gtfsExport) {
 
         try (Stream<Path> walk = Files.walk(Paths.get(sourceDirectory))) {
+
             List<File> zipfilesInDirectory = walk.filter(Files::isRegularFile)
                     .filter(p -> p.endsWith(".zip"))
                     .sorted(Comparator.naturalOrder())
@@ -70,17 +71,14 @@ public class GtfsFileUtils {
         } catch (IOException e) {
             throw new MardukException(e);
         }
-
-
     }
 
     /**
-     * merge a collection of GTFS file entries, add the feed_info.txt entry and return the zipped content of
-     * the working directory
+     * Merge a collection of GTFS file entries, add the feed_info.txt entry and return the merged GTFS file.
      *
-     * @param zipFiles   GTFS archives to be merged
-     * @param gtfsExport the type of export
-     * @return a zip file containing the merged GTFS data
+     * @param zipFiles   GTFS archives to be merged.
+     * @param gtfsExport the type of export.
+     * @return a zip file containing the merged GTFS data.
      * @throws IOException
      */
     static File mergeGtfsFiles(Collection<File> zipFiles, GtfsExport gtfsExport) throws IOException {
