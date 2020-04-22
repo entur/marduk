@@ -41,7 +41,7 @@ public class GtfsFileMerger {
     private static Logger LOGGER = LoggerFactory.getLogger(GtfsFileMerger.class);
 
     private Path workingDirectory;
-    private Map<String,String[]> targetGtfsHeaders;
+    private Map<String, String[]> targetGtfsHeaders;
 
     private Set<String> stopIds = new HashSet<>(150000);
     private Set<List<String>> transfers = new HashSet<>(15000);
@@ -83,9 +83,9 @@ public class GtfsFileMerger {
     /**
      * Append stop entries and remove duplicates.
      *
-     * @param entryStream the GTFS file entry inside the GTFS archive.
+     * @param entryStream     the GTFS file entry inside the GTFS archive.
      * @param destinationFile the temporary file where GTFS lines are merged.
-     * @param ignoreHeader ignore headers. Headers are created only when the destination file is first created.
+     * @param ignoreHeader    ignore headers. Headers are created only when the destination file is first created.
      */
     private void appendStopEntry(InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
@@ -107,6 +107,8 @@ public class GtfsFileMerger {
                     stopIds.add(stopId);
                     List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).collect(Collectors.toList());
                     csvPrinter.printRecord(targetValues);
+                } else {
+                    LOGGER.trace("Ignored duplicated stop: {}", stopId);
                 }
             }
             csvPrinter.flush();
@@ -118,9 +120,9 @@ public class GtfsFileMerger {
     /**
      * Append transfer entries and remove duplicates.
      *
-     * @param entryStream the GTFS file entry inside the GTFS archive.
+     * @param entryStream     the GTFS file entry inside the GTFS archive.
      * @param destinationFile the temporary file where GTFS lines are merged.
-     * @param ignoreHeader ignore headers. Headers are created only when the destination file is first created.
+     * @param ignoreHeader    ignore headers. Headers are created only when the destination file is first created.
      */
     private void appendTransferEntry(InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
@@ -141,6 +143,8 @@ public class GtfsFileMerger {
                 if (!transfers.contains(targetValues)) {
                     transfers.add(targetValues);
                     csvPrinter.printRecord(targetValues);
+                } else {
+                    LOGGER.trace("Ignored duplicated transfer: {}", targetValues);
                 }
             }
             csvPrinter.flush();
@@ -152,10 +156,10 @@ public class GtfsFileMerger {
     /**
      * Append GTFS entries other than stops and transfers. No duplicate check is performed.
      *
-     * @param entryName the GTFS file entry name inside the GTFS archive.
-     * @param entryStream the GTFS file entry inside the GTFS archive.
+     * @param entryName       the GTFS file entry name inside the GTFS archive.
+     * @param entryStream     the GTFS file entry inside the GTFS archive.
      * @param destinationFile the temporary file where GTFS lines are merged.
-     * @param ignoreHeader ignore headers. Headers are created only when the destination file is first created.
+     * @param ignoreHeader    ignore headers. Headers are created only when the destination file is first created.
      */
     private void appendEntry(String entryName, InputStream entryStream, Path destinationFile, boolean ignoreHeader) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
@@ -184,12 +188,13 @@ public class GtfsFileMerger {
     /**
      * Convert default values. null values are inserted as empty string, as well as some default 0 values that are
      * converted into empty string for compatibility with the original merge algorithm.
+     *
      * @param csvRecord
      * @param header
      * @return
      */
     private String convertValue(CSVRecord csvRecord, String header) {
-        if(!csvRecord.isSet(header)) {
+        if (!csvRecord.isSet(header)) {
             return "";
         }
         String value = csvRecord.get(header);
