@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.gtfs;
 
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.routes.google.GoogleRouteTypeCode;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
@@ -21,10 +22,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static no.rutebanken.marduk.gtfs.GtfsExport.GTFS_EXTENDED;
+import static no.rutebanken.marduk.gtfs.GtfsExport.GTFS_GOOGLE;
 
 /**
  * Merge a collection of GTFS archives into a single zip.
@@ -37,11 +40,11 @@ public class GtfsFileMerger {
 
     private static final String[] GTFS_FILE_NAMES = new String[]{"agency.txt", "calendar.txt", "calendar_dates.txt", "routes.txt", "shapes.txt", "stops.txt", "stop_times.txt", "trips.txt", "transfers.txt"};
 
-
     private static Logger LOGGER = LoggerFactory.getLogger(GtfsFileMerger.class);
 
     private Path workingDirectory;
-    private Map<String, String[]> targetGtfsHeaders;
+    private GtfsExport gtfsExport;
+    private boolean removeShape;
 
     private Set<String> stopIds = new HashSet<>(150000);
     private Set<List<String>> transfers = new HashSet<>(15000);
@@ -51,9 +54,10 @@ public class GtfsFileMerger {
      * @param workingDirectory temporary directory in which the GTFS files are merged.
      * @param gtfsExport       the type of GTFS export.
      */
-    public GtfsFileMerger(Path workingDirectory, GtfsExport gtfsExport) {
+    public GtfsFileMerger(Path workingDirectory, GtfsExport gtfsExport, boolean removeShape) {
         this.workingDirectory = workingDirectory;
-        this.targetGtfsHeaders = gtfsExport.getHeaders();
+        this.gtfsExport = gtfsExport;
+        this.removeShape = removeShape;
     }
 
     /**
@@ -74,6 +78,8 @@ public class GtfsFileMerger {
                 appendStopEntry(entryStream, destinationFile, ignoreHeader);
             } else if ("transfers.txt".equals(entryName)) {
                 appendTransferEntry(entryStream, destinationFile, ignoreHeader);
+            } else if ("shape.txt".equals(entryName) && removeShape) {
+                LOGGER.trace("Ignoring shape data in GTFS file {}", gtfsFile.getName());
             } else {
                 appendEntry(entryName, entryStream, destinationFile, ignoreHeader);
             }
@@ -198,6 +204,9 @@ public class GtfsFileMerger {
             return "";
         }
         String value = csvRecord.get(header);
+        if (value.isEmpty()) {
+            return "";
+        }
         if ("wheelchair_accessible".equals(header) && "0".equals(value)) {
             return "";
         }
@@ -210,12 +219,34 @@ public class GtfsFileMerger {
         if ("pickup_type".equals(header) && "0".equals(value)) {
             return "";
         }
+        if ("route_type".equals(header) || "vehicle_type".equals(header)) {
+            if (gtfsExport == GTFS_EXTENDED) {
+                return value;
+            }
+            int routeTypeCode = 0;
+            try {
+                routeTypeCode = Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Invalid route type {}", value);
+                return value;
+            }
+            if (gtfsExport == GTFS_GOOGLE) {
+                return Integer.toString(GoogleRouteTypeCode.toGoogleSupportedRouteTypeCode(routeTypeCode));
+            } else {
+                return Integer.toString(BasicRouteTypeCode.convertRouteType(routeTypeCode));
+            }
+        }
+
+        if ("shape_id".equals(header) && removeShape) {
+            return "";
+        }
+
 
         return value;
     }
 
     private String[] getTargetHeaders(String entryName) {
-        return targetGtfsHeaders.get(entryName);
+        return gtfsExport.getHeaders().get(entryName);
     }
 
 }

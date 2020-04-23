@@ -43,7 +43,7 @@ public class GtfsFileUtilsTest {
     public void mergeGtfsFiles_identicalFilesShouldYieldMergedFileIdenticalToOrg() throws Exception {
 
         File input1 = new File(GTFS_FILE_1);
-        File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(input1, input1), GtfsExport.GTFS_EXTENDED);
+        File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(input1, input1), GtfsExport.GTFS_EXTENDED, false);
 
         // Should assert content, but no exceptions must do for now
         // assertTrue(FileUtils.sizeOf(merged) <= FileUtils.sizeOf(input1));
@@ -56,7 +56,7 @@ public class GtfsFileUtilsTest {
 
         File input1 = new File(GTFS_FILE_1);
         File input2 = new File(GTFS_FILE_2);
-        File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(input1, input2), GtfsExport.GTFS_EXTENDED);
+        File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(input1, input2), GtfsExport.GTFS_EXTENDED, false);
 
         byte[] data = Files.readAllBytes(merged.toPath());
         assertTrue(data.length >= FileUtils.sizeOf(input1));
@@ -67,7 +67,7 @@ public class GtfsFileUtilsTest {
 
     @Test
     public void mergeWithTransfers() throws Exception {
-        File mergedZip = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(new File(GTFS_FILE_1), new File(GTFS_FILE_1)), GtfsExport.GTFS_EXTENDED);
+        File mergedZip = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(new File(GTFS_FILE_1), new File(GTFS_FILE_1)), GtfsExport.GTFS_EXTENDED, false);
 
         List<String> transferLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(mergedZip, "transfers.txt")), StandardCharsets.UTF_8);
         assertThat(transferLines.size()).as("Expected file two duplicates and one other transfer to be merged to two (+ header)").isEqualTo(3);

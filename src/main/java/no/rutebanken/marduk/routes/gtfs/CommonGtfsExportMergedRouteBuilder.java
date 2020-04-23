@@ -114,6 +114,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                         {
                             String sourceDirectory = exchange.getIn().getHeader(FILE_PARENT, String.class) + "/org";
                             String jobAction = exchange.getIn().getHeader(Constants.JOB_ACTION, String.class);
+                            boolean removeShape=   ! exchange.getIn().getHeader(Constants.INCLUDE_SHAPES, false, Boolean.class);
                             GtfsExport gtfsExport = null;
                             if ("EXPORT_GTFS_MERGED".equals(jobAction)) {
                                 gtfsExport = GtfsExport.GTFS_EXTENDED;
@@ -125,7 +126,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                                 gtfsExport = GtfsExport.GTFS_GOOGLE;
                             }
 
-                            exchange.getIn().setBody(GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, gtfsExport));
+                            exchange.getIn().setBody(GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, gtfsExport, removeShape));
                         }
                 )
                 .routeId("gtfs-export-merge");

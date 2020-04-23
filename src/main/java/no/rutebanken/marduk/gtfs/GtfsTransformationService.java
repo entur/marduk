@@ -161,49 +161,14 @@ public class GtfsTransformationService {
         public void run(TransformContext context, GtfsMutableRelationalDao dao, Object entity) {
             if (entity instanceof Route) {
                 Route route = (Route) entity;
-                route.setType(convertRouteType(route.getType()));
+                route.setType(BasicRouteTypeCode.convertRouteType(route.getType()));
             } else if (entity instanceof Stop) {
                 Stop stop = (Stop) entity;
-                stop.setVehicleType(convertRouteType(stop.getVehicleType()));
+                stop.setVehicleType(BasicRouteTypeCode.convertRouteType(stop.getVehicleType()));
             }
         }
 
-        private int convertRouteType(int extendedType) {
-            if (extendedType < 0) {
-                return extendedType; // Probably not set
-            }
-            if (extendedType >= 0 && extendedType <= 7) {
-                return extendedType; // Is actually basic type
-            }
-            if (extendedType >= 100 && extendedType < 200) { // Railway Service
-                return BasicRouteTypeCode.RAIL.getCode();
-            } else if (extendedType >= 200 && extendedType < 300) { //Coach Service
-                return BasicRouteTypeCode.BUS.getCode();
-            } else if (extendedType >= 300
-                               && extendedType < 500) { //Suburban Railway Service and Urban Railway service
-                if (extendedType >= 401 && extendedType <= 402) {
-                    return BasicRouteTypeCode.SUBWAY.getCode();
-                }
-                return BasicRouteTypeCode.RAIL.getCode();
-            } else if (extendedType >= 500 && extendedType < 700) {
-                return BasicRouteTypeCode.SUBWAY.getCode();
-            } else if (extendedType >= 700 && extendedType < 900) {
-                return BasicRouteTypeCode.BUS.getCode();
-            } else if (extendedType >= 900 && extendedType < 1000) {
-                return BasicRouteTypeCode.TRAM.getCode();
-            } else if (extendedType >= 1000 && extendedType < 1100) {
-                return BasicRouteTypeCode.FERRY.getCode();
-            } else if (extendedType >= 1200 && extendedType < 1300) {
-                return BasicRouteTypeCode.FERRY.getCode();
-            } else if (extendedType >= 1300 && extendedType < 1400) {
-                return BasicRouteTypeCode.GONDOLA.getCode();
-            } else if (extendedType >= 1400 && extendedType < 1500) {
-                return BasicRouteTypeCode.FUNICULAR.getCode();
-            }
 
-            logger.warn("Attempted to map unsupported extend route type to basic GTFS route type: {}. Using BUS as default. ", extendedType);
-            return BasicRouteTypeCode.BUS.getCode();
-        }
 
         private static class RemoveShapeTransformer implements GtfsTransformStrategy {
 
