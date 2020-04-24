@@ -14,7 +14,7 @@
  *
  */
 
-package no.rutebanken.marduk.routes.google;
+package no.rutebanken.marduk.gtfs;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

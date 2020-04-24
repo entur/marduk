@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.gtfs;
 
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
-import no.rutebanken.marduk.routes.google.GoogleRouteTypeCode;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 

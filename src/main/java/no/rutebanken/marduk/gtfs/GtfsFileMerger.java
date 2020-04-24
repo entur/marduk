@@ -1,7 +1,6 @@
 package no.rutebanken.marduk.gtfs;
 
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.routes.google.GoogleRouteTypeCode;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
@@ -34,7 +33,7 @@ import static no.rutebanken.marduk.gtfs.GtfsExport.GTFS_GOOGLE;
  * Duplicates in stops.txt and transfers.txt are removed.
  * All other GTFS entries are assumed to not overlap.
  * Stops duplicates are identified by stop/quay id.
- * Transfers duplicates are identified by comparing hashcode of the whole CSV line.
+ * Transfers duplicates are identified by string-equality on the whole CSV line.
  */
 public class GtfsFileMerger {
 
@@ -240,7 +239,6 @@ public class GtfsFileMerger {
         if ("shape_id".equals(header) && ! includeShapes) {
             return "";
         }
-
 
         return value;
     }

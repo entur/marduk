@@ -29,8 +29,8 @@ auth0:
   administratorAccessEnabled: false
 
 resources:
-  cpuLimit: "5"
-  memLimit: 22000Mi
-  cpuRequest: "3"
-  memRequest: 20000Mi
-  xmx: 18g
+  cpuLimit: "3"
+  memLimit: 9000Mi
+  cpuRequest: "1"
+  memRequest: 7000Mi
+  xmx: 5g

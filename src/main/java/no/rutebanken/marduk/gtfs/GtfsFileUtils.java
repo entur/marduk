@@ -53,7 +53,7 @@ public class GtfsFileUtils {
      *
      * @param sourceDirectory the directory containing the GTFS archives.
      * @param gtfsExport      the type of GTFS export.
-     * @return a delete-on-close input stream refering to the resulting merged GTFS archive.
+     * @return a delete-on-close input stream referring to the resulting merged GTFS archive.
      */
     public static InputStream mergeGtfsFilesInDirectory(String sourceDirectory, GtfsExport gtfsExport,  boolean includeShapes) {
 
@@ -72,7 +72,7 @@ public class GtfsFileUtils {
     }
 
     /**
-     * Merge a collection of GTFS file entries, add the feed_info.txt entry and return the merged GTFS file.
+     * Merge a collection of GTFS files, add the feed_info.txt entry and return the merged GTFS file.
      *
      * @param zipFiles   GTFS archives to be merged.
      * @param gtfsExport the type of export.
