@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.camel.Exchange.FILE_PARENT;
-
 /**
  * Route creating a merged GTFS basic file for all providers and uploading it to GCS.
  * <p>

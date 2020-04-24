@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class GtfsTransformationServiceTest {
+public class GtfsFileUtilsTransformationTest {
 
     private File getExtendedGtfsTestFile() throws IOException {
         Path extendedGTFSFile = Files.createTempFile("extendedGTFSFile", ".zip");

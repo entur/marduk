@@ -30,8 +30,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.camel.Exchange.FILE_PARENT;
-
 /**
  * Route preparing and uploading GTFS export to google.
  * <p>

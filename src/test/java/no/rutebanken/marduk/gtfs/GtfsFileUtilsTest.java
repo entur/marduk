@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.gtfs;
 
 import no.rutebanken.marduk.gtfs.GtfsFileUtils;
-import no.rutebanken.marduk.routes.file.TempFileUtils;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -25,7 +24,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
