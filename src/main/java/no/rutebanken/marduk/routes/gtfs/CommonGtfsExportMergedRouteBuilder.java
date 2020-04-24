@@ -114,19 +114,18 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                         {
                             String sourceDirectory = exchange.getIn().getHeader(FILE_PARENT, String.class) + "/org";
                             String jobAction = exchange.getIn().getHeader(Constants.JOB_ACTION, String.class);
-                            boolean removeShape=   ! exchange.getIn().getHeader(Constants.INCLUDE_SHAPES, false, Boolean.class);
+                            boolean includeShapes= true;
                             GtfsExport gtfsExport = null;
                             if ("EXPORT_GTFS_MERGED".equals(jobAction)) {
                                 gtfsExport = GtfsExport.GTFS_EXTENDED;
                             } else if ("EXPORT_GTFS_BASIC_MERGED".equals(jobAction)) {
+                                includeShapes =  exchange.getIn().getHeader(Constants.INCLUDE_SHAPES, Boolean.class);
                                 gtfsExport = GtfsExport.GTFS_BASIC;
-                            } else if ("EXPORT_GOOGLE_GTFS".equals(jobAction)) {
-                                gtfsExport = GtfsExport.GTFS_GOOGLE;
-                            } else if ("EXPORT_GOOGLE_GTFS_QA".equals(jobAction)) {
+                            } else if ("EXPORT_GOOGLE_GTFS".equals(jobAction) || "EXPORT_GOOGLE_GTFS_QA".equals(jobAction)) {
+                                includeShapes =  exchange.getIn().getHeader(Constants.INCLUDE_SHAPES, Boolean.class);
                                 gtfsExport = GtfsExport.GTFS_GOOGLE;
                             }
-
-                            exchange.getIn().setBody(GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, gtfsExport, removeShape));
+                            exchange.getIn().setBody(GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, gtfsExport, includeShapes));
                         }
                 )
                 .routeId("gtfs-export-merge");

@@ -44,7 +44,7 @@ public class GtfsFileMerger {
 
     private Path workingDirectory;
     private GtfsExport gtfsExport;
-    private boolean removeShape;
+    private boolean includeShapes;
 
     private Set<String> stopIds = new HashSet<>(150000);
     private Set<List<String>> transfers = new HashSet<>(15000);
@@ -54,10 +54,10 @@ public class GtfsFileMerger {
      * @param workingDirectory temporary directory in which the GTFS files are merged.
      * @param gtfsExport       the type of GTFS export.
      */
-    public GtfsFileMerger(Path workingDirectory, GtfsExport gtfsExport, boolean removeShape) {
+    public GtfsFileMerger(Path workingDirectory, GtfsExport gtfsExport, boolean includeShapes) {
         this.workingDirectory = workingDirectory;
         this.gtfsExport = gtfsExport;
-        this.removeShape = removeShape;
+        this.includeShapes = includeShapes;
     }
 
     /**
@@ -78,8 +78,8 @@ public class GtfsFileMerger {
                 appendStopEntry(entryStream, destinationFile, ignoreHeader);
             } else if ("transfers.txt".equals(entryName)) {
                 appendTransferEntry(entryStream, destinationFile, ignoreHeader);
-            } else if ("shape.txt".equals(entryName) && removeShape) {
-                LOGGER.trace("Ignoring shape data in GTFS file {}", gtfsFile.getName());
+            } else if ("shapes.txt".equals(entryName) && ! includeShapes) {
+                LOGGER.trace("Ignoring shapes data in GTFS file {}", gtfsFile.getName());
             } else {
                 appendEntry(entryName, entryStream, destinationFile, ignoreHeader);
             }
@@ -237,7 +237,7 @@ public class GtfsFileMerger {
             }
         }
 
-        if ("shape_id".equals(header) && removeShape) {
+        if ("shape_id".equals(header) && ! includeShapes) {
             return "";
         }
 

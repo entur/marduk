@@ -57,7 +57,7 @@ public class GtfsFileUtils {
      * @param gtfsExport      the type of GTFS export.
      * @return a delete-on-close input stream refering to the resulting merged GTFS archive.
      */
-    public static InputStream mergeGtfsFilesInDirectory(String sourceDirectory, GtfsExport gtfsExport,  boolean removeShape) {
+    public static InputStream mergeGtfsFilesInDirectory(String sourceDirectory, GtfsExport gtfsExport,  boolean includeShapes) {
 
         Collection<File> zipFiles = FileUtils.listFiles(new File(sourceDirectory), new String[]{"zip"}, false);
 
@@ -66,7 +66,7 @@ public class GtfsFileUtils {
                 .collect(Collectors.toList());
 
         try {
-            return TempFileUtils.createDeleteOnCloseInputStream(mergeGtfsFiles(sortedZipFiles, gtfsExport, removeShape));
+            return TempFileUtils.createDeleteOnCloseInputStream(mergeGtfsFiles(sortedZipFiles, gtfsExport, includeShapes));
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -81,14 +81,14 @@ public class GtfsFileUtils {
      * @return a zip file containing the merged GTFS data.
      * @throws IOException
      */
-    static File mergeGtfsFiles(Collection<File> zipFiles, GtfsExport gtfsExport, boolean removeShape) throws IOException {
+    static File mergeGtfsFiles(Collection<File> zipFiles, GtfsExport gtfsExport, boolean includeShapes) throws IOException {
 
         long t1 = System.currentTimeMillis();
         logger.debug("Merging GTFS files for export {}", gtfsExport);
 
         Path workingDirectory = Files.createTempDirectory("marduk-merge-gtfs");
         try {
-            GtfsFileMerger gtfsFileMerger = new GtfsFileMerger(workingDirectory, gtfsExport, removeShape);
+            GtfsFileMerger gtfsFileMerger = new GtfsFileMerger(workingDirectory, gtfsExport, includeShapes);
             zipFiles.forEach(zipFile -> gtfsFileMerger.appendGtfs(zipFile));
             Files.write(workingDirectory.resolve(FEED_INFO_FILE_NAME), FEED_INFO_FILE_CONTENT);
             File mergedFile = Files.createTempFile("marduk-merge-gtfs-merged", ".zip").toFile();
