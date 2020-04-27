@@ -83,7 +83,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 graph building in remote directory ${property." + OTP_GRAPH_DIR + "}.")
 
-                .to("direct:exportMergedNetex")
+                .to("direct:otp2ExportMergedNetex")
 
                 .to("direct:remoteBuildOtp2NetexGraphAndSendStatus")
                 .to("direct:remoteOtp2GraphPublishing")
