@@ -69,7 +69,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
-        singletonFrom("entur-google-pubsub:Otp2GraphBuildQueue?ackMode=NONE").autoStartup("{{otp.graph.build.autoStartup:true}}")
+        singletonFrom("entur-google-pubsub:Otp2GraphBuildQueue?ackMode=NONE").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
