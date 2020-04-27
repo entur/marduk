@@ -14,7 +14,7 @@
  *
  */
 
-package no.rutebanken.marduk.routes.netex;
+package no.rutebanken.marduk.routes.otp.otp1;
 
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
