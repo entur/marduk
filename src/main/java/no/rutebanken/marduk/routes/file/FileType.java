@@ -18,7 +18,6 @@ package no.rutebanken.marduk.routes.file;
 
 public enum FileType {
     NOT_A_ZIP_FILE,
-    INVALID_ZIP_ENTRY_NAME,
     INVALID_FILE_NAME,
     GTFS,
     ZIP_WITH_SINGLE_FOLDER,

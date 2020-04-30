@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.file;
 
+import no.rutebanken.marduk.exceptions.MardukException;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,10 +49,10 @@ public class ZipFileUtils {
     }
 
         public static Set<String> listFilesInZip(File file) {
-        try (ZipFile zipFile = new ZipFile(file, StandardCharsets.ISO_8859_1)) {
+        try (ZipFile zipFile = new ZipFile(file)) {
             return zipFile.stream().filter(ze -> !ze.isDirectory()).map(ze -> ze.getName()).collect(Collectors.toSet());
         } catch (IOException e) {
-            return Collections.emptySet();
+            throw new MardukException(e);
         }
     }
 
