@@ -113,8 +113,6 @@ public class FileTypeClassifierBeanTest {
         assertFileType("sof-20170904121616-2907_20170904_Buss_og_ekspressbåt_til_rutesøk_19.06.2017-28.02.2018 (1).zip", data, NETEXPROFILE);
     }
 
-
-
     @Test
     public void nonXMLFilePatternShouldMatchOtherFileTypes() {
         assertTrue("test.log".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
@@ -129,8 +127,6 @@ public class FileTypeClassifierBeanTest {
         assertFalse("test.XML".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
         assertFalse("test.test.xml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
     }
-
-
 
     private void assertFileType(String fileName, FileType expectedFileType) throws IOException {
         byte[] data = IOUtils.toByteArray(this.getClass().getResourceAsStream(fileName));

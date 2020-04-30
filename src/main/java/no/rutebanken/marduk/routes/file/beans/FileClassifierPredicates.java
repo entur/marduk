@@ -122,7 +122,7 @@ public class FileClassifierPredicates {
 
     /**
      * Retrieve the next entry in the ZIP file.
-     * MalformedInputException occurring as a result of an encoding mismatch are wrapped into
+     * MalformedInputExceptions occurring as a result of an encoding mismatch are wrapped into
      * a {@link MardukZipFileEntryNameEncodingException}
      * @param stream the zip file as a stream
      * @return the next entry in the zip file.
