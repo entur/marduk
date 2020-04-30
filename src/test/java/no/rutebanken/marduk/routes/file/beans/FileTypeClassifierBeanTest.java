@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.routes.file.beans;
 
-import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.IOUtils;
@@ -75,10 +74,29 @@ public class FileTypeClassifierBeanTest {
     }
 
     @Test
-    public void classifyNetexWithTwoFilesOneInvalid() {
-    	assertThrows(FileValidationException.class, () ->
-        	assertFileType("netex_with_two_files_one_invalid.zip", NETEXPROFILE)
-        );
+    public void classifyNetexWithTwoFilesOneInvalid() throws IOException {
+    	assertFileType("netex_with_two_files_one_invalid.zip", UNKNOWN_FILE_TYPE);
+
+    }
+
+    @Test
+    public void classifyNotAZipFile() throws IOException {
+        assertFileType("not_a_zip_file.zip", NOT_A_ZIP_FILE);
+    }
+
+    @Test
+    public void classifyInvalidEncodingInZipEntryName() throws IOException {
+        assertFileType("zip_file_with_invalid_encoding_in_entry_name.zip", INVALID_ZIP_FILE_ENTRY_NAME_ENCODING);
+    }
+
+    @Test
+    public void classifyInvalidXMLEncodingInZipFileEntry() throws IOException {
+        assertFileType("zip_file_with_invalid_xml_encoding.zip", INVALID_ZIP_FILE_ENTRY_CONTENT_ENCODING);
+    }
+
+    @Test
+    public void classifyUnknownFileType() throws IOException {
+        assertFileType("unknown_file_type.zip", UNKNOWN_FILE_TYPE);
     }
 
     @Test
@@ -95,6 +113,8 @@ public class FileTypeClassifierBeanTest {
         assertFileType("sof-20170904121616-2907_20170904_Buss_og_ekspressbåt_til_rutesøk_19.06.2017-28.02.2018 (1).zip", data, NETEXPROFILE);
     }
 
+
+
     @Test
     public void nonXMLFilePatternShouldMatchOtherFileTypes() {
         assertTrue("test.log".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
@@ -109,6 +129,8 @@ public class FileTypeClassifierBeanTest {
         assertFalse("test.XML".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
         assertFalse("test.test.xml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
     }
+
+
 
     private void assertFileType(String fileName, FileType expectedFileType) throws IOException {
         byte[] data = IOUtils.toByteArray(this.getClass().getResourceAsStream(fileName));

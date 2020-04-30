@@ -18,6 +18,9 @@ package no.rutebanken.marduk.routes.file.beans;
 
 import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentEncodingException;
+import no.rutebanken.marduk.exceptions.MardukZipFileEntryNameEncodingException;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StreamUtils;
@@ -27,8 +30,10 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import java.io.CharConversionException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.MalformedInputException;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
@@ -67,7 +72,12 @@ public class FileClassifierPredicates {
                 }
             }
         } catch (XMLStreamException e) {
-            throw new MardukException(e);
+            Throwable rootCause = ExceptionUtils.getRootCause(e);
+            if(rootCause instanceof CharConversionException) {
+                throw new MardukZipFileEntryContentEncodingException(e);
+            } else {
+                throw new MardukException(e);
+            }
         } finally {
             try {
                 streamReader.close();
@@ -81,7 +91,7 @@ public class FileClassifierPredicates {
     public static boolean validateZipContent(InputStream inputStream, Predicate<InputStream> predicate) {
         try (ZipInputStream stream = new ZipInputStream(inputStream)) {
             ZipEntry entry;
-            while ( ( entry = stream.getNextEntry()) != null && !entry.isDirectory()) {
+            while ( ( entry = getNextEntry(stream)) != null && !entry.isDirectory()) {
                 if (testPredicate(predicate, stream, entry)) return false;
             }
             return true;
@@ -91,19 +101,44 @@ public class FileClassifierPredicates {
     }
 
 
-    public static boolean validateZipContent(InputStream inputStream, Predicate<InputStream> predicate, String skipFileRegex) {
+    public static boolean validateZipContent(InputStream inputStream, Predicate<InputStream> predicate, String skipFileRegex) throws MalformedInputException {
         try (ZipInputStream stream = new ZipInputStream(inputStream)) {
             ZipEntry entry;
-            while ( ( entry = stream.getNextEntry()) != null) {
+            while ((entry = getNextEntry(stream)) != null) {
                 if (!entry.getName().matches(skipFileRegex)) {
-                    if (testPredicate(predicate, stream, entry)) return false;
+                    if (testPredicate(predicate, stream, entry)) {
+                        return false;
+                    }
                 } else {
                     logger.info("Skipped file with name {}", entry.getName());
                 }
             }
             return true;
+
         } catch (IOException e) {
             throw new MardukException(e);
+        }
+    }
+
+    /**
+     * Retrieve the next entry in the ZIP file.
+     * MalformedInputException occurring as a result of an encoding mismatch are wrapped into
+     * a {@link MardukZipFileEntryNameEncodingException}
+     * @param stream the zip file as a stream
+     * @return the next entry in the zip file.
+     * @throws IOException
+     * @throws MardukZipFileEntryNameEncodingException if the zip entry encoding does not match the default encoding (UTF-8)
+     */
+    private static ZipEntry getNextEntry(ZipInputStream stream) throws IOException {
+        try {
+            return stream.getNextEntry();
+        } catch (IllegalArgumentException e) {
+            Throwable rootCause = ExceptionUtils.getRootCause(e);
+            if (rootCause instanceof MalformedInputException) {
+                throw new MardukZipFileEntryNameEncodingException(e);
+            } else {
+                throw new MardukException(e);
+            }
         }
     }
 
@@ -114,7 +149,10 @@ public class FileClassifierPredicates {
 			    logger.info(s);
 			    return true;
 			}
-		} catch (Exception e) {
+		} catch(MardukZipFileEntryContentEncodingException e) {
+    	    throw new MardukZipFileEntryContentEncodingException("Exception while trying to classify file "+entry.getName()+" in zip file", e);
+        }
+    	catch (Exception e) {
 			throw new MardukException("Exception while trying to classify file "+entry.getName()+" in zip file", e);
 		}
         return false;

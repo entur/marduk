@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
@@ -104,7 +105,8 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
 
                 .endChoice()
                 .when(simple("${header.action_report_result} == 'NOK'"))
-                .log(LoggingLevel.WARN, correlation() + "Netex export failed")
+                .process( e -> e.getIn().setHeader(Constants.CHOUETTE_JOB_FAILURE_CODE, e.getIn().getBody(ActionReportWrapper.class).actionReport.failure.code))
+                .log(LoggingLevel.WARN, correlation() + "Netex export failed with Chouette failure code ${header." + Constants.CHOUETTE_JOB_FAILURE_CODE + "}")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.FAILED).build())
                 .otherwise()
                 .log(LoggingLevel.ERROR, correlation() + "Something went wrong on Netex export")

@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -47,7 +48,7 @@ public class ZipFileUtils {
     }
 
         public static Set<String> listFilesInZip(File file) {
-        try (ZipFile zipFile = new ZipFile(file)) {
+        try (ZipFile zipFile = new ZipFile(file, StandardCharsets.ISO_8859_1)) {
             return zipFile.stream().filter(ze -> !ze.isDirectory()).map(ze -> ze.getName()).collect(Collectors.toSet());
         } catch (IOException e) {
             return Collections.emptySet();

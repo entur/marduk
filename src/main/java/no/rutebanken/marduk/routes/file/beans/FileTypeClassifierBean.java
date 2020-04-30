@@ -16,8 +16,9 @@
 
 package no.rutebanken.marduk.routes.file.beans;
 
-import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentEncodingException;
+import no.rutebanken.marduk.exceptions.MardukZipFileEntryNameEncodingException;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.camel.Exchange;
@@ -25,8 +26,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
@@ -34,7 +37,12 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
 import static no.rutebanken.marduk.routes.file.FileType.GTFS;
 import static no.rutebanken.marduk.routes.file.FileType.INVALID_FILE_NAME;
+import static no.rutebanken.marduk.routes.file.FileType.INVALID_ZIP_FILE_ENTRY_CONTENT_ENCODING;
+import static no.rutebanken.marduk.routes.file.FileType.INVALID_ZIP_FILE_ENTRY_NAME_ENCODING;
 import static no.rutebanken.marduk.routes.file.FileType.NETEXPROFILE;
+import static no.rutebanken.marduk.routes.file.FileType.NOT_A_ZIP_FILE;
+import static no.rutebanken.marduk.routes.file.FileType.UNKNOWN_FILE_EXTENSION;
+import static no.rutebanken.marduk.routes.file.FileType.UNKNOWN_FILE_TYPE;
 import static no.rutebanken.marduk.routes.file.FileType.ZIP_WITH_SINGLE_FOLDER;
 import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.firstElementQNameMatchesNetex;
 import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.validateZipContent;
@@ -74,7 +82,9 @@ public class FileTypeClassifierBean {
         try {
             if (relativePath.toUpperCase().endsWith(".ZIP")) {
                 Set<String> filesNamesInZip = ZipFileUtils.listFilesInZip(data);
-                if (!isValidFileName(relativePath)) {
+                if(!isZipFile(data)) {
+                    return NOT_A_ZIP_FILE;
+                } else if (!isValidFileName(relativePath)) {
                     return INVALID_FILE_NAME;
                 } else if (isGtfsZip(filesNamesInZip)) {
                     return GTFS;
@@ -82,30 +92,49 @@ public class FileTypeClassifierBean {
                     return NETEXPROFILE;
                 } else if (ZipFileUtils.zipFileContainsSingleFolder(data)) {
                     return ZIP_WITH_SINGLE_FOLDER;
+                } else {
+                    return UNKNOWN_FILE_TYPE;
                 }
-                throw new FileValidationException("Could not classify zip file '" + relativePath + "'.");
+            } else {
+                return UNKNOWN_FILE_EXTENSION;
             }
-            throw new FileValidationException("Could not classify file '" + relativePath + "'.");
+        } catch (MardukZipFileEntryNameEncodingException e) {
+            LOGGER.info("Found a zip file entry name with an invalid encoding while classifying file " + relativePath, e);
+            return INVALID_ZIP_FILE_ENTRY_NAME_ENCODING;
+        } catch (MardukZipFileEntryContentEncodingException e) {
+            LOGGER.info("Found a zip file entry with an invalid XML encoding while classifying file " + relativePath, e);
+            return INVALID_ZIP_FILE_ENTRY_CONTENT_ENCODING;
         } catch (IOException e) {
-            throw new MardukException("Exception while classifying file", e);
+            throw new MardukException("Exception while classifying file" + relativePath, e);
+        }
+
+}
+
+
+    public static boolean isZipFile(byte[]data) {
+        if(data.length < 4) {
+            return false;
+        }
+        try(DataInputStream in = new DataInputStream(new ByteArrayInputStream(data));) {
+            return in.readInt() == 0x504b0304;
+        } catch (IOException e) {
+            return false;
         }
     }
+
+
 
     public static boolean isGtfsZip(final Set<String> filesInZip) {
         return filesInZip.stream().anyMatch(p -> p.matches(REQUIRED_GTFS_FILES_REGEX));
     }
 
-    public static boolean isNetexZip(final Set<String> filesInZip, InputStream inputStream) {
+    public static boolean isNetexZip(final Set<String> filesInZip, InputStream inputStream) throws MalformedInputException {
         return filesInZip.stream().anyMatch(p -> p.matches(XML_FILES_REGEX)) //TODO skip file extension check unless it can be more specific?
                        && isNetexXml(inputStream);
     }
 
-    private static boolean isNetexXml(InputStream inputStream) {
-        try {
+    private static boolean isNetexXml(InputStream inputStream) throws MalformedInputException {
             return validateZipContent(inputStream, firstElementQNameMatchesNetex(), NON_XML_FILE_XML);
-        } catch (Exception e) {
-            throw new MardukException(e);
-        }
     }
 
 }
