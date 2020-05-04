@@ -74,30 +74,29 @@ public class FileTypeClassifierBean {
         }
     }
 
-    boolean isValidFileName(String fileName) {
-        return StandardCharsets.ISO_8859_1.newEncoder().canEncode(fileName);
-    }
 
     public FileType classifyFile(String relativePath, byte[] data) {
         try {
-            if (relativePath.toUpperCase().endsWith(".ZIP")) {
-                Set<String> filesNamesInZip = ZipFileUtils.listFilesInZip(data);
-                if(!isZipFile(data)) {
-                    return NOT_A_ZIP_FILE;
-                } else if (!isValidFileName(relativePath)) {
-                    return INVALID_FILE_NAME;
-                } else if (isGtfsZip(filesNamesInZip)) {
-                    return GTFS;
-                } else if (isNetexZip(filesNamesInZip, new ByteArrayInputStream(data))) {
-                    return NETEXPROFILE;
-                } else if (ZipFileUtils.zipFileContainsSingleFolder(data)) {
-                    return ZIP_WITH_SINGLE_FOLDER;
-                } else {
-                    return UNKNOWN_FILE_TYPE;
-                }
-            } else {
+            if (!relativePath.toUpperCase().endsWith(".ZIP")) {
                 return UNKNOWN_FILE_EXTENSION;
             }
+            if (!ZipFileUtils.isZipFile(data)) {
+                return NOT_A_ZIP_FILE;
+            }
+            if (!isValidFileName(relativePath)) {
+                return INVALID_FILE_NAME;
+            }
+            Set<String> filesNamesInZip = ZipFileUtils.listFilesInZip(data);
+            if (isGtfsZip(filesNamesInZip)) {
+                return GTFS;
+            }
+            if (isNetexZip(filesNamesInZip, new ByteArrayInputStream(data))) {
+                return NETEXPROFILE;
+            }
+            if (ZipFileUtils.zipFileContainsSingleFolder(data)) {
+                return ZIP_WITH_SINGLE_FOLDER;
+            }
+            return UNKNOWN_FILE_TYPE;
         } catch (MardukZipFileEntryNameEncodingException e) {
             LOGGER.info("Found a zip file entry name with an invalid encoding while classifying file " + relativePath, e);
             return INVALID_ZIP_FILE_ENTRY_NAME_ENCODING;
@@ -107,22 +106,11 @@ public class FileTypeClassifierBean {
         } catch (IOException e) {
             throw new MardukException("Exception while classifying file" + relativePath, e);
         }
-
-}
-
-
-    public static boolean isZipFile(byte[]data) {
-        if(data.length < 4) {
-            return false;
-        }
-        try(DataInputStream in = new DataInputStream(new ByteArrayInputStream(data));) {
-            return in.readInt() == 0x504b0304;
-        } catch (IOException e) {
-            return false;
-        }
     }
 
-
+    boolean isValidFileName(String fileName) {
+        return StandardCharsets.ISO_8859_1.newEncoder().canEncode(fileName);
+    }
 
     public static boolean isGtfsZip(final Set<String> filesInZip) {
         return filesInZip.stream().anyMatch(p -> p.matches(REQUIRED_GTFS_FILES_REGEX));

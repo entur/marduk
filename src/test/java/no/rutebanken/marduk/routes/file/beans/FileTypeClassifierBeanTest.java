@@ -85,6 +85,11 @@ public class FileTypeClassifierBeanTest {
     }
 
     @Test
+    public void classifyEmptyZipFile() throws IOException {
+        assertFileType("empty_zip.zip", NOT_A_ZIP_FILE);
+    }
+
+    @Test
     public void classifyInvalidEncodingInZipEntryName() throws IOException {
         assertFileType("zip_file_with_invalid_encoding_in_entry_name.zip", INVALID_ZIP_FILE_ENTRY_NAME_ENCODING);
     }

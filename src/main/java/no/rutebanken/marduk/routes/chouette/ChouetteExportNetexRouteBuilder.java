@@ -22,6 +22,8 @@ import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -49,6 +51,8 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
 
     @Value("${chouette.netex.export.stops:false}")
     private boolean exportStops;
+
+    private static Logger LOGGER = LoggerFactory.getLogger(ChouetteExportNetexRouteBuilder.class);
 
     @Override
     public void configure() throws Exception {
@@ -105,8 +109,8 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
 
                 .endChoice()
                 .when(simple("${header.action_report_result} == 'NOK'"))
-                .process( e -> e.getIn().setHeader(Constants.CHOUETTE_JOB_FAILURE_CODE, e.getIn().getBody(ActionReportWrapper.class).actionReport.failure.code))
-                .log(LoggingLevel.WARN, correlation() + "Netex export failed with Chouette failure code ${header." + Constants.CHOUETTE_JOB_FAILURE_CODE + "}")
+                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, toJobErrorCode(e.getIn().getBody(ActionReportWrapper.class).actionReport.failure.code)))
+                .log(LoggingLevel.WARN, correlation() + "Netex export failed with Chouette failure code ${header." + Constants.JOB_ERROR_CODE + "}")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.FAILED).build())
                 .otherwise()
                 .log(LoggingLevel.ERROR, correlation() + "Something went wrong on Netex export")
@@ -116,4 +120,21 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .routeId("chouette-process-export-netex-status");
     }
+
+
+    private static final String CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED = "NO_DATA_PROCEEDED";
+
+    private static String toJobErrorCode(String chouetteJobFailureCode) {
+
+        if(chouetteJobFailureCode == null) {
+            LOGGER.warn("Chouette failure code is not set");
+            return null;
+        }
+        if(CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED.equals(chouetteJobFailureCode)) {
+            return JobEvent.JOB_ERROR_NETEX_EXPORT_EMPTY;
+        }
+        LOGGER.warn("Unexpected Chouette failure code: {}", chouetteJobFailureCode);
+        return null;
+    }
+
 }
