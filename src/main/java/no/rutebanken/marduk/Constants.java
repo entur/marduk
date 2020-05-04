@@ -62,6 +62,7 @@ public class Constants {
 
     public static final String USERNAME = "RutebankenUsername";
     public static final String JOB_ACTION = "RutebankenJobAction";
+    public static final String JOB_ERROR_CODE = "RutebankenJobErrorCode";
 
     public static final String BLOBSTORE_MAKE_BLOB_PUBLIC = "RutebankenBlobstoreMakeBlobPublic";
 

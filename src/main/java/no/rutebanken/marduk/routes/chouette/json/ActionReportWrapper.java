@@ -137,6 +137,8 @@ public class ActionReportWrapper {
         public String result;
 
         public Progression progression;
+
+        public Failure failure;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -150,6 +152,12 @@ public class ActionReportWrapper {
         public String step;
         public int total;
         public int realized;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Failure {
+        public String code;
+
     }
 
 

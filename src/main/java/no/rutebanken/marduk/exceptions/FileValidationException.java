@@ -29,4 +29,8 @@ public class FileValidationException extends MardukException {
     public FileValidationException(String message, Throwable throwable){
         super(message, throwable);
     }
+
+    public FileValidationException(Throwable cause) {
+        super(cause);
+    }
 }

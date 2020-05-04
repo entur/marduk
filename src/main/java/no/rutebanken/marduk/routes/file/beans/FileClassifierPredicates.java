@@ -18,6 +18,8 @@ package no.rutebanken.marduk.routes.file.beans;
 
 import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentEncodingException;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StreamUtils;
@@ -27,6 +29,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import java.io.CharConversionException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
@@ -67,7 +70,12 @@ public class FileClassifierPredicates {
                 }
             }
         } catch (XMLStreamException e) {
-            throw new MardukException(e);
+            Throwable rootCause = ExceptionUtils.getRootCause(e);
+            if(rootCause instanceof CharConversionException) {
+                throw new MardukZipFileEntryContentEncodingException(e);
+            } else {
+                throw new MardukException(e);
+            }
         } finally {
             try {
                 streamReader.close();
@@ -114,7 +122,10 @@ public class FileClassifierPredicates {
 			    logger.info(s);
 			    return true;
 			}
-		} catch (Exception e) {
+		} catch(MardukZipFileEntryContentEncodingException e) {
+    	    throw new MardukZipFileEntryContentEncodingException("Exception while trying to classify file "+entry.getName()+" in zip file", e);
+        }
+    	catch (Exception e) {
 			throw new MardukException("Exception while trying to classify file "+entry.getName()+" in zip file", e);
 		}
         return false;
