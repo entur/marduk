@@ -172,7 +172,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .filter(simple("${headers[" + CHOUETTE_REFERENTIAL + "]}"))
                 .process(e -> {
                     JobEvent.State state = e.getProperty(PROP_STATUS, JobEvent.State.class);
-                    JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(state).build();
+                    JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(state).build();
                 })
                 .to("direct:updateStatus")
                 .routeId("otp2-netex-graph-send-status-for-timetable-jobs");
