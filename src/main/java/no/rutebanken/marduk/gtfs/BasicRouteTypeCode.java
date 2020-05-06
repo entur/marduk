@@ -43,37 +43,37 @@ public enum BasicRouteTypeCode {
         if (extendedType < 0) {
             return extendedType; // Probably not set
         }
-        if (extendedType >= 0 && extendedType <= 7) {
+        if (extendedType <= 7) {
             return extendedType; // Is actually basic type
         }
         if (extendedType >= 100 && extendedType < 200) { // Railway Service
-            return BasicRouteTypeCode.RAIL.getCode();
+            return BasicRouteTypeCode.RAIL.code;
         } else if (extendedType >= 200 && extendedType < 300) { //Coach Service
-            return BasicRouteTypeCode.BUS.getCode();
+            return BasicRouteTypeCode.BUS.code;
         } else if (extendedType >= 300
                 && extendedType < 500) { //Suburban Railway Service and Urban Railway service
             if (extendedType >= 401 && extendedType <= 402) {
-                return BasicRouteTypeCode.SUBWAY.getCode();
+                return BasicRouteTypeCode.SUBWAY.code;
             }
-            return BasicRouteTypeCode.RAIL.getCode();
+            return BasicRouteTypeCode.RAIL.code;
         } else if (extendedType >= 500 && extendedType < 700) {
-            return BasicRouteTypeCode.SUBWAY.getCode();
+            return BasicRouteTypeCode.SUBWAY.code;
         } else if (extendedType >= 700 && extendedType < 900) {
-            return BasicRouteTypeCode.BUS.getCode();
+            return BasicRouteTypeCode.BUS.code;
         } else if (extendedType >= 900 && extendedType < 1000) {
-            return BasicRouteTypeCode.TRAM.getCode();
+            return BasicRouteTypeCode.TRAM.code;
         } else if (extendedType >= 1000 && extendedType < 1100) {
-            return BasicRouteTypeCode.FERRY.getCode();
+            return BasicRouteTypeCode.FERRY.code;
         } else if (extendedType >= 1200 && extendedType < 1300) {
-            return BasicRouteTypeCode.FERRY.getCode();
+            return BasicRouteTypeCode.FERRY.code;
         } else if (extendedType >= 1300 && extendedType < 1400) {
-            return BasicRouteTypeCode.GONDOLA.getCode();
+            return BasicRouteTypeCode.GONDOLA.code;
         } else if (extendedType >= 1400 && extendedType < 1500) {
-            return BasicRouteTypeCode.FUNICULAR.getCode();
+            return BasicRouteTypeCode.FUNICULAR.code;
         }
 
         LOGGER.warn("Attempted to map unsupported extend route type to basic GTFS route type: {}. Using BUS as default. ", extendedType);
-        return BasicRouteTypeCode.BUS.getCode();
+        return BasicRouteTypeCode.BUS.code;
     }
 
 }
