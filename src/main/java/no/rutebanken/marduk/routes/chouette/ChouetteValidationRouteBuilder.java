@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEvent.State;
@@ -152,7 +153,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .log(LoggingLevel.INFO, correlation() + "Validation failed (processed ok, but timetable data is faulty)")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, TimetableAction.class)).state(State.FAILED).build())
                 .otherwise()
-                .log(LoggingLevel.ERROR, correlation() + "Validation went wrong")
+                .log(LoggingLevel.WARN, correlation() + "Validation went wrong  with error code ${header." + Constants.JOB_ERROR_CODE + "}")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, TimetableAction.class)).state(State.FAILED).build())
                 .end()
                 .to("direct:updateStatus")
