@@ -16,18 +16,22 @@
 
 package no.rutebanken.marduk.routes.file;
 
+import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.exceptions.MardukZipFileEntryNameEncodingException;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.MalformedInputException;
 import java.nio.file.Files;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,6 +43,26 @@ import java.util.zip.ZipOutputStream;
 public class ZipFileUtils {
     private static Logger logger = LoggerFactory.getLogger(ZipFileUtils.class);
 
+
+    /**
+     * Test if the given byte arrray contains a zip file.
+     * The test is performed by matching the magic number at the beginning of the array with the zip file magic number
+     * (PK\x03\x04). Magic numbers for empty archives (PK\x05\x06) or spanned archives (PK\x07\x08) are rejected.
+     *
+     * @param data
+     * @return
+     */
+    public static boolean isZipFile(byte[] data) {
+        if (data.length < 4) {
+            return false;
+        }
+        try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(data));) {
+            return in.readInt() == 0x504b0304;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
     public static Set<String> listFilesInZip(byte[] data) throws IOException {
         File tmpFile = TempFileUtils.createTempFile(data, "marduk-list-files-in-zip-", ".zip");
         Set<String> fileList = listFilesInZip(tmpFile);
@@ -46,11 +70,18 @@ public class ZipFileUtils {
         return fileList;
     }
 
-        public static Set<String> listFilesInZip(File file) {
+    public static Set<String> listFilesInZip(File file) {
         try (ZipFile zipFile = new ZipFile(file)) {
             return zipFile.stream().filter(ze -> !ze.isDirectory()).map(ze -> ze.getName()).collect(Collectors.toSet());
+        } catch (IllegalArgumentException e) {
+            Throwable rootCause = ExceptionUtils.getRootCause(e);
+            if (rootCause instanceof MalformedInputException) {
+                throw new MardukZipFileEntryNameEncodingException(e);
+            } else {
+                throw new MardukException(e);
+            }
         } catch (IOException e) {
-            return Collections.emptySet();
+            throw new MardukException(e);
         }
     }
 
@@ -134,10 +165,6 @@ public class ZipFileUtils {
     public static void unzipFile(InputStream inputStream, String targetFolder) {
         ZipUtil.unpack(inputStream, new File(targetFolder));
     }
-
-
-
-
 
 
 }

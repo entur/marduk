@@ -69,7 +69,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
-        singletonFrom("entur-google-pubsub:Otp2GraphBuildQueue?ackMode=NONE").autoStartup("{{otp.graph.build.autoStartup:true}}")
+        singletonFrom("entur-google-pubsub:Otp2GraphBuildQueue?ackMode=NONE").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
@@ -83,7 +83,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 graph building in remote directory ${property." + OTP_GRAPH_DIR + "}.")
 
-                .to("direct:exportMergedNetex")
+                .to("direct:otp2ExportMergedNetex")
 
                 .to("direct:remoteBuildOtp2NetexGraphAndSendStatus")
                 .to("direct:remoteOtp2GraphPublishing")
@@ -172,7 +172,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .filter(simple("${headers[" + CHOUETTE_REFERENTIAL + "]}"))
                 .process(e -> {
                     JobEvent.State state = e.getProperty(PROP_STATUS, JobEvent.State.class);
-                    JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(state).build();
+                    JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(state).build();
                 })
                 .to("direct:updateStatus")
                 .routeId("otp2-netex-graph-send-status-for-timetable-jobs");

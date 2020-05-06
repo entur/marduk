@@ -32,6 +32,7 @@ import java.util.UUID;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_ID;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.JOB_ERROR_CODE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.SYSTEM_STATUS;
 import static no.rutebanken.marduk.Constants.USERNAME;
@@ -39,9 +40,42 @@ import static no.rutebanken.marduk.Constants.USERNAME;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class JobEvent {
 
+
+    /**
+     * The file extension is neither .zip nor .ZIP.
+     */
+    public static final String JOB_ERROR_FILE_UNKNOWN_FILE_EXTENSION = "ERROR_FILE_UNKNOWN_FILE_EXTENSION";
+
+    /**
+     * The file is not a zip archive.
+     */
+    public static final String JOB_ERROR_FILE_NOT_A_ZIP_FILE = "ERROR_FILE_NOT_A_ZIP_FILE";
+
+    /**
+     * The file is neither a NeTEx archive nor a GTFS archive.
+     */
+    public static final String JOB_ERROR_UNKNOWN_FILE_TYPE = "ERROR_FILE_UNKNOWN_FILE_TYPE";
+
+    /**
+     * The archive contains file names that are not UTF8-encoded.
+     */
+    public static final String JOB_ERROR_INVALID_ZIP_ENTRY_ENCODING = "ERROR_FILE_INVALID_ZIP_ENTRY_ENCODING";
+
+    /**
+     * The archive contains XML files with an invalid encoding.
+     */
+    public static final String JOB_ERROR_INVALID_XML_ENCODING = "ERROR_FILE_INVALID_XML_ENCODING_ERROR";
+
+    /**
+     * The exported dataset is empty (no active timetable data found).
+     */
+    public static final String JOB_ERROR_NETEX_EXPORT_EMPTY = "ERROR_NETEX_EXPORT_EMPTY_EXPORT";
+
+
+
     public enum JobDomain {TIMETABLE, GRAPH, TIMETABLE_PUBLISH}
 
-    public enum TimetableAction {FILE_TRANSFER, FILE_CLASSIFICATION, IMPORT, EXPORT, VALIDATION_LEVEL_1, VALIDATION_LEVEL_2, CLEAN, DATASPACE_TRANSFER, BUILD_GRAPH, EXPORT_NETEX}
+    public enum TimetableAction {FILE_TRANSFER, FILE_CLASSIFICATION, IMPORT, EXPORT, VALIDATION_LEVEL_1, VALIDATION_LEVEL_2, CLEAN, DATASPACE_TRANSFER, BUILD_GRAPH, OTP2_BUILD_GRAPH, EXPORT_NETEX}
 
     public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK, DUPLICATE, CANCELLED}
 
@@ -64,6 +98,8 @@ public class JobEvent {
     public String referential;
 
     public String username;
+
+    public String errorCode;
 
     private JobEvent() {
     }
@@ -168,6 +204,11 @@ public class JobEvent {
             return this;
         }
 
+        public Builder errorCode(String errorCode) {
+            jobEvent.errorCode = errorCode;
+            return this;
+        }
+
         public JobEvent build() {
             if (JobDomain.TIMETABLE.equals(jobEvent.domain) && jobEvent.providerId == null) {
                 throw new IllegalArgumentException("No provider id");
@@ -207,6 +248,7 @@ public class JobEvent {
             jobEvent.externalId = exchange.getIn().getHeader(CHOUETTE_JOB_ID, Long.class);
             jobEvent.referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);
             jobEvent.username = exchange.getIn().getHeader(USERNAME, String.class);
+            jobEvent.errorCode = exchange.getIn().getHeader(JOB_ERROR_CODE, String.class);
             return this;
         }
 
