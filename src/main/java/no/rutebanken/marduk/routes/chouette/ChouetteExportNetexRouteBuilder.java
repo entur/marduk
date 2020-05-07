@@ -52,8 +52,6 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
     @Value("${chouette.netex.export.stops:false}")
     private boolean exportStops;
 
-    private static Logger LOGGER = LoggerFactory.getLogger(ChouetteExportNetexRouteBuilder.class);
-
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -109,8 +107,14 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
 
                 .endChoice()
                 .when(simple("${header.action_report_result} == 'NOK'"))
-                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, toJobErrorCode(e.getIn().getBody(ActionReportWrapper.class).actionReport.failure.code)))
-                .log(LoggingLevel.WARN, correlation() + "Netex export failed with Chouette failure code ${header." + Constants.JOB_ERROR_CODE + "}")
+                .process(e -> {
+                            ActionReportWrapper.Failure failure = e.getIn().getBody(ActionReportWrapper.class).actionReport.failure;
+                            if (failure != null) {
+                                e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.toJobErrorCode(failure.code));
+                            }
+                        }
+                )
+                .log(LoggingLevel.WARN, correlation() + "Netex export failed with error code ${header." + Constants.JOB_ERROR_CODE + "}")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.FAILED).build())
                 .otherwise()
                 .log(LoggingLevel.ERROR, correlation() + "Something went wrong on Netex export")
@@ -122,19 +126,6 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
     }
 
 
-    private static final String CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED = "NO_DATA_PROCEEDED";
 
-    private static String toJobErrorCode(String chouetteJobFailureCode) {
-
-        if(chouetteJobFailureCode == null) {
-            LOGGER.warn("Chouette failure code is not set");
-            return null;
-        }
-        if(CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED.equals(chouetteJobFailureCode)) {
-            return JobEvent.JOB_ERROR_NETEX_EXPORT_EMPTY;
-        }
-        LOGGER.warn("Unexpected Chouette failure code: {}", chouetteJobFailureCode);
-        return null;
-    }
 
 }

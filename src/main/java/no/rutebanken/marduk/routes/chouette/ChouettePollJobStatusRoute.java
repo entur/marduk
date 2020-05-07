@@ -265,12 +265,15 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .stop()
                 .end()
 
-
-                .process(e ->
-                    e.getIn().setHeader("action_report_result", e.getIn().getBody(ActionReportWrapper.class).actionReport.result)
+                .process(e -> {
+                            ActionReportWrapper.ActionReport actionReport = e.getIn().getBody(ActionReportWrapper.class).actionReport;
+                            e.getIn().setHeader("action_report_result", actionReport.result);
+                            ActionReportWrapper.Failure failure = actionReport.failure;
+                            if (failure != null) {
+                                e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.toJobErrorCode(failure.code));
+                            }
+                        }
                 )
-
-
 
                 // Fetch and parse validation report
                 .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
