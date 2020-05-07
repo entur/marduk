@@ -45,13 +45,6 @@ public class FileTypeClassifierBeanTest {
     }
 
     @Test
-    public void classifyGtfsFileContainingFolder() throws Exception {
-        // The file is known to be invalid - repack zip
-        InputStream rePackedZipFile = ZipFileUtils.rePackZipFile(IOUtils.toByteArray(this.getClass().getResourceAsStream("gtfs-folder.zip")));
-        assertFileType("repackaged.zip", rePackedZipFile.readAllBytes(), GTFS);
-    }
-
-    @Test
     public void classifyNetexFile() throws Exception {
         assertFileType("netex.zip", NETEXPROFILE);
     }

@@ -80,6 +80,13 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("direct:updateStatus")
                 .stop()
 
+                .when(header(FILE_TYPE).isEqualTo(FileType.ZIP_CONTAINS_SUBDIRECTORIES.name()))
+                .log(LoggingLevel.WARN, correlation() + "The file ${header." + FILE_HANDLE + "} contains one or more subdirectories")
+                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_FILE_ZIP_CONTAINS_SUB_DIRECTORIES))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
+                .to("direct:updateStatus")
+                .stop()
+
                 .when(header(FILE_TYPE).isEqualTo(FileType.INVALID_ZIP_FILE_ENTRY_CONTENT_ENCODING.name()))
                 .log(LoggingLevel.WARN, correlation() + "The file ${header." + FILE_HANDLE + "} contains one or more invalid XML files: invalid encoding")
                 .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_INVALID_XML_ENCODING))
@@ -98,9 +105,6 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.WARN, correlation() + "File with invalid characters in file name ${header." + FILE_HANDLE + "}")
                 .to("direct:sanitizeFileName")
 
-                .when(header(FILE_TYPE).isEqualTo(FileType.ZIP_WITH_SINGLE_FOLDER.name()))
-                .log(LoggingLevel.WARN, correlation() + "Archive containing a single folder ${header." + FILE_HANDLE + "}")
-                .to("direct:repackZipFile")
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .setBody(simple(""))   //remove file data from body since this is in blobstore
@@ -108,13 +112,6 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .end()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .routeId("file-classify");
-
-        from("direct:repackZipFile")
-                .bean(method(ZipFileUtils.class, "rePackZipFile"))
-                .log(LoggingLevel.INFO, correlation() + "ZIP-file repacked ${header." + FILE_HANDLE + "}")
-                .to("direct:uploadBlob")
-                .to("entur-google-pubsub:ProcessFileQueue")
-                .routeId("file-repack-zip");
 
         from("direct:sanitizeFileName")
                 .process(e -> {

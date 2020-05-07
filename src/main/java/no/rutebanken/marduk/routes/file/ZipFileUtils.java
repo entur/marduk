@@ -63,16 +63,16 @@ public class ZipFileUtils {
         }
     }
 
-    public static Set<String> listFilesInZip(byte[] data) throws IOException {
+    public static Set<ZipEntry> listFilesInZip(byte[] data) throws IOException {
         File tmpFile = TempFileUtils.createTempFile(data, "marduk-list-files-in-zip-", ".zip");
-        Set<String> fileList = listFilesInZip(tmpFile);
+        Set<ZipEntry> fileList = listFilesInZip(tmpFile);
         Files.delete(tmpFile.toPath());
         return fileList;
     }
 
-    public static Set<String> listFilesInZip(File file) {
+    public static Set<ZipEntry> listFilesInZip(File file) {
         try (ZipFile zipFile = new ZipFile(file)) {
-            return zipFile.stream().filter(ze -> !ze.isDirectory()).map(ze -> ze.getName()).collect(Collectors.toSet());
+            return zipFile.stream().filter(ze -> !ze.isDirectory()).collect(Collectors.toSet());
         } catch (IllegalArgumentException e) {
             Throwable rootCause = ExceptionUtils.getRootCause(e);
             if (rootCause instanceof MalformedInputException) {
@@ -85,81 +85,14 @@ public class ZipFileUtils {
         }
     }
 
-    public static InputStream rePackZipFile(byte[] data) throws IOException {
-
-        logger.info("Repacking zipfile");
-        File tmpSingleFolderzip = TempFileUtils.createTempFile(data, "marduk-single-folder-", ".zip");
-
-        ZipFile zipFile = new ZipFile(tmpSingleFolderzip);
-
-        File tmpFile = File.createTempFile("marduk-removed-single-folder-", ".zip");
-        ZipOutputStream out = new ZipOutputStream(new FileOutputStream(tmpFile));
-
-        String directoryName = "";
-
-        ZipInputStream zipInputStream = new ZipInputStream(new ByteArrayInputStream(data));
-
-        ZipEntry zipEntry = zipInputStream.getNextEntry();
-        while (zipEntry != null) {
-            if (!zipEntry.isDirectory()) {
-                InputStream inputStream = zipFile.getInputStream(zipEntry);
-                ZipEntry outEntry = new ZipEntry(zipEntry.getName().replace(directoryName, ""));
-                out.putNextEntry(outEntry);
-                byte[] buf = new byte[inputStream.available()];
-                IOUtils.readFully(inputStream, buf);
-                out.write(buf);
-            } else {
-                directoryName = zipEntry.getName();
-            }
-            zipEntry = zipInputStream.getNextEntry();
-        }
-        out.close();
-
-        logger.info("File written to : {}", tmpFile.getAbsolutePath());
-        zipFile.close();
-        Files.delete(tmpSingleFolderzip.toPath());
-
-        return TempFileUtils.createDeleteOnCloseInputStream(tmpFile);
-    }
-
-
     public static File zipFilesInFolder(String folder, String targetFilePath) {
         File outputZip = new File(targetFilePath);
         ZipUtil.pack(new File(folder), outputZip);
         return outputZip;
     }
 
-    public static byte[] extractFileFromZipFile(File file, String extractFileName) {
-        return ZipUtil.unpackEntry(file, extractFileName);
-    }
-
-    public static boolean zipFileContainsSingleFolder(byte[] data) throws IOException {
-        File tmpFile = TempFileUtils.createTempFile(data, "marduk-zip-file-contains-single-folder-", ".zip");
-        boolean singleFolder = zipFileContainsSingleFolder(tmpFile);
-        Files.delete(tmpFile.toPath());
-        return singleFolder;
-    }
-
-    public static boolean zipFileContainsSingleFolder(File inputFile) throws IOException {
-
-        ZipFile zipFile = new ZipFile(inputFile);
-            boolean allFilesInSingleDirectory = false;
-            Enumeration<? extends ZipEntry> entries = zipFile.entries();
-            String directoryName = "";
-            while (entries.hasMoreElements()) {
-                ZipEntry zipEntry = entries.nextElement();
-                if (zipEntry.isDirectory()) {
-                    allFilesInSingleDirectory = true;
-                    directoryName = zipEntry.getName();
-                } else {
-                    if (!zipEntry.getName().startsWith(directoryName)) {
-                        allFilesInSingleDirectory = false;
-                        break;
-                    }
-                }
-            }
-
-        return allFilesInSingleDirectory;
+    public static byte[] extractFileFromZipFile(File zipFile, String extractFileName) {
+        return ZipUtil.unpackEntry(zipFile, extractFileName);
     }
 
     public static void unzipFile(InputStream inputStream, String targetFolder) {

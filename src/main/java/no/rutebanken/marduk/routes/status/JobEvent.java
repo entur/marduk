@@ -61,6 +61,11 @@ public class JobEvent {
     /**
      * The archive contains file names that are not UTF8-encoded.
      */
+    public static final String JOB_ERROR_FILE_ZIP_CONTAINS_SUB_DIRECTORIES = "ERROR_FILE_ZIP_CONTAINS_SUB_DIRECTORIES";
+
+    /**
+     * The archive contains file names that are not UTF8-encoded.
+     */
     public static final String JOB_ERROR_INVALID_ZIP_ENTRY_ENCODING = "ERROR_FILE_INVALID_ZIP_ENTRY_ENCODING";
 
     /**
