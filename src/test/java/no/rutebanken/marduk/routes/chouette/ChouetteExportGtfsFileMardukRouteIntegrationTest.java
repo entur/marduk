@@ -117,9 +117,7 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 					return (T) IOUtils.toByteArray(getClass()
 							.getResourceAsStream("/no/rutebanken/marduk/chouette/empty-chouette-gtfs-export.zip"));
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return null;
+					throw new RuntimeException(e);
 				}
 			}
 		});

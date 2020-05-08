@@ -1,9 +1,5 @@
 package no.rutebanken.marduk.routes.otp;
 
-import io.fabric8.kubernetes.api.model.EnvVar;
-
-import java.util.List;
-
 /**
  * Base interface for OTP graph builders.
  */

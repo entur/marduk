@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -99,11 +100,11 @@ public class FileClassifierPredicates {
     }
 
 
-    public static boolean validateZipContent(InputStream inputStream, Predicate<InputStream> predicate, String skipFileRegex) {
+    public static boolean validateZipContent(InputStream inputStream, Predicate<InputStream> predicate, Pattern skipFileRegex) {
         try (ZipInputStream stream = new ZipInputStream(inputStream)) {
             ZipEntry entry;
             while ( ( entry = stream.getNextEntry()) != null) {
-                if (!entry.getName().matches(skipFileRegex)) {
+                if (!skipFileRegex.matcher(entry.getName()).matches()) {
                     if (testPredicate(predicate, stream, entry)) return false;
                 } else {
                     logger.info("Skipped file with name {}", entry.getName());

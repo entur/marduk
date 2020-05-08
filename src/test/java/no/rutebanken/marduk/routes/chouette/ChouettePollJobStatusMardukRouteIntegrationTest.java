@@ -133,9 +133,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 
 					}
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return null;
+					throw new RuntimeException(e);
 				}
 			}
 		});
@@ -151,9 +149,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 					return (T) IOUtils.toString(getClass()
 							.getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"), StandardCharsets.UTF_8);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return null;
+					throw new RuntimeException(e);
 				}
 			}
 		});
@@ -169,9 +165,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 					return (T) IOUtils.toString(getClass()
 							.getResourceAsStream("/no/rutebanken/marduk/chouette/getValidationReportResponseOK.json"), StandardCharsets.UTF_8);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return null;
+					throw new RuntimeException(e);
 				}
 			}
 		});
@@ -247,9 +241,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 					return (T) IOUtils.toString(getClass()
 							.getResourceAsStream("/no/rutebanken/marduk/chouette/getJobListResponseScheduled.json"), StandardCharsets.UTF_8);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return null;
+					throw new RuntimeException(e);
 				}
 			}
 		});
