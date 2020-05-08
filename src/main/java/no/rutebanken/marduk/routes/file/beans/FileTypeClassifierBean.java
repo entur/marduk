@@ -116,7 +116,7 @@ public class FileTypeClassifierBean {
     }
 
     private static boolean containsDirectory(Set<ZipEntry> zipEntriesInZip) {
-        return zipEntriesInZip.stream().anyMatch(ze -> ze.isDirectory());
+        return zipEntriesInZip.stream().anyMatch(ZipEntry::isDirectory);
     }
 
     private static boolean isGtfsZip(final Set<ZipEntry> zipEntriesInZip) {
