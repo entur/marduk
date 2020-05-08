@@ -74,6 +74,11 @@ public class JobEvent {
     public static final String JOB_ERROR_INVALID_XML_ENCODING = "ERROR_FILE_INVALID_XML_ENCODING_ERROR";
 
     /**
+     * The archive contains invalid XML file.
+     */
+    public static final String JOB_ERROR_INVALID_XML_CONTENT = "ERROR_FILE_INVALID_XML_CONTENT";
+
+    /**
      * The exported dataset is empty (no active timetable data found).
      */
     public static final String JOB_ERROR_NETEX_EXPORT_EMPTY = "ERROR_NETEX_EXPORT_EMPTY_EXPORT";
