@@ -269,8 +269,8 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                             ActionReportWrapper.ActionReport actionReport = e.getIn().getBody(ActionReportWrapper.class).actionReport;
                             e.getIn().setHeader("action_report_result", actionReport.result);
                             ActionReportWrapper.Failure failure = actionReport.failure;
-                            if (failure != null) {
-                                e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.toJobErrorCode(failure.code));
+                            if (failure != null && JobEvent.CHOUETTE_JOB_FAILURE_CODE_NO_DATA_FOUND.equals(failure.code)) {
+                                e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_VALIDATION_NO_DATA);
                             }
                         }
                 )

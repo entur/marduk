@@ -88,7 +88,14 @@ public class JobEvent {
      */
     public static final String JOB_ERROR_VALIDATION_NO_DATA = "ERROR_VALIDATION_NO_DATA";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(JobEvent.class);
+
+    /**
+     * Chouette failure codes
+     */
+    public static final String CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED = "NO_DATA_PROCEEDED";
+    public static final String CHOUETTE_JOB_FAILURE_CODE_NO_DATA_FOUND = "NO_DATA_FOUND";
+
+
 
 
     public enum JobDomain {TIMETABLE, GRAPH, TIMETABLE_PUBLISH}
@@ -304,31 +311,6 @@ public class JobEvent {
             exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
             return jobEvent;
         }
-    }
-
-
-    private static final String CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED = "NO_DATA_PROCEEDED";
-    private static final String CHOUETTE_JOB_FAILURE_CODE_NO_DATA_FOUND = "NO_DATA_FOUND";
-
-    /**
-     * Translate the chouette failure code into a job error code.
-     * @param chouetteJobFailureCode
-     * @return
-     */
-    public static String toJobErrorCode(String chouetteJobFailureCode) {
-
-        if(chouetteJobFailureCode == null) {
-            LOGGER.warn("Chouette failure code is not set");
-            return null;
-        }
-        if(CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED.equals(chouetteJobFailureCode)) {
-            return JobEvent.JOB_ERROR_NETEX_EXPORT_EMPTY;
-        }
-        if(CHOUETTE_JOB_FAILURE_CODE_NO_DATA_FOUND.equals(chouetteJobFailureCode)) {
-            return JobEvent.JOB_ERROR_VALIDATION_NO_DATA;
-        }
-        LOGGER.warn("Unexpected Chouette failure code: {}", chouetteJobFailureCode);
-        return null;
     }
 
 }
