@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.file.beans;
 
+import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentParsingException;
 import no.rutebanken.marduk.routes.file.FileType;
 import org.apache.commons.io.IOUtils;
 
@@ -48,10 +49,8 @@ public class FileTypeClassifierBeanTest {
     }
 
     @Test
-    public void classifyNetexFileFromRuter() {
-    	assertThrows(RuntimeException.class, () ->
-    		assertFileType("AOR.zip", NETEXPROFILE)
-   		);
+    public void classifyNetexFileFromRuter() throws IOException {
+        assertFileType("AOR.zip", INVALID_ZIP_FILE_ENTRY_XML_CONTENT);
     }
 
     @Test

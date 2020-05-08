@@ -118,18 +118,19 @@ public class FileClassifierPredicates {
     }
 
     private static boolean testPredicate(Predicate<InputStream> predicate, ZipInputStream stream, ZipEntry entry) {
-    	try {
-			if (!predicate.test(StreamUtils.nonClosing(stream))) {
-			    String s = String.format("Entry %s with size %d is invalid.", entry.getName(), entry.getSize());
-			    logger.info(s);
-			    return true;
-			}
-		} catch(MardukZipFileEntryContentParsingException e) {
-    	    throw e;
+        try {
+            if (!predicate.test(StreamUtils.nonClosing(stream))) {
+                String s = String.format("Entry %s with size %d is invalid.", entry.getName(), entry.getSize());
+                logger.info(s);
+                return true;
+            }
+        } catch (MardukZipFileEntryContentEncodingException e) {
+            throw new MardukZipFileEntryContentEncodingException("Exception while trying to classify file " + entry.getName() + " in zip file", e);
+        } catch (MardukZipFileEntryContentParsingException e) {
+            throw new MardukZipFileEntryContentParsingException("Exception while trying to classify file " + entry.getName() + " in zip file", e);
+        } catch (Exception e) {
+            throw new MardukException("Exception while trying to classify file " + entry.getName() + " in zip file", e);
         }
-    	catch (Exception e) {
-			throw new MardukException("Exception while trying to classify file "+entry.getName()+" in zip file", e);
-		}
         return false;
     }
 }
