@@ -16,10 +16,6 @@
 
 package no.rutebanken.marduk.routes.chouette;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -45,7 +41,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
-import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.TestApp;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)

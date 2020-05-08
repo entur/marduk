@@ -22,8 +22,6 @@ import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

@@ -128,9 +128,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 					return (T) IOUtils.toString(getClass()
 							                            .getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"), StandardCharsets.UTF_8);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return null;
+					throw new RuntimeException(e);
 				}
 			}
 		});

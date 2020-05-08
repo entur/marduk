@@ -52,7 +52,7 @@ public class FileTypeClassifierBean {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileTypeClassifierBean.class);
 
     private static final Pattern REQUIRED_GTFS_FILES_REGEX = Pattern.compile("agency.txt|stops.txt|routes.txt|trips.txt|stop_times.txt");
-    private static final Pattern XML_FILES_REGEX = Pattern.compile(".+\\.xml");    //TODO can we be more specific?
+    private static final Pattern XML_FILES_REGEX = Pattern.compile(".+\\.xml");
 
     public static final Pattern NON_XML_FILE_XML = Pattern.compile(".*\\.(?!XML$|xml$)[^.]+");
 
@@ -111,20 +111,19 @@ public class FileTypeClassifierBean {
     }
 
 
-    boolean isValidFileName(String fileName) {
+    private static boolean isValidFileName(String fileName) {
         return StandardCharsets.ISO_8859_1.newEncoder().canEncode(fileName);
     }
 
-    private boolean containsDirectory(Set<ZipEntry> zipEntriesInZip) {
+    private static boolean containsDirectory(Set<ZipEntry> zipEntriesInZip) {
         return zipEntriesInZip.stream().anyMatch(ze -> ze.isDirectory());
     }
 
-
-    public static boolean isGtfsZip(final Set<ZipEntry> zipEntriesInZip) {
+    private static boolean isGtfsZip(final Set<ZipEntry> zipEntriesInZip) {
         return zipEntriesInZip.stream().anyMatch(ze -> REQUIRED_GTFS_FILES_REGEX.matcher(ze.getName()).matches());
     }
 
-    public static boolean isNetexZip(final Set<ZipEntry> zipEntriesInZip, InputStream inputStream) {
+    private static boolean isNetexZip(final Set<ZipEntry> zipEntriesInZip, InputStream inputStream) {
         return zipEntriesInZip.stream().anyMatch(ze -> XML_FILES_REGEX.matcher(ze.getName()).matches())
                 && isNetexXml(inputStream);
     }
