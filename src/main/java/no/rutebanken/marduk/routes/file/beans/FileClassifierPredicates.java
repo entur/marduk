@@ -24,6 +24,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StreamUtils;
+import org.springframework.util.xml.StaxUtils;
 
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLInputFactory;
@@ -43,7 +44,7 @@ public class FileClassifierPredicates {
 
     public static final QName NETEX_PUBLICATION_DELIVERY_QNAME = new QName("http://www.netex.org.uk/netex", "PublicationDelivery");
 
-    private static XMLInputFactory xmlInputFactory = XMLInputFactory.newFactory();
+    private static final XMLInputFactory xmlInputFactory =   StaxUtils.createDefensiveInputFactory();
 
     private static final Logger logger = LoggerFactory.getLogger(FileClassifierPredicates.class);
 
