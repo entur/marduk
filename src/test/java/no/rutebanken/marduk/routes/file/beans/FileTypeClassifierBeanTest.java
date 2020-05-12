@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.routes.file.beans;
 
-import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentParsingException;
 import no.rutebanken.marduk.routes.file.FileType;
 import org.apache.commons.io.IOUtils;
 
