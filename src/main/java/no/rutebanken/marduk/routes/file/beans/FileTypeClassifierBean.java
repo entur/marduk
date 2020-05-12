@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.file.beans;
 
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentEncodingException;
+import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentParsingException;
 import no.rutebanken.marduk.exceptions.MardukZipFileEntryNameEncodingException;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
@@ -39,6 +40,7 @@ import static no.rutebanken.marduk.routes.file.FileType.GTFS;
 import static no.rutebanken.marduk.routes.file.FileType.INVALID_FILE_NAME;
 import static no.rutebanken.marduk.routes.file.FileType.INVALID_ZIP_FILE_ENTRY_CONTENT_ENCODING;
 import static no.rutebanken.marduk.routes.file.FileType.INVALID_ZIP_FILE_ENTRY_NAME_ENCODING;
+import static no.rutebanken.marduk.routes.file.FileType.INVALID_ZIP_FILE_ENTRY_XML_CONTENT;
 import static no.rutebanken.marduk.routes.file.FileType.NETEXPROFILE;
 import static no.rutebanken.marduk.routes.file.FileType.NOT_A_ZIP_FILE;
 import static no.rutebanken.marduk.routes.file.FileType.UNKNOWN_FILE_EXTENSION;
@@ -105,6 +107,9 @@ public class FileTypeClassifierBean {
         } catch (MardukZipFileEntryContentEncodingException e) {
             LOGGER.info("Found a zip file entry with an invalid XML encoding while classifying file " + relativePath, e);
             return INVALID_ZIP_FILE_ENTRY_CONTENT_ENCODING;
+        } catch (MardukZipFileEntryContentParsingException e) {
+            LOGGER.info("Found a zip file entry with an unparseable XML content while classifying file " + relativePath, e);
+            return INVALID_ZIP_FILE_ENTRY_XML_CONTENT;
         } catch (IOException e) {
             throw new MardukException("Exception while classifying file" + relativePath, e);
         }

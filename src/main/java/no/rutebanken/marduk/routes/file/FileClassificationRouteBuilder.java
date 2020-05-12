@@ -94,6 +94,13 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("direct:updateStatus")
                 .stop()
 
+                .when(header(FILE_TYPE).isEqualTo(FileType.INVALID_ZIP_FILE_ENTRY_XML_CONTENT.name()))
+                .log(LoggingLevel.WARN, correlation() + "The file ${header." + FILE_HANDLE + "} contains one or more invalid XML files: unparseable XML")
+                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_INVALID_XML_CONTENT))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
+                .to("direct:updateStatus")
+                .stop()
+
                 .when(header(FILE_TYPE).isEqualTo(FileType.INVALID_ZIP_FILE_ENTRY_NAME_ENCODING.name()))
                 .log(LoggingLevel.WARN, correlation() + "The file ${header." + FILE_HANDLE + "} contains one or more invalid zip entry names: invalid encoding")
                 .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_INVALID_ZIP_ENTRY_ENCODING))
