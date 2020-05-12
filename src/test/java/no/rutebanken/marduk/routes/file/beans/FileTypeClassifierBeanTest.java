@@ -75,6 +75,11 @@ public class FileTypeClassifierBeanTest {
     }
 
     @Test
+    public void classifyZipFilContainsSubdirectories() throws IOException {
+        assertFileType("gtfs-folder.zip", ZIP_CONTAINS_SUBDIRECTORIES);
+    }
+
+    @Test
     public void classifyEmptyZipFile() throws IOException {
         assertFileType("empty_zip.zip", NOT_A_ZIP_FILE);
     }
