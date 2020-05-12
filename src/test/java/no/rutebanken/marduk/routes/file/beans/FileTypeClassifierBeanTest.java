@@ -16,15 +16,14 @@
 
 package no.rutebanken.marduk.routes.file.beans;
 
+import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentParsingException;
 import no.rutebanken.marduk.routes.file.FileType;
-import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.IOUtils;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 import static no.rutebanken.marduk.routes.file.FileType.*;
 
@@ -45,22 +44,13 @@ public class FileTypeClassifierBeanTest {
     }
 
     @Test
-    public void classifyGtfsFileContainingFolder() throws Exception {
-        // The file is known to be invalid - repack zip
-        InputStream rePackedZipFile = ZipFileUtils.rePackZipFile(IOUtils.toByteArray(this.getClass().getResourceAsStream("gtfs-folder.zip")));
-        assertFileType("repackaged.zip", rePackedZipFile.readAllBytes(), GTFS);
-    }
-
-    @Test
     public void classifyNetexFile() throws Exception {
         assertFileType("netex.zip", NETEXPROFILE);
     }
 
     @Test
-    public void classifyNetexFileFromRuter() {
-    	assertThrows(RuntimeException.class, () ->
-    		assertFileType("AOR.zip", NETEXPROFILE)
-   		);
+    public void classifyNetexFileFromRuter() throws IOException {
+        assertFileType("AOR.zip", INVALID_ZIP_FILE_ENTRY_XML_CONTENT);
     }
 
     @Test
@@ -82,6 +72,11 @@ public class FileTypeClassifierBeanTest {
     @Test
     public void classifyNotAZipFile() throws IOException {
         assertFileType("not_a_zip_file.zip", NOT_A_ZIP_FILE);
+    }
+
+    @Test
+    public void classifyZipFilContainsSubdirectories() throws IOException {
+        assertFileType("gtfs-folder.zip", ZIP_CONTAINS_SUBDIRECTORIES);
     }
 
     @Test
@@ -120,17 +115,18 @@ public class FileTypeClassifierBeanTest {
 
     @Test
     public void nonXMLFilePatternShouldMatchOtherFileTypes() {
-        assertTrue("test.log".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        assertTrue("test.xml.log".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        assertTrue("test.xml2".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        assertTrue("test.txml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertTrue(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.log").matches());
+        assertTrue(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.xml.log").matches());
+        assertTrue(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.xml2").matches());
+        assertTrue(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.txml").matches());
+
     }
 
     @Test
     public void nonXMLFilePatternShouldNotMatchXMLFiles() {
-        assertFalse("test.xml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        assertFalse("test.XML".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
-        assertFalse("test.test.xml".matches(FileTypeClassifierBean.NON_XML_FILE_XML));
+        assertFalse(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.xml").matches());
+        assertFalse(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.XML").matches());
+        assertFalse(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.test.xml").matches());
     }
 
     private void assertFileType(String fileName, FileType expectedFileType) throws IOException {

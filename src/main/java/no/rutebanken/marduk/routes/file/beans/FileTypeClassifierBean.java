@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.file.beans;
 
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentEncodingException;
+import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentParsingException;
 import no.rutebanken.marduk.exceptions.MardukZipFileEntryNameEncodingException;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
@@ -26,12 +27,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
@@ -39,11 +40,12 @@ import static no.rutebanken.marduk.routes.file.FileType.GTFS;
 import static no.rutebanken.marduk.routes.file.FileType.INVALID_FILE_NAME;
 import static no.rutebanken.marduk.routes.file.FileType.INVALID_ZIP_FILE_ENTRY_CONTENT_ENCODING;
 import static no.rutebanken.marduk.routes.file.FileType.INVALID_ZIP_FILE_ENTRY_NAME_ENCODING;
+import static no.rutebanken.marduk.routes.file.FileType.INVALID_ZIP_FILE_ENTRY_XML_CONTENT;
 import static no.rutebanken.marduk.routes.file.FileType.NETEXPROFILE;
 import static no.rutebanken.marduk.routes.file.FileType.NOT_A_ZIP_FILE;
 import static no.rutebanken.marduk.routes.file.FileType.UNKNOWN_FILE_EXTENSION;
 import static no.rutebanken.marduk.routes.file.FileType.UNKNOWN_FILE_TYPE;
-import static no.rutebanken.marduk.routes.file.FileType.ZIP_WITH_SINGLE_FOLDER;
+import static no.rutebanken.marduk.routes.file.FileType.ZIP_CONTAINS_SUBDIRECTORIES;
 import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.firstElementQNameMatchesNetex;
 import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.validateZipContent;
 
@@ -51,10 +53,10 @@ public class FileTypeClassifierBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileTypeClassifierBean.class);
 
-    private static final String REQUIRED_GTFS_FILES_REGEX = "agency.txt|stops.txt|routes.txt|trips.txt|stop_times.txt";
-    private static final String XML_FILES_REGEX = ".+\\.xml";    //TODO can we be more specific?
+    private static final Pattern REQUIRED_GTFS_FILES_REGEX = Pattern.compile("agency.txt|stops.txt|routes.txt|trips.txt|stop_times.txt");
+    private static final Pattern XML_FILES_REGEX = Pattern.compile(".+\\.xml");
 
-    public static final String NON_XML_FILE_XML=".*\\.(?!XML$|xml$)[^.]+";
+    public static final Pattern NON_XML_FILE_XML = Pattern.compile(".*\\.(?!XML$|xml$)[^.]+");
 
     public boolean validateFile(byte[] data, Exchange exchange) {
         String relativePath = exchange.getIn().getHeader(FILE_HANDLE, String.class);
@@ -74,7 +76,6 @@ public class FileTypeClassifierBean {
         }
     }
 
-
     public FileType classifyFile(String relativePath, byte[] data) {
         try {
             if (!relativePath.toUpperCase().endsWith(".ZIP")) {
@@ -86,15 +87,18 @@ public class FileTypeClassifierBean {
             if (!isValidFileName(relativePath)) {
                 return INVALID_FILE_NAME;
             }
-            Set<String> filesNamesInZip = ZipFileUtils.listFilesInZip(data);
-            if (isGtfsZip(filesNamesInZip)) {
+
+            Set<ZipEntry> zipEntriesInZip = ZipFileUtils.listFilesInZip(data);
+
+            if (containsDirectory(zipEntriesInZip)) {
+                return ZIP_CONTAINS_SUBDIRECTORIES;
+            }
+
+            if (isGtfsZip(zipEntriesInZip)) {
                 return GTFS;
             }
-            if (isNetexZip(filesNamesInZip, new ByteArrayInputStream(data))) {
+            if (isNetexZip(zipEntriesInZip, new ByteArrayInputStream(data))) {
                 return NETEXPROFILE;
-            }
-            if (ZipFileUtils.zipFileContainsSingleFolder(data)) {
-                return ZIP_WITH_SINGLE_FOLDER;
             }
             return UNKNOWN_FILE_TYPE;
         } catch (MardukZipFileEntryNameEncodingException e) {
@@ -103,26 +107,34 @@ public class FileTypeClassifierBean {
         } catch (MardukZipFileEntryContentEncodingException e) {
             LOGGER.info("Found a zip file entry with an invalid XML encoding while classifying file " + relativePath, e);
             return INVALID_ZIP_FILE_ENTRY_CONTENT_ENCODING;
+        } catch (MardukZipFileEntryContentParsingException e) {
+            LOGGER.info("Found a zip file entry with an unparseable XML content while classifying file " + relativePath, e);
+            return INVALID_ZIP_FILE_ENTRY_XML_CONTENT;
         } catch (IOException e) {
             throw new MardukException("Exception while classifying file" + relativePath, e);
         }
     }
 
-    boolean isValidFileName(String fileName) {
+
+    private static boolean isValidFileName(String fileName) {
         return StandardCharsets.ISO_8859_1.newEncoder().canEncode(fileName);
     }
 
-    public static boolean isGtfsZip(final Set<String> filesInZip) {
-        return filesInZip.stream().anyMatch(p -> p.matches(REQUIRED_GTFS_FILES_REGEX));
+    private static boolean containsDirectory(Set<ZipEntry> zipEntriesInZip) {
+        return zipEntriesInZip.stream().anyMatch(ZipEntry::isDirectory);
     }
 
-    public static boolean isNetexZip(final Set<String> filesInZip, InputStream inputStream) throws MalformedInputException {
-        return filesInZip.stream().anyMatch(p -> p.matches(XML_FILES_REGEX)) //TODO skip file extension check unless it can be more specific?
-                       && isNetexXml(inputStream);
+    private static boolean isGtfsZip(final Set<ZipEntry> zipEntriesInZip) {
+        return zipEntriesInZip.stream().anyMatch(ze -> REQUIRED_GTFS_FILES_REGEX.matcher(ze.getName()).matches());
     }
 
-    private static boolean isNetexXml(InputStream inputStream) throws MalformedInputException {
-            return validateZipContent(inputStream, firstElementQNameMatchesNetex(), NON_XML_FILE_XML);
+    private static boolean isNetexZip(final Set<ZipEntry> zipEntriesInZip, InputStream inputStream) {
+        return zipEntriesInZip.stream().anyMatch(ze -> XML_FILES_REGEX.matcher(ze.getName()).matches())
+                && isNetexXml(inputStream);
+    }
+
+    private static boolean isNetexXml(InputStream inputStream) {
+        return validateZipContent(inputStream, firstElementQNameMatchesNetex(), NON_XML_FILE_XML);
     }
 
 }
