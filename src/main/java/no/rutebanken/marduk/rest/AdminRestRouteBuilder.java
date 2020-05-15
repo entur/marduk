@@ -454,7 +454,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .bindingMode(RestBindingMode.off)
                 .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
+                .responseMessage().code(500).message("Internal server error").endResponseMessage()
                 .route()
                 .streamCaching()
                 .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
