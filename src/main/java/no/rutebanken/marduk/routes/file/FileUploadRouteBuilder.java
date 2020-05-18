@@ -94,13 +94,13 @@ public class FileUploadRouteBuilder extends BaseRouteBuilder {
         try {
             byte[] content = IOUtils.toByteArray(e.getIn().getBody(InputStream.class));
             String contentType = e.getIn().getHeader(Exchange.CONTENT_TYPE, String.class);
-            LOGGER.trace("Received a multipart request (size: {} bytes) with content type {} ", content.length, contentType);
+            LOGGER.debug("Received a multipart request (size: {} bytes) with content type {} ", content.length, contentType);
             SimpleUploadContext uploadContext = new SimpleUploadContext(StandardCharsets.UTF_8, contentType, content);
             List<FileItem> fileItems = upload.parseRequest(uploadContext);
-            if(LOGGER.isTraceEnabled()) {
-                LOGGER.trace("The multipart request contains {} file(s)", fileItems.size());
+            if(LOGGER.isDebugEnabled()) {
+                LOGGER.debug("The multipart request contains {} file(s)", fileItems.size());
                 for(FileItem fileItem : fileItems) {
-                    LOGGER.trace("Received file {} (size: {})", fileItem.getName(), fileItem.getSize());
+                    LOGGER.debug("Received file {} (size: {})", fileItem.getName(), fileItem.getSize());
                 }
             }
             e.getIn().setBody(fileItems);
