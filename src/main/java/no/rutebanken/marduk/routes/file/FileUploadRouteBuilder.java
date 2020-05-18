@@ -29,12 +29,15 @@ import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.CloseShieldInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
@@ -48,6 +51,8 @@ import static no.rutebanken.marduk.Constants.FILE_NAME;
 public class FileUploadRouteBuilder extends BaseRouteBuilder {
 
     private static final String FILE_CONTENT_HEADER = "RutebankenFileContent";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileUploadRouteBuilder.class);
 
     @Override
     public void configure() throws Exception {
@@ -87,7 +92,18 @@ public class FileUploadRouteBuilder extends BaseRouteBuilder {
         ServletFileUpload upload = new ServletFileUpload(factory);
 
         try {
-            e.getIn().setBody(upload.parseRequest(new SimpleUploadContext(StandardCharsets.UTF_8, e.getIn().getHeader(Exchange.CONTENT_TYPE, String.class), IOUtils.toByteArray(e.getIn().getBody(InputStream.class)))));
+            byte[] content = IOUtils.toByteArray(e.getIn().getBody(InputStream.class));
+            String contentType = e.getIn().getHeader(Exchange.CONTENT_TYPE, String.class);
+            LOGGER.trace("Received a multipart request (size: {} bytes) with content type {} ", content.length, contentType);
+            SimpleUploadContext uploadContext = new SimpleUploadContext(StandardCharsets.UTF_8, contentType, content);
+            List<FileItem> fileItems = upload.parseRequest(uploadContext);
+            if(LOGGER.isTraceEnabled()) {
+                LOGGER.trace("The multipart request contains {} file(s)", fileItems.size());
+                for(FileItem fileItem : fileItems) {
+                    LOGGER.trace("Received file {} (size: {})", fileItem.getName(), fileItem.getSize());
+                }
+            }
+            e.getIn().setBody(fileItems);
         } catch (Exception ex) {
             throw new MardukException("Failed to parse multipart content: " + ex.getMessage());
         }

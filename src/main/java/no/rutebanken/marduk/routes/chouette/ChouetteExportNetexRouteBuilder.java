@@ -106,9 +106,12 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .endChoice()
                 .when(simple("${header.action_report_result} == 'NOK'"))
                 .process(e -> {
-                            ActionReportWrapper.Failure failure = e.getIn().getBody(ActionReportWrapper.class).actionReport.failure;
-                            if (failure != null && JobEvent.CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED.equals(failure.code)) {
-                                e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_NETEX_EXPORT_EMPTY);
+                            ActionReportWrapper actionReportWrapper = e.getIn().getBody(ActionReportWrapper.class);
+                            if (actionReportWrapper != null && actionReportWrapper.actionReport != null && actionReportWrapper.actionReport.failure != null) {
+                                ActionReportWrapper.Failure failure = actionReportWrapper.actionReport.failure;
+                                if (JobEvent.CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED.equals(failure.code)) {
+                                    e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_NETEX_EXPORT_EMPTY);
+                                }
                             }
                         }
                 )
