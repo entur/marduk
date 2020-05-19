@@ -34,3 +34,5 @@ resources:
   cpuRequest: "3"
   memRequest: 20000Mi
   xmx: 18g
+
+  monitoringEnabled: false
