@@ -35,3 +35,4 @@ resources:
   memRequest: 20000Mi
   xmx: 18g
 
+monitoringEnabled: false

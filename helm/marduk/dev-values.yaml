@@ -36,3 +36,5 @@ resources:
   cpuRequest: "1"
   memRequest: 7000Mi
   xmx: 5g
+
+monitoringEnabled: true

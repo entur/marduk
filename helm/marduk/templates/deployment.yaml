@@ -67,7 +67,8 @@ spec:
             - name: JAVA_OPTIONS
               value: -server -Xms512m -Xmx{{ .Values.resources.xmx }} -Xss256k -XX:MaxGCPauseMillis=5000 -XX:ParallelGCThreads=3
                 -Dspring.config.location=/etc/application-config/application.properties
-                -Dfile.encoding=UTF-8
+                -Dfile.encoding=UTF-8  {{- if .Values.monitoringEnabled}} -Dcom.sun.management.jmxremote.port=9999  -Dcom.sun.management.jmxremote.rmi.port=9998 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1
+            {{- end}}
             - name: TZ
               value: Europe/Oslo
             - name: SPRING_DATASOURCE_USERNAME
