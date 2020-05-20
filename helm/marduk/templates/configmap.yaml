@@ -78,7 +78,6 @@ data:
     gtfs.export.download.directory=/tmp/marduk/files/gtfs/merged
     netex.export.download.directory=/tmp/marduk/files/netex/merged
     sftp.localworkdir=/tmp/marduk/sftp
-    hazelcast.shutdownhook.enabled=false
 
 kind: ConfigMap
 metadata:
