@@ -25,7 +25,8 @@ google:
 
 keycloakUrl: https://kc-stage.devstage.entur.io/auth
 auth0:
-  url: https://partner.dev.entur.org
+  url: https://partner.staging.entur.org
+  audience: https://api.staging.entur.io
   administratorAccessEnabled: false
 
 resources:

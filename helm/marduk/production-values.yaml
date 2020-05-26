@@ -26,6 +26,7 @@ google:
 keycloakUrl: https://auth.entur.org/auth
 auth0:
   url: https://partner.entur.org
+  audience: https://api.entur.io
   administratorAccessEnabled: false
 
 resources:

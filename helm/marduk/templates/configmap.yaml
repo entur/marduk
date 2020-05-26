@@ -73,7 +73,7 @@ data:
     marduk.oauth2.resourceserver.keycloak.jwt.audience=account
     marduk.oauth2.resourceserver.auth0.jwt.issuer-uri={{ .Values.auth0.url }}/
     marduk.oauth2.resourceserver.auth0.jwt.jwkset-uri={{ .Values.auth0.url }}/.well-known/jwks.json
-    marduk.oauth2.resourceserver.auth0.jwt.audience=https://api.dev.entur.io
+    marduk.oauth2.resourceserver.auth0.jwt.audience={{ .Values.auth0.audience }}
     marduk.oauth2.resourceserver.auth0.admin.activated={{ .Values.auth0.administratorAccessEnabled }}
     gtfs.export.download.directory=/tmp/marduk/files/gtfs/merged
     netex.export.download.directory=/tmp/marduk/files/netex/merged
