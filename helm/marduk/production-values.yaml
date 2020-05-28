@@ -26,12 +26,14 @@ google:
 keycloakUrl: https://auth.entur.org/auth
 auth0:
   url: https://partner.entur.org
+  audience: https://api.entur.io
   administratorAccessEnabled: false
 
 resources:
-  cpuLimit: "3"
-  memLimit: 9000Mi
-  cpuRequest: "1"
-  memRequest: 7000Mi
-  xmx: 5g
+  cpuLimit: "4"
+  memLimit: 14000Mi
+  cpuRequest: "2"
+  memRequest: 12000Mi
+  xmx: 10g
 
+monitoringEnabled: false

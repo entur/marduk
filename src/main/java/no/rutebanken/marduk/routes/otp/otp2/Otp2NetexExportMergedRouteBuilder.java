@@ -45,7 +45,7 @@ import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 @Component
 public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
 
-    @Value("${netex.export.download.directory:files/netex/merged}")
+    @Value("${otp2.netex.export.download.directory:files/netex/merged-otp2}")
     private String localWorkingDirectory;
 
     @Value("${netex.export.stop.place.blob.path:tiamat/Full_latest.zip}")

@@ -25,12 +25,15 @@ google:
 
 keycloakUrl: https://kc-stage.devstage.entur.io/auth
 auth0:
-  url: https://partner.dev.entur.org
+  url: https://partner.staging.entur.org
+  audience: https://api.staging.entur.io
   administratorAccessEnabled: false
 
 resources:
-  cpuLimit: "3"
-  memLimit: 9000Mi
-  cpuRequest: "1"
-  memRequest: 7000Mi
-  xmx: 5g
+  cpuLimit: "4"
+  memLimit: 14000Mi
+  cpuRequest: "2"
+  memRequest: 12000Mi
+  xmx: 10g
+
+  monitoringEnabled: true

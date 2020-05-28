@@ -28,6 +28,7 @@ google:
 keycloakUrl: https://kc-dev.devstage.entur.io/auth
 auth0:
   url: https://partner.dev.entur.org
+  audience: https://api.dev.entur.io
   administratorAccessEnabled: true
 
 resources:
@@ -36,3 +37,5 @@ resources:
   cpuRequest: "1"
   memRequest: 7000Mi
   xmx: 5g
+
+monitoringEnabled: true
