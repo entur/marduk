@@ -9,7 +9,7 @@ gcpExchangeBucketName: marduk-exchange-stage
 gcpOtpReportBucketName: otpreport-stage.entur.org
 
 chouette:
-  validateLevel1CronSchedule: 0+45+2+?+*+*
+  validateLevel1CronSchedule: 0+30+4+?+*+*
 
 osm:
   fetchCronSchedule: 0+11+*+*+*+?
