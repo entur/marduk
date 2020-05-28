@@ -14,7 +14,7 @@
  *
  */
 
-package no.rutebanken.marduk.routes.google;
+package no.rutebanken.marduk.gtfs;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,7 +103,7 @@ public enum GoogleRouteTypeCode {
 
         GoogleRouteTypeCode orgMapping = map(org);
         if (orgMapping != null) {
-            return orgMapping.getCode();
+            return orgMapping.code;
         }
 
         // Reduce to base type (round to whole hundred) and try again
@@ -111,21 +111,21 @@ public enum GoogleRouteTypeCode {
             int baseType = org - (org % 100);
             GoogleRouteTypeCode baseTypeMapping = map(baseType);
             if (baseTypeMapping != null) {
-                return baseTypeMapping.getCode();
+                return baseTypeMapping.code;
             }
         }
 
         LOGGER.warn("Unable to map RouteType: {} to google supported value, using {} as default", org, FALLBACK_CODE);
 
-        return FALLBACK_CODE.getCode();
+        return FALLBACK_CODE.code;
     }
 
     private static GoogleRouteTypeCode map(int org) {
         GoogleRouteTypeCode match = fromCode(org);
 
         if (match != null) {
-            if (match.getMapsTo() != null) {
-                return match.getMapsTo();
+            if (match.mapsTo != null) {
+                return match.mapsTo;
             }
 
             return match;
@@ -144,7 +144,7 @@ public enum GoogleRouteTypeCode {
     }
 
     public static GoogleRouteTypeCode fromCode(int org) {
-        return Arrays.stream(GoogleRouteTypeCode.values()).filter(routeType -> routeType.getCode() == org).findFirst().orElse(null);
+        return Arrays.stream(GoogleRouteTypeCode.values()).filter(routeType -> routeType.code == org).findFirst().orElse(null);
     }
 
 }

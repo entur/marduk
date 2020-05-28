@@ -14,9 +14,11 @@
  *
  */
 
-package no.rutebanken.marduk.routes.google;
+package no.rutebanken.marduk.gtfs;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import no.rutebanken.marduk.gtfs.GoogleRouteTypeCode;
 import org.junit.jupiter.api.Test;
 
 public class GoogleRouteTypeCodeTest {

@@ -30,8 +30,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.camel.Exchange.FILE_PARENT;
-
 /**
  * Route preparing and uploading GTFS export to google.
  * <p>
@@ -66,17 +64,9 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .inOnly("entur-google-pubsub:GtfsGoogleQaExportQueue")
                 .routeId("gtfs-google-export-merged-route");
 
-        from("direct:transformToGoogleGTFS")
-                .log(LoggingLevel.INFO, getClass().getName(), "Transforming gtfs to suit google")
-                .process( e -> e.getIn().setBody(getGtfsFileList(e.getIn().getHeader(FILE_PARENT, String.class) + "/org")))
-                .split().body()
-                .bean("gtfsTransformationService", "transformToGoogleFormat")
-                .routeId("google-export-transform-gtfs");
-
         from("direct:exportGtfsGoogle")
                 .setBody(constant(null))
                 .process(e -> e.setProperty(Constants.PROVIDER_WHITE_LIST, prepareProviderWhiteListGoogleUpload()))
-                .setProperty(Constants.TRANSFORMATION_ROUTING_DESTINATION, constant("direct:transformToGoogleGTFS"))
                 .setHeader(Constants.FILE_NAME, constant(googleExportFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(googleExportIncludeShapes))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GOOGLE_GTFS"))
@@ -95,7 +85,6 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
         from("direct:exportQaGtfsGoogle")
                 .setBody(constant(null))
                 .process(e -> e.setProperty(Constants.PROVIDER_WHITE_LIST, prepareProviderWhiteListGoogleQAUpload()))
-                .setProperty(Constants.TRANSFORMATION_ROUTING_DESTINATION, constant("direct:transformToGoogleGTFS"))
                 .setHeader(Constants.FILE_NAME, constant(googleQaExportFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(googleQaExportIncludeShapes))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GOOGLE_GTFS_QA"))

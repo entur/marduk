@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.camel.Exchange.FILE_PARENT;
-
 /**
  * Route creating a merged GTFS basic file for all providers and uploading it to GCS.
  * <p>
@@ -66,20 +64,12 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:exportGtfsBasicMerged")
                 .setBody(constant(null))
-                .setProperty(Constants.TRANSFORMATION_ROUTING_DESTINATION, constant("direct:transformToBasicGTFS"))
                 .setProperty(Constants.PROVIDER_BLACK_LIST, constant(createProviderBlackList()))
                 .setHeader(Constants.FILE_NAME, constant(gtfsBasicMergedFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(includeShapes))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GTFS_BASIC_MERGED"))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-basic-export-merged");
-
-        from("direct:transformToBasicGTFS")
-                .log(LoggingLevel.INFO, getClass().getName(), "Transforming gtfs to strict GTFS (no extensions)")
-                .process( e -> e.getIn().setBody(getGtfsFileList(e.getIn().getHeader(FILE_PARENT, String.class)+ "/org")))
-                .split().body()
-                .bean("gtfsTransformationService", "transformToBasicGTFSFormat")
-                .routeId("gtfs-basic-export-transform-gtfs");
 
     }
 

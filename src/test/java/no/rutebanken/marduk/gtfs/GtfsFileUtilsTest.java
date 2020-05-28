@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.gtfs;
 
+import no.rutebanken.marduk.gtfs.GtfsFileUtils;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -25,6 +26,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +41,7 @@ public class GtfsFileUtilsTest {
     public void mergeGtfsFiles_identicalFilesShouldYieldMergedFileIdenticalToOrg() throws Exception {
 
         File input1 = new File(GTFS_FILE_1);
-        File merged = GtfsFileUtils.mergeGtfsFiles(List.of(input1, input1), GtfsExport.GTFS_EXTENDED);
+        File merged = GtfsFileUtils.mergeGtfsFiles(List.of(input1, input1), GtfsExport.GTFS_EXTENDED, false);
 
         // Should assert content, but no exceptions must do for now
         // assertTrue(FileUtils.sizeOf(merged) <= FileUtils.sizeOf(input1));
@@ -52,7 +54,7 @@ public class GtfsFileUtilsTest {
 
         File input1 = new File(GTFS_FILE_1);
         File input2 = new File(GTFS_FILE_2);
-        File merged = GtfsFileUtils.mergeGtfsFiles(List.of(input1, input2), GtfsExport.GTFS_EXTENDED);
+        File merged = GtfsFileUtils.mergeGtfsFiles(Arrays.asList(input1, input2), GtfsExport.GTFS_EXTENDED, false);
 
         byte[] data = Files.readAllBytes(merged.toPath());
         assertTrue(data.length >= FileUtils.sizeOf(input1));
@@ -63,7 +65,7 @@ public class GtfsFileUtilsTest {
 
     @Test
     public void mergeWithTransfers() throws Exception {
-        File mergedZip = GtfsFileUtils.mergeGtfsFiles(List.of(new File(GTFS_FILE_1), new File(GTFS_FILE_1)), GtfsExport.GTFS_EXTENDED);
+        File mergedZip = GtfsFileUtils.mergeGtfsFiles(List.of(new File(GTFS_FILE_1), new File(GTFS_FILE_1)), GtfsExport.GTFS_EXTENDED, false);
 
         List<String> transferLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(mergedZip, "transfers.txt")), StandardCharsets.UTF_8);
         assertThat(transferLines.size()).as("Expected file two duplicates and one other transfer to be merged to two (+ header)").isEqualTo(3);
