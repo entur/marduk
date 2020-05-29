@@ -81,6 +81,7 @@ data:
     sftp.localworkdir=/tmp/marduk/sftp
     # Temporary fix for https://github.com/spring-cloud/spring-cloud-gcp/issues/2315
     spring.cloud.gcp.security.firebase.enabled=false
+    entur.hazelcast.shutdownhook.enabled=false
 
 kind: ConfigMap
 metadata:
