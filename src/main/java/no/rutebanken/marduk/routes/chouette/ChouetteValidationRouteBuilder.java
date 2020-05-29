@@ -170,7 +170,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setBody(constant(""))
                 .to("entur-google-pubsub:ChouetteTransferExportQueue")
                 .otherwise()
-                .log(LoggingLevel.INFO, correlation() + "Validation ok, triggering GTFS export.")
+                .log(LoggingLevel.INFO, correlation() + "Validation ok, triggering NeTEx export.")
                 .setBody(constant(""))
                 .to("entur-google-pubsub:ChouetteExportNetexQueue") // Check on provider if should trigger transfer
                 .end()
