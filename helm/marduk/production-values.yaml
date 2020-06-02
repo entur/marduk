@@ -1,12 +1,13 @@
 env: production
 replicas: 2
-gcpProjectId: neon-1287
-gcpDatabaseInstance: neon-1287:europe-west1:marduk-db-1=tcp:5432
-gcpKeyName: marduk-neon-storage-key
-gcpExchangeKeyName: marduk-exchange-neon-storage-key
-gcpBucketName: marduk-production
-gcpExchangeBucketName: marduk-exchange-production
-gcpOtpReportBucketName: otpreport.entur.org
+
+gcp:
+  blobstoreProjectId: neon-1287
+  pubsubProjectId: neon-1287
+  databaseInstance: neon-1287:europe-west1:marduk-db-1=tcp:5432
+  bucketName: marduk-production
+  exchangeBucketName: marduk-exchange-production
+  otpReportBucketName: otpreport.entur.org
 
 chouette:
   validateLevel1CronSchedule: 0+30+23+?+*+*

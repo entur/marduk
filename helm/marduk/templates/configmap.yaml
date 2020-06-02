@@ -2,7 +2,7 @@ apiVersion: v1
 data:
   application.properties: |+
     chouette.stats.validity.categories=-1;INVALID,0;EXPIRING,120;VALID
-    blobstore.gcs.project.id={{ .Values.gcpProjectId }}
+    blobstore.gcs.project.id={{ .Values.gcp.blobstoreProjectId }}
     chouette.validate.level1.cron.schedule={{ .Values.chouette.validateLevel1CronSchedule }}
     sftp.delay=60s
     providers.api.url=http://baba/services/providers/
@@ -11,7 +11,7 @@ data:
     keycloak.bearer-only=true
     spring.datasource.platform=postgresql
     blobstore.gcs.exchange.credential.path=/etc/marduk-service-account/credentials.json
-    spring.cloud.gcp.pubsub.project-id={{ .Values.gcpProjectId }}
+    spring.cloud.gcp.pubsub.project-id={{ .Values.gcp.pubsubProjectId }}
     spring.cloud.gcp.pubsub.credentials.location=file:/etc/marduk-service-account/credentials.json
     spring.cloud.gcp.pubsub.subscriber.parallel-pull-count=1
     spring.cloud.gcp.pubsub.subscriber.executor-threads=30
@@ -20,7 +20,7 @@ data:
     chouette.validate.level1.autoStartup=true
     chouette.retry.delay=60000
     chouette.stats.days=180
-    blobstore.gcs.container.name={{ .Values.gcpBucketName }}
+    blobstore.gcs.container.name={{ .Values.gcp.bucketName }}
     chouette.url=http4://chouette:8080
     sftp.keyfile=/etc/secret-volume/id-rsa
     spring.datasource.url=jdbc:postgresql://localhost:5432/marduk
@@ -43,7 +43,7 @@ data:
     blobstore.delete.external.blobs=false
     camel.springboot.name=Marduk
     chouette.export.days.forward=365
-    blobstore.gcs.otpreport.container.name={{ .Values.gcpOtpReportBucketName }}
+    blobstore.gcs.otpreport.container.name={{ .Values.gcp.otpReportBucketName }}
     server.port={{ .Values.service.http.internalPort }}
     chouette.remove.old.jobs.keep.jobs=100
     blobstore.gcs.otpreport.credential.path=/etc/marduk-service-account/credentials.json
@@ -53,8 +53,8 @@ data:
     spring.datasource.maxActive=30
     chouette.export.days.back=365
     sftp.autoStartup=true
-    blobstore.container.name={{ .Values.gcpBucketName }}
-    blobstore.gcs.exchange.container.name={{ .Values.gcpExchangeBucketName }}
+    blobstore.container.name={{ .Values.gcp.bucketName }}
+    blobstore.gcs.exchange.container.name={{ .Values.gcp.exchangeBucketName }}
     keycloak.principal-attribute=preferred_username
     netex.export.merge.flexible.lines.enabled=true
     # Temporary setting until bug in KeycloakWebSecurityConfigurerAdapter is fixed (The bean 'httpSessionManager', defined in class path resource [XXXSecurityConfiguration.class], could not be registered. A bean with that name has already been defined in URL)

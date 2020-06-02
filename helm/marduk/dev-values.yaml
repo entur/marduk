@@ -1,12 +1,13 @@
 env: dev
 replicas: 2
-gcpProjectId: carbon-1287
-gcpDatabaseInstance: carbon-1287:europe-west1:marduk-db-1=tcp:5432
-gcpKeyName: marduk-carbon-storage-key
-gcpExchangeKeyName: marduk-exchange-carbon-storage-key
-gcpBucketName: marduk
-gcpExchangeBucketName: marduk-exchange
-gcpOtpReportBucketName: otpreport-test.entur.org
+
+gcp:
+  blobstoreProjectId: carbon-1287
+  pubsubProjectId: carbon-1287
+  databaseInstance: carbon-1287:europe-west1:marduk-db-1=tcp:5432
+  bucketName: marduk
+  exchangeBucketName: marduk-exchange
+  otpReportBucketName: otpreport-test.entur.org
 
 chouette:
   validateLevel1CronSchedule: 0+30+23+?+*+MON-FRI
