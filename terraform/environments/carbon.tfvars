@@ -1,5 +1,5 @@
 gcp_project            = "carbon-1287"
-gcp_pubsub_project            = "entur-ror-test"
+gcp_pubsub_project            = "entur-ror-dev"
 kube_namespace = "dev"
 bucket_marduk_instance_name = "marduk"
 bucket_exchange_instance_name = "marduk-exchange"
