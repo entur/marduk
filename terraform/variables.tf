@@ -3,6 +3,10 @@ variable "gcp_project" {
   description = "The GCP project hosting the workloads"
 }
 
+variable "gcp_cloudsql_project" {
+  description = "The GCP project hosting the CloudSQL resources"
+}
+
 variable "gcp_pubsub_project" {
   description = "The GCP project hosting the PubSub resources"
 }
@@ -68,6 +72,20 @@ variable "bucket_otpreport_instance_name" {
   description = "OTP report storage bucket name"
 }
 
+variable "db_region" {
+  description = "GCP  region"
+  default = "europe-west1"
+}
+
+variable "db_zone_letter" {
+  description = "GCP zone letter"
+  default = "b"
+}
+
+variable "db_availability_type" {
+  description = "Database availability type"
+}
+
 variable "ror-marduk-db-username" {
   description = "marduk database username"
 }
@@ -95,3 +113,6 @@ variable "ror-marduk-google-qa-sftp-password" {
 variable "ror-marduk-keycloak-secret" {
   description = "marduk keycloak secret"
 }
+
+
+
