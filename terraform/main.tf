@@ -102,12 +102,12 @@ module "postgres" {
   kubernetes_namespace = var.kube_namespace
   db_name = "marduk"
   db_user = "marduk"
-  region = var.db-region
-  zoneLetter = var.db-zone-letter
+  region = var.db_region
+  zoneLetter = var.db_zone_letter
   db_instance_tier = "db-custom-1-3840"
   db_instance_disk_size = 10
-  db_instance_backup_enabled= true
-  availability_type = var.db-availability_type
+  db_instance_backup_enabled = true
+  availability_type = var.db_availability_type
 }
 
 # Create pubsub topics and subscriptions
