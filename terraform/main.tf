@@ -95,248 +95,248 @@ resource "kubernetes_secret" "ror-marduk-secret" {
 
 # Create pubsub topics and subscriptions
 resource "google_pubsub_topic" "ChouetteExportGtfsQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouetteExportGtfsQueue"
+  name = "ChouetteExportGtfsQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "ChouetteExportGtfsQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouetteExportGtfsQueue"
+  name = "ChouetteExportGtfsQueue"
   topic = google_pubsub_topic.ChouetteExportGtfsQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "ChouetteExportNetexQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouetteExportNetexQueue"
+  name = "ChouetteExportNetexQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "ChouetteExportNetexQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouetteExportNetexQueue"
+  name = "ChouetteExportNetexQueue"
   topic = google_pubsub_topic.ChouetteExportNetexQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "ChouetteImportQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouetteImportQueue"
+  name = "ChouetteImportQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "ChouetteImportQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouetteImportQueue"
+  name = "ChouetteImportQueue"
   topic = google_pubsub_topic.ChouetteImportQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "ChouetteMergeWithFlexibleLinesQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouetteMergeWithFlexibleLinesQueue"
+  name = "ChouetteMergeWithFlexibleLinesQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "ChouetteMergeWithFlexibleLinesQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouetteMergeWithFlexibleLinesQueue"
+  name = "ChouetteMergeWithFlexibleLinesQueue"
   topic = google_pubsub_topic.ChouetteMergeWithFlexibleLinesQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "ChouettePollStatusQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouettePollStatusQueue"
+  name = "ChouettePollStatusQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "ChouettePollStatusQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouettePollStatusQueue"
+  name = "ChouettePollStatusQueue"
   topic = google_pubsub_topic.ChouettePollStatusQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "ChouetteTransferExportQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouetteTransferExportQueue"
+  name = "ChouetteTransferExportQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "ChouetteTransferExportQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouetteTransferExportQueue"
+  name = "ChouetteTransferExportQueue"
   topic = google_pubsub_topic.ChouetteTransferExportQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "ChouetteValidationQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouetteValidationQueue"
+  name = "ChouetteValidationQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "ChouetteValidationQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ChouetteValidationQueue"
+  name = "ChouetteValidationQueue"
   topic = google_pubsub_topic.ChouetteValidationQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "GtfsBasicExportMergedQueue" {
-  name = "${var.labels.team}.${var.labels.app}.GtfsBasicExportMergedQueue"
+  name = "GtfsBasicExportMergedQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "GtfsBasicExportMergedQueue" {
-  name = "${var.labels.team}.${var.labels.app}.GtfsBasicExportMergedQueue"
+  name = "GtfsBasicExportMergedQueue"
   topic = google_pubsub_topic.GtfsBasicExportMergedQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "GtfsExportMergedQueue" {
-  name = "${var.labels.team}.${var.labels.app}.GtfsExportMergedQueue"
+  name = "GtfsExportMergedQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "GtfsExportMergedQueue" {
-  name = "${var.labels.team}.${var.labels.app}.GtfsExportMergedQueue"
+  name = "GtfsExportMergedQueue"
   topic = google_pubsub_topic.GtfsExportMergedQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "GtfsGoogleExportQueue" {
-  name = "${var.labels.team}.${var.labels.app}.GtfsGoogleExportQueue"
+  name = "GtfsGoogleExportQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "GtfsGoogleExportQueue" {
-  name = "${var.labels.team}.${var.labels.app}.GtfsGoogleExportQueue"
+  name = "GtfsGoogleExportQueue"
   topic = google_pubsub_topic.GtfsGoogleExportQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "GtfsGooglePublishQaQueue" {
-  name = "${var.labels.team}.${var.labels.app}.GtfsGooglePublishQaQueue"
+  name = "GtfsGooglePublishQaQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "GtfsGooglePublishQaQueue" {
-  name = "${var.labels.team}.${var.labels.app}.GtfsGooglePublishQaQueue"
+  name = "GtfsGooglePublishQaQueue"
   topic = google_pubsub_topic.GtfsGooglePublishQaQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "GtfsGooglePublishQueue" {
-  name = "${var.labels.team}.${var.labels.app}.GtfsGooglePublishQueue"
+  name = "GtfsGooglePublishQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "GtfsGooglePublishQueue" {
-  name = "${var.labels.team}.${var.labels.app}.GtfsGooglePublishQueue"
+  name = "GtfsGooglePublishQueue"
   topic = google_pubsub_topic.GtfsGooglePublishQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "GtfsGoogleQaExportQueue" {
-  name = "${var.labels.team}.${var.labels.app}.GtfsGoogleQaExportQueue"
+  name = "GtfsGoogleQaExportQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "GtfsGoogleQaExportQueue" {
-  name = "${var.labels.team}.${var.labels.app}.GtfsGoogleQaExportQueue"
+  name = "GtfsGoogleQaExportQueue"
   topic = google_pubsub_topic.GtfsGoogleQaExportQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "MardukInboundQueue" {
-  name = "${var.labels.team}.${var.labels.app}.MardukInboundQueue"
+  name = "MardukInboundQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "MardukInboundQueue" {
-  name = "${var.labels.team}.${var.labels.app}.MardukInboundQueue"
+  name = "MardukInboundQueue"
   topic = google_pubsub_topic.MardukInboundQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "NetexExportMergedQueue" {
-  name = "${var.labels.team}.${var.labels.app}.NetexExportMergedQueue"
+  name = "NetexExportMergedQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "NetexExportMergedQueue" {
-  name = "${var.labels.team}.${var.labels.app}.NetexExportMergedQueue"
+  name = "NetexExportMergedQueue"
   topic = google_pubsub_topic.NetexExportMergedQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "ProcessFileQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ProcessFileQueue"
+  name = "ProcessFileQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "ProcessFileQueue" {
-  name = "${var.labels.team}.${var.labels.app}.ProcessFileQueue"
+  name = "ProcessFileQueue"
   topic = google_pubsub_topic.ProcessFileQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "OtpBaseGraphBuildQueue" {
-  name = "${var.labels.team}.${var.labels.app}.OtpBaseGraphBuildQueue"
+  name = "OtpBaseGraphBuildQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "OtpBaseGraphBuildQueue" {
-  name = "${var.labels.team}.${var.labels.app}.OtpBaseGraphBuildQueue"
+  name = "OtpBaseGraphBuildQueue"
   topic = google_pubsub_topic.OtpBaseGraphBuildQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "Otp2BaseGraphBuildQueue" {
-  name = "${var.labels.team}.${var.labels.app}.Otp2BaseGraphBuildQueue"
+  name = "Otp2BaseGraphBuildQueue"
   topic = google_pubsub_topic.OtpBaseGraphBuildQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "OtpGraphBuildQueue" {
-  name = "${var.labels.team}.${var.labels.app}.OtpGraphBuildQueue"
+  name = "OtpGraphBuildQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "OtpGraphBuildQueue" {
-  name = "${var.labels.team}.${var.labels.app}.OtpGraphBuildQueue"
+  name = "OtpGraphBuildQueue"
   topic = google_pubsub_topic.OtpGraphBuildQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "Otp2GraphBuildQueue" {
-  name = "${var.labels.team}.${var.labels.app}.Otp2GraphBuildQueue"
+  name = "Otp2GraphBuildQueue"
   topic = google_pubsub_topic.OtpGraphBuildQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
