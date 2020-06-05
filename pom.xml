@@ -26,7 +26,7 @@
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>2.25.1</camel.version>
         <keycloak.version>4.8.3.Final</keycloak.version>
-        <entur.helpers.version>1.0.18</entur.helpers.version>
+        <entur.helpers.version>1.0.21</entur.helpers.version>
         <guava.version>28.1-jre</guava.version>
         <commons-io.version>2.6</commons-io.version>
         <commons-csv.version>1.5</commons-csv.version>
