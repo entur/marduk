@@ -3,6 +3,10 @@ variable "gcp_project" {
   description = "The GCP project hosting the workloads"
 }
 
+variable "gcp_cloudsql_project" {
+  description = "The GCP project hosting the CloudSQL resources"
+}
+
 variable "gcp_pubsub_project" {
   description = "The GCP project hosting the PubSub resources"
 }
@@ -95,3 +99,18 @@ variable "ror-marduk-google-qa-sftp-password" {
 variable "ror-marduk-keycloak-secret" {
   description = "marduk keycloak secret"
 }
+
+variable "db-region" {
+  description = "GCP  region"
+  default = "europe-west1"
+}
+
+variable "db-zone-letter" {
+  description = "GCP zone letter"
+  default = "b"
+}
+
+variable "db-availability_type" {
+  description = "Database availability type"
+}
+
