@@ -146,9 +146,6 @@ spec:
             - mountPath: /etc/marduk-service-account
               name: marduk-service-account
               readOnly: true
-            - mountPath: /etc/secret-volume
-              name: secret-volume
-              readOnly: true
             - mountPath: /etc/application-config
               name: application-config
               readOnly: true
@@ -162,10 +159,6 @@ spec:
           secret:
             defaultMode: 420
             secretName: ror-marduk-sa-key
-        - name: secret-volume
-          secret:
-            defaultMode: 420
-            secretName: lamassu-private-key
         - name: application-config
           configMap:
             defaultMode: 420

@@ -55,19 +55,11 @@ server.admin.port=8888
 server.host=0.0.0.0
 server.port=8776
 
-sftp.host=192.168.99.100:30022
-sftp.keyfile=/home/tomgag/.ssh/lamassu.pem
-sftp.known.hosts.file=/home/tomgag/.ssh/known_hosts
-sftp.autoStartup=false
-sftp.delay=30s
-
 spring.main.sources=no.rutebanken.marduk
 spring.profiles.active=gcs-blobstore
 otp.graph.deployment.notification.url=none
 
 idempotent.skip=false
-
-babylon.url=http4://babylon:9030/rest
 
 ----
 
@@ -85,7 +77,7 @@ Build: `mvn clean install`
 
 Run the docker image in docker inside vagrant:et
 
-`docker rm -f marduk ; mvn -Pf8-build &amp;&amp; docker run -it --name marduk -e JAVA_OPTIONS=&quot;-Xmx1280m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005&quot; --link lamassu --link chouette -p 5005:5005 -v ~/.ssh/lamassu.pem:/opt/jboss/.ssh/lamassu.pem:ro -v /git/config/marduk/dev/application.properties:/app/config/application.properties:ro dr.rutebanken.org/rutebanken/marduk:0.0.1-SNAPSHOT`
+`docker rm -f marduk ; mvn -Pf8-build &amp;&amp; docker run -it --name marduk -e JAVA_OPTIONS=&quot;-Xmx1280m -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005&quot; --link chouette -p 5005:5005 -v /git/config/marduk/dev/application.properties:/app/config/application.properties:ro dr.rutebanken.org/rutebanken/marduk:0.0.1-SNAPSHOT`
 
 Here, we mount the lamssu key and an application.properties file from vagrant.
 

@@ -4,7 +4,6 @@ data:
     chouette.stats.validity.categories=-1;INVALID,0;EXPIRING,120;VALID
     blobstore.gcs.project.id={{ .Values.gcp.blobstoreProjectId }}
     chouette.validate.level1.cron.schedule={{ .Values.chouette.validateLevel1CronSchedule }}
-    sftp.delay=60s
     providers.api.url=http://baba/services/providers/
     fetch.osm.cron.schedule={{ .Values.osm.fetchCronSchedule }}
     google.publish.cron.schedule={{ .Values.google.publish.cronSchedule }}
@@ -22,7 +21,6 @@ data:
     chouette.stats.days=180
     blobstore.gcs.container.name={{ .Values.gcp.bucketName }}
     chouette.url=http4://chouette:8080
-    sftp.keyfile=/etc/secret-volume/id-rsa
     spring.datasource.url=jdbc:postgresql://localhost:5432/marduk
     google.publish.qa.scheduler.autoStartup={{ .Values.google.publishQA.autoStartup }}
     chouette.remove.old.jobs.keep.days=100
@@ -35,7 +33,6 @@ data:
     blobstore.gcs.credential.path=/etc/marduk-service-account/credentials.json
     keycloak.resource=marduk
     chouette.validate.level2.autoStartup=false
-    sftp.host=lamassu.default:22
     logging.level.org.apache=INFO
     logging.config=classpath:logback.xml
     spring.datasource.driver-class-name=org.postgresql.Driver
@@ -52,7 +49,6 @@ data:
     spring.profiles.active=gcs-blobstore
     spring.datasource.maxActive=30
     chouette.export.days.back=365
-    sftp.autoStartup=true
     blobstore.container.name={{ .Values.gcp.bucketName }}
     blobstore.gcs.exchange.container.name={{ .Values.gcp.exchangeBucketName }}
     keycloak.principal-attribute=preferred_username
@@ -78,7 +74,6 @@ data:
     gtfs.export.download.directory=/tmp/marduk/files/gtfs/merged
     netex.export.download.directory=/tmp/marduk/files/netex/merged
     otp2.netex.export.download.directory=/tmp/marduk/files/netex/merged-otp2
-    sftp.localworkdir=/tmp/marduk/sftp
     # Temporary fix for https://github.com/spring-cloud/spring-cloud-gcp/issues/2315
     spring.cloud.gcp.security.firebase.enabled=false
     entur.hazelcast.shutdownhook.enabled=false
