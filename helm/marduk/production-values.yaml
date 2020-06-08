@@ -31,10 +31,10 @@ auth0:
   administratorAccessEnabled: false
 
 resources:
-  cpuLimit: "4"
-  memLimit: 14000Mi
+  cpuLimit: "3"
+  memLimit: 11000Mi
   cpuRequest: "2"
-  memRequest: 12000Mi
-  xmx: 10g
+  memRequest: 9000Mi
+  xmx: 7g
 
 monitoringEnabled: false
