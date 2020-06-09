@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Google Transit does not (yet) support all Extended Route Type codes :https://developers.google.com/transit/gtfs/reference/extended-route-types
@@ -29,56 +30,56 @@ import java.util.Arrays;
 public enum GoogleRouteTypeCode {
 
     // Basic code set (supported by google)
-    Tram(0),
-    Subway(1),
-    Rail(2),
-    Bus(3),
-    Ferry(4),
-    Cable(5),
-    Gondola(6),
-    Funicular(7),
+    TRAM(0),
+    SUBWAY(1),
+    RAIL(2),
+    BUS(3),
+    FERRY(4),
+    CABLE(5),
+    GONDOLA(6),
+    FUNICULAR(7),
 
     // Extended values supported by google
-    Railway_Service(100),
-    High_Speed_Rail_Service(101),
-    Long_Distance_Trains(102),
-    Inter_Regional_Rail_Service(103),
-    Car_Transport_Rail_Service(104),
-    Sleeper_Rail_Service(105),
-    Regional_Rail_Service(106),
-    Tourist_Railway_Service(107),
-    Rail_Shuttle_Within_Complex(108),
-    Suburban_Railway(109),
-    Coach_Service(200),
-    International_Coach_Service(201),
-    National_Coach_Service(202),
-    Regional_Coach_Service(204),
-    Commuter_Coach_Service(208),
-    Urban_Railway_Service(400),
-    Metro_Service(401),
-    Underground_Service(402),
-    Monorail(405),
-    Bus_Service(700),
-    Regional_Bus_Service(701),
-    Express_Bus_Service(702),
-    Local_Bus_Service(704),
-    Trolleybus_Service(800),
-    Tram_Service(900),
-    Water_Transport_Service(1000),
-    Telecabin_Service(1300),
-    Funicular_Service(1400),
-    Communal_Taxi_Service(1501),
-    Miscellaneous_Service(1700),
-    Cable_Car(1701),
-    Horsedrawn_Carriage(1702),
+    RAILWAY_SERVICE(100),
+    HIGH_SPEED_RAIL_SERVICE(101),
+    LONG_DISTANCE_TRAINS(102),
+    INTER_REGIONAL_RAIL_SERVICE(103),
+    CAR_TRANSPORT_RAIL_SERVICE(104),
+    SLEEPER_RAIL_SERVICE(105),
+    REGIONAL_RAIL_SERVICE(106),
+    TOURIST_RAILWAY_SERVICE(107),
+    RAIL_SHUTTLE_WITHIN_COMPLEX(108),
+    SUBURBAN_RAILWAY(109),
+    COACH_SERVICE(200),
+    INTERNATIONAL_COACH_SERVICE(201),
+    NATIONAL_COACH_SERVICE(202),
+    REGIONAL_COACH_SERVICE(204),
+    COMMUTER_COACH_SERVICE(208),
+    URBAN_RAILWAY_SERVICE(400),
+    METRO_SERVICE(401),
+    UNDERGROUND_SERVICE(402),
+    MONORAIL(405),
+    BUS_SERVICE(700),
+    REGIONAL_BUS_SERVICE(701),
+    EXPRESS_BUS_SERVICE(702),
+    LOCAL_BUS_SERVICE(704),
+    TROLLEYBUS_SERVICE(800),
+    TRAM_SERVICE(900),
+    WATER_TRANSPORT_SERVICE(1000),
+    TELECABIN_SERVICE(1300),
+    FUNICULAR_SERVICE(1400),
+    COMMUNAL_TAXI_SERVICE(1501),
+    MISCELLANEOUS_SERVICE(1700),
+    CABLE_CAR(1701),
+    HORSEDRAWN_CARRIAGE(1702),
 
 
     // Values not supported by google, with explicit mapping
-    Suburban_Railway_Service(300, Railway_Service),
-    Metro_Service2(500, Metro_Service),
-    Underground_Service2(600, Underground_Service),
-    Ferry_Service(1200, Water_Transport_Service),
-    Taxi_Service(1500, Communal_Taxi_Service);
+    SUBURBAN_RAILWAY_SERVICE(300, RAILWAY_SERVICE),
+    METRO_SERVICE_2(500, METRO_SERVICE),
+    UNDERGROUND_SERVICE_2(600, UNDERGROUND_SERVICE),
+    FERRY_SERVICE(1200, WATER_TRANSPORT_SERVICE),
+    TAXI_SERVICE(1500, COMMUNAL_TAXI_SERVICE);
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GoogleRouteTypeCode.class);
 
@@ -87,7 +88,7 @@ public enum GoogleRouteTypeCode {
 
 
     // Default to misc
-    private static final GoogleRouteTypeCode FALLBACK_CODE = Miscellaneous_Service;
+    private static final GoogleRouteTypeCode FALLBACK_CODE = MISCELLANEOUS_SERVICE;
 
     GoogleRouteTypeCode(int code) {
         this.code = code;
@@ -124,11 +125,8 @@ public enum GoogleRouteTypeCode {
         GoogleRouteTypeCode match = fromCode(org);
 
         if (match != null) {
-            if (match.mapsTo != null) {
-                return match.mapsTo;
-            }
+            return Objects.requireNonNullElse(match.mapsTo, match);
 
-            return match;
         }
         return null;
     }
