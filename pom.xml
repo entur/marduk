@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-        <version>1.0.9</version>
+        <version>1.0.10</version>
     </parent>
 
 
@@ -28,7 +28,7 @@
         <keycloak.version>4.8.3.Final</keycloak.version>
         <entur.helpers.version>1.0.18</entur.helpers.version>
         <guava.version>28.1-jre</guava.version>
-        <commons-io.version>2.6</commons-io.version>
+        <commons-io.version>2.7</commons-io.version>
         <commons-csv.version>1.5</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <zt-zip.version>1.13</zt-zip.version>
