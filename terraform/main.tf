@@ -94,36 +94,20 @@ resource "kubernetes_secret" "ror-marduk-secret" {
 }
 
 # Create database
-resource "google_sql_database_instance" "marduk_db_instance" {
-  name = "marduk-db"
-  project = var.gcp_cloudsql_project
-  region = "europe-west1"
-
-  settings {
-    availability_type = var.db_availability_type
-    disk_size = 10
-    tier = "db-custom-1-3840"
-    location_preference {
-      zone = "europe-west1-b"
-    }
-  backup_configuration {
-    enabled = true
-  }
-}
-database_version = "POSTGRES_9_6"
-}
-
-resource "google_sql_database" "marduk_db" {
-name = "marduk"
-project = var.gcp_cloudsql_project
-instance = google_sql_database_instance.marduk_db_instance.name
-}
-
-resource "google_sql_user" "marduk_db_user" {
-name = "marduk"
-project = var.gcp_cloudsql_project
-instance = google_sql_database_instance.marduk_db_instance.name
-password = var.ror-marduk-db-password
+module "postgres" {
+  source = "github.com/entur/terraform//modules/postgres"
+  postgresql_version = "POSTGRES_9_6"
+  gcp_project = var.gcp_cloudsql_project
+  labels = var.labels
+  kubernetes_namespace = var.kube_namespace
+  db_name = "marduk"
+  db_user = "marduk"
+  region = var.db_region
+  zoneLetter = var.db_zone_letter
+  db_instance_tier = "db-custom-1-3840"
+  db_instance_disk_size = 10
+  db_instance_backup_enabled = true
+  availability_type = var.db_availability_type
 }
 
 # Create pubsub topics and subscriptions
