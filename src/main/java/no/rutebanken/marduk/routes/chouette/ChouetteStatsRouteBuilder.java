@@ -24,6 +24,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
 import org.apache.camel.model.dataformat.JsonLibrary;
+import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -90,7 +91,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
 
 
         from("direct:chouetteGetFreshStats")
-                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
+                .removeHeaders("Camel*", EnturGooglePubSubConstants.ACK_ID)
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .process(e -> e.getIn().setHeader("refParam", getAllReferentialsAsParam()))

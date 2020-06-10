@@ -153,10 +153,12 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void setStorage(Storage storage) {
+        // not applicable to local disk blobstore
     }
 
     @Override
     public void setContainerName(String containerName) {
+        // not applicable to local disk blobstore
     }
 
     @Override

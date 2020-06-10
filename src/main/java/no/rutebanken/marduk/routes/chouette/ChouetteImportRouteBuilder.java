@@ -26,6 +26,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.component.http4.HttpMethods;
+import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -54,7 +55,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
         from("direct:chouetteCleanStopPlaces")
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette stop place clean")
-                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
+                .removeHeaders("Camel*", EnturGooglePubSubConstants.ACK_ID)
                 .setBody(constant(null))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/clean/stop_areas"))
@@ -64,7 +65,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
         from("direct:chouetteCleanAllReferentials")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorService(allProvidersExecutorService)
-                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
+                .removeHeaders("Camel*",EnturGooglePubSubConstants.ACK_ID)
                 .setHeader(Constants.PROVIDER_ID, simple("${body.id}"))
                 .validate(header("filter").in("all", "level1", "level2"))
                 .choice()
@@ -90,7 +91,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
                 })
-                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
+                .removeHeaders("Camel*",EnturGooglePubSubConstants.ACK_ID)
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/clean"))
                 .toD("${property.chouette_url}")
