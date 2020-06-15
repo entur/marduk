@@ -10,6 +10,11 @@ provider "kubernetes" {
   load_config_file = var.load_config_file
 }
 
+# temporary adding back provider "random"
+provider "random" {
+  version = "~> 2.2.1"
+}
+
 # create service account
 resource "google_service_account" "marduk_service_account" {
   account_id = "${var.labels.team}-${var.labels.app}-sa"
