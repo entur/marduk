@@ -37,4 +37,4 @@ resources:
   memRequest: 9000Mi
   xmx: 7g
 
-  monitoringEnabled: true
+monitoringEnabled: true
