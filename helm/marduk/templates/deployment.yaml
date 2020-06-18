@@ -154,6 +154,7 @@ spec:
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
+      serviceAccountName: marduk-service-account
       terminationGracePeriodSeconds: 30
       volumes:
         - name: marduk-service-account
