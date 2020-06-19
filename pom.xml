@@ -32,6 +32,10 @@
         <commons-csv.version>1.5</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <zt-zip.version>1.13</zt-zip.version>
+
+        <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
+        <argLine></argLine>
+
     </properties>
 
     <dependencyManagement>
@@ -389,7 +393,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>-Xms500m -Xmx500m -Xss256k</argLine>
+                    <argLine>@{argLine} -Xms500m -Xmx500m -Xss256k</argLine>
                     <systemPropertyVariables combine.children="override">
                         <spring.output.ansi.enabled>ALWAYS</spring.output.ansi.enabled>
                     </systemPropertyVariables>
