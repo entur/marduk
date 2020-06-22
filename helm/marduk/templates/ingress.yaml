@@ -5,13 +5,7 @@ metadata:
     {{- include "common.labels" . | indent 4 }}
   annotations:
     kubernetes.io/ingress.class: traefik
-    {{- if eq .Values.env "production"}}
-    external-dns.alpha.kubernetes.io/target: {{ .Values.ingress.productionIp }}
-    {{ else if eq .Values.env "staging"}}
-    external-dns.alpha.kubernetes.io/target: {{ .Values.ingress.stagingIp }}
-    {{ else if eq .Values.env "dev"}}
-    external-dns.alpha.kubernetes.io/target: {{ .Values.ingress.devIp }}
-    {{- end}}
+    external-dns.alpha.kubernetes.io/target: {{ .Values.ingress.loadBalancerIP }}
   name: timetable-admin-v1-map
   namespace: {{ .Release.Namespace }}
 spec:
@@ -34,13 +28,7 @@ metadata:
         {{- include "common.labels" . | indent 4 }}
   annotations:
     kubernetes.io/ingress.class: traefik
-          {{- if eq .Values.env "production"}}
-    external-dns.alpha.kubernetes.io/target: {{ .Values.ingress.productionIp }}
-          {{ else if eq .Values.env "staging"}}
-    external-dns.alpha.kubernetes.io/target: {{ .Values.ingress.stagingIp }}
-          {{ else if eq .Values.env "dev"}}
-    external-dns.alpha.kubernetes.io/target: {{ .Values.ingress.devIp }}
-        {{- end}}
+    external-dns.alpha.kubernetes.io/target: {{ .Values.ingress.loadBalancerIP }}
   name: timetable-admin-v1-timetable
   namespace: {{ .Release.Namespace }}
 spec:
