@@ -81,7 +81,9 @@ public class FileClassifierPredicates {
             }
         } finally {
             try {
-                streamReader.close();
+                if(streamReader != null) {
+                    streamReader.close();
+                }
             } catch (XMLStreamException e) {
                 throw new RuntimeException("Exception while closing", e);
             }
