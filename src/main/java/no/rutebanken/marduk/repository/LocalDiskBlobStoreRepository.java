@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -60,10 +61,10 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         for (String prefix : prefixes) {
-            if(Paths.get(baseFolder, prefix).toFile().isDirectory()) {
+            if (Paths.get(baseFolder, prefix).toFile().isDirectory()) {
                 try (Stream<Path> walk = Files.walk(Paths.get(baseFolder, prefix))) {
                     List<BlobStoreFiles.File> result = walk.filter(Files::isRegularFile)
-                            .map(x -> new BlobStoreFiles.File(Paths.get(baseFolder).relativize(x).toString(), new Date(), new Date(), x.toFile().length())).collect(Collectors.toList());
+                            .map(path -> new BlobStoreFiles.File(Paths.get(baseFolder).relativize(path).toString(), getFileCreationDate(path), getFileLastModifiedDate(path), getFileSize(path))).collect(Collectors.toList());
                     blobStoreFiles.add(result);
                 } catch (IOException e) {
                     throw new MardukException(e);
@@ -79,7 +80,7 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
     @Override
     public BlobStoreFiles listBlobsFlat(String prefix) {
         List<BlobStoreFiles.File> files = listBlobs(prefix).getFiles();
-        List<BlobStoreFiles.File> result = files.stream().map(k -> new BlobStoreFiles.File(k.getName().replaceFirst(prefix + "/", ""), new Date(), new Date(), 1234L)).collect(Collectors.toList());
+        List<BlobStoreFiles.File> result = files.stream().map(file -> new BlobStoreFiles.File(file.getName().replaceFirst(prefix, ""), file.getCreated(), file.getUpdated(), file.getFileSize())).collect(Collectors.toList());
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(result);
         return blobStoreFiles;
@@ -192,5 +193,22 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
         } catch (IOException e) {
             throw new MardukException(e);
         }
+    }
+
+    private static Date getFileCreationDate(Path path) {
+        try {
+            BasicFileAttributes attr = Files.readAttributes(path, BasicFileAttributes.class);
+            return new Date(attr.creationTime().toMillis());
+        } catch (IOException e) {
+            throw new MardukException(e);
+        }
+    }
+
+    private static Date getFileLastModifiedDate(Path path) {
+        return new Date(path.toFile().lastModified());
+    }
+
+    private static long getFileSize(Path path) {
+        return path.toFile().length();
     }
 }
