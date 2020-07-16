@@ -79,7 +79,7 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
     @Override
     public BlobStoreFiles listBlobsFlat(String prefix) {
         List<BlobStoreFiles.File> files = listBlobs(prefix).getFiles();
-        List<BlobStoreFiles.File> result = files.stream().map(k -> new BlobStoreFiles.File(k.getName().replaceFirst(prefix + "/", ""), new Date(), new Date(), 1234L)).collect(Collectors.toList());
+        List<BlobStoreFiles.File> result = files.stream().map(k -> new BlobStoreFiles.File(k.getName().replaceFirst(prefix , ""), new Date(), new Date(), 1234L)).collect(Collectors.toList());
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(result);
         return blobStoreFiles;
