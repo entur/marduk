@@ -213,8 +213,8 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
         ObjectMapper mapper = new ObjectMapper();
         BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
-        assertEquals(1, rsp.getFiles().size());
-        assertEquals(testFileStorePath + testFileName, rsp.getFiles().get(0).getName());
+        assertEquals(1, rsp.getFiles().size(), "The list should contain exactly one file");
+        assertEquals(testFileName, rsp.getFiles().get(0).getName(), "The file name should not be prefixed by the file store path");
 
     }
 
