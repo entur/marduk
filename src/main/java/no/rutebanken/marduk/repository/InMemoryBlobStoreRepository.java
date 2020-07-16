@@ -29,6 +29,9 @@ import org.springframework.stereotype.Repository;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -57,9 +60,9 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     public BlobStoreFiles listBlobs(Collection<String> prefixes) {
         logger.debug("list blobs called in in-memory blob store");
         List<BlobStoreFiles.File> files = blobs.keySet().stream()
-                                                  .filter(k -> prefixes.stream().anyMatch(k::startsWith))
-                                                  .map(k -> new BlobStoreFiles.File(k,new Date(), new Date(), 1234L))
-                                                  .collect(Collectors.toList());
+                .filter(fileName -> prefixes.stream().anyMatch(fileName::startsWith))
+                .map(fileName -> new BlobStoreFiles.File(fileName, new Date(), new Date(), (long) blobs.get(fileName).length))
+                .collect(Collectors.toList());
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(files);
         return blobStoreFiles;
@@ -68,7 +71,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     @Override
     public BlobStoreFiles listBlobsFlat(String prefix) {
         List<BlobStoreFiles.File> files = listBlobs(prefix).getFiles();
-        List<BlobStoreFiles.File> result = files.stream().map(k -> new BlobStoreFiles.File(k.getName().replaceFirst(prefix, ""), new Date(), new Date(), 1234L)).collect(Collectors.toList());
+        List<BlobStoreFiles.File> result = files.stream().map(file -> new BlobStoreFiles.File(file.getName().replaceFirst(prefix, ""), file.getCreated(), file.getUpdated(), file.getFileSize())).collect(Collectors.toList());
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(result);
         return blobStoreFiles;
