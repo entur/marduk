@@ -40,7 +40,7 @@ public interface BlobStoreRepository {
 
     /**
      * Retrieve the list of files in the blob store under the given prefix. In the returned list
-     * of {@link BlobStoreFiles.File}s, the file names are stripped from the prefix. Example:
+     * of {@link BlobStoreFiles.File}s, the file names are stripped of the prefix. Example:
      * /inbound/received/myfile.zip --> myfile.zip
      * @param prefix the prefix under which to look up files in the blob store.
      * @return The files in the blob store under the given prefix. The prefix is removed from the file names.
