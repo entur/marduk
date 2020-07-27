@@ -2,14 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
+    <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-        <version>1.0.10</version>
+        <version>1.0.11</version>
     </parent>
-
-
-    <modelVersion>4.0.0</modelVersion>
 
     <groupId>no.rutebanken.marduk</groupId>
     <artifactId>marduk</artifactId>
@@ -17,6 +16,7 @@
 
     <name>marduk</name>
     <description>Backend integration</description>
+    <url>https://github.com/entur/marduk</url>
 
     <scm>
         <connection>scm:git:ssh://git@github.com:entur/marduk.git</connection>
@@ -26,7 +26,7 @@
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>2.25.1</camel.version>
         <keycloak.version>4.8.3.Final</keycloak.version>
-        <entur.helpers.version>1.0.18</entur.helpers.version>
+        <entur.helpers.version>1.0.22-SNAPSHOT</entur.helpers.version>
         <guava.version>28.1-jre</guava.version>
         <commons-io.version>2.7</commons-io.version>
         <commons-csv.version>1.5</commons-csv.version>
@@ -35,7 +35,6 @@
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
         <argLine></argLine>
-
     </properties>
 
     <dependencyManagement>
