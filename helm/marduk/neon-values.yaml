@@ -35,9 +35,9 @@ ingress:
 
 resources:
   cpuLimit: "3"
-  memLimit: 11000Mi
+  memLimit: 9000Mi
   cpuRequest: "2"
-  memRequest: 9000Mi
-  xmx: 7g
+  memRequest: 7000Mi
+  xmx: 5g
 
 monitoringEnabled: false
