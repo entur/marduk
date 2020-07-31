@@ -144,7 +144,7 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic) {
-
+        // no-op implementation for local disk blobstore
     }
 
     @Override
