@@ -115,7 +115,6 @@ public class FileTypeClassifierBean {
         }
     }
 
-
     private static boolean isValidFileName(String fileName) {
         return StandardCharsets.ISO_8859_1.newEncoder().canEncode(fileName);
     }

@@ -157,7 +157,7 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
             int i = 0;
             for (File stopFile : FileUtils.listFiles(new File(sourceDir), null, false)) {
                 String targetFileName = netexExportStopsFilePrefix + (i > 0 ? i : "") + ".xml";
-                FileUtils.copyFile(stopFile, new File(targetDir + "/" + targetFileName));
+                FileUtils.copyFile(stopFile, new File(targetDir, targetFileName));
                 i++;
             }
         } catch (IOException ioe) {

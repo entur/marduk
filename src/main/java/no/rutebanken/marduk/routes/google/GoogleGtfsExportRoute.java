@@ -94,7 +94,6 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
     }
 
-
     private Set<String> prepareProviderWhiteListGoogleUpload() {
         return getProviderRepository().getProviders().stream().filter(p -> p.chouetteInfo.googleUpload).map(this::getExportReferentialForProvider).collect(Collectors.toSet());
     }
@@ -102,7 +101,6 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
     private Set<String> prepareProviderWhiteListGoogleQAUpload() {
         return getProviderRepository().getProviders().stream().filter(p -> p.chouetteInfo.googleQAUpload).map(this::getExportReferentialForProvider).collect(Collectors.toSet());
     }
-
 
     /**
      * Use referential for RB-space provider even if providers own space is configured for export.
@@ -117,13 +115,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
             if (migrateToProvider != null) {
                 return migrateToProvider.chouetteInfo.referential;
             }
-
         }
         return provider.chouetteInfo.referential;
     }
-
-    private Collection<File> getGtfsFileList(String directory) {
-        return FileUtils.listFiles(new File(directory), new String[]{"zip"}, false);
-    }
-
 }

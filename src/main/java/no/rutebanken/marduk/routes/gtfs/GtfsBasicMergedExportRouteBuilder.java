@@ -84,9 +84,4 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
 
         return agencyBlackList.stream().map(agency -> agency.startsWith("rb_") ? agency : "rb_" + agency).collect(Collectors.toList());
     }
-
-    private Collection<File> getGtfsFileList(String directory) {
-        return FileUtils.listFiles(new File(directory), new String[]{"zip"}, false);
-    }
-
 }

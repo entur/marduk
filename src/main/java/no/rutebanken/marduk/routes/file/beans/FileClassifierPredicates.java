@@ -46,7 +46,7 @@ public class FileClassifierPredicates {
 
     private static final XMLInputFactory xmlInputFactory =   StaxUtils.createDefensiveInputFactory();
 
-    private static final Logger logger = LoggerFactory.getLogger(FileClassifierPredicates.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileClassifierPredicates.class);
 
     public static Predicate<InputStream> firstElementQNameMatchesNetex() {
         return inputStream -> firstElementQNameMatches(NETEX_PUBLICATION_DELIVERY_QNAME).test(inputStream);
@@ -85,7 +85,7 @@ public class FileClassifierPredicates {
                     streamReader.close();
                 }
             } catch (XMLStreamException e) {
-                throw new RuntimeException("Exception while closing", e);
+                LOGGER.warn("Exception while closing the stream reader", e);
             }
         }
         return Optional.empty();
@@ -111,7 +111,7 @@ public class FileClassifierPredicates {
                 if (!skipFileRegex.matcher(entry.getName()).matches()) {
                     if (testPredicate(predicate, stream, entry)) return false;
                 } else {
-                    logger.info("Skipped file with name {}", entry.getName());
+                    LOGGER.info("Skipped file with name {}", entry.getName());
                 }
             }
             return true;
@@ -124,7 +124,7 @@ public class FileClassifierPredicates {
         try {
             if (!predicate.test(StreamUtils.nonClosing(stream))) {
                 String s = String.format("Entry %s with size %d is invalid.", entry.getName(), entry.getSize());
-                logger.info(s);
+                LOGGER.info(s);
                 return true;
             }
         } catch (MardukZipFileEntryContentEncodingException e) {
