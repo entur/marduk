@@ -64,7 +64,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
         from("direct:chouetteCleanAllReferentials")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
-                .split().body().parallelProcessing().executorService(allProvidersExecutorService)
+                .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
                 .removeHeaders("Camel*",EnturGooglePubSubConstants.ACK_ID)
                 .setHeader(Constants.PROVIDER_ID, simple("${body.id}"))
                 .validate(header("filter").in("all", "level1", "level2"))
