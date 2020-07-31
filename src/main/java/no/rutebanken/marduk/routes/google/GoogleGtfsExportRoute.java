@@ -21,12 +21,9 @@ import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
-import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
