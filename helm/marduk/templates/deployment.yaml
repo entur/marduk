@@ -44,7 +44,7 @@ spec:
             - -instances={{ .Values.gcp.databaseInstance}}
             - -credential_file=/etc/marduk-service-account/credentials.json
             - -log_debug_stdout
-          image: gcr.io/cloudsql-docker/gce-proxy:1.15
+          image: gcr.io/cloudsql-docker/gce-proxy:1.17
           imagePullPolicy: IfNotPresent
           lifecycle:
             preStop:
@@ -65,7 +65,8 @@ spec:
               name:  marduk-service-account
         - env:
             - name: JAVA_OPTIONS
-              value: -server -Xms512m -Xmx{{ .Values.resources.xmx }} -Xss512k -XX:MaxGCPauseMillis=5000 -XX:ParallelGCThreads=3
+              value: -server -Xms512m -Xmx{{ .Values.resources.xmx }} -Xss512k -XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90
+                -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40
                 -Dspring.config.location=/etc/application-config/application.properties
                 -Dfile.encoding=UTF-8  {{- if .Values.monitoringEnabled}} -Dcom.sun.management.jmxremote.port=9999  -Dcom.sun.management.jmxremote.rmi.port=9998 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1
             {{- end}}
@@ -146,9 +147,6 @@ spec:
             - mountPath: /etc/marduk-service-account
               name: marduk-service-account
               readOnly: true
-            - mountPath: /etc/secret-volume
-              name: secret-volume
-              readOnly: true
             - mountPath: /etc/application-config
               name: application-config
               readOnly: true
@@ -156,16 +154,13 @@ spec:
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
+      serviceAccountName: marduk-service-account
       terminationGracePeriodSeconds: 30
       volumes:
         - name: marduk-service-account
           secret:
             defaultMode: 420
             secretName: ror-marduk-sa-key
-        - name: secret-volume
-          secret:
-            defaultMode: 420
-            secretName: lamassu-private-key
         - name: application-config
           configMap:
             defaultMode: 420

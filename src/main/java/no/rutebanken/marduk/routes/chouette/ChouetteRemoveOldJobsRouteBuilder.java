@@ -20,6 +20,7 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http4.HttpMethods;
+import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -56,7 +57,7 @@ public class ChouetteRemoveOldJobsRouteBuilder extends BaseRouteBuilder {
 
         from("direct:chouetteRemoveOldJobs")
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette remove old jobs")
-                .removeHeaders("Camel*","CamelGooglePubsub.MsgAckId")
+                .removeHeaders("Camel*", EnturGooglePubSubConstants.ACK_ID)
                 .setBody(constant(null))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.DELETE))
 

@@ -33,7 +33,7 @@ auth0:
   administratorAccessEnabled: true
 
 ingress:
-  loadBalancerIP: 35.205.170.68
+  loadBalancerIP: 35.195.223.29
 
 resources:
   cpuLimit: "3"

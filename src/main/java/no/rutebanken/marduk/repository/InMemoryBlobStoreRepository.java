@@ -18,6 +18,7 @@ package no.rutebanken.marduk.repository;
 
 import com.google.cloud.storage.Storage;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
+import no.rutebanken.marduk.exceptions.MardukException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.slf4j.Logger;
@@ -56,9 +57,9 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     public BlobStoreFiles listBlobs(Collection<String> prefixes) {
         logger.debug("list blobs called in in-memory blob store");
         List<BlobStoreFiles.File> files = blobs.keySet().stream()
-                                                  .filter(k -> prefixes.stream().anyMatch(prefix -> k.startsWith(prefix)))
-                                                  .map(k -> new BlobStoreFiles.File(k,new Date(), new Date(), 1234L))    //TODO Add real details?
-                                                  .collect(Collectors.toList());
+                .filter(fileName -> prefixes.stream().anyMatch(fileName::startsWith))
+                .map(fileName -> new BlobStoreFiles.File(fileName, new Date(), new Date(), (long) blobs.get(fileName).length))
+                .collect(Collectors.toList());
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(files);
         return blobStoreFiles;
@@ -67,7 +68,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     @Override
     public BlobStoreFiles listBlobsFlat(String prefix) {
         List<BlobStoreFiles.File> files = listBlobs(prefix).getFiles();
-        List<BlobStoreFiles.File> result = files.stream().map(k -> new BlobStoreFiles.File(k.getName().replaceFirst(prefix + "/", ""), new Date(), new Date(), 1234L)).collect(Collectors.toList());
+        List<BlobStoreFiles.File> result = files.stream().map(file -> new BlobStoreFiles.File(file.getName().replaceFirst(prefix, ""), file.getCreated(), file.getUpdated(), file.getFileSize())).collect(Collectors.toList());
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(result);
         return blobStoreFiles;
@@ -94,7 +95,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
             byte[] data = byteArrayOutputStream.toByteArray();
             blobs.put(objectName, data);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new MardukException(e);
         }
     }
 
@@ -117,12 +118,12 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void setStorage(Storage storage) {
-
+        // not applicable to in-memory blobstore
     }
 
     @Override
     public void setContainerName(String containerName) {
-
+        // not applicable to in-memory blobstore
     }
 
     @Override

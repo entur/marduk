@@ -34,7 +34,9 @@ class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<Strin
             35L, "GOA",
             41L, "SJN",
             56L, "FLI",
-            23L, "HUR"
+            23L, "HUR",
+            58L, "VYX",
+            59L, "VYB"
     );
 
     private final MappedJwtClaimSetConverter delegate =
