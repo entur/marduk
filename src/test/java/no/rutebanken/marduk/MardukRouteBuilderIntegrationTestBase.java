@@ -72,8 +72,10 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
     }
 
     @AfterEach
-    public void disableStartBeforeReloadedContext() {
+    public void disableStartBeforeReloadedContext() throws Exception {
     	SpringCamelContext.setNoStart(true);
+    	// Explicitly stop the Camel context here so that PubSub resources are released before the PubSub emulator is stopped
+    	context.stop();
     }
 
     @BeforeEach
