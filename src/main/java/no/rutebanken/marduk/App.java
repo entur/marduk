@@ -54,15 +54,15 @@ public class App extends RouteBuilder {
 	@Value("${marduk.provider.service.retry.interval:5000}")
 	private Integer providerRetryInterval;
 
-    private static Logger logger = LoggerFactory.getLogger(App.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
 
     @Autowired
-	CacheProviderRepository providerRepository;
+	private CacheProviderRepository providerRepository;
 
     // must have a main method spring-boot can run
     public static void main(String... args) {
-        logger.info("Starting Marduk...");
-        
+        LOGGER.info("Starting Marduk...");
+
         configureJsonPath();
 
 	    SpringApplication.run(App.class,args);
@@ -81,11 +81,11 @@ public class App extends RouteBuilder {
 			try {
 				providerRepository.populate();
 			} catch (ResourceAccessException e) {
-				logger.warn("Provider Repository not available. Waiting " + providerRetryInterval/1000 + " secs before retrying...", e);
+				LOGGER.warn("Provider Repository not available. Waiting {} secs before retrying...", providerRetryInterval/1000, e);
 				Thread.sleep(providerRetryInterval);
 			}
         }
-		logger.info("Provider Repository available. Starting camel routes...");
+		LOGGER.info("Provider Repository available. Starting camel routes...");
 	}
 
 	private static void configureJsonPath() {
@@ -108,6 +108,6 @@ public class App extends RouteBuilder {
 		    public Set<Option> options() {
 		        return EnumSet.noneOf(Option.class);
 		    }
-		});	}
-
+		});
+    }
 }

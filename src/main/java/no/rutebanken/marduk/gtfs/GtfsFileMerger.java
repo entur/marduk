@@ -39,7 +39,7 @@ public class GtfsFileMerger {
 
     private static final String[] GTFS_FILE_NAMES = new String[]{"agency.txt", "calendar.txt", "calendar_dates.txt", "routes.txt", "shapes.txt", "stops.txt", "stop_times.txt", "trips.txt", "transfers.txt"};
 
-    private static Logger LOGGER = LoggerFactory.getLogger(GtfsFileMerger.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GtfsFileMerger.class);
 
     private Path workingDirectory;
     private GtfsExport gtfsExport;

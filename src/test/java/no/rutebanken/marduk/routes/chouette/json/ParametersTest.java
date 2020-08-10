@@ -16,17 +16,20 @@
 
 package no.rutebanken.marduk.routes.chouette.json;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.importer.GtfsImportParameters;
-
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
 import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
 import static net.javacrumbs.jsonunit.JsonAssert.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ParametersTest {
 
@@ -39,23 +42,27 @@ public class ParametersTest {
             "\"parse_connection_links\": false," +
                 " \"max_distance_for_connection_link\": \"0\", \"test\": false, \"stop_area_remote_id_mapping\": true, \"stop_area_import_mode\": \"CREATE_NEW\", \"keep_obsolete_lines\": true, \"generate_missing_route_sections_for_modes\": [\"water\",\"bus\"] } } }";
     @Test
-    public void createGtfsImportParameters() {
+    public void testGtfsImportParameters() {
         GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette",false,false,true, true, Set.of("water","bus"));
         assertJsonEquals(GTFS_REFERENCE_JSON, importParameters.toJsonString(), when(Option.IGNORING_ARRAY_ORDER));
     }
 
     @Test
-    public void getNeptuneExportParameters() {
+    public void testTransferExportParameters() throws JsonProcessingException {
         Provider provider = getProvider();
         Provider destProvider = new Provider();
         destProvider.chouetteInfo = new ChouetteInfo();
-        destProvider.chouetteInfo.referential = "rb_ost";
-        String neptuneExportParameters = Parameters.getTransferExportParameters(provider,destProvider);
-        System.out.println(neptuneExportParameters);
+        String targetReferentialName = "rb_ost";
+        destProvider.chouetteInfo.referential = targetReferentialName;
+        String transferExportParametersAsString = Parameters.getTransferExportParameters(provider, destProvider);
 
+        final ObjectMapper mapper = new ObjectMapper();
+        JsonNode transferExportParametersasJson = mapper.readTree(transferExportParametersAsString);
+        JsonNode targetReferentialNode = transferExportParametersasJson.path("parameters").path("transfer-export").path("dest_referential_name");
+        assertEquals(targetReferentialName, targetReferentialNode.asText(), "The transfer parameter should refeence the target referential");
     }
 
-    private Provider getProvider() {
+    private static Provider getProvider() {
         ChouetteInfo chouetteInfo = new ChouetteInfo();
         chouetteInfo.id = 3L;
         chouetteInfo.organisation = "Ruter";

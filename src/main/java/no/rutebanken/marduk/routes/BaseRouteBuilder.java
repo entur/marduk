@@ -203,7 +203,7 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
                 log.info("The directory {} did not exist, ignoring deletion request", directory);
             }
         } catch (IOException e) {
-            log.warn("Failed to delete directory " + directory, e);
+            log.warn("Failed to delete directory {}", directory, e);
         }
     }
 

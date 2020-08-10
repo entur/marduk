@@ -21,12 +21,9 @@ import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
-import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -94,7 +91,6 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
     }
 
-
     private Set<String> prepareProviderWhiteListGoogleUpload() {
         return getProviderRepository().getProviders().stream().filter(p -> p.chouetteInfo.googleUpload).map(this::getExportReferentialForProvider).collect(Collectors.toSet());
     }
@@ -102,7 +98,6 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
     private Set<String> prepareProviderWhiteListGoogleQAUpload() {
         return getProviderRepository().getProviders().stream().filter(p -> p.chouetteInfo.googleQAUpload).map(this::getExportReferentialForProvider).collect(Collectors.toSet());
     }
-
 
     /**
      * Use referential for RB-space provider even if providers own space is configured for export.
@@ -117,13 +112,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
             if (migrateToProvider != null) {
                 return migrateToProvider.chouetteInfo.referential;
             }
-
         }
         return provider.chouetteInfo.referential;
     }
-
-    private Collection<File> getGtfsFileList(String directory) {
-        return FileUtils.listFiles(new File(directory), new String[]{"zip"}, false);
-    }
-
 }

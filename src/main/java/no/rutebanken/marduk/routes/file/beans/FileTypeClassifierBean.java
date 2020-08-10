@@ -71,7 +71,7 @@ public class FileTypeClassifierBean {
             exchange.getIn().setHeader(FILE_TYPE, fileType.name());
             return true;
         } catch (RuntimeException e) {
-            LOGGER.warn("Exception while trying to classify file '" + relativePath + "'", e);
+            LOGGER.warn("Exception while trying to classify file '{}'", relativePath, e);
             return false;
         }
     }
@@ -102,19 +102,18 @@ public class FileTypeClassifierBean {
             }
             return UNKNOWN_FILE_TYPE;
         } catch (MardukZipFileEntryNameEncodingException e) {
-            LOGGER.info("Found a zip file entry name with an invalid encoding while classifying file " + relativePath, e);
+            LOGGER.info("Found a zip file entry name with an invalid encoding while classifying file {}", relativePath, e);
             return INVALID_ZIP_FILE_ENTRY_NAME_ENCODING;
         } catch (MardukZipFileEntryContentEncodingException e) {
-            LOGGER.info("Found a zip file entry with an invalid XML encoding while classifying file " + relativePath, e);
+            LOGGER.info("Found a zip file entry with an invalid XML encoding while classifying file {}", relativePath, e);
             return INVALID_ZIP_FILE_ENTRY_CONTENT_ENCODING;
         } catch (MardukZipFileEntryContentParsingException e) {
-            LOGGER.info("Found a zip file entry with an unparseable XML content while classifying file " + relativePath, e);
+            LOGGER.info("Found a zip file entry with an unparseable XML content while classifying file {}", relativePath, e);
             return INVALID_ZIP_FILE_ENTRY_XML_CONTENT;
         } catch (IOException e) {
             throw new MardukException("Exception while classifying file" + relativePath, e);
         }
     }
-
 
     private static boolean isValidFileName(String fileName) {
         return StandardCharsets.ISO_8859_1.newEncoder().canEncode(fileName);

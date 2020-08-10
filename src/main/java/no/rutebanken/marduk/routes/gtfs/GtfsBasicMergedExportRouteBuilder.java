@@ -20,12 +20,9 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
-import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -84,9 +81,4 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
 
         return agencyBlackList.stream().map(agency -> agency.startsWith("rb_") ? agency : "rb_" + agency).collect(Collectors.toList());
     }
-
-    private Collection<File> getGtfsFileList(String directory) {
-        return FileUtils.listFiles(new File(directory), new String[]{"zip"}, false);
-    }
-
 }
