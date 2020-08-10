@@ -4,7 +4,7 @@ metadata:
   name: {{ template "marduk.name" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-        {{- include "common.labels" . | indent 4 }}
+  {{- include "common.labels" . | indent 4 }}
 spec:
   progressDeadlineSeconds: 600
   replicas: {{ .Values.replicas }}
@@ -36,7 +36,7 @@ spec:
             }
           }
       labels:
-        {{- include "common.labels" . | indent 8 }}
+    {{- include "common.labels" . | indent 8 }}
     spec:
       containers:
         - command:
@@ -104,9 +104,9 @@ spec:
                   name: ror-marduk-secret
             - name: IAM_KEYCLOAK_CLIENT_SECRET
               valueFrom:
-                  secretKeyRef:
-                    key: marduk-keycloak-secret
-                    name: ror-marduk-secret
+                secretKeyRef:
+                  key: marduk-keycloak-secret
+                  name: ror-marduk-secret
           image: {{ .Values.image.identifier }}
           imagePullPolicy: Always
           livenessProbe:
@@ -115,10 +115,10 @@ spec:
               path: /actuator/health
               port: 9001
               scheme: HTTP
-            initialDelaySeconds: 140
+            initialDelaySeconds: 40
             periodSeconds: 10
             successThreshold: 1
-            timeoutSeconds: 30
+            timeoutSeconds: 1
           name: marduk
           ports:
             - containerPort: {{ .Values.service.http.internalPort }}
@@ -130,10 +130,10 @@ spec:
               path: /actuator/health
               port: 9001
               scheme: HTTP
-            initialDelaySeconds: 30
+            initialDelaySeconds: 40
             periodSeconds: 10
             successThreshold: 1
-            timeoutSeconds: 10
+            timeoutSeconds: 1
           resources:
             limits:
               cpu: {{ .Values.resources.cpuLimit }}
