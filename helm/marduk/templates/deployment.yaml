@@ -112,25 +112,25 @@ spec:
               name: http
               protocol: TCP
           livenessProbe:
-            failureThreshold: 3
             httpGet:
               path: /actuator/health
               port: 9001
               scheme: HTTP
-            initialDelaySeconds: 60
+            initialDelaySeconds: 140
             periodSeconds: 10
             successThreshold: 1
-            timeoutSeconds: 5
+            failureThreshold: 3
+            timeoutSeconds: 30
           readinessProbe:
-            failureThreshold: 3
             httpGet:
               path: /actuator/health
               port: 9001
               scheme: HTTP
-            initialDelaySeconds: 60
+            initialDelaySeconds: 30
             periodSeconds: 10
             successThreshold: 1
-            timeoutSeconds: 5
+            failureThreshold: 3
+            timeoutSeconds: 10
           resources:
             limits:
               cpu: {{ .Values.resources.cpuLimit }}
