@@ -36,10 +36,10 @@ ingress:
   loadBalancerIP: 35.205.170.68
 
 resources:
-  cpuLimit: "3"
-  memLimit: 9000Mi
-  cpuRequest: "2"
-  memRequest: 7000Mi
+  cpuLimit: 3500m
+  memLimit: 7000Mi
+  cpuRequest: 2500m
+  memRequest: 6000Mi
   xmx: 5g
 
 monitoringEnabled: true
