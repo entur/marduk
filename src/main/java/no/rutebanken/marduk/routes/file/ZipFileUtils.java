@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 /**
@@ -88,6 +89,12 @@ public class ZipFileUtils {
         } catch (IllegalArgumentException e) {
             Throwable rootCause = ExceptionUtils.getRootCause(e);
             if (rootCause instanceof MalformedInputException) {
+                throw new MardukZipFileEntryNameEncodingException(e);
+            } else {
+                throw new MardukException(e);
+            }
+        } catch (ZipException e) {
+            if ("invalid CEN header (bad entry name)".equals(e.getMessage())) {
                 throw new MardukZipFileEntryNameEncodingException(e);
             } else {
                 throw new MardukException(e);
