@@ -48,6 +48,8 @@ public class MardukWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
                 // exposed internally only, on a different port (pod-level)
                 .antMatchers("/actuator/prometheus").permitAll()
                 .antMatchers("/actuator/health").permitAll()
+                .antMatchers("/actuator/health/liveness").permitAll()
+                .antMatchers("/actuator/health/readiness").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .oauth2ResourceServer().authenticationManagerResolver(this.multiIssuerAuthenticationManagerResolver);
