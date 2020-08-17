@@ -55,6 +55,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
         singletonFrom("entur-google-pubsub:GtfsGoogleExportQueue?ackMode=NONE").autoStartup("{{google.export.autoStartup:true}}")
                 .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .executorServiceRef("gtfsExportExecutorService")
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
                 .to("direct:exportGtfsGoogle")
@@ -73,6 +74,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
         singletonFrom("entur-google-pubsub:GtfsGoogleQaExportQueue?ackMode=NONE").autoStartup("{{google.export.qa.autoStartup:true}}")
                 .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .executorServiceRef("gtfsExportExecutorService")
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google QA export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
                 .to("direct:exportQaGtfsGoogle")

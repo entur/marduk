@@ -27,6 +27,13 @@ import java.util.concurrent.ExecutorService;
 @Configuration
 public class CamelExecutorServiceConfig {
 
+    /**
+     * Configure the Camel thread pool for bulk operations on providers.
+     *
+     * @param camelContext
+     * @return
+     * @throws Exception
+     */
     @Bean
     public ExecutorService allProvidersExecutorService(@Autowired CamelContext camelContext) throws Exception {
         ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder(camelContext);
@@ -36,5 +43,26 @@ public class CamelExecutorServiceConfig {
                 .maxQueueSize(1000)
                 .build("allProvidersExecutorService");
     }
+
+    /**
+     * Configure the Camel thread pool for GTFS export routes.
+     * The pool size is set to 1 in order to limit resource usage and prioritize other routes.
+     * This means that a most one route among GTFS extended, GTFS basic and GTFS Google and GTFS Google QA export routes
+     * can be running at any given time.
+     *
+     * @param camelContext
+     * @return
+     * @throws Exception
+     */
+    @Bean
+    public ExecutorService gtfsExportExecutorService(@Autowired CamelContext camelContext) throws Exception {
+        ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder(camelContext);
+        return poolBuilder
+                .poolSize(1)
+                .maxPoolSize(1)
+                .maxQueueSize(100)
+                .build("gtfsExportExecutorService");
+    }
+
 
 }
