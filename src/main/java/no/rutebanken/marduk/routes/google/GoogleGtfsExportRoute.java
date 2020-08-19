@@ -48,13 +48,16 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
     @Value("${google.export.qa.includes.shapes:false}")
     private String googleQaExportIncludeShapes;
 
+    @Value("${google.export.aggregation.timeout:300000}")
+    private int googleExportAggregationTimeout;
+
     @Override
     public void configure() throws Exception {
         super.configure();
 
 
         singletonFrom("entur-google-pubsub:GtfsGoogleExportQueue?ackMode=NONE").autoStartup("{{google.export.autoStartup:true}}")
-                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
@@ -73,7 +76,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
 
         singletonFrom("entur-google-pubsub:GtfsGoogleQaExportQueue?ackMode=NONE").autoStartup("{{google.export.qa.autoStartup:true}}")
-                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google QA export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(exchange -> addOnCompletionForAggregatedExchange(exchange))

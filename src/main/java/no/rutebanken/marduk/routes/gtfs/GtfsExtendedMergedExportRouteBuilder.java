@@ -37,13 +37,16 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
     @Value("${gtfs.norway.merged.file.name:rb_norway-aggregated-gtfs.zip}")
     private String gtfsNorwayMergedFileName;
 
+    @Value("${gtfs.export.aggregation.timeout:300000}")
+    private int gtfsExportAggregationTimeout;
+
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
         singletonFrom("entur-google-pubsub:GtfsExportMergedQueue?ackMode=NONE").autoStartup("{{gtfs.export.autoStartup:true}}")
-                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
