@@ -47,12 +47,15 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
     @Value("#{'${gtfs.basic.export.agency.prefix.blacklist:AVI}'.split(',')}")
     private Set<String> agencyBlackList;
 
+    @Value("${gtfs.export.aggregation.timeout:300000}")
+    private int gtfsExportAggregationTimeout;
+
     @Override
     public void configure() throws Exception {
         super.configure();
 
         singletonFrom("entur-google-pubsub:GtfsBasicExportMergedQueue?ackMode=NONE").autoStartup("{{gtfs.export.basic.autoStartup:true}}")
-                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS Basics export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
