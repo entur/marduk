@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
+import no.rutebanken.marduk.gtfs.GtfsConstants;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.camel.EndpointInject;
@@ -102,7 +103,7 @@ public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderI
     }
 
    private void assertStopVehicleTypesAreNotConverted(File out) throws IOException {
-        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, "stops.txt")), StandardCharsets.UTF_8);
+        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.STOPS_TXT)), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
         
         assertThat(stopLines.get(0)).as("Line without vehicle type should not be changed").endsWith(",,");

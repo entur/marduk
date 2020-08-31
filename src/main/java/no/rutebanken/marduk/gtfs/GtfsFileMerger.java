@@ -37,7 +37,9 @@ import static no.rutebanken.marduk.gtfs.GtfsExport.GTFS_GOOGLE;
  */
 public class GtfsFileMerger {
 
-    private static final String[] GTFS_FILE_NAMES = new String[]{"agency.txt", "calendar.txt", "calendar_dates.txt", "routes.txt", "shapes.txt", "stops.txt", "stop_times.txt", "trips.txt", "transfers.txt"};
+    private static final String[] GTFS_FILE_NAMES = new String[]{GtfsConstants.AGENCY_TXT, GtfsConstants.CALENDAR_TXT,
+            GtfsConstants.CALENDAR_DATES_TXT, GtfsConstants.ROUTES_TXT, GtfsConstants.SHAPES_TXT,
+            GtfsConstants.STOPS_TXT, GtfsConstants.STOP_TIMES_TXT, GtfsConstants.TRIPS_TXT, GtfsConstants.TRANSFERS_TXT};
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GtfsFileMerger.class);
 
@@ -73,11 +75,11 @@ public class GtfsFileMerger {
             Path destinationFile = workingDirectory.resolve(entryName);
             boolean ignoreHeader = Files.exists(destinationFile);
 
-            if ("stops.txt".equals(entryName)) {
+            if (GtfsConstants.STOPS_TXT.equals(entryName)) {
                 appendStopEntry(entryStream, destinationFile, ignoreHeader);
-            } else if ("transfers.txt".equals(entryName)) {
+            } else if (GtfsConstants.TRANSFERS_TXT.equals(entryName)) {
                 appendTransferEntry(entryStream, destinationFile, ignoreHeader);
-            } else if ("shapes.txt".equals(entryName) && ! includeShapes) {
+            } else if (GtfsConstants.SHAPES_TXT.equals(entryName) && ! includeShapes) {
                 LOGGER.trace("Ignoring shapes data in GTFS file {}", gtfsFile.getName());
             } else {
                 appendEntry(entryName, entryStream, destinationFile, ignoreHeader);
@@ -100,7 +102,7 @@ public class GtfsFileMerger {
                     .withIgnoreHeaderCase()
                     .withTrim());
 
-            String[] targetHeaders = getTargetHeaders("stops.txt");
+            String[] targetHeaders = getTargetHeaders(GtfsConstants.STOPS_TXT);
 
             CSVPrinter csvPrinter = ignoreHeader
                     ? new CSVPrinter(writer, CSVFormat.DEFAULT)
@@ -137,7 +139,7 @@ public class GtfsFileMerger {
                     .withIgnoreHeaderCase()
                     .withTrim());
 
-            String[] targetHeaders = getTargetHeaders("transfers.txt");
+            String[] targetHeaders = getTargetHeaders(GtfsConstants.TRANSFERS_TXT);
 
             CSVPrinter csvPrinter = ignoreHeader
                     ? new CSVPrinter(writer, CSVFormat.DEFAULT)

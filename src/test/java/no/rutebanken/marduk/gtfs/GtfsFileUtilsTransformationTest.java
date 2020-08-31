@@ -93,7 +93,7 @@ public class GtfsFileUtilsTransformationTest {
     }
 
     public static void assertRouteRouteTypesAreConvertedToGoogleSupportedValues(File out) throws IOException {
-        List<String> routeLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, "routes.txt")), StandardCharsets.UTF_8);
+        List<String> routeLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.ROUTES_TXT)), StandardCharsets.UTF_8);
         routeLines.remove(0); // remove header
         assertEquals(10, routeLines.size());
 
@@ -106,7 +106,7 @@ public class GtfsFileUtilsTransformationTest {
     }
 
     public static void assertStopVehicleTypesAreConvertedToGoogleSupportedValues(File out) throws IOException {
-        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, "stops.txt")), StandardCharsets.UTF_8);
+        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.STOPS_TXT)), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
         assertThat(stopLines.get(0)).as("Line without vehicle type should not be changed").endsWith(",");
         assertThat(stopLines.get(1)).as("Line with valid value 701 should be kept").endsWith(",701,");
@@ -115,7 +115,7 @@ public class GtfsFileUtilsTransformationTest {
     }
 
     public static void assertRouteRouteTypesAreConvertedToBasicGtfsValues(File out) throws IOException {
-        List<String> routeLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, "routes.txt")), StandardCharsets.UTF_8);
+        List<String> routeLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.ROUTES_TXT)), StandardCharsets.UTF_8);
         routeLines.remove(0); // remove header
         assertEquals(10, routeLines.size());
 
@@ -128,7 +128,7 @@ public class GtfsFileUtilsTransformationTest {
     }
 
     public static void assertStopVehicleTypesAreConvertedToBasicGtfsValues(File out) throws IOException {
-        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, "stops.txt")), StandardCharsets.UTF_8);
+        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.STOPS_TXT)), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
         assertThat(stopLines.get(1)).as("Line with valid value 701 should be converted to 3").endsWith(",3,");
         assertThat(stopLines.get(2)).as("Line with extended value 1012 should be converted to 4").endsWith(",4,");
@@ -138,18 +138,18 @@ public class GtfsFileUtilsTransformationTest {
     }
 
     public static void assertShapesAreRemoved(File out) throws IOException {
-        assertThat(ZipFileUtils.extractFileFromZipFile(out, "shapes.txt")).as("All Shapes should have been removed").isNull();
+        assertThat(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.SHAPES_TXT)).as("All Shapes should have been removed").isNull();
 
-        List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, "trips.txt")), StandardCharsets.UTF_8);
+        List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.TRIPS_TXT)), StandardCharsets.UTF_8);
         String tripWithShape = trips.stream().filter(t -> t.startsWith("9797,262919,")).findFirst().get();
 
         assertFalse(tripWithShape.contains("SKY:JourneyPattern:1-362_0_10446_1"));
     }
 
     public static void assertShapesAreIncluded(File out) throws IOException {
-        assertThat(ZipFileUtils.extractFileFromZipFile(out, "shapes.txt")).as("All Shapes should be present").isNotNull();
+        assertThat(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.SHAPES_TXT)).as("All Shapes should be present").isNotNull();
 
-        List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, "trips.txt")), StandardCharsets.UTF_8);
+        List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.TRIPS_TXT)), StandardCharsets.UTF_8);
         String tripWithShape = trips.stream().filter(t -> t.startsWith("9797,262919,")).findFirst().get();
 
         assertTrue(tripWithShape.contains("SKY:JourneyPattern:1-362_0_10446_1"));
