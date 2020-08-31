@@ -83,7 +83,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-list-jobs-for-provider");
 
         from("direct:chouetteGetJobs")
-                .removeHeaders("Camel*", EnturGooglePubSubConstants.ACK_ID)
+                .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .process(e -> {
@@ -120,7 +120,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
         from("direct:chouetteCancelJob")
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-                .removeHeaders("Camel*",EnturGooglePubSubConstants.ACK_ID)
+                .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .setBody(constant(null))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.DELETE))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/scheduled_jobs/${header." + Constants.CHOUETTE_JOB_ID + "}"))
@@ -132,7 +132,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .process(e -> e.getIn().setHeader("status", Arrays.asList("STARTED", "SCHEDULED")))
                 .to("direct:chouetteGetJobsForProvider")
                 .sort(body(), new JobResponseDescendingSorter())
-                .removeHeaders("Camel*",EnturGooglePubSubConstants.ACK_ID)
+                .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
                 .setHeader(Constants.CHOUETTE_JOB_ID, simple("${body.id}"))
                 .setBody(constant(null))
@@ -144,7 +144,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
                 .setHeader(Constants.PROVIDER_ID, simple("${body.id}"))
                 .setBody(constant(null))
-                .removeHeaders("Camel*",EnturGooglePubSubConstants.ACK_ID)
+                .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .to("direct:chouetteCancelAllJobsForProvider")
                 .routeId("chouette-cancel-all-jobs-for-all-providers");
 
@@ -175,7 +175,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 )
                 .setProperty(Constants.CHOUETTE_REFERENTIAL, header(Constants.CHOUETTE_REFERENTIAL))
                 .setProperty("url", header(Constants.CHOUETTE_JOB_STATUS_URL))
-                .removeHeaders("Camel*",EnturGooglePubSubConstants.ACK_ID)
+                .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
                 .toD("${exchangeProperty.url}")
@@ -208,7 +208,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
         from("direct:jobStatusDone")
                 .log(LoggingLevel.DEBUG, correlation() + "Exited retry loop with status ${header.current_status}")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .choice()
                 .when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "' || ${header.current_status} == '" + RESCHEDULED + "'"))
                 .log(LoggingLevel.WARN, correlation() + "Job timed out with state ${header.current_status}. Config should probably be tweaked. Stopping route.")
@@ -236,13 +236,13 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                     e.getIn().setHeader("data_url", dataUrlOptional.orElse(null));
                 })
                 // Fetch and parse action report
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Calling action report url ${header.action_report_url}")
-                .removeHeaders("Camel*",EnturGooglePubSubConstants.ACK_ID)
+                .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .toD("${header.action_report_url}")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
 
                 .doTry()
                 .unmarshal().json(JsonLibrary.Jackson, ActionReportWrapper.class).process(e -> { /* Dummy line to make doCatch available */})
@@ -277,11 +277,11 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 )
 
                 // Fetch and parse validation report
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .choice()
                 .when(simple("${header.validation_report_url} != null"))
                 .log(LoggingLevel.DEBUG, correlation() + "Calling validation report url ${header.validation_report_url}")
-                .removeHeaders("Camel*",EnturGooglePubSubConstants.ACK_ID)
+                .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .toD("${header.validation_report_url}")

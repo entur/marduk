@@ -55,7 +55,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
         from("direct:chouetteCleanStopPlaces")
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette stop place clean")
-                .removeHeaders("Camel*", EnturGooglePubSubConstants.ACK_ID)
+                .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
                 .setBody(constant(null))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/clean/stop_areas"))
@@ -65,7 +65,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
         from("direct:chouetteCleanAllReferentials")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
-                .removeHeaders("Camel*",EnturGooglePubSubConstants.ACK_ID)
+                .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .setHeader(Constants.PROVIDER_ID, simple("${body.id}"))
                 .validate(header("filter").in("all", "level1", "level2"))
                 .choice()
@@ -91,7 +91,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
                 })
-                .removeHeaders("Camel*",EnturGooglePubSubConstants.ACK_ID)
+                .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/clean"))
                 .toD("${property.chouette_url}")
@@ -113,7 +113,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                     e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
                     e.getIn().setHeader(Constants.ENABLE_VALIDATION, provider.chouetteInfo.enableValidation);
                 })
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .to("direct:addImportParameters")
                 .end()
                 .routeId("chouette-import-dataspace");
@@ -136,13 +136,13 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
                 .process(e -> toImportMultipart(e))
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/importer/${header." + FILE_TYPE + ".toLowerCase()}"))
                 .log(LoggingLevel.DEBUG, correlation() + "Calling Chouette with URL: ${exchangeProperty.chouette_url}")
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
                 // Attempt to retrigger delivery in case of errors
                 .toD("${exchangeProperty.chouette_url}")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .process(e -> {
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, getHttp4(e.getIn().getHeader("Location", String.class)));
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
@@ -159,7 +159,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
 
         from("direct:processImportResult")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .setBody(constant(""))
                 .choice()
                 .when(PredicateBuilder.and(constant("false").isEqualTo(header(Constants.ENABLE_VALIDATION)), simple("${header.action_report_result} == 'OK'")))
@@ -194,7 +194,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Import and validation ok, triggering next step.")
                 .setBody(constant(""))
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .choice()
                 .when(constant("true").isEqualTo(header(Constants.ENABLE_VALIDATION)))
                 .log(LoggingLevel.INFO, correlation() + "Import ok, triggering validation")

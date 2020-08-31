@@ -94,6 +94,10 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
         log.warn("Exchange failed ({}: {}) . Redelivering the message locally, attempt {}/{}...", rootCauseType, rootCauseMessage, redeliveryCounter, redeliveryMaxCounter);
     }
 
+    protected String logDebugShowAll() {
+        return "log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true";
+    }
+
     /**
      * Add ACK/NACK completion callback for an aggregated exchange.
      * The callback should be added after the aggregation is complete to prevent individual messages from being acked

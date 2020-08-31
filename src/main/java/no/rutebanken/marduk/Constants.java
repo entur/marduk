@@ -16,7 +16,7 @@
 
 package no.rutebanken.marduk;
 
-public class Constants {
+public final class Constants {
     public static final String FILE_TYPE = "RutebankenFileType";
     public static final String FILE_HANDLE = "RutebankenFileHandle";
     public static final String TARGET_FILE_HANDLE = "RutebankenTargetFileHandle";
@@ -85,5 +85,11 @@ public class Constants {
 
     public static final String INCLUDE_SHAPES = "IncludeShapes";
 
+    public static final String CAMEL_ALL_HEADERS = "Camel*";
+    public static final String CAMEL_ALL_HTTP_HEADERS = "CamelHttp*";
+
+
+    private Constants() {
+    }
 }
 

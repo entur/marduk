@@ -142,7 +142,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 
         // Will be sent here after polling completes
         from("direct:processValidationResult")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .setBody(constant(""))
                 .choice()
                 .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'OK'"))
