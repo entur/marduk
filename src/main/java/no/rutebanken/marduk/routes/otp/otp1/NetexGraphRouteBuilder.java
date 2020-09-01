@@ -121,7 +121,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:remoteBuildNetexGraph")
                 .process(new OtpGraphBuilderProcessor(netexGraphBuilder))
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP graph.")
                 .routeId("otp-remote-netex-graph-build-otp");
 
@@ -214,7 +214,6 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-netex-graph-send-status-for-timetable-jobs");
 
     }
-
 
     private InputStream createRedirectPage(String version) {
             String url = "http://" + otpReportContainerName + "/" + version + "/index.html";

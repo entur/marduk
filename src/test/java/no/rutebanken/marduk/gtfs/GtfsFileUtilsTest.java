@@ -67,7 +67,7 @@ public class GtfsFileUtilsTest {
     public void mergeWithTransfers() throws Exception {
         File mergedZip = GtfsFileUtils.mergeGtfsFiles(List.of(new File(GTFS_FILE_1), new File(GTFS_FILE_1)), GtfsExport.GTFS_EXTENDED, false);
 
-        List<String> transferLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(mergedZip, "transfers.txt")), StandardCharsets.UTF_8);
+        List<String> transferLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(mergedZip, GtfsConstants.TRANSFERS_TXT)), StandardCharsets.UTF_8);
         assertThat(transferLines.size()).as("Expected file two duplicates and one other transfer to be merged to two (+ header)").isEqualTo(3);
     }
 

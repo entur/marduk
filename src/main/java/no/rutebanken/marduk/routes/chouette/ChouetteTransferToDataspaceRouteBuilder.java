@@ -72,14 +72,14 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, JobEvent.TimetableAction.DATASPACE_TRANSFER.name());
                     })
                 .log(LoggingLevel.INFO,correlation()+"Sending transfer export to poll job status")
-                .to("log:" + getClass().getName() + "?level=INFO&showAll=true&multiline=true")
+                .to(logDebugShowAll())
 		        .removeHeader("loopCounter")
 				.setBody(constant(""))
                 .to("entur-google-pubsub:ChouettePollStatusQueue")
                 .routeId("chouette-send-transfer-job");
 
  		 from("direct:processTransferExportResult")
- 		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+ 		        .to(logDebugShowAll())
  		        .setBody(constant(""))
  		        .choice()
 // 				.when(PredicateBuilder.and(constant("false").isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
@@ -117,7 +117,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  				.log(LoggingLevel.INFO,correlation()+"Transfer ok, triggering validation.")
  		        .setBody(constant(""))
  		        
- 		        .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+ 		        .to(logDebugShowAll())
 				.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
 				.to("entur-google-pubsub:ChouetteValidationQueue")
              .end()

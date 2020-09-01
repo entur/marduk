@@ -94,7 +94,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 )
                 .to("direct:copyBlob")
 
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP base graph, triggering full OTP graph build")
                 .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
 

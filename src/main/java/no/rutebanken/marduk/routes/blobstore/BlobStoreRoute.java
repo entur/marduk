@@ -32,73 +32,73 @@ public class BlobStoreRoute extends BaseRouteBuilder {
     public void configure() {
 
         from("direct:uploadBlob")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .choice()
                 .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))     //defaulting to false if not specified
                 .end()
                 .bean("blobStoreService", "uploadBlob")
                 .setBody(simple(""))
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Stored file ${header." + FILE_HANDLE + "} in blob store.")
                 .routeId("blobstore-upload");
 
         from("direct:copyBlob")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .choice()
                 .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))     //defaulting to false if not specified
                 .end()
                 .bean("blobStoreService", "copyBlob")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from copying file ${header." + FILE_HANDLE + "} in blob store.")
                 .routeId("blobstore-copy");
 
         from("direct:copyAllBlobs")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .choice()
                 .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))     //defaulting to false if not specified
                 .end()
                 .bean("blobStoreService", "copyAllBlobs")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from copying all files in folder ${header." + FILE_HANDLE + "} in blob store.")
                 .routeId("blobstore-copy-all");
 
         from("direct:getBlob")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .bean("blobStoreService", "getBlob")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.")
                 .routeId("blobstore-download");
 
         from("direct:listBlobs")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .bean("blobStoreService", "listBlobs")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store.")
                 .routeId("blobstore-list");
 
         from("direct:listBlobsFlat")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .bean("blobStoreService", "listBlobsFlat")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store.")
                 .routeId("blobstore-list-flat");
 
         from("direct:listBlobsInFolders")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .bean("blobStoreService", "listBlobsInFolders")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store for multiple folders.")
                 .routeId("blobstore-list-in-folders");
 
         from("direct:deleteAllBlobsInFolder")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .bean("blobStoreService", "deleteAllBlobsInFolder")
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from deleting blobs in folder.")
                 .routeId("blobstore-delete-in-folder");
 

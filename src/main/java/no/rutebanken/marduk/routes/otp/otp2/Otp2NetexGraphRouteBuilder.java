@@ -108,7 +108,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:remoteBuildOtp2NetexGraph")
                 .process(new OtpGraphBuilderProcessor(otp2NetexGraphBuilder))
-                .to("log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true")
+                .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP2 graph.")
                 .routeId("otp2-remote-netex-graph-build-otp");
 
