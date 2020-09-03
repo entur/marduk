@@ -4,7 +4,7 @@ replicas: 2
 gcp:
   blobstoreProjectId: neon-1287
   pubsubProjectId: neon-1287
-  databaseInstance: neon-1287:europe-west1:marduk-db-1=tcp:5432
+  databaseInstance: entur-ror-prod:europe-west1:marduk-db-1=tcp:5432
   bucketName: marduk-production
   exchangeBucketName: marduk-exchange-production
   otpReportBucketName: otpreport.entur.org

@@ -4,7 +4,7 @@ replicas: 2
 gcp:
   blobstoreProjectId: carbon-1287
   pubsubProjectId: carbon-1287
-  databaseInstance: carbon-1287:europe-west1:marduk-db-1=tcp:5432
+  databaseInstance: entur-ror-dev:europe-west1:marduk-db-1=tcp:5432
   bucketName: marduk
   exchangeBucketName: marduk-exchange
   otpReportBucketName: otpreport-test.entur.org

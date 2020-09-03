@@ -92,22 +92,6 @@ resource "kubernetes_secret" "ror-marduk-secret" {
 
 /** Deactivate resource creation until workloads are moved to the new cluster.
 
-module "postgres" {
-  source = "github.com/entur/terraform//modules/postgres"
-  postgresql_version = "POSTGRES_9_6"
-  gcp_project = var.gcp_cloudsql_project
-  labels = var.labels
-  kubernetes_namespace = var.kube_namespace
-  db_name = "marduk"
-  db_user = "marduk"
-  region = var.db_region
-  zoneLetter = var.db_zone_letter
-  db_instance_tier = "db-custom-1-3840"
-  db_instance_disk_size = 10
-  db_instance_backup_enabled = true
-  availability_type = var.db_availability_type
-}
-
 # Create pubsub topics and subscriptions
 resource "google_pubsub_topic" "ChouetteExportGtfsQueue" {
   name = "ChouetteExportGtfsQueue"
