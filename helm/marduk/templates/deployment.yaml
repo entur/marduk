@@ -62,7 +62,6 @@ spec:
               name:  marduk-service-account
         - name: marduk
           image: {{ .Values.image.identifier }}
-          imagePullPolicy: Always
           env:
             - name: JAVA_OPTIONS
               value: -server -Xms512m -Xmx{{ .Values.resources.xmx }} -Xss512k -XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90
