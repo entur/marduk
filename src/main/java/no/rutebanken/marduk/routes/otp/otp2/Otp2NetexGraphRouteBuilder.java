@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ;
@@ -125,6 +126,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
                             e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
                             e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
+                            e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false));
                             e.setProperty(GRAPH_VERSION, publishedGraphVersion);
                         }
                 )
@@ -136,6 +138,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 // update file containing the reference to the latest graph
                 .setBody(header(TARGET_FILE_HANDLE))
                 .setHeader(FILE_HANDLE, constant(otpGraphCurrentFile))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, "Done uploading reference to current OTP2graph: ${header." + FILE_HANDLE + "}")
 
