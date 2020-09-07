@@ -8,6 +8,7 @@ gcp:
   bucketName: marduk-stage
   exchangeBucketName: marduk-exchange-stage
   otpReportBucketName: otpreport-stage.entur.org
+  otpGraphBucketName: otp-graphs-test
 
 chouette:
   validateLevel1CronSchedule: 0+30+4+?+*+*

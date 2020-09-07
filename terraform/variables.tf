@@ -72,6 +72,10 @@ variable "bucket_exchange_instance_name" {
   description = "Exchange storage bucket name"
 }
 
+variable "bucket_graphs_instance_name" {
+  description = "OTP Graphs storage bucket name"
+}
+
 variable "bucket_otpreport_instance_name" {
   description = "OTP report storage bucket name"
 }

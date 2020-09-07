@@ -92,7 +92,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                             e.getIn().setHeader(TARGET_FILE_HANDLE, publishedBaseGraphPath);
                         }
                 )
-                .to("direct:copyBlob")
+                .to("direct:copyBlobInBucket")
 
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP base graph, triggering full OTP graph build")

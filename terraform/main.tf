@@ -43,6 +43,13 @@ resource "google_storage_bucket_iam_member" "storage_exchange_bucket_iam_member"
   member = "serviceAccount:${google_service_account.marduk_service_account.email}"
 }
 
+# add service account as member to the otp graphs bucket
+resource "google_storage_bucket_iam_member" "storage_graphs_bucket_iam_member" {
+  bucket = var.bucket_graphs_instance_name
+  role = var.service_account_bucket_role
+  member = "serviceAccount:${google_service_account.marduk_service_account.email}"
+}
+
 # add service account as member to the otpreport bucket
 resource "google_storage_bucket_iam_member" "storage_otpreport_bucket_iam_member" {
   bucket = var.bucket_otpreport_instance_name

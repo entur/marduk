@@ -37,22 +37,33 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))     //defaulting to false if not specified
                 .end()
-                .bean("blobStoreService", "uploadBlob")
+                .bean("mardukBlobStoreService", "uploadBlob")
                 .setBody(simple(""))
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Stored file ${header." + FILE_HANDLE + "} in blob store.")
                 .routeId("blobstore-upload");
 
-        from("direct:copyBlob")
+        from("direct:copyBlobInBucket")
                 .to(logDebugShowAll())
                 .choice()
                 .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))     //defaulting to false if not specified
                 .end()
-                .bean("blobStoreService", "copyBlob")
+                .bean("mardukBlobStoreService", "copyBlobInBucket")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from copying file ${header." + FILE_HANDLE + "} in blob store.")
-                .routeId("blobstore-copy");
+                .routeId("blobstore-copy-in-bucket");
+
+        from("direct:copyBlobToAnotherBucket")
+                .to(logDebugShowAll())
+                .choice()
+                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))     //defaulting to false if not specified
+                .end()
+                .bean("mardukBlobStoreService", "copyBlobToAnotherBucket")
+                .to(logDebugShowAll())
+                .log(LoggingLevel.INFO, correlation() + "Returning from copying file ${header." + FILE_HANDLE + "} in blob store.")
+                .routeId("blobstore-copy-to-another-bucket");
 
         from("direct:copyAllBlobs")
                 .to(logDebugShowAll())
@@ -60,14 +71,14 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))     //defaulting to false if not specified
                 .end()
-                .bean("blobStoreService", "copyAllBlobs")
+                .bean("mardukBlobStoreService", "copyAllBlobs")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from copying all files in folder ${header." + FILE_HANDLE + "} in blob store.")
                 .routeId("blobstore-copy-all");
 
         from("direct:getBlob")
                 .to(logDebugShowAll())
-                .bean("blobStoreService", "getBlob")
+                .bean("mardukBlobStoreService", "getBlob")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.")
                 .routeId("blobstore-download");
@@ -75,7 +86,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
         from("direct:listBlobs")
                 .to(logDebugShowAll())
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-                .bean("blobStoreService", "listBlobs")
+                .bean("mardukBlobStoreService", "listBlobs")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store.")
                 .routeId("blobstore-list");
@@ -83,21 +94,21 @@ public class BlobStoreRoute extends BaseRouteBuilder {
         from("direct:listBlobsFlat")
                 .to(logDebugShowAll())
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-                .bean("blobStoreService", "listBlobsFlat")
+                .bean("mardukBlobStoreService", "listBlobsFlat")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store.")
                 .routeId("blobstore-list-flat");
 
         from("direct:listBlobsInFolders")
                 .to(logDebugShowAll())
-                .bean("blobStoreService", "listBlobsInFolders")
+                .bean("mardukBlobStoreService", "listBlobsInFolders")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store for multiple folders.")
                 .routeId("blobstore-list-in-folders");
 
         from("direct:deleteAllBlobsInFolder")
                 .to(logDebugShowAll())
-                .bean("blobStoreService", "deleteAllBlobsInFolder")
+                .bean("mardukBlobStoreService", "deleteAllBlobsInFolder")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from deleting blobs in folder.")
                 .routeId("blobstore-delete-in-folder");

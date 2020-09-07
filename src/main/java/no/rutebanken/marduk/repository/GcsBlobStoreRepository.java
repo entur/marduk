@@ -45,6 +45,7 @@ import java.util.List;
 @Scope("prototype")
 public class GcsBlobStoreRepository implements BlobStoreRepository {
 
+    @Autowired
     private Storage storage;
 
     private String containerName;
@@ -52,12 +53,6 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
     @Autowired
     private ProviderRepository providerRepository;
 
-    @Override
-    public void setStorage(Storage storage) {
-        this.storage = storage;
-    }
-
-    @Override
     public void setContainerName(String containerName) {
         this.containerName = containerName;
     }
@@ -112,10 +107,6 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public void copyBlob(String sourceObjectName, String targetObjectName, boolean makePublic) {
-        copyBlob(containerName, sourceObjectName, containerName, targetObjectName, makePublic);
-    }
-
     public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
 
         List<Storage.BlobTargetOption> blobTargetOptions = makePublic ? List.of(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ))
