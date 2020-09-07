@@ -18,10 +18,7 @@ package no.rutebanken.marduk.routes.blobstore;
 
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
-
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 
 @Component
 public class OtpGraphsBlobStoreRoute extends BaseRouteBuilder {

@@ -20,7 +20,6 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import no.rutebanken.marduk.services.OtpGraphsBlobStoreService;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
