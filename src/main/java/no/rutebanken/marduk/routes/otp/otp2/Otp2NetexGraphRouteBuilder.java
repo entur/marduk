@@ -49,7 +49,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
 
-    @Value("${otp2.graph.current.file:graphs/current-otp2}")
+    @Value("${otp2.graph.current.file:current-otp2}")
     private String otpGraphCurrentFile;
 
     @Value("${blobstore.gcs.graphs.container.name:otp-graphs}")
