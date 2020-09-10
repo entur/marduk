@@ -25,7 +25,7 @@
     <properties>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>2.25.2</camel.version>
-        <keycloak.version>4.8.3.Final</keycloak.version>
+        <keycloak.version>11.0.0</keycloak.version>
         <entur.helpers.version>1.0.22</entur.helpers.version>
         <guava.version>28.1-jre</guava.version>
         <commons-io.version>2.7</commons-io.version>
@@ -34,7 +34,7 @@
         <zt-zip.version>1.13</zt-zip.version>
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
-        <argLine></argLine>
+        <argLine/>
     </properties>
 
     <dependencyManagement>
@@ -103,7 +103,7 @@
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-client</artifactId>
-            <version>3.6.1.Final</version>
+            <version>3.11.0.Final</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
