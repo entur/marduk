@@ -22,6 +22,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 public class Utils {
 
+    private  Utils() {
+    }
+
     public static String getHttp4(String url) {
         if (url == null) {
             throw new IllegalArgumentException("Url is null");
