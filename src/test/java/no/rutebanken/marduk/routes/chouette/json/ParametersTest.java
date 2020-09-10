@@ -48,6 +48,16 @@ public class ParametersTest {
     }
 
     @Test
+    public void testGtfsExportParameters() throws JsonProcessingException {
+        Provider provider = getProvider();
+        String gtfsExportParametersAsString = Parameters.getGtfsExportParameters(provider);
+        final ObjectMapper mapper = new ObjectMapper();
+        JsonNode gtfsExportParametersAsJson = mapper.readTree(gtfsExportParametersAsString);
+        JsonNode providerIdNode = gtfsExportParametersAsJson.path("parameters").path("gtfs-export").path("referential_name");
+        assertEquals(provider.getChouetteInfo().getReferential(), providerIdNode.asText(), "The referential_name parameter should reference the provider referential");
+    }
+
+    @Test
     public void testTransferExportParameters() throws JsonProcessingException {
         Provider provider = getProvider();
         Provider destProvider = new Provider();
@@ -59,7 +69,7 @@ public class ParametersTest {
         final ObjectMapper mapper = new ObjectMapper();
         JsonNode transferExportParametersasJson = mapper.readTree(transferExportParametersAsString);
         JsonNode targetReferentialNode = transferExportParametersasJson.path("parameters").path("transfer-export").path("dest_referential_name");
-        assertEquals(targetReferentialName, targetReferentialNode.asText(), "The transfer parameter should refeence the target referential");
+        assertEquals(targetReferentialName, targetReferentialNode.asText(), "The transfer parameter should reference the target referential");
     }
 
     private static Provider getProvider() {
@@ -67,6 +77,7 @@ public class ParametersTest {
         chouetteInfo.id = 3L;
         chouetteInfo.organisation = "Ruter";
         chouetteInfo.user = "rut";
+        chouetteInfo.referential = "rut";
 
         Provider provider = new Provider();
         provider.id = 2L;

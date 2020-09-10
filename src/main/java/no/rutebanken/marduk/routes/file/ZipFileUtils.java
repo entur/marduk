@@ -39,6 +39,9 @@ import java.util.zip.ZipFile;
  */
 public class ZipFileUtils {
 
+    private ZipFileUtils() {
+    }
+
     /**
      * Test if the given byte arrray contains a zip file.
      * The test is performed by matching the magic number at the beginning of the array with the zip file magic number
