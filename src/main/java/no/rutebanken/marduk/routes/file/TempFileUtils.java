@@ -28,6 +28,9 @@ import java.nio.file.StandardOpenOption;
  */
 public class TempFileUtils {
 
+    private TempFileUtils() {
+    }
+
 
     public static File createTempFile(byte[] data, String prefix, String suffix) throws IOException {
         File inputFile = File.createTempFile(prefix, suffix);

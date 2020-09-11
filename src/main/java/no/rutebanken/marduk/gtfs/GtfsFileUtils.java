@@ -41,11 +41,14 @@ import java.util.stream.Collectors;
 
 public class GtfsFileUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(GtfsFileUtils.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GtfsFileUtils.class);
 
     public static final String FEED_INFO_FILE_NAME = "feed_info.txt";
     private static final byte[] FEED_INFO_FILE_CONTENT = "feed_id,feed_publisher_name,feed_publisher_url,feed_lang\nENTUR,Entur,https://www.entur.org,no".getBytes(StandardCharsets.UTF_8);
 
+
+    private GtfsFileUtils() {
+    }
 
     /**
      * Merge all GTFS files in a given directory.
@@ -82,7 +85,7 @@ public class GtfsFileUtils {
     static File mergeGtfsFiles(Collection<File> zipFiles, GtfsExport gtfsExport, boolean includeShapes) throws IOException {
 
         long t1 = System.currentTimeMillis();
-        logger.debug("Merging GTFS files for export {}", gtfsExport);
+        LOGGER.debug("Merging GTFS files for export {}", gtfsExport);
 
         Path workingDirectory = Files.createTempDirectory("marduk-merge-gtfs");
         try {
@@ -92,7 +95,7 @@ public class GtfsFileUtils {
             File mergedFile = Files.createTempFile("marduk-merge-gtfs-merged", ".zip").toFile();
             ZipFileUtils.zipFilesInFolder(workingDirectory.toString(), mergedFile.toString());
 
-            logger.debug("Merged GTFS-files - spent {} ms", (System.currentTimeMillis() - t1));
+            LOGGER.debug("Merged GTFS-files - spent {} ms", (System.currentTimeMillis() - t1));
 
             return mergedFile;
         } finally {

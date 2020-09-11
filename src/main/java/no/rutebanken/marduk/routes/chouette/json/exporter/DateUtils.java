@@ -22,6 +22,9 @@ import java.util.Date;
 
 public class DateUtils {
 
+    private DateUtils() {
+    }
+
     public static Date startDateFor(long daysBack){
         return Date.from(LocalDate.now().atStartOfDay().minusDays(daysBack).atZone(ZoneId.systemDefault()).toInstant());
     }

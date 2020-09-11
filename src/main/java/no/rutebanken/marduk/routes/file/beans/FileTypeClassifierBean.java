@@ -54,9 +54,11 @@ public class FileTypeClassifierBean {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileTypeClassifierBean.class);
 
     private static final Pattern REQUIRED_GTFS_FILES_REGEX = Pattern.compile("agency.txt|stops.txt|routes.txt|trips.txt|stop_times.txt");
-    private static final Pattern XML_FILES_REGEX = Pattern.compile(".+\\.xml");
 
-    public static final Pattern NON_XML_FILE_XML = Pattern.compile(".*\\.(?!XML$|xml$)[^.]+");
+    /**
+     * Match only XML files with a lower case extension, consistently with Chouette import process.
+     */
+    static final Pattern XML_FILES_REGEX = Pattern.compile(".+\\.xml");
 
     public boolean validateFile(byte[] data, Exchange exchange) {
         String relativePath = exchange.getIn().getHeader(FILE_HANDLE, String.class);
@@ -133,7 +135,7 @@ public class FileTypeClassifierBean {
     }
 
     private static boolean isNetexXml(InputStream inputStream) {
-        return validateZipContent(inputStream, firstElementQNameMatchesNetex(), NON_XML_FILE_XML);
+        return validateZipContent(inputStream, firstElementQNameMatchesNetex(), XML_FILES_REGEX);
     }
 
 }
