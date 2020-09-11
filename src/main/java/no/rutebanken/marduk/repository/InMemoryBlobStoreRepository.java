@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.repository;
 
-import com.google.cloud.storage.Storage;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.exceptions.MardukException;
 import org.apache.commons.io.IOUtils;

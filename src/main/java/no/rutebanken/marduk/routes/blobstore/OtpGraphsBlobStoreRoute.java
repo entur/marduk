@@ -18,17 +18,22 @@ package no.rutebanken.marduk.routes.blobstore;
 
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.services.OtpGraphsBlobStoreService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class OtpGraphsBlobStoreRoute extends BaseRouteBuilder {
+
+    @Autowired
+    OtpGraphsBlobStoreService otpGraphsBlobStoreService;
 
     @Override
     public void configure() {
 
         from("direct:uploadOtpGraphsBlob")
                 .to(logDebugShowAll())
-                .bean("otpGraphsBlobStoreService", "uploadBlob")
+                .bean(otpGraphsBlobStoreService, "uploadBlob")
                 .to(logDebugShowAll());
     }
 }
