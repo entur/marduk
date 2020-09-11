@@ -113,19 +113,23 @@ public class FileTypeClassifierBeanTest {
     }
 
     @Test
-    public void nonXMLFilePatternShouldMatchOtherFileTypes() {
-        assertTrue(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.log").matches());
-        assertTrue(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.xml.log").matches());
-        assertTrue(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.xml2").matches());
-        assertTrue(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.txml").matches());
-
+    public void xMLFilePatternShouldMatchXMLFiles() {
+        assertTrue(FileTypeClassifierBean.XML_FILES_REGEX.matcher("test.xml").matches());
+        assertTrue(FileTypeClassifierBean.XML_FILES_REGEX.matcher("test.test.xml").matches());
     }
 
     @Test
-    public void nonXMLFilePatternShouldNotMatchXMLFiles() {
-        assertFalse(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.xml").matches());
-        assertFalse(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.XML").matches());
-        assertFalse(FileTypeClassifierBean.NON_XML_FILE_XML.matcher("test.test.xml").matches());
+    public void xMLFilePatternShouldNotMatchOtherFileTypes() {
+        assertFalse(FileTypeClassifierBean.XML_FILES_REGEX.matcher("test.log").matches());
+        assertFalse(FileTypeClassifierBean.XML_FILES_REGEX.matcher("test.xml.log").matches());
+        assertFalse(FileTypeClassifierBean.XML_FILES_REGEX.matcher("test.xml2").matches());
+        assertFalse(FileTypeClassifierBean.XML_FILES_REGEX.matcher("test.txml").matches());
+    }
+
+    @Test
+    public void xMLFilePatternShouldMatchOnlyLowerCaseExtension() {
+        assertFalse(FileTypeClassifierBean.XML_FILES_REGEX.matcher("test.XML").matches());
+        assertFalse(FileTypeClassifierBean.XML_FILES_REGEX.matcher("test.Xml").matches());
     }
 
     private void assertFileType(String fileName, FileType expectedFileType) throws IOException {

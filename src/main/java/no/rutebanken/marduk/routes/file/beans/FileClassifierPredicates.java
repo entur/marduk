@@ -91,25 +91,21 @@ public class FileClassifierPredicates {
         return Optional.empty();
     }
 
-    public static boolean validateZipContent(InputStream inputStream, Predicate<InputStream> predicate) {
-        try (ZipInputStream stream = new ZipInputStream(inputStream)) {
-            ZipEntry entry;
-            while ( ( entry = stream.getNextEntry()) != null && !entry.isDirectory()) {
-                if (testPredicate(predicate, stream, entry)) return false;
-            }
-            return true;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
-    public static boolean validateZipContent(InputStream inputStream, Predicate<InputStream> predicate, Pattern skipFileRegex) {
+    /**
+     * Check that files in the zip archive verify the predicate.
+     * @param inputStream the zip file.
+     * @param predicate the predicate to evaluate.
+     * @param fileNamePattern the pattern for file names to be tested. Other files are ignored.
+     * @return true if all tested files verify the predicate.
+     */
+    public static boolean validateZipContent(InputStream inputStream, Predicate<InputStream> predicate, Pattern fileNamePattern) {
         try (ZipInputStream stream = new ZipInputStream(inputStream)) {
             ZipEntry entry;
             while ( ( entry = stream.getNextEntry()) != null) {
-                if (!skipFileRegex.matcher(entry.getName()).matches()) {
-                    if (testPredicate(predicate, stream, entry)) return false;
+                if (fileNamePattern.matcher(entry.getName()).matches()) {
+                    if (testPredicate(predicate, stream, entry)) {
+                        return false;
+                    }
                 } else {
                     LOGGER.info("Skipped file with name {}", entry.getName());
                 }
