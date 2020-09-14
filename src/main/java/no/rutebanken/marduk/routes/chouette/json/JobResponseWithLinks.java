@@ -20,63 +20,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 
-
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class JobResponseWithLinks extends JobResponse{
+public class JobResponseWithLinks extends JobResponse {
 
- 
-
-	public List<LinkInfo> links;
-//    @JsonProperty("action_parameters")
-//    public ActionParameters actionParameters;
+    public List<LinkInfo> links;
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class LinkInfo {
         public String rel;
         public String href;
-//        public String type;
-//        public String method;
     }
-
-//    public static class ActionParameters {
-//
-//        public String name;
-//
-//        @JsonProperty("no_save")
-//        public boolean noSave;
-//
-//        @JsonProperty("user_name")
-//        public String userName;
-//
-//        @JsonProperty("organisation_name")
-//        public String organisationName;
-//
-//        @JsonProperty("referential_name")
-//        public String referentialName;
-//
-//        @JsonProperty("object_id_prefix")
-//        public String objectIdPrefix;
-//
-//        @JsonProperty("max_distance_for_commercial")
-//        public Integer maxDistanceForCommercial;
-//
-//        @JsonProperty("ignore_last_word")
-//        public boolean ignoreLastWord;
-//
-//        @JsonProperty("ignore_end_chars")
-//        public Integer ignoreEndChars;
-//
-//        @JsonProperty("max_distance_for_connection_link")
-//        @JsonInclude(JsonInclude.Include.ALWAYS)
-//        public Integer maxDistanceForConnectionLink;
-//
-//        @JsonProperty("references_type")
-//        @JsonInclude(JsonInclude.Include.ALWAYS)
-//        public String referencesType = "";
-//
-//        @JsonProperty("clean_repository")
-//        public boolean cleanRepository;
-//
-//    }
-
 }
