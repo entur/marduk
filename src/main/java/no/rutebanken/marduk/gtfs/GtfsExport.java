@@ -1,7 +1,6 @@
 package no.rutebanken.marduk.gtfs;
 
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * GTFS Export types.
@@ -76,10 +75,8 @@ public enum GtfsExport {
                 GtfsConstants.TRANSFERS_TXT, TRANSFERS_TXT_HEADERS,
                 GtfsConstants.TRIPS_TXT, TRIPS_TXT_HEADERS);
 
-        private static final Pattern PATTERN_COMMA = Pattern.compile(",");
-
         private static String[] splitHeaders(String header) {
-            return PATTERN_COMMA.split(header);
+            return header.split(",");
         }
     }
 
