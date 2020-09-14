@@ -100,7 +100,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
         singletonFrom("entur-google-pubsub:GtfsGooglePublishQueue?ackMode=NONE")
                 .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
+                .process(this::addOnCompletionForAggregatedExchange)
                 .log(LoggingLevel.INFO, getClass().getName(), "Start publish of GTFS file to Google")
 
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName))
@@ -115,7 +115,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
         singletonFrom("entur-google-pubsub:GtfsGooglePublishQaQueue?ackMode=NONE")
                 .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish QA requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
+                .process(this::addOnCompletionForAggregatedExchange)
                 .log(LoggingLevel.INFO, getClass().getName(), "Start publish of GTFS QA file to Google")
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName))
                 .to("direct:getBlob")
