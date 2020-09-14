@@ -25,7 +25,7 @@ variable "location" {
 
 variable "bucket_storage_class" {
   description = "GCP storage class"
-  default     = "MULTI_REGIONAL"
+  default     = "REGIONAL"
 }
 
 variable "bucket_retention_period" {
