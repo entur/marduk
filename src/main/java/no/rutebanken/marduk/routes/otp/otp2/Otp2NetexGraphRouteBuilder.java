@@ -29,11 +29,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
+import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
@@ -47,8 +49,11 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
 
-    @Value("${otp2.graph.current.file:graphs/current-otp2}")
+    @Value("${otp2.graph.current.file:current-otp2}")
     private String otpGraphCurrentFile;
+
+    @Value("${blobstore.gcs.graphs.container.name:otp-graphs}")
+    private String otpGraphsBucketName;
 
     @Value("${otp.graph.build.remote.work.dir.cleanup:true}")
     private boolean deleteOtpRemoteWorkDir;
@@ -117,18 +122,19 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 // copy the new graph from the OTP remote work directory to the graphs directory in GCS
                 .process(e -> {
                             String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + OTP2_GRAPH_OBJ;
-                            String publishedGraphPath = blobStoreSubdirectory
-                                                        + "/" + Constants.OTP2_NETEX_GRAPH_DIR
+                            String publishedGraphPath = Constants.OTP2_NETEX_GRAPH_DIR
                                                         + "/" + e.getProperty(TIMESTAMP, String.class)
                                                         + '-' + OTP2_GRAPH_OBJ;
                             String publishedGraphVersion = Constants.OTP2_NETEX_GRAPH_DIR + "/" + e.getProperty(TIMESTAMP, String.class) + "-report";
 
                             e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
                             e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
+                            e.getIn().setHeader(TARGET_CONTAINER, otpGraphsBucketName);
+                            e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false));
                             e.setProperty(GRAPH_VERSION, publishedGraphVersion);
                         }
                 )
-                .to("direct:copyBlob")
+                .to("direct:copyBlobToAnotherBucket")
                 .log(LoggingLevel.INFO, "Done copying new OTP2 graph: ${header." + FILE_HANDLE + "}")
 
                 .setProperty(GRAPH_PATH_PROPERTY, header(FILE_HANDLE))
@@ -136,7 +142,8 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 // update file containing the reference to the latest graph
                 .setBody(header(TARGET_FILE_HANDLE))
                 .setHeader(FILE_HANDLE, constant(otpGraphCurrentFile))
-                .to("direct:uploadBlob")
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))
+                .to("direct:uploadOtpGraphsBlob")
                 .log(LoggingLevel.INFO, "Done uploading reference to current OTP2graph: ${header." + FILE_HANDLE + "}")
 
                 .log(LoggingLevel.INFO, "Done uploading OTP2 graph build reports.")

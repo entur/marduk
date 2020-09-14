@@ -18,38 +18,22 @@ package no.rutebanken.marduk.routes.blobstore;
 
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.services.ExchangeBlobStoreService;
-import org.apache.camel.LoggingLevel;
+import no.rutebanken.marduk.services.OtpGraphsBlobStoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-
 @Component
-public class ExternalBlobStoreRoute extends BaseRouteBuilder {
+public class OtpGraphsBlobStoreRoute extends BaseRouteBuilder {
 
     @Autowired
-    ExchangeBlobStoreService exchangeBlobStoreService;
+    OtpGraphsBlobStoreService otpGraphsBlobStoreService;
 
     @Override
     public void configure() {
 
-        from("direct:uploadExternalBlob")
+        from("direct:uploadOtpGraphsBlob")
                 .to(logDebugShowAll())
-                .bean(exchangeBlobStoreService,"uploadPrivateBlob")
+                .bean(otpGraphsBlobStoreService, "uploadBlob")
                 .to(logDebugShowAll());
-
-        from("direct:fetchExternalBlob")
-                .to(logDebugShowAll())
-                .bean(exchangeBlobStoreService,"getBlob")
-                .to(logDebugShowAll());
-
-        from("direct:deleteExternalBlob")
-                .log(LoggingLevel.INFO, correlation() + "Deleting blob ${header." + FILE_HANDLE + "} from external blob store.")
-                .to(logDebugShowAll())
-                .bean(exchangeBlobStoreService,"deleteBlob")
-                .to(logDebugShowAll());
-
     }
 }
-

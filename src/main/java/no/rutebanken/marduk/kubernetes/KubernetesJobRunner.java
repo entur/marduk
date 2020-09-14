@@ -115,10 +115,18 @@ public class KubernetesJobRunner {
                 // Delete job after completion
                 if (deleteJobAfterCompletion) {
                     LOGGER.info("Deleting job {} after completion.", jobName);
-                    kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).delete(job);
+                    deleteKubernetesJob(kubernetesClient, job);
                     LOGGER.info("Deleted job {} after completion.", jobName);
                 }
             }
+        }
+    }
+
+    private void deleteKubernetesJob(KubernetesClient kubernetesClient, Job job) {
+        try {
+            kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).delete(job);
+        } catch (Exception e) {
+            LOGGER.warn("Unable to delete Kubernetes job after completion", e);
         }
     }
 
