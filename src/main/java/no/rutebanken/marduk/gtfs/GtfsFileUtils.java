@@ -90,7 +90,7 @@ public class GtfsFileUtils {
         Path workingDirectory = Files.createTempDirectory("marduk-merge-gtfs");
         try {
             GtfsFileMerger gtfsFileMerger = new GtfsFileMerger(workingDirectory, gtfsExport, includeShapes);
-            zipFiles.forEach(zipFile -> gtfsFileMerger.appendGtfs(zipFile));
+            zipFiles.forEach(gtfsFileMerger::appendGtfs);
             Files.write(workingDirectory.resolve(FEED_INFO_FILE_NAME), FEED_INFO_FILE_CONTENT);
             File mergedFile = Files.createTempFile("marduk-merge-gtfs-merged", ".zip").toFile();
             ZipFileUtils.zipFilesInFolder(workingDirectory.toString(), mergedFile.toString());
