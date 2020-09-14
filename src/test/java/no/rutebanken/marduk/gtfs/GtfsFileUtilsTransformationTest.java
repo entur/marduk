@@ -71,7 +71,7 @@ public class GtfsFileUtilsTransformationTest {
     @Test
     public void transformToBasicGTFSFormatExcludeShapes() throws Exception {
 
-        File target = GtfsFileUtils.mergeGtfsFiles(Collections.singleton(getExtendedGtfsTestFile()), GtfsExport.GTFS_BASIC, false);
+        File target = GtfsFileUtils.mergeGtfsFiles(Collections.singleton(getExtendedGtfsTestFile()), GtfsExport.GTFS_BASIC_AND_EXTENDED, false);
 
 
         assertRouteRouteTypesAreConvertedToBasicGtfsValues(target);
@@ -83,7 +83,7 @@ public class GtfsFileUtilsTransformationTest {
     @Test
     public void transformToBasicGTFSFormatIncludeShapes() throws Exception {
 
-        File target = GtfsFileUtils.mergeGtfsFiles(Collections.singleton(getExtendedGtfsTestFile()), GtfsExport.GTFS_BASIC, true);
+        File target = GtfsFileUtils.mergeGtfsFiles(Collections.singleton(getExtendedGtfsTestFile()), GtfsExport.GTFS_BASIC_AND_EXTENDED, true);
 
 
         assertRouteRouteTypesAreConvertedToBasicGtfsValues(target);

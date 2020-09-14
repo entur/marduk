@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static no.rutebanken.marduk.gtfs.GtfsExport.GTFS_EXTENDED;
+import static no.rutebanken.marduk.gtfs.GtfsExport.GTFS_BASIC_AND_EXTENDED;
 import static no.rutebanken.marduk.gtfs.GtfsExport.GTFS_GOOGLE;
 
 /**
@@ -221,7 +221,7 @@ public class GtfsFileMerger {
             return "";
         }
         if ("route_type".equals(header) || "vehicle_type".equals(header)) {
-            if (gtfsExport == GTFS_EXTENDED) {
+            if (gtfsExport == GTFS_BASIC_AND_EXTENDED) {
                 return value;
             }
             int routeTypeCode = 0;
