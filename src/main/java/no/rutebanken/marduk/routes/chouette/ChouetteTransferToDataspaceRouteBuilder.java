@@ -108,7 +108,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  	
  		 // Check that no other import jobs in status SCHEDULED exists for this referential. If so, do not trigger export
  		from("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation")
- 			.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?timetableAction=importer&status=SCHEDULED&status=STARTED")) // TODO: check on validator as well?
+ 			.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?timetableAction=importer&status=SCHEDULED&status=STARTED"))
  			.toD("${exchangeProperty.job_status_url}")
  			.choice()
  			.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
