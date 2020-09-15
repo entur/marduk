@@ -60,7 +60,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
+                .process(this::addOnCompletionForAggregatedExchange)
                 .to("direct:exportGtfsGoogle")
                 .inOnly("entur-google-pubsub:GtfsGoogleQaExportQueue")
                 .routeId("gtfs-google-export-merged-route");
@@ -79,7 +79,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google QA export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
+                .process(this::addOnCompletionForAggregatedExchange)
                 .to("direct:exportQaGtfsGoogle")
                 .routeId("gtfs-google-qa-export-merged-route");
 

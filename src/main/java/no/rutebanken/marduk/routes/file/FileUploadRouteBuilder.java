@@ -60,7 +60,7 @@ public class FileUploadRouteBuilder extends BaseRouteBuilder {
 
 
         from("direct:uploadFilesAndStartImport")
-                .process(e -> convertBodyToFileItems(e))
+                .process(this::convertBodyToFileItems)
                 .split().body()
                 .process(e -> e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString())))
                 .setHeader(FILE_NAME, simple("${body.name}"))

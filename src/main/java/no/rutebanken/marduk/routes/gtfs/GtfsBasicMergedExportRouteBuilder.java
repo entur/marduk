@@ -58,7 +58,7 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS Basics export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .process(exchange -> addOnCompletionForAggregatedExchange(exchange))
+                .process(this::addOnCompletionForAggregatedExchange)
                 .to("direct:exportGtfsBasicMerged")
                 .inOnly("entur-google-pubsub:GtfsGoogleExportQueue")
                 .routeId("gtfs-basic-export-merged-route");

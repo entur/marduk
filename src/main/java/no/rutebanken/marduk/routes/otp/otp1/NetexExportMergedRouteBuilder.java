@@ -45,6 +45,10 @@ import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 @Component
 public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
 
+    private static final String UNPACKED_NETEX_SUBFOLDER = "/unpacked-netex";
+    private static final String STOPS_FILES_SUBFOLDER = "/stops";
+    private static final String MERGED_NETEX_SUBFOLDER = "/result";
+
     @Value("${netex.export.download.directory:files/netex/merged}")
     private String localWorkingDirectory;
 
@@ -107,7 +111,7 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class)  + "/unpacked-netex"))
+                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class)  + UNPACKED_NETEX_SUBFOLDER))
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), "${property.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("netex-export-fetch-latest-for-provider");
@@ -120,8 +124,8 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class),  e.getProperty(FOLDER_NAME, String.class) + "/stops"))
-                .process(e -> copyStopFiles( e.getProperty(FOLDER_NAME, String.class) + "/stops", e.getProperty(FOLDER_NAME, String.class) + "/unpacked-netex"))
+                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class),  e.getProperty(FOLDER_NAME, String.class) + STOPS_FILES_SUBFOLDER))
+                .process(e -> copyAndRenameStopFiles( e.getProperty(FOLDER_NAME, String.class) + STOPS_FILES_SUBFOLDER, e.getProperty(FOLDER_NAME, String.class) + UNPACKED_NETEX_SUBFOLDER))
 
                 .otherwise()
                 .log(LoggingLevel.WARN, getClass().getName(), "No stop place export found, unable to create merged Netex for Norway")
@@ -131,8 +135,8 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
 
         from("direct:mergeNetex").streamCaching()
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Merging Netex files for all providers and stop place registry.")
-                .process(e -> new File( e.getProperty(FOLDER_NAME, String.class) + "/result").mkdir())
-                .process(e -> e.getIn().setBody(ZipFileUtils.zipFilesInFolder( e.getProperty(FOLDER_NAME, String.class) + "/unpacked-netex",  e.getProperty(FOLDER_NAME, String.class) + "/result/merged.zip")))
+                .process(e -> new File( e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUBFOLDER).mkdir())
+                .process(e -> e.getIn().setBody(ZipFileUtils.zipFilesInFolder( e.getProperty(FOLDER_NAME, String.class) + UNPACKED_NETEX_SUBFOLDER,  e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUBFOLDER + "/merged.zip")))
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath))
                 .to("direct:uploadBlob")
@@ -152,7 +156,7 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
     /**
      * Copy stop files from stop place registry to ensure they are given a name in compliance with profile.
      */
-    private void copyStopFiles(String sourceDir, String targetDir) {
+    private void copyAndRenameStopFiles(String sourceDir, String targetDir) {
         try {
             int i = 0;
             for (File stopFile : FileUtils.listFiles(new File(sourceDir), null, false)) {

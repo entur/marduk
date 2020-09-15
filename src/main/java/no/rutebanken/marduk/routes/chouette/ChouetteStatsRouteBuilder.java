@@ -87,7 +87,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .choice().when(e -> cache == null)
                 .to("direct:chouetteRefreshStatsCache")
                 .end()
-                .process(e -> populateWithMatchingLineStatsFromCache(e))
+                .process(this::populateWithMatchingLineStatsFromCache)
                 .routeId("chouette-line-stats-get");
 
 
