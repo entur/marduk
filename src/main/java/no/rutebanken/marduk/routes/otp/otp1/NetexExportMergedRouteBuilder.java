@@ -125,7 +125,7 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .choice()
                 .when(body().isNotEqualTo(null))
                 .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class),  e.getProperty(FOLDER_NAME, String.class) + STOPS_FILES_SUBFOLDER))
-                .process(e -> copyStopFiles( e.getProperty(FOLDER_NAME, String.class) + STOPS_FILES_SUBFOLDER, e.getProperty(FOLDER_NAME, String.class) + UNPACKED_NETEX_SUBFOLDER))
+                .process(e -> copyAndRenameStopFiles( e.getProperty(FOLDER_NAME, String.class) + STOPS_FILES_SUBFOLDER, e.getProperty(FOLDER_NAME, String.class) + UNPACKED_NETEX_SUBFOLDER))
 
                 .otherwise()
                 .log(LoggingLevel.WARN, getClass().getName(), "No stop place export found, unable to create merged Netex for Norway")
@@ -156,7 +156,7 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
     /**
      * Copy stop files from stop place registry to ensure they are given a name in compliance with profile.
      */
-    private void copyStopFiles(String sourceDir, String targetDir) {
+    private void copyAndRenameStopFiles(String sourceDir, String targetDir) {
         try {
             int i = 0;
             for (File stopFile : FileUtils.listFiles(new File(sourceDir), null, false)) {
