@@ -16,39 +16,26 @@
 
 package no.rutebanken.marduk.services;
 
-import com.google.cloud.storage.Storage;
 import no.rutebanken.marduk.repository.BlobStoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.InputStream;
 
+/**
+ * Operations on blobs in the OTP report bucket.
+ */
+
 @Service
-public class OtpReportBlobStoreService {
+public class OtpReportBlobStoreService extends AbstractBlobStoreService {
 
-    @Autowired
-    private BlobStoreRepository repository;
-
-    @Autowired
-    private Storage otpReportStorage;
-
-    @Value("${blobstore.gcs.otpreport.container.name}")
-    private String containerName;
-
-    @PostConstruct
-    public void init() {
-        repository.setStorage(otpReportStorage);
-        repository.setContainerName(containerName);
+    public OtpReportBlobStoreService(@Value("${blobstore.gcs.otpreport.container.name}") String containerName, @Autowired BlobStoreRepository repository) {
+        super(containerName, repository);
     }
 
-    public void uploadBlob(String name, InputStream inputStream, boolean makePublic) {
-        if (name.endsWith(".html")) {
+    public void uploadHtmlBlob(String name, InputStream inputStream, boolean makePublic) {
             repository.uploadBlob(name, inputStream, makePublic, "text/html");
-        } else {
-            repository.uploadBlob(name, inputStream, makePublic);
-        }
     }
 
 }

@@ -7,6 +7,10 @@ variable "gcp_cloudsql_project" {
   description = "The GCP project hosting the CloudSQL resources"
 }
 
+variable "gcp_storage_project" {
+  description = "The GCP project hosting the Google Storage resources"
+}
+
 variable "gcp_pubsub_project" {
   description = "The GCP project hosting the PubSub resources"
 }
@@ -18,6 +22,17 @@ variable "gcp_resources_project" {
 variable "location" {
   description = "GCP bucket location"
 }
+
+variable "bucket_storage_class" {
+  description = "GCP storage class"
+  default     = "REGIONAL"
+}
+
+variable "bucket_retention_period" {
+  description = "Retention period for GCS objects, in days"
+  default     = "180"
+}
+
 variable "kube_namespace" {
   description = "The Kubernetes namespace"
 }
@@ -70,6 +85,10 @@ variable "bucket_marduk_instance_name" {
 
 variable "bucket_exchange_instance_name" {
   description = "Exchange storage bucket name"
+}
+
+variable "bucket_graphs_instance_name" {
+  description = "OTP Graphs storage bucket name"
 }
 
 variable "bucket_otpreport_instance_name" {

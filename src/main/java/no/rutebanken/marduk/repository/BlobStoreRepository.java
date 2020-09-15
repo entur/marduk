@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.repository;
 
-import com.google.cloud.storage.Storage;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 
 import java.io.InputStream;
@@ -53,11 +52,9 @@ public interface BlobStoreRepository {
 
     void uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType);
 
-    void copyBlob(String sourceObjectName, String targetObjectName, boolean makePublic);
+    void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic);
 
     void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic);
-
-    void setStorage(Storage storage);
 
     void setContainerName(String containerName);
 

@@ -8,6 +8,7 @@ gcp:
   bucketName: marduk
   exchangeBucketName: marduk-exchange
   otpReportBucketName: otpreport-test.entur.org
+  otpGraphBucketName: otp-graphs-dev
 
 chouette:
   validateLevel1CronSchedule: 0+30+23+?+*+MON-FRI

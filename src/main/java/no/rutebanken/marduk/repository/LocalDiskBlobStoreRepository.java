@@ -15,7 +15,6 @@
 
 package no.rutebanken.marduk.repository;
 
-import com.google.cloud.storage.Storage;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.exceptions.MardukException;
 import org.slf4j.Logger;
@@ -123,23 +122,8 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public void copyBlob(String sourceObjectName, String targetObjectName, boolean makePublic) {
-        Path sourceLocalPath = Paths.get(sourceObjectName);
-        Path sourceFullPath = Paths.get(baseFolder).resolve(sourceLocalPath);
-        Path targetLocalPath = Paths.get(targetObjectName);
-        Path targetFullPath = Paths.get(baseFolder).resolve(targetLocalPath);
-        try {
-
-            // create target parent directories if missing
-            Path parentDirectory = targetLocalPath.getParent();
-            Path folder = parentDirectory == null ? Paths.get(baseFolder) : Paths.get(baseFolder).resolve(parentDirectory);
-            Files.createDirectories(folder);
-
-            Files.copy(sourceFullPath, targetFullPath);
-        } catch (IOException e) {
-            throw new MardukException(e);
-        }
-
+    public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
+        // no-op implementation for in-memory blobstore
     }
 
     @Override
@@ -150,11 +134,6 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
     @Override
     public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType) {
         uploadBlob(objectName, inputStream, makePublic);
-    }
-
-    @Override
-    public void setStorage(Storage storage) {
-        // not applicable to local disk blobstore
     }
 
     @Override

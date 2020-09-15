@@ -14,28 +14,20 @@
  *
  */
 
-package no.rutebanken.marduk.config;
+package no.rutebanken.marduk.services;
 
-import com.google.cloud.storage.Storage;
-import org.rutebanken.helper.gcp.BlobStoreHelper;
+import no.rutebanken.marduk.repository.BlobStoreRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
 
-@Configuration
-@Profile("gcs-blobstore")
-public class GcsStorageConfig {
+/**
+ * Operations on blobs in the main Marduk bucket.
+ */
+@Service
+public class MardukBlobStoreService extends AbstractBlobStoreService {
 
-    @Value("${blobstore.gcs.credential.path}")
-    private String credentialPath;
-
-    @Value("${blobstore.gcs.project.id}")
-    private String projectId;
-
-    @Bean
-    public Storage storage() {
-        return BlobStoreHelper.getStorage(credentialPath, projectId);
+    public MardukBlobStoreService(@Value("${blobstore.gcs.container.name}") String containerName, @Autowired BlobStoreRepository repository) {
+        super(containerName, repository);
     }
-
 }

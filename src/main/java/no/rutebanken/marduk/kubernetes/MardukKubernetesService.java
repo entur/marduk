@@ -14,28 +14,20 @@
  *
  */
 
-package no.rutebanken.marduk.config;
+package no.rutebanken.marduk.kubernetes;
 
-import com.google.cloud.storage.Storage;
-import org.rutebanken.helper.gcp.BlobStoreHelper;
+import org.rutebanken.hazelcasthelper.service.KubernetesService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
 
-@Configuration
-@Profile("gcs-blobstore")
-public class GcsStorageConfig {
+@Service
+public final class MardukKubernetesService extends KubernetesService {
 
-    @Value("${blobstore.gcs.credential.path}")
-    private String credentialPath;
+	public MardukKubernetesService(@Value("${rutebanken.kubernetes.url:}") String kubernetesUrl,
+			                                @Value("${rutebanken.kubernetes.namespace:default}") String namespace,
+			                                @Value("${rutebanken.kubernetes.enabled:true}") boolean kubernetesEnabled) {
+		super(kubernetesUrl, namespace, kubernetesEnabled);
+	}
 
-    @Value("${blobstore.gcs.project.id}")
-    private String projectId;
-
-    @Bean
-    public Storage storage() {
-        return BlobStoreHelper.getStorage(credentialPath, projectId);
-    }
 
 }

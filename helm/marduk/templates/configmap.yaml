@@ -22,12 +22,11 @@ data:
 
     # Blobstore
     blobstore.gcs.project.id={{ .Values.gcp.blobstoreProjectId }}
-    blobstore.gcs.container.name={{ .Values.gcp.bucketName }}
     blobstore.gcs.credential.path=/etc/marduk-service-account/credentials.json
+    blobstore.gcs.container.name={{ .Values.gcp.bucketName }}
     blobstore.gcs.otpreport.container.name={{ .Values.gcp.otpReportBucketName }}
-    blobstore.gcs.otpreport.credential.path=/etc/marduk-service-account/credentials.json
     blobstore.gcs.exchange.container.name={{ .Values.gcp.exchangeBucketName }}
-    blobstore.gcs.exchange.credential.path=/etc/marduk-service-account/credentials.json
+    blobstore.gcs.graphs.container.name={{ .Values.gcp.otpGraphBucketName }}
     blobstore.delete.external.blobs=false
 
     # Chouette

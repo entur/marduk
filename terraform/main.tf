@@ -22,6 +22,27 @@ resource "google_service_account" "marduk_service_account" {
   project = var.gcp_resources_project
 }
 
+# Create bucket
+resource "google_storage_bucket" "graphs_storage_bucket" {
+  name               = var.bucket_graphs_instance_name
+  location           = var.location
+  project            = var.gcp_storage_project
+  storage_class      = var.bucket_storage_class
+  labels             = var.labels
+
+  lifecycle_rule {
+
+    condition {
+      age = var.bucket_retention_period
+      is_live = true
+      with_state = "ANY"
+    }
+    action {
+      type = "Delete"
+    }
+  }
+}
+
 # add service account as member to the cloudsql client
 resource "google_project_iam_member" "cloudsql_iam_member" {
   project = var.gcp_cloudsql_project
@@ -39,6 +60,13 @@ resource "google_storage_bucket_iam_member" "storage_main_bucket_iam_member" {
 # add service account as member to the exchange bucket
 resource "google_storage_bucket_iam_member" "storage_exchange_bucket_iam_member" {
   bucket = var.bucket_exchange_instance_name
+  role = var.service_account_bucket_role
+  member = "serviceAccount:${google_service_account.marduk_service_account.email}"
+}
+
+# add service account as member to the otp graphs bucket
+resource "google_storage_bucket_iam_member" "storage_graphs_bucket_iam_member" {
+  bucket = var.bucket_graphs_instance_name
   role = var.service_account_bucket_role
   member = "serviceAccount:${google_service_account.marduk_service_account.email}"
 }

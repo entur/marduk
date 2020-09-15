@@ -16,18 +16,19 @@
 
 package no.rutebanken.marduk.services;
 
-import org.rutebanken.hazelcasthelper.service.KubernetesService;
+import no.rutebanken.marduk.repository.BlobStoreRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+/**
+ * Operations on blobs in the OTP Graphs bucket.
+ */
+
 @Service
-public final class MardukKubernetesService extends KubernetesService {
+public class OtpGraphsBlobStoreService extends AbstractBlobStoreService {
 
-	public MardukKubernetesService(@Value("${rutebanken.kubernetes.url:}") String kubernetesUrl,
-			                                @Value("${rutebanken.kubernetes.namespace:default}") String namespace,
-			                                @Value("${rutebanken.kubernetes.enabled:true}") boolean kubernetesEnabled) {
-		super(kubernetesUrl, namespace, kubernetesEnabled);
-	}
-
-
+    public OtpGraphsBlobStoreService(@Value("${blobstore.gcs.graphs.container.name:otp-graphs}") String containerName, @Autowired BlobStoreRepository repository) {
+        super(containerName, repository);
+    }
 }
