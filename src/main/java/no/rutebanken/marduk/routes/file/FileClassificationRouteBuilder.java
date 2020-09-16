@@ -25,8 +25,6 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
-
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
@@ -122,8 +120,8 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
         from("direct:sanitizeFileName")
                 .process(e -> {
-                    String orgFileName = e.getIn().getHeader(Constants.FILE_NAME, String.class);
-                    String sanitizedFileName = sanitizeString(orgFileName);
+                    String originalFileName = e.getIn().getHeader(Constants.FILE_NAME, String.class);
+                    String sanitizedFileName = MardukFileUtils.sanitizeFileName(originalFileName);
                     e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
                                                              + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
                                                              + "/" + sanitizedFileName);
@@ -133,18 +131,6 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .to("entur-google-pubsub:ProcessFileQueue")
                 .routeId("file-sanitize-filename");
-    }
-
-    /**
-     * Remove any non ISO_8859_1 characters from file name as these cause chouette import to crash
-     */
-    String sanitizeString(String value) {
-        StringBuilder result = new StringBuilder();
-        for (char val : value.toCharArray()) {
-
-            if (StandardCharsets.ISO_8859_1.newEncoder().canEncode(val)) result.append(val);
-        }
-        return result.toString();
     }
 
 }

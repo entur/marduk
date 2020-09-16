@@ -20,6 +20,7 @@ import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentEncodingException;
 import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentParsingException;
+import no.rutebanken.marduk.routes.file.MardukFileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,7 +108,7 @@ public class FileClassifierPredicates {
                         return false;
                     }
                 } else {
-                    LOGGER.info("Skipped file with name {}", entry.getName());
+                    LOGGER.info("Skipped file with name {}", MardukFileUtils.sanitizeFileName(entry.getName()));
                 }
             }
             return true;

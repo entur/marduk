@@ -71,7 +71,7 @@ public class ZipFileUtils {
      * @throws MardukZipFileEntryNameEncodingException if an entry is not UTF8-encoded.
      */
     public static Set<ZipEntry> listFilesInZip(byte[] data) throws IOException {
-        File tmpFile = TempFileUtils.createTempFile(data, "marduk-list-files-in-zip-", ".zip");
+        File tmpFile = MardukFileUtils.createTempFile(data, "marduk-list-files-in-zip-", ".zip");
         Set<ZipEntry> fileList = listFilesInZip(tmpFile);
         Files.delete(tmpFile.toPath());
         return fileList;
