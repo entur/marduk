@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.routes.file.beans;
 
 import no.rutebanken.marduk.routes.file.FileType;
-import no.rutebanken.marduk.routes.file.MardukFileUtils;
 import org.apache.commons.io.IOUtils;
 
 import org.junit.jupiter.api.BeforeEach;

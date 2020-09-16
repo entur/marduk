@@ -25,7 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 
 /**
- * Utility class for creating and using temporary files.
+ * Utility class for file management.
  */
 public class MardukFileUtils {
 
