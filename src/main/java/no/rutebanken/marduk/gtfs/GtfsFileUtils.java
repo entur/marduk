@@ -17,7 +17,7 @@
 package no.rutebanken.marduk.gtfs;
 
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.routes.file.TempFileUtils;
+import no.rutebanken.marduk.routes.file.MardukFileUtils;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -67,7 +67,7 @@ public class GtfsFileUtils {
                 .collect(Collectors.toList());
 
         try {
-            return TempFileUtils.createDeleteOnCloseInputStream(mergeGtfsFiles(sortedZipFiles, gtfsExport, includeShapes));
+            return MardukFileUtils.createDeleteOnCloseInputStream(mergeGtfsFiles(sortedZipFiles, gtfsExport, includeShapes));
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -113,6 +113,6 @@ public class GtfsFileUtils {
         File tmpZip = File.createTempFile("marduk-add-or-replace-feed-info-", ".zip");
         Files.copy(source, tmpZip.toPath(), StandardCopyOption.REPLACE_EXISTING);
         addOrReplaceFeedInfo(tmpZip);
-        return TempFileUtils.createDeleteOnCloseInputStream(tmpZip);
+        return MardukFileUtils.createDeleteOnCloseInputStream(tmpZip);
     }
 }
