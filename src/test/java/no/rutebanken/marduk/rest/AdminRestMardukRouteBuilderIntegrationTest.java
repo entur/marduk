@@ -246,9 +246,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "GET");
 
-        assertThrows(CamelExecutionException.class, () -> {
-            getUnknownFileTemplate.requestBodyAndHeaders(null, headers);
-        });
+        assertThrows(CamelExecutionException.class, () -> getUnknownFileTemplate.requestBodyAndHeaders(null, headers));
     }
 
 

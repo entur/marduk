@@ -36,7 +36,7 @@ import static org.apache.camel.builder.PredicateBuilder.not;
 public class IdempotentFileFilterRoute extends BaseRouteBuilder {
 
     @Autowired
-    private IdempotentRepository fileNameAndDigestIdempotentRepository;
+    private IdempotentRepository<String> fileNameAndDigestIdempotentRepository;
 
 
     private static final String HEADER_FILE_NAME_AND_DIGEST = "file_NameAndDigest";
