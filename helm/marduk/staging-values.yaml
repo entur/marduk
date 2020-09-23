@@ -12,6 +12,7 @@ gcp:
 
 chouette:
   validateLevel1CronSchedule: 0+30+4+?+*+*
+  refreshStatsCacheCronSchedule: 0+0/10+7-23+*+*+?
 
 osm:
   fetchCronSchedule: 0+11+*+*+*+?
