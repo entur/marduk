@@ -43,7 +43,7 @@ public class GtfsFileUtilsTest {
     private static final String GTFS_FILE_2 = "src/test/resources/no/rutebanken/marduk/routes/file/beans/gtfs2.zip";
 
     @Test
-    public void notADirectory() {
+    void notADirectory() {
         File sourceDirectory = new File("/dev/null");
         assertThrows(MardukException.class, () -> {
             GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, null, false);
@@ -51,15 +51,15 @@ public class GtfsFileUtilsTest {
     }
 
     @Test
-    public void emptyDirectory() throws IOException {
-        Path sourceDirectory = Files.createTempDirectory("test-emptyDirectory");
+    void emptyDirectory() throws IOException {
+        File sourceDirectory = Files.createTempDirectory("test-emptyDirectory").toFile();
         assertThrows(MardukException.class, () -> {
-            GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory.toFile(), null, false);
+            GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, null, false);
         });
     }
 
     @Test
-    public void mergeGtfsFiles_identicalFilesShouldYieldMergedFileIdenticalToOrg() throws Exception {
+    void mergeGtfsFiles_identicalFilesShouldYieldMergedFileIdenticalToOrg() throws Exception {
 
         File input1 = new File(GTFS_FILE_1);
         File merged = GtfsFileUtils.mergeGtfsFiles(List.of(input1, input1), GtfsExport.GTFS_EXTENDED, false);
@@ -71,7 +71,7 @@ public class GtfsFileUtilsTest {
     }
 
     @Test
-    public void mergeGtfsFiles_nonIdenticalFilesShouldYieldUnion() throws Exception {
+    void mergeGtfsFiles_nonIdenticalFilesShouldYieldUnion() throws Exception {
 
         File input1 = new File(GTFS_FILE_1);
         File input2 = new File(GTFS_FILE_2);
@@ -85,7 +85,7 @@ public class GtfsFileUtilsTest {
     }
 
     @Test
-    public void mergeWithTransfers() throws Exception {
+    void mergeWithTransfers() throws Exception {
         File mergedZip = GtfsFileUtils.mergeGtfsFiles(List.of(new File(GTFS_FILE_1), new File(GTFS_FILE_1)), GtfsExport.GTFS_EXTENDED, false);
 
         List<String> transferLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(mergedZip, GtfsConstants.TRANSFERS_TXT)), StandardCharsets.UTF_8);

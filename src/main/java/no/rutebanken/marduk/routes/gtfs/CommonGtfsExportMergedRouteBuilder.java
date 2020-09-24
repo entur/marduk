@@ -39,7 +39,6 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CURRENT_AGGREGATED_GTFS_FILENAME;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
-import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 import static no.rutebanken.marduk.Constants.JOB_ACTION;
 import static no.rutebanken.marduk.Constants.PROVIDER_BLACK_LIST;
 import static no.rutebanken.marduk.Constants.PROVIDER_WHITE_LIST;
