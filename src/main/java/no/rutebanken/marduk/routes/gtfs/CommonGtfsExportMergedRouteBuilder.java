@@ -27,6 +27,7 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +39,7 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CURRENT_AGGREGATED_GTFS_FILENAME;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
+import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 import static no.rutebanken.marduk.Constants.JOB_ACTION;
 import static no.rutebanken.marduk.Constants.PROVIDER_BLACK_LIST;
 import static no.rutebanken.marduk.Constants.PROVIDER_WHITE_LIST;
@@ -88,6 +90,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
         from("direct:fetchLatestGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs files for all providers.")
+                .process(e -> new File(e.getIn().getHeader(FILE_PARENT, String.class) + ORIGINAL_GTFS_FILES_SUB_FOLDER).mkdirs())
                 .process(e -> e.getIn().setBody(getAggregatedGtfsFiles(getProviderBlackList(e), getProviderWhiteList(e))))
                 .choice().when(simple("${body.empty}"))
                 .log(LoggingLevel.INFO, getClass().getName(), "No gtfs files configured for inclusion in export '${property.fileName}', terminating export.")
@@ -114,7 +117,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
                 .process(exchange ->
                         {
-                            String sourceDirectory = exchange.getIn().getHeader(FILE_PARENT, String.class) + ORIGINAL_GTFS_FILES_SUB_FOLDER;
+                            File sourceDirectory = new File(exchange.getIn().getHeader(FILE_PARENT, String.class) + ORIGINAL_GTFS_FILES_SUB_FOLDER);
                             String jobAction = exchange.getIn().getHeader(Constants.JOB_ACTION, String.class);
                             boolean includeShapes= true;
                             GtfsExport gtfsExport = null;

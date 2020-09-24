@@ -58,9 +58,17 @@ public class GtfsFileUtils {
      * @param gtfsExport      the type of GTFS export.
      * @return a delete-on-close input stream referring to the resulting merged GTFS archive.
      */
-    public static InputStream mergeGtfsFilesInDirectory(String sourceDirectory, GtfsExport gtfsExport,  boolean includeShapes) {
+    public static InputStream mergeGtfsFilesInDirectory(File sourceDirectory, GtfsExport gtfsExport, boolean includeShapes) {
 
-        Collection<File> zipFiles = FileUtils.listFiles(new File(sourceDirectory), new String[]{"zip"}, false);
+        if (sourceDirectory == null || !sourceDirectory.isDirectory()) {
+            throw new MardukException(sourceDirectory + " is not a directory");
+        }
+
+        Collection<File> zipFiles = FileUtils.listFiles(sourceDirectory, new String[]{"zip"}, false);
+
+        if (zipFiles.isEmpty()) {
+            throw new MardukException(sourceDirectory + " does not contain any GTFS archive");
+        }
 
         List<File> sortedZipFiles = zipFiles.stream()
                 .sorted(Comparator.comparing(File::getName))

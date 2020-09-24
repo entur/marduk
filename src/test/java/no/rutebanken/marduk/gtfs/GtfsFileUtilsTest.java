@@ -16,26 +16,47 @@
 
 package no.rutebanken.marduk.gtfs;
 
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.gtfs.GtfsFileUtils;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
+import org.apache.camel.CamelExecutionException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GtfsFileUtilsTest {
 
     private static final String GTFS_FILE_1 = "src/test/resources/no/rutebanken/marduk/routes/file/beans/gtfs.zip";
     private static final String GTFS_FILE_2 = "src/test/resources/no/rutebanken/marduk/routes/file/beans/gtfs2.zip";
+
+    @Test
+    public void notADirectory() {
+        File sourceDirectory = new File("/dev/null");
+        assertThrows(MardukException.class, () -> {
+            GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, null, false);
+        });
+    }
+
+    @Test
+    public void emptyDirectory() throws IOException {
+        Path sourceDirectory = Files.createTempDirectory("test-emptyDirectory");
+        assertThrows(MardukException.class, () -> {
+            GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory.toFile(), null, false);
+        });
+    }
 
     @Test
     public void mergeGtfsFiles_identicalFilesShouldYieldMergedFileIdenticalToOrg() throws Exception {
