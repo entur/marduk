@@ -50,6 +50,8 @@ import static org.apache.camel.Exchange.FILE_PARENT;
 public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
 
+    private static final String ORIGINAL_GTFS_FILES_SUB_FOLDER = "/original-gtfs-files";
+
     @Value("${gtfs.export.download.directory:files/gtfs/merged}")
     private String localWorkingDirectory;
 
@@ -102,7 +104,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .toD("file:${header." + FILE_PARENT + "}/org?fileName=${property.fileName}")
+                .toD("file:${header." + FILE_PARENT + "}" + ORIGINAL_GTFS_FILES_SUB_FOLDER + "?fileName=${property.fileName}")
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${property.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("gtfs-export-get-latest-for-provider");
@@ -112,7 +114,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
                 .process(exchange ->
                         {
-                            String sourceDirectory = exchange.getIn().getHeader(FILE_PARENT, String.class) + "/org";
+                            String sourceDirectory = exchange.getIn().getHeader(FILE_PARENT, String.class) + ORIGINAL_GTFS_FILES_SUB_FOLDER;
                             String jobAction = exchange.getIn().getHeader(Constants.JOB_ACTION, String.class);
                             boolean includeShapes= true;
                             GtfsExport gtfsExport = null;
