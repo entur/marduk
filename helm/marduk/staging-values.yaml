@@ -2,13 +2,13 @@ env: staging
 replicas: 2
 
 gcp:
-  blobstoreProjectId: entur-ror-test
+  blobstoreProjectId: radon-1287
   pubsubProjectId: radon-1287
   databaseInstance: entur-ror-test:europe-west1:marduk-db-1=tcp:5432
-  bucketName: marduk-test
-  exchangeBucketName: ror-marduk-exchange-test
+  bucketName: marduk-stage
+  exchangeBucketName: marduk-exchange-stage
   otpReportBucketName: otpreport-stage.entur.org
-  otpGraphBucketName: ror-otp-graphs-test
+  otpGraphBucketName: otp-graphs-test
 
 chouette:
   validateLevel1CronSchedule: 0+30+4+?+*+*
