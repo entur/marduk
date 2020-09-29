@@ -22,7 +22,26 @@ resource "google_service_account" "marduk_service_account" {
   project = var.gcp_resources_project
 }
 
-# Create bucket
+
+# Create main bucket
+resource "google_storage_bucket" "marduk_storage_bucket" {
+  name               = var.bucket_marduk_instance_name
+  location           = var.location
+  project            = var.gcp_storage_project
+  storage_class      = var.bucket_storage_class
+  labels             = var.labels
+}
+
+# Create bucket for exchange
+resource "google_storage_bucket" "exchange_storage_bucket" {
+  name               = var.bucket_exchange_instance_name
+  location           = var.location
+  project            = var.gcp_storage_project
+  storage_class      = var.bucket_storage_class
+  labels             = var.labels
+}
+
+# Create bucket for OTP graphs
 resource "google_storage_bucket" "graphs_storage_bucket" {
   name               = var.bucket_graphs_instance_name
   location           = var.location
@@ -41,6 +60,15 @@ resource "google_storage_bucket" "graphs_storage_bucket" {
       type = "Delete"
     }
   }
+}
+
+# Create bucket for otp report
+resource "google_storage_bucket" "otpreport_storage_bucket" {
+  name               = var.bucket_otpreport_instance_name
+  location           = var.location
+  project            = var.gcp_storage_project
+  storage_class      = var.bucket_storage_class
+  labels             = var.labels
 }
 
 # add service account as member to the cloudsql client
