@@ -7,7 +7,7 @@ gcp:
   databaseInstance: entur-ror-dev:europe-west1:marduk-db-1=tcp:5432
   bucketName: marduk-dev
   exchangeBucketName: ror-marduk-exchange-dev
-  otpReportBucketName: otpreport-test.entur.org
+  otpReportBucketName: otpreport_dev_entur_org
   otpGraphBucketName: ror-otp-graphs-dev
 
 chouette:
