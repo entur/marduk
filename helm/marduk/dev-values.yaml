@@ -2,13 +2,13 @@ env: dev
 replicas: 2
 
 gcp:
-  blobstoreProjectId: carbon-1287
+  blobstoreProjectId: entur-ror-dev
   pubsubProjectId: carbon-1287
   databaseInstance: entur-ror-dev:europe-west1:marduk-db-1=tcp:5432
-  bucketName: marduk
-  exchangeBucketName: marduk-exchange
-  otpReportBucketName: otpreport-test.entur.org
-  otpGraphBucketName: otp-graphs-dev
+  bucketName: marduk-dev
+  exchangeBucketName: ror-marduk-exchange-dev
+  otpReportBucketName: otpreport_dev_entur_org
+  otpGraphBucketName: ror-otp-graphs-dev
 
 chouette:
   validateLevel1CronSchedule: 0+30+23+?+*+MON-FRI
