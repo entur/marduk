@@ -51,7 +51,7 @@ public class ZipFileUtils {
      * @return
      */
     public static boolean isZipFile(byte[] data) {
-        if (data.length < 4) {
+        if (data == null || data.length < 4) {
             return false;
         }
         try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(data))) {
