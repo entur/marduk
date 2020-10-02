@@ -35,7 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TestApp.class)
-public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
@@ -65,7 +65,7 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 	private String chouetteUrl;
 
 	@Test
-	public void testExportDataspace() throws Exception {
+	void testExportDataspace() throws Exception {
 
 		// Mock initial call to Chouette to import job
 		context.getRouteDefinition("chouette-send-export-job").adviceWith(context, new AdviceWithRouteBuilder() {

@@ -50,7 +50,7 @@ import java.util.List;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static org.mockito.Mockito.when;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderIntegrationTestBase {
+class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderIntegrationTestBase {
 
 
     @Autowired
@@ -68,13 +68,13 @@ public class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderI
 
 
     @BeforeEach
-    public void prepare() {
+    void prepare() {
         when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null), provider("rb_rut", 2, null), provider("opp", 3, 4L)));
     }
 
 
     @Test
-    public void testUploadExtendedGtfsMergedFile() throws Exception {
+    void testUploadExtendedGtfsMergedFile() throws Exception {
         //populate fake blob repo
         inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
         inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_avi-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);

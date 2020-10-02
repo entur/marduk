@@ -20,11 +20,11 @@ package no.rutebanken.marduk.domain;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
-public class FileNameAndDigestTest {
+class FileNameAndDigestTest {
 
 
 	@Test
-	public void testStringEncoding() {
+	void testStringEncoding() {
 		FileNameAndDigest org = new FileNameAndDigest("fileName", "digest");
 
 		FileNameAndDigest converted = FileNameAndDigest.fromString(org.toString());

@@ -42,7 +42,7 @@ import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Autowired
     private BlobStoreRepository blobStoreRepository;
@@ -64,7 +64,7 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
     protected ProducerTemplate baseGraphProducerTemplate;
 
     @Test
-    public void testRemoteNetexGraphBuildStatusEventReporting() throws Exception {
+    void testRemoteNetexGraphBuildStatusEventReporting() throws Exception {
 
         // create a dummy base graph object in the blobstore repository
         blobStoreRepository.uploadBlob(blobStoreSubdirectory + "/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
@@ -124,7 +124,7 @@ public class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrati
     }
 
     @Test
-    public void testRemoteBaseGraphBuildStatusEventReporting() throws Exception {
+    void testRemoteBaseGraphBuildStatusEventReporting() throws Exception {
 
         context.getRouteDefinition("otp-netex-graph-send-started-events").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override

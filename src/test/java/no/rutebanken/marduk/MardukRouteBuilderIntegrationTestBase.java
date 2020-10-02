@@ -66,20 +66,20 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
     }
 
     @BeforeEach
-    public void enableStart() {
+    void enableStart() {
     	assertFalse(context.getStatus().isStarted());
     	SpringCamelContext.setNoStart(false);
     }
 
     @AfterEach
-    public void disableStartBeforeReloadedContext() throws Exception {
+    void disableStartBeforeReloadedContext() throws Exception {
     	SpringCamelContext.setNoStart(true);
     	// Explicitly stop the Camel context here so that PubSub resources are released before the PubSub emulator is stopped
     	context.stop();
     }
 
     @BeforeEach
-    public void setUp() throws IOException {
+    protected void setUp() throws IOException {
         when(providerRepository.getProviders()).thenReturn(Collections.singletonList(Provider.create(IOUtils.toString(new FileReader(
                 "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")))));
 

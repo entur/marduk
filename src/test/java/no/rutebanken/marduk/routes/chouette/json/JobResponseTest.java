@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class JobResponseTest {
+class JobResponseTest {
 
     String inputJson = "{\"id\":130,\"referential\":\"tds\",\"action\":\"importer\",\"type\":\"gtfs\"," +
             "\"created\":1450177618732,\"updated\":1450177618732,\"status\":\"SCHEDULED\"," +
@@ -41,7 +41,7 @@ public class JobResponseTest {
             "\"organisation_name\":\"Rutebanken\",\"referential_name\":\"testDS\",\"no_save\":false,\"clean_repository\":false}}";
 
     @Test
-    public void createInputJson() throws Exception {
+    void createInputJson() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         StringReader reader = new StringReader(inputJson);
         JobResponseWithLinks jobResponse = mapper.readValue(reader, JobResponseWithLinks.class);

@@ -45,7 +45,7 @@ import no.rutebanken.marduk.TestApp;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
@@ -84,7 +84,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
     private String chouetteUrl;
 
     @BeforeEach
-    public void setUp() throws IOException {
+    protected void setUp() throws IOException {
         super.setUp();
         chouetteCreateImport.reset();
         pollJobStatus.reset();
@@ -96,7 +96,7 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
     }
 
     @Test
-    public void testImportFileToDataspace() throws Exception {
+    void testImportFileToDataspace() throws Exception {
 
         String testFilename = "netex.zip";
         InputStream testFile = getTestNetexArchiveAsStream();
@@ -170,16 +170,16 @@ public class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBui
 
 
     @Test
-    public void testJobListResponseTerminated() throws Exception {
+    void testJobListResponseTerminated() throws Exception {
         testJobListResponse("/no/rutebanken/marduk/chouette/getJobListResponseAllTerminated.json", true);
     }
 
     @Test
-    public void testJobListResponseScheduled() throws Exception {
+    void testJobListResponseScheduled() throws Exception {
         testJobListResponse("/no/rutebanken/marduk/chouette/getJobListResponseScheduled.json", false);
     }
 
-    public void testJobListResponse(String jobListResponseClasspathReference, boolean expectExport) throws Exception {
+    void testJobListResponse(String jobListResponseClasspathReference, boolean expectExport) throws Exception {
 
         context.getRouteDefinition("chouette-process-job-list-after-import").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override

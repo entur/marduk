@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TestApp.class)
-public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
@@ -75,7 +75,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 	private String chouetteUrl;
 
 	@Test
-	public void testPollJobStatus() throws Exception {
+	void testPollJobStatus() throws Exception {
 
 		// Mock get status call to chouette
 		context.getRouteDefinition("chouette-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
@@ -195,16 +195,16 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 	}
 
 	//@Test
-	public void testValidationReportResultOK() throws Exception {
+	void testValidationReportResultOK() throws Exception {
 		testValidationReportResult("/no/rutebanken/marduk/chouette/getValidationReportResponseOK.json", "OK");
 	}
 
 	//@Test
-	public void testValidationReportResultNOK() throws Exception {
+	void testValidationReportResultNOK() throws Exception {
 		testValidationReportResult("/no/rutebanken/marduk/chouette/getValidationReportResponseNOK.json", "NOK");
 	}
 
-	public void testValidationReportResult(String validationReportClasspathReference, String expectedResult)
+	void testValidationReportResult(String validationReportClasspathReference, String expectedResult)
 			throws Exception {
 
 		context.start();
@@ -219,7 +219,7 @@ public class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRoute
 	}
 	
 	@Test
-	public void getJobs() throws Exception {
+	void getJobs() throws Exception {
 
 		context.getRouteDefinition("chouette-list-jobs").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override

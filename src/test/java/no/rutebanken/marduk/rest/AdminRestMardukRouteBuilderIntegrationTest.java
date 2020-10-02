@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes= TestApp.class)
-public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 
     @TestConfiguration
@@ -114,12 +114,12 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
 
     @BeforeEach
-    public void setUpProvider() {
+    void setUpProvider() {
         when(providerRepository.getReferential(2L)).thenReturn("rut");
     }
 
     @Test
-    public void runImport() throws Exception {
+    void runImport() throws Exception {
 
         camelContext.getRouteDefinition("admin-chouette-import").adviceWith(camelContext, new AdviceWithRouteBuilder() {
             @Override
@@ -161,7 +161,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     }
 
     @Test
-    public void runExport() throws Exception {
+    void runExport() throws Exception {
 
         camelContext.getRouteDefinition("admin-chouette-export").adviceWith(camelContext, new AdviceWithRouteBuilder() {
             @Override
@@ -191,7 +191,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     }
 
     @Test
-    public void getBlobStoreFiles() throws Exception {
+    void getBlobStoreFiles() throws Exception {
 
         // Preparations
         String testFileName = "ruter_fake_data.zip";
@@ -220,7 +220,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
 
     @Test
-    public void getBlobStoreFile() throws Exception {
+    void getBlobStoreFile() throws Exception {
         // Preparations
         String filename = "netex.zip";
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
@@ -239,7 +239,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
 
     @Test
-    public void getBlobStoreFile_unknownFile() throws Exception {
+    void getBlobStoreFile_unknownFile() throws Exception {
 
         camelContext.start();
 
@@ -251,7 +251,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
 
     @Test
-    public void getBlobStoreExportFiles() throws Exception {
+    void getBlobStoreExportFiles() throws Exception {
         String testFileName = "netex.zip";
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo

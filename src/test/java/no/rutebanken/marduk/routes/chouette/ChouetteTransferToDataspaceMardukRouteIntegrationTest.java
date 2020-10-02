@@ -32,7 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TestApp.class)
-public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
@@ -60,7 +60,7 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 	private String chouetteUrl;
 
 	@Test
-	public void testTransferDataToDataspaceDataspace() throws Exception {
+	void testTransferDataToDataspaceDataspace() throws Exception {
 
 		// Mock initial call to Chouette to export job
 		context.getRouteDefinition("chouette-send-transfer-job").adviceWith(context, new AdviceWithRouteBuilder() {

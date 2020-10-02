@@ -36,7 +36,7 @@ import java.util.Map;
                 "marduk.camel.redelivery.delay=0",
                 "marduk.camel.redelivery.backoff.multiplier=1",
         })
-public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @EndpointInject(uri = "mock:buildOtpGraph")
     protected MockEndpoint buildOtpGraph;
@@ -48,7 +48,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
 
 
     @Test
-    public void testOtpGraphMessageAggregationOneMessageWithoutException() throws Exception {
+    void testOtpGraphMessageAggregationOneMessageWithoutException() throws Exception {
 
         context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -69,7 +69,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
 
 
     @Test
-    public void testOtpGraphMessageAggregationWithoutException() throws Exception {
+    void testOtpGraphMessageAggregationWithoutException() throws Exception {
 
         context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
@@ -93,7 +93,7 @@ public class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderI
     }
 
     @Test
-    public void testOtpGraphMessageAggregationWithException() throws Exception {
+    void testOtpGraphMessageAggregationWithException() throws Exception {
 
         context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
             @Override

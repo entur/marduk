@@ -40,7 +40,7 @@ import java.util.Map;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TestApp.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
@@ -79,7 +79,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 	private String chouetteUrl;
 
 	@BeforeEach
-	public void setUp() throws IOException {
+	protected void setUp() throws IOException {
 		super.setUp();
 		chouetteCreateValidation.reset();
 		pollJobStatus.reset();
@@ -91,7 +91,7 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 	}
 	
 	@Test
-	public void testRunChouetteValidation() throws Exception {
+	void testRunChouetteValidation() throws Exception {
 
 		// Mock initial call to Chouette to validation job
 		context.getRouteDefinition("chouette-send-validation-job").adviceWith(context, new AdviceWithRouteBuilder() {
@@ -161,16 +161,16 @@ public class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIn
 
 
 	@Test
-	public void testJobListResponseTerminated() throws Exception {
+	void testJobListResponseTerminated() throws Exception {
 		testJobListResponse("/no/rutebanken/marduk/chouette/getJobListResponseAllTerminated.json", true);
 	}
 
 	@Test
-	public void testJobListResponseScheduled() throws Exception {
+	void testJobListResponseScheduled() throws Exception {
 		testJobListResponse("/no/rutebanken/marduk/chouette/getJobListResponseScheduled.json", false);
 	}
 
-	public void testJobListResponse(String jobListResponseClasspathReference, boolean expectExport) throws Exception {
+	void testJobListResponse(String jobListResponseClasspathReference, boolean expectExport) throws Exception {
 
 		context.getRouteDefinition("chouette-process-job-list-after-validation").adviceWith(context, new AdviceWithRouteBuilder() {
 			@Override
