@@ -68,41 +68,28 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 	void testExportDataspace() throws Exception {
 
 		// Mock initial call to Chouette to import job
-		context.getRouteDefinition("chouette-send-export-job").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/gtfs")
-						.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-						.to("mock:updateStatus");
-			}
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-send-export-job", a -> {
+			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/gtfs")
+					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
+			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+					.to("mock:updateStatus");
 		});
 
 		// Mock update status calls
-		context.getRouteDefinition("chouette-process-export-status").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-						.to("mock:updateStatus");
-			}
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-export-status", a -> {
+			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+					.to("mock:updateStatus");
 		});
 
 		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
-		context.getRouteDefinition("chouette-validate-job-status-parameters").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
-				.to("mock:pollJobStatus");
-			}
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> {
+			a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
+					.to("mock:pollJobStatus");
 		});
 
-		context.getRouteDefinition("chouette-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
-						.skipSendToOriginalEndpoint().to("mock:chouetteGetData");
-
-			}
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> {
+			a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
+					.skipSendToOriginalEndpoint().to("mock:chouetteGetData");
 		});
 
 		

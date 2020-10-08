@@ -79,13 +79,11 @@ class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderIntegrat
         inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
         inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_avi-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
 
-        context.getRouteDefinition("gtfs-export-merged-report-ok").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-                interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-                        .to("mock:updateStatus");
-            }
+        AdviceWithRouteBuilder.adviceWith(context, "gtfs-export-merged-report-ok", a -> {
+            a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+                    .to("mock:updateStatus");
         });
+
         updateStatus.expectedMessageCount(2);
 
         context.start();

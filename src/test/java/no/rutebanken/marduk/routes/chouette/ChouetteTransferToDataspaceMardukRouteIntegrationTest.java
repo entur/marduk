@@ -63,34 +63,24 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 	void testTransferDataToDataspaceDataspace() throws Exception {
 
 		// Mock initial call to Chouette to export job
-		context.getRouteDefinition("chouette-send-transfer-job").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/transfer")
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-send-transfer-job", a -> {
+			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/transfer")
 					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
-				
-				interceptSendToEndpoint("entur-google-pubsub:ChouettePollStatusQueue")
+
+			a.interceptSendToEndpoint("entur-google-pubsub:ChouettePollStatusQueue")
 					.skipSendToOriginalEndpoint().to("mock:pollJobStatus");
 
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-				.to("mock:updateStatus");
-			}
+			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+					.to("mock:updateStatus");
 		});
-
-	
 
 		// Mock update status calls
-		context.getRouteDefinition("chouette-process-transfer-status").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-				.to("mock:updateStatus");
-				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation").skipSendToOriginalEndpoint()
-				.to("mock:checkScheduledJobsBeforeTriggeringNextAction");
-			}
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-transfer-status", a -> {
+			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+					.to("mock:updateStatus");
+			a.interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation").skipSendToOriginalEndpoint()
+					.to("mock:checkScheduledJobsBeforeTriggeringNextAction");
 		});
-
-	
 
 		// we must manually start when we are done with all the advice with
 		context.start();

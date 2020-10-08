@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.services;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.attachment.AttachmentMessage;
 
 public class ExchangeUtils {
 
@@ -27,6 +28,7 @@ public class ExchangeUtils {
         // copy headers from IN to OUT to propagate them
         exchange.getIn().setHeaders(exchange.getIn().getHeaders());
         // copy attachements from IN to OUT to propagate them
-        exchange.getIn().setAttachments(exchange.getIn().getAttachments());
+        AttachmentMessage am = exchange.getMessage(AttachmentMessage.class);
+        am.setAttachments(am.getAttachments());
     }
 }

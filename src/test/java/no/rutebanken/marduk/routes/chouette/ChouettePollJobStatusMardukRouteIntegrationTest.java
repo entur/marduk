@@ -78,37 +78,23 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 	void testPollJobStatus() throws Exception {
 
 		// Mock get status call to chouette
-		context.getRouteDefinition("chouette-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/scheduled_jobs/1")
-						.skipSendToOriginalEndpoint().to("mock:chouetteGetJobStatus");
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
-
-			}
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> {
+			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/scheduled_jobs/1")
+					.skipSendToOriginalEndpoint().to("mock:chouetteGetJobStatus");
+			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
 		});
 
-		context.getRouteDefinition("chouette-process-job-reports").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/action_report.json")
-						.skipSendToOriginalEndpoint().to("mock:chouetteGetActionReport");
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-job-reports", a -> {
+			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/action_report.json")
+					.skipSendToOriginalEndpoint().to("mock:chouetteGetActionReport");
 
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/validation_report.json")
-						.skipSendToOriginalEndpoint().to("mock:chouetteGetValidationReport");
-
-			}
+			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/validation_report.json")
+					.skipSendToOriginalEndpoint().to("mock:chouetteGetValidationReport");
 		});
 
-		context.getRouteDefinition("chouette-reschedule-job").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
-
-			}
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-reschedule-job", a -> {
+			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
 		});
-
 
 		// we must manually start when we are done with all the advice with
 		context.start();
@@ -221,13 +207,10 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 	@Test
 	void getJobs() throws Exception {
 
-		context.getRouteDefinition("chouette-list-jobs").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?addActionParameters=false")
-				.skipSendToOriginalEndpoint()
-				.to("mock:chouetteGetJobsForProvider");
-			}
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-list-jobs", a -> {
+			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?addActionParameters=false")
+					.skipSendToOriginalEndpoint()
+					.to("mock:chouetteGetJobsForProvider");
 		});
 
 		context.start();

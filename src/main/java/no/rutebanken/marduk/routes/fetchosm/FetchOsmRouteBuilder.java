@@ -81,7 +81,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm + "/" + "norway-latest.osm.pbf.md5"))
                 .to("direct:uploadBlob")
                 // Fetch the actual file
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .streamCaching()
                 .to(osmMapUrl)
                 .convertBodyTo(InputStream.class)
@@ -108,7 +108,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
 
         from("direct:fetchOsmMapOverNorwayMd5")
                 .log(LoggingLevel.DEBUG, "Fetching MD5 sum for map over Norway")
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .to(osmMapUrl + ".md5")
                 .convertBodyTo(String.class)
                 .process(p -> {

@@ -60,17 +60,12 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
     void testExportMergedNetex() throws Exception {
 
         // Mock status update
-        context.getRouteDefinition("netex-export-merge-chouette-with-flexible-lines").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-
-                interceptSendToEndpoint("entur-google-pubsub:OtpGraphBuildQueue").skipSendToOriginalEndpoint()
-                        .to("mock:OtpGraphBuildQueue");
-                interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-                        .to("mock:updateStatus");
-            }
+        AdviceWithRouteBuilder.adviceWith(context, "netex-export-merge-chouette-with-flexible-lines", a -> {
+            a.interceptSendToEndpoint("entur-google-pubsub:OtpGraphBuildQueue").skipSendToOriginalEndpoint()
+                    .to("mock:OtpGraphBuildQueue");
+            a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+                    .to("mock:updateStatus");
         });
-
 
         context.start();
 
