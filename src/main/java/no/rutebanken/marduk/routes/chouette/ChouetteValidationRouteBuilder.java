@@ -132,7 +132,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 
         from("direct:assertHeadersForChouetteValidation")
                 .choice()
-                .when(simple("${header." + CHOUETTE_REFERENTIAL + "} == null or ${header." + PROVIDER_ID + "} == null "))
+                .when(simple("${header." + CHOUETTE_REFERENTIAL + "} == null || ${header." + PROVIDER_ID + "} == null "))
                 .log(LoggingLevel.WARN, correlation() + "Unable to start Chouette validation for missing referential or providerId")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.class)).state(State.FAILED).build())
                 .to("direct:updateStatus")
