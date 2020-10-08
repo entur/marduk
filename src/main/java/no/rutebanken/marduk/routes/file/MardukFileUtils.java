@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -78,13 +79,14 @@ public class MardukFileUtils {
     public static String sanitizeFileName(String fileName) {
 
         StringBuilder result = new StringBuilder(fileName.length());
+        CharsetEncoder charsetEncoder = StandardCharsets.ISO_8859_1.newEncoder();
         for (char val : fileName.toCharArray()) {
 
             if (val == '\n' || val == '\r' || val == '\t') {
                 continue;
             }
 
-            if (StandardCharsets.ISO_8859_1.newEncoder().canEncode(val)) {
+            if (charsetEncoder.canEncode(val)) {
                 result.append(val);
             }
         }

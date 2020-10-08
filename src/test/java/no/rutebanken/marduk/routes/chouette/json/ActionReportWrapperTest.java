@@ -23,10 +23,10 @@ import java.io.StringReader;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ActionReportWrapperTest {
+class ActionReportWrapperTest {
 
     @Test
-    public void testErrorResult() throws Exception {
+    void testErrorResult() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         StringReader reader = new StringReader(ERROR_RESPONSE);
         ActionReportWrapper actionReport = mapper.readValue(reader, ActionReportWrapper.class);

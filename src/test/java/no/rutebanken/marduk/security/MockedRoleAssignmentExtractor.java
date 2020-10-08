@@ -29,7 +29,7 @@ import java.util.List;
  */
 @Service
 @Primary
-public class MockedRoleAssignmentExtractor implements RoleAssignmentExtractor {
+class MockedRoleAssignmentExtractor implements RoleAssignmentExtractor {
 
     private List<RoleAssignment> nextReturnedRoleAssignmentList;
 
@@ -51,7 +51,7 @@ public class MockedRoleAssignmentExtractor implements RoleAssignmentExtractor {
         return getRoleAssignmentsForUser();
     }
 
-    public void setNextReturnedRoleAssignmentList(List<RoleAssignment> nextReturnedRoleAssignmentList) {
+    void setNextReturnedRoleAssignmentList(List<RoleAssignment> nextReturnedRoleAssignmentList) {
         this.nextReturnedRoleAssignmentList = nextReturnedRoleAssignmentList;
     }
 

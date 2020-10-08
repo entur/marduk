@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes =  TestApp.class)
-public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 
     @Autowired
@@ -61,7 +61,7 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
     protected ProducerTemplate producerTemplate;
 
     @Test
-    public void testStatusEventReporting() throws Exception {
+    void testStatusEventReporting() throws Exception {
 
         //populate fake blob repo
         inMemoryBlobStoreRepository.uploadBlob(  blobStoreSubdirectory+"/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);

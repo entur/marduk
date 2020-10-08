@@ -19,27 +19,27 @@ package no.rutebanken.marduk;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
-public class UtilsTest {
+class UtilsTest {
 
     @Test
-    public void testGetJobId(){
+    void testGetJobId(){
         String locationUrl = "http://localhost:8180/chouette_iev/referentials/avinor/scheduled_jobs/2321";
         assertEquals(Long.valueOf(2321), Utils.getLastPathElementOfUrl(locationUrl));
     }
 
     @Test
-    public void testGetJobIdWithNull(){
+    void testGetJobIdWithNull(){
         assertThrows(IllegalArgumentException.class, () -> Utils.getLastPathElementOfUrl(null));
     }
 
     @Test
-    public void testGetHttp4(){
+    void testGetHttp4(){
         String url = "http://localhost:8180/chouette_iev/referentials/avinor";
         assertEquals("http4://localhost:8180/chouette_iev/referentials/avinor", Utils.getHttp4(url));
     }
 
     @Test
-    public void testGetHttp4WithNull(){
+    void testGetHttp4WithNull(){
         assertThrows(IllegalArgumentException.class, () -> Utils.getHttp4(null));
     }
 

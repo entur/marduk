@@ -22,7 +22,7 @@ import org.rutebanken.helper.organisation.RoleAssignment;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RoleAssignmentListBuilder {
+class RoleAssignmentListBuilder {
 
     private List<RoleAssignment> roleAssignments = new ArrayList<>();
 

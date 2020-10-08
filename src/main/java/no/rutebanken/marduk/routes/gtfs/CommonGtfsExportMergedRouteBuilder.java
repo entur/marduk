@@ -27,6 +27,7 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -49,6 +50,8 @@ import static org.apache.camel.Exchange.FILE_PARENT;
 @Component
 public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
+
+    private static final String ORIGINAL_GTFS_FILES_SUB_FOLDER = "/original-gtfs-files";
 
     @Value("${gtfs.export.download.directory:files/gtfs/merged}")
     private String localWorkingDirectory;
@@ -86,6 +89,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
         from("direct:fetchLatestGtfs")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs files for all providers.")
+                .process(e -> new File(e.getIn().getHeader(FILE_PARENT, String.class) + ORIGINAL_GTFS_FILES_SUB_FOLDER).mkdirs())
                 .process(e -> e.getIn().setBody(getAggregatedGtfsFiles(getProviderBlackList(e), getProviderWhiteList(e))))
                 .choice().when(simple("${body.empty}"))
                 .log(LoggingLevel.INFO, getClass().getName(), "No gtfs files configured for inclusion in export '${property.fileName}', terminating export.")
@@ -102,7 +106,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .toD("file:${header." + FILE_PARENT + "}/org?fileName=${property.fileName}")
+                .toD("file:${header." + FILE_PARENT + "}" + ORIGINAL_GTFS_FILES_SUB_FOLDER + "?fileName=${property.fileName}")
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${property.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("gtfs-export-get-latest-for-provider");
@@ -112,7 +116,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
                 .process(exchange ->
                         {
-                            String sourceDirectory = exchange.getIn().getHeader(FILE_PARENT, String.class) + "/org";
+                            File sourceDirectory = new File(exchange.getIn().getHeader(FILE_PARENT, String.class) + ORIGINAL_GTFS_FILES_SUB_FOLDER);
                             String jobAction = exchange.getIn().getHeader(Constants.JOB_ACTION, String.class);
                             boolean includeShapes= true;
                             GtfsExport gtfsExport = null;

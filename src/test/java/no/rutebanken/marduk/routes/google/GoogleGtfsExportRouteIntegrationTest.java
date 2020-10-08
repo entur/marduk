@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 
     @Autowired
@@ -62,7 +62,7 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
     private String googleQaExportFileName;
 
     @BeforeEach
-    public void prepare() {
+    void prepare() {
         Provider rbOppProvider = provider("rb_opp", 4, null, false, false);
         when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null, false, false), provider("rb_rut", 2, null, true, false),
                 provider("opp", 3, rbOppProvider.id, false, true), rbOppProvider));
@@ -72,7 +72,7 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
 
 
     @Test
-    public void testUploadGtfsToGoogle() throws Exception {
+    void testUploadGtfsToGoogle() throws Exception {
         context.start();
 
         //populate fake blob repo
@@ -84,7 +84,7 @@ public class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderInte
     }
 
     @Test
-    public void testUploadQaGtfsToGoogle() throws Exception {
+    void testUploadQaGtfsToGoogle() throws Exception {
         context.start();
 
         //populate fake blob repo

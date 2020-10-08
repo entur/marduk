@@ -34,7 +34,7 @@ public class IdempotentRepositoryConfig {
 	private int maxTransactionSeconds;
 
 	@Bean
-	public IdempotentRepository fileNameAndDigestIdempotentRepository() {
+	public IdempotentRepository<String> fileNameAndDigestIdempotentRepository() {
 		return new FileNameAndDigestIdempotentRepository(datasource, "nameAndDigest", maxTransactionSeconds);
 	}
 

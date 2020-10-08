@@ -39,7 +39,7 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-public class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuilderIntegrationTestBase {
+class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuilderIntegrationTestBase {
 
 
     @Autowired
@@ -57,7 +57,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRou
 
 
     @Test
-    public void testExportMergedNetex() throws Exception {
+    void testExportMergedNetex() throws Exception {
 
         // Mock status update
         context.getRouteDefinition("netex-export-merge-chouette-with-flexible-lines").adviceWith(context, new AdviceWithRouteBuilder() {

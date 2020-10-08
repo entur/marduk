@@ -38,7 +38,7 @@ import java.util.Map;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TestApp.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
@@ -74,7 +74,7 @@ public class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRou
 
 
 	@Test
-	public void testExportDataspace() throws Exception {
+	void testExportDataspace() throws Exception {
 
 		// Mock initial call to Chouette to import job
 		context.getRouteDefinition("chouette-start-export-netex").adviceWith(context, new AdviceWithRouteBuilder() {

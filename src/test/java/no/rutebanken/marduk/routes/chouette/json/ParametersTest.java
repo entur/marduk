@@ -31,7 +31,7 @@ import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
 import static net.javacrumbs.jsonunit.JsonAssert.when;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ParametersTest {
+class ParametersTest {
 
 
     private static final String GTFS_REFERENCE_JSON =  "{ \"parameters\": { \"gtfs-import\": {\"clean_repository\":\"0\",\"no_save\": \"0\", " +
@@ -42,13 +42,13 @@ public class ParametersTest {
             "\"parse_connection_links\": false," +
                 " \"max_distance_for_connection_link\": \"0\", \"test\": false, \"stop_area_remote_id_mapping\": true, \"stop_area_import_mode\": \"CREATE_NEW\", \"keep_obsolete_lines\": true, \"generate_missing_route_sections_for_modes\": [\"water\",\"bus\"] } } }";
     @Test
-    public void testGtfsImportParameters() {
+    void testGtfsImportParameters() {
         GtfsImportParameters importParameters = GtfsImportParameters.create("test", "tds", "testDS", "Rutebanken", "Chouette",false,false,true, true, Set.of("water","bus"));
         assertJsonEquals(GTFS_REFERENCE_JSON, importParameters.toJsonString(), when(Option.IGNORING_ARRAY_ORDER));
     }
 
     @Test
-    public void testGtfsExportParameters() throws JsonProcessingException {
+    void testGtfsExportParameters() throws JsonProcessingException {
         Provider provider = getProvider();
         String gtfsExportParametersAsString = Parameters.getGtfsExportParameters(provider);
         final ObjectMapper mapper = new ObjectMapper();
@@ -58,7 +58,7 @@ public class ParametersTest {
     }
 
     @Test
-    public void testTransferExportParameters() throws JsonProcessingException {
+    void testTransferExportParameters() throws JsonProcessingException {
         Provider provider = getProvider();
         Provider destProvider = new Provider();
         destProvider.chouetteInfo = new ChouetteInfo();

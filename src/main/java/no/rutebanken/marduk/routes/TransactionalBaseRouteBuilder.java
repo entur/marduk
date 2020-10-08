@@ -38,7 +38,7 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
 
 
     @Override
-    public void configure() throws Exception {
+    public void configure() {
         errorHandler(transactionErrorHandler()
                 .redeliveryDelay(redeliveryDelay)
                 .maximumRedeliveries(maxRedelivery)
