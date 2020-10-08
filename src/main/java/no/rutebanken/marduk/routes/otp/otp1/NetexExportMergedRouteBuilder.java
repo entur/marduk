@@ -107,13 +107,13 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
         from("direct:fetchProviderNetexExport")
                 .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching " + BLOBSTORE_PATH_OUTBOUND + "netex/${body}")
                 .setProperty("fileName", body())
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "netex/${property.fileName}"))
+                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "netex/${exchangeProperty.fileName}"))
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
                 .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class)  + UNPACKED_NETEX_SUBFOLDER))
                 .otherwise()
-                .log(LoggingLevel.INFO, getClass().getName(), "${property.fileName} was empty when trying to fetch it from blobstore.")
+                .log(LoggingLevel.INFO, getClass().getName(), "${exchangeProperty.fileName} was empty when trying to fetch it from blobstore.")
                 .routeId("netex-export-fetch-latest-for-provider");
 
 

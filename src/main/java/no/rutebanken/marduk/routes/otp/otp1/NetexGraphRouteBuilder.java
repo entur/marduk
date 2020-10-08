@@ -97,8 +97,8 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(PROP_MESSAGES, simple("${body}"))
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
-                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP graph building in remote directory ${property." + OTP_GRAPH_DIR + "}.")
+                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${exchangeProperty." + TIMESTAMP + "}"))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP graph building in remote directory ${exchangeProperty." + OTP_GRAPH_DIR + "}.")
 
                 .to("direct:exportMergedNetex")
 
@@ -194,10 +194,10 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:remoteCleanUp")
                 .choice()
                 .when(constant(deleteOtpRemoteWorkDir))
-                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP remote work directory ${property." + Exchange.FILE_PARENT + "} ...")
+                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP remote work directory ${exchangeProperty." + Exchange.FILE_PARENT + "} ...")
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(OTP_REMOTE_WORK_DIR))
                 .to("direct:deleteAllBlobsInFolder")
-                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP remote work directory ${property." + Exchange.FILE_PARENT + "} cleanup done.")
+                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP remote work directory ${exchangeProperty." + Exchange.FILE_PARENT + "} cleanup done.")
                 .end()
                 .routeId("otp-remote-graph-cleanup");
 

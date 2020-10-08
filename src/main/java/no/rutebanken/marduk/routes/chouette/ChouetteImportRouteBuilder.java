@@ -58,7 +58,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setBody(constant(null))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/clean/stop_areas"))
-                .toD("${property.chouette_url}")
+                .toD("${exchangeProperty.chouette_url}")
                 .routeId("chouette-clean-stop-places");
 
         from("direct:chouetteCleanAllReferentials")
@@ -93,7 +93,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/clean"))
-                .toD("${property.chouette_url}")
+                .toD("${exchangeProperty.chouette_url}")
                 .routeId("chouette-clean-dataspace");
 
         from("entur-google-pubsub:ChouetteImportQueue").streamCaching()
