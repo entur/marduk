@@ -25,17 +25,6 @@ public class Utils {
     private  Utils() {
     }
 
-    public static String getHttp4(String url) {
-        if (url == null) {
-            throw new IllegalArgumentException("Url is null");
-        }
-
-        if (url.contains("https")) {
-            return url.replaceFirst("https", "https4");
-        }
-        return url.replaceFirst("http", "http4");
-    }
-
     public static Long getLastPathElementOfUrl(String url) {
         if (url == null) {
             throw new IllegalArgumentException("Url is null");

@@ -89,23 +89,23 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @EndpointInject(uri = "mock:chouetteExportNetexQueue")
     protected MockEndpoint exportQueue;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/import")
+    @Produce(uri = "http:localhost:28080/services/timetable_admin/2/import")
     protected ProducerTemplate importTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/export")
+    @Produce(uri = "http:localhost:28080/services/timetable_admin/2/export")
     protected ProducerTemplate exportTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files")
+    @Produce(uri = "http:localhost:28080/services/timetable_admin/2/files")
     protected ProducerTemplate listFilesTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files/netex.zip")
+    @Produce(uri = "http:localhost:28080/services/timetable_admin/2/files/netex.zip")
     protected ProducerTemplate getFileTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files/unknown-file.zip")
+    @Produce(uri = "http:localhost:28080/services/timetable_admin/2/files/unknown-file.zip")
     protected ProducerTemplate getUnknownFileTemplate;
 
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/export/files")
+    @Produce(uri = "http:localhost:28080/services/timetable_admin/export/files")
     protected ProducerTemplate listExportFilesTemplate;
 
 

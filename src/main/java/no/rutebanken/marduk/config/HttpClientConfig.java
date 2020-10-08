@@ -42,7 +42,7 @@ public class HttpClientConfig {
 
     @Bean
     public HttpClientConfigurer httpClientConfigurer(@Autowired CamelContext camelContext) {
-        HttpComponent httpComponent = camelContext.getComponent("http4", HttpComponent.class);
+        HttpComponent httpComponent = camelContext.getComponent("http", HttpComponent.class);
         HttpClientConfigurer httpClientConfigurer = new HttpClientConfigurer() {
             @Override
             public void configureHttpClient(HttpClientBuilder httpClientBuilder) {

@@ -89,7 +89,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .process(e -> {
                     String url = (String) e.getProperty("chouette_url");
 
-                    // Convert camel dynamic endpoint format (http4:xxxx) to url (http://xxx) before manipulating url. Needed as interception
+                    // Convert camel dynamic endpoint format (http:xxxx) to url (http://xxx) before manipulating url. Needed as interception
                     // does not seem to work with // in target anymore (as of camel 2.22.0)
                     boolean dynamicEndpointNotation=!url.contains("://");
                     if (dynamicEndpointNotation) {
@@ -228,11 +228,11 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .end()
                 .process(e -> {
                     JobResponseWithLinks response = e.getIn().getBody(JobResponseWithLinks.class);
-                    Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "action_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
+                    Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "action_report".equals(li.rel)).findFirst().map(li -> li.href);
                     e.getIn().setHeader("action_report_url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
-                    Optional<String> validationReportUrlOptional = response.links.stream().filter(li -> "validation_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
+                    Optional<String> validationReportUrlOptional = response.links.stream().filter(li -> "validation_report".equals(li.rel)).findFirst().map(li -> li.href);
                     e.getIn().setHeader("validation_report_url", validationReportUrlOptional.orElse(null));
-                    Optional<String> dataUrlOptional = response.links.stream().filter(li -> "data".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
+                    Optional<String> dataUrlOptional = response.links.stream().filter(li -> "data".equals(li.rel)).findFirst().map(li -> li.href);
                     e.getIn().setHeader("data_url", dataUrlOptional.orElse(null));
                 })
                 // Fetch and parse action report
