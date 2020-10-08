@@ -81,7 +81,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("quartz2://marduk/googleExportPublish?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+        singletonFrom("quartz://marduk/googleExportPublish?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{google.publish.scheduler.autoStartup:true}}")
                 .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs export.")
@@ -89,7 +89,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .routeId("google-publish--quartz");
 
 
-        singletonFrom("quartz2://marduk/googleQaExportPublish?cron=" + qaCronSchedule + "&trigger.timeZone=Europe/Oslo")
+        singletonFrom("quartz://marduk/googleQaExportPublish?cron=" + qaCronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{google.publish.qa.scheduler.autoStartup:true}}")
                 .filter(e -> shouldQuartzRouteTrigger(e, qaCronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs QA export.")

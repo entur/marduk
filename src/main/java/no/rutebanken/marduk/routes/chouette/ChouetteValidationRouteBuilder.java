@@ -53,7 +53,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
         super.configure();
 
 
-        singletonFrom("quartz2://marduk/chouetteValidateLevel1?cron=" + level1CronSchedule + "&trigger.timeZone=Europe/Oslo")
+        singletonFrom("quartz://marduk/chouetteValidateLevel1?cron=" + level1CronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{chouette.validate.level1.autoStartup:true}}")
 
                 .filter(e -> shouldQuartzRouteTrigger(e, level1CronSchedule))
@@ -61,7 +61,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .inOnly("direct:chouetteValidateLevel1ForAllProviders")
                 .routeId("chouette-validate-level1-quartz");
 
-        singletonFrom("quartz2://marduk/chouetteValidateLevel2?cron=" + level2CronSchedule + "&trigger.timeZone=Europe/Oslo")
+        singletonFrom("quartz://marduk/chouetteValidateLevel2?cron=" + level2CronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{chouette.validate.level2.autoStartup:false}}")
 
                 .filter(e -> shouldQuartzRouteTrigger(e, level2CronSchedule))

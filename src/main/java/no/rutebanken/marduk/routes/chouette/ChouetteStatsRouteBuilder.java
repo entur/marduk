@@ -65,7 +65,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
         super.configure();
 
         // Quartz job must run on all nodes
-        from("quartz2://marduk/refreshLine?" + quartzTrigger)
+        from("quartz://marduk/refreshLine?" + quartzTrigger)
                 .log(LoggingLevel.DEBUG, "Quartz triggers refresh of line stats.")
                 .to("direct:chouetteRefreshStatsCache")
 
