@@ -87,7 +87,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
         singletonFrom("entur-google-pubsub:OtpGraphBuildQueue?ackMode=NONE").autoStartup("{{otp.graph.build.autoStartup:true}}")
-                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:remoteBuildOtpGraph")
@@ -142,7 +142,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                             e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
                             e.getIn().setHeader(TARGET_CONTAINER, otpGraphsBucketName);
                             e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
-                            e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false));
+                            e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, false);
                             e.setProperty(GRAPH_VERSION, publishedGraphVersion);
                         }
                 )
@@ -154,7 +154,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 // update file containing the reference to the latest graph
                 .setBody(header(TARGET_FILE_HANDLE))
                 .setHeader(FILE_HANDLE, constant(otpGraphCurrentFile))
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .to("direct:uploadOtpGraphsBlob")
                 .log(LoggingLevel.INFO, "Done uploading reference to current graph: ${header." + FILE_HANDLE + "}")
 
@@ -178,7 +178,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(Exchange.FILE_PARENT, e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/report");
                     e.getIn().setHeader(TARGET_CONTAINER, otpReportContainerName);
                     e.getIn().setHeader(TARGET_FILE_PARENT, e.getProperty(GRAPH_VERSION, String.class));
-                    e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true));
+                    e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, true);
                 })
                 .log(LoggingLevel.INFO, "Copying OTP graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
                 .to("direct:copyAllBlobs")

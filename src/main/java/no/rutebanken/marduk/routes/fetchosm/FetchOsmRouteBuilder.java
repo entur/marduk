@@ -95,10 +95,10 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     }
                 })
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm + "/" + "norway-latest.osm.pbf"))
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .to("direct:uploadBlob")
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
-                .setHeader(FINISHED, constant("true"))
+                .setHeader(FINISHED, simple("true", Boolean.class))
                 .log(LoggingLevel.INFO, "Map was updated, therefore triggering OSM base graph build and Geocoder POI update")
                 .setBody(constant(null))
                 .inOnly("entur-google-pubsub:OtpBaseGraphBuildQueue")

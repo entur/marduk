@@ -82,7 +82,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  		        .to(logDebugShowAll())
  		        .setBody(constant(""))
  		        .choice()
-// 				.when(PredicateBuilder.and(constant("false").isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
+// 				.when(PredicateBuilder.and(simple("false", Boolean.class).isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
 // 		            .to("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation")
 // 		            .process(e -> Status.addStatus(e, TimetableAction.DATASPACE_TRANSFER, State.OK))
  		        .when(simple("${header.action_report_result} == 'OK'"))

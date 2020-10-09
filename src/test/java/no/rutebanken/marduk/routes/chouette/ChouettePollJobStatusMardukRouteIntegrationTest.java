@@ -213,8 +213,6 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 					.to("mock:chouetteGetJobsForProvider");
 		});
 
-		context.start();
-
 		getJobs.returnReplyBody(new Expression() {
 
 			@SuppressWarnings("unchecked")
@@ -228,6 +226,10 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 				}
 			}
 		});
+
+		context.start();
+
+
 
 		
 		// Do rest call

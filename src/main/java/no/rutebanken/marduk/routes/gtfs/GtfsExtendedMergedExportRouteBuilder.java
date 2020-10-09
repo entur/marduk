@@ -46,7 +46,7 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         singletonFrom("entur-google-pubsub:GtfsExportMergedQueue?ackMode=NONE").autoStartup("{{gtfs.export.autoStartup:true}}")
-                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(this::addOnCompletionForAggregatedExchange)

@@ -94,7 +94,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .toD("${header.data_url}")
 
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_CHOUETTE + "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:uploadBlob")
                 .setBody(constant(null))

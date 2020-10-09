@@ -140,7 +140,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .routeId("gtfs-export-merged-transform");
 
         from("direct:uploadMergedGtfs")
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + FILE_NAME + "}"))
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, getClass().getName(), "Uploaded new merged GTFS file: ${header." + FILE_NAME + "}")

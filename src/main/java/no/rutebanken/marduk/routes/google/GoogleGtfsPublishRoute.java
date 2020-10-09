@@ -98,7 +98,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
 
         singletonFrom("entur-google-pubsub:GtfsGooglePublishQueue?ackMode=NONE")
-                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(this::addOnCompletionForAggregatedExchange)
                 .log(LoggingLevel.INFO, getClass().getName(), "Start publish of GTFS file to Google")
@@ -113,7 +113,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
 
         singletonFrom("entur-google-pubsub:GtfsGooglePublishQaQueue?ackMode=NONE")
-                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish QA requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(this::addOnCompletionForAggregatedExchange)
                 .log(LoggingLevel.INFO, getClass().getName(), "Start publish of GTFS QA file to Google")
