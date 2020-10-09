@@ -35,6 +35,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -236,10 +237,10 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 		Map<String, Object> headers = new HashMap<>();
 		headers.put(Exchange.HTTP_METHOD, "GET");
 		headers.put(Constants.PROVIDER_ID, "2");
-		JobResponse[] rsp =  (JobResponse[]) getJobsTemplate.requestBodyAndHeaders(null, headers);
+		List<JobResponse> rsp =  (List<JobResponse>) getJobsTemplate.requestBodyAndHeaders(null, headers);
 		// Parse response
 
-		assertNotEquals(0, rsp.length);
+		assertNotEquals(0, rsp.size());
 	
 
 	}

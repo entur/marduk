@@ -29,6 +29,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.component.http.HttpMethods;
+import org.apache.camel.component.jackson.ListJacksonDataFormat;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.http.client.utils.URIBuilder;
 import org.entur.pubsub.camel.EnturGooglePubSubConstants;
@@ -114,7 +115,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                     e.setProperty("chouette_url", b.toString());
                 })
                 .toD("${exchangeProperty.chouette_url}")
-                .unmarshal().json(JsonLibrary.Jackson, JobResponse[].class)
+                .unmarshal(new ListJacksonDataFormat(JobResponse.class))
                 .routeId("chouette-list-jobs");
 
 
