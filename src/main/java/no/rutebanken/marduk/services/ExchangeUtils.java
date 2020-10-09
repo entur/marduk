@@ -26,9 +26,10 @@ public class ExchangeUtils {
 
     public static void addHeadersAndAttachments(Exchange exchange) {
         // copy headers from IN to OUT to propagate them
-        exchange.getIn().setHeaders(exchange.getIn().getHeaders());
+        //exchange.getIn().setHeaders(exchange.getIn().getHeaders());
         // copy attachements from IN to OUT to propagate them
-        AttachmentMessage am = exchange.getMessage(AttachmentMessage.class);
-        am.setAttachments(am.getAttachments());
+        //AttachmentMessage inMessage = exchange.getIn(AttachmentMessage.class);
+        //AttachmentMessage outMessage = exchange.getMessage(AttachmentMessage.class);
+        //outMessage.setAttachments(inMessage.getAttachments());
     }
 }
