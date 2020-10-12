@@ -22,6 +22,7 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEvent.State;
 import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -58,7 +59,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 
                 .filter(e -> shouldQuartzRouteTrigger(e, level1CronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers validation of Level1 for all providers in Chouette.")
-                .inOnly("direct:chouetteValidateLevel1ForAllProviders")
+                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel1ForAllProviders")
                 .routeId("chouette-validate-level1-quartz");
 
         singletonFrom("quartz://marduk/chouetteValidateLevel2?cron=" + level2CronSchedule + "&trigger.timeZone=Europe/Oslo")
@@ -66,7 +67,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 
                 .filter(e -> shouldQuartzRouteTrigger(e, level2CronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers validation of Level2 for all providers in Chouette.")
-                .inOnly("direct:chouetteValidateLevel2ForAllProviders")
+                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel2ForAllProviders")
                 .routeId("chouette-validate-level2-quartz");
 
         // Trigger validation level1 for all level1 providers (ie migrateDateToProvider and referential set)
@@ -79,7 +80,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
                 .setBody(constant(null))
-                .inOnly("entur-google-pubsub:ChouetteValidationQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("chouette-validate-level1-all-providers");
 
 
@@ -93,7 +94,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
                 .setBody(constant(null))
-                .inOnly("entur-google-pubsub:ChouetteValidationQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("chouette-validate-level2-all-providers");
 
 

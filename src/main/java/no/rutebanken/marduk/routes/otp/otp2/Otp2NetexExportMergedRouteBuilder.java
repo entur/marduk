@@ -21,6 +21,7 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,7 +74,7 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .setProperty(FOLDER_NAME, simple(localWorkingDirectory + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}"))
 
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action("EXPORT_NETEX_MERGED").fileName(netexExportStopsFilePrefix).state(JobEvent.State.STARTED).newCorrelationId().build())
-                .inOnly("direct:updateStatus")
+                .to(ExchangePattern.InOnly, "direct:updateStatus")
 
                 .setHeader(Exchange.FILE_PARENT, simple("${exchangeProperty."+FOLDER_NAME+"}"))
                 .to("direct:cleanUpLocalDirectory")
@@ -93,7 +94,7 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
 
         from("direct:otp2ReportExportMergedNetexOK")
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build())
-                .inOnly("direct:updateStatus")
+                .to(ExchangePattern.InOnly, "direct:updateStatus")
                 .routeId("otp2-netex-export-merged-report-ok");
 
         from("direct:otp2FetchLatestProviderNetexExports")

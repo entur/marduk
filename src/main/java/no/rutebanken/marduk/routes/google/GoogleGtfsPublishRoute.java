@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.google;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
@@ -85,7 +86,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .autoStartup("{{google.publish.scheduler.autoStartup:true}}")
                 .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs export.")
-                .inOnly("entur-google-pubsub:GtfsGooglePublishQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQueue")
                 .routeId("google-publish--quartz");
 
 
@@ -93,7 +94,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .autoStartup("{{google.publish.qa.scheduler.autoStartup:true}}")
                 .filter(e -> shouldQuartzRouteTrigger(e, qaCronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs QA export.")
-                .inOnly("entur-google-pubsub:GtfsGooglePublishQaQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQaQueue")
                 .routeId("google-publish-qa-quartz");
 
 

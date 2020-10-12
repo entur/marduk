@@ -27,6 +27,7 @@ import no.rutebanken.marduk.security.AuthorizationClaim;
 import no.rutebanken.marduk.security.AuthorizationService;
 import org.apache.camel.Body;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
@@ -130,7 +131,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation level1 for all providers")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("direct:chouetteValidateLevel1ForAllProviders")
+                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel1ForAllProviders")
                 .setBody(constant(null))
                 .routeId("admin-chouette-validate-level1-all-providers")
                 .endRest()
@@ -145,7 +146,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation level2 for all providers")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("direct:chouetteValidateLevel2ForAllProviders")
+                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel2ForAllProviders")
                 .setBody(constant(null))
                 .routeId("admin-chouette-validate-level2-all-providers")
                 .endRest()
@@ -331,7 +332,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS extended export")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:GtfsExportMergedQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsExportMergedQueue")
                 .routeId("admin-timetable-gtfs-extended-export")
                 .endRest()
 
@@ -346,7 +347,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS basic export")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:GtfsBasicExportMergedQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsBasicExportMergedQueue")
                 .routeId("admin-timetable-gtfs-basic-export")
                 .endRest()
 
@@ -360,7 +361,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS export to Google")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:GtfsGoogleExportQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGoogleExportQueue")
                 .routeId("admin-timetable-google-export")
                 .endRest()
 
@@ -374,7 +375,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS QA export to Google")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:GtfsGoogleQaExportQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGoogleQaExportQueue")
                 .routeId("admin-timetable-google-qa-export")
                 .endRest()
 
@@ -388,7 +389,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeRequest")
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS to Google")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:GtfsGooglePublishQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQueue")
                 .routeId("admin-timetable-google-publish")
                 .endRest()
 
@@ -402,7 +403,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeRequest")
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS QA export to Google")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:GtfsGooglePublishQaQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQaQueue")
                 .routeId("admin-timetable-google-qa-publish")
                 .endRest()
 
@@ -417,7 +418,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeRequest")
                 .log(LoggingLevel.INFO, "Triggered Netex export of merged file for Norway")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:NetexExportMergedQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:NetexExportMergedQueue")
                 .routeId("admin-timetable-netex-merged-export")
                 .endRest()
 
@@ -431,7 +432,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "Triggered build of OTP base graph with map data")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .setBody(simple(""))
-                .inOnly("entur-google-pubsub:OtpBaseGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpBaseGraphBuildQueue")
                 .routeId("admin-build-base-graph")
                 .endRest()
 
@@ -445,7 +446,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "OTP build graph from NeTEx")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .setBody(simple(""))
-                .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphBuildQueue")
                 .routeId("admin-build-graph-netex")
                 .endRest()
 
@@ -499,7 +500,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 })
                 .setBody(constant(null))
 
-                .inOnly("entur-google-pubsub:ProcessFileQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ProcessFileQueue")
                 .routeId("admin-chouette-import")
                 .endRest()
 
@@ -662,7 +663,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
                 .log(LoggingLevel.INFO, correlation() + "Chouette start export")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:ChouetteExportNetexQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteExportNetexQueue")
                 .routeId("admin-chouette-export")
                 .endRest()
 
@@ -684,7 +685,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .otherwise()
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
                 .end()
-                .inOnly("entur-google-pubsub:ChouetteValidationQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("admin-chouette-validate")
                 .endRest()
 
@@ -715,7 +716,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
-                .inOnly("entur-google-pubsub:ChouetteTransferExportQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteTransferExportQueue")
                 .routeId("admin-chouette-transfer")
                 .endRest();
 

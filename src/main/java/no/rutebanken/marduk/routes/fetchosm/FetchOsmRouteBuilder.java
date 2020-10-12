@@ -21,6 +21,7 @@ import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.exceptions.Md5ChecksumValidationException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -101,8 +102,8 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FINISHED, simple("true", Boolean.class))
                 .log(LoggingLevel.INFO, "Map was updated, therefore triggering OSM base graph build and Geocoder POI update")
                 .setBody(constant(null))
-                .inOnly("entur-google-pubsub:OtpBaseGraphBuildQueue")
-                .inOnly("entur-google-pubsub:GeoCoderOsmUpdateNotificationQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpBaseGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GeoCoderOsmUpdateNotificationQueue")
                 .log(LoggingLevel.DEBUG, "Processing of OSM map finished")
                 .routeId("osm-fetch-map");
 
@@ -141,7 +142,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple("No need to updated the map file, as the MD5 sum has not changed"))
                 .otherwise()
                 .log(LoggingLevel.INFO, "Need to update the map file. Calling the update map route")
-                .inOnly("direct:fetchOsmMapOverNorway")
+                .to(ExchangePattern.InOnly, "direct:fetchOsmMapOverNorway")
                 .setBody(simple("Need to fetch map file. Called update map route"))
                 .end()
                 .routeId("osm-check-for-newer-map");

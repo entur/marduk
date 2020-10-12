@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.otp.otp1;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,7 +97,7 @@ public class BaseGraphRouteBuilder extends BaseRouteBuilder {
 
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP base graph, triggering full OTP graph build")
-                .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphBuildQueue")
 
                 .to("direct:remoteCleanUp")
 
