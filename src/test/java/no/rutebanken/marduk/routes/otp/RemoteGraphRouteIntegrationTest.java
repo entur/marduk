@@ -51,16 +51,16 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
 
-    @EndpointInject(uri = "mock:sink")
+    @EndpointInject("mock:sink")
     protected MockEndpoint sink;
 
-    @EndpointInject(uri = "mock:updateStatus")
+    @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce(uri = "entur-google-pubsub:OtpGraphBuildQueue")
+    @Produce("entur-google-pubsub:OtpGraphBuildQueue")
     protected ProducerTemplate graphProducerTemplate;
 
-    @Produce(uri = "entur-google-pubsub:OtpBaseGraphBuildQueue")
+    @Produce("entur-google-pubsub:OtpBaseGraphBuildQueue")
     protected ProducerTemplate baseGraphProducerTemplate;
 
     @Test
@@ -69,17 +69,11 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
         // create a dummy base graph object in the blobstore repository
         blobStoreRepository.uploadBlob(blobStoreSubdirectory + "/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-netex-graph-send-started-events", a -> {
-            a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "otp-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-netex-graph-send-status-for-timetable-jobs", a -> {
-            a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "otp-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-remote-netex-graph-build", a -> {
-            a.weaveByToUri("direct:exportMergedNetex").replace().to("mock:sink");
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "otp-remote-netex-graph-build", a -> a.weaveByToUri("direct:exportMergedNetex").replace().to("mock:sink"));
 
         AdviceWithRouteBuilder.adviceWith(context, "otp-remote-netex-graph-build-and-send-status", a -> {
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
@@ -113,17 +107,11 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
     @Test
     void testRemoteBaseGraphBuildStatusEventReporting() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-netex-graph-send-started-events", a -> {
-            a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "otp-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-netex-graph-send-status-for-timetable-jobs", a -> {
-            a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "otp-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-base-graph-build-send-started-events", a -> {
-            a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "otp-base-graph-build-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
         AdviceWithRouteBuilder.adviceWith(context, "otp-remote-base-graph-build-and-send-status", a -> {
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");

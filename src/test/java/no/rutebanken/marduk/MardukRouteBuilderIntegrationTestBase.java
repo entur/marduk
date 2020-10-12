@@ -55,7 +55,7 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
     @MockBean
     public CacheProviderRepository providerRepository;
 
-    @EndpointInject(uri = "mock:sink")
+    @EndpointInject("mock:sink")
     protected MockEndpoint sink;
 
     // manually start the camel context so that routes can be reliably modified (mocked).
@@ -92,10 +92,8 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
 
     protected void replaceEndpoint(String routeId, String originalEndpoint, String replacementEndpoint) throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, routeId, a -> {
-            a.interceptSendToEndpoint(originalEndpoint)
-                    .skipSendToOriginalEndpoint().to(replacementEndpoint);
-        });
+        AdviceWithRouteBuilder.adviceWith(context, routeId, a -> a.interceptSendToEndpoint(originalEndpoint)
+                .skipSendToOriginalEndpoint().to(replacementEndpoint));
 
     }
 

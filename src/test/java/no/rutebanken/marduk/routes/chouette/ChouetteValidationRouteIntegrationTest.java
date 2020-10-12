@@ -45,34 +45,34 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 	@Autowired
 	private ModelCamelContext context;
 
-	@EndpointInject(uri = "mock:chouetteCreateValidation")
+	@EndpointInject("mock:chouetteCreateValidation")
 	protected MockEndpoint chouetteCreateValidation;
 
-	@EndpointInject(uri = "mock:pollJobStatus")
+	@EndpointInject("mock:pollJobStatus")
 	protected MockEndpoint pollJobStatus;
 
-	@EndpointInject(uri = "mock:chouetteGetJobsForProvider")
+	@EndpointInject("mock:chouetteGetJobsForProvider")
 	protected MockEndpoint chouetteGetJobs;
 
-	@EndpointInject(uri = "mock:processValidationResult")
+	@EndpointInject("mock:processValidationResult")
 	protected MockEndpoint processValidationResult;
 
-	@EndpointInject(uri = "mock:chouetteTransferExportQueue")
+	@EndpointInject("mock:chouetteTransferExportQueue")
 	protected MockEndpoint chouetteTransferExportQueue;
 
-	@EndpointInject(uri = "mock:checkScheduledJobsBeforeTriggeringExport")
+	@EndpointInject("mock:checkScheduledJobsBeforeTriggeringExport")
 	protected MockEndpoint chouetteCheckScheduledJobs;
 
-	@EndpointInject(uri = "mock:updateStatus")
+	@EndpointInject("mock:updateStatus")
 	protected MockEndpoint updateStatus;
 
-	@Produce(uri = "entur-google-pubsub:ChouetteValidationQueue")
+	@Produce("entur-google-pubsub:ChouetteValidationQueue")
 	protected ProducerTemplate validationTemplate;
 
-	@Produce(uri = "direct:processValidationResult")
+	@Produce("direct:processValidationResult")
 	protected ProducerTemplate processValidationResultTemplate;
 
-	@Produce(uri = "direct:checkScheduledJobsBeforeTriggeringExport")
+	@Produce("direct:checkScheduledJobsBeforeTriggeringExport")
 	protected ProducerTemplate triggerJobListTemplate;
 
 	@Value("${chouette.url}")
@@ -102,10 +102,8 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 		});
 
 		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well)
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> {
-			a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
-					.to("mock:pollJobStatus");
-		});
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
+				.to("mock:pollJobStatus"));
 
 		// Mock update status calls
 		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-validation-status", a -> {

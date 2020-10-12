@@ -40,25 +40,25 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 	@Autowired
 	private ModelCamelContext context;
 
-	@EndpointInject(uri = "mock:chouetteCreateExport")
+	@EndpointInject("mock:chouetteCreateExport")
 	protected MockEndpoint chouetteCreateExport;
 
-	@EndpointInject(uri = "mock:pollJobStatus")
+	@EndpointInject("mock:pollJobStatus")
 	protected MockEndpoint pollJobStatus;
 
-	@EndpointInject(uri = "mock:processExportResult")
+	@EndpointInject("mock:processExportResult")
 	protected MockEndpoint processExportResult;
 
-	@EndpointInject(uri = "mock:updateStatus")
+	@EndpointInject("mock:updateStatus")
 	protected MockEndpoint updateStatus;
 	
-	@EndpointInject(uri = "mock:chouetteGetData")
+	@EndpointInject("mock:chouetteGetData")
 	protected MockEndpoint chouetteGetData;
 
-	@Produce(uri = "entur-google-pubsub:ChouetteExportGtfsQueue")
+	@Produce("entur-google-pubsub:ChouetteExportGtfsQueue")
 	protected ProducerTemplate importTemplate;
 
-	@Produce(uri = "direct:processExportResult")
+	@Produce("direct:processExportResult")
 	protected ProducerTemplate processExportResultTemplate;
 
 	@Value("${chouette.url}")
@@ -76,21 +76,15 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 		});
 
 		// Mock update status calls
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-export-status", a -> {
-			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-					.to("mock:updateStatus");
-		});
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-export-status", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+				.to("mock:updateStatus"));
 
 		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> {
-			a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
-					.to("mock:pollJobStatus");
-		});
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
+				.to("mock:pollJobStatus"));
 
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> {
-			a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
-					.skipSendToOriginalEndpoint().to("mock:chouetteGetData");
-		});
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
+				.skipSendToOriginalEndpoint().to("mock:chouetteGetData"));
 
 		
 		chouetteGetData.expectedMessageCount(1);

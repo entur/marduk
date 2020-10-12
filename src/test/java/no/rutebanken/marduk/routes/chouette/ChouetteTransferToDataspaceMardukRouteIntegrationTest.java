@@ -37,22 +37,22 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 	@Autowired
 	private ModelCamelContext context;
 
-	@EndpointInject(uri = "mock:chouetteCreateExport")
+	@EndpointInject("mock:chouetteCreateExport")
 	protected MockEndpoint chouetteCreateExport;
 
-	@EndpointInject(uri = "mock:pollJobStatus")
+	@EndpointInject("mock:pollJobStatus")
 	protected MockEndpoint pollJobStatus;
 
-	@EndpointInject(uri = "mock:checkScheduledJobsBeforeTriggeringNextAction")
+	@EndpointInject("mock:checkScheduledJobsBeforeTriggeringNextAction")
 	protected MockEndpoint checkScheduledJobsBeforeTriggeringNextAction;
 
-	@EndpointInject(uri = "mock:updateStatus")
+	@EndpointInject("mock:updateStatus")
 	protected MockEndpoint updateStatus;
 
-	@Produce(uri = "entur-google-pubsub:ChouetteTransferExportQueue")
+	@Produce("entur-google-pubsub:ChouetteTransferExportQueue")
 	protected ProducerTemplate transferTemplate;
 
-	@Produce(uri = "direct:processTransferExportResult")
+	@Produce("direct:processTransferExportResult")
 	protected ProducerTemplate processTransferExportResultTemplate;
 
 	

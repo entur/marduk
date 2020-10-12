@@ -45,14 +45,14 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
-    @Produce(uri = "direct:mergeChouetteExportWithFlexibleLinesExport")
+    @Produce("direct:mergeChouetteExportWithFlexibleLinesExport")
     protected ProducerTemplate startRoute;
 
-    @EndpointInject(uri = "mock:updateStatus")
+    @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
 
-    @EndpointInject(uri = "mock:OtpGraphBuildQueue")
+    @EndpointInject("mock:OtpGraphBuildQueue")
     protected MockEndpoint otpBuildGraph;
 
 

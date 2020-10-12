@@ -43,29 +43,29 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 	@Autowired
 	private ModelCamelContext context;
 
-	@EndpointInject(uri = "mock:chouetteCreateExport")
+	@EndpointInject("mock:chouetteCreateExport")
 	protected MockEndpoint chouetteCreateExport;
 
-	@EndpointInject(uri = "mock:pollJobStatus")
+	@EndpointInject("mock:pollJobStatus")
 	protected MockEndpoint pollJobStatus;
 
-	@EndpointInject(uri = "mock:updateStatus")
+	@EndpointInject("mock:updateStatus")
 	protected MockEndpoint updateStatus;
 
-	@EndpointInject(uri = "mock:chouetteGetData")
+	@EndpointInject("mock:chouetteGetData")
 	protected MockEndpoint chouetteGetData;
 
 
-	@EndpointInject(uri = "mock:ChouetteMergeWithFlexibleLinesQueue")
+	@EndpointInject("mock:ChouetteMergeWithFlexibleLinesQueue")
 	protected MockEndpoint mergeWithFlexibleLinesMock;
 
-	@EndpointInject(uri = "mock:ExportGtfsQueue")
+	@EndpointInject("mock:ExportGtfsQueue")
 	protected MockEndpoint exportGtfsQueue;
 
-	@Produce(uri = "entur-google-pubsub:ChouetteExportNetexQueue")
+	@Produce("entur-google-pubsub:ChouetteExportNetexQueue")
 	protected ProducerTemplate importTemplate;
 
-	@Produce(uri = "direct:processNetexExportResult")
+	@Produce("direct:processNetexExportResult")
 	protected ProducerTemplate processExportResultTemplate;
 
 	@Value("${chouette.url}")
@@ -85,10 +85,8 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 		});
 
 		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> {
-			a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
-					.to("mock:pollJobStatus");
-		});
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
+				.to("mock:pollJobStatus"));
 
 		// Mock update status calls
 		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-export-netex-status", a -> {
@@ -98,10 +96,8 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 			a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportGtfsQueue").skipSendToOriginalEndpoint().to("mock:ExportGtfsQueue");
 		});
 
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> {
-			a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
-					.skipSendToOriginalEndpoint().to("mock:chouetteGetData");
-		});
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
+				.skipSendToOriginalEndpoint().to("mock:chouetteGetData"));
 
 		chouetteGetData.expectedMessageCount(1);
 		chouetteGetData.returnReplyBody(new Expression() {

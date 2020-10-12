@@ -48,13 +48,13 @@ class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegration
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
-    @Produce(uri = "direct:exportGtfsGoogle")
+    @Produce("direct:exportGtfsGoogle")
     protected ProducerTemplate startRoute;
 
     @Value("${google.export.file.name:google/google_norway-aggregated-gtfs.zip}")
     private String googleExportFileName;
 
-    @Produce(uri = "direct:exportQaGtfsGoogle")
+    @Produce("direct:exportQaGtfsGoogle")
     protected ProducerTemplate startQaRoute;
 
 

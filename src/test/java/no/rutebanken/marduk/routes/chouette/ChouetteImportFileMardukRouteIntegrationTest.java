@@ -50,34 +50,34 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
-    @EndpointInject(uri = "mock:chouetteCreateImport")
+    @EndpointInject("mock:chouetteCreateImport")
     protected MockEndpoint chouetteCreateImport;
 
-    @EndpointInject(uri = "mock:pollJobStatus")
+    @EndpointInject("mock:pollJobStatus")
     protected MockEndpoint pollJobStatus;
 
-    @EndpointInject(uri = "mock:chouetteGetJobsForProvider")
+    @EndpointInject("mock:chouetteGetJobsForProvider")
     protected MockEndpoint chouetteGetJobs;
 
-    @EndpointInject(uri = "mock:processImportResult")
+    @EndpointInject("mock:processImportResult")
     protected MockEndpoint processActionReportResult;
 
-    @EndpointInject(uri = "mock:chouetteValidationQueue")
+    @EndpointInject("mock:chouetteValidationQueue")
     protected MockEndpoint chouetteValidationQueue;
 
-    @EndpointInject(uri = "mock:checkScheduledJobsBeforeTriggeringNextAction")
+    @EndpointInject("mock:checkScheduledJobsBeforeTriggeringNextAction")
     protected MockEndpoint checkScheduledJobsBeforeTriggeringNextAction;
 
-    @EndpointInject(uri = "mock:updateStatus")
+    @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce(uri = "entur-google-pubsub:ProcessFileQueue")
+    @Produce("entur-google-pubsub:ProcessFileQueue")
     protected ProducerTemplate importTemplate;
 
-    @Produce(uri = "direct:processImportResult")
+    @Produce("direct:processImportResult")
     protected ProducerTemplate processImportResultTemplate;
 
-    @Produce(uri = "direct:checkScheduledJobsBeforeTriggeringNextAction")
+    @Produce("direct:checkScheduledJobsBeforeTriggeringNextAction")
     protected ProducerTemplate triggerJobListTemplate;
 
     @Value("${chouette.url}")
@@ -105,16 +105,12 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
         inMemoryBlobStoreRepository.uploadBlob("rut/" + testFilename, testFile, false);
 
         // Mock initial call to Chouette to import job
-        AdviceWithRouteBuilder.adviceWith(context, "chouette-send-import-job", a -> {
-            a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/netexprofile")
-                    .skipSendToOriginalEndpoint().to("mock:chouetteCreateImport");
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "chouette-send-import-job", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/netexprofile")
+                .skipSendToOriginalEndpoint().to("mock:chouetteCreateImport"));
 
         // Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
-        AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> {
-            a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
-                    .to("mock:pollJobStatus");
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
+                .to("mock:pollJobStatus"));
 
         // Mock update status calls
         AdviceWithRouteBuilder.adviceWith(context, "chouette-process-import-status", a -> {
