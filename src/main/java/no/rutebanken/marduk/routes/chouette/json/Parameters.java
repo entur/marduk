@@ -74,11 +74,11 @@ public class Parameters {
         }
     }
 
-    public static String getNetexExportProvider(Provider provider, boolean exportStops) {
+    public static String getNetexExportProvider(Provider provider, boolean exportStops, boolean exportBlocks) {
         try {
             ChouetteInfo chouetteInfo = provider.chouetteInfo;
             String projectionType = null;
-            NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport("for journey planning", chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, projectionType, exportStops,chouetteInfo.xmlns);
+            NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport("for journey planning", chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, projectionType, exportStops, exportBlocks, chouetteInfo.xmlns);
             NetexExportParameters.Parameters parameters = new NetexExportParameters.Parameters(netexExport);
             NetexExportParameters exportParameters = new NetexExportParameters(parameters);
             ObjectMapper mapper = new ObjectMapper();

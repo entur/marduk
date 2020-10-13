@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.chouette.json.exporter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class NetexExportParameters {
+
     public NetexExportParameters.Parameters parameters;
 
     public NetexExportParameters(NetexExportParameters.Parameters parameters) {
@@ -47,10 +48,13 @@ public class NetexExportParameters {
         @JsonProperty("export_stops")
         public boolean exportStops = false;
 
+        @JsonProperty("export_blocks")
+        public boolean exportBlocks = false;
+
         @JsonProperty("default_codespace_prefix")
         public String defaultCodespacePrefix = null;
 
-        public NetexExport(String name, String referentialName, String organisationName, String userName, String projectionType, boolean exportStops, String defaultCodespacePrefix) {
+        public NetexExport(String name, String referentialName, String organisationName, String userName, String projectionType, boolean exportStops, boolean exportBlocks, String defaultCodespacePrefix) {
             this.name = name;
             this.projectionType = projectionType;
             this.referentialName = referentialName;
@@ -59,6 +63,7 @@ public class NetexExportParameters {
             this.startDate = DateUtils.startDateFor(2L);
 			this.endDate = DateUtils.endDateFor(365L);
             this.exportStops = exportStops;
+            this.exportBlocks = exportBlocks;
             this.defaultCodespacePrefix = defaultCodespacePrefix;
         }
 

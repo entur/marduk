@@ -40,6 +40,7 @@ public class ChouetteInfo {
     public Set<String> generateMissingServiceLinksForModes;
     public boolean googleUpload;
     public boolean googleQAUpload;
+    public boolean enableExportBlocks;
 
     public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
 
@@ -68,6 +69,7 @@ public class ChouetteInfo {
                        ", generateDatedServiceJourneyIds='" + generateDatedServiceJourneyIds + '\'' +
                        ", googleUpload='" + googleUpload + '\'' +
                        ", googleQAUpload='" + googleQAUpload + '\'' +
+                       ", enableExportBlocks='" + enableExportBlocks + '\'' +
                        '}';
     }
 
