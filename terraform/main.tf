@@ -1,10 +1,10 @@
-# Contains main description of bulk of terraform?
+# Contains main description of bulk of terraform
 terraform {
   required_version = ">= 0.12"
 }
 
 provider "google" {
-  version = "~> 2.19"
+  version = "~> 3.43"
 }
 provider "kubernetes" {
   load_config_file = var.load_config_file
@@ -109,6 +109,9 @@ resource "google_pubsub_subscription" "ChouetteExportGtfsQueue" {
   topic = google_pubsub_topic.ChouetteExportGtfsQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "ChouetteExportNetexQueue" {
@@ -122,6 +125,9 @@ resource "google_pubsub_subscription" "ChouetteExportNetexQueue" {
   topic = google_pubsub_topic.ChouetteExportNetexQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "ChouetteImportQueue" {
@@ -135,6 +141,9 @@ resource "google_pubsub_subscription" "ChouetteImportQueue" {
   topic = google_pubsub_topic.ChouetteImportQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "ChouetteMergeWithFlexibleLinesQueue" {
@@ -148,6 +157,9 @@ resource "google_pubsub_subscription" "ChouetteMergeWithFlexibleLinesQueue" {
   topic = google_pubsub_topic.ChouetteMergeWithFlexibleLinesQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "ChouettePollStatusQueue" {
@@ -161,6 +173,9 @@ resource "google_pubsub_subscription" "ChouettePollStatusQueue" {
   topic = google_pubsub_topic.ChouettePollStatusQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "ChouetteTransferExportQueue" {
@@ -174,6 +189,9 @@ resource "google_pubsub_subscription" "ChouetteTransferExportQueue" {
   topic = google_pubsub_topic.ChouetteTransferExportQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "ChouetteValidationQueue" {
@@ -187,6 +205,9 @@ resource "google_pubsub_subscription" "ChouetteValidationQueue" {
   topic = google_pubsub_topic.ChouetteValidationQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "GtfsBasicExportMergedQueue" {
@@ -200,6 +221,9 @@ resource "google_pubsub_subscription" "GtfsBasicExportMergedQueue" {
   topic = google_pubsub_topic.GtfsBasicExportMergedQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "GtfsExportMergedQueue" {
@@ -213,6 +237,9 @@ resource "google_pubsub_subscription" "GtfsExportMergedQueue" {
   topic = google_pubsub_topic.GtfsExportMergedQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "GtfsGoogleExportQueue" {
@@ -226,6 +253,9 @@ resource "google_pubsub_subscription" "GtfsGoogleExportQueue" {
   topic = google_pubsub_topic.GtfsGoogleExportQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "GtfsGooglePublishQaQueue" {
@@ -239,6 +269,9 @@ resource "google_pubsub_subscription" "GtfsGooglePublishQaQueue" {
   topic = google_pubsub_topic.GtfsGooglePublishQaQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "GtfsGooglePublishQueue" {
@@ -252,6 +285,9 @@ resource "google_pubsub_subscription" "GtfsGooglePublishQueue" {
   topic = google_pubsub_topic.GtfsGooglePublishQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "GtfsGoogleQaExportQueue" {
@@ -265,6 +301,9 @@ resource "google_pubsub_subscription" "GtfsGoogleQaExportQueue" {
   topic = google_pubsub_topic.GtfsGoogleQaExportQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "MardukInboundQueue" {
@@ -278,6 +317,9 @@ resource "google_pubsub_subscription" "MardukInboundQueue" {
   topic = google_pubsub_topic.MardukInboundQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "NetexExportMergedQueue" {
@@ -291,6 +333,9 @@ resource "google_pubsub_subscription" "NetexExportMergedQueue" {
   topic = google_pubsub_topic.NetexExportMergedQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "ProcessFileQueue" {
@@ -304,6 +349,9 @@ resource "google_pubsub_subscription" "ProcessFileQueue" {
   topic = google_pubsub_topic.ProcessFileQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "OtpBaseGraphBuildQueue" {
@@ -317,6 +365,9 @@ resource "google_pubsub_subscription" "OtpBaseGraphBuildQueue" {
   topic = google_pubsub_topic.OtpBaseGraphBuildQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_subscription" "Otp2BaseGraphBuildQueue" {
@@ -324,6 +375,9 @@ resource "google_pubsub_subscription" "Otp2BaseGraphBuildQueue" {
   topic = google_pubsub_topic.OtpBaseGraphBuildQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "OtpGraphBuildQueue" {
@@ -337,6 +391,9 @@ resource "google_pubsub_subscription" "OtpGraphBuildQueue" {
   topic = google_pubsub_topic.OtpGraphBuildQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_subscription" "Otp2GraphBuildQueue" {
@@ -344,4 +401,7 @@ resource "google_pubsub_subscription" "Otp2GraphBuildQueue" {
   topic = google_pubsub_topic.OtpGraphBuildQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
