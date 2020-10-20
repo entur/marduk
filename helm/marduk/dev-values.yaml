@@ -3,7 +3,7 @@ replicas: 2
 
 gcp:
   blobstoreProjectId: entur-ror-dev
-  pubsubProjectId: carbon-1287
+  pubsubProjectId: entur-ror-dev
   databaseInstance: entur-ror-dev:europe-west1:marduk-db-1=tcp:5432
   bucketName: marduk-dev
   exchangeBucketName: ror-marduk-exchange-dev

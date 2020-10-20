@@ -97,8 +97,6 @@ resource "kubernetes_secret" "ror-marduk-secret" {
   }
 }
 
-/** Deactivate resource creation until workloads are moved to the new cluster.
-
 # Create pubsub topics and subscriptions
 resource "google_pubsub_topic" "ChouetteExportGtfsQueue" {
   name = "ChouetteExportGtfsQueue"
@@ -347,4 +345,3 @@ resource "google_pubsub_subscription" "Otp2GraphBuildQueue" {
   project = var.gcp_pubsub_project
   labels = var.labels
 }
-**/
