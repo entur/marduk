@@ -10,11 +10,6 @@ provider "kubernetes" {
   load_config_file = var.load_config_file
 }
 
-# temporary adding back provider "random"
-provider "random" {
-  version = "~> 2.2.1"
-}
-
 # create service account
 resource "google_service_account" "marduk_service_account" {
   account_id = "${var.labels.team}-${var.labels.app}-sa"
@@ -58,9 +53,15 @@ resource "google_storage_bucket_iam_member" "storage_otpreport_bucket_iam_member
 }
 
 # add service account as member to pubsub service in the resources project
-resource "google_project_iam_member" "pubsub_project_iam_member" {
+resource "google_project_iam_member" "pubsub_project_iam_member_subscriber" {
   project = var.gcp_pubsub_project
-  role = var.service_account_pubsub_role
+  role = "roles/pubsub.subscriber"
+  member = "serviceAccount:${google_service_account.marduk_service_account.email}"
+}
+
+resource "google_project_iam_member" "pubsub_project_iam_member_publisher" {
+  project = var.gcp_pubsub_project
+  role = "roles/pubsub.publisher"
   member = "serviceAccount:${google_service_account.marduk_service_account.email}"
 }
 
