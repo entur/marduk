@@ -2,11 +2,11 @@ env: production
 replicas: 2
 
 gcp:
-  blobstoreProjectId: neon-1287
-  pubsubProjectId: neon-1287
+  blobstoreProjectId: entur-ror-prod
+  pubsubProjectId: entur-ror-prod
   databaseInstance: entur-ror-prod:europe-west1:marduk-db-1=tcp:5432
   bucketName: marduk-production
-  exchangeBucketName: marduk-exchange-production
+  exchangeBucketName: ror-marduk-exchange-production
   otpReportBucketName: otpreport.entur.org
   otpGraphBucketName: otp-graphs-production
 

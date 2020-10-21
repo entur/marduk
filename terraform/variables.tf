@@ -74,11 +74,6 @@ variable "service_account_bucket_role" {
   default = "roles/storage.objectViewer"
 }
 
-variable "service_account_pubsub_role" {
-  description = "Role of the Service Account - more about roles https://cloud.google.com/pubsub/docs/access-control"
-  default = "roles/pubsub.editor"
-}
-
 variable "bucket_marduk_instance_name" {
   description = "Main storage bucket name"
 }
