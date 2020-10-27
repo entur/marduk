@@ -24,6 +24,8 @@ import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.spring.SpringCamelContext;
+import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
+import org.apache.camel.test.spring.junit5.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -42,6 +44,8 @@ import java.util.Collections;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.when;
 
+@CamelSpringBootTest
+@UseAdviceWith
 @ActiveProfiles({"test", "default", "in-memory-blobstore", "google-pubsub-emulator"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public abstract class MardukRouteBuilderIntegrationTestBase {
@@ -55,28 +59,8 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
     @MockBean
     public CacheProviderRepository providerRepository;
 
-    @EndpointInject(uri = "mock:sink")
+    @EndpointInject("mock:sink")
     protected MockEndpoint sink;
-
-    // manually start the camel context so that routes can be reliably modified (mocked).
-    
-    @BeforeAll
-    public static void disableStartBeforeContext() {
-    	SpringCamelContext.setNoStart(true);
-    }
-
-    @BeforeEach
-    void enableStart() {
-    	assertFalse(context.getStatus().isStarted());
-    	SpringCamelContext.setNoStart(false);
-    }
-
-    @AfterEach
-    void disableStartBeforeReloadedContext() throws Exception {
-    	SpringCamelContext.setNoStart(true);
-    	// Explicitly stop the Camel context here so that PubSub resources are released before the PubSub emulator is stopped
-    	context.stop();
-    }
 
     @BeforeEach
     protected void setUp() throws IOException {
@@ -88,16 +72,6 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
 
         when(providerRepository.getProviderId("rb_rut")).thenReturn(2L);
 
-    }
-
-    protected void replaceEndpoint(String routeId, String originalEndpoint, String replacementEndpoint) throws Exception {
-        context.getRouteDefinition(routeId).adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-                interceptSendToEndpoint(originalEndpoint)
-                        .skipSendToOriginalEndpoint().to(replacementEndpoint);
-            }
-        });
     }
 
     protected Provider provider(String ref, long id, Long migrateToProvider) {

@@ -38,11 +38,11 @@ import java.util.Map;
         })
 class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
-    @EndpointInject(uri = "mock:buildOtpGraph")
+    @EndpointInject("mock:buildOtpGraph")
     protected MockEndpoint buildOtpGraph;
 
 
-    @Produce(uri = "entur-google-pubsub:OtpGraphBuildQueue")
+    @Produce("entur-google-pubsub:OtpGraphBuildQueue")
     protected ProducerTemplate producerTemplate;
 
 
@@ -50,12 +50,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
     @Test
     void testOtpGraphMessageAggregationOneMessageWithoutException() throws Exception {
 
-        context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-                weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph");
-            }
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
 
         buildOtpGraph.expectedMessageCount(1);
 
@@ -71,12 +66,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
     @Test
     void testOtpGraphMessageAggregationWithoutException() throws Exception {
 
-        context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-                weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph");
-            }
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
 
         buildOtpGraph.expectedMessageCount(1);
 
@@ -95,13 +85,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
     @Test
     void testOtpGraphMessageAggregationWithException() throws Exception {
 
-        context.getRouteDefinition("otp-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-
-                weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph");
-            }
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
 
         buildOtpGraph.whenAnyExchangeReceived(exchange -> {
             throw new RuntimeException("Test - Triggering exception in Exchange");

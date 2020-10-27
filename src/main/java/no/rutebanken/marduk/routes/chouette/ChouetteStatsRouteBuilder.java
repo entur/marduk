@@ -23,7 +23,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.component.http4.HttpMethods;
+import org.apache.camel.component.http.HttpMethods;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,7 +65,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
         super.configure();
 
         // Quartz job must run on all nodes
-        from("quartz2://marduk/refreshLine?" + quartzTrigger)
+        from("quartz://marduk/refreshLine?" + quartzTrigger)
                 .log(LoggingLevel.DEBUG, "Quartz triggers refresh of line stats.")
                 .to("direct:chouetteRefreshStatsCache")
 
@@ -97,7 +97,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .process(e -> e.getIn().setHeader("refParam", getAllReferentialsAsParam()))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/statistics/line?days=" + days + "&" + getValidityCategories() + "${header.refParam}"))
-                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Calling chouette with ${property.chouette_url}")
+                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Calling chouette with ${exchangeProperty.chouette_url}")
                 .toD("${exchangeProperty.chouette_url}")
                 .unmarshal().json(JsonLibrary.Jackson, Map.class)
                 .process(e -> e.getIn().setBody(mapReferentialToProviderId(e.getIn().getBody(Map.class))))

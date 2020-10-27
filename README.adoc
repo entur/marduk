@@ -25,7 +25,7 @@ chouette.export.days.back=365
 chouette.export.days.forward=365
 chouette.max.retries=3000
 chouette.retry.delay=5000
-chouette.url=http4://localhost:8080
+chouette.url=http://localhost:8080
 chouette.stats.validity.categories=10,17
 chouette.stats.days=180
 

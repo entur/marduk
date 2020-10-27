@@ -75,7 +75,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
         singletonFrom("entur-google-pubsub:Otp2GraphBuildQueue?ackMode=NONE").autoStartup("{{otp2.graph.build.autoStartup:true}}")
-                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:remoteBuildOtp2Graph")
@@ -85,8 +85,8 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(PROP_MESSAGES, simple("${body}"))
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtp2NetexGraphBuildStartedEventsInNewTransaction")
-                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 graph building in remote directory ${property." + OTP_GRAPH_DIR + "}.")
+                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${exchangeProperty." + TIMESTAMP + "}"))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 graph building in remote directory ${exchangeProperty." + OTP_GRAPH_DIR + "}.")
 
                 .to("direct:otp2ExportMergedNetex")
 
@@ -130,7 +130,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                             e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
                             e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
                             e.getIn().setHeader(TARGET_CONTAINER, otpGraphsBucketName);
-                            e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false));
+                            e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, false);
                             e.setProperty(GRAPH_VERSION, publishedGraphVersion);
                         }
                 )
@@ -142,7 +142,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 // update file containing the reference to the latest graph
                 .setBody(header(TARGET_FILE_HANDLE))
                 .setHeader(FILE_HANDLE, constant(otpGraphCurrentFile))
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .to("direct:uploadOtpGraphsBlob")
                 .log(LoggingLevel.INFO, "Done uploading reference to current OTP2graph: ${header." + FILE_HANDLE + "}")
 
@@ -159,10 +159,10 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:remoteOtp2CleanUp")
                 .choice()
                 .when(constant(deleteOtpRemoteWorkDir))
-                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP2 remote work directory ${property." + Exchange.FILE_PARENT + "} ...")
+                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP2 remote work directory ${exchangeProperty." + Exchange.FILE_PARENT + "} ...")
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(OTP_REMOTE_WORK_DIR))
                 .to("direct:deleteAllBlobsInFolder")
-                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP2 remote work directory ${property." + Exchange.FILE_PARENT + "} cleanup done.")
+                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP2 remote work directory ${exchangeProperty." + Exchange.FILE_PARENT + "} cleanup done.")
                 .end()
                 .routeId("otp2-remote-graph-cleanup");
 

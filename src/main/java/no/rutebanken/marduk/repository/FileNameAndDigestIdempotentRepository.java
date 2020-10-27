@@ -29,7 +29,7 @@ import java.sql.Timestamp;
  * <p>
  * MessageId format is JSON because camel forces conversion to String.
  */
-public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageIdRepository<String> {
+public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageIdRepository {
 
     private static final String QUERY_STRING = "SELECT COUNT(*) FROM CAMEL_UNIQUE_FILENAME_AND_DIGEST WHERE processorName = ? AND (digest = ? or fileName=?)";
     private static final String INSERT_STRING = "INSERT INTO CAMEL_UNIQUE_FILENAME_AND_DIGEST (processorName, digest,fileName, createdAt) VALUES (?,?, ?, ?)";

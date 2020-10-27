@@ -35,6 +35,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,31 +45,31 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 	@Autowired
 	private ModelCamelContext context;
 
-	@EndpointInject(uri = "mock:destination")
+	@EndpointInject("mock:destination")
 	protected MockEndpoint destination;
 
-	@EndpointInject(uri = "mock:updateStatus")
+	@EndpointInject("mock:updateStatus")
 	protected MockEndpoint updateStatus;
 
-	@EndpointInject(uri = "mock:chouetteGetJobStatus")
+	@EndpointInject("mock:chouetteGetJobStatus")
 	protected MockEndpoint chouetteGetJobStatus;
 
-	@EndpointInject(uri = "mock:chouetteGetActionReport")
+	@EndpointInject("mock:chouetteGetActionReport")
 	protected MockEndpoint chouetteGetActionReport;
 
-	@EndpointInject(uri = "mock:chouetteGetValidationReport")
+	@EndpointInject("mock:chouetteGetValidationReport")
 	protected MockEndpoint chouetteGetValidationReport;
 
-	@Produce(uri = "entur-google-pubsub:ChouettePollStatusQueue")
+	@Produce("entur-google-pubsub:ChouettePollStatusQueue")
 	protected ProducerTemplate pollStartTemplate;
 
-	@Produce(uri = "direct:checkValidationReport")
+	@Produce("direct:checkValidationReport")
 	protected ProducerTemplate validationReportTemplate;
 
-	@EndpointInject(uri = "mock:chouetteGetJobsForProvider")
+	@EndpointInject("mock:chouetteGetJobsForProvider")
 	protected MockEndpoint getJobs;
 
-	@Produce(uri = "direct:chouetteGetJobsForProvider")
+	@Produce("direct:chouetteGetJobsForProvider")
 	protected ProducerTemplate getJobsTemplate;
 
 	@Value("${chouette.url}")
@@ -78,37 +79,21 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 	void testPollJobStatus() throws Exception {
 
 		// Mock get status call to chouette
-		context.getRouteDefinition("chouette-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/scheduled_jobs/1")
-						.skipSendToOriginalEndpoint().to("mock:chouetteGetJobStatus");
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
-
-			}
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> {
+			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/scheduled_jobs/1")
+					.skipSendToOriginalEndpoint().to("mock:chouetteGetJobStatus");
+			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
 		});
 
-		context.getRouteDefinition("chouette-process-job-reports").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/action_report.json")
-						.skipSendToOriginalEndpoint().to("mock:chouetteGetActionReport");
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-job-reports", a -> {
+			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/action_report.json")
+					.skipSendToOriginalEndpoint().to("mock:chouetteGetActionReport");
 
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/validation_report.json")
-						.skipSendToOriginalEndpoint().to("mock:chouetteGetValidationReport");
-
-			}
+			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/validation_report.json")
+					.skipSendToOriginalEndpoint().to("mock:chouetteGetValidationReport");
 		});
 
-		context.getRouteDefinition("chouette-reschedule-job").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
-
-			}
-		});
-
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-reschedule-job", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus"));
 
 		// we must manually start when we are done with all the advice with
 		context.start();
@@ -221,16 +206,9 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 	@Test
 	void getJobs() throws Exception {
 
-		context.getRouteDefinition("chouette-list-jobs").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?addActionParameters=false")
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-list-jobs", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?addActionParameters=false")
 				.skipSendToOriginalEndpoint()
-				.to("mock:chouetteGetJobsForProvider");
-			}
-		});
-
-		context.start();
+				.to("mock:chouetteGetJobsForProvider"));
 
 		getJobs.returnReplyBody(new Expression() {
 
@@ -246,15 +224,19 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 			}
 		});
 
+		context.start();
+
+
+
 		
 		// Do rest call
 		Map<String, Object> headers = new HashMap<>();
 		headers.put(Exchange.HTTP_METHOD, "GET");
 		headers.put(Constants.PROVIDER_ID, "2");
-		JobResponse[] rsp =  (JobResponse[]) getJobsTemplate.requestBodyAndHeaders(null, headers);
+		List<JobResponse> rsp =  (List<JobResponse>) getJobsTemplate.requestBodyAndHeaders(null, headers);
 		// Parse response
 
-		assertNotEquals(0, rsp.length);
+		assertNotEquals(0, rsp.size());
 	
 
 	}

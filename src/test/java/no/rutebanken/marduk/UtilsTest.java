@@ -31,16 +31,4 @@ class UtilsTest {
     void testGetJobIdWithNull(){
         assertThrows(IllegalArgumentException.class, () -> Utils.getLastPathElementOfUrl(null));
     }
-
-    @Test
-    void testGetHttp4(){
-        String url = "http://localhost:8180/chouette_iev/referentials/avinor";
-        assertEquals("http4://localhost:8180/chouette_iev/referentials/avinor", Utils.getHttp4(url));
-    }
-
-    @Test
-    void testGetHttp4WithNull(){
-        assertThrows(IllegalArgumentException.class, () -> Utils.getHttp4(null));
-    }
-
 }

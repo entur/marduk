@@ -21,6 +21,7 @@ import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.exceptions.Md5ChecksumValidationException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,7 +57,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
     @Value("${fetch.osm.cron.schedule:0+*+*/23+?+*+MON-FRI}")
     private String cronSchedule;
 
-    @Value("${fetch.osm.map.url:https4://download.geofabrik.de/europe/norway-latest.osm.pbf}")
+    @Value("${fetch.osm.map.url:https://download.geofabrik.de/europe/norway-latest.osm.pbf}")
     private String osmMapUrl;
 
     /**
@@ -81,7 +82,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm + "/" + "norway-latest.osm.pbf.md5"))
                 .to("direct:uploadBlob")
                 // Fetch the actual file
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .streamCaching()
                 .to(osmMapUrl)
                 .convertBodyTo(InputStream.class)
@@ -95,20 +96,20 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                     }
                 })
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm + "/" + "norway-latest.osm.pbf"))
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .to("direct:uploadBlob")
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
-                .setHeader(FINISHED, constant("true"))
+                .setHeader(FINISHED, simple("true", Boolean.class))
                 .log(LoggingLevel.INFO, "Map was updated, therefore triggering OSM base graph build and Geocoder POI update")
                 .setBody(constant(null))
-                .inOnly("entur-google-pubsub:OtpBaseGraphBuildQueue")
-                .inOnly("entur-google-pubsub:GeoCoderOsmUpdateNotificationQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpBaseGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GeoCoderOsmUpdateNotificationQueue")
                 .log(LoggingLevel.DEBUG, "Processing of OSM map finished")
                 .routeId("osm-fetch-map");
 
         from("direct:fetchOsmMapOverNorwayMd5")
                 .log(LoggingLevel.DEBUG, "Fetching MD5 sum for map over Norway")
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .to(osmMapUrl + ".md5")
                 .convertBodyTo(String.class)
                 .process(p -> {
@@ -141,12 +142,12 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple("No need to updated the map file, as the MD5 sum has not changed"))
                 .otherwise()
                 .log(LoggingLevel.INFO, "Need to update the map file. Calling the update map route")
-                .inOnly("direct:fetchOsmMapOverNorway")
+                .to(ExchangePattern.InOnly, "direct:fetchOsmMapOverNorway")
                 .setBody(simple("Need to fetch map file. Called update map route"))
                 .end()
                 .routeId("osm-check-for-newer-map");
 
-        singletonFrom("quartz2://marduk/fetchOsmMap?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
+        singletonFrom("quartz://marduk/fetchOsmMap?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers fetch of OSM map over Norway.")
                 .to("direct:considerToFetchOsmMapOverNorway")

@@ -42,7 +42,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .choice()
                 .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
                 //defaulting to private access if not specified
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .end()
                 .bean(mardukBlobStoreService, "uploadBlob")
                 .setBody(simple(""))
@@ -55,7 +55,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .choice()
                 .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
                 //defaulting to private access if not specified
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .end()
                 .bean(mardukBlobStoreService, "copyBlobInBucket")
                 .to(logDebugShowAll())
@@ -66,8 +66,8 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .to(logDebugShowAll())
                 .choice()
                 .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
-                //defaulting to private access if not specified
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))
+                        //defaulting to private access if not specified
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .end()
                 .bean(mardukBlobStoreService, "copyBlobToAnotherBucket")
                 .to(logDebugShowAll())
@@ -79,7 +79,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .choice()
                 .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
                 //defaulting to private access if not specified
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .end()
                 .bean(mardukBlobStoreService, "copyAllBlobs")
                 .to(logDebugShowAll())

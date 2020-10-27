@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes;
 
+import org.apache.camel.spring.spi.TransactionErrorHandlerBuilder;
 import org.springframework.beans.factory.annotation.Value;
 
 
@@ -48,6 +49,16 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
                 .logExhausted(true)
                 .logRetryStackTrace(true));
 
+    }
+
+    /**
+     * Creates a transaction error handler that will lookup in application context for
+     * an exiting transaction manager.
+     *
+     * @return the created error handler
+     */
+    public TransactionErrorHandlerBuilder transactionErrorHandler() {
+        return new TransactionErrorHandlerBuilder();
     }
 
 

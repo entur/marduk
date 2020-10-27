@@ -19,7 +19,6 @@ package no.rutebanken.marduk.gtfs;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.gtfs.GtfsFileUtils;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
-import org.apache.camel.CamelExecutionException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
@@ -29,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
@@ -45,17 +43,13 @@ class GtfsFileUtilsTest {
     @Test
     void notADirectory() {
         File sourceDirectory = new File("/dev/null");
-        assertThrows(MardukException.class, () -> {
-            GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, null, false);
-        });
+        assertThrows(MardukException.class, () -> GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, null, false));
     }
 
     @Test
     void emptyDirectory() throws IOException {
         File sourceDirectory = Files.createTempDirectory("test-emptyDirectory").toFile();
-        assertThrows(MardukException.class, () -> {
-            GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, null, false);
-        });
+        assertThrows(MardukException.class, () -> GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, null, false));
     }
 
     @Test

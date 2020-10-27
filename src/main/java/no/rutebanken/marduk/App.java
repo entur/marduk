@@ -74,6 +74,8 @@ public class App extends RouteBuilder {
 
 		getContext().getShutdownStrategy().setTimeout(shutdownTimeout);
 		getContext().setUseMDCLogging(true);
+		getContext().setUseBreadcrumb(true);
+		getContext().setMessageHistory(true);
 	}
 
 	protected void waitForProviderRepository() throws InterruptedException {

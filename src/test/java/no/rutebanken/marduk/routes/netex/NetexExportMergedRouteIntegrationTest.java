@@ -39,7 +39,7 @@ class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegratio
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
-    @Produce(uri = "direct:exportMergedNetex")
+    @Produce("direct:exportMergedNetex")
     protected ProducerTemplate startRoute;
 
     @Value("${netex.export.download.directory:files/netex/merged}")

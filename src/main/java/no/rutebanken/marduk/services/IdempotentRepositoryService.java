@@ -28,7 +28,7 @@ public class IdempotentRepositoryService {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
-    IdempotentRepository<String> fileNameAndDigestIdempotentRepository;
+    IdempotentRepository fileNameAndDigestIdempotentRepository;
 
     public void cleanUniqueFileNameAndDigestRepo() {
         logger.info("Starting cleaning of unique file name and digest idempotent message repository.");
