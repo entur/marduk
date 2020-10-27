@@ -26,12 +26,16 @@
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>3.4.4</camel.version>
         <keycloak.version>4.8.3.Final</keycloak.version>
-        <entur.helpers.version>1.0.26</entur.helpers.version>
+        <entur.helpers.version>1.0.30</entur.helpers.version>
         <guava.version>28.1-jre</guava.version>
         <commons-io.version>2.7</commons-io.version>
         <commons-csv.version>1.5</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <zt-zip.version>1.13</zt-zip.version>
+
+        <!-- Override Spring Boot configuration -->
+        <!-- Camel 3 requires Hazelcast 4.x -->
+        <hazelcast.version>4.0.2</hazelcast.version>
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
         <argLine/>
@@ -64,6 +68,45 @@
     </dependencyManagement>
 
     <dependencies>
+
+        <!-- Entur -->
+
+        <dependency>
+            <groupId>org.entur.helpers</groupId>
+            <artifactId>camel3-entur-google-pubsub</artifactId>
+            <version>${entur.helpers.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.entur.helpers</groupId>
+            <artifactId>gcp-storage</artifactId>
+            <version>${entur.helpers.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-codec-http2</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-lite</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.entur.helpers</groupId>
+            <artifactId>hazelcast4-helper</artifactId>
+            <version>${entur.helpers.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.entur.helpers</groupId>
+            <artifactId>organisation</artifactId>
+            <version>${entur.helpers.version}</version>
+        </dependency>
+
+        <!-- Other -->
 
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -141,31 +184,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.entur.helpers</groupId>
-            <artifactId>gcp-storage</artifactId>
-            <version>${entur.helpers.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-codec-http2</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.protobuf</groupId>
-                    <artifactId>protobuf-lite</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.entur.helpers</groupId>
-            <artifactId>camel3-entur-google-pubsub</artifactId>
-            <version>${entur.helpers.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
         </dependency>
@@ -223,16 +241,7 @@
             <artifactId>camel-micrometer-starter</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.entur.helpers</groupId>
-            <artifactId>hazelcast-helper</artifactId>
-            <version>${entur.helpers.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.entur.helpers</groupId>
-            <artifactId>organisation</artifactId>
-            <version>${entur.helpers.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-sql</artifactId>
