@@ -44,9 +44,8 @@ public class SingletonRoutePolicyFactory extends HazelCastService implements Rou
     @Value("${rutebanken.route.singleton.policy.ignore:false}")
     private boolean ignorePolicy;
 
-    public SingletonRoutePolicyFactory(@Autowired KubernetesService kubernetesService,
-                                              @Value("${rutebanken.hazelcast.management.url:}") String managementUrl) {
-        super(kubernetesService, managementUrl);
+    public SingletonRoutePolicyFactory(@Autowired KubernetesService kubernetesService) {
+        super(kubernetesService);
     }
 
     /**
