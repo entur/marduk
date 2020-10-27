@@ -3,7 +3,7 @@ replicas: 2
 
 gcp:
   blobstoreProjectId: entur-ror-test
-  pubsubProjectId: radon-1287
+  pubsubProjectId: entur-ror-test
   databaseInstance: entur-ror-test:europe-west1:marduk-db-1=tcp:5432
   bucketName: marduk-test
   exchangeBucketName: ror-marduk-exchange-test
