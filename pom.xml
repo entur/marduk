@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-        <version>1.0.14</version>
+        <version>1.0.15</version>
     </parent>
 
     <groupId>no.rutebanken.marduk</groupId>
@@ -26,8 +26,7 @@
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>3.4.4</camel.version>
         <keycloak.version>4.8.3.Final</keycloak.version>
-        <entur.helpers.version>1.0.30</entur.helpers.version>
-        <guava.version>28.1-jre</guava.version>
+        <entur.helpers.version>1.0.31</entur.helpers.version>
         <commons-io.version>2.7</commons-io.version>
         <commons-csv.version>1.5</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
@@ -35,7 +34,7 @@
 
         <!-- Override Spring Boot configuration -->
         <!-- Camel 3 requires Hazelcast 4.x -->
-        <hazelcast.version>4.0.2</hazelcast.version>
+        <hazelcast.version>4.0.3</hazelcast.version>
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
         <argLine/>
@@ -48,12 +47,6 @@
                 <groupId>com.google.inject</groupId>
                 <artifactId>guice</artifactId>
                 <version>4.1.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>${guava.version}</version>
             </dependency>
 
             <dependency>
