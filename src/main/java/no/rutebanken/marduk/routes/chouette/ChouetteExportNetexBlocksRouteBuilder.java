@@ -59,7 +59,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
         super.configure();
 
         from("entur-google-pubsub:ChouetteExportNetexBlocksQueue").streamCaching()
-                .process( e -> e.setProperty(PROP_EXPORT_BLOCKS, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.enableExportBlocks))
+                .process( e -> e.setProperty(PROP_EXPORT_BLOCKS, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.enableBlocksExport))
                 .choice()
                 .when(simple("${exchangeProperty." + PROP_EXPORT_BLOCKS + "} != 'true'"))
                 .log(LoggingLevel.INFO, getClass().getName(), "Skipping Chouette Netex Blocks export for provider with id ${header." + PROVIDER_ID + "}")
