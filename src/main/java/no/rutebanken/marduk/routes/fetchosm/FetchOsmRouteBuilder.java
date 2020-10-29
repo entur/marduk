@@ -100,10 +100,9 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
                 .setHeader(FINISHED, simple("true", Boolean.class))
-                .log(LoggingLevel.INFO, "Map was updated, therefore triggering OSM base graph build and Geocoder POI update")
+                .log(LoggingLevel.INFO, "Map was updated, therefore triggering OSM base graph build")
                 .setBody(constant(null))
                 .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpBaseGraphBuildQueue")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GeoCoderOsmUpdateNotificationQueue")
                 .log(LoggingLevel.DEBUG, "Processing of OSM map finished")
                 .routeId("osm-fetch-map");
 
