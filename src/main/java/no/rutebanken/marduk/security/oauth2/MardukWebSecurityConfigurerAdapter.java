@@ -45,7 +45,6 @@ public class MardukWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
                 .csrf().disable()
                 .authorizeRequests()
                 .antMatchers("/services/swagger.json").permitAll()
-                // exposed internally only, on a different port (pod-level)
                 .antMatchers("/actuator/prometheus").permitAll()
                 .antMatchers("/actuator/health").permitAll()
                 .antMatchers("/actuator/health/liveness").permitAll()
