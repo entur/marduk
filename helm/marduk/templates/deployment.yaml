@@ -21,7 +21,7 @@ spec:
     metadata:
       annotations:
         prometheus.io/path: /actuator/prometheus
-        prometheus.io/port: "8080"
+        prometheus.io/port: "9001"
         prometheus.io/scrape: "true"
         scheduler.alpha.kubernetes.io/affinity: |
           {
@@ -113,7 +113,7 @@ spec:
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
-              port: 8080
+              port: 9001
               scheme: HTTP
             initialDelaySeconds: 140
             periodSeconds: 10
@@ -123,7 +123,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
-              port: 8080
+              port: 9001
               scheme: HTTP
             initialDelaySeconds: 30
             periodSeconds: 10
