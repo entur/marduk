@@ -8,7 +8,7 @@ gcp:
   bucketName: marduk-production
   exchangeBucketName: ror-marduk-exchange-production
   otpReportBucketName: otpreport.entur.org
-  otpGraphBucketName: ror-otp-graphs-production
+  otpGraphBucketName: otp-graphs-production
 
 chouette:
   validateLevel1CronSchedule: 0+30+23+?+*+*
@@ -34,12 +34,5 @@ auth0:
 
 ingress:
   loadBalancerIP: 35.205.233.237
-
-resources:
-  cpuLimit: 3500m
-  memLimit: 7000Mi
-  cpuRequest: 2500m
-  memRequest: 6000Mi
-  xmx: 5g
 
 monitoringEnabled: false

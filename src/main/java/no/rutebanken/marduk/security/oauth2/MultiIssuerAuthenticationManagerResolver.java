@@ -98,7 +98,7 @@ public class MultiIssuerAuthenticationManagerResolver
         } else if (keycloakIssuer.equals(issuer)) {
             return keycloakJwtDecoder();
         } else {
-            throw new IllegalArgumentException("unknown issuer");
+            throw new IllegalArgumentException("Received JWT token with unknown OAuth2 issuer: " + issuer);
         }
     }
 
@@ -107,18 +107,18 @@ public class MultiIssuerAuthenticationManagerResolver
         try {
             String token = this.resolver.resolve(request);
             String issuer = JWTParser.parse(token).getJWTClaimsSet().getIssuer();
-            logger.debug("Received JWT token from issuer {}", issuer);
+            logger.debug("Received JWT token from OAuth2 issuer {}", issuer);
             return issuer;
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }
     }
 
-    private AuthenticationManager fromIssuer(String issuer) {
+    AuthenticationManager fromIssuer(String issuer) {
         return Optional.ofNullable(issuer)
                 .map(this::jwtDecoder)
                 .map(JwtAuthenticationProvider::new)
-                .orElseThrow(() -> new IllegalArgumentException("unknown issuer"))::authenticate;
+                .orElseThrow(() -> new IllegalArgumentException("Received JWT token with null OAuth2 issuer"))::authenticate;
     }
 
     @Override
