@@ -59,6 +59,10 @@ import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
 @Component
 public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
+    private static final String NETEX_BLOCKS_CONSUMER_CODESPACE = "consumerCodespace";
+    private static final String NETEX_BLOCKS_PROVIDER_CODESPACE = "providerCodespace";
+    private static final String NETEX_BLOCKS_EXPORT_SUB_DIRECTORY = "netex-with-blocks/";
+
 
     private static final String JSON = "application/json";
     private static final String X_OCTET_STREAM = "application/x-octet-stream";
@@ -469,6 +473,31 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:uploadFilesAndStartImport")
                 .routeId("admin-upload-file")
+                .endRest()
+
+                .get("/download_netex_blocks/{consumerCodespace}/{providerCodespace}")
+                .description("Download NeTEx dataset with blocks")
+                .param().name(NETEX_BLOCKS_CONSUMER_CODESPACE).type(RestParamType.path).description("Codespace of the organization downloading the NeTEx dataset with blocks").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
+                .param().name(NETEX_BLOCKS_PROVIDER_CODESPACE).type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
+                .consumes(PLAIN)
+                .produces(X_OCTET_STREAM)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
+                .route()
+                .log(LoggingLevel.INFO, correlation() + "Received Blocks download request from consumer ${header." + NETEX_BLOCKS_CONSUMER_CODESPACE + "} for provider ${header." + NETEX_BLOCKS_PROVIDER_CODESPACE + "} through the HTTP endpoint")
+                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(NETEX_BLOCKS_CONSUMER_CODESPACE, String.class)) != null).id("validate-consumer")
+                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(NETEX_BLOCKS_PROVIDER_CODESPACE, String.class)) != null).id("validate-provider" +
+            "")
+                .to("direct:authorizeBlocksDownloadRequest")
+                .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_CHOUETTE
+                    + NETEX_BLOCKS_EXPORT_SUB_DIRECTORY
+                    + "rb_" + e.getIn().getHeader(NETEX_BLOCKS_PROVIDER_CODESPACE, String.class).toLowerCase()
+                    + "-aggregated-netex.zip"))
+                .log(LoggingLevel.INFO, correlation() + "Downloading NeTEx dataset with blocks: ${header." + FILE_HANDLE  + "}")
+                .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
+                .to("direct:getBlob")
+                .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
+                .routeId("admin-chouette-netex-blocks-download")
                 .endRest();
 
         rest("/timetable_admin/{providerId}")
@@ -742,7 +771,16 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                         new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT, e.getIn().getHeader(PROVIDER_ID, Long.class))))
                 .routeId("admin-authorize-request");
 
+        from("direct:authorizeBlocksDownloadRequest")
+                .doTry()
+                .log(LoggingLevel.INFO, "Authorizing NeTEx blocks download for consumer ${header." + NETEX_BLOCKS_CONSUMER_CODESPACE + "} and provider ${header." + NETEX_BLOCKS_PROVIDER_CODESPACE + "} ")
+                //.process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .routeId("admin-authorize-blocks-download-request");
+
     }
+
+
+
 
     public static class ImportFilesSplitter {
         public List<String> splitFiles(@Body BlobStoreFiles files) {
