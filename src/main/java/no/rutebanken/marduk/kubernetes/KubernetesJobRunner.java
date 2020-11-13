@@ -45,14 +45,15 @@ public class KubernetesJobRunner {
     /**
      * Run a Kubernetes job
      * @param cronJobName name of the CronJob used as a template
+     * @param jobNamePrefix prefix for the Kubernetes job name
      * @param envVars environment variables to be provided to the job
      * @param timestamp timestamp used to create a unique name for the Kubernetes job.
      */
-    public void runJob(String cronJobName, List<EnvVar> envVars, String timestamp) {
+    public void runJob(String cronJobName, String jobNamePrefix, List<EnvVar> envVars, String timestamp) {
         try (final KubernetesClient kubernetesClient = new DefaultKubernetesClient()) {
 
             CronJobSpec specTemplate = getCronJobSpecTemplate(cronJobName, kubernetesClient);
-            String jobName = cronJobName + '-' + timestamp;
+            String jobName = jobNamePrefix + '-' + timestamp;
 
             LOGGER.info("Creating Graph builder job with name {} ", jobName);
 

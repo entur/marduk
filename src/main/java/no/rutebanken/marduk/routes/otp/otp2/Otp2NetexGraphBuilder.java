@@ -25,5 +25,9 @@ public class Otp2NetexGraphBuilder extends AbstractOtp2GraphBuilder implements O
                 new EnvVar(OTP_GCS_BASE_GRAPH_DIR_ENV_VAR, blobStoreGraphSubdirectory, null));
     }
 
+    @Override
+    protected String getJobNamePrefix() {
+        return "otp2-graph-builder-netex";
+    }
 
 }

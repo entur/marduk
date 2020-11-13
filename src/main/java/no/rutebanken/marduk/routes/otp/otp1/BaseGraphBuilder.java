@@ -21,5 +21,10 @@ public class BaseGraphBuilder extends AbstractOtpGraphBuilder implements OtpGrap
                 new EnvVar(OTP_GCS_BASE_GRAPH_DIR_ENV_VAR, otpWorkDir, null));
     }
 
+    @Override
+    protected String getJobNamePrefix() {
+        return "otp1-graph-builder-base";
+    }
+
 
 }
