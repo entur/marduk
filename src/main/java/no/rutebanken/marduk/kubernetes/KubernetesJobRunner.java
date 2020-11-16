@@ -88,7 +88,7 @@ public class KubernetesJobRunner {
                 @Override
                 public void onClose(KubernetesClientException e) {
                     if (e != null) {
-                        LOGGER.error("The Graph Builder job ended with an error", e);
+                        LOGGER.error("Error while watching for the Graph Builder job {}", jobName, e);
                         watchLatch.countDown();
                     }
                 }
