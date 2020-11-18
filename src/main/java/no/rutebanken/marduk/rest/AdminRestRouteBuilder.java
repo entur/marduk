@@ -25,6 +25,7 @@ import no.rutebanken.marduk.routes.chouette.json.Status;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.security.AuthorizationClaim;
 import no.rutebanken.marduk.security.AuthorizationService;
+import no.rutebanken.marduk.security.NetexBlocksAuthorizationService;
 import org.apache.camel.Body;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
@@ -72,6 +73,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
     @Autowired
     private AuthorizationService authorizationService;
+
+    @Autowired
+    private NetexBlocksAuthorizationService netexBlocksAuthorizationService;
 
     @Override
     public void configure() throws Exception {
@@ -485,7 +489,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
                 .route()
                 .log(LoggingLevel.INFO, correlation() + "Received Blocks download request from consumer ${header." + NETEX_BLOCKS_CONSUMER_CODESPACE + "} for provider ${header." + NETEX_BLOCKS_PROVIDER_CODESPACE + "} through the HTTP endpoint")
-                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(NETEX_BLOCKS_CONSUMER_CODESPACE, String.class)) != null).id("validate-consumer")
+                .validate(e -> netexBlocksAuthorizationService.isValidConsumer(e.getIn().getHeader(NETEX_BLOCKS_CONSUMER_CODESPACE, String.class))).id("validate-consumer")
                 .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(NETEX_BLOCKS_PROVIDER_CODESPACE, String.class)) != null).id("validate-provider" +
             "")
                 .to("direct:authorizeBlocksDownloadRequest")
@@ -774,7 +778,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:authorizeBlocksDownloadRequest")
                 .doTry()
                 .log(LoggingLevel.INFO, "Authorizing NeTEx blocks download for consumer ${header." + NETEX_BLOCKS_CONSUMER_CODESPACE + "} and provider ${header." + NETEX_BLOCKS_PROVIDER_CODESPACE + "} ")
-                //.process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .process(e -> netexBlocksAuthorizationService.authorizeConsumerForProvider(e.getIn().getHeader(NETEX_BLOCKS_CONSUMER_CODESPACE, String.class), e.getIn().getHeader(NETEX_BLOCKS_PROVIDER_CODESPACE, String.class)))
                 .routeId("admin-authorize-blocks-download-request");
 
     }
