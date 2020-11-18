@@ -98,6 +98,7 @@ data:
     spring.cloud.gcp.security.firebase.enabled=false
     # Fix for Hazelcast exception message on shutdown
     entur.hazelcast.shutdownhook.enabled=false
+    logging.level.io.fabric8.kubernetes.client.dsl.internal.WatchConnectionManager=DEBUG
 
 kind: ConfigMap
 metadata:

@@ -37,7 +37,7 @@ import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
 
 /**
- * Build remotely a base OTP graph containing OSM data and elevation data (but not transit data)
+ * Build remotely a base OTP2 graph containing OSM data and elevation data (but not transit data)
  */
 @Component
 public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
@@ -65,13 +65,13 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:sendOtp2BaseGraphStartedEventsInNewTransaction")
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${exchangeProperty." + TIMESTAMP + "}"))
 
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP base graph building in directory ${exchangeProperty." + OTP_GRAPH_DIR + "}.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 base graph building in directory ${exchangeProperty." + OTP_GRAPH_DIR + "}.")
                 .to("direct:remoteBuildOtp2BaseGraphAndSendStatus")
-                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP base graph building route.")
+                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP2 base graph building route.")
                 .routeId("otp2-remote-base-graph-build");
 
         from("direct:remoteBuildOtp2BaseGraphAndSendStatus")
-                .log(LoggingLevel.INFO, correlation() + "Preparing OTP graph with all non-transit data...")
+                .log(LoggingLevel.INFO, correlation() + "Preparing OTP2 graph with all non-transit data...")
                 .doTry()
                 .to("direct:remoteOtp2BuildBaseGraph")
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
@@ -83,7 +83,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:remoteOtp2BuildBaseGraph")
                 .process(new OtpGraphBuilderProcessor(otp2BaseGraphBuilder))
-                .log(LoggingLevel.INFO, correlation() + "Done building new OTP base graph.")
+                .log(LoggingLevel.INFO, correlation() + "Done building new OTP2 base graph.")
                 // copy new base graph in remote storage
                 .process(e -> {
                             String builtBaseGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + OTP2_BASE_GRAPH_OBJ;
@@ -96,7 +96,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:copyBlobInBucket")
 
                 .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Copied new OTP base graph, triggering full OTP graph build")
+                .log(LoggingLevel.INFO, correlation() + "Copied new OTP2 base graph, triggering full OTP2 graph build")
                 .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphBuildQueue")
 
                 .to("direct:remoteCleanUp")

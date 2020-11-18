@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-        <version>1.0.16</version>
+        <version>1.0.17</version>
     </parent>
 
     <groupId>no.rutebanken.marduk</groupId>
@@ -26,11 +26,11 @@
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>3.4.4</camel.version>
         <keycloak.version>4.8.3.Final</keycloak.version>
-        <entur.helpers.version>1.0.31</entur.helpers.version>
-        <commons-io.version>2.7</commons-io.version>
-        <commons-csv.version>1.5</commons-csv.version>
+        <entur.helpers.version>1.0.32</entur.helpers.version>
+        <commons-io.version>2.8.0</commons-io.version>
+        <commons-csv.version>1.8</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
-        <zt-zip.version>1.13</zt-zip.version>
+        <zt-zip.version>1.14</zt-zip.version>
 
         <!-- Override Spring Boot configuration -->
         <!-- Camel 3 requires Hazelcast 4.x -->
