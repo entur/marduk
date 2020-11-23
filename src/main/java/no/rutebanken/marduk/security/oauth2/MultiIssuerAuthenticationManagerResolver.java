@@ -3,6 +3,7 @@ package no.rutebanken.marduk.security.oauth2;
 import com.nimbusds.jwt.JWTParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationManagerResolver;
@@ -49,8 +50,8 @@ public class MultiIssuerAuthenticationManagerResolver
     @Value("${marduk.oauth2.resourceserver.auth0.jwt.issuer-uri}")
     private String auth0Issuer;
 
-    @Value("${marduk.oauth2.resourceserver.auth0.admin.activated:false}")
-    private boolean administratorAccessActivated;
+    @Autowired
+    Auth0RolesClaimAdapter auth0RolesClaimAdapter;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -72,7 +73,7 @@ public class MultiIssuerAuthenticationManagerResolver
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(auth0Issuer);
         OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
         jwtDecoder.setJwtValidator(withAudience);
-        jwtDecoder.setClaimSetConverter(new Auth0RolesClaimAdapter(administratorAccessActivated));
+        jwtDecoder.setClaimSetConverter(auth0RolesClaimAdapter);
         return jwtDecoder;
     }
 

@@ -77,13 +77,18 @@ data:
     marduk.oauth2.resourceserver.auth0.jwt.jwkset-uri={{ .Values.auth0.url }}/.well-known/jwks.json
     marduk.oauth2.resourceserver.auth0.jwt.audience={{ .Values.auth0.audience }}
     marduk.oauth2.resourceserver.auth0.admin.activated={{ .Values.auth0.administratorAccessEnabled }}
+    marduk.oauth2.resourceserver.auth0.organisations={1:'RB', 14:'MOR', 20:'NSB', 35:'GOA', 41:'SJN', 56:'FLI', 23:'HUR', 58:'VYX', 59:'VYB', 68:'FAR'}
+
+    # Logging
+    logging.level.no.rutebanken=INFO
+    logging.level.org.apache=INFO
+    logging.config=classpath:logback.xml
+    logging.level.io.fabric8.kubernetes.client.dsl.internal.WatchConnectionManager=DEBUG
 
     # Other
     providers.api.url=http://baba/services/providers/
     fetch.osm.cron.schedule={{ .Values.osm.fetchCronSchedule }}
-    logging.level.no.rutebanken=INFO
-    logging.level.org.apache=INFO
-    logging.config=classpath:logback.xml
+    netex.export.block.authorization={FAR:'OST'}
     netex.export.merge.flexible.lines.enabled=true
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
@@ -94,11 +99,9 @@ data:
 
     # Temporary setting until bug in KeycloakWebSecurityConfigurerAdapter is fixed (The bean 'httpSessionManager', defined in class path resource [XXXSecurityConfiguration.class], could not be registered. A bean with that name has already been defined in URL)
     spring.main.allow-bean-definition-overriding=true
-    # Temporary fix for https://github.com/spring-cloud/spring-cloud-gcp/issues/2315
-    spring.cloud.gcp.security.firebase.enabled=false
     # Fix for Hazelcast exception message on shutdown
     entur.hazelcast.shutdownhook.enabled=false
-    logging.level.io.fabric8.kubernetes.client.dsl.internal.WatchConnectionManager=DEBUG
+
 
 kind: ConfigMap
 metadata:

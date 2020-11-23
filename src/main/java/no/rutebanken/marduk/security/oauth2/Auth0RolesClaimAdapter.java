@@ -4,11 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.exceptions.MardukException;
 import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.RoleAssignment;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.oauth2.jwt.MappedJwtClaimSetConverter;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,53 +23,65 @@ import java.util.Optional;
  * Insert a "roles" claim in the JWT token based on the organisationID claim, for compatibility with the existing
  * authorization process (@{@link JwtRoleAssignmentExtractor}).
  */
-class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<String, Object>> {
-
-
-    private static final ObjectMapper mapper = new ObjectMapper();
+@Component
+public class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<String, Object>> {
 
     private static final String ORG_RUTEBANKEN = "RB";
 
-
-    private static final Map<Long, String> rutebankenOrganisations = Map.of(
-            1L, ORG_RUTEBANKEN,
-            14L, "MOR",
-            20L, "NSB",
-            35L, "GOA",
-            41L, "SJN",
-            56L, "FLI",
-            23L, "HUR",
-            58L, "VYX",
-            59L, "VYB"
-    );
+    private final ObjectMapper mapper = new ObjectMapper();
 
     private final MappedJwtClaimSetConverter delegate =
             MappedJwtClaimSetConverter.withDefaults(Collections.emptyMap());
 
+    @Value("#{${marduk.oauth2.resourceserver.auth0.organisations}}")
+    private Map<Long, String> rutebankenOrganisations;
+
+    @Value("${marduk.oauth2.resourceserver.auth0.admin.activated:false}")
     private boolean administratorAccessActivated;
 
-    Auth0RolesClaimAdapter(boolean administratorAccessActivated) {
-        this.administratorAccessActivated = administratorAccessActivated;
-    }
+    @Value("#{${netex.export.block.authorization}}")
+    protected Map<String, String> authorizedProvidersForNetexBlocksConsumer;
 
     @Override
     public Map<String, Object> convert(Map<String, Object> claims) {
         Map<String, Object> convertedClaims = this.delegate.convert(claims);
-
         Long enturOrganisationId = (Long) convertedClaims.get("https://entur.io/organisationID");
         String rutebankenOrganisationId = getRutebankenOrganisationId(enturOrganisationId);
+        List<String> roleAssignments = new ArrayList<>(2);
 
-        String role = administratorAccessActivated && ORG_RUTEBANKEN.equals(rutebankenOrganisationId)
+        // Add route data role
+        String roleRouteData = administratorAccessActivated && isEnturUser(rutebankenOrganisationId)
                 ? AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN
                 : AuthorizationConstants.ROLE_ROUTE_DATA_EDIT;
 
-        RoleAssignment.Builder builder = RoleAssignment.builder();
-        builder.withRole(role);
-        builder.withOrganisation(rutebankenOrganisationId);
+        RoleAssignment.Builder routeDataRoleAssignmentBuilder = RoleAssignment.builder();
+        routeDataRoleAssignmentBuilder.withRole(roleRouteData);
+        routeDataRoleAssignmentBuilder.withOrganisation(rutebankenOrganisationId);
+        roleAssignments.add(toJSON(routeDataRoleAssignmentBuilder.build()));
 
-        List<String> roleAssignments = Collections.singletonList(toJSON(builder.build()));
+        // Add NeTEx Blocks view roles
+        for(String authorizedNetexBlocksProviderForConsumer: getNetexBlocksProvidersForConsumer(rutebankenOrganisationId)) {
+            RoleAssignment.Builder netexBlockRoleAssignmentBuilder = RoleAssignment.builder();
+            routeDataRoleAssignmentBuilder.withRole(AuthorizationConstants.ROLE_NETEX_BLOCKS_DATA_VIEW);
+            routeDataRoleAssignmentBuilder.withOrganisation(authorizedNetexBlocksProviderForConsumer);
+            roleAssignments.add(toJSON(netexBlockRoleAssignmentBuilder.build()));
+        }
+
         convertedClaims.put("roles", roleAssignments);
         return convertedClaims;
+    }
+
+    private boolean isEnturUser(String rutebankenOrganisationId) {
+        return ORG_RUTEBANKEN.equals(rutebankenOrganisationId);
+    }
+
+    private List<String> getNetexBlocksProvidersForConsumer(String rutebankenOrganisationId) {
+        if( authorizedProvidersForNetexBlocksConsumer.get(rutebankenOrganisationId) == null) {
+            return Collections.emptyList();
+        } else {
+            return Arrays.asList(authorizedProvidersForNetexBlocksConsumer.get(rutebankenOrganisationId).split(","));
+        }
+
     }
 
     private String getRutebankenOrganisationId(Long enturOrganisationId) {
