@@ -86,6 +86,8 @@ data:
     logging.level.io.fabric8.kubernetes.client.dsl.internal.WatchConnectionManager=DEBUG
 
     # Other
+    # the Camel shutdown timeout must be shorter than the Kubernetes terminationGracePeriod
+    marduk.shutdown.timeout=25
     providers.api.url=http://baba/services/providers/
     fetch.osm.cron.schedule={{ .Values.osm.fetchCronSchedule }}
     netex.export.block.authorization={FAR:'OST'}
