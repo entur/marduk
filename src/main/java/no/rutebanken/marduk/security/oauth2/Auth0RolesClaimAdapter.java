@@ -26,7 +26,7 @@ import java.util.Optional;
 @Component
 public class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<String, Object>> {
 
-    private static final String ORG_RUTEBANKEN = "RB";
+    static final String ORG_RUTEBANKEN = "RB";
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -40,7 +40,7 @@ public class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Ma
     private boolean administratorAccessActivated;
 
     @Value("#{${netex.export.block.authorization}}")
-    protected Map<String, String> authorizedProvidersForNetexBlocksConsumer;
+    protected Map<String, String> authorizedProvidersForNetexBlocksConsumer = Collections.emptyMap();
 
     @Override
     public Map<String, Object> convert(Map<String, Object> claims) {
@@ -62,8 +62,8 @@ public class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Ma
         // Add NeTEx Blocks view roles
         for(String authorizedNetexBlocksProviderForConsumer: getNetexBlocksProvidersForConsumer(rutebankenOrganisationId)) {
             RoleAssignment.Builder netexBlockRoleAssignmentBuilder = RoleAssignment.builder();
-            routeDataRoleAssignmentBuilder.withRole(AuthorizationConstants.ROLE_NETEX_BLOCKS_DATA_VIEW);
-            routeDataRoleAssignmentBuilder.withOrganisation(authorizedNetexBlocksProviderForConsumer);
+            netexBlockRoleAssignmentBuilder.withRole(AuthorizationConstants.ROLE_NETEX_BLOCKS_DATA_VIEW);
+            netexBlockRoleAssignmentBuilder.withOrganisation(authorizedNetexBlocksProviderForConsumer);
             roleAssignments.add(toJSON(netexBlockRoleAssignmentBuilder.build()));
         }
 
