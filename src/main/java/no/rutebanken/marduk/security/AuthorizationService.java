@@ -53,8 +53,8 @@ public class AuthorizationService {
     }
 
     /**
-     * A user can edit route data if it has administrator privileges,
-     * or if it has editor privileges for this provider
+     * Users can edit route data if they have administrator privileges,
+     * or if it has editor privileges for this provider.
      * @param providerId
      */    public void verifyRouteDataEditorPrivileges(Long providerId) {
         verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
@@ -62,9 +62,9 @@ public class AuthorizationService {
     }
 
     /**
-     * A user can download NeTEx blocks data if it has administrator privileges,
-     * or if it has editor privileges for this provider
-     * or if it has NeTEx blocks viewer privileges for this provider
+     * Users can download NeTEx blocks data if they have administrator privileges,
+     * or if they have editor privileges for this provider
+     * or if they have NeTEx blocks viewer privileges for this provider.
      * @param providerId
      */
     public void verifyBlockViewerPrivileges(Long providerId) {
