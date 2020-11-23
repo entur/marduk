@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.security;
 
+import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -8,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-class AuthorizationServiceTest {
+class AuthorizationServiceTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Autowired
     private AuthorizationService authorizationService;
