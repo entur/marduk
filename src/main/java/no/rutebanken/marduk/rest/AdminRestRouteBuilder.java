@@ -57,8 +57,6 @@ import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
 @Component
 public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
-    private static final String NETEX_BLOCKS_CONSUMER_CODESPACE = "consumerCodespace";
-    private static final String NETEX_BLOCKS_PROVIDER_CODESPACE = "providerCodespace";
     private static final String NETEX_BLOCKS_EXPORT_SUB_DIRECTORY = "netex-with-blocks/";
 
 
@@ -471,20 +469,21 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-upload-file")
                 .endRest()
 
-                .get("/download_netex_blocks/{providerCodespace}")
+                .get("/download_netex_blocks/{codespace}")
                 .description("Download NeTEx dataset with blocks")
-                .param().name(NETEX_BLOCKS_PROVIDER_CODESPACE).type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
+                .param().name("codespace").type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
                 .consumes(PLAIN)
                 .produces(X_OCTET_STREAM)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
                 .route()
-                .log(LoggingLevel.INFO, correlation() + "Received Blocks download request for provider ${header." + NETEX_BLOCKS_PROVIDER_CODESPACE + "} through the HTTP endpoint")
-                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(NETEX_BLOCKS_PROVIDER_CODESPACE, String.class)) != null).id("validate-provider")
+                .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
+                .log(LoggingLevel.INFO, correlation() + "Received Blocks download request for provider ${header." + CHOUETTE_REFERENTIAL + "} through the HTTP endpoint")
+                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null).id("validate-provider")
                 .to("direct:authorizeBlocksDownloadRequest")
                 .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_CHOUETTE
                     + NETEX_BLOCKS_EXPORT_SUB_DIRECTORY
-                    + "rb_" + e.getIn().getHeader(NETEX_BLOCKS_PROVIDER_CODESPACE, String.class).toLowerCase()
+                    + "rb_" + e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toLowerCase()
                     + "-aggregated-netex.zip"))
                 .log(LoggingLevel.INFO, correlation() + "Downloading NeTEx dataset with blocks: ${header." + FILE_HANDLE  + "}")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
@@ -769,7 +768,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         from("direct:authorizeBlocksDownloadRequest")
                 .doTry()
-                .log(LoggingLevel.INFO, "Authorizing NeTEx blocks download for provider ${header." + NETEX_BLOCKS_PROVIDER_CODESPACE + "} ")
+                .log(LoggingLevel.INFO, "Authorizing NeTEx blocks download for provider ${header." + CHOUETTE_REFERENTIAL + "} ")
                 .process(e -> authorizationService.verifyBlockViewerPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
                 .routeId("admin-authorize-blocks-download-request");
 

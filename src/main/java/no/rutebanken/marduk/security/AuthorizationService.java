@@ -31,8 +31,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-
 @Service
 public class AuthorizationService {
 
