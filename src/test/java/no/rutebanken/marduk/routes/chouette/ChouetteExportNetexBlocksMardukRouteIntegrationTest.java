@@ -59,7 +59,7 @@ class ChouetteExportNetexBlocksMardukRouteIntegrationTest extends MardukRouteBui
     @EndpointInject("mock:chouetteGetData")
     protected MockEndpoint chouetteGetData;
 
-    @Produce("entur-google-pubsub:ChouetteExportNetexQueue")
+    @Produce("entur-google-pubsub:ChouetteExportNetexBlocksQueue")
     protected ProducerTemplate importTemplate;
 
     @Produce("direct:processNetexBlocksExportResult")

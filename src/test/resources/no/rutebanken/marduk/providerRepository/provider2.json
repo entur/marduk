@@ -19,6 +19,8 @@
         "migrateDataToProvider": 2,
         "generateDatedServiceJourneyIds":true,
         "googleUpload": true,
-        "googleQAUpload": true
+        "googleQAUpload": true,
+        "enableBlocksExport": true
+
     }
 }
