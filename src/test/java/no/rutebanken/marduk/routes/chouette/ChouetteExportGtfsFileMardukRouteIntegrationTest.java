@@ -90,7 +90,6 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 		chouetteGetData.expectedMessageCount(1);
 		chouetteGetData.returnReplyBody(new Expression() {
 
-			@SuppressWarnings("unchecked")
 			@Override
 			public <T> T evaluate(Exchange ex, Class<T> arg1) {
 				try {

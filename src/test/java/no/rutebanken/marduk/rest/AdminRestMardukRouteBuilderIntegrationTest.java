@@ -234,7 +234,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
 
     @Test
-    void getBlobStoreFile_unknownFile() throws Exception {
+    void getBlobStoreFile_unknownFile() {
 
         camelContext.start();
 

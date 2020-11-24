@@ -29,7 +29,7 @@ public class Utils {
         if (url == null) {
             throw new IllegalArgumentException("Url is null");
         }
-        return Long.valueOf(url.substring(url.lastIndexOf('/') + 1, url.length()));
+        return Long.valueOf(url.substring(url.lastIndexOf('/') + 1));
     }
 
     public static String getUsername() {
