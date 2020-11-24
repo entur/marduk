@@ -54,6 +54,8 @@ public final class Constants {
     public static final String BLOBSTORE_PATH_INBOUND = "inbound/received/";
     public static final String BLOBSTORE_PATH_OUTBOUND = "outbound/";
     public static final String BLOBSTORE_PATH_CHOUETTE = "chouette/";
+    public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT = "chouette/netex-with-blocks/";
+
 
     public static final String CHOUETTE_JOB_STATUS_URL = "RutebankenChouetteJobStatusURL";
     public static final String CHOUETTE_JOB_ID = "RutebankenChouetteJobId";

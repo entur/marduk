@@ -104,10 +104,11 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Produce("http:localhost:28080/services/timetable_admin/2/files/unknown-file.zip")
     protected ProducerTemplate getUnknownFileTemplate;
 
-
     @Produce("http:localhost:28080/services/timetable_admin/export/files")
     protected ProducerTemplate listExportFilesTemplate;
 
+    @Produce("http:localhost:28080/services/timetable_admin/download_netex_blocks/RUT")
+    protected ProducerTemplate downloadNetexBlocksTemplate;
 
     @Value("#{'${timetable.export.blob.prefixes:outbound/gtfs/,outbound/netex/}'.split(',')}")
     private List<String> exportFileStaticPrefixes;
@@ -260,6 +261,26 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
         assertEquals(exportFileStaticPrefixes.size(), rsp.getFiles().size());
         exportFileStaticPrefixes.forEach(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName())));
+    }
+
+    @Test
+    void downloadNetexBlocks() throws Exception {
+
+        AdviceWithRouteBuilder.adviceWith(context, "admin-chouette-netex-blocks-download", a ->
+                a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexQueue")
+                        .skipSendToOriginalEndpoint()
+                        .to("mock:chouetteExportNetexQueue"));
+
+        // Preparations
+        String filename = "rb_rut-aggregated-netex.zip";
+        String fileStorePath = Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT;
+        InputStream testFile = getTestNetexArchiveAsStream();
+        //populate fake blob repo
+        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
+
+        camelContext.start();
+        InputStream response = (InputStream) downloadNetexBlocksTemplate.requestBodyAndHeaders(null, null);
+        assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
     }
 
 

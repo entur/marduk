@@ -57,7 +57,6 @@ import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
 @Component
 public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
-    private static final String NETEX_BLOCKS_EXPORT_SUB_DIRECTORY = "netex-with-blocks/";
 
 
     private static final String JSON = "application/json";
@@ -481,8 +480,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Received Blocks download request for provider ${header." + CHOUETTE_REFERENTIAL + "} through the HTTP endpoint")
                 .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null).id("validate-provider")
                 .to("direct:authorizeBlocksDownloadRequest")
-                .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_CHOUETTE
-                    + NETEX_BLOCKS_EXPORT_SUB_DIRECTORY
+                .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
                     + "rb_" + e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toLowerCase()
                     + "-aggregated-netex.zip"))
                 .log(LoggingLevel.INFO, correlation() + "Downloading NeTEx dataset with blocks: ${header." + FILE_HANDLE  + "}")
