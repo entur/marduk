@@ -31,6 +31,8 @@ import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,8 +91,11 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @EndpointInject("mock:chouetteExportNetexQueue")
     protected MockEndpoint exportQueue;
 
-    @EndpointInject("mock:uploadFilesAndStartImport")
-    protected MockEndpoint uploadFilesAndStartImport;
+    @EndpointInject("mock:processFileQueue")
+    protected MockEndpoint processFileQueue;
+
+    @EndpointInject("mock:updateStatus")
+    protected MockEndpoint updateStatus;
 
     @Produce("http:localhost:28080/services/timetable_admin/2/import")
     protected ProducerTemplate importTemplate;
@@ -272,17 +277,25 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void uploadNetexDataset() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "admin-upload-file", a ->
-                a.interceptSendToEndpoint("direct:uploadFilesAndStartImport")
-                        .skipSendToOriginalEndpoint()
-                        .to("mock:uploadFilesAndStartImport"));
+        AdviceWithRouteBuilder.adviceWith(context, "file-upload-and-start-import", a -> {
+                    a.interceptSendToEndpoint("direct:updateStatus")
+                            .skipSendToOriginalEndpoint()
+                            .to("mock:updateStatus");
+                    a.interceptSendToEndpoint("entur-google-pubsub:ProcessFileQueue")
+                            .skipSendToOriginalEndpoint()
+                            .to("mock:processFileQueue");
+                }
+        );
 
-        uploadFilesAndStartImport.expectedMessageCount(1);
+        updateStatus.expectedMessageCount(1);
+        processFileQueue.expectedMessageCount(1);
+
+        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody("netex.zip", getTestNetexArchiveAsStream()).build();
+
         camelContext.start();
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Exchange.HTTP_METHOD, "POST");
-        uploadFileTemplate.sendBodyAndHeaders(null, headers);
-        uploadFilesAndStartImport.assertIsSatisfied();
+        uploadFileTemplate.requestBody(httpEntity, String.class);
+        updateStatus.assertIsSatisfied();
+        processFileQueue.assertIsSatisfied();
     }
 
     @Test
