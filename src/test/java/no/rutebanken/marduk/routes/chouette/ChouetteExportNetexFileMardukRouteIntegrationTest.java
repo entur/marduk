@@ -62,6 +62,9 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 	@EndpointInject("mock:ExportGtfsQueue")
 	protected MockEndpoint exportGtfsQueue;
 
+	@EndpointInject("mock:ExportNetexBlocksQueue")
+	protected MockEndpoint exportNetexBlocksQueue;
+
 	@Produce("entur-google-pubsub:ChouetteExportNetexQueue")
 	protected ProducerTemplate importTemplate;
 
@@ -74,7 +77,7 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 
 
 	@Test
-	void testExportDataspace() throws Exception {
+	void testExportNetex() throws Exception {
 
 		// Mock initial call to Chouette to import job
 		AdviceWithRouteBuilder.adviceWith(context, "chouette-start-export-netex", a -> {
@@ -94,6 +97,7 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 					.to("mock:updateStatus");
 			a.interceptSendToEndpoint("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue").skipSendToOriginalEndpoint().to("mock:ChouetteMergeWithFlexibleLinesQueue");
 			a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportGtfsQueue").skipSendToOriginalEndpoint().to("mock:ExportGtfsQueue");
+			a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexBlocksQueue").skipSendToOriginalEndpoint().to("mock:ExportNetexBlocksQueue");
 		});
 
 		AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
@@ -130,6 +134,7 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 
 		mergeWithFlexibleLinesMock.expectedMessageCount(1);
 		exportGtfsQueue.expectedMessageCount(1);
+		exportNetexBlocksQueue.expectedMessageCount(1);
 
 		Map<String, Object> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
@@ -148,6 +153,7 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 		updateStatus.assertIsSatisfied();
 		mergeWithFlexibleLinesMock.assertIsSatisfied();
 		exportGtfsQueue.assertIsSatisfied();
+		exportNetexBlocksQueue.assertIsSatisfied();
 
 	}
 }
