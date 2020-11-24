@@ -60,7 +60,7 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 	private String chouetteUrl;
 
 	@Test
-	void testTransferDataToDataspaceDataspace() throws Exception {
+	void testTransferDataToDataspace() throws Exception {
 
 		// Mock initial call to Chouette to export job
 		AdviceWithRouteBuilder.adviceWith(context, "chouette-send-transfer-job", a -> {

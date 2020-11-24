@@ -86,6 +86,7 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
         provider.id = id;
         provider.chouetteInfo.googleUpload = googleUpload;
         provider.chouetteInfo.googleQAUpload = googleQAUpload;
+        provider.chouetteInfo.enableBlocksExport = true;
 
         return provider;
     }

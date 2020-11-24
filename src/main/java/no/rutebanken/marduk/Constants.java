@@ -48,11 +48,14 @@ public final class Constants {
 
     public static final String FILE_TARGET_MD5 = "RutebankenMd5SumRecordedForTargetFile";
     public static final String ENABLE_VALIDATION = "RutebankenEnableValidation";
+    public static final String ENABLE_BLOCKS_EXPORT = "RutebankenEnableBlockExport";
     public static final String FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES = "RutebankenSkipStatusUpdateForDuplicateFiles";
 
     public static final String BLOBSTORE_PATH_INBOUND = "inbound/received/";
     public static final String BLOBSTORE_PATH_OUTBOUND = "outbound/";
     public static final String BLOBSTORE_PATH_CHOUETTE = "chouette/";
+    public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT = "chouette/netex-with-blocks/";
+
 
     public static final String CHOUETTE_JOB_STATUS_URL = "RutebankenChouetteJobStatusURL";
     public static final String CHOUETTE_JOB_ID = "RutebankenChouetteJobId";
