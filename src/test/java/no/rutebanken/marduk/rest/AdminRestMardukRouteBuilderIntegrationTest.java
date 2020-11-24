@@ -89,6 +89,9 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @EndpointInject("mock:chouetteExportNetexQueue")
     protected MockEndpoint exportQueue;
 
+    @EndpointInject("mock:uploadFilesAndStartImport")
+    protected MockEndpoint uploadFilesAndStartImport;
+
     @Produce("http:localhost:28080/services/timetable_admin/2/import")
     protected ProducerTemplate importTemplate;
 
@@ -109,6 +112,9 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
     @Produce("http:localhost:28080/services/timetable_admin/download_netex_blocks/RUT")
     protected ProducerTemplate downloadNetexBlocksTemplate;
+
+    @Produce("http:localhost:28080/services/timetable_admin/upload/RUT")
+    protected ProducerTemplate uploadFileTemplate;
 
     @Value("#{'${timetable.export.blob.prefixes:outbound/gtfs/,outbound/netex/}'.split(',')}")
     private List<String> exportFileStaticPrefixes;
@@ -261,6 +267,22 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
         assertEquals(exportFileStaticPrefixes.size(), rsp.getFiles().size());
         exportFileStaticPrefixes.forEach(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName())));
+    }
+
+    @Test
+    void uploadNetexDataset() throws Exception {
+
+        AdviceWithRouteBuilder.adviceWith(context, "admin-upload-file", a ->
+                a.interceptSendToEndpoint("direct:uploadFilesAndStartImport")
+                        .skipSendToOriginalEndpoint()
+                        .to("mock:uploadFilesAndStartImport"));
+
+        uploadFilesAndStartImport.expectedMessageCount(1);
+        camelContext.start();
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(Exchange.HTTP_METHOD, "POST");
+        uploadFileTemplate.sendBodyAndHeaders(null, headers);
+        uploadFilesAndStartImport.assertIsSatisfied();
     }
 
     @Test
