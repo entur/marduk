@@ -31,7 +31,6 @@ public abstract class ChouetteJobParameters {
 	@JsonIgnore
 	public boolean enableValidation = false;
 
-	@SuppressWarnings("unchecked")
 	public String toJsonString() {
 		try {
 			ObjectMapper mapper = new ObjectMapper();

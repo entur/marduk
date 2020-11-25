@@ -85,10 +85,8 @@ class ChouetteExportNetexBlocksMardukRouteIntegrationTest extends MardukRouteBui
                 .to("mock:pollJobStatus"));
 
         // Mock update status calls
-        AdviceWithRouteBuilder.adviceWith(context, "chouette-process-export-netex-status", a -> {
-            a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-                    .to("mock:updateStatus");
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "chouette-process-export-netex-status", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+                .to("mock:updateStatus"));
 
         AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs/1/data")
                 .skipSendToOriginalEndpoint().to("mock:chouetteGetData"));
