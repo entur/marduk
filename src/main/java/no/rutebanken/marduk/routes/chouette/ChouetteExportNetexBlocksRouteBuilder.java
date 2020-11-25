@@ -82,7 +82,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processNetexBlocksExportResult"))
-                .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT_NETEX.name()))
+                .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS.name()))
                 .removeHeader("loopCounter")
                 .setBody(constant(null))
                 .to("entur-google-pubsub:ChouettePollStatusQueue")
