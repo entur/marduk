@@ -97,7 +97,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .to(logDebugShowAll())
                 .choice()
                 .when(simple("${header.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, correlation() + "GTFS export successful for provider ${header." + CHOUETTE_REFERENTIAL + "}. Downloading export data")
+                .log(LoggingLevel.INFO, correlation() + "GTFS export successful. Downloading export data")
                 .log(LoggingLevel.DEBUG, correlation() + "Downloading GTFS export data from ${header.data_url}")
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
                 .setBody(simple(""))

@@ -93,7 +93,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
         from("direct:processNetexBlocksExportResult")
                 .choice()
                 .when(simple("${header.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, correlation() + "NeTEx Blocks export successful for provider ${header." + CHOUETTE_REFERENTIAL + "}. Downloading export data")
+                .log(LoggingLevel.INFO, correlation() + "NeTEx Blocks export successful. Downloading export data")
                 .log(LoggingLevel.DEBUG, correlation() + "Downloading NeTEx Blocks export data from ${header.data_url}")
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
                 .setBody(simple(""))
