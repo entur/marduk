@@ -18,6 +18,7 @@ data:
     spring.cloud.gcp.pubsub.subscriber.parallel-pull-count=1
     spring.cloud.gcp.pubsub.subscriber.executor-threads=30
     spring.cloud.gcp.pubsub.subscriber.max-ack-extension-period=36000
+    spring.cloud.gcp.pubsub.subscriber.flow-control.max-outstanding-element-count=1
     entur.pubsub.subscriber.autocreate=false
 
     # Blobstore
