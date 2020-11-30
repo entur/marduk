@@ -68,7 +68,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
 
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(e -> e.getIn().setHeader(JSON_PART, Parameters.getDefaultNetexExportParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)), exportStops))) //Using header to addToExchange json data
-                .log(LoggingLevel.INFO, correlation() + "Creating multipart request")
+                .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
                 .process(e -> toGenericChouetteMultipart(e))
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/netexprofile")
@@ -87,8 +87,8 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
         from("direct:processNetexExportResult")
                 .choice()
                 .when(simple("${header.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, correlation() + "Export ended with status '${header.action_report_result}'")
-                .log(LoggingLevel.DEBUG, correlation() + "Calling url ${header.data_url}")
+                .log(LoggingLevel.INFO, correlation() + "NeTEx export successful. Downloading export data")
+                .log(LoggingLevel.DEBUG, correlation() + "Downloading NeTEx export data from ${header.data_url}")
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))

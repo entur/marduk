@@ -50,7 +50,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
         from("entur-google-pubsub:ChouetteTransferExportQueue").streamCaching()
 
         		.log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette transfer for provider with id ${header." + PROVIDER_ID + "}")
-                .process(e -> { 
+                .process(e -> {
                 	// Add correlation id only if missing
                 	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
                 	e.getIn().setHeader(Constants.FILE_HANDLE,"transfer.zip");
@@ -62,7 +62,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 })
 				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.DATASPACE_TRANSFER).state(State.PENDING).build())
 		        .to("direct:updateStatus")
-                .log(LoggingLevel.INFO,correlation()+"Creating multipart request")
+				.log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
                 .process(e -> toGenericChouetteMultipart(e))
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/transfer")
                 .process(e -> {
@@ -93,7 +93,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 	                	Provider currentProvider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
 	                	e.getIn().setHeader(Constants.ORIGINAL_PROVIDER_ID,e.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID,e.getIn().getHeader(Constants.PROVIDER_ID)));
 	                	e.getIn().setHeader(Constants.PROVIDER_ID, currentProvider.chouetteInfo.migrateDataToProvider);
-	                }) 
+	                })
  		            .to("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation")
  		        .when(simple("${header.action_report_result} == 'NOK'"))
  		        	.log(LoggingLevel.INFO,correlation()+"Transfer failed")
@@ -105,7 +105,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  	 		        .to("direct:updateStatus")
  		        .end()
  		        .routeId("chouette-process-transfer-status");
- 	
+
  		 // Check that no other import jobs in status SCHEDULED exists for this referential. If so, do not trigger export
  		from("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation")
  			.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?timetableAction=importer&status=SCHEDULED&status=STARTED"))
@@ -116,7 +116,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
              .otherwise()
  				.log(LoggingLevel.INFO,correlation()+"Transfer ok, triggering validation.")
  		        .setBody(constant(""))
- 		        
+
  		        .to(logDebugShowAll())
 				.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
 				.to("entur-google-pubsub:ChouetteValidationQueue")

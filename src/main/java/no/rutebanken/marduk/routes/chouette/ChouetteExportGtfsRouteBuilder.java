@@ -73,7 +73,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
 
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(e -> e.getIn().setHeader(JSON_PART, Parameters.getGtfsExportParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class))))) //Using header to addToExchange json data
-                .log(LoggingLevel.INFO, correlation() + "Creating multipart request")
+                .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
                 .to(logDebugShowAll())
                 .process(e -> toGenericChouetteMultipart(e))
                 .to(logDebugShowAll())
@@ -97,8 +97,8 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .to(logDebugShowAll())
                 .choice()
                 .when(simple("${header.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, correlation() + "Export ended with status '${header.action_report_result}'")
-                .log(LoggingLevel.INFO, correlation() + "Calling url ${header.data_url}")
+                .log(LoggingLevel.INFO, correlation() + "GTFS export successful. Downloading export data")
+                .log(LoggingLevel.DEBUG, correlation() + "Downloading GTFS export data from ${header.data_url}")
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
