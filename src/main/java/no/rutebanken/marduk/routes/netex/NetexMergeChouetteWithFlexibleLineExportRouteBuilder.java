@@ -64,7 +64,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .routeId("netex-export-merge-chouette-with-flexible-lines-queue");
 
         from("direct:mergeChouetteExportWithFlexibleLinesExport").streamCaching()
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Merging chouette NeTEx export with FlexibleLines for provider")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Merging chouette NeTEx export with FlexibleLines for provider ${header." + CHOUETTE_REFERENTIAL + "}")
                 .validate(header(Constants.CHOUETTE_REFERENTIAL).isNotNull())
 
                 .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
