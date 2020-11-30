@@ -73,7 +73,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
 
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(e -> e.getIn().setHeader(JSON_PART, Parameters.getGtfsExportParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class))))) //Using header to addToExchange json data
-                .log(LoggingLevel.INFO, correlation() + "Creating multipart request")
+                .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
                 .to(logDebugShowAll())
                 .process(e -> toGenericChouetteMultipart(e))
                 .to(logDebugShowAll())
