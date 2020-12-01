@@ -56,7 +56,8 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
         singletonFrom("entur-google-pubsub:Otp2BaseGraphBuildQueue?ackMode=NONE").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
-                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:remoteBuildOtp2BaseGraph")
                 .routeId("otp2-base-graph-build");
 
@@ -67,7 +68,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
 
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 base graph building in directory ${exchangeProperty." + OTP_GRAPH_DIR + "}.")
                 .to("direct:remoteBuildOtp2BaseGraphAndSendStatus")
-                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP2 base graph building route.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP2 base graph building route.")
                 .routeId("otp2-remote-base-graph-build");
 
         from("direct:remoteBuildOtp2BaseGraphAndSendStatus")

@@ -26,8 +26,6 @@ import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
-
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_CHOUETTE;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_URL;
@@ -56,13 +54,9 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
         super.configure();
 
         from("entur-google-pubsub:ChouetteExportNetexQueue").streamCaching()
-
-                .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette Netex export for provider with id ${header." + PROVIDER_ID + "}")
-                .process(e -> {
-                    // Add correlation id only if missing
-                    e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString()));
-                    e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
-                })
+                .process(this::setCorrelationIdIfMissing)
+                .removeHeader(Constants.CHOUETTE_JOB_ID)
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette Netex export for provider with id ${header." + PROVIDER_ID + "}")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
 

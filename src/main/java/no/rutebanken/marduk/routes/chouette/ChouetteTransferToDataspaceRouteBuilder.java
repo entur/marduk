@@ -26,8 +26,6 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
-
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.JSON_PART;
@@ -48,17 +46,16 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
         super.configure();
 
         from("entur-google-pubsub:ChouetteTransferExportQueue").streamCaching()
-
-        		.log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette transfer for provider with id ${header." + PROVIDER_ID + "}")
+				.process(this::setCorrelationIdIfMissing)
+				.removeHeader(Constants.CHOUETTE_JOB_ID)
+        		.log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette transfer")
                 .process(e -> {
-                	// Add correlation id only if missing
-                	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
                 	e.getIn().setHeader(Constants.FILE_HANDLE,"transfer.zip");
                 	Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                 	Provider destProvider = getProviderRepository().getProvider(provider.chouetteInfo.migrateDataToProvider);
 					e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
                 	e.getIn().setHeader(JSON_PART, Parameters.getTransferExportParameters(provider,destProvider));
-	                e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
+
                 })
 				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.DATASPACE_TRANSFER).state(State.PENDING).build())
 		        .to("direct:updateStatus")
@@ -71,7 +68,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,"direct:processTransferExportResult");
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, JobEvent.TimetableAction.DATASPACE_TRANSFER.name());
                     })
-                .log(LoggingLevel.INFO,correlation()+"Sending transfer export to poll job status")
+                .log(LoggingLevel.INFO,correlation() + "Sending transfer export to poll job status")
                 .to(logDebugShowAll())
 		        .removeHeader("loopCounter")
 				.setBody(constant(""))
@@ -96,11 +93,11 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 	                })
  		            .to("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation")
  		        .when(simple("${header.action_report_result} == 'NOK'"))
- 		        	.log(LoggingLevel.INFO,correlation()+"Transfer failed")
+ 		        	.log(LoggingLevel.INFO,correlation() + "Transfer failed")
 				 	.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.DATASPACE_TRANSFER).state(State.FAILED).build())
  	 		        .to("direct:updateStatus")
  		        .otherwise()
- 		            .log(LoggingLevel.ERROR,correlation()+"Something went wrong on transfer")
+ 		            .log(LoggingLevel.ERROR,correlation() + "Something went wrong on transfer")
 				 	.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.DATASPACE_TRANSFER).state(State.FAILED).build())
  	 		        .to("direct:updateStatus")
  		        .end()
@@ -112,9 +109,9 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  			.toD("${exchangeProperty.job_status_url}")
  			.choice()
  			.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
- 				.log(LoggingLevel.INFO,correlation()+"Transfer ok, skipping validation as ther are more import jobs active")
+ 				.log(LoggingLevel.INFO,correlation() + "Transfer ok, skipping validation as ther are more import jobs active")
              .otherwise()
- 				.log(LoggingLevel.INFO,correlation()+"Transfer ok, triggering validation.")
+ 				.log(LoggingLevel.INFO,correlation() + "Transfer ok, triggering validation.")
  		        .setBody(constant(""))
 
  		        .to(logDebugShowAll())
