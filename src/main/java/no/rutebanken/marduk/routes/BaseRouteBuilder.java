@@ -43,6 +43,7 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NAME;
@@ -136,6 +137,14 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
     protected ProviderRepository getProviderRepository() {
         return providerRepository;
+    }
+
+    protected void setNewCorrelationId(Exchange e) {
+        e.getIn().setHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString());
+    }
+
+    protected void setCorrelationIdIfMissing(Exchange e) {
+        e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString()));
     }
 
     protected String correlation() {

@@ -27,11 +27,9 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.JSON_PART;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
@@ -75,7 +73,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
                 .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} && ${body.chouetteInfo.referential}"))
-                .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
+                .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
@@ -89,7 +87,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
                 .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} == null && ${body.chouetteInfo.referential}"))
-                .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
+                .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
@@ -99,13 +97,9 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 
 
         from("entur-google-pubsub:ChouetteValidationQueue?concurrentConsumers=3").streamCaching()
-
+                .process(this::setCorrelationIdIfMissing)
+                .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette validation")
-                .process(e -> {
-                    // Add correlation id only if missing
-                    e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString()));
-                    e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
-                })
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.class)).state(State.PENDING).build())
                 .to("direct:updateStatus")
 

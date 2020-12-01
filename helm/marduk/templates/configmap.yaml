@@ -84,6 +84,7 @@ data:
     logging.level.org.apache=INFO
     logging.config=classpath:logback.xml
     logging.level.io.fabric8.kubernetes.client.dsl.internal.WatchConnectionManager=DEBUG
+    logging.level.org.apache.camel.component.http.HttpComponent=WARN
 
     # Other
     # the Camel shutdown timeout must be shorter than the Kubernetes terminationGracePeriod

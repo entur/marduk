@@ -238,7 +238,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 })
                 // Fetch and parse action report
                 .to(logDebugShowAll())
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Calling action report url ${header.action_report_url}")
+                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Calling action report url ${header.action_report_url}")
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))

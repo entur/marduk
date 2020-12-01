@@ -30,7 +30,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
-import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
@@ -61,13 +60,9 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
         super.configure();
 
         from("entur-google-pubsub:ChouetteExportGtfsQueue").streamCaching()
-
-                .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette GTFS export for provider with id ${header." + PROVIDER_ID + "}")
-                .process(e -> {
-                    // Add correlation id only if missing
-                    e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString()));
-                    e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
-                })
+                .process(this::setCorrelationIdIfMissing)
+                .removeHeader(Constants.CHOUETTE_JOB_ID)
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette GTFS export")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.EXPORT).state(State.PENDING).build())
                 .to("direct:updateStatus")
 

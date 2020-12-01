@@ -40,13 +40,11 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
@@ -510,7 +508,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
                                                                        + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
                                                                        + "/" + e.getIn().getBody(String.class)))
-                .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
+                .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Chouette start import fileHandle=${body}")
 
                 .process(e -> {

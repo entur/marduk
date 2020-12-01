@@ -27,7 +27,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_CHOUETTE;
@@ -64,6 +63,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .routeId("netex-export-merge-chouette-with-flexible-lines-queue");
 
         from("direct:mergeChouetteExportWithFlexibleLinesExport").streamCaching()
+                .process(this::setCorrelationIdIfMissing)
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Merging chouette NeTEx export with FlexibleLines")
                 .validate(header(Constants.CHOUETTE_REFERENTIAL).isNotNull())
 
@@ -82,7 +82,6 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .end()
 
                 .setBody(constant(null))
-                .process(e -> e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString())))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
 
