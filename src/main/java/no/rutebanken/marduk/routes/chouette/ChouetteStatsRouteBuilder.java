@@ -66,10 +66,11 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
 
         // Quartz job must run on all nodes
         from("quartz://marduk/refreshLine?" + quartzTrigger)
-                .log(LoggingLevel.DEBUG, "Quartz triggers refresh of line stats.")
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.DEBUG, correlation() + "Quartz triggers refresh of line stats.")
                 .to("direct:chouetteRefreshStatsCache")
 
-                .log(LoggingLevel.DEBUG, "Quartz refresh of line stats done.")
+                .log(LoggingLevel.DEBUG, correlation() + "Quartz refresh of line stats done.")
                 .routeId("chouette-line-stats-cache-refresh-quartz");
 
 
@@ -79,7 +80,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .end()
                 .process(e -> e.getIn().setBody(cache.get(e.getIn().getHeader(PROVIDER_ID, String.class))))
                 .choice().when(body().isNull())
-                    .log(LoggingLevel.WARN, "No line statistics cached for provider: ${header." + PROVIDER_ID + "}")
+                .log(LoggingLevel.WARN, correlation() + "No line statistics cached for provider: ${header." + PROVIDER_ID + "}")
                 .end()
                 .routeId("chouette-line-stats-get-single");
 
@@ -106,25 +107,26 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
 
 
         from("direct:chouetteRefreshStatsCache")
+                .log(LoggingLevel.INFO, correlation() + "Refreshing line stats")
                 .to("direct:chouetteGetFreshStats")
                 .unmarshal().json(JsonLibrary.Jackson, JsonNode.class)
                 .process(e -> cache = e.getIn().getBody(JsonNode.class))
                 .setBody(constant(null))
-                .log(LoggingLevel.INFO,  "Refresh of line stats done")
+                .log(LoggingLevel.INFO, correlation() + "Refresh of line stats done")
                 .routeId("chouette-line-stats-cache-refresh");
     }
 
 
     private Map<Long, Object> mapReferentialToProviderId(Map<String, Object> statsPerReferential) {
         return getProviderRepository().getProviders().stream().filter(provider -> statsPerReferential.containsKey(provider.chouetteInfo.referential))
-                       .collect(Collectors.toMap(Provider::getId, provider -> statsPerReferential.get(provider.chouetteInfo.referential)));
+                .collect(Collectors.toMap(Provider::getId, provider -> statsPerReferential.get(provider.chouetteInfo.referential)));
     }
 
     private String getAllReferentialsAsParam() {
         List<String> referentials = getProviderRepository().getProviders().stream()
-                                            .filter(provider -> provider.chouetteInfo!=null && provider.chouetteInfo.referential!=null)
-                                            .map(provider -> provider.chouetteInfo.referential).collect(Collectors.toList());
-        return "&referentials=" +  String.join(",",referentials);
+                .filter(provider -> provider.chouetteInfo != null && provider.chouetteInfo.referential != null)
+                .map(provider -> provider.chouetteInfo.referential).collect(Collectors.toList());
+        return "&referentials=" + String.join(",", referentials);
     }
 
     private List<Provider> getMatchingProviders(Exchange e) {
