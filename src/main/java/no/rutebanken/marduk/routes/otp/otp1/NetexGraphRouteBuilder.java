@@ -37,7 +37,6 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
-import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
@@ -99,7 +98,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${exchangeProperty." + TIMESTAMP + "}"))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP graph building in remote directory ${exchangeProperty." + OTP_GRAPH_DIR + "}.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP graph building in remote directory ${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}.")
 
                 .to("direct:exportMergedNetex")
 
@@ -136,8 +135,8 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .process(e -> {
                             String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ;
                             String publishedGraphPath = Constants.NETEX_GRAPH_DIR
-                                                        + "/" + e.getProperty(TIMESTAMP, String.class)
-                                                        + '-' + GRAPH_OBJ;
+                                    + "/" + e.getProperty(TIMESTAMP, String.class)
+                                    + '-' + GRAPH_OBJ;
                             String publishedGraphVersion = Constants.NETEX_GRAPH_DIR + "/" + e.getProperty(TIMESTAMP, String.class) + "-report";
 
                             e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
@@ -148,7 +147,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                         }
                 )
                 .to("direct:copyBlobToAnotherBucket")
-                .log(LoggingLevel.INFO, correlation() +  "Done copying new OTP graph: ${header." + FILE_HANDLE + "}")
+                .log(LoggingLevel.INFO, correlation() + "Done copying new OTP graph: ${header." + FILE_HANDLE + "}")
 
                 .setProperty(GRAPH_PATH_PROPERTY, header(FILE_HANDLE))
 
@@ -223,14 +222,14 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
     }
 
     private InputStream createRedirectPage(String version) {
-            String url = "http://" + otpReportContainerName + "/" + version + "/index.html";
-            String html = "<html>\n" +
-                    "<head>\n" +
-                    "    <meta http-equiv=\"refresh\" content=\"0; url=" + url + "\" />\n" +
-                    "</head>\n" +
-                    "</html>";
+        String url = "http://" + otpReportContainerName + "/" + version + "/index.html";
+        String html = "<html>\n" +
+                "<head>\n" +
+                "    <meta http-equiv=\"refresh\" content=\"0; url=" + url + "\" />\n" +
+                "</head>\n" +
+                "</html>";
 
-            return IOUtils.toInputStream(html, StandardCharsets.UTF_8);
+        return IOUtils.toInputStream(html, StandardCharsets.UTF_8);
     }
 
 }

@@ -92,16 +92,18 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .to(logDebugShowAll())
                 .choice()
                 .when(simple("${header.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, correlation() + "GTFS export successful. Downloading export data")
-                .log(LoggingLevel.DEBUG, correlation() + "Downloading GTFS export data from ${header.data_url}")
+                .log(LoggingLevel.INFO, correlation() + "Chouette GTFS export completed successfully. Downloading GTFS zip file from Chouette")
+                .log(LoggingLevel.DEBUG, correlation() + "Downloading GTFS zip file from ${header.data_url}")
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .toD("${header.data_url}")
+                .log(LoggingLevel.INFO, correlation() + "Downloaded GTFS zip file from Chouette. Updating GTFS zip file with feed info")
                 .to("direct:addGtfsFeedInfo")
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
                 .to("direct:uploadBlob")
+                .log(LoggingLevel.INFO, correlation() + "GTFS zip file uploaded to blob sore. Triggering export of merged GTFS.")
                 .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsExportMergedQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.EXPORT).state(State.OK).build())
                 .when(simple("${header.action_report_result} == 'NOK'"))
@@ -115,7 +117,6 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .routeId("chouette-process-export-status");
 
         from("direct:addGtfsFeedInfo")
-                .log(LoggingLevel.INFO, correlation() + "Adding feed_info.txt to GTFS file")
                 .process(e -> e.getIn().setBody(GtfsFileUtils.addOrReplaceFeedInfo(e.getIn().getBody(InputStream.class))))
                 .routeId("chouette-process-export-gtfs-feedinfo");
     }

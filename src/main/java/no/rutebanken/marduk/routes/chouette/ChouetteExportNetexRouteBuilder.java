@@ -56,7 +56,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
         from("entur-google-pubsub:ChouetteExportNetexQueue").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette Netex export for provider with id ${header." + PROVIDER_ID + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette Netex export")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
 
