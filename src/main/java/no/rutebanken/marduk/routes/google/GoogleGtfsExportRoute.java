@@ -60,8 +60,9 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
         singletonFrom("entur-google-pubsub:GtfsGoogleExportQueue?ackMode=NONE").autoStartup("{{google.export.autoStartup:true}}")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
-                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(this::addOnCompletionForAggregatedExchange)
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} Google export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:exportGtfsGoogle")
                 .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGoogleQaExportQueue")
                 .routeId("gtfs-google-export-merged-route");
@@ -79,8 +80,9 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
         singletonFrom("entur-google-pubsub:GtfsGoogleQaExportQueue?ackMode=NONE").autoStartup("{{google.export.qa.autoStartup:true}}")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
-                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google QA export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(this::addOnCompletionForAggregatedExchange)
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.INFO, correlation() +"Aggregated ${exchangeProperty.CamelAggregatedSize} Google QA export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:exportQaGtfsGoogle")
                 .routeId("gtfs-google-qa-export-merged-route");
 

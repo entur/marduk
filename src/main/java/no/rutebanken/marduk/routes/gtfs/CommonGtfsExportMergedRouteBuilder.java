@@ -62,7 +62,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("direct:exportMergedGtfs")
-                .log(LoggingLevel.INFO, getClass().getName(), "Start export of merged GTFS file: ${header." + FILE_NAME + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Start export of merged GTFS file: ${header." + FILE_NAME + "}")
 
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action(e.getIn().getHeader(JOB_ACTION, String.class)).state(JobEvent.State.STARTED).newCorrelationId().build())
                 .to(ExchangePattern.InOnly, "direct:updateStatus")
@@ -76,7 +76,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 // Use wire tap to avoid replacing body
                 .wireTap("direct:reportExportMergedGtfsOK")
                 .end()
-                .log(LoggingLevel.INFO, getClass().getName(), "Completed export of merged GTFS file: ${header." + FILE_NAME + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Completed export of merged GTFS file: ${header." + FILE_NAME + "}")
                 .doFinally()
                 .to("direct:cleanUpLocalDirectory")
                 .end()
@@ -89,11 +89,11 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .routeId("gtfs-export-merged-report-ok");
 
         from("direct:fetchLatestGtfs")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Fetching gtfs files for all providers.")
+                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Fetching gtfs files for all providers.")
                 .process(e -> new File(e.getIn().getHeader(FILE_PARENT, String.class) + ORIGINAL_GTFS_FILES_SUB_FOLDER).mkdirs())
                 .process(e -> e.getIn().setBody(getAggregatedGtfsFiles(getProviderBlackList(e), getProviderWhiteList(e))))
                 .choice().when(simple("${body.empty}"))
-                .log(LoggingLevel.INFO, getClass().getName(), "No gtfs files configured for inclusion in export '${exchangeProperty.fileName}', terminating export.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "No gtfs files configured for inclusion in export '${exchangeProperty.fileName}', terminating export.")
                 .stop()
                 .end()
                 .split(body())
@@ -113,7 +113,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .routeId("gtfs-export-get-latest-for-provider");
 
         from("direct:mergeGtfs")
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Merging gtfs files for all providers.")
+                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Merging gtfs files for all providers.")
 
                 .process(exchange ->
                         {
@@ -144,7 +144,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + FILE_NAME + "}"))
                 .to("direct:uploadBlob")
-                .log(LoggingLevel.INFO, getClass().getName(), "Uploaded new merged GTFS file: ${header." + FILE_NAME + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploaded new merged GTFS file: ${header." + FILE_NAME + "}")
                 .routeId("gtfs-export-upload-merged");
 
 

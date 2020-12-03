@@ -72,7 +72,7 @@ public class FileUploadRouteBuilder extends BaseRouteBuilder {
         from("direct:uploadFileAndStartImport")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
                 .doTry()
-                .log(LoggingLevel.INFO, correlation() + "About to upload timetable file to blob store: ${header." + FILE_HANDLE + "}")
+                .log(LoggingLevel.INFO, correlation() + "Uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
                 .setBody(header(FILE_CONTENT_HEADER))
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, correlation() + "Finished uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")

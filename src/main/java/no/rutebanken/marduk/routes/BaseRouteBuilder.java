@@ -212,7 +212,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
             if (deleted) {
                 log.debug("Local directory {} cleanup done.", directory);
             } else {
-                log.info("The directory {} did not exist, ignoring deletion request", directory);
+                log.debug("The directory {} did not exist, ignoring deletion request", directory);
             }
         } catch (IOException e) {
             log.warn("Failed to delete directory {}", directory, e);
