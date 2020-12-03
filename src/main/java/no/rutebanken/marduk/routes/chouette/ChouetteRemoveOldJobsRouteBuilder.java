@@ -51,7 +51,8 @@ public class ChouetteRemoveOldJobsRouteBuilder extends BaseRouteBuilder {
         singletonFrom("quartz://marduk/chouetteRemoveOldJobsQuartz?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{chouette.remove.old.jobs.autoStartup:true}}")
                 .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
-                .log(LoggingLevel.INFO, "Quartz triggers deletion of old jobs in Chouette.")
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.INFO, correlation() + "Quartz triggers deletion of old jobs in Chouette.")
                 .to("direct:chouetteRemoveOldJobs")
                 .routeId("chouette-remove-old-jobs-quartz");
 

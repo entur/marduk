@@ -100,9 +100,10 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
         singletonFrom("entur-google-pubsub:GtfsGooglePublishQueue?ackMode=NONE")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
-                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(this::addOnCompletionForAggregatedExchange)
-                .log(LoggingLevel.INFO, getClass().getName(), "Start publish of GTFS file to Google")
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() +"Start publish of GTFS file to Google")
 
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName))
                 .to("direct:getBlob")
@@ -115,15 +116,16 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
         singletonFrom("entur-google-pubsub:GtfsGooglePublishQaQueue?ackMode=NONE")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
-                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish QA requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .process(this::addOnCompletionForAggregatedExchange)
-                .log(LoggingLevel.INFO, getClass().getName(), "Start publish of GTFS QA file to Google")
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.INFO, correlation() +"Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish QA requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() +"Start publish of GTFS QA file to Google")
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName))
                 .to("direct:getBlob")
                 .setHeader(Exchange.FILE_NAME, constant(googleQaExportFileName))
                 .to("sftp:" + googleQaSftpUsername + ":" + googleQAaSftpPassword + "@" + googleSftpHost + ":" + googleSftpPort)
 
-                .log(LoggingLevel.INFO, getClass().getName(), "Completed publish of GTFS QA file to Google")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() +"Completed publish of GTFS QA file to Google")
                 .routeId("google-publish-qa-route");
 
 
