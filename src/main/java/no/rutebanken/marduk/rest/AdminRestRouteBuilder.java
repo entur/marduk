@@ -309,6 +309,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
+                .process(this::setNewCorrelationId)
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, correlation() + "get time table and graph files")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
