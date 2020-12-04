@@ -131,6 +131,22 @@ resource "google_pubsub_subscription" "ChouetteExportNetexQueue" {
   }
 }
 
+resource "google_pubsub_topic" "ChouetteExportNetexBlocksQueue" {
+  name = "ChouetteExportNetexBlocksQueue"
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "ChouetteExportNetexBlocksQueue" {
+  name = "ChouetteExportNetexBlocksQueue"
+  topic = google_pubsub_topic.ChouetteExportNetexBlocksQueue.name
+  project = var.gcp_pubsub_project
+  labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
 resource "google_pubsub_topic" "ChouetteImportQueue" {
   name = "ChouetteImportQueue"
   project = var.gcp_pubsub_project
