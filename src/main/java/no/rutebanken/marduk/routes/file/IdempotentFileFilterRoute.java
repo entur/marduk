@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.file;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.FileNameAndDigest;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -74,7 +75,10 @@ public class IdempotentFileFilterRoute extends BaseRouteBuilder {
 
         from("direct:updateStatusForDuplicateFile")
                 .choice().when(not(simple("${header." + FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES + "}")))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.DUPLICATE).build()).to("direct:updateStatus").endChoice();
+                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_DUPLICATE_FILE))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.FAILED).build())
+                .to("direct:updateStatus")
+                .endChoice();
 
     }
 }

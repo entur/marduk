@@ -52,6 +52,12 @@ public class JobEvent {
     public static final String JOB_ERROR_FILE_NOT_A_ZIP_FILE = "ERROR_FILE_NOT_A_ZIP_FILE";
 
     /**
+     * The file has already been imported.
+     */
+    public static final String JOB_ERROR_DUPLICATE_FILE = "ERROR_FILE_DUPLICATE";
+
+
+    /**
      * The file is neither a NeTEx archive nor a GTFS archive.
      */
     public static final String JOB_ERROR_UNKNOWN_FILE_TYPE = "ERROR_FILE_UNKNOWN_FILE_TYPE";
