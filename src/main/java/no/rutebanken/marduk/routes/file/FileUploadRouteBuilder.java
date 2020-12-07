@@ -54,7 +54,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileUploadRouteBuilder.class);
 
     @Override
-    public void configure() throws Exception {
+    public void configure() {
         super.configure();
 
 
@@ -70,7 +70,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
 
 
         from("direct:uploadFileAndStartImport").streamCaching()
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build()).inOnly("direct:updateStatus")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
                 .doTry()
                 .log(LoggingLevel.INFO, correlation() + "Uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
                 .setBody(header(FILE_CONTENT_HEADER))
