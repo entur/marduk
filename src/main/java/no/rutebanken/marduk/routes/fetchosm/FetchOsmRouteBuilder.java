@@ -153,7 +153,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Quartz triggers fetch of OSM map over Norway.")
                 .to("direct:considerToFetchOsmMapOverNorway")
-                .log(LoggingLevel.INFO, correlation() + "Quartz processing done.")
+                .log(LoggingLevel.INFO, correlation() + "Quartz processing done for fetching OSM map over Norway.")
                 .routeId("osm-trigger-fetching");
     }
 
