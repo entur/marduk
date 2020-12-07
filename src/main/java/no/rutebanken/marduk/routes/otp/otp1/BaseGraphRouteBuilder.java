@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.otp.otp1;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +30,6 @@ import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BASE_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
@@ -53,20 +53,21 @@ public class BaseGraphRouteBuilder extends BaseRouteBuilder {
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
         singletonFrom("entur-google-pubsub:OtpBaseGraphBuildQueue?ackMode=NONE").autoStartup("{{otp.graph.build.autoStartup:true}}")
-                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
-                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:remoteBuildOtpBaseGraph")
                 .routeId("otp-base-graph-build");
 
         from("direct:remoteBuildOtpBaseGraph")
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtpBaseGraphStartedEventsInNewTransaction")
-                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
+                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${exchangeProperty." + TIMESTAMP + "}"))
 
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP base graph building in directory ${property." + OTP_GRAPH_DIR + "}.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP base graph building in directory ${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}.")
                 .to("direct:remoteBuildBaseGraphAndSendStatus")
-                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP base graph building route.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP base graph building route.")
                 .routeId("otp-remote-base-graph-build");
 
         from("direct:remoteBuildBaseGraphAndSendStatus")
@@ -96,7 +97,7 @@ public class BaseGraphRouteBuilder extends BaseRouteBuilder {
 
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP base graph, triggering full OTP graph build")
-                .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphBuildQueue")
 
                 .to("direct:remoteCleanUp")
 

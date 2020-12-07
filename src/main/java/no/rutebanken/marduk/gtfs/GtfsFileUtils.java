@@ -17,7 +17,7 @@
 package no.rutebanken.marduk.gtfs;
 
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.routes.file.TempFileUtils;
+import no.rutebanken.marduk.routes.file.MardukFileUtils;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -58,16 +58,24 @@ public class GtfsFileUtils {
      * @param gtfsExport      the type of GTFS export.
      * @return a delete-on-close input stream referring to the resulting merged GTFS archive.
      */
-    public static InputStream mergeGtfsFilesInDirectory(String sourceDirectory, GtfsExport gtfsExport,  boolean includeShapes) {
+    public static InputStream mergeGtfsFilesInDirectory(File sourceDirectory, GtfsExport gtfsExport, boolean includeShapes) {
 
-        Collection<File> zipFiles = FileUtils.listFiles(new File(sourceDirectory), new String[]{"zip"}, false);
+        if (sourceDirectory == null || !sourceDirectory.isDirectory()) {
+            throw new MardukException(sourceDirectory + " is not a directory");
+        }
+
+        Collection<File> zipFiles = FileUtils.listFiles(sourceDirectory, new String[]{"zip"}, false);
+
+        if (zipFiles.isEmpty()) {
+            throw new MardukException(sourceDirectory + " does not contain any GTFS archive");
+        }
 
         List<File> sortedZipFiles = zipFiles.stream()
                 .sorted(Comparator.comparing(File::getName))
                 .collect(Collectors.toList());
 
         try {
-            return TempFileUtils.createDeleteOnCloseInputStream(mergeGtfsFiles(sortedZipFiles, gtfsExport, includeShapes));
+            return MardukFileUtils.createDeleteOnCloseInputStream(mergeGtfsFiles(sortedZipFiles, gtfsExport, includeShapes));
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -113,6 +121,6 @@ public class GtfsFileUtils {
         File tmpZip = File.createTempFile("marduk-add-or-replace-feed-info-", ".zip");
         Files.copy(source, tmpZip.toPath(), StandardCopyOption.REPLACE_EXISTING);
         addOrReplaceFeedInfo(tmpZip);
-        return TempFileUtils.createDeleteOnCloseInputStream(tmpZip);
+        return MardukFileUtils.createDeleteOnCloseInputStream(tmpZip);
     }
 }

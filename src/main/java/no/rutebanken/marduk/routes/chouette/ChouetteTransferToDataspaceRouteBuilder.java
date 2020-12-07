@@ -26,8 +26,6 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
-
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.JSON_PART;
@@ -48,30 +46,29 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
         super.configure();
 
         from("entur-google-pubsub:ChouetteTransferExportQueue").streamCaching()
-
-        		.log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette transfer for provider with id ${header." + PROVIDER_ID + "}")
-                .process(e -> { 
-                	// Add correlation id only if missing
-                	e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID,UUID.randomUUID().toString()));
+				.process(this::setCorrelationIdIfMissing)
+				.removeHeader(Constants.CHOUETTE_JOB_ID)
+        		.log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette transfer")
+                .process(e -> {
                 	e.getIn().setHeader(Constants.FILE_HANDLE,"transfer.zip");
                 	Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                 	Provider destProvider = getProviderRepository().getProvider(provider.chouetteInfo.migrateDataToProvider);
 					e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
                 	e.getIn().setHeader(JSON_PART, Parameters.getTransferExportParameters(provider,destProvider));
-	                e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
+
                 })
 				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.DATASPACE_TRANSFER).state(State.PENDING).build())
 		        .to("direct:updateStatus")
-                .log(LoggingLevel.INFO,correlation()+"Creating multipart request")
+				.log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
                 .process(e -> toGenericChouetteMultipart(e))
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/transfer")
                 .process(e -> {
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location", String.class).replaceFirst("http", "http4"));
+                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location", String.class));
 	                e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,"direct:processTransferExportResult");
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, JobEvent.TimetableAction.DATASPACE_TRANSFER.name());
                     })
-                .log(LoggingLevel.INFO,correlation()+"Sending transfer export to poll job status")
+                .log(LoggingLevel.INFO,correlation() + "Sending transfer export to poll job status")
                 .to(logDebugShowAll())
 		        .removeHeader("loopCounter")
 				.setBody(constant(""))
@@ -82,7 +79,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
  		        .to(logDebugShowAll())
  		        .setBody(constant(""))
  		        .choice()
-// 				.when(PredicateBuilder.and(constant("false").isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
+// 				.when(PredicateBuilder.and(simple("false", Boolean.class).isEqualTo(header(Constants.ENABLE_VALIDATION)),simple("${header.action_report_result} == 'OK'")))
 // 		            .to("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation")
 // 		            .process(e -> Status.addStatus(e, TimetableAction.DATASPACE_TRANSFER, State.OK))
  		        .when(simple("${header.action_report_result} == 'OK'"))
@@ -93,30 +90,30 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 	                	Provider currentProvider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
 	                	e.getIn().setHeader(Constants.ORIGINAL_PROVIDER_ID,e.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID,e.getIn().getHeader(Constants.PROVIDER_ID)));
 	                	e.getIn().setHeader(Constants.PROVIDER_ID, currentProvider.chouetteInfo.migrateDataToProvider);
-	                }) 
+	                })
  		            .to("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation")
  		        .when(simple("${header.action_report_result} == 'NOK'"))
- 		        	.log(LoggingLevel.INFO,correlation()+"Transfer failed")
+ 		        	.log(LoggingLevel.INFO,correlation() + "Transfer failed")
 				 	.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.DATASPACE_TRANSFER).state(State.FAILED).build())
  	 		        .to("direct:updateStatus")
  		        .otherwise()
- 		            .log(LoggingLevel.ERROR,correlation()+"Something went wrong on transfer")
+ 		            .log(LoggingLevel.ERROR,correlation() + "Something went wrong on transfer")
 				 	.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.DATASPACE_TRANSFER).state(State.FAILED).build())
  	 		        .to("direct:updateStatus")
  		        .end()
  		        .routeId("chouette-process-transfer-status");
- 	
+
  		 // Check that no other import jobs in status SCHEDULED exists for this referential. If so, do not trigger export
  		from("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation")
  			.setProperty("job_status_url",simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?timetableAction=importer&status=SCHEDULED&status=STARTED"))
  			.toD("${exchangeProperty.job_status_url}")
  			.choice()
  			.when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
- 				.log(LoggingLevel.INFO,correlation()+"Transfer ok, skipping validation as ther are more import jobs active")
+ 				.log(LoggingLevel.INFO,correlation() + "Transfer ok, skipping validation as ther are more import jobs active")
              .otherwise()
- 				.log(LoggingLevel.INFO,correlation()+"Transfer ok, triggering validation.")
+ 				.log(LoggingLevel.INFO,correlation() + "Transfer ok, triggering validation.")
  		        .setBody(constant(""))
- 		        
+
  		        .to(logDebugShowAll())
 				.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
 				.to("entur-google-pubsub:ChouetteValidationQueue")

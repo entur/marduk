@@ -31,6 +31,8 @@ import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes= TestApp.class)
-public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 
     @TestConfiguration
@@ -83,51 +85,55 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
-    @EndpointInject(uri = "mock:chouetteImportQueue")
+    @EndpointInject("mock:chouetteImportQueue")
     protected MockEndpoint importQueue;
 
-    @EndpointInject(uri = "mock:chouetteExportNetexQueue")
+    @EndpointInject("mock:chouetteExportNetexQueue")
     protected MockEndpoint exportQueue;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/import")
+    @EndpointInject("mock:processFileQueue")
+    protected MockEndpoint processFileQueue;
+
+    @EndpointInject("mock:updateStatus")
+    protected MockEndpoint updateStatus;
+
+    @Produce("http:localhost:28080/services/timetable_admin/2/import")
     protected ProducerTemplate importTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/export")
+    @Produce("http:localhost:28080/services/timetable_admin/2/export")
     protected ProducerTemplate exportTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files")
+    @Produce("http:localhost:28080/services/timetable_admin/2/files")
     protected ProducerTemplate listFilesTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files/netex.zip")
+    @Produce("http:localhost:28080/services/timetable_admin/2/files/netex.zip")
     protected ProducerTemplate getFileTemplate;
 
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/2/files/unknown-file.zip")
+    @Produce("http:localhost:28080/services/timetable_admin/2/files/unknown-file.zip")
     protected ProducerTemplate getUnknownFileTemplate;
 
-
-    @Produce(uri = "http4:localhost:28080/services/timetable_admin/export/files")
+    @Produce("http:localhost:28080/services/timetable_admin/export/files")
     protected ProducerTemplate listExportFilesTemplate;
 
+    @Produce("http:localhost:28080/services/timetable_admin/download_netex_blocks/RUT")
+    protected ProducerTemplate downloadNetexBlocksTemplate;
+
+    @Produce("http:localhost:28080/services/timetable_admin/upload/RUT")
+    protected ProducerTemplate uploadFileTemplate;
 
     @Value("#{'${timetable.export.blob.prefixes:outbound/gtfs/,outbound/netex/}'.split(',')}")
     private List<String> exportFileStaticPrefixes;
 
 
     @BeforeEach
-    public void setUpProvider() {
+    void setUpProvider() {
         when(providerRepository.getReferential(2L)).thenReturn("rut");
     }
 
     @Test
-    public void runImport() throws Exception {
+    void runImport() throws Exception {
 
-        camelContext.getRouteDefinition("admin-chouette-import").adviceWith(camelContext, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-                interceptSendToEndpoint("entur-google-pubsub:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue");
-            }
-        });
-
+        AdviceWithRouteBuilder.adviceWith(context, "admin-chouette-import", a -> a.interceptSendToEndpoint("entur-google-pubsub:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue"));
 
         // we must manually start when we are done with all the advice with
         camelContext.start();
@@ -161,15 +167,9 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     }
 
     @Test
-    public void runExport() throws Exception {
+    void runExport() throws Exception {
 
-        camelContext.getRouteDefinition("admin-chouette-export").adviceWith(camelContext, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-                interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportNetexQueue");
-
-            }
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "admin-chouette-export", a -> a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportNetexQueue"));
 
         // we must manually start when we are done with all the advice with
         camelContext.start();
@@ -191,7 +191,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
     }
 
     @Test
-    public void getBlobStoreFiles() throws Exception {
+    void getBlobStoreFiles() throws Exception {
 
         // Preparations
         String testFileName = "ruter_fake_data.zip";
@@ -220,7 +220,7 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
 
     @Test
-    public void getBlobStoreFile() throws Exception {
+    void getBlobStoreFile() throws Exception {
         // Preparations
         String filename = "netex.zip";
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
@@ -239,21 +239,19 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
 
 
     @Test
-    public void getBlobStoreFile_unknownFile() throws Exception {
+    void getBlobStoreFile_unknownFile() {
 
         camelContext.start();
 
         Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "GET");
 
-        assertThrows(CamelExecutionException.class, () -> {
-            getUnknownFileTemplate.requestBodyAndHeaders(null, headers);
-        });
+        assertThrows(CamelExecutionException.class, () -> getUnknownFileTemplate.requestBodyAndHeaders(null, headers));
     }
 
 
     @Test
-    public void getBlobStoreExportFiles() throws Exception {
+    void getBlobStoreExportFiles() throws Exception {
         String testFileName = "netex.zip";
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
@@ -274,6 +272,50 @@ public class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuild
         BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
         assertEquals(exportFileStaticPrefixes.size(), rsp.getFiles().size());
         exportFileStaticPrefixes.forEach(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName())));
+    }
+
+    @Test
+    void uploadNetexDataset() throws Exception {
+
+        AdviceWithRouteBuilder.adviceWith(context, "file-upload-and-start-import", a -> {
+                    a.interceptSendToEndpoint("direct:updateStatus")
+                            .skipSendToOriginalEndpoint()
+                            .to("mock:updateStatus");
+                    a.interceptSendToEndpoint("entur-google-pubsub:ProcessFileQueue")
+                            .skipSendToOriginalEndpoint()
+                            .to("mock:processFileQueue");
+                }
+        );
+
+        updateStatus.expectedMessageCount(1);
+        processFileQueue.expectedMessageCount(1);
+
+        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody("netex.zip", getTestNetexArchiveAsStream()).build();
+
+        camelContext.start();
+        uploadFileTemplate.requestBody(httpEntity, String.class);
+        updateStatus.assertIsSatisfied();
+        processFileQueue.assertIsSatisfied();
+    }
+
+    @Test
+    void downloadNetexBlocks() throws Exception {
+
+        AdviceWithRouteBuilder.adviceWith(context, "admin-chouette-netex-blocks-download", a ->
+                a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexQueue")
+                        .skipSendToOriginalEndpoint()
+                        .to("mock:chouetteExportNetexQueue"));
+
+        // Preparations
+        String filename = "rb_rut-aggregated-netex.zip";
+        String fileStorePath = Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT;
+        InputStream testFile = getTestNetexArchiveAsStream();
+        //populate fake blob repo
+        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
+
+        camelContext.start();
+        InputStream response = (InputStream) downloadNetexBlocksTemplate.requestBodyAndHeaders(null, null);
+        assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
     }
 
 

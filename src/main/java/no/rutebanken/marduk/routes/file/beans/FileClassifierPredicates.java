@@ -20,6 +20,7 @@ import no.rutebanken.marduk.exceptions.FileValidationException;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentEncodingException;
 import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentParsingException;
+import no.rutebanken.marduk.routes.file.MardukFileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,14 +45,16 @@ public class FileClassifierPredicates {
 
     public static final QName NETEX_PUBLICATION_DELIVERY_QNAME = new QName("http://www.netex.org.uk/netex", "PublicationDelivery");
 
-    private static final XMLInputFactory xmlInputFactory =   StaxUtils.createDefensiveInputFactory();
+    private static final XMLInputFactory xmlInputFactory = StaxUtils.createDefensiveInputFactory();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileClassifierPredicates.class);
+
+    private FileClassifierPredicates() {
+    }
 
     public static Predicate<InputStream> firstElementQNameMatchesNetex() {
         return inputStream -> firstElementQNameMatches(NETEX_PUBLICATION_DELIVERY_QNAME).test(inputStream);
     }
-
 
     public static Predicate<InputStream> firstElementQNameMatches(QName qName) {
         return inputStream -> getFirstElementQName(inputStream)
@@ -74,14 +77,14 @@ public class FileClassifierPredicates {
             }
         } catch (XMLStreamException e) {
             Throwable rootCause = ExceptionUtils.getRootCause(e);
-            if(rootCause instanceof CharConversionException) {
+            if (rootCause instanceof CharConversionException) {
                 throw new MardukZipFileEntryContentEncodingException(e);
             } else {
                 throw new MardukZipFileEntryContentParsingException(e);
             }
         } finally {
             try {
-                if(streamReader != null) {
+                if (streamReader != null) {
                     streamReader.close();
                 }
             } catch (XMLStreamException e) {
@@ -93,21 +96,25 @@ public class FileClassifierPredicates {
 
     /**
      * Check that files in the zip archive verify the predicate.
-     * @param inputStream the zip file.
-     * @param predicate the predicate to evaluate.
+     *
+     * @param inputStream     the zip file.
+     * @param predicate       the predicate to evaluate.
      * @param fileNamePattern the pattern for file names to be tested. Other files are ignored.
      * @return true if all tested files verify the predicate.
      */
     public static boolean validateZipContent(InputStream inputStream, Predicate<InputStream> predicate, Pattern fileNamePattern) {
         try (ZipInputStream stream = new ZipInputStream(inputStream)) {
             ZipEntry entry;
-            while ( ( entry = stream.getNextEntry()) != null) {
-                if (fileNamePattern.matcher(entry.getName()).matches()) {
+            while ((entry = stream.getNextEntry()) != null) {
+                String entryName = entry.getName();
+                if (fileNamePattern.matcher(entryName).matches()) {
                     if (testPredicate(predicate, stream, entry)) {
                         return false;
                     }
                 } else {
-                    LOGGER.info("Skipped file with name {}", entry.getName());
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info("Skipped zip entry with name {}", MardukFileUtils.sanitizeFileName(entryName));
+                    }
                 }
             }
             return true;
@@ -117,21 +124,21 @@ public class FileClassifierPredicates {
     }
 
     private static boolean testPredicate(Predicate<InputStream> predicate, ZipInputStream stream, ZipEntry entry) {
+        String entryName = entry.getName();
         try {
             if (!predicate.test(StreamUtils.nonClosing(stream))) {
-                String s = String.format("Entry %s with size %d is invalid.", entry.getName(), entry.getSize());
-                LOGGER.info(s);
+                if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("Zip entry {} with size {} is invalid.", MardukFileUtils.sanitizeFileName(entryName), entry.getSize());
+                }
                 return true;
             }
         } catch (MardukZipFileEntryContentEncodingException e) {
-            throw new MardukZipFileEntryContentEncodingException("Exception while trying to classify file " + entry.getName() + " in zip file", e);
+            throw new MardukZipFileEntryContentEncodingException("Encoding exception while trying to classify zip file entry " + entryName, e);
         } catch (MardukZipFileEntryContentParsingException e) {
-            throw new MardukZipFileEntryContentParsingException("Exception while trying to classify file " + entry.getName() + " in zip file", e);
+            throw new MardukZipFileEntryContentParsingException("Parsing exception while trying to classify zip file entry " + entryName, e);
         } catch (Exception e) {
-            throw new MardukException("Exception while trying to classify file " + entry.getName() + " in zip file", e);
+            throw new MardukException("Exception while trying to classify zip file entry " + entryName, e);
         }
         return false;
     }
 }
-
-

@@ -21,6 +21,7 @@ import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentEncodingExceptio
 import no.rutebanken.marduk.exceptions.MardukZipFileEntryContentParsingException;
 import no.rutebanken.marduk.exceptions.MardukZipFileEntryNameEncodingException;
 import no.rutebanken.marduk.routes.file.FileType;
+import no.rutebanken.marduk.routes.file.MardukFileUtils;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.camel.Exchange;
 import org.slf4j.Logger;
@@ -29,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -86,7 +86,7 @@ public class FileTypeClassifierBean {
             if (!ZipFileUtils.isZipFile(data)) {
                 return NOT_A_ZIP_FILE;
             }
-            if (!isValidFileName(relativePath)) {
+            if (!MardukFileUtils.isValidFileName(relativePath)) {
                 return INVALID_FILE_NAME;
             }
 
@@ -115,10 +115,6 @@ public class FileTypeClassifierBean {
         } catch (IOException e) {
             throw new MardukException("Exception while classifying file" + relativePath, e);
         }
-    }
-
-    private static boolean isValidFileName(String fileName) {
-        return StandardCharsets.ISO_8859_1.newEncoder().canEncode(fileName);
     }
 
     private static boolean containsDirectory(Set<ZipEntry> zipEntriesInZip) {

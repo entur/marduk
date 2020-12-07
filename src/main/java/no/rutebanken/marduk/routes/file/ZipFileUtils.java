@@ -51,7 +51,7 @@ public class ZipFileUtils {
      * @return
      */
     public static boolean isZipFile(byte[] data) {
-        if (data.length < 4) {
+        if (data == null || data.length < 4) {
             return false;
         }
         try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(data))) {
@@ -71,7 +71,7 @@ public class ZipFileUtils {
      * @throws MardukZipFileEntryNameEncodingException if an entry is not UTF8-encoded.
      */
     public static Set<ZipEntry> listFilesInZip(byte[] data) throws IOException {
-        File tmpFile = TempFileUtils.createTempFile(data, "marduk-list-files-in-zip-", ".zip");
+        File tmpFile = MardukFileUtils.createTempFile(data, "marduk-list-files-in-zip-", ".zip");
         Set<ZipEntry> fileList = listFilesInZip(tmpFile);
         Files.delete(tmpFile.toPath());
         return fileList;

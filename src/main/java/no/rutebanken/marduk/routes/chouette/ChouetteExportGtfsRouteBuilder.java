@@ -23,13 +23,13 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEvent.State;
 import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
-import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
@@ -60,19 +60,15 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
         super.configure();
 
         from("entur-google-pubsub:ChouetteExportGtfsQueue").streamCaching()
-
-                .log(LoggingLevel.INFO, getClass().getName(), "Starting Chouette GTFS export for provider with id ${header." + PROVIDER_ID + "}")
-                .process(e -> {
-                    // Add correlation id only if missing
-                    e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString()));
-                    e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
-                })
+                .process(this::setCorrelationIdIfMissing)
+                .removeHeader(Constants.CHOUETTE_JOB_ID)
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette GTFS export")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.EXPORT).state(State.PENDING).build())
                 .to("direct:updateStatus")
 
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(e -> e.getIn().setHeader(JSON_PART, Parameters.getGtfsExportParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class))))) //Using header to addToExchange json data
-                .log(LoggingLevel.INFO, correlation() + "Creating multipart request")
+                .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
                 .to(logDebugShowAll())
                 .process(e -> toGenericChouetteMultipart(e))
                 .to(logDebugShowAll())
@@ -81,7 +77,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/gtfs")
                 .to(logDebugShowAll())
                 .process(e -> {
-                    e.getIn().setHeader(CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location", String.class).replaceFirst("http", "http4"));
+                    e.getIn().setHeader(CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location", String.class));
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processExportResult"))
@@ -96,17 +92,19 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .to(logDebugShowAll())
                 .choice()
                 .when(simple("${header.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, correlation() + "Export ended with status '${header.action_report_result}'")
-                .log(LoggingLevel.INFO, correlation() + "Calling url ${header.data_url}")
+                .log(LoggingLevel.INFO, correlation() + "Chouette GTFS export completed successfully. Downloading GTFS zip file from Chouette")
+                .log(LoggingLevel.DEBUG, correlation() + "Downloading GTFS zip file from ${header.data_url}")
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
                 .setBody(simple(""))
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .toD("${header.data_url}")
+                .log(LoggingLevel.INFO, correlation() + "Downloaded GTFS zip file from Chouette. Updating GTFS zip file with feed info")
                 .to("direct:addGtfsFeedInfo")
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
                 .to("direct:uploadBlob")
-                .inOnly("entur-google-pubsub:GtfsExportMergedQueue")
+                .log(LoggingLevel.INFO, correlation() + "GTFS zip file uploaded to blob sore. Triggering export of merged GTFS.")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsExportMergedQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.EXPORT).state(State.OK).build())
                 .when(simple("${header.action_report_result} == 'NOK'"))
                 .log(LoggingLevel.WARN, correlation() + "Export failed")
@@ -119,7 +117,6 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .routeId("chouette-process-export-status");
 
         from("direct:addGtfsFeedInfo")
-                .log(LoggingLevel.INFO, correlation() + "Adding feed_info.txt to GTFS file")
                 .process(e -> e.getIn().setBody(GtfsFileUtils.addOrReplaceFeedInfo(e.getIn().getBody(InputStream.class))))
                 .routeId("chouette-process-export-gtfs-feedinfo");
     }

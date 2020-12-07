@@ -6,3 +6,10 @@ service:
   http:
     externalPort: 8080
     internalPort: 8080
+
+resources:
+  cpuLimit: 3500m
+  memLimit: 8000Mi
+  cpuRequest: 3500m
+  memRequest: 7000Mi
+  xmx: 5g

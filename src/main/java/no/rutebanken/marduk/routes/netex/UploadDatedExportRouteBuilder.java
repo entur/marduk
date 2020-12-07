@@ -39,7 +39,7 @@ public class UploadDatedExportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:uploadDatedExport").streamCaching()
                 .setProperty("datedVersionFileName", simple("${header." + CHOUETTE_REFERENTIAL + "}-${date:now:yyyyMMddHHmmssSSS}.zip"))
-                .log(LoggingLevel.INFO, getClass().getName(), "Start uploading dated version of ${exchangeProperty.datedVersionFileName} to marduk-exchange")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Start uploading dated version of ${exchangeProperty.datedVersionFileName} to marduk-exchange")
                 .setHeader(FILE_HANDLE, simple(blobStorePath + "/${exchangeProperty.datedVersionFileName}"))
                 .to("direct:uploadExternalBlob")
                 .routeId("upload-dated-export");

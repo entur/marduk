@@ -17,8 +17,8 @@
 package no.rutebanken.marduk.config;
 
 import org.apache.camel.CamelContext;
-import org.apache.camel.component.http4.HttpClientConfigurer;
-import org.apache.camel.component.http4.HttpComponent;
+import org.apache.camel.component.http.HttpClientConfigurer;
+import org.apache.camel.component.http.HttpComponent;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicHeader;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +42,7 @@ public class HttpClientConfig {
 
     @Bean
     public HttpClientConfigurer httpClientConfigurer(@Autowired CamelContext camelContext) {
-        HttpComponent httpComponent = camelContext.getComponent("http4", HttpComponent.class);
+        HttpComponent httpComponent = camelContext.getComponent("http", HttpComponent.class);
         HttpClientConfigurer httpClientConfigurer = new HttpClientConfigurer() {
             @Override
             public void configureHttpClient(HttpClientBuilder httpClientBuilder) {

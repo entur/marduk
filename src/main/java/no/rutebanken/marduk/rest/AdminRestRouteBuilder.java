@@ -23,14 +23,13 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import no.rutebanken.marduk.security.AuthorizationClaim;
 import no.rutebanken.marduk.security.AuthorizationService;
 import org.apache.camel.Body;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
-import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
@@ -41,13 +40,11 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
@@ -57,6 +54,7 @@ import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
  */
 @Component
 public class AdminRestRouteBuilder extends BaseRouteBuilder {
+
 
 
     private static final String JSON = "application/json";
@@ -115,7 +113,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route().routeId("admin-application-clean-unique-filename-and-digest-idempotent-repos")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .to("direct:authorizeAdminRequest")
                 .to("direct:cleanIdempotentFileStore")
                 .setBody(constant(null))
                 .endRest()
@@ -126,11 +124,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation level1 for all providers")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("direct:chouetteValidateLevel1ForAllProviders")
+                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel1ForAllProviders")
                 .setBody(constant(null))
                 .routeId("admin-chouette-validate-level1-all-providers")
                 .endRest()
@@ -141,11 +138,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation level2 for all providers")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("direct:chouetteValidateLevel2ForAllProviders")
+                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel2ForAllProviders")
                 .setBody(constant(null))
                 .routeId("admin-chouette-validate-level2-all-providers")
                 .endRest()
@@ -172,7 +168,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.DEBUG, correlation() + "Get chouette active jobs all providers")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .process(e -> e.getIn().setHeader("status", e.getIn().getHeader("status") != null ? e.getIn().getHeader("status") : Arrays.asList("STARTED", "SCHEDULED")))
@@ -185,7 +181,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("All jobs canceled").endResponseMessage()
                 .responseMessage().code(500).message("Could not cancel all jobs").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Cancel all chouette jobs for all providers")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:chouetteCancelAllJobsForAllProviders")
@@ -212,7 +208,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Completed jobs removed").endResponseMessage()
                 .responseMessage().code(500).message("Could not remove complete jobs").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Removing old chouette jobs for all providers")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:chouetteRemoveOldJobs")
@@ -236,7 +232,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .responseMessage().code(500).message("Internal error - check filter").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean all dataspaces")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:chouetteCleanAllReferentials")
@@ -251,7 +247,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .responseMessage().code(500).message("Internal error - check filter").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean all stop places")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:chouetteCleanStopPlaces")
@@ -279,13 +275,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
-                .log(LoggingLevel.INFO, correlation() + "get stats for multiple providers")
+                .to("direct:authorizeEditorRequest")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .choice()
                 .when(simple("${header.providerIds}"))
                 .process(e -> e.getIn().setHeader(PROVIDER_IDS, e.getIn().getHeader("providerIds", "", String.class).split(",")))
                 .end()
+                .log(LoggingLevel.INFO, correlation() + "Get lines statistics for multiple providers (providers whitelist: [${header." + PROVIDER_IDS + "}])")
                 .to("direct:chouetteGetStats")
                 .routeId("admin-chouette-stats-multiple-providers")
                 .endRest()
@@ -298,7 +294,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, correlation() + "refresh stats cache")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:chouetteRefreshStatsCache")
@@ -313,8 +309,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
-                .log(LoggingLevel.INFO, correlation() + "get time table and graph files")
+                .process(this::setNewCorrelationId)
+                .to("direct:authorizeEditorRequest")
+                .log(LoggingLevel.INFO, correlation() + "List time table and graph files")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:listTimetableExportAndGraphBlobs")
                 .routeId("admin-chouette-timetable-files-get")
@@ -328,10 +325,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS extended export")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:GtfsExportMergedQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsExportMergedQueue")
                 .routeId("admin-timetable-gtfs-extended-export")
                 .endRest()
 
@@ -343,10 +340,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS basic export")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:GtfsBasicExportMergedQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsBasicExportMergedQueue")
                 .routeId("admin-timetable-gtfs-basic-export")
                 .endRest()
 
@@ -357,10 +354,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS export to Google")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:GtfsGoogleExportQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGoogleExportQueue")
                 .routeId("admin-timetable-google-export")
                 .endRest()
 
@@ -371,10 +368,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS QA export to Google")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:GtfsGoogleQaExportQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGoogleQaExportQueue")
                 .routeId("admin-timetable-google-qa-export")
                 .endRest()
 
@@ -385,10 +382,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS to Google")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:GtfsGooglePublishQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQueue")
                 .routeId("admin-timetable-google-publish")
                 .endRest()
 
@@ -399,10 +396,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS QA export to Google")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:GtfsGooglePublishQaQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQaQueue")
                 .routeId("admin-timetable-google-qa-publish")
                 .endRest()
 
@@ -414,10 +411,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
-                .to("direct:authorizeRequest")
+                .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered Netex export of merged file for Norway")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:NetexExportMergedQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:NetexExportMergedQueue")
                 .routeId("admin-timetable-netex-merged-export")
                 .endRest()
 
@@ -427,11 +424,11 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "Triggered build of OTP base graph with map data")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .setBody(simple(""))
-                .inOnly("entur-google-pubsub:OtpBaseGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpBaseGraphBuildQueue")
                 .routeId("admin-build-base-graph")
                 .endRest()
 
@@ -441,11 +438,11 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "OTP build graph from NeTEx")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .setBody(simple(""))
-                .inOnly("entur-google-pubsub:OtpGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphBuildQueue")
                 .routeId("admin-build-graph-netex")
                 .endRest()
 
@@ -459,15 +456,38 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Internal server error").endResponseMessage()
                 .route()
                 .streamCaching()
+                .process(this::setNewCorrelationId)
                 .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
                 .log(LoggingLevel.INFO, correlation() + "Received file from provider ${header.codespace} through the HTTP endpoint")
-                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null)
+                .to("direct:validateReferential")
                 .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
-                .to("direct:authorizeRequest")
+                .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, correlation() + "Authorization OK for HTTP endpoint, uploading files and starting import pipeline")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:uploadFilesAndStartImport")
                 .routeId("admin-upload-file")
+                .endRest()
+
+                .get("/download_netex_blocks/{codespace}")
+                .description("Download NeTEx dataset with blocks")
+                .param().name("codespace").type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
+                .consumes(PLAIN)
+                .produces(X_OCTET_STREAM)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
+                .route()
+                .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
+                .log(LoggingLevel.INFO, correlation() + "Received Blocks download request for provider ${header." + CHOUETTE_REFERENTIAL + "} through the HTTP endpoint")
+                .to("direct:validateReferential")
+                .to("direct:authorizeBlocksDownloadRequest")
+                .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
+                    + "rb_" + e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toLowerCase()
+                    + "-aggregated-netex.zip"))
+                .log(LoggingLevel.INFO, correlation() + "Downloading NeTEx dataset with blocks: ${header." + FILE_HANDLE  + "}")
+                .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
+                .to("direct:getBlob")
+                .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
+                .routeId("admin-chouette-netex-blocks-download")
                 .endRest();
 
         rest("/timetable_admin/{providerId}")
@@ -483,14 +503,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .route()
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .to("direct:authorizeEditorRequest")
+                .to("direct:validateProvider")
                 .split(method(ImportFilesSplitter.class, "splitFiles"))
 
                 .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
                                                                        + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
                                                                        + "/" + e.getIn().getBody(String.class)))
-                .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
+                .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Chouette start import fileHandle=${body}")
 
                 .process(e -> {
@@ -499,7 +519,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 })
                 .setBody(constant(null))
 
-                .inOnly("entur-google-pubsub:ProcessFileQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ProcessFileQueue")
                 .routeId("admin-chouette-import")
                 .endRest()
 
@@ -512,10 +532,11 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
+                .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
-                .log(LoggingLevel.INFO, correlation() + "blob store get files")
+                .to("direct:authorizeEditorRequest")
+                .to("direct:validateProvider")
+                .log(LoggingLevel.INFO, correlation() + "List files in blob store")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:listBlobsFlat")
                 .routeId("admin-chouette-import-list")
@@ -531,11 +552,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
                 .streamCaching()
+                .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .to("direct:authorizeEditorRequest")
+                .to("direct:validateProvider")
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))))
-                .log(LoggingLevel.INFO, correlation() + "upload files and start import pipeline")
+                .log(LoggingLevel.INFO, correlation() + "Upload files and start import pipeline")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:uploadFilesAndStartImport")
                 .routeId("admin-chouette-upload-file")
@@ -551,8 +573,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid fileName").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .to("direct:authorizeEditorRequest")
+                .to("direct:validateProvider")
                 .process(e -> e.getIn().setHeader("fileName", URLDecoder.decode(e.getIn().getHeader("fileName", String.class), StandardCharsets.UTF_8)))
                 .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
                                                                        + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
@@ -573,10 +595,11 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
+                .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
-                .log(LoggingLevel.INFO, correlation() + "get stats")
+                .to("direct:authorizeEditorRequest")
+                .to("direct:validateProvider")
+                .log(LoggingLevel.INFO, correlation() + "Get lines statistics")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:chouetteGetStatsSingleProvider")
                 .routeId("admin-chouette-stats")
@@ -605,9 +628,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .route()
+                .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .to("direct:authorizeEditorRequest")
+                .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Get chouette jobs status=${header.status} action=${header.action}")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:chouetteGetJobsForProvider")
@@ -623,8 +647,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid jobId").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .to("direct:authorizeEditorRequest")
+                .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Cancel all chouette jobs")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:chouetteCancelAllJobsForProvider")
@@ -641,8 +665,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid jobId").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .to("direct:authorizeEditorRequest")
+                .to("direct:validateProvider")
                 .setHeader(Constants.CHOUETTE_JOB_ID, header("jobId"))
                 .log(LoggingLevel.INFO, correlation() + "Cancel chouette job")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
@@ -658,11 +682,11 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .to("direct:authorizeEditorRequest")
+                .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Chouette start export")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .inOnly("entur-google-pubsub:ChouetteExportNetexQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteExportNetexQueue")
                 .routeId("admin-chouette-export")
                 .endRest()
 
@@ -674,8 +698,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeRequest")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .to("direct:authorizeEditorRequest")
+                .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
 
@@ -684,7 +708,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .otherwise()
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
                 .end()
-                .inOnly("entur-google-pubsub:ChouetteValidationQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("admin-chouette-validate")
                 .endRest()
 
@@ -696,7 +720,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean dataspace")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:chouetteCleanReferential")
@@ -714,8 +738,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Chouette transfer dataspace")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .setHeader(PROVIDER_ID, header("providerId"))
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
-                .inOnly("entur-google-pubsub:ChouetteTransferExportQueue")
+                .to("direct:validateProvider")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteTransferExportQueue")
                 .routeId("admin-chouette-transfer")
                 .endRest();
 
@@ -727,21 +751,39 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN)))
+                .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "OSM update map data")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .to("direct:considerToFetchOsmMapOverNorway")
                 .routeId("admin-fetch-osm")
                 .endRest();
 
+        from("direct:validateProvider")
+                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .routeId("admin-validate-provider");
 
-        from("direct:authorizeRequest")
+        from("direct:validateReferential")
+                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null)
+                .routeId("admin-validate-referential");
+        
+        from("direct:authorizeAdminRequest")
                 .doTry()
-                .process(e -> authorizationService.verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
-                        new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT, e.getIn().getHeader(PROVIDER_ID, Long.class))))
-                .routeId("admin-authorize-request");
+                .process(e -> authorizationService.verifyAdministratorPrivileges())
+                .routeId("admin-authorize-admin-request");
+
+        from("direct:authorizeEditorRequest")
+                .doTry()
+                .process(e -> authorizationService.verifyRouteDataEditorPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
+                .routeId("admin-authorize-editor-request");
+
+        from("direct:authorizeBlocksDownloadRequest")
+                .doTry()
+                .log(LoggingLevel.INFO, "Authorizing NeTEx blocks download for provider ${header." + CHOUETTE_REFERENTIAL + "} ")
+                .process(e -> authorizationService.verifyBlockViewerPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
+                .routeId("admin-authorize-blocks-download-request");
 
     }
+
 
     public static class ImportFilesSplitter {
         public List<String> splitFiles(@Body BlobStoreFiles files) {

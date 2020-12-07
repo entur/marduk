@@ -27,7 +27,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
-import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_CHOUETTE;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_URL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
@@ -36,7 +35,9 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
 
 @Component
-public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilder {
+public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRouteBuilder {
+
+    private static final String PROP_EXPORT_BLOCKS = "exportBlocks";
     @Value("${chouette.url}")
     private String chouetteUrl;
 
@@ -53,15 +54,20 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
     public void configure() throws Exception {
         super.configure();
 
-        from("entur-google-pubsub:ChouetteExportNetexQueue").streamCaching()
+        from("entur-google-pubsub:ChouetteExportNetexBlocksQueue").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette Netex export")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.PENDING).build())
+                .process( e -> e.setProperty(PROP_EXPORT_BLOCKS, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.enableBlocksExport))
+                .choice()
+                .when(simple("${exchangeProperty." + PROP_EXPORT_BLOCKS + "} != 'true'"))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Skipping Chouette Netex Blocks export")
+                .otherwise()
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette Netex Blocks export")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
 
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
-                .process(e -> e.getIn().setHeader(JSON_PART, Parameters.getDefaultNetexExportParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)), exportStops))) //Using header to addToExchange json data
+                .process(e -> e.getIn().setHeader(JSON_PART, Parameters.getNetexBlocksExportParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)), exportStops))) //Using header to addToExchange json data
                 .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
                 .process(e -> toGenericChouetteMultipart(e))
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
@@ -70,34 +76,29 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                     e.getIn().setHeader(CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location", String.class));
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                 })
-                .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processNetexExportResult"))
-                .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT_NETEX.name()))
+                .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processNetexBlocksExportResult"))
+                .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS.name()))
                 .removeHeader("loopCounter")
                 .setBody(constant(null))
                 .to("entur-google-pubsub:ChouettePollStatusQueue")
-                .routeId("chouette-start-export-netex");
+                .endChoice()
+                .routeId("chouette-start-export-netex-block");
 
 
-        from("direct:processNetexExportResult")
+        from("direct:processNetexBlocksExportResult")
                 .choice()
                 .when(simple("${header.action_report_result} == 'OK'"))
-                .log(LoggingLevel.INFO, correlation() + "NeTEx export successful. Downloading export data")
-                .log(LoggingLevel.DEBUG, correlation() + "Downloading NeTEx export data from ${header.data_url}")
+                .log(LoggingLevel.INFO, correlation() + "NeTEx Blocks export successful. Downloading export data")
+                .log(LoggingLevel.DEBUG, correlation() + "Downloading NeTEx Blocks export data from ${header.data_url}")
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .toD("${header.data_url}")
-
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_CHOUETTE + "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:uploadBlob")
                 .setBody(constant(null))
-
-                .to("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue")
-                .to("entur-google-pubsub:ChouetteExportGtfsQueue")
-                .to("entur-google-pubsub:ChouetteExportNetexBlocksQueue")
-
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.OK).build())
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS).state(JobEvent.State.OK).build())
 
                 .endChoice()
                 .when(simple("${header.action_report_result} == 'NOK'"))
@@ -111,16 +112,17 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                             }
                         }
                 )
-                .log(LoggingLevel.WARN, correlation() + "Netex export failed with error code ${header." + Constants.JOB_ERROR_CODE + "}")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.FAILED).build())
+                .log(LoggingLevel.WARN, correlation() + "Netex blocks export failed with error code ${header." + Constants.JOB_ERROR_CODE + "}")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS).state(JobEvent.State.FAILED).build())
                 .otherwise()
-                .log(LoggingLevel.ERROR, correlation() + "Something went wrong on Netex export")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.FAILED).build())
+                .log(LoggingLevel.ERROR, correlation() + "Something went wrong on Netex blocks export")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS).state(JobEvent.State.FAILED).build())
                 .end()
                 .to("direct:updateStatus")
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
-                .routeId("chouette-process-export-netex-status");
-    }
+                .routeId("chouette-process-export-netex-block-status");
 
+
+    }
 
 }

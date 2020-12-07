@@ -46,7 +46,7 @@ public class GtfsFileUtilsTransformationTest {
     }
 
     @Test
-    public void transformToGoogleFormatExcludeShapes() throws Exception {
+    void transformToGoogleFormatExcludeShapes() throws Exception {
 
         File target = GtfsFileUtils.mergeGtfsFiles(Collections.singleton(getExtendedGtfsTestFile()), GtfsExport.GTFS_GOOGLE, false);
 
@@ -57,7 +57,7 @@ public class GtfsFileUtilsTransformationTest {
     }
 
     @Test
-    public void transformToGoogleFormatIncludeShapes() throws Exception {
+    void transformToGoogleFormatIncludeShapes() throws Exception {
 
         File target = GtfsFileUtils.mergeGtfsFiles(Collections.singleton(getExtendedGtfsTestFile()), GtfsExport.GTFS_GOOGLE, true);
 
@@ -69,7 +69,7 @@ public class GtfsFileUtilsTransformationTest {
 
 
     @Test
-    public void transformToBasicGTFSFormatExcludeShapes() throws Exception {
+    void transformToBasicGTFSFormatExcludeShapes() throws Exception {
 
         File target = GtfsFileUtils.mergeGtfsFiles(Collections.singleton(getExtendedGtfsTestFile()), GtfsExport.GTFS_BASIC, false);
 
@@ -81,7 +81,7 @@ public class GtfsFileUtilsTransformationTest {
     }
 
     @Test
-    public void transformToBasicGTFSFormatIncludeShapes() throws Exception {
+    void transformToBasicGTFSFormatIncludeShapes() throws Exception {
 
         File target = GtfsFileUtils.mergeGtfsFiles(Collections.singleton(getExtendedGtfsTestFile()), GtfsExport.GTFS_BASIC, true);
 

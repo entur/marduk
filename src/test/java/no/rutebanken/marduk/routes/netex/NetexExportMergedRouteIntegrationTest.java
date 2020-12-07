@@ -33,13 +33,13 @@ import java.io.FileInputStream;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-public class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
-    @Produce(uri = "direct:exportMergedNetex")
+    @Produce("direct:exportMergedNetex")
     protected ProducerTemplate startRoute;
 
     @Value("${netex.export.download.directory:files/netex/merged}")
@@ -52,7 +52,7 @@ public class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderInt
     private String netexExportMergedFilePath;
 
     @Test
-    public void testExportMergedNetex() throws Exception {
+    void testExportMergedNetex() throws Exception {
 
         // Create stop file in in memory blob store
         inMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip")), false);

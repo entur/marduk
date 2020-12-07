@@ -35,81 +35,61 @@ import java.util.HashMap;
 import java.util.Map;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TestApp.class)
-public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
 
-	@EndpointInject(uri = "mock:chouetteCreateExport")
+	@EndpointInject("mock:chouetteCreateExport")
 	protected MockEndpoint chouetteCreateExport;
 
-	@EndpointInject(uri = "mock:pollJobStatus")
+	@EndpointInject("mock:pollJobStatus")
 	protected MockEndpoint pollJobStatus;
 
-	@EndpointInject(uri = "mock:processExportResult")
+	@EndpointInject("mock:processExportResult")
 	protected MockEndpoint processExportResult;
 
-	@EndpointInject(uri = "mock:updateStatus")
+	@EndpointInject("mock:updateStatus")
 	protected MockEndpoint updateStatus;
 	
-	@EndpointInject(uri = "mock:chouetteGetData")
+	@EndpointInject("mock:chouetteGetData")
 	protected MockEndpoint chouetteGetData;
 
-	@Produce(uri = "entur-google-pubsub:ChouetteExportGtfsQueue")
+	@Produce("entur-google-pubsub:ChouetteExportGtfsQueue")
 	protected ProducerTemplate importTemplate;
 
-	@Produce(uri = "direct:processExportResult")
+	@Produce("direct:processExportResult")
 	protected ProducerTemplate processExportResultTemplate;
 
 	@Value("${chouette.url}")
 	private String chouetteUrl;
 
 	@Test
-	public void testExportDataspace() throws Exception {
+	void testExportDataspace() throws Exception {
 
 		// Mock initial call to Chouette to import job
-		context.getRouteDefinition("chouette-send-export-job").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/gtfs")
-						.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-						.to("mock:updateStatus");
-			}
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-send-export-job", a -> {
+			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/gtfs")
+					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
+			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+					.to("mock:updateStatus");
 		});
 
 		// Mock update status calls
-		context.getRouteDefinition("chouette-process-export-status").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-						.to("mock:updateStatus");
-			}
-		});
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-export-status", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+				.to("mock:updateStatus"));
 
 		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
-		context.getRouteDefinition("chouette-validate-job-status-parameters").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
-				.to("mock:pollJobStatus");
-			}
-		});
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
+				.to("mock:pollJobStatus"));
 
-		context.getRouteDefinition("chouette-get-job-status").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
-						.skipSendToOriginalEndpoint().to("mock:chouetteGetData");
-
-			}
-		});
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
+				.skipSendToOriginalEndpoint().to("mock:chouetteGetData"));
 
 		
 		chouetteGetData.expectedMessageCount(1);
 		chouetteGetData.returnReplyBody(new Expression() {
 
-			@SuppressWarnings("unchecked")
 			@Override
 			public <T> T evaluate(Exchange ex, Class<T> arg1) {
 				try {
@@ -128,7 +108,7 @@ public class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRout
 		// 1 initial import call
 		chouetteCreateExport.expectedMessageCount(1);
 		chouetteCreateExport.returnReplyHeader("Location", new SimpleExpression(
-				chouetteUrl.replace("http4:", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
+				chouetteUrl.replace("http:", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
 
 	
 		pollJobStatus.expectedMessageCount(1);

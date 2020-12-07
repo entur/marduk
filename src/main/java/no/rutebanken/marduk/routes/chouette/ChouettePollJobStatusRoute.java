@@ -28,7 +28,8 @@ import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
-import org.apache.camel.component.http4.HttpMethods;
+import org.apache.camel.component.http.HttpMethods;
+import org.apache.camel.component.jackson.ListJacksonDataFormat;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.http.client.utils.URIBuilder;
 import org.entur.pubsub.camel.EnturGooglePubSubConstants;
@@ -85,11 +86,11 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
         from("direct:chouetteGetJobs")
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
                 .setBody(constant(""))
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .process(e -> {
                     String url = (String) e.getProperty("chouette_url");
 
-                    // Convert camel dynamic endpoint format (http4:xxxx) to url (http://xxx) before manipulating url. Needed as interception
+                    // Convert camel dynamic endpoint format (http:xxxx) to url (http://xxx) before manipulating url. Needed as interception
                     // does not seem to work with // in target anymore (as of camel 2.22.0)
                     boolean dynamicEndpointNotation=!url.contains("://");
                     if (dynamicEndpointNotation) {
@@ -114,7 +115,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                     e.setProperty("chouette_url", b.toString());
                 })
                 .toD("${exchangeProperty.chouette_url}")
-                .unmarshal().json(JsonLibrary.Jackson, JobResponse[].class)
+                .unmarshal(new ListJacksonDataFormat(JobResponse.class))
                 .routeId("chouette-list-jobs");
 
 
@@ -122,7 +123,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .setBody(constant(null))
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.DELETE))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.DELETE))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/scheduled_jobs/${header." + Constants.CHOUETTE_JOB_ID + "}"))
                 .toD("${exchangeProperty.chouette_url}")
                 .setBody(constant(null))
@@ -177,7 +178,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .setProperty("url", header(Constants.CHOUETTE_JOB_STATUS_URL))
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .setBody(constant(""))
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.GET))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .toD("${exchangeProperty.url}")
                 .unmarshal().json(JsonLibrary.Jackson, JobResponseWithLinks.class)
                 .setProperty("current_status", simple("${body.status}"))
@@ -228,16 +229,16 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .end()
                 .process(e -> {
                     JobResponseWithLinks response = e.getIn().getBody(JobResponseWithLinks.class);
-                    Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "action_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
+                    Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "action_report".equals(li.rel)).findFirst().map(li -> li.href);
                     e.getIn().setHeader("action_report_url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
-                    Optional<String> validationReportUrlOptional = response.links.stream().filter(li -> "validation_report".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
+                    Optional<String> validationReportUrlOptional = response.links.stream().filter(li -> "validation_report".equals(li.rel)).findFirst().map(li -> li.href);
                     e.getIn().setHeader("validation_report_url", validationReportUrlOptional.orElse(null));
-                    Optional<String> dataUrlOptional = response.links.stream().filter(li -> "data".equals(li.rel)).findFirst().map(li -> li.href.replaceFirst("http", "http4"));
+                    Optional<String> dataUrlOptional = response.links.stream().filter(li -> "data".equals(li.rel)).findFirst().map(li -> li.href);
                     e.getIn().setHeader("data_url", dataUrlOptional.orElse(null));
                 })
                 // Fetch and parse action report
                 .to(logDebugShowAll())
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Calling action report url ${header.action_report_url}")
+                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Calling action report url ${header.action_report_url}")
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))

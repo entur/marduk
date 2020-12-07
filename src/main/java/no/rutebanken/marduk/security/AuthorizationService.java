@@ -18,6 +18,7 @@ package no.rutebanken.marduk.security;
 
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.ProviderRepository;
+import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.RoleAssignment;
 import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AuthorizationService {
@@ -42,7 +44,36 @@ public class AuthorizationService {
     @Value("${authorization.enabled:true}")
     protected boolean authorizationEnabled;
 
-    public void verifyAtLeastOne(AuthorizationClaim... claims) {
+    @Value("#{${netex.export.block.authorization}}")
+    protected Map<String, String> authorizedProvidersForConsumer;
+
+
+    public void verifyAdministratorPrivileges() {
+        verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN));
+    }
+
+    /**
+     * Users can edit route data if they have administrator privileges,
+     * or if it has editor privileges for this provider.
+     * @param providerId
+     */    public void verifyRouteDataEditorPrivileges(Long providerId) {
+        verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
+                new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT, providerId));
+    }
+
+    /**
+     * Users can download NeTEx blocks data if they have administrator privileges,
+     * or if they have editor privileges for this provider
+     * or if they have NeTEx blocks viewer privileges for this provider.
+     * @param providerId
+     */
+    public void verifyBlockViewerPrivileges(Long providerId) {
+        verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
+                new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT, providerId),
+                new AuthorizationClaim(AuthorizationConstants.ROLE_NETEX_BLOCKS_DATA_VIEW, providerId));
+    }
+
+    protected void verifyAtLeastOne(AuthorizationClaim... claims) {
         if (!authorizationEnabled){
             return;
         }
@@ -77,4 +108,5 @@ public class AuthorizationService {
                        .filter(ra -> claim.getRequiredRole().equals(ra.r)).anyMatch(ra -> provider.chouetteInfo.xmlns.equals(ra.o));
 
     }
+
 }

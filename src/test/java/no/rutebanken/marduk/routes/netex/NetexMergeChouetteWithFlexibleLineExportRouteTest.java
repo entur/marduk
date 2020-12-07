@@ -39,38 +39,33 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-public class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuilderIntegrationTestBase {
+class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuilderIntegrationTestBase {
 
 
     @Autowired
     private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
-    @Produce(uri = "direct:mergeChouetteExportWithFlexibleLinesExport")
+    @Produce("direct:mergeChouetteExportWithFlexibleLinesExport")
     protected ProducerTemplate startRoute;
 
-    @EndpointInject(uri = "mock:updateStatus")
+    @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
 
-    @EndpointInject(uri = "mock:OtpGraphBuildQueue")
+    @EndpointInject("mock:OtpGraphBuildQueue")
     protected MockEndpoint otpBuildGraph;
 
 
     @Test
-    public void testExportMergedNetex() throws Exception {
+    void testExportMergedNetex() throws Exception {
 
         // Mock status update
-        context.getRouteDefinition("netex-export-merge-chouette-with-flexible-lines").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-
-                interceptSendToEndpoint("entur-google-pubsub:OtpGraphBuildQueue").skipSendToOriginalEndpoint()
-                        .to("mock:OtpGraphBuildQueue");
-                interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-                        .to("mock:updateStatus");
-            }
+        AdviceWithRouteBuilder.adviceWith(context, "netex-export-merge-chouette-with-flexible-lines", a -> {
+            a.interceptSendToEndpoint("entur-google-pubsub:OtpGraphBuildQueue").skipSendToOriginalEndpoint()
+                    .to("mock:OtpGraphBuildQueue");
+            a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+                    .to("mock:updateStatus");
         });
-
 
         context.start();
 

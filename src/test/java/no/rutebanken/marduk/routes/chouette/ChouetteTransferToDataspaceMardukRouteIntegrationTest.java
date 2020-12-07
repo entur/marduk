@@ -32,27 +32,27 @@ import java.util.HashMap;
 import java.util.Map;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TestApp.class)
-public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired
 	private ModelCamelContext context;
 
-	@EndpointInject(uri = "mock:chouetteCreateExport")
+	@EndpointInject("mock:chouetteCreateExport")
 	protected MockEndpoint chouetteCreateExport;
 
-	@EndpointInject(uri = "mock:pollJobStatus")
+	@EndpointInject("mock:pollJobStatus")
 	protected MockEndpoint pollJobStatus;
 
-	@EndpointInject(uri = "mock:checkScheduledJobsBeforeTriggeringNextAction")
+	@EndpointInject("mock:checkScheduledJobsBeforeTriggeringNextAction")
 	protected MockEndpoint checkScheduledJobsBeforeTriggeringNextAction;
 
-	@EndpointInject(uri = "mock:updateStatus")
+	@EndpointInject("mock:updateStatus")
 	protected MockEndpoint updateStatus;
 
-	@Produce(uri = "entur-google-pubsub:ChouetteTransferExportQueue")
+	@Produce("entur-google-pubsub:ChouetteTransferExportQueue")
 	protected ProducerTemplate transferTemplate;
 
-	@Produce(uri = "direct:processTransferExportResult")
+	@Produce("direct:processTransferExportResult")
 	protected ProducerTemplate processTransferExportResultTemplate;
 
 	
@@ -60,37 +60,27 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 	private String chouetteUrl;
 
 	@Test
-	public void testTransferDataToDataspaceDataspace() throws Exception {
+	void testTransferDataToDataspace() throws Exception {
 
 		// Mock initial call to Chouette to export job
-		context.getRouteDefinition("chouette-send-transfer-job").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/transfer")
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-send-transfer-job", a -> {
+			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/transfer")
 					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
-				
-				interceptSendToEndpoint("entur-google-pubsub:ChouettePollStatusQueue")
+
+			a.interceptSendToEndpoint("entur-google-pubsub:ChouettePollStatusQueue")
 					.skipSendToOriginalEndpoint().to("mock:pollJobStatus");
 
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-				.to("mock:updateStatus");
-			}
+			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+					.to("mock:updateStatus");
 		});
-
-	
 
 		// Mock update status calls
-		context.getRouteDefinition("chouette-process-transfer-status").adviceWith(context, new AdviceWithRouteBuilder() {
-			@Override
-			public void configure() {
-				interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-				.to("mock:updateStatus");
-				interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation").skipSendToOriginalEndpoint()
-				.to("mock:checkScheduledJobsBeforeTriggeringNextAction");
-			}
+		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-transfer-status", a -> {
+			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+					.to("mock:updateStatus");
+			a.interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation").skipSendToOriginalEndpoint()
+					.to("mock:checkScheduledJobsBeforeTriggeringNextAction");
 		});
-
-	
 
 		// we must manually start when we are done with all the advice with
 		context.start();
@@ -99,7 +89,7 @@ public class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends Mardu
 		// 1 initial import call
 		chouetteCreateExport.expectedMessageCount(1);
 		chouetteCreateExport.returnReplyHeader("Location", new SimpleExpression(
-				chouetteUrl.replace("http4:", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
+				chouetteUrl.replace("http:", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
 
 	
 		pollJobStatus.expectedMessageCount(1);

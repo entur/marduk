@@ -22,15 +22,14 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEvent.State;
 import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.JSON_PART;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
@@ -53,20 +52,20 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
         super.configure();
 
 
-        singletonFrom("quartz2://marduk/chouetteValidateLevel1?cron=" + level1CronSchedule + "&trigger.timeZone=Europe/Oslo")
+        singletonFrom("quartz://marduk/chouetteValidateLevel1?cron=" + level1CronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{chouette.validate.level1.autoStartup:true}}")
 
                 .filter(e -> shouldQuartzRouteTrigger(e, level1CronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers validation of Level1 for all providers in Chouette.")
-                .inOnly("direct:chouetteValidateLevel1ForAllProviders")
+                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel1ForAllProviders")
                 .routeId("chouette-validate-level1-quartz");
 
-        singletonFrom("quartz2://marduk/chouetteValidateLevel2?cron=" + level2CronSchedule + "&trigger.timeZone=Europe/Oslo")
+        singletonFrom("quartz://marduk/chouetteValidateLevel2?cron=" + level2CronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{chouette.validate.level2.autoStartup:false}}")
 
                 .filter(e -> shouldQuartzRouteTrigger(e, level2CronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers validation of Level2 for all providers in Chouette.")
-                .inOnly("direct:chouetteValidateLevel2ForAllProviders")
+                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel2ForAllProviders")
                 .routeId("chouette-validate-level2-quartz");
 
         // Trigger validation level1 for all level1 providers (ie migrateDateToProvider and referential set)
@@ -74,12 +73,12 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
                 .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} && ${body.chouetteInfo.referential}"))
-                .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
+                .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
                 .setBody(constant(null))
-                .inOnly("entur-google-pubsub:ChouetteValidationQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("chouette-validate-level1-all-providers");
 
 
@@ -88,23 +87,19 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
                 .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} == null && ${body.chouetteInfo.referential}"))
-                .process(e -> e.getIn().setHeader(CORRELATION_ID, UUID.randomUUID().toString()))
+                .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
                 .setBody(constant(null))
-                .inOnly("entur-google-pubsub:ChouetteValidationQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("chouette-validate-level2-all-providers");
 
 
         from("entur-google-pubsub:ChouetteValidationQueue?concurrentConsumers=3").streamCaching()
-
+                .process(this::setCorrelationIdIfMissing)
+                .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette validation")
-                .process(e -> {
-                    // Add correlation id only if missing
-                    e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString()));
-                    e.getIn().removeHeader(Constants.CHOUETTE_JOB_ID);
-                })
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.class)).state(State.PENDING).build())
                 .to("direct:updateStatus")
 
@@ -118,7 +113,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/validator")
                 .process(e -> {
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location", String.class).replaceFirst("http", "http4"));
+                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location", String.class));
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processValidationResult"))
@@ -132,7 +127,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 
         from("direct:assertHeadersForChouetteValidation")
                 .choice()
-                .when(simple("${header." + CHOUETTE_REFERENTIAL + "} == null or ${header." + PROVIDER_ID + "} == null "))
+                .when(simple("${header." + CHOUETTE_REFERENTIAL + "} == null || ${header." + PROVIDER_ID + "} == null "))
                 .log(LoggingLevel.WARN, correlation() + "Unable to start Chouette validation for missing referential or providerId")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.class)).state(State.FAILED).build())
                 .to("direct:updateStatus")
@@ -145,10 +140,10 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .to(logDebugShowAll())
                 .setBody(constant(""))
                 .choice()
-                .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'OK'"))
+                .when(simple("${header.action_report_result} == 'OK' && ${header.validation_report_result} == 'OK'"))
                 .to("direct:checkScheduledJobsBeforeTriggeringExport")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, TimetableAction.class)).state(State.OK).build())
-                .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'NOK'"))
+                .when(simple("${header.action_report_result} == 'OK' && ${header.validation_report_result} == 'NOK'"))
                 .log(LoggingLevel.INFO, correlation() + "Validation failed (processed ok, but timetable data is faulty)")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, TimetableAction.class)).state(State.FAILED).build())
                 .otherwise()

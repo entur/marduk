@@ -27,7 +27,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_CHOUETTE;
@@ -43,6 +42,9 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
  */
 @Component
 public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRouteBuilder {
+
+    private static final String UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER = "/unpacked-with-flexible-lines";
+    private static final String MERGED_NETEX_SUB_FOLDER = "/result";
 
     @Value("${netex.export.download.directory:files/netex/merged}")
     private String localWorkingDirectory;
@@ -61,7 +63,8 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .routeId("netex-export-merge-chouette-with-flexible-lines-queue");
 
         from("direct:mergeChouetteExportWithFlexibleLinesExport").streamCaching()
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Merging chouette NeTEx export with FlexibleLines for provider")
+                .process(this::setCorrelationIdIfMissing)
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Merging chouette NeTEx export with FlexibleLines")
                 .validate(header(Constants.CHOUETTE_REFERENTIAL).isNotNull())
 
                 .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
@@ -79,25 +82,24 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .end()
 
                 .setBody(constant(null))
-                .process(e -> e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString())))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
-
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")
                 .to("entur-google-pubsub:OtpGraphBuildQueue")
 
                 .routeId("netex-export-merge-chouette-with-flexible-lines");
 
 
         from("direct:uploadWorkingFolderContent").streamCaching()
-                .process(e -> new File(e.getProperty(FOLDER_NAME, String.class) + "/result").mkdir())
-                .process(e -> e.getIn().setBody(ZipFileUtils.zipFilesInFolder(e.getProperty(FOLDER_NAME, String.class) + "/unpacked-with-flexible-lines", e.getProperty(FOLDER_NAME, String.class) + "/result/merged.zip")))
+                .process(e -> new File(e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUB_FOLDER).mkdir())
+                .process(e -> e.getIn().setBody(ZipFileUtils.zipFilesInFolder(e.getProperty(FOLDER_NAME, String.class) + UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER, e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUB_FOLDER + "/merged.zip")))
 
 
                 .choice().when(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.generateDatedServiceJourneyIds)
                 .to("direct:uploadDatedExport")
                 .end()
 
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + EXPORT_FILE_NAME))
                 .to("direct:uploadBlob")
 
@@ -109,25 +111,31 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class) + "/unpacked-with-flexible-lines"))
+                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class) + UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER))
                 .otherwise()
-                .log(LoggingLevel.INFO, getClass().getName(), "${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
                 .routeId("netex-export-merge-chouette-with-flexible-lines-unpack-chouette-export");
 
 
         from("direct:unpackFlexibleLinesExportToWorkingFolder")
                 .choice().when(constant(mergeFlexibleLinesEnabled))
+                .to("direct:doUnpackFlexibleLinesExportToWorkingFolder")
+                .otherwise()
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Skipping merge with flexible lines as this is disabled.")
+                .routeId("netex-export-merge-chouette-with-flexible-lines-unpack-flexible-lines-export");
+
+        // do unpack in a sub-route to avoid having nested choice(), which does not work
+        from("direct:doUnpackFlexibleLinesExportToWorkingFolder")
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME))
                 .to("direct:fetchExternalBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class) + "/unpacked-with-flexible-lines"))
+                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class) + UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER))
                 .otherwise()
-                .log(LoggingLevel.INFO, getClass().getName(), "${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
-                .otherwise()
-                .log(LoggingLevel.INFO, getClass().getName(), "Skipping merge with flexible lines as this is diabled.")
-                .end()
-                .routeId("netex-export-merge-chouette-with-flexible-lines-unpack-flexible-lines-export");
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "No flexible line data found: ${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
+                .routeId("netex-export-merge-chouette-with-flexible-lines-do-unpack-flexible-lines-export");
+
+
 
     }
 }

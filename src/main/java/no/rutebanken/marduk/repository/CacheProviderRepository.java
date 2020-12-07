@@ -58,19 +58,19 @@ public class CacheProviderRepository implements ProviderRepository {
             Collection<Provider> newProviders = restProviderService.getProviders();
             Map<Long, Provider> providerMap = newProviders.stream().collect(Collectors.toMap(Provider::getId, p -> p));
             if (providerMap.isEmpty()) {
-                logger.warn("Result from REST Provider Service is empty. Skipping provider cache update. Keeping {} existing elements.", cache.size() );
+                logger.warn("Result from REST Provider Service is empty. Skipping provider cache update. Keeping {} existing elements.", cache.size());
                 return;
             }
             Cache<Long, Provider> newCache = CacheBuilder.newBuilder().maximumSize(cacheMaxSize).build();
             newCache.putAll(providerMap);
             cache = newCache;
-            logger.info("Updated provider cache with result from REST Provider Service. Cache now has {} elements",  cache.size());
+            logger.debug("Updated provider cache with result from REST Provider Service. Cache now has {} elements", cache.size());
         } catch (ResourceAccessException re) {
             if (re.getCause() instanceof ConnectException) {
                 if (isEmpty()) {
                     throw re;
                 } else {
-                    logger.warn("REST Provider Service is unavailable. Could not update provider cache, but keeping {} existing elements.",  cache.size());
+                    logger.warn("REST Provider Service is unavailable. Could not update provider cache, but keeping {} existing elements.", cache.size());
                 }
             } else {
                 throw re;

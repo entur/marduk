@@ -21,9 +21,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -43,12 +45,15 @@ import java.util.stream.Stream;
  */
 @Component
 @Profile("local-disk-blobstore")
+@Scope("prototype")
 public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private static final Logger LOGGER = LoggerFactory.getLogger(LocalDiskBlobStoreRepository.class);
 
     @Value("${blobstore.local.folder:files/blob}")
     private String baseFolder;
+
+    private String containerName;
 
     @Override
     public BlobStoreFiles listBlobs(String prefix) {
@@ -60,10 +65,10 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         for (String prefix : prefixes) {
-            if (Paths.get(baseFolder, prefix).toFile().isDirectory()) {
-                try (Stream<Path> walk = Files.walk(Paths.get(baseFolder, prefix))) {
+            if (Paths.get(getContainerFolder(), prefix).toFile().isDirectory()) {
+                try (Stream<Path> walk = Files.walk(Paths.get(getContainerFolder(), prefix))) {
                     List<BlobStoreFiles.File> result = walk.filter(Files::isRegularFile)
-                            .map(path -> new BlobStoreFiles.File(Paths.get(baseFolder).relativize(path).toString(), getFileCreationDate(path), getFileLastModifiedDate(path), getFileSize(path))).collect(Collectors.toList());
+                            .map(path -> new BlobStoreFiles.File(Paths.get(getContainerFolder()).relativize(path).toString(), getFileCreationDate(path), getFileLastModifiedDate(path), getFileSize(path))).collect(Collectors.toList());
                     blobStoreFiles.add(result);
                 } catch (IOException e) {
                     throw new MardukException(e);
@@ -74,6 +79,9 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
         return blobStoreFiles;
     }
 
+    private String getContainerFolder() {
+        return baseFolder + File.separator + containerName;
+    }
 
 
     @Override
@@ -87,13 +95,13 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public InputStream getBlob(String objectName) {
-        logger.debug("get blob called in local-disk blob store on {}", objectName);
-        Path path = Paths.get(baseFolder).resolve(objectName);
+        LOGGER.debug("get blob called in local-disk blob store on {}", objectName);
+        Path path = Paths.get(getContainerFolder()).resolve(objectName);
         if (!path.toFile().exists()) {
-            logger.debug("getBlob(): File not found in local-disk blob store: {} ", path);
+            LOGGER.debug("getBlob(): File not found in local-disk blob store: {} ", path);
             return null;
         }
-        logger.debug("getBlob(): File found in local-disk blob store: {} ", path);
+        LOGGER.debug("getBlob(): File found in local-disk blob store: {} ", path);
         try {
             // converted as ByteArrayInputStream so that Camel stream cache can reopen it
             // since ByteArrayInputStream.close() does nothing
@@ -105,14 +113,14 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
-        logger.debug("Upload blob called in local-disk blob store on {}", objectName);
+        LOGGER.debug("Upload blob called in local-disk blob store on {}", objectName);
         try {
             Path localPath = Paths.get(objectName);
             Path parentDirectory = localPath.getParent();
-            Path folder = parentDirectory == null ? Paths.get(baseFolder) : Paths.get(baseFolder).resolve(parentDirectory);
+            Path folder = parentDirectory == null ? Paths.get(getContainerFolder()) : Paths.get(getContainerFolder()).resolve(parentDirectory);
             Files.createDirectories(folder);
 
-            Path fullPath = Paths.get(baseFolder).resolve(localPath);
+            Path fullPath = Paths.get(getContainerFolder()).resolve(localPath);
             Files.deleteIfExists(fullPath);
 
             Files.copy(inputStream, fullPath);
@@ -138,15 +146,15 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void setContainerName(String containerName) {
-        // not applicable to local disk blobstore
+       this.containerName = containerName;
     }
 
     @Override
     public boolean delete(String objectName) {
-        logger.debug("Delete blob called in local-disk blob store on: {}", objectName);
-        Path path = Paths.get(baseFolder).resolve(objectName);
+        LOGGER.debug("Delete blob called in local-disk blob store on: {}", objectName);
+        Path path = Paths.get(getContainerFolder()).resolve(objectName);
         if (!path.toFile().exists()) {
-            logger.debug("delete(): File not found in local-disk blob store: {} ", path);
+            LOGGER.debug("delete(): File not found in local-disk blob store: {} ", path);
             return false;
         }
         try {
@@ -159,7 +167,7 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public boolean deleteAllFilesInFolder(String folder) {
-        try (Stream<Path> paths = Files.walk(Paths.get(baseFolder).resolve(folder))) {
+        try (Stream<Path> paths = Files.walk(Paths.get(getContainerFolder()).resolve(folder))) {
             paths.sorted(Comparator.reverseOrder())
                     .forEach(path -> {
                         try {

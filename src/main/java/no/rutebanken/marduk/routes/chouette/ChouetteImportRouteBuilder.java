@@ -25,7 +25,7 @@ import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
-import org.apache.camel.component.http4.HttpMethods;
+import org.apache.camel.component.http.HttpMethods;
 import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -36,7 +36,6 @@ import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
 import static no.rutebanken.marduk.Constants.JSON_PART;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-import static no.rutebanken.marduk.Utils.getHttp4;
 import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
 
 /**
@@ -59,7 +58,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setBody(constant(null))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/clean/stop_areas"))
-                .toD("${property.chouette_url}")
+                .toD("${exchangeProperty.chouette_url}")
                 .routeId("chouette-clean-stop-places");
 
         from("direct:chouetteCleanAllReferentials")
@@ -94,7 +93,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .removeHeaders(Constants.CAMEL_ALL_HEADERS,EnturGooglePubSubConstants.ACK_ID)
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/clean"))
-                .toD("${property.chouette_url}")
+                .toD("${exchangeProperty.chouette_url}")
                 .routeId("chouette-clean-dataspace");
 
         from("entur-google-pubsub:ChouetteImportQueue").streamCaching()
@@ -139,12 +138,12 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .to(logDebugShowAll())
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/importer/${header." + FILE_TYPE + ".toLowerCase()}"))
                 .log(LoggingLevel.DEBUG, correlation() + "Calling Chouette with URL: ${exchangeProperty.chouette_url}")
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http4.HttpMethods.POST))
+                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.POST))
                 // Attempt to retrigger delivery in case of errors
                 .toD("${exchangeProperty.chouette_url}")
                 .to(logDebugShowAll())
                 .process(e -> {
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, getHttp4(e.getIn().getHeader("Location", String.class)));
+                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location", String.class));
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
                 })
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processImportResult"))
@@ -165,10 +164,10 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .when(PredicateBuilder.and(constant("false").isEqualTo(header(Constants.ENABLE_VALIDATION)), simple("${header.action_report_result} == 'OK'")))
                 .to("direct:checkScheduledJobsBeforeTriggeringNextAction")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.IMPORT).state(State.OK).build())
-                .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'OK'"))
+                .when(simple("${header.action_report_result} == 'OK' && ${header.validation_report_result} == 'OK'"))
                 .to("direct:checkScheduledJobsBeforeTriggeringNextAction")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.OK).build())
-                .when(simple("${header.action_report_result} == 'OK' and ${header.validation_report_result} == 'NOK'"))
+                .when(simple("${header.action_report_result} == 'OK' && ${header.validation_report_result} == 'NOK'"))
                 .log(LoggingLevel.INFO, correlation() + "Import ok but validation failed")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.IMPORT).state(State.FAILED).build())
                 .when(simple("${header.action_report_result} == 'NOK'"))

@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.gtfs;
 
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.gtfs.GtfsFileUtils;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.FileUtils;
@@ -24,21 +25,35 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class GtfsFileUtilsTest {
+class GtfsFileUtilsTest {
 
     private static final String GTFS_FILE_1 = "src/test/resources/no/rutebanken/marduk/routes/file/beans/gtfs.zip";
     private static final String GTFS_FILE_2 = "src/test/resources/no/rutebanken/marduk/routes/file/beans/gtfs2.zip";
 
     @Test
-    public void mergeGtfsFiles_identicalFilesShouldYieldMergedFileIdenticalToOrg() throws Exception {
+    void notADirectory() {
+        File sourceDirectory = new File("/dev/null");
+        assertThrows(MardukException.class, () -> GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, null, false));
+    }
+
+    @Test
+    void emptyDirectory() throws IOException {
+        File sourceDirectory = Files.createTempDirectory("test-emptyDirectory").toFile();
+        assertThrows(MardukException.class, () -> GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, null, false));
+    }
+
+    @Test
+    void mergeGtfsFiles_identicalFilesShouldYieldMergedFileIdenticalToOrg() throws Exception {
 
         File input1 = new File(GTFS_FILE_1);
         File merged = GtfsFileUtils.mergeGtfsFiles(List.of(input1, input1), GtfsExport.GTFS_EXTENDED, false);
@@ -50,7 +65,7 @@ public class GtfsFileUtilsTest {
     }
 
     @Test
-    public void mergeGtfsFiles_nonIdenticalFilesShouldYieldUnion() throws Exception {
+    void mergeGtfsFiles_nonIdenticalFilesShouldYieldUnion() throws Exception {
 
         File input1 = new File(GTFS_FILE_1);
         File input2 = new File(GTFS_FILE_2);
@@ -64,7 +79,7 @@ public class GtfsFileUtilsTest {
     }
 
     @Test
-    public void mergeWithTransfers() throws Exception {
+    void mergeWithTransfers() throws Exception {
         File mergedZip = GtfsFileUtils.mergeGtfsFiles(List.of(new File(GTFS_FILE_1), new File(GTFS_FILE_1)), GtfsExport.GTFS_EXTENDED, false);
 
         List<String> transferLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(mergedZip, GtfsConstants.TRANSFERS_TXT)), StandardCharsets.UTF_8);

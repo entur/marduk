@@ -30,13 +30,13 @@ import java.sql.Timestamp;
 import java.util.Date;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-public class FileNameAndDigestIdempotentRepositoryTest extends MardukRouteBuilderIntegrationTestBase {
+class FileNameAndDigestIdempotentRepositoryTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Autowired
     private FileNameAndDigestIdempotentRepository idempotentRepository;
 
     @Test
-    public void testNonUniqueFileNameRejected() {
+    void testNonUniqueFileNameRejected() {
         idempotentRepository.clear();
         FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
         assertTrue(idempotentRepository.add(fileNameAndDigest.toString()));
@@ -46,7 +46,7 @@ public class FileNameAndDigestIdempotentRepositoryTest extends MardukRouteBuilde
     }
 
     @Test
-    public void testNonUniqueDigestRejected() {
+    void testNonUniqueDigestRejected() {
         idempotentRepository.clear();
         FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
         assertTrue(idempotentRepository.add(fileNameAndDigest.toString()));
@@ -56,7 +56,7 @@ public class FileNameAndDigestIdempotentRepositoryTest extends MardukRouteBuilde
     }
 
     @Test
-    public void testNonUniqueFileNameAndDigestRejected() {
+    void testNonUniqueFileNameAndDigestRejected() {
         idempotentRepository.clear();
         FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
         assertTrue(idempotentRepository.add(fileNameAndDigest.toString()));
@@ -65,7 +65,7 @@ public class FileNameAndDigestIdempotentRepositoryTest extends MardukRouteBuilde
     }
 
     @Test
-    public void testUniqueFileNameAndDigestAccepted() {
+    void testUniqueFileNameAndDigestAccepted() {
         idempotentRepository.clear();
         FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
         assertTrue(idempotentRepository.add(fileNameAndDigest.toString()));
@@ -76,7 +76,7 @@ public class FileNameAndDigestIdempotentRepositoryTest extends MardukRouteBuilde
 
 
     @Test
-    public void testRemoveEntryIfAddedRecently() {
+    void testRemoveEntryIfAddedRecently() {
         idempotentRepository.clear();
         FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
         assertTrue(idempotentRepository.add(fileNameAndDigest.toString()));
@@ -86,7 +86,7 @@ public class FileNameAndDigestIdempotentRepositoryTest extends MardukRouteBuilde
     }
 
     @Test
-    public void testRemoveEntryIfAddedYesterday() {
+    void testRemoveEntryIfAddedYesterday() {
         idempotentRepository.clear();
         FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
 

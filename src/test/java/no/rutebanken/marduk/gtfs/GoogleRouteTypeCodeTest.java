@@ -21,11 +21,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import no.rutebanken.marduk.gtfs.GoogleRouteTypeCode;
 import org.junit.jupiter.api.Test;
 
-public class GoogleRouteTypeCodeTest {
+class GoogleRouteTypeCodeTest {
 
 
     @Test
-    public void supportedVersionsAreReturnedUnchanged() {
+    void supportedVersionsAreReturnedUnchanged() {
         assertMapping(0, 0);
         assertMapping(6, 6);
         assertMapping(100, 100);
@@ -35,7 +35,7 @@ public class GoogleRouteTypeCodeTest {
     }
 
     @Test
-    public void unsupportedVersionsWithExplicitMappingsAreMapped() {
+    void unsupportedVersionsWithExplicitMappingsAreMapped() {
         assertMapping(300, 100);
         assertMapping(500, 401);
         assertMapping(600, 402);
@@ -44,7 +44,7 @@ public class GoogleRouteTypeCodeTest {
     }
 
     @Test
-    public void unsupportedVersionsWithoutExplicitMappingWithSupportedBaseTypeAreReturnedAsBaseType() {
+    void unsupportedVersionsWithoutExplicitMappingWithSupportedBaseTypeAreReturnedAsBaseType() {
         assertMapping(117, 100);
         assertMapping(118, 100);
         assertMapping(1021, 1000);
@@ -52,13 +52,13 @@ public class GoogleRouteTypeCodeTest {
     }
 
     @Test
-    public void unsupportedVersionsWithoutExplicitMappingWithUnsupportedBaseTypesWithExplicitMappingAreReturnedAsBaseTypesMapping() {
+    void unsupportedVersionsWithoutExplicitMappingWithUnsupportedBaseTypesWithExplicitMappingAreReturnedAsBaseTypesMapping() {
         assertMapping(1502, 1501);
         assertMapping(1506, 1501);
     }
 
     @Test
-    public void unsupportedVersionsWithNoMappingAreReturnedAsMisc() {
+    void unsupportedVersionsWithNoMappingAreReturnedAsMisc() {
         assertMapping(20000, 1700);
         assertMapping(1600, 1700);
         assertMapping(1601, 1700);

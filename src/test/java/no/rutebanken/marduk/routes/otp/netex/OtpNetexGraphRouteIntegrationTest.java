@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes =  TestApp.class)
-public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 
     @Autowired
@@ -51,49 +51,30 @@ public class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegra
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
 
-    @EndpointInject(uri = "mock:sink")
+    @EndpointInject("mock:sink")
     protected MockEndpoint sink;
 
-    @EndpointInject(uri = "mock:updateStatus")
+    @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce(uri = "entur-google-pubsub:OtpGraphBuildQueue")
+    @Produce("entur-google-pubsub:OtpGraphBuildQueue")
     protected ProducerTemplate producerTemplate;
 
     @Test
-    public void testStatusEventReporting() throws Exception {
+    void testStatusEventReporting() throws Exception {
 
         //populate fake blob repo
         inMemoryBlobStoreRepository.uploadBlob(  blobStoreSubdirectory+"/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
 
+        AdviceWithRouteBuilder.adviceWith(context, "otp-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        context.getRouteDefinition("otp-netex-graph-send-started-events").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-                weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-            }
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "otp-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        context.getRouteDefinition("otp-netex-graph-send-status-for-timetable-jobs").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-                weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-            }
-        });
+        AdviceWithRouteBuilder.adviceWith(context, "otp-remote-netex-graph-build", a -> a.weaveByToUri("direct:exportMergedNetex").replace().to("mock:sink"));
 
-        context.getRouteDefinition("otp-remote-netex-graph-build").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-                weaveByToUri("direct:exportMergedNetex").replace().to("mock:sink");
-            }
-        });
-
-        context.getRouteDefinition("otp-remote-netex-graph-build-and-send-status").adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() {
-                weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-                weaveByToUri("direct:remoteBuildNetexGraph").replace().to("mock:sink");
-            }
+        AdviceWithRouteBuilder.adviceWith(context, "otp-remote-netex-graph-build-and-send-status", a -> {
+            a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
+            a.weaveByToUri("direct:remoteBuildNetexGraph").replace().to("mock:sink");
         });
 
         updateStatus.expectedMessageCount(3);

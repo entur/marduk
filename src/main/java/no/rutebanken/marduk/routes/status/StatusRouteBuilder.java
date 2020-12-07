@@ -16,17 +16,18 @@
 
 package no.rutebanken.marduk.routes.status;
 
+import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class StatusRouteBuilder extends RouteBuilder {
+public class StatusRouteBuilder extends BaseRouteBuilder {
 
 	@Override
 	public void configure() {
 		from("direct:updateStatus")
-				.log(LoggingLevel.INFO, getClass().getName(), "Sending off job status event: ${body}")
+				.log(LoggingLevel.INFO, getClass().getName(), correlation() + "Sending off job status event: ${body}")
 				.to("entur-google-pubsub:JobEventQueue")
 				.routeId("update-status").startupOrder(1);
 	}

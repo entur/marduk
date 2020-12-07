@@ -20,14 +20,14 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExtendedExchange;
 import org.apache.camel.Message;
 import org.apache.camel.ServiceStatus;
+import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
 import org.apache.camel.model.RouteDefinition;
-import org.apache.camel.spi.RouteContext;
 import org.apache.camel.spi.RoutePolicy;
 import org.apache.camel.spi.Synchronization;
-import org.apache.camel.spring.SpringRouteBuilder;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.entur.pubsub.camel.EnturGooglePubSubConstants;
@@ -43,6 +43,7 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NAME;
@@ -51,7 +52,7 @@ import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NA
 /**
  * Defines common route behavior.
  */
-public abstract class BaseRouteBuilder extends SpringRouteBuilder {
+public abstract class BaseRouteBuilder extends RouteBuilder {
 
     @Autowired
     private ProviderRepository providerRepository;
@@ -110,7 +111,7 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
                 .map(m->m.getHeader(EnturGooglePubSubConstants.ACK_ID, BasicAcknowledgeablePubsubMessage.class))
                 .collect(Collectors.toList());
 
-        exchange.addOnCompletion(new AckSynchronization(ackList));
+        exchange.adapt(ExtendedExchange.class).addOnCompletion(new AckSynchronization(ackList));
     }
 
 
@@ -136,6 +137,14 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
 
     protected ProviderRepository getProviderRepository() {
         return providerRepository;
+    }
+
+    protected void setNewCorrelationId(Exchange e) {
+        e.getIn().setHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString());
+    }
+
+    protected void setCorrelationIdIfMissing(Exchange e) {
+        e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString()));
     }
 
     protected String correlation() {
@@ -178,13 +187,12 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
     }
 
     protected boolean isStarted(String routeId) {
-        ServiceStatus status = getContext().getRouteStatus(routeId);
+        ServiceStatus status = getContext().getRouteController().getRouteStatus(routeId);
         return status != null && status.isStarted();
     }
 
     protected boolean isLeader(String routeId) {
-        RouteContext routeContext = getContext().getRoute(routeId).getRouteContext();
-        List<RoutePolicy> routePolicyList = routeContext.getRoutePolicyList();
+        List<RoutePolicy> routePolicyList = getContext().getRoute(routeId).getRoutePolicyList();
         if (routePolicyList != null) {
             for (RoutePolicy routePolicy : routePolicyList) {
                 if (routePolicy instanceof HazelcastRoutePolicy) {
@@ -204,7 +212,7 @@ public abstract class BaseRouteBuilder extends SpringRouteBuilder {
             if (deleted) {
                 log.debug("Local directory {} cleanup done.", directory);
             } else {
-                log.info("The directory {} did not exist, ignoring deletion request", directory);
+                log.debug("The directory {} did not exist, ignoring deletion request", directory);
             }
         } catch (IOException e) {
             log.warn("Failed to delete directory {}", directory, e);

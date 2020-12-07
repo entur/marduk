@@ -37,7 +37,6 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
-import static no.rutebanken.marduk.Constants.OTP_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
@@ -87,9 +86,10 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
         singletonFrom("entur-google-pubsub:OtpGraphBuildQueue?ackMode=NONE").autoStartup("{{otp.graph.build.autoStartup:true}}")
-                .aggregate(constant(true)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
-                .log(LoggingLevel.INFO, "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:remoteBuildOtpGraph")
                 .routeId("otp-graph-build");
 
@@ -97,14 +97,14 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(PROP_MESSAGES, simple("${body}"))
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
-                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${property." + TIMESTAMP + "}"))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP graph building in remote directory ${property." + OTP_GRAPH_DIR + "}.")
+                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${exchangeProperty." + TIMESTAMP + "}"))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP graph building in remote directory ${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}.")
 
                 .to("direct:exportMergedNetex")
 
                 .to("direct:remoteBuildNetexGraphAndSendStatus")
                 .to("direct:remoteGraphPublishing")
-                .log(LoggingLevel.INFO, getClass().getName(), "Done with OTP graph building route.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP graph building route.")
                 .routeId("otp-remote-netex-graph-build");
 
         from("direct:remoteBuildNetexGraphAndSendStatus")
@@ -135,34 +135,34 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .process(e -> {
                             String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ;
                             String publishedGraphPath = Constants.NETEX_GRAPH_DIR
-                                                        + "/" + e.getProperty(TIMESTAMP, String.class)
-                                                        + '-' + GRAPH_OBJ;
+                                    + "/" + e.getProperty(TIMESTAMP, String.class)
+                                    + '-' + GRAPH_OBJ;
                             String publishedGraphVersion = Constants.NETEX_GRAPH_DIR + "/" + e.getProperty(TIMESTAMP, String.class) + "-report";
 
                             e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
                             e.getIn().setHeader(TARGET_CONTAINER, otpGraphsBucketName);
                             e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
-                            e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false));
+                            e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, false);
                             e.setProperty(GRAPH_VERSION, publishedGraphVersion);
                         }
                 )
                 .to("direct:copyBlobToAnotherBucket")
-                .log(LoggingLevel.INFO, "Done copying new OTP graph: ${header." + FILE_HANDLE + "}")
+                .log(LoggingLevel.INFO, correlation() + "Done copying new OTP graph: ${header." + FILE_HANDLE + "}")
 
                 .setProperty(GRAPH_PATH_PROPERTY, header(FILE_HANDLE))
 
                 // update file containing the reference to the latest graph
                 .setBody(header(TARGET_FILE_HANDLE))
                 .setHeader(FILE_HANDLE, constant(otpGraphCurrentFile))
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(false))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .to("direct:uploadOtpGraphsBlob")
-                .log(LoggingLevel.INFO, "Done uploading reference to current graph: ${header." + FILE_HANDLE + "}")
+                .log(LoggingLevel.INFO, correlation() + "Done uploading reference to current graph: ${header." + FILE_HANDLE + "}")
 
                 // copy the graph build report and update the reference to the current report
                 .setHeader(FILE_HANDLE, exchangeProperty(GRAPH_PATH_PROPERTY))
                 .to("direct:remoteCopyVersionedGraphBuildReport")
                 .to("direct:remoteUpdateCurrentGraphReportVersion")
-                .log(LoggingLevel.INFO, "Done uploading OTP graph build reports.")
+                .log(LoggingLevel.INFO, correlation() + "Done uploading OTP graph build reports.")
 
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
                 .to("direct:updateStatus")
@@ -178,15 +178,15 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(Exchange.FILE_PARENT, e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/report");
                     e.getIn().setHeader(TARGET_CONTAINER, otpReportContainerName);
                     e.getIn().setHeader(TARGET_FILE_PARENT, e.getProperty(GRAPH_VERSION, String.class));
-                    e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, constant(true));
+                    e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, true);
                 })
-                .log(LoggingLevel.INFO, "Copying OTP graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
+                .log(LoggingLevel.INFO, correlation() + "Copying OTP graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
                 .to("direct:copyAllBlobs")
-                .log(LoggingLevel.INFO, "Done copying OTP graph build reports.")
+                .log(LoggingLevel.INFO, correlation() + "Done copying OTP graph build reports.")
                 .routeId("otp-remote-graph-build-report-versioned-upload");
 
         from("direct:remoteUpdateCurrentGraphReportVersion")
-                .log(LoggingLevel.INFO, "Uploading OTP graph build reports current version.")
+                .log(LoggingLevel.INFO, correlation() + "Uploading OTP graph build reports current version.")
                 .process(e ->
                         otpReportBlobStoreService.uploadHtmlBlob("index.html", createRedirectPage(e.getProperty(GRAPH_VERSION, String.class)), true))
                 .routeId("otp-remote-graph-report-update-current");
@@ -194,10 +194,10 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:remoteCleanUp")
                 .choice()
                 .when(constant(deleteOtpRemoteWorkDir))
-                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP remote work directory ${property." + Exchange.FILE_PARENT + "} ...")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP remote work directory ${exchangeProperty." + Exchange.FILE_PARENT + "} ...")
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(OTP_REMOTE_WORK_DIR))
                 .to("direct:deleteAllBlobsInFolder")
-                .log(LoggingLevel.INFO, getClass().getName(), "Deleting OTP remote work directory ${property." + Exchange.FILE_PARENT + "} cleanup done.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP remote work directory ${exchangeProperty." + Exchange.FILE_PARENT + "} cleanup done.")
                 .end()
                 .routeId("otp-remote-graph-cleanup");
 
@@ -222,14 +222,14 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
     }
 
     private InputStream createRedirectPage(String version) {
-            String url = "http://" + otpReportContainerName + "/" + version + "/index.html";
-            String html = "<html>\n" +
-                    "<head>\n" +
-                    "    <meta http-equiv=\"refresh\" content=\"0; url=" + url + "\" />\n" +
-                    "</head>\n" +
-                    "</html>";
+        String url = "http://" + otpReportContainerName + "/" + version + "/index.html";
+        String html = "<html>\n" +
+                "<head>\n" +
+                "    <meta http-equiv=\"refresh\" content=\"0; url=" + url + "\" />\n" +
+                "</head>\n" +
+                "</html>";
 
-            return IOUtils.toInputStream(html, StandardCharsets.UTF_8);
+        return IOUtils.toInputStream(html, StandardCharsets.UTF_8);
     }
 
 }

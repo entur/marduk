@@ -16,11 +16,11 @@
 
 package no.rutebanken.marduk.routes.file;
 
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.TransactionalBaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
@@ -38,7 +38,6 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
@@ -62,7 +61,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
         from("direct:uploadFilesAndStartImport")
                 .process(this::convertBodyToFileItems)
                 .split().body()
-                .process(e -> e.getIn().setHeader(Constants.CORRELATION_ID, e.getIn().getHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString())))
+                .process(this::setCorrelationIdIfMissing)
                 .setHeader(FILE_NAME, simple("${body.name}"))
                 .setHeader(FILE_HANDLE, simple("inbound/received/${header." + CHOUETTE_REFERENTIAL + "}/${header." + FILE_NAME + "}"))
                 .process(e -> e.getIn().setHeader(FILE_CONTENT_HEADER, new CloseShieldInputStream(e.getIn().getBody(FileItem.class).getInputStream())))
@@ -73,18 +72,18 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
         from("direct:uploadFileAndStartImport").streamCaching()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build()).inOnly("direct:updateStatus")
                 .doTry()
-                .log(LoggingLevel.INFO, correlation() + "About to upload timetable file to blob store: ${header." + FILE_HANDLE + "}")
+                .log(LoggingLevel.INFO, correlation() + "Uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
                 .setBody(header(FILE_CONTENT_HEADER))
                 .setHeader(Exchange.FILE_NAME, header(FILE_NAME))
                 .to("direct:filterDuplicateFile")
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, correlation() + "Finished uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
                 .setBody(constant(null))
-                .inOnly("entur-google-pubsub:ProcessFileQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ProcessFileQueue")
                 .log(LoggingLevel.INFO, correlation() + "Triggered import pipeline for timetable file: ${header." + FILE_HANDLE + "}")
                 .doCatch(Exception.class)
                 .log(LoggingLevel.WARN, correlation() + "Upload of timetable data to blob store failed for file: ${header." + FILE_HANDLE + "}")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.FAILED).build()).inOnly("direct:updateStatus")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.FAILED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
                 .end()
                 .routeId("file-upload-and-start-import");
     }
