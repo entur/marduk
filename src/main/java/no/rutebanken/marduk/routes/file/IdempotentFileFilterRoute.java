@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.file;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.FileNameAndDigest;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 
+import static no.rutebanken.marduk.Constants.FILE_APPLY_DUPLICATES_FILTER;
 import static no.rutebanken.marduk.Constants.FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES;
 import static org.apache.camel.builder.PredicateBuilder.and;
 import static org.apache.camel.builder.PredicateBuilder.not;
@@ -55,9 +57,8 @@ public class IdempotentFileFilterRoute extends BaseRouteBuilder {
                     .end()
                 .end()
                 .choice()
-                .when(simple("{{idempotent.skip:false}}"))
-                .log(LoggingLevel.WARN, getClass().getName(), "Idempotent filter is disabled. This also means that consumed SFTP files will be deleted.")
-                .otherwise()
+                .when(and(not(simple("{{idempotent.skip:false}}")),header(FILE_APPLY_DUPLICATES_FILTER).isEqualTo(true)))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() +  "Checking duplicate on file ${header." + Exchange.FILE_NAME + "}")
                 .to("direct:runIdempotentConsumer")
                 .endChoice();
 
@@ -66,7 +67,7 @@ public class IdempotentFileFilterRoute extends BaseRouteBuilder {
                 .process(e -> e.getIn().setHeader(HEADER_FILE_NAME_AND_DIGEST, new FileNameAndDigest(e.getIn().getHeader(Exchange.FILE_NAME, String.class), DigestUtils.md5Hex(e.getIn().getBody(InputStream.class)))))
                 .idempotentConsumer(header(HEADER_FILE_NAME_AND_DIGEST)).messageIdRepository(fileNameAndDigestIdempotentRepository).skipDuplicate(false).removeOnFailure(false)
                 .filter(exchangeProperty(Exchange.DUPLICATE_MESSAGE).isEqualTo(true))
-                .log(LoggingLevel.DEBUG, getClass().getName(), "Detected ${header." + Exchange.FILE_NAME + "} as duplicate.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Detected ${header." + Exchange.FILE_NAME + "} as duplicate.")
                 .to("direct:updateStatusForDuplicateFile")
                 .stop()
                 .end();
@@ -74,7 +75,10 @@ public class IdempotentFileFilterRoute extends BaseRouteBuilder {
 
         from("direct:updateStatusForDuplicateFile")
                 .choice().when(not(simple("${header." + FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES + "}")))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.DUPLICATE).build()).to("direct:updateStatus").endChoice();
+                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_DUPLICATE_FILE))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.FAILED).build())
+                .to("direct:updateStatus")
+                .endChoice();
 
     }
 }

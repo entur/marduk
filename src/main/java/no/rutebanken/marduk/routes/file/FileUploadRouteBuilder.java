@@ -17,7 +17,7 @@
 package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.TransactionalBaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
@@ -47,14 +47,14 @@ import static no.rutebanken.marduk.Constants.FILE_NAME;
  * Upload file to blob store and trigger import pipeline.
  */
 @Component
-public class FileUploadRouteBuilder extends BaseRouteBuilder {
+public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
 
     private static final String FILE_CONTENT_HEADER = "RutebankenFileContent";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileUploadRouteBuilder.class);
 
     @Override
-    public void configure() throws Exception {
+    public void configure() {
         super.configure();
 
 
@@ -69,11 +69,13 @@ public class FileUploadRouteBuilder extends BaseRouteBuilder {
                 .routeId("files-upload");
 
 
-        from("direct:uploadFileAndStartImport")
+        from("direct:uploadFileAndStartImport").streamCaching()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
                 .doTry()
                 .log(LoggingLevel.INFO, correlation() + "Uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
                 .setBody(header(FILE_CONTENT_HEADER))
+                .setHeader(Exchange.FILE_NAME, header(FILE_NAME))
+                .to("direct:filterDuplicateFile")
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, correlation() + "Finished uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
                 .setBody(constant(null))
@@ -96,9 +98,9 @@ public class FileUploadRouteBuilder extends BaseRouteBuilder {
             LOGGER.debug("Received a multipart request (size: {} bytes) with content type {} ", content.length, contentType);
             SimpleUploadContext uploadContext = new SimpleUploadContext(StandardCharsets.UTF_8, contentType, content);
             List<FileItem> fileItems = upload.parseRequest(uploadContext);
-            if(LOGGER.isDebugEnabled()) {
+            if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("The multipart request contains {} file(s)", fileItems.size());
-                for(FileItem fileItem : fileItems) {
+                for (FileItem fileItem : fileItems) {
                     LOGGER.debug("Received file {} (size: {})", fileItem.getName(), fileItem.getSize());
                 }
             }
