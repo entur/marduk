@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.FILE_APPLY_DUPLICATES_FILTER;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
@@ -464,6 +465,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, correlation() + "Authorization OK for HTTP endpoint, uploading files and starting import pipeline")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
+                .setHeader(FILE_APPLY_DUPLICATES_FILTER, constant(true))
                 .to("direct:uploadFilesAndStartImport")
                 .routeId("admin-upload-file")
                 .endRest()
