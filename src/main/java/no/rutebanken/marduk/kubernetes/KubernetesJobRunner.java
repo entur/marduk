@@ -57,7 +57,7 @@ public class KubernetesJobRunner {
 
             LOGGER.info("Creating Graph builder job with name {} ", jobName);
 
-            Job job = buildJobfromCronJobSpecTemplate(specTemplate, jobName, envVars);
+            Job job = buildJobFromCronJobSpecTemplate(specTemplate, jobName, envVars);
             kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).create(job);
 
 
@@ -133,17 +133,14 @@ public class KubernetesJobRunner {
     }
 
     protected CronJobSpec getCronJobSpecTemplate(String cronJobName, KubernetesClient client) {
-        List<CronJob> matchingJobs = client.batch().cronjobs().inNamespace(kubernetesNamespace).withLabel("app", cronJobName).list().getItems();
-        if (matchingJobs.isEmpty()) {
-            throw new KubernetesJobRunnerException("Job with label=" + cronJobName + " not found in namespace " + kubernetesNamespace);
+        CronJob matchingCrobJob = client.batch().cronjobs().inNamespace(kubernetesNamespace).withName(cronJobName).get();
+        if (matchingCrobJob == null) {
+            throw new KubernetesJobRunnerException("Job with name=" + cronJobName + " not found in namespace " + kubernetesNamespace);
         }
-        if (matchingJobs.size() > 1) {
-            throw new KubernetesJobRunnerException("Found multiple jobs matching label app=" + cronJobName + " in namespace " + kubernetesNamespace);
-        }
-        return matchingJobs.get(0).getSpec();
+        return matchingCrobJob.getSpec();
     }
 
-    protected Job buildJobfromCronJobSpecTemplate(CronJobSpec specTemplate, String jobName, List<EnvVar> envVars) {
+    protected Job buildJobFromCronJobSpecTemplate(CronJobSpec specTemplate, String jobName, List<EnvVar> envVars) {
 
         JobSpec jobSpec = specTemplate.getJobTemplate().getSpec();
         return new JobBuilder()
