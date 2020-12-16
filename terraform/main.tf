@@ -1,6 +1,6 @@
 # Contains main description of bulk of terraform
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 0.13"
 }
 
 provider "google" {
@@ -52,19 +52,6 @@ resource "google_storage_bucket_iam_member" "storage_otpreport_bucket_iam_member
   member = "serviceAccount:${google_service_account.marduk_service_account.email}"
 }
 
-# add service account as member to pubsub service in the resources project
-resource "google_project_iam_member" "pubsub_project_iam_member_subscriber" {
-  project = var.gcp_pubsub_project
-  role = "roles/pubsub.subscriber"
-  member = "serviceAccount:${google_service_account.marduk_service_account.email}"
-}
-
-resource "google_project_iam_member" "pubsub_project_iam_member_publisher" {
-  project = var.gcp_pubsub_project
-  role = "roles/pubsub.publisher"
-  member = "serviceAccount:${google_service_account.marduk_service_account.email}"
-}
-
 # create key for service account
 resource "google_service_account_key" "marduk_service_account_key" {
   service_account_id = google_service_account.marduk_service_account.name
@@ -98,327 +85,77 @@ resource "kubernetes_secret" "ror-marduk-secret" {
   }
 }
 
-# Create pubsub topics and subscriptions
-resource "google_pubsub_topic" "ChouetteExportGtfsQueue" {
-  name = "ChouetteExportGtfsQueue"
+# Create pubsub topics
+resource "google_pubsub_topic" "topics" {
+  count = length(var.queues)
+  name  = var.queues[count.index]
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
-resource "google_pubsub_subscription" "ChouetteExportGtfsQueue" {
-  name = "ChouetteExportGtfsQueue"
-  topic = google_pubsub_topic.ChouetteExportGtfsQueue.name
+# Create pubsub subscriptions
+resource "google_pubsub_subscription" "queues" {
+  count = length(var.queues)
+  name  = var.queues[count.index]
+  topic = var.queues[count.index]
   project = var.gcp_pubsub_project
-  labels = var.labels
   retry_policy {
     minimum_backoff = "10s"
   }
-}
-
-resource "google_pubsub_topic" "ChouetteExportNetexQueue" {
-  name = "ChouetteExportNetexQueue"
-  project = var.gcp_pubsub_project
   labels = var.labels
 }
 
-resource "google_pubsub_subscription" "ChouetteExportNetexQueue" {
-  name = "ChouetteExportNetexQueue"
-  topic = google_pubsub_topic.ChouetteExportNetexQueue.name
+# Configure IAM for pubsub topics
+resource "google_pubsub_topic_iam_member" "topics_iam" {
+  count = length(var.queues)
   project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
+  topic = var.queues[count.index]
+  role = "roles/pubsub.publisher"
+  member = "serviceAccount:${google_service_account.marduk_service_account.email}"
 }
 
-resource "google_pubsub_topic" "ChouetteExportNetexBlocksQueue" {
-  name = "ChouetteExportNetexBlocksQueue"
+# Configure IAM for pubsub subscriptions
+resource "google_pubsub_subscription_iam_member" "subscriptions_iam" {
+  count = length(var.queues)
   project = var.gcp_pubsub_project
-  labels = var.labels
+  subscription = var.queues[count.index]
+  role = "roles/pubsub.subscriber"
+  member = "serviceAccount:${google_service_account.marduk_service_account.email}"
 }
 
-resource "google_pubsub_subscription" "ChouetteExportNetexBlocksQueue" {
-  name = "ChouetteExportNetexBlocksQueue"
-  topic = google_pubsub_topic.ChouetteExportNetexBlocksQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "ChouetteImportQueue" {
-  name = "ChouetteImportQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "ChouetteImportQueue" {
-  name = "ChouetteImportQueue"
-  topic = google_pubsub_topic.ChouetteImportQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "ChouetteMergeWithFlexibleLinesQueue" {
-  name = "ChouetteMergeWithFlexibleLinesQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "ChouetteMergeWithFlexibleLinesQueue" {
-  name = "ChouetteMergeWithFlexibleLinesQueue"
-  topic = google_pubsub_topic.ChouetteMergeWithFlexibleLinesQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "ChouettePollStatusQueue" {
-  name = "ChouettePollStatusQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "ChouettePollStatusQueue" {
-  name = "ChouettePollStatusQueue"
-  topic = google_pubsub_topic.ChouettePollStatusQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "ChouetteTransferExportQueue" {
-  name = "ChouetteTransferExportQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "ChouetteTransferExportQueue" {
-  name = "ChouetteTransferExportQueue"
-  topic = google_pubsub_topic.ChouetteTransferExportQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "ChouetteValidationQueue" {
-  name = "ChouetteValidationQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "ChouetteValidationQueue" {
-  name = "ChouetteValidationQueue"
-  topic = google_pubsub_topic.ChouetteValidationQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "GtfsBasicExportMergedQueue" {
-  name = "GtfsBasicExportMergedQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "GtfsBasicExportMergedQueue" {
-  name = "GtfsBasicExportMergedQueue"
-  topic = google_pubsub_topic.GtfsBasicExportMergedQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "GtfsExportMergedQueue" {
-  name = "GtfsExportMergedQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "GtfsExportMergedQueue" {
-  name = "GtfsExportMergedQueue"
-  topic = google_pubsub_topic.GtfsExportMergedQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "GtfsGoogleExportQueue" {
-  name = "GtfsGoogleExportQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "GtfsGoogleExportQueue" {
-  name = "GtfsGoogleExportQueue"
-  topic = google_pubsub_topic.GtfsGoogleExportQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "GtfsGooglePublishQaQueue" {
-  name = "GtfsGooglePublishQaQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "GtfsGooglePublishQaQueue" {
-  name = "GtfsGooglePublishQaQueue"
-  topic = google_pubsub_topic.GtfsGooglePublishQaQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "GtfsGooglePublishQueue" {
-  name = "GtfsGooglePublishQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "GtfsGooglePublishQueue" {
-  name = "GtfsGooglePublishQueue"
-  topic = google_pubsub_topic.GtfsGooglePublishQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "GtfsGoogleQaExportQueue" {
-  name = "GtfsGoogleQaExportQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "GtfsGoogleQaExportQueue" {
-  name = "GtfsGoogleQaExportQueue"
-  topic = google_pubsub_topic.GtfsGoogleQaExportQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "MardukInboundQueue" {
-  name = "MardukInboundQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "MardukInboundQueue" {
-  name = "MardukInboundQueue"
-  topic = google_pubsub_topic.MardukInboundQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "NetexExportMergedQueue" {
-  name = "NetexExportMergedQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "NetexExportMergedQueue" {
-  name = "NetexExportMergedQueue"
-  topic = google_pubsub_topic.NetexExportMergedQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "ProcessFileQueue" {
-  name = "ProcessFileQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "ProcessFileQueue" {
-  name = "ProcessFileQueue"
-  topic = google_pubsub_topic.ProcessFileQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "OtpBaseGraphBuildQueue" {
-  name = "OtpBaseGraphBuildQueue"
-  project = var.gcp_pubsub_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "OtpBaseGraphBuildQueue" {
-  name = "OtpBaseGraphBuildQueue"
-  topic = google_pubsub_topic.OtpBaseGraphBuildQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
+# Configure subscriptions for OTP2 queues that are attached to OTP1 topics
 resource "google_pubsub_subscription" "Otp2BaseGraphBuildQueue" {
   name = "Otp2BaseGraphBuildQueue"
-  topic = google_pubsub_topic.OtpBaseGraphBuildQueue.name
-  project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "OtpGraphBuildQueue" {
-  name = "OtpGraphBuildQueue"
+  topic = "OtpBaseGraphBuildQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
 }
 
-resource "google_pubsub_subscription" "OtpGraphBuildQueue" {
-  name = "OtpGraphBuildQueue"
-  topic = google_pubsub_topic.OtpGraphBuildQueue.name
+resource "google_pubsub_subscription_iam_member" "Otp2BaseGraphBuildQueue_iam" {
   project = var.gcp_pubsub_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
+  subscription = "Otp2BaseGraphBuildQueue"
+  role = "roles/pubsub.subscriber"
+  member = "serviceAccount:${google_service_account.marduk_service_account.email}"
 }
 
 resource "google_pubsub_subscription" "Otp2GraphBuildQueue" {
   name = "Otp2GraphBuildQueue"
-  topic = google_pubsub_topic.OtpGraphBuildQueue.name
+  topic = "OtpGraphBuildQueue"
   project = var.gcp_pubsub_project
   labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
+}
+
+resource "google_pubsub_subscription_iam_member" "Otp2GraphBuildQueue_iam" {
+  project = var.gcp_pubsub_project
+  subscription = "Otp2GraphBuildQueue"
+  role = "roles/pubsub.subscriber"
+  member = "serviceAccount:${google_service_account.marduk_service_account.email}"
+}
+
+# Configure IAM for the event notification topic (Nabu)
+resource "google_pubsub_topic_iam_member" "pubsub_subscription_iam_member_subscriber_job_event_queue" {
+  project = var.gcp_pubsub_project
+  topic = "JobEventQueue"
+  role = "roles/pubsub.publisher"
+  member = "serviceAccount:${google_service_account.marduk_service_account.email}"
 }
