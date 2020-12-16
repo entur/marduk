@@ -28,6 +28,7 @@ import org.apache.camel.Body;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
@@ -445,6 +446,37 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple(""))
                 .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphBuildQueue")
                 .routeId("admin-build-graph-netex")
+                .endRest()
+
+                .post("routing_graph/build_candidate/{graphType}")
+                .description("Triggers graph building for a candidate OTP version")
+                .param().name("graphType").type(RestParamType.path).description("Type of graph").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Command accepted").endResponseMessage()
+                .route()
+                .to("direct:authorizeAdminRequest")
+                .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
+                .setBody(simple(""))
+                .choice()
+                .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp1_base")))
+                .log(LoggingLevel.INFO, "OTP1 build candidate base graph")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpBaseGraphCandidateBuildQueue")
+                .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp1_netex")))
+                .log(LoggingLevel.INFO, "OTP1 build candidate NeTEx graph")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphCandidateBuildQueue")
+                .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp2_base")))
+                .log(LoggingLevel.INFO, "OTP2 build candidate base graph")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:Otp2BaseGraphCandidateBuildQueue")
+                .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp2_netex")))
+                .log(LoggingLevel.INFO, "OTP2 build candidate NeTEx graph")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:Otp2GraphCandidateBuildQueue")
+                .otherwise()
+                .setBody(constant("Unknown Graph Type"))
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(400))
+                .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                .end()
+                .routeId("admin-build-graph-candidate")
                 .endRest()
 
                 .post("/upload/{codespace}")

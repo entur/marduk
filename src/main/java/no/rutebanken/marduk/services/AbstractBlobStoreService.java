@@ -2,6 +2,7 @@ package no.rutebanken.marduk.services;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.BlobStoreRepository;
 import org.apache.camel.Exchange;
 import org.apache.camel.Header;
@@ -37,6 +38,16 @@ public abstract class AbstractBlobStoreService {
 
     public BlobStoreFiles listBlobsFlat(@Header(value = Constants.CHOUETTE_REFERENTIAL) String referential, Exchange exchange) {
         return repository.listBlobsFlat(Constants.BLOBSTORE_PATH_INBOUND + referential + "/");
+    }
+
+    public BlobStoreFiles.File findBlob(@Header(value = Constants.FILE_PREFIX) String prefix, Exchange exchange) {
+        BlobStoreFiles blobStoreFiles = repository.listBlobs(prefix);
+        if(blobStoreFiles.getFiles().isEmpty()) {
+            return null;
+        } else if(blobStoreFiles.getFiles().size() > 1) {
+            throw new MardukException("Found multiple files matching the prefix " + prefix);
+        }
+        return blobStoreFiles.getFiles().get(0);
     }
 
     public InputStream getBlob(@Header(value = Constants.FILE_HANDLE) String name, Exchange exchange) {

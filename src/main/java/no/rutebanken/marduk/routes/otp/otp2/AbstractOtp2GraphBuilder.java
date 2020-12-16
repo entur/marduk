@@ -24,8 +24,17 @@ public abstract class AbstractOtp2GraphBuilder implements OtpGraphBuilder {
     private KubernetesJobRunner kubernetesJobRunner;
 
     @Override
-    public void build(String otpWorkDir, String timestamp) {
-        kubernetesJobRunner.runJob(graphBuilderCronJobName, getJobNamePrefix(), getEnvVars(otpWorkDir), timestamp);
+    public void build(String otpWorkDir, String timestamp, boolean candidate) {
+        String cronJobName;
+        String jobNamePrefix;
+        if(candidate) {
+            cronJobName = graphBuilderCronJobName + "-candidate";
+            jobNamePrefix = getJobNamePrefix() + "-candidate";
+        } else {
+            cronJobName = graphBuilderCronJobName;
+            jobNamePrefix = getJobNamePrefix();
+        }
+        kubernetesJobRunner.runJob(cronJobName, jobNamePrefix, getEnvVars(otpWorkDir), timestamp);
     }
 
     protected abstract List<EnvVar> getEnvVars(String otpWorkDir);

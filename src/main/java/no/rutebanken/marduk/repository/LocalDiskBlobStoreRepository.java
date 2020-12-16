@@ -167,19 +167,23 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public boolean deleteAllFilesInFolder(String folder) {
-        try (Stream<Path> paths = Files.walk(Paths.get(getContainerFolder()).resolve(folder))) {
-            paths.sorted(Comparator.reverseOrder())
-                    .forEach(path -> {
-                        try {
-                            Files.delete(path);
-                        } catch (IOException e) {
-                            throw new MardukException(e);
-                        }
-                    });
-            return true;
-        } catch (IOException e) {
-            throw new MardukException(e);
+        Path folderToDelete = Paths.get(getContainerFolder()).resolve(folder);
+        if (folderToDelete.toFile().isDirectory()) {
+            try (Stream<Path> paths = Files.walk(folderToDelete)) {
+                paths.sorted(Comparator.reverseOrder())
+                        .forEach(path -> {
+                            try {
+                                Files.delete(path);
+                            } catch (IOException e) {
+                                throw new MardukException(e);
+                            }
+                        });
+                return true;
+            } catch (IOException e) {
+                throw new MardukException(e);
+            }
         }
+        return false;
     }
 
     private static Date getFileCreationDate(Path path) {

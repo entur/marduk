@@ -17,11 +17,13 @@
 package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +34,10 @@ import java.util.UUID;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ_PREFIX;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ_PREFIX;
+import static no.rutebanken.marduk.Constants.OTP_BUILD_CANDIDATE;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
@@ -61,8 +66,6 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
     private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
 
-    private static final String GRAPH_VERSION = "RutebankenGraphVersion";
-
     private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
 
     @Autowired
@@ -81,6 +84,15 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:remoteBuildOtp2Graph")
                 .routeId("otp2-graph-build");
 
+        singletonFrom("entur-google-pubsub:Otp2GraphCandidateBuildQueue?ackMode=NONE").autoStartup("{{otp2.graph.build.autoStartup:true}}")
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .process(this::addOnCompletionForAggregatedExchange)
+                .process(this::setNewCorrelationId)
+                .setProperty(OTP_BUILD_CANDIDATE, simple("true", Boolean.class))
+                .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 graph candidate building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .to("direct:remoteBuildOtp2Graph")
+                .routeId("otp2-graph-candidate-build");
+
         from("direct:remoteBuildOtp2Graph")
                 .setProperty(PROP_MESSAGES, simple("${body}"))
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
@@ -88,7 +100,10 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${exchangeProperty." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 graph building in remote directory ${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}.")
 
+                .choice()
+                .when(PredicateBuilder.not(exchangeProperty(OTP_BUILD_CANDIDATE)))
                 .to("direct:otp2ExportMergedNetex")
+                .end()
 
                 .to("direct:remoteBuildOtp2NetexGraphAndSendStatus")
                 .to("direct:remoteOtp2GraphPublishing")
@@ -118,22 +133,12 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp2-remote-netex-graph-build-otp");
 
         from("direct:remoteOtp2GraphPublishing")
+                .setHeader(Constants.FILE_PREFIX, simple("${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}/" + OTP2_GRAPH_OBJ_PREFIX))
+                .to("direct:findBlob")
+                .log(LoggingLevel.INFO, correlation() + "Found OTP2 graph named ${body.fileNameOnly} matching file prefix ${header." + Constants.FILE_PREFIX + "}")
 
                 // copy the new graph from the OTP remote work directory to the graphs directory in GCS
-                .process(e -> {
-                            String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + OTP2_GRAPH_OBJ;
-                            String publishedGraphPath = Constants.OTP2_NETEX_GRAPH_DIR
-                                    + "/" + e.getProperty(TIMESTAMP, String.class)
-                                    + '-' + OTP2_GRAPH_OBJ;
-                            String publishedGraphVersion = Constants.OTP2_NETEX_GRAPH_DIR + "/" + e.getProperty(TIMESTAMP, String.class) + "-report";
-
-                            e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
-                            e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
-                            e.getIn().setHeader(TARGET_CONTAINER, otpGraphsBucketName);
-                            e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, false);
-                            e.setProperty(GRAPH_VERSION, publishedGraphVersion);
-                        }
-                )
+                .process(new Otp2NetexGraphPublishingProcessor(otpGraphsBucketName))
                 .to("direct:copyBlobToAnotherBucket")
                 .log(LoggingLevel.INFO, correlation() + "Done copying new OTP2 graph: ${header." + FILE_HANDLE + "}")
 
@@ -146,23 +151,18 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadOtpGraphsBlob")
                 .log(LoggingLevel.INFO, correlation() + "Done uploading reference to current OTP2graph: ${header." + FILE_HANDLE + "}")
 
-                .log(LoggingLevel.INFO, correlation() + "Done uploading OTP2 graph build reports.")
-
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("OTP2_BUILD_GRAPH").state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
                 .to("direct:updateStatus")
-
                 .to("direct:remoteOtp2CleanUp")
-
-
                 .routeId("otp2-remote-netex-graph-publish");
 
         from("direct:remoteOtp2CleanUp")
                 .choice()
                 .when(constant(deleteOtpRemoteWorkDir))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP2 remote work directory ${exchangeProperty." + Exchange.FILE_PARENT + "} ...")
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(OTP_REMOTE_WORK_DIR))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP2 remote work directory ${header." + Exchange.FILE_PARENT + "} ...")
                 .to("direct:deleteAllBlobsInFolder")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP2 remote work directory ${exchangeProperty." + Exchange.FILE_PARENT + "} cleanup done.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleted OTP2 remote work directory ${header." + Exchange.FILE_PARENT + "}")
                 .end()
                 .routeId("otp2-remote-graph-cleanup");
 
@@ -185,4 +185,6 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp2-netex-graph-send-status-for-timetable-jobs");
 
     }
+
+
 }

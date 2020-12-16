@@ -37,6 +37,7 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.OTP_GRAPH_VERSION;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
@@ -69,8 +70,6 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
     private static final String PROP_MESSAGES = "RutebankenPropMessages";
 
     private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
-
-    private static final String GRAPH_VERSION = "RutebankenGraphVersion";
 
     private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
 
@@ -143,7 +142,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                             e.getIn().setHeader(TARGET_CONTAINER, otpGraphsBucketName);
                             e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
                             e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, false);
-                            e.setProperty(GRAPH_VERSION, publishedGraphVersion);
+                            e.setProperty(OTP_GRAPH_VERSION, publishedGraphVersion);
                         }
                 )
                 .to("direct:copyBlobToAnotherBucket")
@@ -177,7 +176,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .process(e -> {
                     e.getIn().setHeader(Exchange.FILE_PARENT, e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/report");
                     e.getIn().setHeader(TARGET_CONTAINER, otpReportContainerName);
-                    e.getIn().setHeader(TARGET_FILE_PARENT, e.getProperty(GRAPH_VERSION, String.class));
+                    e.getIn().setHeader(TARGET_FILE_PARENT, e.getProperty(OTP_GRAPH_VERSION, String.class));
                     e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, true);
                 })
                 .log(LoggingLevel.INFO, correlation() + "Copying OTP graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
@@ -188,16 +187,16 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:remoteUpdateCurrentGraphReportVersion")
                 .log(LoggingLevel.INFO, correlation() + "Uploading OTP graph build reports current version.")
                 .process(e ->
-                        otpReportBlobStoreService.uploadHtmlBlob("index.html", createRedirectPage(e.getProperty(GRAPH_VERSION, String.class)), true))
+                        otpReportBlobStoreService.uploadHtmlBlob("index.html", createRedirectPage(e.getProperty(OTP_GRAPH_VERSION, String.class)), true))
                 .routeId("otp-remote-graph-report-update-current");
 
         from("direct:remoteCleanUp")
                 .choice()
                 .when(constant(deleteOtpRemoteWorkDir))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP remote work directory ${exchangeProperty." + Exchange.FILE_PARENT + "} ...")
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(OTP_REMOTE_WORK_DIR))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP remote work directory ${header." + Exchange.FILE_PARENT + "} ...")
                 .to("direct:deleteAllBlobsInFolder")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP remote work directory ${exchangeProperty." + Exchange.FILE_PARENT + "} cleanup done.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleted OTP remote work directory ${header." + Exchange.FILE_PARENT + "}")
                 .end()
                 .routeId("otp-remote-graph-cleanup");
 

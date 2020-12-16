@@ -16,11 +16,13 @@
 
 package no.rutebanken.marduk.routes.otp.otp2;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +32,8 @@ import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ_PREFIX;
+import static no.rutebanken.marduk.Constants.OTP_BUILD_CANDIDATE;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
@@ -60,6 +64,15 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:remoteBuildOtp2BaseGraph")
                 .routeId("otp2-base-graph-build");
 
+        singletonFrom("entur-google-pubsub:Otp2BaseGraphCandidateBuildQueue?ackMode=NONE").autoStartup("{{otp2.graph.build.autoStartup:true}}")
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .process(this::addOnCompletionForAggregatedExchange)
+                .process(this::setNewCorrelationId)
+                .setProperty(OTP_BUILD_CANDIDATE, simple("true", Boolean.class))
+                .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 base graph candidate building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .to("direct:remoteBuildOtp2BaseGraph")
+                .routeId("otp2-base-graph-candidate-build");
+
         from("direct:remoteBuildOtp2BaseGraph")
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtp2BaseGraphStartedEventsInNewTransaction")
@@ -85,6 +98,9 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .process(new OtpGraphBuilderProcessor(otp2BaseGraphBuilder))
                 .log(LoggingLevel.INFO, correlation() + "Done building new OTP2 base graph.")
                 // copy new base graph in remote storage
+                .setHeader(Constants.FILE_PREFIX, simple("${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}/" + OTP2_BASE_GRAPH_OBJ_PREFIX))
+                .to("direct:findBlob")
+                .log(LoggingLevel.DEBUG, correlation() + "Found OTP2 base graph named ${body.name} ")
                 .process(e -> {
                             String builtBaseGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + OTP2_BASE_GRAPH_OBJ;
                             String publishedBaseGraphPath = blobStoreSubdirectory + "/" + OTP2_BASE_GRAPH_OBJ;
@@ -97,10 +113,11 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
 
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP2 base graph, triggering full OTP2 graph build")
+                .choice()
+                .when(PredicateBuilder.not(exchangeProperty(OTP_BUILD_CANDIDATE)))
                 .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphBuildQueue")
-
+                .end()
                 .to("direct:remoteCleanUp")
-
                 .routeId("otp2-remote-base-graph-build-build-otp");
 
         from("direct:sendOtp2BaseGraphStartedEventsInNewTransaction")

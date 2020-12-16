@@ -19,6 +19,7 @@ package no.rutebanken.marduk;
 public final class Constants {
     public static final String FILE_TYPE = "RutebankenFileType";
     public static final String FILE_HANDLE = "RutebankenFileHandle";
+    public static final String FILE_PREFIX = "RutebankenFilePrefix";
     public static final String TARGET_FILE_HANDLE = "RutebankenTargetFileHandle";
     public static final String TARGET_FILE_PARENT = "RutebankenTargetFileParent";
     public static final String TARGET_CONTAINER = "RutebankenTargetContainer";
@@ -38,11 +39,15 @@ public final class Constants {
     public static final String CURRENT_AGGREGATED_NETEX_FILENAME = "aggregated-netex.zip";
     public static final String CURRENT_FLEXIBLE_LINES_NETEX_FILENAME = "flexible-lines.zip";
     public static final String GRAPH_OBJ = "Graph.obj";
+    public static final String GRAPH_OBJ_PREFIX = "Graph";
     public static final String BASE_GRAPH_OBJ = "baseGraph.obj";
+    public static final String BASE_GRAPH_OBJ_PREFIX = "baseGraph";
     public static final String NETEX_GRAPH_DIR = "netex";
 
     public static final String OTP2_GRAPH_OBJ = "Graph-otp2.obj";
+    public static final String OTP2_GRAPH_OBJ_PREFIX = "Graph-otp2";
     public static final String OTP2_BASE_GRAPH_OBJ = "streetGraph-otp2.obj";
+    public static final String OTP2_BASE_GRAPH_OBJ_PREFIX = "streetGraph-otp2";
     public static final String OTP2_NETEX_GRAPH_DIR = "netex-otp2";
 
     public static final String FILE_TARGET_MD5 = "RutebankenMd5SumRecordedForTargetFile";
@@ -85,12 +90,16 @@ public final class Constants {
     public static final String TRANSFORMATION_ROUTING_DESTINATION = "RutebankenTransformationRoutingDestination";
 
     public static final String OTP_REMOTE_WORK_DIR = "RutebankenOtpRemoteWorkDir";
+    public static final String OTP_GRAPH_VERSION = "RutebankenGraphVersion";
+    public static final String OTP_BUILD_CANDIDATE = "RutebankenOtpBuildCandidate";
+
 
 
     public static final String INCLUDE_SHAPES = "IncludeShapes";
 
     public static final String CAMEL_ALL_HEADERS = "Camel*";
     public static final String CAMEL_ALL_HTTP_HEADERS = "CamelHttp*";
+
 
 
     private Constants() {
