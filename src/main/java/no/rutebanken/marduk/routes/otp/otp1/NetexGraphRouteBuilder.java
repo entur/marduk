@@ -115,7 +115,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:sendStatusForOtpNetexJobs")
                 .doCatch(Exception.class)
                 .log(LoggingLevel.ERROR, correlation() + "Graph building failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.FAILED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.FAILED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
                 .setProperty(PROP_STATUS, constant(JobEvent.State.FAILED))
                 .to("direct:sendStatusForOtpNetexJobs")
                 .to("direct:remoteCleanUp")
@@ -164,7 +164,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:remoteUpdateCurrentGraphReportVersion")
                 .log(LoggingLevel.INFO, correlation() + "Done uploading OTP graph build reports.")
 
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
                 .to("direct:updateStatus")
 
                 .to("direct:remoteCleanUp")
@@ -203,7 +203,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
 
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action("BUILD_GRAPH").state(JobEvent.State.STARTED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.STARTED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
                 .setProperty(PROP_STATUS, constant(JobEvent.State.STARTED))
                 .to("direct:sendStatusForOtpNetexJobs")
                 .routeId("otp-netex-graph-send-started-events");
