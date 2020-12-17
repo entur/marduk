@@ -22,7 +22,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
 import java.io.ByteArrayInputStream;
@@ -41,11 +43,28 @@ import java.util.stream.Collectors;
  */
 @Repository
 @Profile("in-memory-blobstore")
+@Scope("prototype")
 public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private static final Logger LOGGER = LoggerFactory.getLogger(InMemoryBlobStoreRepository.class);
 
-    private Map<String, byte[]> blobs = new HashMap<>();
+
+    /**
+     * Autowire a shared map so that each prototype bean can access blobs from other containers.
+     * This is needed for {@link #copyBlob(String, String, String, String, boolean)}
+     */
+    @Autowired
+    private Map<String, Map<String, byte[]>> blobsInContainers;
+
+    private String containerName;
+
+    private Map<String, byte[]> getBlobsForCurrentContainer() {
+        return getBlobsForContainer(containerName);
+    }
+
+    private Map<String, byte[]> getBlobsForContainer(String aContainer) {
+        return blobsInContainers.computeIfAbsent(aContainer, k -> new HashMap<>());
+    }
 
     @Override
     public BlobStoreFiles listBlobs(String prefix) {
@@ -54,10 +73,10 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public BlobStoreFiles listBlobs(Collection<String> prefixes) {
-        logger.debug("list blobs called in in-memory blob store");
-        List<BlobStoreFiles.File> files = blobs.keySet().stream()
+        LOGGER.debug("list blobs called in in-memory blob store");
+        List<BlobStoreFiles.File> files = getBlobsForCurrentContainer().keySet().stream()
                 .filter(fileName -> prefixes.stream().anyMatch(fileName::startsWith))
-                .map(fileName -> new BlobStoreFiles.File(fileName, new Date(), new Date(), (long) blobs.get(fileName).length))
+                .map(fileName -> new BlobStoreFiles.File(fileName, new Date(), new Date(), (long) getBlobsForCurrentContainer().get(fileName).length))
                 .collect(Collectors.toList());
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(files);
@@ -75,8 +94,8 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public InputStream getBlob(String objectName) {
-        logger.debug("get blob called in in-memory blob store");
-        byte[] data = blobs.get(objectName);
+        LOGGER.debug("get blob called in in-memory blob store");
+        byte[] data = getBlobsForCurrentContainer().get(objectName);
         return (data == null) ? null : new ByteArrayInputStream(data);
     }
 
@@ -88,11 +107,11 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     @Override
     public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
         try {
-            logger.debug("upload blob called in in-memory blob store");
+            LOGGER.debug("upload blob called in in-memory blob store");
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             IOUtils.copy(inputStream, byteArrayOutputStream);
             byte[] data = byteArrayOutputStream.toByteArray();
-            blobs.put(objectName, data);
+            getBlobsForCurrentContainer().put(objectName, data);
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -100,8 +119,8 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
-        byte[] sourceData = blobs.get(sourceObjectName);
-        blobs.put(targetObjectName, sourceData);
+        byte[] sourceData = getBlobsForContainer(sourceContainerName).get(sourceObjectName);
+        getBlobsForContainer(targetContainerName).put(targetObjectName, sourceData);
     }
 
     @Override
@@ -111,13 +130,8 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public boolean delete(String objectName) {
-        blobs.remove(objectName);
+        getBlobsForCurrentContainer().remove(objectName);
         return true;
-    }
-
-    @Override
-    public void setContainerName(String containerName) {
-        // not applicable to in-memory blobstore
     }
 
     @Override
@@ -125,4 +139,10 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
         listBlobs(folder).getFiles().forEach(file -> delete(file.getName()));
         return true;
     }
+
+    @Override
+    public void setContainerName(String containerName) {
+        this.containerName = containerName;
+    }
+
 }

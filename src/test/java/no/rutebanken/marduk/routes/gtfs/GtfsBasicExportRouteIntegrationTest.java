@@ -19,20 +19,16 @@ package no.rutebanken.marduk.routes.gtfs;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.gtfs.GtfsFileUtilsTransformationTest;
-import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.FileUtils;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,14 +40,12 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 class GtfsBasicExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
-
-    @Autowired
-    private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
     @Produce("direct:exportGtfsBasicMerged")
     protected ProducerTemplate startRoute;
@@ -74,8 +68,8 @@ class GtfsBasicExportRouteIntegrationTest extends MardukRouteBuilderIntegrationT
     void testUploadBasicGtfsMergedFile() throws Exception {
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_avi-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_avi-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
 
         AdviceWithRouteBuilder.adviceWith(context, "gtfs-export-merged-report-ok", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
                 .to("mock:updateStatus"));
@@ -88,7 +82,7 @@ class GtfsBasicExportRouteIntegrationTest extends MardukRouteBuilderIntegrationT
 
         updateStatus.assertIsSatisfied();
 
-        InputStream mergedIS = inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + exportFileName);
+        InputStream mergedIS = mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + exportFileName);
         assertThat(mergedIS).as("Expected transformed gtfs file to have been uploaded").isNotNull();
 
         File mergedFile = File.createTempFile("mergedID", "tmp");

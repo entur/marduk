@@ -21,7 +21,6 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
-import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
@@ -81,9 +80,6 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
     @Autowired
     ModelCamelContext camelContext;
-
-    @Autowired
-    private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
     @EndpointInject("mock:chouetteImportQueue")
     protected MockEndpoint importQueue;
@@ -199,7 +195,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         InputStream testFile = getTestNetexArchiveAsStream();
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(testFileStorePath + testFileName, testFile, false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(testFileStorePath + testFileName, testFile, false);
 
         camelContext.start();
 
@@ -226,7 +222,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
 
         camelContext.start();
 
@@ -256,7 +252,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
         for (String prefix : exportFileStaticPrefixes) {
-            inMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, testFile, false);
+            mardukInMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, testFile, false);
         }
         camelContext.start();
 
@@ -271,7 +267,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         ObjectMapper mapper = new ObjectMapper();
         BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
         assertEquals(exportFileStaticPrefixes.size(), rsp.getFiles().size());
-        exportFileStaticPrefixes.forEach(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName())));
+        assertTrue(exportFileStaticPrefixes.stream().allMatch(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName()))));
     }
 
     @Test
@@ -311,7 +307,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         String fileStorePath = Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT;
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
 
         camelContext.start();
         InputStream response = (InputStream) downloadNetexBlocksTemplate.requestBodyAndHeaders(null, null);

@@ -19,6 +19,7 @@ package no.rutebanken.marduk;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
+import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
@@ -27,11 +28,13 @@ import org.apache.camel.test.spring.junit5.UseAdviceWith;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
+import javax.annotation.PostConstruct;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,17 +48,50 @@ import static org.mockito.Mockito.when;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public abstract class MardukRouteBuilderIntegrationTestBase {
 
+    @Value("${blobstore.gcs.container.name}")
+    private String mardukContainerName;
+
+    @Value("${blobstore.gcs.exchange.container.name}")
+    private String exchangeContainerName;
+
+    @Value("${blobstore.gcs.graphs.container.name}")
+    private String graphsContainerName;
+
+    @Value("${blobstore.gcs.otpreport.container.name}")
+    private String otpReportContainerName;
+
     @Autowired
     protected ModelCamelContext context;
 
     @Autowired
     protected PubSubTemplate pubSubTemplate;
 
+    @Autowired
+    protected InMemoryBlobStoreRepository mardukInMemoryBlobStoreRepository;
+
+    @Autowired
+    protected InMemoryBlobStoreRepository exchangeInMemoryBlobStoreRepository;
+
+    @Autowired
+    protected InMemoryBlobStoreRepository graphsInMemoryBlobStoreRepository;
+
+    @Autowired
+    protected InMemoryBlobStoreRepository otpReportInMemoryBlobStoreRepository;
+
+
     @MockBean
     public CacheProviderRepository providerRepository;
 
     @EndpointInject("mock:sink")
     protected MockEndpoint sink;
+
+    @PostConstruct
+    void initInMemoryBlobStoreRepositories() {
+        mardukInMemoryBlobStoreRepository.setContainerName(mardukContainerName);
+        exchangeInMemoryBlobStoreRepository.setContainerName(exchangeContainerName);
+        graphsInMemoryBlobStoreRepository.setContainerName(graphsContainerName);
+        otpReportInMemoryBlobStoreRepository.setContainerName(otpReportContainerName);
+    }
 
     @BeforeEach
     protected void setUp() throws IOException {
