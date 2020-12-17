@@ -62,6 +62,8 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
 
         AdviceWithRouteBuilder.adviceWith(context, "otp2-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
+        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-netex-graph-publish", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+
         AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-netex-graph-build", a -> a.weaveByToUri("direct:otp2ExportMergedNetex").replace().to("mock:sink"));
 
         AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-netex-graph-build-and-send-status", a -> {
@@ -73,7 +75,7 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
             });
         });
 
-        updateStatus.expectedMessageCount(3);
+        updateStatus.expectedMessageCount(4);
 
         context.start();
 
@@ -90,6 +92,8 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
 
         BlobStoreFiles blobStoreFiles = graphsInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
         Assertions.assertFalse(blobStoreFiles.getFiles().isEmpty());
+        BlobStoreFiles currentFileBlobStoreFiles = graphsInMemoryBlobStoreRepository.listBlobs("current-otp2");
+        Assertions.assertFalse(currentFileBlobStoreFiles.getFiles().isEmpty());
 
     }
 
