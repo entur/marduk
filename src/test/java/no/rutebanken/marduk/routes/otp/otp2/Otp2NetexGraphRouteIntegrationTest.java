@@ -14,11 +14,12 @@
  *
  */
 
-package no.rutebanken.marduk.routes.otp.netex;
+package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
+import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
@@ -26,8 +27,8 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.nio.charset.Charset;
@@ -36,38 +37,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes =  TestApp.class)
-class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
-
-    @Value("${otp.graph.blobstore.subdirectory:graphs}")
-    private String blobStoreSubdirectory;
-
-    @EndpointInject("mock:sink")
-    protected MockEndpoint sink;
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
+class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce("entur-google-pubsub:OtpGraphBuildQueue")
+    @Produce("entur-google-pubsub:Otp2GraphBuildQueue")
     protected ProducerTemplate producerTemplate;
 
     @Test
-    void testStatusEventReporting() throws Exception {
+    void testGraphBuilding() throws Exception {
 
-        //populate fake blob repo
-        mardukInMemoryBlobStoreRepository.uploadBlob(  blobStoreSubdirectory+"/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWithRouteBuilder.adviceWith(context, "otp2-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWithRouteBuilder.adviceWith(context, "otp2-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-remote-netex-graph-build", a -> a.weaveByToUri("direct:exportMergedNetex").replace().to("mock:sink"));
+        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-netex-graph-build", a -> a.weaveByToUri("direct:otp2ExportMergedNetex").replace().to("mock:sink"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-remote-netex-graph-build-and-send-status", a -> {
+        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-netex-graph-build-and-send-status", a -> {
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-            a.weaveByToUri("direct:remoteBuildNetexGraph").replace().to("mock:sink");
+            a.weaveByToUri("direct:remoteBuildOtp2NetexGraph").replace().process(exchange -> {
+                // create dummy graph file in the blob store
+                String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_GRAPH_OBJ;
+                mardukInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+            });
         });
 
         updateStatus.expectedMessageCount(3);
@@ -84,6 +83,10 @@ class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.STARTED.equals(je.state) && 2 == je.providerId));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.OK.equals(je.state) && 2 == je.providerId));
+
+        BlobStoreFiles blobStoreFiles = graphsInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
+        Assertions.assertFalse(blobStoreFiles.getFiles().isEmpty());
+
     }
 
 

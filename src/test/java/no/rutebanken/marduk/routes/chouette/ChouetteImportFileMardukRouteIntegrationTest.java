@@ -16,12 +16,9 @@
 
 package no.rutebanken.marduk.routes.chouette;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestApp;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
@@ -33,22 +30,19 @@ import org.apache.camel.model.language.SimpleExpression;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
-import no.rutebanken.marduk.TestApp;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
-
-    @Autowired
-    private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
     @EndpointInject("mock:chouetteCreateImport")
     protected MockEndpoint chouetteCreateImport;
@@ -102,7 +96,7 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
         InputStream testFile = getTestNetexArchiveAsStream();
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob("rut/" + testFilename, testFile, false);
+        mardukInMemoryBlobStoreRepository.uploadBlob("rut/" + testFilename, testFile, false);
 
         // Mock initial call to Chouette to import job
         AdviceWithRouteBuilder.adviceWith(context, "chouette-send-import-job", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/netexprofile")

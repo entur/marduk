@@ -19,13 +19,10 @@ package no.rutebanken.marduk.routes.google;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -38,15 +35,12 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
-import static org.mockito.Mockito.when;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
-
-    @Autowired
-    private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
 
     @Produce("direct:exportGtfsGoogle")
     protected ProducerTemplate startRoute;
@@ -76,11 +70,11 @@ class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegration
         context.start();
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
 
         startRoute.requestBody(null);
 
-        assertThat(inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName)).as("Expected transformed gtfs file to have been uploaded").isNotNull();
+        assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName)).as("Expected transformed gtfs file to have been uploaded").isNotNull();
     }
 
     @Test
@@ -88,11 +82,11 @@ class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegration
         context.start();
 
         //populate fake blob repo
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_opp-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_opp-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
 
         startQaRoute.requestBody(null);
 
-        assertThat(inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName)).as("Expected transformed gtfs file to have been uploaded").isNotNull();
+        assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName)).as("Expected transformed gtfs file to have been uploaded").isNotNull();
     }
 
     private File getExtendedGtfsTestFile() throws IOException {
