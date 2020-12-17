@@ -47,9 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 
-    @Autowired
-    private BlobStoreRepository blobStoreRepository;
-
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
@@ -72,7 +69,7 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
             a.weaveByToUri("direct:remoteBuildOtp2NetexGraph").replace().process(exchange -> {
                 // create dummy graph file in the blob store
                 String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_GRAPH_OBJ;
-                blobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+                mardukInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
             });
         });
 
@@ -91,7 +88,7 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.STARTED.equals(je.state) && 2 == je.providerId));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.OK.equals(je.state) && 2 == je.providerId));
 
-        BlobStoreFiles blobStoreFiles = blobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
+        BlobStoreFiles blobStoreFiles = graphsInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
         Assertions.assertFalse(blobStoreFiles.getFiles().isEmpty());
 
     }
