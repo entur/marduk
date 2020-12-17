@@ -38,6 +38,8 @@ public final class Constants {
     public static final String CURRENT_AGGREGATED_GTFS_FILENAME = "aggregated-gtfs.zip";
     public static final String CURRENT_AGGREGATED_NETEX_FILENAME = "aggregated-netex.zip";
     public static final String CURRENT_FLEXIBLE_LINES_NETEX_FILENAME = "flexible-lines.zip";
+
+    public static final String GRAPH_COMPATIBILITY_VERSION = "RutebankenGraphCompatibilityVersion";
     public static final String GRAPH_OBJ = "Graph.obj";
     public static final String GRAPH_OBJ_PREFIX = "Graph";
     public static final String BASE_GRAPH_OBJ = "baseGraph.obj";

@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -34,12 +33,9 @@ import java.util.UUID;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ_PREFIX;
-import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ_PREFIX;
 import static no.rutebanken.marduk.Constants.OTP_BUILD_CANDIDATE;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
-import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 import static org.apache.camel.builder.Builder.exceptionStackTrace;
@@ -144,12 +140,22 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
                 .setProperty(GRAPH_PATH_PROPERTY, header(FILE_HANDLE))
 
-                // update file containing the reference to the latest graph
+                // update file containing the reference to the latest graph for the current graph compatibility version
                 .setBody(header(TARGET_FILE_HANDLE))
-                .setHeader(FILE_HANDLE, constant(otpGraphCurrentFile))
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
+                .setHeader(FILE_HANDLE, simple(Constants.OTP2_NETEX_GRAPH_DIR + "/${header." + Constants.GRAPH_COMPATIBILITY_VERSION + "}/"  + otpGraphCurrentFile))
                 .to("direct:uploadOtpGraphsBlob")
-                .log(LoggingLevel.INFO, correlation() + "Done uploading reference to current OTP2graph: ${header." + FILE_HANDLE + "}")
+                .log(LoggingLevel.INFO, correlation() + "Done uploading reference to versioned current OTP2graph: ${header." + FILE_HANDLE + "}")
+
+                // update file containing the reference to the latest production graph if this is not a candidate build
+                .choice()
+                .when(PredicateBuilder.not(exchangeProperty(OTP_BUILD_CANDIDATE)))
+                .setHeader(FILE_HANDLE, constant(otpGraphCurrentFile))
+                .log(LoggingLevel.INFO, correlation() + "Uploading reference to current OTP2 graph: ${header." + FILE_HANDLE + "}")
+                .to("direct:uploadOtpGraphsBlob")
+                .log(LoggingLevel.INFO, correlation() + "Done uploading reference to current OTP2 graph: ${header." + FILE_HANDLE + "}")
+                .end()
+
 
                 .log(LoggingLevel.INFO, correlation() + "Done uploading OTP2 graph build reports.")
 
