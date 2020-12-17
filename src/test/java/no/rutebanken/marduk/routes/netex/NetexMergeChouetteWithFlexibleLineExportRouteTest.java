@@ -19,16 +19,12 @@ package no.rutebanken.marduk.routes.netex;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
-import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.File;
@@ -37,15 +33,13 @@ import java.io.FileInputStream;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_CHOUETTE;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuilderIntegrationTestBase {
 
-
-    @Autowired
-    private InMemoryBlobStoreRepository inMemoryBlobStoreRepository;
-
-    @Produce("direct:mergeChouetteExportWithFlexibleLinesExport")
+  @Produce("direct:mergeChouetteExportWithFlexibleLinesExport")
     protected ProducerTemplate startRoute;
 
     @EndpointInject("mock:updateStatus")
@@ -73,16 +67,16 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
         updateStatus.expectedMessageCount(1);
 
         // Create flexible line export in in memory blob store
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + CURRENT_FLEXIBLE_LINES_NETEX_FILENAME, new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex_with_two_files.zip")), false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + CURRENT_FLEXIBLE_LINES_NETEX_FILENAME, new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex_with_two_files.zip")), false);
 
         // Create chouette netex export in in memory blob store
-        inMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_CHOUETTE + "netex/rb_rut-aggregated-netex.zip", new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip")), false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_CHOUETTE + "netex/rb_rut-aggregated-netex.zip", new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip")), false);
 
 
         startRoute.requestBodyAndHeader(null, Constants.CHOUETTE_REFERENTIAL, "rb_rut");
 
-        assertNotNull(inMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME), "Expected merged netex file to have been uploaded");
-        assertTrue(inMemoryBlobStoreRepository.listBlobs(BLOBSTORE_PATH_OUTBOUND + "dated").getFiles().size() > 0, "Expected merged netex file to have been uploaded to marduk exchange for DatedServiceJourneyId-generation");
+        assertNotNull(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME), "Expected merged netex file to have been uploaded");
+        assertTrue(exchangeInMemoryBlobStoreRepository.listBlobs(BLOBSTORE_PATH_OUTBOUND + "dated").getFiles().size() > 0, "Expected merged netex file to have been uploaded to marduk exchange for DatedServiceJourneyId-generation");
 
 
         updateStatus.assertIsSatisfied();
