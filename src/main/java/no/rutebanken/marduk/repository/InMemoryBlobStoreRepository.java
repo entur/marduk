@@ -100,7 +100,8 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
-        // no-op implementation for in-memory blobstore
+        byte[] sourceData = blobs.get(sourceObjectName);
+        blobs.put(targetObjectName, sourceData);
     }
 
     @Override
