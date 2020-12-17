@@ -118,7 +118,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:sendStatusForOtp2NetexJobs")
                 .doCatch(Exception.class)
                 .log(LoggingLevel.ERROR, correlation() + "OTP2 Graph building failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).timetableAction(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(JobEvent.State.FAILED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(JobEvent.State.FAILED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
                 .setProperty(PROP_STATUS, constant(JobEvent.State.FAILED))
                 .to("direct:sendStatusForOtp2NetexJobs")
                 .to("direct:remoteOtp2CleanUp")
@@ -151,7 +151,9 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadOtpGraphsBlob")
                 .log(LoggingLevel.INFO, correlation() + "Done uploading reference to current OTP2graph: ${header." + FILE_HANDLE + "}")
 
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).timetableAction(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
+                .log(LoggingLevel.INFO, correlation() + "Done uploading OTP2 graph build reports.")
+
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
                 .to("direct:updateStatus")
                 .to("direct:remoteOtp2CleanUp")
                 .routeId("otp2-remote-netex-graph-publish");
@@ -168,7 +170,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:sendOtp2NetexGraphBuildStartedEventsInNewTransaction")
 
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).timetableAction(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(JobEvent.State.STARTED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(JobEvent.State.STARTED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
                 .setProperty(PROP_STATUS, constant(JobEvent.State.STARTED))
                 .to("direct:sendStatusForOtp2NetexJobs")
                 .routeId("otp2-netex-graph-send-started-events");
