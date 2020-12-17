@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,7 +33,7 @@ public class InMemoryBlobStoreRepositoryConfig {
 
     @Bean
     public Map<String, Map<String, byte[]>> blobsInContainers() {
-        return new HashMap<>();
+        return Collections.synchronizedMap(new HashMap<>());
     }
 
 }

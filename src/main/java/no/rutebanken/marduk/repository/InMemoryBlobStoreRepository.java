@@ -63,7 +63,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     }
 
     private Map<String, byte[]> getBlobsForContainer(String aContainer) {
-        return blobsInContainers.computeIfAbsent(aContainer, k -> new HashMap<>());
+        return blobsInContainers.computeIfAbsent(aContainer, k -> Collections.synchronizedMap(new HashMap<>()));
     }
 
     @Override
