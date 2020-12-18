@@ -44,10 +44,11 @@ public class KubernetesJobRunner {
 
     /**
      * Run a Kubernetes job
-     * @param cronJobName name of the CronJob used as a template
+     *
+     * @param cronJobName   name of the CronJob used as a template
      * @param jobNamePrefix prefix for the Kubernetes job name
-     * @param envVars environment variables to be provided to the job
-     * @param timestamp timestamp used to create a unique name for the Kubernetes job.
+     * @param envVars       environment variables to be provided to the job
+     * @param timestamp     timestamp used to create a unique name for the Kubernetes job.
      */
     public void runJob(String cronJobName, String jobNamePrefix, List<EnvVar> envVars, String timestamp) {
         try (final KubernetesClient kubernetesClient = new DefaultKubernetesClient()) {
@@ -69,11 +70,11 @@ public class KubernetesJobRunner {
                 boolean jobSucceeded = succeeded != null && succeeded > 0;
                 if (jobSucceeded) {
                     LOGGER.info("The Graph Builder job {} completed successfully.", jobName);
-                } else if(mardukPodWatcher.isKubernetesClientError()) {
+                } else if (mardukPodWatcher.isKubernetesClientError()) {
                     throw new KubernetesJobRunnerException("Kubernetes client error while watching the Graph Builder job " + jobName);
                 } else {
-                        throw new KubernetesJobRunnerException("The Graph Builder job " + jobName + " failed.");
-                    }
+                    throw new KubernetesJobRunnerException("The Graph Builder job " + jobName + " failed.");
+                }
             } catch (KubernetesClientException e) {
                 throw new KubernetesJobRunnerException("Could not watch pod", e);
             } catch (InterruptedException e) {
@@ -94,10 +95,11 @@ public class KubernetesJobRunner {
      * Retrieve a job or create a new one.
      * If a job with the same name is already running (presumably created during a previous attempt that failed due to network
      * issues), this job is retrieved. Otherwise a new job is created.
-     * @param jobName the Kubernetes job name.
+     *
+     * @param jobName          the Kubernetes job name.
      * @param kubernetesClient the Kubernetes client.
-     * @param cronJobName the name of the Kubernetes cron job used as a template to create a new Kubernetes job.
-     * @param envVars environment variables to be provided to the job.
+     * @param cronJobName      the name of the Kubernetes cron job used as a template to create a new Kubernetes job.
+     * @param envVars          environment variables to be provided to the job.
      * @return the Kubernetes job
      */
     private Job retrieveOrCreateJob(String jobName, String cronJobName, List<EnvVar> envVars, KubernetesClient kubernetesClient) {
