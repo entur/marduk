@@ -103,11 +103,11 @@ public class KubernetesJobRunner {
                 boolean jobSucceeded = succeeded != null && succeeded > 0;
                 if (jobSucceeded) {
                     LOGGER.info("The Graph Builder job {} completed successfully.", jobName);
+                } else if(mardukPodWatcher.isKubernetesClientError()) {
+                    throw new KubernetesJobRunnerException("Kubernetes client error while watching the Graph Builder job " + jobName);
                 } else {
-                    throw new KubernetesJobRunnerException("The Graph Builder job " + jobName + " failed.");
-                }
-
-
+                        throw new KubernetesJobRunnerException("The Graph Builder job " + jobName + " failed.");
+                    }
             } catch (KubernetesClientException e) {
                 throw new KubernetesJobRunnerException("Could not watch pod", e);
             } catch (InterruptedException e) {
@@ -133,11 +133,11 @@ public class KubernetesJobRunner {
     }
 
     protected CronJobSpec getCronJobSpecTemplate(String cronJobName, KubernetesClient client) {
-        CronJob matchingCrobJob = client.batch().cronjobs().inNamespace(kubernetesNamespace).withName(cronJobName).get();
-        if (matchingCrobJob == null) {
+        CronJob matchingCronJob = client.batch().cronjobs().inNamespace(kubernetesNamespace).withName(cronJobName).get();
+        if (matchingCronJob == null) {
             throw new KubernetesJobRunnerException("Job with name=" + cronJobName + " not found in namespace " + kubernetesNamespace);
         }
-        return matchingCrobJob.getSpec();
+        return matchingCronJob.getSpec();
     }
 
     protected Job buildJobFromCronJobSpecTemplate(CronJobSpec specTemplate, String jobName, List<EnvVar> envVars) {
