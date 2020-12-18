@@ -159,10 +159,10 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:remoteOtp2CleanUp")
                 .choice()
                 .when(constant(deleteOtpRemoteWorkDir))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP2 remote work directory ${exchangeProperty." + Exchange.FILE_PARENT + "} ...")
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(OTP_REMOTE_WORK_DIR))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP2 remote work directory ${header." + Exchange.FILE_PARENT + "} ...")
                 .to("direct:deleteAllBlobsInFolder")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP2 remote work directory ${exchangeProperty." + Exchange.FILE_PARENT + "} cleanup done.")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleted OTP2 remote work directory ${header." + Exchange.FILE_PARENT + "}")
                 .end()
                 .routeId("otp2-remote-graph-cleanup");
 
