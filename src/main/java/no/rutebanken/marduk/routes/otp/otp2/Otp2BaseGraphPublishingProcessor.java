@@ -31,7 +31,7 @@ public class Otp2BaseGraphPublishingProcessor implements Processor {
         String builtBaseGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + graphFileName;
         String publishedBaseGraphPath;
         if (e.getProperty(OTP_BUILD_CANDIDATE) != null) {
-            publishedBaseGraphPath = blobStoreSubdirectory + "/" + graphFileName;
+            publishedBaseGraphPath = blobStoreSubdirectory + "/candidate-" + OTP2_BASE_GRAPH_OBJ;
         } else {
             publishedBaseGraphPath = blobStoreSubdirectory + "/" + OTP2_BASE_GRAPH_OBJ;
         }
