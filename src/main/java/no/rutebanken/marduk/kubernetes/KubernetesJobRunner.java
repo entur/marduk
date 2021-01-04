@@ -44,55 +44,22 @@ public class KubernetesJobRunner {
 
     /**
      * Run a Kubernetes job
-     * @param cronJobName name of the CronJob used as a template
+     *
+     * @param cronJobName   name of the CronJob used as a template
      * @param jobNamePrefix prefix for the Kubernetes job name
-     * @param envVars environment variables to be provided to the job
-     * @param timestamp timestamp used to create a unique name for the Kubernetes job.
+     * @param envVars       environment variables to be provided to the job
+     * @param timestamp     timestamp used to create a unique name for the Kubernetes job.
      */
     public void runJob(String cronJobName, String jobNamePrefix, List<EnvVar> envVars, String timestamp) {
         try (final KubernetesClient kubernetesClient = new DefaultKubernetesClient()) {
-
-            CronJobSpec specTemplate = getCronJobSpecTemplate(cronJobName, kubernetesClient);
             String jobName = jobNamePrefix + '-' + timestamp;
 
-            LOGGER.info("Creating Graph builder job with name {} ", jobName);
-
-            Job job = buildJobFromCronJobSpecTemplate(specTemplate, jobName, envVars);
-            kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).create(job);
+            final Job job = retrieveOrCreateJob(jobName, cronJobName, envVars, kubernetesClient);
 
 
             final CountDownLatch watchLatch = new CountDownLatch(1);
-            try (Watch watch = kubernetesClient.pods().inNamespace(kubernetesNamespace).withLabel("job-name", jobName).watch(new Watcher<Pod>() {
-
-                private int backoffLimit = job.getSpec().getBackoffLimit();
-                private int podFailureCounter = 0;
-
-                @Override
-                public void eventReceived(Action action, Pod pod) {
-                    String podName = pod.getMetadata().getName();
-                    LOGGER.info("The Graph Builder pod {} is in phase {} (Action: {}).", podName, pod.getStatus().getPhase(), action.name());
-                    if (pod.getStatus().getPhase().equals("Succeeded")) {
-                        watchLatch.countDown();
-                    }
-                    if (pod.getStatus().getPhase().equals("Failed")) {
-                        podFailureCounter++;
-                        if (podFailureCounter >= backoffLimit) {
-                            LOGGER.error("The Graph Builder job {} failed after {} retries, exceeding the backoff limit. Giving up.", jobName, podFailureCounter);
-                            watchLatch.countDown();
-                        } else {
-                            LOGGER.warn("The Graph Builder job {} failed, retrying {}/{}", jobName, podFailureCounter, backoffLimit);
-                        }
-                    }
-                }
-
-                @Override
-                public void onClose(KubernetesClientException e) {
-                    if (e != null) {
-                        LOGGER.error("Error while watching for the Graph Builder job {}", jobName, e);
-                        watchLatch.countDown();
-                    }
-                }
-            })) {
+            MardukPodWatcher mardukPodWatcher = new MardukPodWatcher(job, watchLatch, jobName);
+            try (Watch watch = kubernetesClient.pods().inNamespace(kubernetesNamespace).withLabel("job-name", jobName).watch(mardukPodWatcher)) {
 
                 boolean jobCompletedBeforeTimeout = watchLatch.await(jobTimeoutSecond, TimeUnit.SECONDS);
                 if (!jobCompletedBeforeTimeout) {
@@ -103,25 +70,49 @@ public class KubernetesJobRunner {
                 boolean jobSucceeded = succeeded != null && succeeded > 0;
                 if (jobSucceeded) {
                     LOGGER.info("The Graph Builder job {} completed successfully.", jobName);
+                } else if (mardukPodWatcher.isKubernetesClientError()) {
+                    throw new KubernetesJobRunnerException("Kubernetes client error while watching the Graph Builder job " + jobName);
                 } else {
                     throw new KubernetesJobRunnerException("The Graph Builder job " + jobName + " failed.");
                 }
-
-
             } catch (KubernetesClientException e) {
                 throw new KubernetesJobRunnerException("Could not watch pod", e);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new KubernetesJobRunnerException("Interrupted while watching pod", e);
             } finally {
-                // Delete job after completion
-                if (deleteJobAfterCompletion) {
+                // Delete job after completion unless there was a Kubernetes error that can be retried
+                if (!mardukPodWatcher.isKubernetesClientError() && deleteJobAfterCompletion) {
                     LOGGER.info("Deleting job {} after completion.", jobName);
                     deleteKubernetesJob(kubernetesClient, job);
                     LOGGER.info("Deleted job {} after completion.", jobName);
                 }
             }
         }
+    }
+
+    /**
+     * Retrieve a job or create a new one.
+     * If a job with the same name is already running (presumably created during a previous attempt that failed due to network
+     * issues), this job is retrieved. Otherwise a new job is created.
+     *
+     * @param jobName          the Kubernetes job name.
+     * @param kubernetesClient the Kubernetes client.
+     * @param cronJobName      the name of the Kubernetes cron job used as a template to create a new Kubernetes job.
+     * @param envVars          environment variables to be provided to the job.
+     * @return the Kubernetes job
+     */
+    private Job retrieveOrCreateJob(String jobName, String cronJobName, List<EnvVar> envVars, KubernetesClient kubernetesClient) {
+        Job job = kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).withName(jobName).get();
+        if (job != null) {
+            LOGGER.info("Reconnecting to existing Graph builder job with name {} ", jobName);
+        } else {
+            LOGGER.info("Creating Graph builder job with name {} ", jobName);
+            CronJobSpec specTemplate = getCronJobSpecTemplate(cronJobName, kubernetesClient);
+            job = buildJobFromCronJobSpecTemplate(specTemplate, jobName, envVars);
+            kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).create(job);
+        }
+        return job;
     }
 
     private void deleteKubernetesJob(KubernetesClient kubernetesClient, Job job) {
@@ -133,11 +124,11 @@ public class KubernetesJobRunner {
     }
 
     protected CronJobSpec getCronJobSpecTemplate(String cronJobName, KubernetesClient client) {
-        CronJob matchingCrobJob = client.batch().cronjobs().inNamespace(kubernetesNamespace).withName(cronJobName).get();
-        if (matchingCrobJob == null) {
+        CronJob matchingCronJob = client.batch().cronjobs().inNamespace(kubernetesNamespace).withName(cronJobName).get();
+        if (matchingCronJob == null) {
             throw new KubernetesJobRunnerException("Job with name=" + cronJobName + " not found in namespace " + kubernetesNamespace);
         }
-        return matchingCrobJob.getSpec();
+        return matchingCronJob.getSpec();
     }
 
     protected Job buildJobFromCronJobSpecTemplate(CronJobSpec specTemplate, String jobName, List<EnvVar> envVars) {
@@ -158,5 +149,52 @@ public class KubernetesJobRunner {
                 .endTemplate()
                 .endSpec()
                 .build();
+    }
+
+    private static class MardukPodWatcher implements Watcher<Pod> {
+
+        private final CountDownLatch watchLatch;
+        private final String jobName;
+        private final int backoffLimit;
+        private int podFailureCounter;
+        private boolean kubernetesClientError;
+
+        public boolean isKubernetesClientError() {
+            return kubernetesClientError;
+        }
+
+        public MardukPodWatcher(Job job, CountDownLatch watchLatch, String jobName) {
+            this.watchLatch = watchLatch;
+            this.jobName = jobName;
+            backoffLimit = job.getSpec().getBackoffLimit();
+            podFailureCounter = 0;
+        }
+
+        @Override
+        public void eventReceived(Action action, Pod pod) {
+            String podName = pod.getMetadata().getName();
+            LOGGER.info("The Graph Builder pod {} is in phase {} (Action: {}).", podName, pod.getStatus().getPhase(), action.name());
+            if (pod.getStatus().getPhase().equals("Succeeded")) {
+                watchLatch.countDown();
+            }
+            if (pod.getStatus().getPhase().equals("Failed")) {
+                podFailureCounter++;
+                if (podFailureCounter >= backoffLimit) {
+                    LOGGER.error("The Graph Builder job {} failed after {} retries, exceeding the backoff limit. Giving up.", jobName, podFailureCounter);
+                    watchLatch.countDown();
+                } else {
+                    LOGGER.warn("The Graph Builder job {} failed, retrying {}/{}", jobName, podFailureCounter, backoffLimit);
+                }
+            }
+        }
+
+        @Override
+        public void onClose(KubernetesClientException e) {
+            if (e != null) {
+                LOGGER.warn("Kubernetes client error while watching the Graph Builder job {}. Trying to reconnect...", jobName, e);
+                kubernetesClientError = true;
+                watchLatch.countDown();
+            }
+        }
     }
 }
