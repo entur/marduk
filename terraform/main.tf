@@ -422,3 +422,36 @@ resource "google_pubsub_subscription" "Otp2GraphBuildQueue" {
     minimum_backoff = "10s"
   }
 }
+
+resource "google_pubsub_topic" "Otp2GraphCandidateBuildQueue" {
+  name = "Otp2GraphCandidateBuildQueue"
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "Otp2GraphCandidateBuildQueue" {
+  name = "Otp2GraphCandidateBuildQueue"
+  topic = google_pubsub_topic.Otp2GraphCandidateBuildQueue.name
+  project = var.gcp_pubsub_project
+  labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
+resource "google_pubsub_topic" "Otp2BaseGraphCandidateBuildQueue" {
+  name = "Otp2BaseGraphCandidateBuildQueue"
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "Otp2BaseGraphCandidateBuildQueue" {
+  name = "Otp2BaseGraphCandidateBuildQueue"
+  topic = google_pubsub_topic.Otp2BaseGraphCandidateBuildQueue.name
+  project = var.gcp_pubsub_project
+  labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+

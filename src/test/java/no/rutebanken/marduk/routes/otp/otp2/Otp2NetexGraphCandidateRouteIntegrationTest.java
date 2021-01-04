@@ -41,17 +41,19 @@ import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes =  TestApp.class)
+class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+
 
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce("entur-google-pubsub:Otp2GraphBuildQueue")
+    @Produce("entur-google-pubsub:Otp2GraphCandidateBuildQueue")
     protected ProducerTemplate producerTemplate;
 
     @Test
-    void testGraphBuilding() throws Exception {
+    void testStatusEventReporting() throws Exception {
+
 
 
         AdviceWithRouteBuilder.adviceWith(context, "otp2-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
@@ -87,9 +89,9 @@ class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.OK.equals(je.state) && 2 == je.providerId));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
 
-        // the current file is created
+        // current file is not created
         BlobStoreFiles currentFileBlobStoreFiles = graphsInMemoryBlobStoreRepository.listBlobs("current-otp2");
-        Assertions.assertFalse(currentFileBlobStoreFiles.getFiles().isEmpty());
+        Assertions.assertTrue(currentFileBlobStoreFiles.getFiles().isEmpty());
 
         // the graph object and the versioned current file are present in the version subdirectory
         BlobStoreFiles blobsInVersionedSubDirectory = graphsInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);

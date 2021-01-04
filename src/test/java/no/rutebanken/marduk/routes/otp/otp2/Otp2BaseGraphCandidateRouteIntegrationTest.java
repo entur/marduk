@@ -37,41 +37,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce("entur-google-pubsub:Otp2GraphBuildQueue")
+    @Produce("entur-google-pubsub:Otp2BaseGraphCandidateBuildQueue")
     protected ProducerTemplate producerTemplate;
 
     @Test
-    void testGraphBuilding() throws Exception {
+    void testBaseGraphCandidateBuilding() throws Exception {
 
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWithRouteBuilder.adviceWith(context, "otp2-base-graph-build-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-base-graph-build-and-send-status", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-netex-graph-publish", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-netex-graph-build", a -> a.weaveByToUri("direct:otp2ExportMergedNetex").replace().to("mock:sink"));
-
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-netex-graph-build-and-send-status", a -> {
+        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-base-graph-build-copy", a -> {
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-            a.weaveByToUri("direct:remoteBuildOtp2NetexGraph").replace().process(exchange -> {
+            a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().process(exchange -> {
                 // create dummy graph file in the blob store
-                String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_GRAPH_OBJ;
+                String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_OBJ;
                 mardukInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
             });
         });
 
-        updateStatus.expectedMessageCount(4);
+        updateStatus.expectedMessageCount(2);
 
         context.start();
 
@@ -83,17 +79,11 @@ class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
 
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.STARTED.equals(je.state) && 2 == je.providerId));
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.OK.equals(je.state) && 2 == je.providerId));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
 
-        // the current file is created
-        BlobStoreFiles currentFileBlobStoreFiles = graphsInMemoryBlobStoreRepository.listBlobs("current-otp2");
-        Assertions.assertFalse(currentFileBlobStoreFiles.getFiles().isEmpty());
-
-        // the graph object and the versioned current file are present in the version subdirectory
-        BlobStoreFiles blobsInVersionedSubDirectory = graphsInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
-        Assertions.assertEquals(2, blobsInVersionedSubDirectory.getFiles().size());
+        // the graph object is present in the main bucket
+        BlobStoreFiles blobsInVersionedSubDirectory = mardukInMemoryBlobStoreRepository.listBlobs("");
+        Assertions.assertEquals(1, blobsInVersionedSubDirectory.getFiles().size());
 
     }
 

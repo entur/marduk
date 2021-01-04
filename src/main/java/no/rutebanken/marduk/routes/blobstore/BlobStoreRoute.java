@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_PREFIX;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 
@@ -92,6 +93,13 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.")
                 .routeId("blobstore-download");
+
+        from("direct:findBlob")
+                .to(logDebugShowAll())
+                .bean(mardukBlobStoreService, "findBlob")
+                .to(logDebugShowAll())
+                .log(LoggingLevel.INFO, correlation() + "Returning from looking up file with prefix ${header." + FILE_PREFIX + "} in the blob store.")
+                .routeId("blobstore-find");
 
         from("direct:listBlobs")
                 .to(logDebugShowAll())

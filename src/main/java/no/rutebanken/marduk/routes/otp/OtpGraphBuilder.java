@@ -11,5 +11,5 @@ public interface OtpGraphBuilder {
      * @param otpWorkDir the directory where the graph is saved.
      * @param timestamp a timestamp used for creating unique file and directory names.
      */
-    void build(String otpWorkDir, String timestamp);
+    void build(String otpWorkDir, String timestamp, boolean candidate);
 }
