@@ -113,7 +113,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .end()
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_BASE).state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
                 .to("direct:updateStatus")
-                .to("direct:remoteCleanUp")
+                .to("direct:remoteOtp2CleanUp")
                 .routeId("otp2-remote-base-graph-build-copy");
 
         from("direct:remoteBuildOtp2BaseGraph")
