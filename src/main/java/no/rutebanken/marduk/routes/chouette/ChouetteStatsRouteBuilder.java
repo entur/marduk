@@ -24,6 +24,7 @@ import no.rutebanken.marduk.domain.Provider;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http.HttpMethods;
+import org.apache.camel.http.base.HttpOperationFailedException;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.springframework.beans.factory.annotation.Value;
@@ -99,7 +100,17 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .process(e -> e.getIn().setHeader("refParam", getAllReferentialsAsParam()))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/statistics/line?days=" + days + "&" + getValidityCategories() + "${header.refParam}"))
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Calling chouette with ${exchangeProperty.chouette_url}")
+                .doTry()
                 .toD("${exchangeProperty.chouette_url}")
+                .doCatch(HttpOperationFailedException.class).onWhen(exchange -> {
+            HttpOperationFailedException ex = exchange.getException(HttpOperationFailedException.class);
+            return (ex.getStatusCode() == 423);
+        })
+                .log(LoggingLevel.INFO, correlation() + "Unable to refresh statistics because Chouette is busy")
+                .setBody(constant(""))
+                .stop()
+                .end()
+                .log(LoggingLevel.INFO, correlation() + "Received refreshed statistics")
                 .unmarshal().json(JsonLibrary.Jackson, Map.class)
                 .process(e -> e.getIn().setBody(mapReferentialToProviderId(e.getIn().getBody(Map.class))))
                 .marshal().json(JsonLibrary.Jackson)
