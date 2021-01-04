@@ -18,10 +18,18 @@ public class Otp2NetexGraphBuilder extends AbstractOtp2GraphBuilder implements O
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreGraphSubdirectory;
 
-    protected List<EnvVar> getEnvVars(String otpWorkDir) {
+    protected List<EnvVar> getEnvVars(String otpWorkDir, boolean candidate) {
+        final String baseGraphPath;
+        if (candidate) {
+            baseGraphPath = blobStoreGraphSubdirectory + "/candidate-streetGraph-otp2.obj";
+        } else {
+            baseGraphPath = blobStoreGraphSubdirectory + "/streetGraph-otp2.obj";
+        }
         return List.of(
                 new EnvVar(OTP_GCS_WORK_DIR_ENV_VAR, otpWorkDir, null),
                 new EnvVar(OTP_GRAPH_MODE, "--loadStreet", null),
+                new EnvVar(OTP_GCS_BASE_GRAPH_PATH_ENV_VAR, baseGraphPath, null),
+                // TODO for backward compatibility, to be removed when OTP is updated
                 new EnvVar(OTP_GCS_BASE_GRAPH_DIR_ENV_VAR, blobStoreGraphSubdirectory, null));
     }
 
