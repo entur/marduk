@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_CANDIDATE_OBJ;
+import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ;
+
 
 /**
  * Build an OTP full graph (with transit data) based on NeTEx input data.
@@ -21,9 +24,9 @@ public class Otp2NetexGraphBuilder extends AbstractOtp2GraphBuilder implements O
     protected List<EnvVar> getEnvVars(String otpWorkDir, boolean candidate) {
         final String baseGraphPath;
         if (candidate) {
-            baseGraphPath = blobStoreGraphSubdirectory + "/candidate-streetGraph-otp2.obj";
+            baseGraphPath = blobStoreGraphSubdirectory + "/" + OTP2_BASE_GRAPH_CANDIDATE_OBJ;
         } else {
-            baseGraphPath = blobStoreGraphSubdirectory + "/streetGraph-otp2.obj";
+            baseGraphPath = blobStoreGraphSubdirectory + "/" + OTP2_BASE_GRAPH_OBJ;
         }
         return List.of(
                 new EnvVar(OTP_GCS_WORK_DIR_ENV_VAR, otpWorkDir, null),
