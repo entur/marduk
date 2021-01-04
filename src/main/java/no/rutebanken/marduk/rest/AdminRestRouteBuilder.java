@@ -474,7 +474,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .otherwise()
                 .setBody(constant("Unknown Graph Type"))
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(400))
-                .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
                 .end()
                 .routeId("admin-build-graph-candidate")
                 .endRest()
