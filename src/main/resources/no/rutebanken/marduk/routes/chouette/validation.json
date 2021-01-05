@@ -133,7 +133,7 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "1000",
         "inter_stop_area_distance_max": "300000",
-        "speed_max": "200",
+        "speed_max": "210",
         "speed_warning": "180",
         "speed_min": "10",
         "inter_stop_duration_variation_max": "300",
