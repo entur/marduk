@@ -93,6 +93,8 @@ data:
     netex.export.block.authorization={FAR:'OST'}
     netex.export.merge.flexible.lines.enabled=true
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
+    otp.graph.build.remote.kubernetes.timeout=12000
+
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
     camel.component.servlet.mapping.context-path=/services/*
     gtfs.export.download.directory=/tmp/marduk/files/gtfs/merged
