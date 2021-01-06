@@ -7,6 +7,7 @@ import io.fabric8.kubernetes.api.model.batch.CronJobSpec;
 import io.fabric8.kubernetes.api.model.batch.Job;
 import io.fabric8.kubernetes.api.model.batch.JobBuilder;
 import io.fabric8.kubernetes.api.model.batch.JobSpec;
+import io.fabric8.kubernetes.api.model.batch.JobStatus;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -53,20 +54,16 @@ public class KubernetesJobRunner {
     public void runJob(String cronJobName, String jobNamePrefix, List<EnvVar> envVars, String timestamp) {
         try (final KubernetesClient kubernetesClient = new DefaultKubernetesClient()) {
             String jobName = jobNamePrefix + '-' + timestamp;
-
             final Job job = retrieveOrCreateJob(jobName, cronJobName, envVars, kubernetesClient);
-
-
             final CountDownLatch watchLatch = new CountDownLatch(1);
             MardukPodWatcher mardukPodWatcher = new MardukPodWatcher(job, watchLatch, jobName);
             try (Watch watch = kubernetesClient.pods().inNamespace(kubernetesNamespace).withLabel("job-name", jobName).watch(mardukPodWatcher)) {
-
                 boolean jobCompletedBeforeTimeout = watchLatch.await(jobTimeoutSecond, TimeUnit.SECONDS);
                 if (!jobCompletedBeforeTimeout) {
                     throw new KubernetesJobRunnerException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
                 }
-
-                Integer succeeded = kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).withName(jobName).get().getStatus().getSucceeded();
+                JobStatus status = job.getStatus();
+                Integer succeeded = status == null ? null : status.getSucceeded();
                 boolean jobSucceeded = succeeded != null && succeeded > 0;
                 if (jobSucceeded) {
                     LOGGER.info("The Graph Builder job {} completed successfully.", jobName);
