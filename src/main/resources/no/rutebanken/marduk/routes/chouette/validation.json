@@ -21,7 +21,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "500",
         "inter_stop_area_distance_max": "30000",
-        "speed_max": "90",
+        "speed_max": "130",
+        "speed_warning": "80",
         "speed_min": "10",
         "inter_stop_duration_variation_max": "300",
         "route_section_stop_area_distance_max": "100"
@@ -30,7 +31,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "30000",
         "inter_stop_area_distance_max": "2100000",
-        "speed_max": "900",
+        "speed_max": "1000",
+        "speed_warning": "900",
         "speed_min": "100",
         "inter_stop_duration_variation_max": "1200",
         "route_section_stop_area_distance_max": "100"
@@ -39,7 +41,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "200",
         "inter_stop_area_distance_max": "30000",
-        "speed_max": "50",
+        "speed_max": "200",
+        "speed_warning": "50",
         "speed_min": "5",
         "inter_stop_duration_variation_max": "300",
         "route_section_stop_area_distance_max": "100"
@@ -48,7 +51,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "100",
         "inter_stop_area_distance_max": "10000",
-        "speed_max": "90",
+        "speed_max": "120",
+        "speed_warning": "70",
         "speed_min": "5",
         "inter_stop_duration_variation_max": "300",
         "route_section_stop_area_distance_max": "100"
@@ -57,7 +61,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "200",
         "inter_stop_area_distance_max": "30000",
-        "speed_max": "40",
+        "speed_max": "200",
+        "speed_warning": "50",
         "speed_min": "5",
         "inter_stop_duration_variation_max": "300",
         "route_section_stop_area_distance_max": "100"
@@ -66,7 +71,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "1",
         "inter_stop_area_distance_max": "10000",
-        "speed_max": "6",
+        "speed_max": "10",
+        "speed_warning": "6",
         "speed_min": "1",
         "inter_stop_duration_variation_max": "10",
         "route_section_stop_area_distance_max": "100"
@@ -75,7 +81,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "200",
         "inter_stop_area_distance_max": "2000",
-        "speed_max": "40",
+        "speed_max": "70",
+        "speed_warning": "50",
         "speed_min": "15",
         "inter_stop_duration_variation_max": "180",
         "route_section_stop_area_distance_max": "100"
@@ -84,7 +91,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "300",
         "inter_stop_area_distance_max": "2000",
-        "speed_max": "30",
+        "speed_max": "80",
+        "speed_warning": "30",
         "speed_min": "10",
         "inter_stop_duration_variation_max": "180",
         "route_section_stop_area_distance_max": "100"
@@ -93,7 +101,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "100",
         "inter_stop_area_distance_max": "1000",
-        "speed_max": "30",
+        "speed_max": "80",
+        "speed_warning": "30",
         "speed_min": "10",
         "inter_stop_duration_variation_max": "180",
         "route_section_stop_area_distance_max": "100"
@@ -102,7 +111,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "300",
         "inter_stop_area_distance_max": "2000",
-        "speed_max": "50",
+        "speed_max": "60",
+        "speed_warning": "50",
         "speed_min": "20",
         "inter_stop_duration_variation_max": "180",
         "route_section_stop_area_distance_max": "100"
@@ -113,6 +123,7 @@
         "inter_stop_area_distance_min": "500",
         "inter_stop_area_distance_max": "300000",
         "speed_max": "130",
+        "speed_warning": "110",
         "speed_min": "1",
         "inter_stop_duration_variation_max": "60",
         "route_section_stop_area_distance_max": "100"
@@ -123,6 +134,7 @@
         "inter_stop_area_distance_min": "1000",
         "inter_stop_area_distance_max": "300000",
         "speed_max": "210",
+        "speed_warning": "180",
         "speed_min": "10",
         "inter_stop_duration_variation_max": "300",
         "route_section_stop_area_distance_max": "100"
@@ -132,7 +144,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "200",
         "inter_stop_area_distance_max": "1000",
-        "speed_max": "50",
+        "speed_max": "70",
+        "speed_warning": "50",
         "speed_min": "10",
         "inter_stop_duration_variation_max": "180",
         "route_section_stop_area_distance_max": "100"
@@ -141,7 +154,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "300",
         "inter_stop_area_distance_max": "2000",
-        "speed_max": "50",
+        "speed_max": "70",
+        "speed_warning": "50",
         "speed_min": "10",
         "inter_stop_duration_variation_max": "180",
         "route_section_stop_area_distance_max": "100"
@@ -151,6 +165,7 @@
         "inter_stop_area_distance_min": "500",
         "inter_stop_area_distance_max": "300000",
         "speed_max": "130",
+        "speed_warning": "110",
         "speed_min": "2",
         "inter_stop_duration_variation_max": "60",
         "route_section_stop_area_distance_max": "100"
@@ -160,6 +175,7 @@
         "inter_stop_area_distance_min": "300",
         "inter_stop_area_distance_max": "30000",
         "speed_max": "40",
+        "speed_warning": "30",
         "speed_min": "1",
         "inter_stop_duration_variation_max": "10",
         "route_section_stop_area_distance_max": "100"
@@ -168,7 +184,8 @@
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "300",
         "inter_stop_area_distance_max": "30000",
-        "speed_max": "40",
+        "speed_max": "50",
+        "speed_warning": "40",
         "speed_min": "1",
         "inter_stop_duration_variation_max": "180",
         "route_section_stop_area_distance_max": "100"
