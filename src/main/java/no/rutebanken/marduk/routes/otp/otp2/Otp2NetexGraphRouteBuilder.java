@@ -38,7 +38,6 @@ import static no.rutebanken.marduk.Constants.OTP_BUILD_CANDIDATE;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
-import static org.apache.camel.builder.Builder.exceptionStackTrace;
 
 /**
  * Build remotely a full OTP graph (containing OSM data, elevation data and NeTEx data).
@@ -113,7 +112,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(PROP_STATUS, constant(JobEvent.State.OK))
                 .to("direct:sendStatusForOtp2NetexJobs")
                 .doCatch(Exception.class)
-                .log(LoggingLevel.ERROR, correlation() + "OTP2 Graph building failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
+                .log(LoggingLevel.ERROR, correlation() + "OTP2 Graph building failed: ${exception.message} stacktrace: ${exception.stacktrace}")
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(JobEvent.State.FAILED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
                 .setProperty(PROP_STATUS, constant(JobEvent.State.FAILED))
                 .to("direct:sendStatusForOtp2NetexJobs")

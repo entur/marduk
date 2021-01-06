@@ -33,7 +33,6 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
-import static org.apache.camel.builder.Builder.exceptionStackTrace;
 
 /**
  * Build remotely a base OTP graph containing OSM data and elevation data (but not transit data)
@@ -76,7 +75,7 @@ public class BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:remoteBuildBaseGraph")
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .doCatch(Exception.class)
-                .log(LoggingLevel.ERROR, correlation() + "Graph building failed: " + exceptionMessage() + " stacktrace: " + exceptionStackTrace())
+                .log(LoggingLevel.ERROR, correlation() + "Base Graph building failed: ${exception.message} stacktrace: ${exception.stacktrace}")
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.BUILD_BASE).state(JobEvent.State.FAILED).correlationId(e.getProperty(TIMESTAMP, String.class)).build()).to("direct:updateStatus")
                 .end()
                 .routeId("otp-remote-base-graph-build-and-send-status");
