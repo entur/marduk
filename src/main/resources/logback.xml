@@ -22,7 +22,7 @@
     </then>
     <else>
         <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <encoder class="no.rutebanken.marduk.logger.CustomEncoder">
                 <providers>
                     <pattern>
                         <pattern>
@@ -31,7 +31,6 @@
                                 "service": "marduk"
                             },
                             "message": "%message\n%ex{full}",
-                            "severity": "%level",
                             "breadcrumb": "%X{camel.breadcrumbId}",
                             "reportLocation": {
                                 "filePath": "%logger",
