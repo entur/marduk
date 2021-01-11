@@ -22,7 +22,6 @@ import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -90,7 +89,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .when(simple("${header.action_report_result} == 'OK'"))
                 .log(LoggingLevel.INFO, correlation() + "NeTEx Blocks export successful. Downloading export data")
                 .log(LoggingLevel.DEBUG, correlation() + "Downloading NeTEx Blocks export data from ${header.data_url}")
-                .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
+                .process(this::removeAllCamelHeaders)
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .toD("${header.data_url}")
