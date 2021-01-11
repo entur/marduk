@@ -24,14 +24,18 @@ import org.apache.camel.ExtendedExchange;
 import org.apache.camel.Message;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
+import org.apache.camel.component.google.pubsub.GooglePubsubEndpoint;
+import org.apache.camel.component.google.pubsub.consumer.AcknowledgeAsync;
 import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.RoutePolicy;
 import org.apache.camel.spi.Synchronization;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.DateUtils;
-import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.quartz.CronExpression;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gcp.pubsub.support.BasicAcknowledgeablePubsubMessage;
@@ -42,7 +46,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -53,6 +60,8 @@ import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NA
  * Defines common route behavior.
  */
 public abstract class BaseRouteBuilder extends RouteBuilder {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseRouteBuilder.class);
 
     @Autowired
     private ProviderRepository providerRepository;
@@ -81,6 +90,24 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                 .logExhausted(true)
                 .logRetryStackTrace(true));
 
+        interceptFrom("google-pubsub:*")
+                .process(exchange ->
+                {
+                    Map<String, String> pubSubAttributes = exchange.getIn().getHeader(GooglePubsubConstants.ATTRIBUTES, Map.class);
+                    pubSubAttributes.entrySet().stream().filter(entry -> !entry.getKey().startsWith("CamelGooglePubsub")).forEach(entry -> exchange.getIn().setHeader(entry.getKey(), entry.getValue()));
+                });
+
+        interceptSendToEndpoint("google-pubsub:*").process(
+                exchange -> {
+                    Map<String, String> pubSubAttributes = new HashMap<>();
+                    exchange.getIn().getHeaders().entrySet().stream()
+                            .filter(entry -> !entry.getKey().startsWith("CamelGooglePubsub"))
+                            .filter(entry -> Objects.toString(entry.getValue()).length() <= 1024)
+                            .forEach(entry -> pubSubAttributes.put(entry.getKey(), Objects.toString(entry.getValue(), "")));
+                    exchange.getIn().setHeader(GooglePubsubConstants.ATTRIBUTES, pubSubAttributes);
+
+                });
+
     }
 
     protected void logRedelivery(Exchange exchange) {
@@ -105,13 +132,20 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
      * by the aggregator.
      */
     protected void addOnCompletionForAggregatedExchange(Exchange exchange) {
+        GooglePubsubEndpoint googlePubsubEndpoint = (GooglePubsubEndpoint) exchange.getFromEndpoint();
+        if (googlePubsubEndpoint.isSynchronousPull()) {
+            LOGGER.info("Synchronous pull");
+        } else {
+            LOGGER.info("Asynchronous pull");
+        }
 
-        List<Message> messages = exchange.getIn().getBody(List.class);
-        List<BasicAcknowledgeablePubsubMessage> ackList = messages.stream()
-                .map(m->m.getHeader(EnturGooglePubSubConstants.ACK_ID, BasicAcknowledgeablePubsubMessage.class))
+
+/*        List<Message> messages = exchange.getIn().getBody(List.class);
+        List<String> ackList = messages.stream()
+                .map(m->m.getHeader(EnturGooglePubSubConstants.ACK_ID, String.class))
                 .collect(Collectors.toList());
 
-        exchange.adapt(ExtendedExchange.class).addOnCompletion(new AckSynchronization(ackList));
+        exchange.adapt(ExtendedExchange.class).addOnCompletion(new AcknowledgeAsync(ackReplyConsumer));*/
     }
 
 

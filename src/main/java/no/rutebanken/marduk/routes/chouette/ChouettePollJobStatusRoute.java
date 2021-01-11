@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.routes.EnturGooglePubSubConstants;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.JobResponseWithLinks;
@@ -32,7 +33,6 @@ import org.apache.camel.component.http.HttpMethods;
 import org.apache.camel.component.jackson.ListJacksonDataFormat;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.http.client.utils.URIBuilder;
-import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -161,7 +161,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-get-jobs-all");
 
 
-        from("entur-google-pubsub:ChouettePollStatusQueue?concurrentConsumers=" + maxConsumers)
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouettePollStatusQueue?concurrentConsumers=" + maxConsumers)
                 .validate(header(Constants.CORRELATION_ID).isNotNull())
                 .validate(header(Constants.PROVIDER_ID).isNotNull())
                 .validate(header(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION).isNotNull())
@@ -204,7 +204,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 // Remove or ActiveMQ will think message is overdue and resend immediately
                 .removeHeader("scheduledJobId")
                 .setBody(constant(""))
-                .to("entur-google-pubsub:ChouettePollStatusQueue")
+                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouettePollStatusQueue")
                 .routeId("chouette-reschedule-job");
 
         from("direct:jobStatusDone")

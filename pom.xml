@@ -57,6 +57,15 @@
                 <scope>import</scope>
             </dependency>
 
+            <dependency>
+                <!-- This make sure all google libraries are using compatible versions. -->
+                <groupId>com.google.cloud</groupId>
+                <artifactId>libraries-bom</artifactId>
+                <version>14.4.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -66,7 +75,7 @@
 
         <dependency>
             <groupId>org.entur.helpers</groupId>
-            <artifactId>camel3-entur-google-pubsub</artifactId>
+            <artifactId>entur-google-pubsub</artifactId>
             <version>${entur.helpers.version}</version>
         </dependency>
         <dependency>
@@ -202,6 +211,10 @@
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-sql-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-google-pubsub-starter</artifactId>
         </dependency>
 
         <!-- Keycloak -->

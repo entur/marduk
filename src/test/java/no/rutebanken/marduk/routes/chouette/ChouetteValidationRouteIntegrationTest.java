@@ -66,7 +66,7 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 	@EndpointInject("mock:updateStatus")
 	protected MockEndpoint updateStatus;
 
-	@Produce("entur-google-pubsub:ChouetteValidationQueue")
+	@Produce("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteValidationQueue")
 	protected ProducerTemplate validationTemplate;
 
 	@Produce("direct:processValidationResult")
@@ -165,7 +165,7 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 			a.interceptSendToEndpoint(chouetteUrl + "/*")
 					.skipSendToOriginalEndpoint()
 					.to("mock:chouetteGetJobsForProvider");
-			a.interceptSendToEndpoint("entur-google-pubsub:ChouetteTransferExportQueue")
+			a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteTransferExportQueue")
 					.skipSendToOriginalEndpoint()
 					.to("mock:chouetteTransferExportQueue");
 		});

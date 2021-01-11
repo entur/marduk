@@ -55,7 +55,7 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 	@EndpointInject("mock:chouetteGetData")
 	protected MockEndpoint chouetteGetData;
 
-	@Produce("entur-google-pubsub:ChouetteExportGtfsQueue")
+	@Produce("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportGtfsQueue")
 	protected ProducerTemplate importTemplate;
 
 	@Produce("direct:processExportResult")

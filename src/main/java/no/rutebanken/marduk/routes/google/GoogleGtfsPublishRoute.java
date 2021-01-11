@@ -86,7 +86,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .autoStartup("{{google.publish.scheduler.autoStartup:true}}")
                 .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs export.")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQueue")
                 .routeId("google-publish--quartz");
 
 
@@ -94,11 +94,11 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .autoStartup("{{google.publish.qa.scheduler.autoStartup:true}}")
                 .filter(e -> shouldQuartzRouteTrigger(e, qaCronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers publish of google gtfs QA export.")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQaQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQaQueue")
                 .routeId("google-publish-qa-quartz");
 
 
-        singletonFrom("entur-google-pubsub:GtfsGooglePublishQueue?ackMode=NONE")
+        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQueue?ackMode=NONE")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
@@ -114,7 +114,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .routeId("google-publish-route");
 
 
-        singletonFrom("entur-google-pubsub:GtfsGooglePublishQaQueue?ackMode=NONE")
+        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQaQueue?ackMode=NONE")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)

@@ -45,10 +45,10 @@ public class InboundQueueRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .setBody(simple(""))      //remove file data from body
-                .to("entur-google-pubsub:DeadLetterQueue");
+                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:DeadLetterQueue");
 
 
-        from("entur-google-pubsub:MardukInboundQueue").streamCaching()
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:MardukInboundQueue").streamCaching()
                 .setHeader(Exchange.FILE_NAME, header(Constants.FILE_NAME))
                 .log(LoggingLevel.INFO, correlation() + "Received notification about file '${header." + Constants.FILE_NAME + "}' on inbound queue. Fetching file ...")
                 .log(LoggingLevel.INFO, correlation() + "Fetching blob ${header." + FILE_HANDLE + "}")
@@ -66,7 +66,7 @@ public class InboundQueueRouteBuilder extends BaseRouteBuilder {
                 .when(simple("{{blobstore.delete.external.blobs:true}}"))
                 .to("direct:deleteExternalBlob")
                 .end()
-                .to("entur-google-pubsub:ProcessFileQueue")
+                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ProcessFileQueue")
                 .routeId("inbound-queue");
 
     }

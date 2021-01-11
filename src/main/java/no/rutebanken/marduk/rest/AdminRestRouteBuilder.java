@@ -330,7 +330,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS extended export")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsExportMergedQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsExportMergedQueue")
                 .routeId("admin-timetable-gtfs-extended-export")
                 .endRest()
 
@@ -345,7 +345,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS basic export")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsBasicExportMergedQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsBasicExportMergedQueue")
                 .routeId("admin-timetable-gtfs-basic-export")
                 .endRest()
 
@@ -359,7 +359,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS export to Google")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGoogleExportQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleExportQueue")
                 .routeId("admin-timetable-google-export")
                 .endRest()
 
@@ -373,7 +373,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS QA export to Google")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGoogleQaExportQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleQaExportQueue")
                 .routeId("admin-timetable-google-qa-export")
                 .endRest()
 
@@ -387,7 +387,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS to Google")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQueue")
                 .routeId("admin-timetable-google-publish")
                 .endRest()
 
@@ -401,7 +401,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS QA export to Google")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQaQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQaQueue")
                 .routeId("admin-timetable-google-qa-publish")
                 .endRest()
 
@@ -416,7 +416,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered Netex export of merged file for Norway")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:NetexExportMergedQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:NetexExportMergedQueue")
                 .routeId("admin-timetable-netex-merged-export")
                 .endRest()
 
@@ -430,7 +430,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "Triggered build of OTP base graph with map data")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .setBody(simple(""))
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpBaseGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpBaseGraphBuildQueue")
                 .routeId("admin-build-base-graph")
                 .endRest()
 
@@ -444,7 +444,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "OTP build graph from NeTEx")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .setBody(simple(""))
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpGraphBuildQueue")
                 .routeId("admin-build-graph-netex")
                 .endRest()
 
@@ -461,16 +461,16 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .choice()
                 .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp1_base")))
                 .log(LoggingLevel.INFO, "OTP1 build candidate base graph")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpBaseGraphCandidateBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpBaseGraphCandidateBuildQueue")
                 .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp1_netex")))
                 .log(LoggingLevel.INFO, "OTP1 build candidate NeTEx graph")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphCandidateBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpGraphCandidateBuildQueue")
                 .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp2_base")))
                 .log(LoggingLevel.INFO, "OTP2 build candidate base graph")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:Otp2BaseGraphCandidateBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:Otp2BaseGraphCandidateBuildQueue")
                 .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp2_netex")))
                 .log(LoggingLevel.INFO, "OTP2 build candidate NeTEx graph")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:Otp2GraphCandidateBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:Otp2GraphCandidateBuildQueue")
                 .otherwise()
                 .setBody(constant("Unknown Graph Type"))
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(400))
@@ -553,7 +553,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 })
                 .setBody(constant(null))
 
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:ProcessFileQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ProcessFileQueue")
                 .routeId("admin-chouette-import")
                 .endRest()
 
@@ -720,7 +720,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Chouette start export")
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteExportNetexQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexQueue")
                 .routeId("admin-chouette-export")
                 .endRest()
 
@@ -742,7 +742,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .otherwise()
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
                 .end()
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteValidationQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteValidationQueue")
                 .routeId("admin-chouette-validate")
                 .endRest()
 
@@ -773,7 +773,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS)
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:validateProvider")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteTransferExportQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteTransferExportQueue")
                 .routeId("admin-chouette-transfer")
                 .endRest();
 

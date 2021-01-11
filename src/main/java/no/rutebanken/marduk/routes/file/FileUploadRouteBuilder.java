@@ -79,7 +79,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, correlation() + "Finished uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
                 .setBody(constant(null))
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:ProcessFileQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ProcessFileQueue")
                 .log(LoggingLevel.INFO, correlation() + "Triggered import pipeline for timetable file: ${header." + FILE_HANDLE + "}")
                 .doCatch(Exception.class)
                 .log(LoggingLevel.WARN, correlation() + "Upload of timetable data to blob store failed for file: ${header." + FILE_HANDLE + "}")

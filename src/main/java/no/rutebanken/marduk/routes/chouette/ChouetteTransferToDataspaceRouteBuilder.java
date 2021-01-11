@@ -45,7 +45,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
     public void configure() throws Exception {
         super.configure();
 
-        from("entur-google-pubsub:ChouetteTransferExportQueue").streamCaching()
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteTransferExportQueue").streamCaching()
 				.process(this::setCorrelationIdIfMissing)
 				.removeHeader(Constants.CHOUETTE_JOB_ID)
         		.log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette transfer")
@@ -72,7 +72,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 .to(logDebugShowAll())
 		        .removeHeader("loopCounter")
 				.setBody(constant(""))
-                .to("entur-google-pubsub:ChouettePollStatusQueue")
+                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouettePollStatusQueue")
                 .routeId("chouette-send-transfer-job");
 
  		 from("direct:processTransferExportResult")
@@ -116,7 +116,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 
  		        .to(logDebugShowAll())
 				.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
-				.to("entur-google-pubsub:ChouetteValidationQueue")
+				.to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteValidationQueue")
              .end()
              .routeId("chouette-process-job-list-after-transfer");
 

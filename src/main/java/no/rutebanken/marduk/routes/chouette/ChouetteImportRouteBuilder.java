@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.routes.EnturGooglePubSubConstants;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEvent.State;
@@ -26,7 +27,6 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.component.http.HttpMethods;
-import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -96,7 +96,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .toD("${exchangeProperty.chouette_url}")
                 .routeId("chouette-clean-dataspace");
 
-        from("entur-google-pubsub:ChouetteImportQueue").streamCaching()
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteImportQueue").streamCaching()
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette import")
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.PENDING).build())
@@ -150,7 +150,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.IMPORT.name()))
                 .removeHeader("loopCounter")
                 .setBody(constant(null))
-                .to("entur-google-pubsub:ChouettePollStatusQueue")
+                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouettePollStatusQueue")
                 .routeId("chouette-send-import-job");
 
 
@@ -198,13 +198,13 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .when(constant("true").isEqualTo(header(Constants.ENABLE_VALIDATION)))
                 .log(LoggingLevel.INFO, correlation() + "Import ok, triggering validation")
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
-                .to("entur-google-pubsub:ChouetteValidationQueue")
+                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteValidationQueue")
                 .when(method(getClass(), "shouldTransferData").isEqualTo(true))
                 .log(LoggingLevel.INFO, correlation() + "Import ok, transfering data to next dataspace")
-                .to("entur-google-pubsub:ChouetteTransferExportQueue")
+                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteTransferExportQueue")
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Import ok, triggering export")
-                .to("entur-google-pubsub:ChouetteExportNetexQueue")
+                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexQueue")
                 .end()
                 .end()
                 .routeId("chouette-process-job-list-after-import");

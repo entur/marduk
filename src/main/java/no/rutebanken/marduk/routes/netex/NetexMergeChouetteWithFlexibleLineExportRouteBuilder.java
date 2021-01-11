@@ -58,7 +58,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     public void configure() throws Exception {
         super.configure();
 
-        from("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue")
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteMergeWithFlexibleLinesQueue")
                 .to("direct:mergeChouetteExportWithFlexibleLinesExport")
                 .routeId("netex-export-merge-chouette-with-flexible-lines-queue");
 
@@ -85,7 +85,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")
-                .to("entur-google-pubsub:OtpGraphBuildQueue")
+                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpGraphBuildQueue")
 
                 .routeId("netex-export-merge-chouette-with-flexible-lines");
 
