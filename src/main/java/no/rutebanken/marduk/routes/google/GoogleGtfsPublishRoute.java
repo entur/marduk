@@ -98,7 +98,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .routeId("google-publish-qa-quartz");
 
 
-        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQueue?ackMode=NONE")
+        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQueue?ackMode=NONE&synchronousPull=true")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
@@ -114,7 +114,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .routeId("google-publish-route");
 
 
-        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQaQueue?ackMode=NONE")
+        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQaQueue?ackMode=NONE&synchronousPull=true")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)

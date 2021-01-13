@@ -52,7 +52,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
-        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:Otp2BaseGraphBuildQueue?ackMode=NONE").autoStartup("{{otp2.graph.build.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:Otp2BaseGraphBuildQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
@@ -60,7 +60,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:buildOtp2BaseGraph")
                 .routeId("pubsub-otp2-base-graph-build");
 
-        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:Otp2BaseGraphCandidateBuildQueue?ackMode=NONE").autoStartup("{{otp2.graph.build.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:Otp2BaseGraphCandidateBuildQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)

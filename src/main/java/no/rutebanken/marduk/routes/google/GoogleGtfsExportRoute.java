@@ -57,7 +57,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
         super.configure();
 
 
-        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleExportQueue?ackMode=NONE").autoStartup("{{google.export.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleExportQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{google.export.autoStartup:true}}")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .process(this::addOnCompletionForAggregatedExchange)
@@ -77,7 +77,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .routeId("gtfs-google-export-merged");
 
 
-        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleQaExportQueue?ackMode=NONE").autoStartup("{{google.export.qa.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleQaExportQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{google.export.qa.autoStartup:true}}")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .process(this::addOnCompletionForAggregatedExchange)

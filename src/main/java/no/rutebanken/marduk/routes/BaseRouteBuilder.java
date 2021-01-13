@@ -16,14 +16,17 @@
 
 package no.rutebanken.marduk.routes;
 
+import com.google.cloud.pubsub.v1.stub.SubscriberStub;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExtendedExchange;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
 import org.apache.camel.component.google.pubsub.GooglePubsubEndpoint;
+import org.apache.camel.component.google.pubsub.consumer.AcknowledgeSync;
 import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.RoutePolicy;
@@ -35,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
 import org.springframework.cloud.gcp.pubsub.support.BasicAcknowledgeablePubsubMessage;
 import org.springframework.util.FileSystemUtils;
 
@@ -61,6 +65,10 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
     @Autowired
     private ProviderRepository providerRepository;
+
+    @Autowired
+    private PubSubTemplate pubSubTemplate;
+
 
     @Value("${quartz.lenient.fire.time.ms:180000}")
     private int lenientFireTimeMs;
@@ -127,21 +135,20 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
      * The callback should be added after the aggregation is complete to prevent individual messages from being acked
      * by the aggregator.
      */
-    protected void addOnCompletionForAggregatedExchange(Exchange exchange) {
+    protected void addOnCompletionForAggregatedExchange(Exchange exchange) throws IOException {
         GooglePubsubEndpoint googlePubsubEndpoint = (GooglePubsubEndpoint) exchange.getFromEndpoint();
+        SubscriberStub subscriber = googlePubsubEndpoint.getComponent().getSubscriberStub();
+        String destinationName = googlePubsubEndpoint.getDestinationName();
         if (googlePubsubEndpoint.isSynchronousPull()) {
-            LOGGER.info("Synchronous pull");
+            LOGGER.info("Add call back for synchronous pull to {}", destinationName);
+            exchange.adapt(ExtendedExchange.class).addOnCompletion(new AcknowledgeSync(subscriber, destinationName));
         } else {
             LOGGER.info("Asynchronous pull");
+            throw new IllegalStateException("Cannot add completion callback for Asynchronous pull");
+            //exchange.adapt(ExtendedExchange.class).addOnCompletion(new AcknowledgeAsync(ackReplyConsumer));
         }
 
 
-/*        List<Message> messages = exchange.getIn().getBody(List.class);
-        List<String> ackList = messages.stream()
-                .map(m->m.getHeader(EnturGooglePubSubConstants.ACK_ID, String.class))
-                .collect(Collectors.toList());
-
-        exchange.adapt(ExtendedExchange.class).addOnCompletion(new AcknowledgeAsync(ackReplyConsumer));*/
     }
 
 
@@ -182,11 +189,12 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     }
 
     protected void removeAllCamelHeaders(Exchange e) {
-        e.getIn().removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID);
+        e.getIn().removeHeaders(Constants.CAMEL_ALL_HEADERS, GooglePubsubConstants.ACK_ID);
+
     }
 
     protected void removeAllCamelHttpHeaders(Exchange e) {
-        e.getIn().removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS, EnturGooglePubSubConstants.ACK_ID);
+        e.getIn().removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS, GooglePubsubConstants.ACK_ID);
     }
 
     /**

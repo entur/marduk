@@ -46,7 +46,7 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsExportMergedQueue?ackMode=NONE").autoStartup("{{gtfs.export.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsExportMergedQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{gtfs.export.autoStartup:true}}")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .process(this::addOnCompletionForAggregatedExchange)
