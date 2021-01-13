@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.OTP2_NETEX_GRAPH_DIR;
-import static no.rutebanken.marduk.Constants.OTP_GRAPH_VERSION;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;

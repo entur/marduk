@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ;
-import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

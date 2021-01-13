@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.EnturGooglePubSubConstants;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.http.HttpMethods;

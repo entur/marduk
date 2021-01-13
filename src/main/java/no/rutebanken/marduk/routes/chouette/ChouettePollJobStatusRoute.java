@@ -18,7 +18,6 @@ package no.rutebanken.marduk.routes.chouette;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.routes.EnturGooglePubSubConstants;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.JobResponseWithLinks;
