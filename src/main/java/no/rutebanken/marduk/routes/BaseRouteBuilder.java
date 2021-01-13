@@ -151,6 +151,14 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
         return "[providerId=${header." + Constants.PROVIDER_ID + "} referential=${header." + Constants.CHOUETTE_REFERENTIAL + "} correlationId=${header." + Constants.CORRELATION_ID + "}] ";
     }
 
+    protected void removeAllCamelHeaders(Exchange e) {
+        e.getIn().removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID);
+    }
+
+    protected void removeAllCamelHttpHeaders(Exchange e) {
+        e.getIn().removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS, EnturGooglePubSubConstants.ACK_ID);
+    }
+
     /**
      * Create a new singleton route definition from URI. Only one such route should be active throughout the cluster at any time.
      */
