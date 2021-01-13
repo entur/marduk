@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.routes.chouette;
 
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.EnturGooglePubSubConstants;
 import org.apache.camel.Exchange;
@@ -59,7 +58,7 @@ public class ChouetteRemoveOldJobsRouteBuilder extends BaseRouteBuilder {
 
         from("direct:chouetteRemoveOldJobs")
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette remove old jobs")
-                .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
+                .process(this::removeAllCamelHeaders)
                 .setBody(constant(null))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.DELETE))
 

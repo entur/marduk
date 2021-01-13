@@ -19,7 +19,6 @@ package no.rutebanken.marduk.routes.chouette;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.EnturGooglePubSubConstants;
 import org.apache.camel.Exchange;
@@ -94,7 +93,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
 
 
         from("direct:chouetteGetFreshStats")
-                .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
+                .process(this::removeAllCamelHeaders)
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .process(e -> e.getIn().setHeader("refParam", getAllReferentialsAsParam()))

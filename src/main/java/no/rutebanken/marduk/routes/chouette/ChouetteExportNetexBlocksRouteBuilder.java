@@ -90,7 +90,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .when(simple("${header.action_report_result} == 'OK'"))
                 .log(LoggingLevel.INFO, correlation() + "NeTEx Blocks export successful. Downloading export data")
                 .log(LoggingLevel.DEBUG, correlation() + "Downloading NeTEx Blocks export data from ${header.data_url}")
-                .removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID)
+                .process(this::removeAllCamelHeaders)
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .toD("${header.data_url}")
