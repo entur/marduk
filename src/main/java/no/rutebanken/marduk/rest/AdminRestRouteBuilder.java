@@ -330,7 +330,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS extended export")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsExportMergedQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsExportMergedQueue")
                 .routeId("admin-timetable-gtfs-extended-export")
                 .endRest()
 
@@ -345,7 +345,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS basic export")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsBasicExportMergedQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsBasicExportMergedQueue")
                 .routeId("admin-timetable-gtfs-basic-export")
                 .endRest()
 
@@ -359,7 +359,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS export to Google")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGoogleExportQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleExportQueue")
                 .routeId("admin-timetable-google-export")
                 .endRest()
 
@@ -373,7 +373,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS QA export to Google")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGoogleQaExportQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleQaExportQueue")
                 .routeId("admin-timetable-google-qa-export")
                 .endRest()
 
@@ -387,7 +387,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS to Google")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQueue")
                 .routeId("admin-timetable-google-publish")
                 .endRest()
 
@@ -401,7 +401,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS QA export to Google")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQaQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQaQueue")
                 .routeId("admin-timetable-google-qa-publish")
                 .endRest()
 
@@ -416,7 +416,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, "Triggered Netex export of merged file for Norway")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:NetexExportMergedQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:NetexExportMergedQueue")
                 .routeId("admin-timetable-netex-merged-export")
                 .endRest()
 
@@ -720,7 +720,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Chouette start export")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteExportNetexQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexQueue")
                 .routeId("admin-chouette-export")
                 .endRest()
 
