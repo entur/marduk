@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes;
 
 import com.google.cloud.pubsub.v1.stub.SubscriberStub;
+import com.google.pubsub.v1.ProjectSubscriptionName;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
@@ -138,10 +139,10 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     protected void addOnCompletionForAggregatedExchange(Exchange exchange) throws IOException {
         GooglePubsubEndpoint googlePubsubEndpoint = (GooglePubsubEndpoint) exchange.getFromEndpoint();
         SubscriberStub subscriber = googlePubsubEndpoint.getComponent().getSubscriberStub();
-        String destinationName = googlePubsubEndpoint.getDestinationName();
+        String subscriptionName = ProjectSubscriptionName.format(googlePubsubEndpoint.getProjectId(), googlePubsubEndpoint.getDestinationName());
         if (googlePubsubEndpoint.isSynchronousPull()) {
-            LOGGER.info("Add call back for synchronous pull to {}", destinationName);
-            exchange.adapt(ExtendedExchange.class).addOnCompletion(new AcknowledgeSync(subscriber, destinationName));
+            LOGGER.info("Add call back for synchronous pull to {}", subscriptionName);
+            exchange.adapt(ExtendedExchange.class).addOnCompletion(new MardukAcknowledgeSync(subscriber, subscriptionName));
         } else {
             LOGGER.info("Asynchronous pull");
             throw new IllegalStateException("Cannot add completion callback for Asynchronous pull");

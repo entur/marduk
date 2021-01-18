@@ -160,7 +160,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-get-jobs-all");
 
 
-        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouettePollStatusQueue?concurrentConsumers=" + maxConsumers)
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouettePollStatusQueue?synchronousPull=true&concurrentConsumers=" + maxConsumers)
                 .validate(header(Constants.CORRELATION_ID).isNotNull())
                 .validate(header(Constants.PROVIDER_ID).isNotNull())
                 .validate(header(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION).isNotNull())
