@@ -77,7 +77,7 @@ data:
     marduk.oauth2.resourceserver.auth0.jwt.jwkset-uri={{ .Values.auth0.url }}/.well-known/jwks.json
     marduk.oauth2.resourceserver.auth0.jwt.audience={{ .Values.auth0.audience }}
     marduk.oauth2.resourceserver.auth0.admin.activated={{ .Values.auth0.administratorAccessEnabled }}
-    marduk.oauth2.resourceserver.auth0.organisations={1:'RB', 14:'MOR', 20:'NSB', 35:'GOA', 41:'SJN', 56:'FLI', 23:'HUR', 58:'VYX', 59:'VYB', 68:'FAR'}
+    marduk.oauth2.resourceserver.auth0.organisations={1:'RB', 14:'MOR', 20:'NSB', 35:'GOA', 41:'SJN', 56:'FLI', 23:'HUR', 58:'VYX', 59:'VYB', 68:'FAR', 29:'TRO', 74:'CON'}
 
     # Logging
     logging.level.no.rutebanken=INFO
@@ -90,7 +90,7 @@ data:
     marduk.shutdown.timeout=25
     providers.api.url=http://baba/services/providers/
     fetch.osm.cron.schedule={{ .Values.osm.fetchCronSchedule }}
-    netex.export.block.authorization={FAR:'OST'}
+    netex.export.block.authorization={FAR:'OST',CON:'TRO'}
     netex.export.merge.flexible.lines.enabled=true
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
     otp.graph.build.remote.kubernetes.timeout=12000
