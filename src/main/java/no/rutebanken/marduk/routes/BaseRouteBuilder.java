@@ -27,7 +27,6 @@ import org.apache.camel.ServiceStatus;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
 import org.apache.camel.component.google.pubsub.GooglePubsubEndpoint;
-import org.apache.camel.component.google.pubsub.consumer.AcknowledgeSync;
 import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.RoutePolicy;
@@ -141,12 +140,10 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
         SubscriberStub subscriber = googlePubsubEndpoint.getComponent().getSubscriberStub();
         String subscriptionName = ProjectSubscriptionName.format(googlePubsubEndpoint.getProjectId(), googlePubsubEndpoint.getDestinationName());
         if (googlePubsubEndpoint.isSynchronousPull()) {
-            LOGGER.info("Add call back for synchronous pull to {}", subscriptionName);
-            exchange.adapt(ExtendedExchange.class).addOnCompletion(new MardukAcknowledgeSync(subscriber, subscriptionName));
+            LOGGER.debug("Add call back for synchronous pull to {}", subscriptionName);
+            exchange.adapt(ExtendedExchange.class).addOnCompletion(new MardukGroupedMessageAcknowledgeSync(subscriber, subscriptionName));
         } else {
-            LOGGER.info("Asynchronous pull");
             throw new IllegalStateException("Cannot add completion callback for Asynchronous pull");
-            //exchange.adapt(ExtendedExchange.class).addOnCompletion(new AcknowledgeAsync(ackReplyConsumer));
         }
 
 

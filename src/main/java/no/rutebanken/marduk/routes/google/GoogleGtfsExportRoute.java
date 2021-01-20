@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.google;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.MardukGroupedMessageAggregationStrategy;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
@@ -58,7 +59,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
 
         singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleExportQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{google.export.autoStartup:true}}")
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
@@ -78,7 +79,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
 
         singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleQaExportQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{google.export.qa.autoStartup:true}}")
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)

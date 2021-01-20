@@ -45,7 +45,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
     public void configure() throws Exception {
         super.configure();
 
-        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteTransferExportQueue").streamCaching()
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteTransferExportQueue?synchronousPull=true").streamCaching()
 				.process(this::setCorrelationIdIfMissing)
 				.removeHeader(Constants.CHOUETTE_JOB_ID)
         		.log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette transfer")

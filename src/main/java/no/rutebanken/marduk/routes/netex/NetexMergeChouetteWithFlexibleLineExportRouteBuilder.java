@@ -58,7 +58,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     public void configure() throws Exception {
         super.configure();
 
-        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteMergeWithFlexibleLinesQueue")
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteMergeWithFlexibleLinesQueue?synchronousPull=true")
                 .to("direct:mergeChouetteExportWithFlexibleLinesExport")
                 .routeId("netex-export-merge-chouette-with-flexible-lines-queue");
 

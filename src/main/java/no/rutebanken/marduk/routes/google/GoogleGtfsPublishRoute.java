@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes.google;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.MardukGroupedMessageAggregationStrategy;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
@@ -99,7 +100,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
 
         singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQueue?ackMode=NONE&synchronousPull=true")
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
@@ -115,7 +116,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
 
         singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGooglePublishQaQueue?ackMode=NONE&synchronousPull=true")
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() +"Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish QA requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")

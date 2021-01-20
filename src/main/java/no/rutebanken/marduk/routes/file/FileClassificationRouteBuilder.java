@@ -48,7 +48,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple(""))      //remove file data from body
                 .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:DeadLetterQueue");
 
-        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ProcessFileQueue")
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ProcessFileQueue?synchronousPull=true")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.OK).build())
                 .to("direct:updateStatus")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.STARTED).build()).to("direct:updateStatus")

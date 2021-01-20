@@ -95,7 +95,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .toD("${exchangeProperty.chouette_url}")
                 .routeId("chouette-clean-dataspace");
 
-        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteImportQueue").streamCaching()
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteImportQueue?synchronousPull=true").streamCaching()
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette import")
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.PENDING).build())

@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.MardukGroupedMessageAggregationStrategy;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
@@ -57,8 +58,6 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${otp.graph.build.remote.work.dir.cleanup:true}")
     private boolean deleteOtpRemoteWorkDir;
 
-    private static final String PROP_MESSAGES = "RutebankenPropMessages";
-
     private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
 
     private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
@@ -72,7 +71,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
         singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:Otp2GraphBuildQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{otp2.graph.build.autoStartup:true}}")
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
@@ -80,7 +79,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp2-graph-build");
 
         singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:Otp2GraphCandidateBuildQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{otp2.graph.build.autoStartup:true}}")
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .setProperty(OTP_BUILD_CANDIDATE, simple("true", Boolean.class))
@@ -89,7 +88,6 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp2-graph-candidate-build");
 
         from("direct:remoteBuildOtp2Graph")
-                .setProperty(PROP_MESSAGES, simple("${body}"))
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtp2NetexGraphBuildStartedEventsInNewTransaction")
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${exchangeProperty." + TIMESTAMP + "}"))
@@ -182,7 +180,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:sendStatusForOtp2NetexJobs")
                 .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
-                .split().exchangeProperty(PROP_MESSAGES)
+                .split().exchangeProperty(Exchange.GROUPED_EXCHANGE)
                 .filter(simple("${headers[" + CHOUETTE_REFERENTIAL + "]}"))
                 .process(e -> {
                     JobEvent.State state = e.getProperty(PROP_STATUS, JobEvent.State.class);

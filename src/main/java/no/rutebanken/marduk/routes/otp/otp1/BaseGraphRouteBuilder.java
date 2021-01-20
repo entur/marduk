@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes.otp.otp1;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.MardukGroupedMessageAggregationStrategy;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.ExchangePattern;
@@ -52,7 +53,7 @@ public class BaseGraphRouteBuilder extends BaseRouteBuilder {
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
         singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpBaseGraphBuildQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{otp.graph.build.autoStartup:true}}")
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")

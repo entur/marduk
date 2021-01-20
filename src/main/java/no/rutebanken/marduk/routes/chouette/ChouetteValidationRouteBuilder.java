@@ -96,7 +96,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .routeId("chouette-validate-level2-all-providers");
 
 
-        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteValidationQueue?concurrentConsumers=3").streamCaching()
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteValidationQueue?synchronousPull=true&concurrentConsumers=3").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette validation")

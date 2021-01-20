@@ -58,7 +58,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
     public void configure() throws Exception {
         super.configure();
 
-        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportGtfsQueue").streamCaching()
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportGtfsQueue?synchronousPull=true").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette GTFS export")

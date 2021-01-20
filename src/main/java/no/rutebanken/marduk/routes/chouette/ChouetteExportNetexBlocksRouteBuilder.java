@@ -53,7 +53,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
     public void configure() throws Exception {
         super.configure();
 
-        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexBlocksQueue").streamCaching()
+        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexBlocksQueue?synchronousPull=true").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .process( e -> e.setProperty(PROP_EXPORT_BLOCKS, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.enableBlocksExport))

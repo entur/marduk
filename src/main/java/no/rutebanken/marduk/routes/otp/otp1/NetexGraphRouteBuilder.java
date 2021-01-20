@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.otp.otp1;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.MardukGroupedMessageAggregationStrategy;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
@@ -66,8 +67,6 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${blobstore.gcs.otpreport.container.name}")
     String otpReportContainerName;
 
-    private static final String PROP_MESSAGES = "RutebankenPropMessages";
-
     private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
 
     private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
@@ -84,7 +83,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
         singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpGraphBuildQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{otp.graph.build.autoStartup:true}}")
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
@@ -92,7 +91,6 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("otp-graph-build");
 
         from("direct:remoteBuildOtpGraph")
-                .setProperty(PROP_MESSAGES, simple("${body}"))
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtpNetexGraphBuildStartedEventsInNewTransaction")
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${exchangeProperty." + TIMESTAMP + "}"))
@@ -208,7 +206,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:sendStatusForOtpNetexJobs")
                 .doTry() // <- doTry seems necessary for correct transactional handling. not sure why...
-                .split().exchangeProperty(PROP_MESSAGES)
+                .split().exchangeProperty(Exchange.GROUPED_EXCHANGE)
                 .filter(simple("${headers[" + CHOUETTE_REFERENTIAL + "]}"))
                 .process(e -> {
                     JobEvent.State state = e.getProperty(PROP_STATUS, JobEvent.State.class);
