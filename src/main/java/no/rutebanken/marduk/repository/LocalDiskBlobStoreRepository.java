@@ -28,9 +28,11 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Collections;
@@ -131,7 +133,11 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
-        // no-op implementation for in-memory blobstore
+        try {
+            Files.copy(Path.of(baseFolder, sourceContainerName, sourceObjectName), Path.of(baseFolder, targetContainerName, targetObjectName), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new MardukException(e);
+        }
     }
 
     @Override

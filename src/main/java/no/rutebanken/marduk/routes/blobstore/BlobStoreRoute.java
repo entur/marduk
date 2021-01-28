@@ -28,6 +28,7 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_PREFIX;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 
 @Component
 public class BlobStoreRoute extends BaseRouteBuilder {
@@ -60,7 +61,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .end()
                 .bean(mardukBlobStoreService, "copyBlobInBucket")
                 .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} in blob store in Marduk bucket.")
+                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} in blob store in Marduk bucket.")
                 .routeId("blobstore-copy-in-bucket");
 
         from("direct:copyBlobToAnotherBucket")
@@ -72,7 +73,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .end()
                 .bean(mardukBlobStoreService, "copyBlobToAnotherBucket")
                 .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} in blob store from Marduk bucket to another bucket (${header." + TARGET_CONTAINER + "}).")
+                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} in blob store from Marduk bucket to another bucket (${header." + TARGET_CONTAINER + "}).")
                 .routeId("blobstore-copy-to-another-bucket");
 
         from("direct:copyAllBlobs")
