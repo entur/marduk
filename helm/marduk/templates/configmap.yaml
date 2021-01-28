@@ -90,7 +90,7 @@ data:
     marduk.shutdown.timeout=25
     providers.api.url=http://baba/services/providers/
     fetch.osm.cron.schedule={{ .Values.osm.fetchCronSchedule }}
-    netex.export.block.authorization={FAR:'OST',CON:'TRO'}
+    netex.export.block.authorization={FAR:'OST,ATB',CON:'TRO'}
     netex.export.merge.flexible.lines.enabled=true
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
     otp.graph.build.remote.kubernetes.timeout=12000
