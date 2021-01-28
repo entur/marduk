@@ -30,9 +30,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_CANDIDATE_OBJ;
+import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ_PREFIX;
 import static no.rutebanken.marduk.Constants.OTP_BUILD_CANDIDATE;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 
 /**
@@ -122,5 +126,11 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:updateStatus")
                 .routeId("otp2-base-graph-build-send-started-events");
 
+        from("direct:promoteBaseGraphCandidate")
+                .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory + "/" + OTP2_BASE_GRAPH_CANDIDATE_OBJ))
+                .setHeader(TARGET_FILE_HANDLE, simple(blobStoreSubdirectory + "/" + OTP2_BASE_GRAPH_OBJ))
+                .to("direct:copyBlobInBucket")
+                .log(LoggingLevel.INFO, correlation() + "Promoted OTP2 base graph candidate")
+                .routeId("otp2-base-graph-promote-base-graph-candidate");
     }
 }
