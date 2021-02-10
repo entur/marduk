@@ -69,7 +69,7 @@ public class MultiIssuerAuthenticationManagerResolver
     private final Map<String, AuthenticationManager> authenticationManagers = new ConcurrentHashMap<>();
 
     /**
-     * Build a @{@link JwtDecoder} for Entur Partner Auth0 domain.
+     * Build a @{@link JwtDecoder} for Entur Partner Auth0 tenant.
      * To ensure compatibility with the existing authorization process ({@link JwtRoleAssignmentExtractor}), a "roles"
      * claim is inserted in the token thanks to @{@link Auth0RolesClaimAdapter}
      * @return a @{@link JwtDecoder} for Auth0.
@@ -87,9 +87,9 @@ public class MultiIssuerAuthenticationManagerResolver
     }
 
     /**
-     * Build a @{@link JwtDecoder} for Entur Partner Auth0 domain.
+     * Build a @{@link JwtDecoder} for Ror Auth0 tenant.
      * To ensure compatibility with the existing authorization process ({@link JwtRoleAssignmentExtractor}), a "roles"
-     * claim is inserted in the token thanks to @{@link Auth0RolesClaimAdapter}
+     * claim is inserted in the token thanks to @{@link RorAuth0RolesClaimAdapter}
      * @return a @{@link JwtDecoder} for Auth0.
      */
     private JwtDecoder rorAuth0JwtDecoder() {
