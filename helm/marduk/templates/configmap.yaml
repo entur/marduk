@@ -4,7 +4,7 @@ data:
 
     # Spring
     spring.main.sources=no.rutebanken.marduk
-    spring.profiles.active=gcs-blobstore,auth0
+    spring.profiles.active=gcs-blobstore
     spring.datasource.url=jdbc:postgresql://localhost:5432/marduk
     spring.datasource.platform=postgresql
     spring.datasource.driver-class-name=org.postgresql.Driver
