@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.config;
 
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientProperties;
 import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientPropertiesRegistrationAdapter;
@@ -49,6 +48,7 @@ public class WebClientConfig {
      * Return a WebClient for authorized API calls.
      * The WebClient inserts a JWT bearer token in the Authorization HTTP header.
      * The JWT token is obtained from the configured Authorization Server.
+     *
      * @param properties
      * @param audience
      * @return
@@ -72,6 +72,7 @@ public class WebClientConfig {
      * Return the repository of OAuth2 clients.
      * In a reactive Spring Boot application this bean would be auto-configured.
      * Since Marduk is servlet-based (not reactive), the bean must be created manually.
+     *
      * @param properties
      * @return
      */
@@ -86,7 +87,8 @@ public class WebClientConfig {
      * Return an Authorized Client Manager.
      * This must be manually configured in order to inject a WebClient compatible with Auth0.
      * See {@link #webClientForTokenRequest(String)}
-     * @param  properties
+     *
+     * @param properties
      * @param audience
      * @return
      */
@@ -117,7 +119,6 @@ public class WebClientConfig {
      * @param audience the audience to be inserted in the request body for compatibility with Auth0.
      * @return a WebClient instance that can be used for requesting a token to the Authorization Server.
      */
-    @NotNull
     private WebClient webClientForTokenRequest(String audience) {
 
         // The exchange filter adds the 2 required parameters in the request body.
