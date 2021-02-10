@@ -52,7 +52,10 @@ public class MardukWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
                 .antMatchers("/actuator/health/readiness").permitAll()
                 .anyRequest().authenticated()
                 .and()
-                .oauth2ResourceServer().authenticationManagerResolver(this.multiIssuerAuthenticationManagerResolver);
+                .oauth2ResourceServer().authenticationManagerResolver(this.multiIssuerAuthenticationManagerResolver)
+                .and()
+                .oauth2Client();
+
     }
 
 }

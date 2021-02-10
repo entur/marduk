@@ -69,7 +69,7 @@ data:
     keycloak.bearer-only=true
     keycloak.principal-attribute=preferred_username
 
-    # OAuth2
+    # OAuth2 Resource Server
     marduk.oauth2.resourceserver.keycloak.jwt.issuer-uri={{ .Values.keycloakUrl }}/realms/rutebanken
     marduk.oauth2.resourceserver.keycloak.jwt.jwkset-uri={{ .Values.keycloakUrl }}/realms/rutebanken/protocol/openid-connect/certs
     marduk.oauth2.resourceserver.keycloak.jwt.audience=account
@@ -78,6 +78,12 @@ data:
     marduk.oauth2.resourceserver.auth0.jwt.audience={{ .Values.auth0.audience }}
     marduk.oauth2.resourceserver.auth0.admin.activated={{ .Values.auth0.administratorAccessEnabled }}
     marduk.oauth2.resourceserver.auth0.organisations={1:'RB', 14:'MOR', 20:'NSB', 35:'GOA', 41:'SJN', 56:'FLI', 23:'HUR', 58:'VYX', 59:'VYB', 68:'FAR', 29:'TRO', 74:'CON'}
+
+    # OAuth2 Client with Keycloak Authorization Server
+    spring.security.oauth2.client.registration.marduk.authorization-grant-type=client_credentials
+    spring.security.oauth2.client.registration.marduk.client-id=marduk
+    spring.security.oauth2.client.provider.marduk.token-uri={{ .Values.keycloakUrl }}/realms/rutebanken/protocol/openid-connect/token
+    marduk.oauth2.client.audience=account
 
     # Logging
     logging.level.no.rutebanken=INFO
@@ -101,8 +107,6 @@ data:
     netex.export.download.directory=/tmp/marduk/files/netex/merged
     otp2.netex.export.download.directory=/tmp/marduk/files/netex/merged-otp2
 
-    # Temporary setting until bug in KeycloakWebSecurityConfigurerAdapter is fixed (The bean 'httpSessionManager', defined in class path resource [XXXSecurityConfiguration.class], could not be registered. A bean with that name has already been defined in URL)
-    spring.main.allow-bean-definition-overriding=true
     # Fix for Hazelcast exception message on shutdown
     entur.hazelcast.shutdownhook.enabled=false
 
