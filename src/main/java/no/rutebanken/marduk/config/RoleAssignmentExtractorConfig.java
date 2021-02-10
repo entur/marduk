@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Configuration;
 public class RoleAssignmentExtractorConfig {
 
     @Bean
-    public RoleAssignmentExtractor keycloakRoleAssignmentExtractor() {
+    public RoleAssignmentExtractor roleAssignmentExtractor() {
         return new JwtRoleAssignmentExtractor();
     }
 

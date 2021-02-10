@@ -49,9 +49,9 @@ public class WebClientConfig {
      * The WebClient inserts a JWT bearer token in the Authorization HTTP header.
      * The JWT token is obtained from the configured Authorization Server.
      *
-     * @param properties
-     * @param audience
-     * @return
+     * @param properties The spring.security.oauth2.client.registration.* properties
+     * @param audience The API audience, required for obtaining a token from Auth0
+     * @return  a WebClient for authorized API calls.
      */
     @Bean
     WebClient webClient(OAuth2ClientProperties properties, @Value("${marduk.oauth2.client.audience}") String audience) {
@@ -60,8 +60,7 @@ public class WebClientConfig {
         //oauth.setAuthorizationFailureHandler(new RemoveAuthorizedClientReactiveOAuth2AuthorizationFailureHandler());
 
         return WebClient.builder()
-                .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(oauth)
-                )
+                .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(oauth))
                 .build();
     }
 
@@ -71,8 +70,8 @@ public class WebClientConfig {
      * In a reactive Spring Boot application this bean would be auto-configured.
      * Since Marduk is servlet-based (not reactive), the bean must be created manually.
      *
-     * @param properties
-     * @return
+     * @param properties The spring.security.oauth2.client.registration.* properties
+     * @return the repository of OAuth2 clients.
      */
     private ReactiveClientRegistrationRepository clientRegistrationRepository(OAuth2ClientProperties properties) {
         List<ClientRegistration> registrations = new ArrayList<>(
@@ -86,9 +85,9 @@ public class WebClientConfig {
      * This must be manually configured in order to inject a WebClient compatible with Auth0.
      * See {@link #webClientForTokenRequest(String)}
      *
-     * @param properties
-     * @param audience
-     * @return
+     * @param properties The spring.security.oauth2.client.registration.* properties
+     * @param audience The API audience, required for obtaining a token from Auth0
+     * @return an Authorized Client Manager
      */
     private ReactiveOAuth2AuthorizedClientManager reactiveOAuth2AuthorizedClientManager(OAuth2ClientProperties properties, String audience) {
 
@@ -130,8 +129,7 @@ public class WebClientConfig {
         });
 
         return WebClient.builder()
-                .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(tokenRequestFilter)
-                )
+                .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(tokenRequestFilter))
                 .build();
     }
 
