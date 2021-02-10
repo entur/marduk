@@ -60,9 +60,7 @@ public class WebClientConfig {
         //oauth.setAuthorizationFailureHandler(new RemoveAuthorizedClientReactiveOAuth2AuthorizationFailureHandler());
 
         return WebClient.builder()
-                .filters(exchangeFilterFunctions -> {
-                            exchangeFilterFunctions.add(oauth);
-                        }
+                .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(oauth)
                 )
                 .build();
     }
@@ -132,9 +130,7 @@ public class WebClientConfig {
         });
 
         return WebClient.builder()
-                .filters(exchangeFilterFunctions -> {
-                            exchangeFilterFunctions.add(tokenRequestFilter);
-                        }
+                .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(tokenRequestFilter)
                 )
                 .build();
     }
