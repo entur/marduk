@@ -24,8 +24,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.ClientCredentialsReactiveOAuth2AuthorizedClientProvider;
 import org.springframework.security.oauth2.client.InMemoryReactiveOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizationFailureHandler;
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.RemoveAuthorizedClientReactiveOAuth2AuthorizationFailureHandler;
 import org.springframework.security.oauth2.client.endpoint.WebClientReactiveClientCredentialsTokenResponseClient;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
@@ -36,6 +38,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -55,9 +58,20 @@ public class WebClientConfig {
      */
     @Bean
     WebClient webClient(OAuth2ClientProperties properties, @Value("${marduk.oauth2.client.audience}") String audience) {
-        ServerOAuth2AuthorizedClientExchangeFilterFunction oauth = new ServerOAuth2AuthorizedClientExchangeFilterFunction(reactiveOAuth2AuthorizedClientManager(properties, audience));
+
+        ReactiveClientRegistrationRepository clientRegistrations = clientRegistrationRepository(properties);
+        ReactiveOAuth2AuthorizedClientService reactiveOAuth2AuthorizedClientService = new InMemoryReactiveOAuth2AuthorizedClientService(clientRegistrations);
+
+        // the failure handler ensures that the authorized client is removed if an authorization error occurs. A new token will then be requested.
+        // this makes it possible to replace an expired token with a new one.
+        ReactiveOAuth2AuthorizationFailureHandler authorizationFailureHandler =
+                new RemoveAuthorizedClientReactiveOAuth2AuthorizationFailureHandler(
+                        (clientRegistrationId, principal, attributes) ->
+                                reactiveOAuth2AuthorizedClientService.removeAuthorizedClient(clientRegistrationId, principal.getName()));
+
+        ServerOAuth2AuthorizedClientExchangeFilterFunction oauth = new ServerOAuth2AuthorizedClientExchangeFilterFunction(reactiveOAuth2AuthorizedClientManager(clientRegistrations, reactiveOAuth2AuthorizedClientService, authorizationFailureHandler, audience));
         oauth.setDefaultClientRegistrationId("marduk");
-        //oauth.setAuthorizationFailureHandler(new RemoveAuthorizedClientReactiveOAuth2AuthorizationFailureHandler());
+        oauth.setAuthorizationFailureHandler(authorizationFailureHandler);
 
         return WebClient.builder()
                 .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(oauth))
@@ -85,25 +99,19 @@ public class WebClientConfig {
      * This must be manually configured in order to inject a WebClient compatible with Auth0.
      * See {@link #webClientForTokenRequest(String)}
      *
-     * @param properties The spring.security.oauth2.client.registration.* properties
      * @param audience The API audience, required for obtaining a token from Auth0
      * @return an Authorized Client Manager
      */
-    private ReactiveOAuth2AuthorizedClientManager reactiveOAuth2AuthorizedClientManager(OAuth2ClientProperties properties, String audience) {
-
-        ReactiveClientRegistrationRepository clientRegistrations = clientRegistrationRepository(properties);
-
-
-        ReactiveOAuth2AuthorizedClientService reactiveOAuth2AuthorizedClientService = new InMemoryReactiveOAuth2AuthorizedClientService(clientRegistrations);
+    private ReactiveOAuth2AuthorizedClientManager reactiveOAuth2AuthorizedClientManager(ReactiveClientRegistrationRepository clientRegistrations, ReactiveOAuth2AuthorizedClientService reactiveOAuth2AuthorizedClientService, ReactiveOAuth2AuthorizationFailureHandler authorizationFailureHandler, String audience) {
 
         WebClientReactiveClientCredentialsTokenResponseClient webClientReactiveClientCredentialsTokenResponseClient = new WebClientReactiveClientCredentialsTokenResponseClient();
         webClientReactiveClientCredentialsTokenResponseClient.setWebClient(webClientForTokenRequest(audience));
-
 
         ClientCredentialsReactiveOAuth2AuthorizedClientProvider reactiveOAuth2AuthorizedClientProvider = new ClientCredentialsReactiveOAuth2AuthorizedClientProvider();
         reactiveOAuth2AuthorizedClientProvider.setAccessTokenResponseClient(webClientReactiveClientCredentialsTokenResponseClient);
 
         AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager authorizedClientServiceReactiveOAuth2AuthorizedClientManager = new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistrations, reactiveOAuth2AuthorizedClientService);
+        authorizedClientServiceReactiveOAuth2AuthorizedClientManager.setAuthorizationFailureHandler(authorizationFailureHandler);
         authorizedClientServiceReactiveOAuth2AuthorizedClientManager.setAuthorizedClientProvider(reactiveOAuth2AuthorizedClientProvider);
         return authorizedClientServiceReactiveOAuth2AuthorizedClientManager;
     }
