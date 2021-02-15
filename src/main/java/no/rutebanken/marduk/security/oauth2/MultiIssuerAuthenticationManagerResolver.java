@@ -1,6 +1,9 @@
 package no.rutebanken.marduk.security.oauth2;
 
 import com.nimbusds.jwt.JWTParser;
+import org.entur.oauth2.AudienceValidator;
+import org.entur.oauth2.JwtRoleAssignmentExtractor;
+import org.entur.oauth2.RorAuth0RolesClaimAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * This is achieved by extracting the issuer from the token and matching it against either the Keycloack
  * issuer URI or the Auth0 issuer URI.
  * The two @{@link AuthenticationManager}s (one for Keycloak, one for Auth0) are instantiated during the first request and then cached.
- *
  */
 @Component
 public class MultiIssuerAuthenticationManagerResolver
@@ -70,8 +72,9 @@ public class MultiIssuerAuthenticationManagerResolver
 
     /**
      * Build a @{@link JwtDecoder} for Entur Partner Auth0 tenant.
-     * To ensure compatibility with the existing authorization process ({@link JwtRoleAssignmentExtractor}), a "roles"
+     * To ensure compatibility with the existing authorization process ({@link org.entur.oauth2.JwtRoleAssignmentExtractor}), a "roles"
      * claim is inserted in the token thanks to @{@link Auth0RolesClaimAdapter}
+     *
      * @return a @{@link JwtDecoder} for Auth0.
      */
     private JwtDecoder auth0JwtDecoder() {
@@ -90,6 +93,7 @@ public class MultiIssuerAuthenticationManagerResolver
      * Build a @{@link JwtDecoder} for Ror Auth0 tenant.
      * To ensure compatibility with the existing authorization process ({@link JwtRoleAssignmentExtractor}), a "roles"
      * claim is inserted in the token thanks to @{@link RorAuth0RolesClaimAdapter}
+     *
      * @return a @{@link JwtDecoder} for Auth0.
      */
     private JwtDecoder rorAuth0JwtDecoder() {
@@ -107,6 +111,7 @@ public class MultiIssuerAuthenticationManagerResolver
     /**
      * Build a @{@link JwtDecoder} for Keycloak.
      * Keycloak exposes a non-standard JWK-Set URI that must be configured explicitly.
+     *
      * @return a @{@link JwtDecoder} for Keycloak.
      */
     private JwtDecoder keycloakJwtDecoder() {

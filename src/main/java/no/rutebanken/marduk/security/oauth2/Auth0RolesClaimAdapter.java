@@ -21,7 +21,7 @@ import java.util.Optional;
 
 /**
  * Insert a "roles" claim in the JWT token based on the organisationID claim, for compatibility with the existing
- * authorization process (@{@link JwtRoleAssignmentExtractor}).
+ * authorization process (@{@link org.entur.oauth2.JwtRoleAssignmentExtractor}).
  */
 @Component
 public class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<String, Object>> {
