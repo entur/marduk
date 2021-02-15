@@ -2,6 +2,7 @@ package no.rutebanken.marduk.security.oauth2;
 
 import com.nimbusds.jwt.JWTParser;
 import org.entur.oauth2.AudienceValidator;
+import org.entur.oauth2.JwtGrantedAuthoritiesConverter;
 import org.entur.oauth2.JwtRoleAssignmentExtractor;
 import org.entur.oauth2.RorAuth0RolesClaimAdapter;
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
@@ -29,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Resolve the @{@link AuthenticationManager} that should authenticate the current JWT token.
- * This is achieved by extracting the issuer from the token and matching it against either the Keycloack
+ * This is achieved by extracting the issuer from the token and matching it against either the Keycloak
  * issuer URI or the Auth0 issuer URI.
  * The two @{@link AuthenticationManager}s (one for Keycloak, one for Auth0) are instantiated during the first request and then cached.
  */
@@ -152,13 +154,25 @@ public class MultiIssuerAuthenticationManagerResolver
     AuthenticationManager fromIssuer(String issuer) {
         return Optional.ofNullable(issuer)
                 .map(this::jwtDecoder)
-                .map(JwtAuthenticationProvider::new)
+                .map(this::jwtAuthenticationProvider)
                 .orElseThrow(() -> new IllegalArgumentException("Received JWT token with null OAuth2 issuer"))::authenticate;
     }
 
     @Override
     public AuthenticationManager resolve(HttpServletRequest request) {
         return this.authenticationManagers.computeIfAbsent(toIssuer(request), this::fromIssuer);
+    }
+
+    private JwtAuthenticationProvider jwtAuthenticationProvider(JwtDecoder jwtDecoder) {
+        JwtAuthenticationProvider jwtAuthenticationProvider = new JwtAuthenticationProvider(jwtDecoder);
+        jwtAuthenticationProvider.setJwtAuthenticationConverter(jwtAuthenticationConverter());
+        return jwtAuthenticationProvider;
+    }
+
+    private JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter j = new JwtAuthenticationConverter();
+        j.setJwtGrantedAuthoritiesConverter(new JwtGrantedAuthoritiesConverter());
+        return j;
     }
 
 }
