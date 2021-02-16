@@ -70,26 +70,26 @@ data:
     keycloak.principal-attribute=preferred_username
 
     # OAuth2 Resource Server
-    marduk.oauth2.resourceserver.keycloak.jwt.issuer-uri={{ .Values.keycloakUrl }}/realms/rutebanken
-    marduk.oauth2.resourceserver.keycloak.jwt.jwkset-uri={{ .Values.keycloakUrl }}/realms/rutebanken/protocol/openid-connect/certs
+    marduk.oauth2.resourceserver.keycloak.jwt.issuer-uri={{ .Values.keycloak.url }}/realms/rutebanken
+    marduk.oauth2.resourceserver.keycloak.jwt.jwkset-uri={{ .Values.keycloak.url }}/realms/rutebanken/protocol/openid-connect/certs
     marduk.oauth2.resourceserver.keycloak.jwt.audience=account
 
-    marduk.oauth2.resourceserver.auth0.jwt.issuer-uri={{ .Values.auth0.url }}/
-    marduk.oauth2.resourceserver.auth0.jwt.audience={{ .Values.auth0.audience }}
+    marduk.oauth2.resourceserver.auth0.partner.jwt.issuer-uri={{ .Values.auth0.partner.url }}/
+    marduk.oauth2.resourceserver.auth0.partner.jwt.audience={{ .Values.auth0.partner.audience }}
+    marduk.oauth2.resourceserver.auth0.partner.admin.activated={{ .Values.auth0.partner.administratorAccessEnabled }}
+    marduk.oauth2.resourceserver.auth0.partner.organisations={1:'RB', 14:'MOR', 20:'NSB', 35:'GOA', 41:'SJN', 56:'FLI', 23:'HUR', 58:'VYX', 59:'VYB', 68:'FAR', 29:'TRO', 74:'CON'}
 
     marduk.oauth2.resourceserver.auth0.ror.jwt.issuer-uri={{ .Values.auth0.ror.url }}/
     marduk.oauth2.resourceserver.auth0.ror.jwt.audience={{ .Values.auth0.ror.audience }}
-    marduk.oauth2.resourceserver.auth0.ror.claim.namespace={{ .Values.auth0.ror.claim.namespace }}
+    marduk.oauth2.resourceserver.auth0.ror.claim.namespace=https://ror.entur.io/
 
 
-    marduk.oauth2.resourceserver.auth0.admin.activated={{ .Values.auth0.administratorAccessEnabled }}
-    marduk.oauth2.resourceserver.auth0.organisations={1:'RB', 14:'MOR', 20:'NSB', 35:'GOA', 41:'SJN', 56:'FLI', 23:'HUR', 58:'VYX', 59:'VYB', 68:'FAR', 29:'TRO', 74:'CON'}
 
     # OAuth2 Client with Keycloak Authorization Server
     spring.security.oauth2.client.registration.marduk.authorization-grant-type=client_credentials
-    spring.security.oauth2.client.registration.marduk.client-id=marduk
-    spring.security.oauth2.client.provider.marduk.token-uri={{ .Values.keycloakUrl }}/realms/rutebanken/protocol/openid-connect/token
-    marduk.oauth2.client.audience=account
+    spring.security.oauth2.client.registration.marduk.client-id={{ .Values.configMap.oauth2.client.id }}
+    spring.security.oauth2.client.provider.marduk.token-uri={{ .Values.configMap.oauth2.client.url }}
+    marduk.oauth2.client.audience={{ .Values.configMap.oauth2.client.audience }}
 
     # Logging
     logging.level.no.rutebanken=INFO
