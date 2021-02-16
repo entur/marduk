@@ -39,8 +39,8 @@ public class OAuth2Config {
      * @return a WebClient for authorized API calls.
      */
     @Bean
-    WebClient webClient(OAuth2ClientProperties properties, @Value("${marduk.oauth2.client.audience}") String audience) {
-        return new AuthorizedWebClientBuilder()
+    WebClient webClient(WebClient.Builder webClientBuilder, OAuth2ClientProperties properties, @Value("${marduk.oauth2.client.audience}") String audience) {
+        return new AuthorizedWebClientBuilder(webClientBuilder)
                 .withOAuth2ClientProperties(properties)
                 .withAudience(audience)
                 .withClientRegistrationId("marduk")
