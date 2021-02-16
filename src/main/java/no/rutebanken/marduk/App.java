@@ -82,7 +82,7 @@ public class App extends RouteBuilder {
 		while (!providerRepository.isReady()){
 			try {
 				providerRepository.populate();
-			} catch (ResourceAccessException e) {
+			} catch (Exception e) {
 				LOGGER.warn("Provider Repository not available. Waiting {} secs before retrying...", providerRetryInterval/1000, e);
 				Thread.sleep(providerRetryInterval);
 			}
