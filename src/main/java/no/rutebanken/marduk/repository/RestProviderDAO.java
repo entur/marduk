@@ -17,19 +17,12 @@
 package no.rutebanken.marduk.repository;
 
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.security.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Collection;
-import java.util.List;
 
 @Component
 public class RestProviderDAO {
@@ -37,25 +30,18 @@ public class RestProviderDAO {
     @Value("${providers.api.url}")
     private String restServiceUrl;
 
-
     @Autowired
-    private TokenService tokenService;
+    private WebClient webClient;
 
 
     public Collection<Provider> getProviders() {
-        RestTemplate restTemplate = new RestTemplate();
 
-        ResponseEntity<List<Provider>> rateResponse =
-                restTemplate.exchange(restServiceUrl,
-                        HttpMethod.GET, getEntityWithAuthenticationToken(), new ParameterizedTypeReference<List<Provider>>() {
-                        });
-        return rateResponse.getBody();
-    }
+        return webClient.get()
+                .uri(restServiceUrl)
+                .retrieve()
+                .bodyToFlux(Provider.class)
+                .collectList().block();
 
-    private HttpEntity<String> getEntityWithAuthenticationToken() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Bearer " + tokenService.getToken());
-        return new HttpEntity<>(headers);
     }
 
 }

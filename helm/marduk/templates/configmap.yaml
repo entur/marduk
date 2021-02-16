@@ -69,15 +69,15 @@ data:
     keycloak.bearer-only=true
     keycloak.principal-attribute=preferred_username
 
-    # OAuth2
-    marduk.oauth2.resourceserver.keycloak.jwt.issuer-uri={{ .Values.keycloakUrl }}/realms/rutebanken
-    marduk.oauth2.resourceserver.keycloak.jwt.jwkset-uri={{ .Values.keycloakUrl }}/realms/rutebanken/protocol/openid-connect/certs
+    # OAuth2 Resource Server
+    marduk.oauth2.resourceserver.keycloak.jwt.issuer-uri={{ .Values.keycloak.url }}/realms/rutebanken
+    marduk.oauth2.resourceserver.keycloak.jwt.jwkset-uri={{ .Values.keycloak.url }}/realms/rutebanken/protocol/openid-connect/certs
     marduk.oauth2.resourceserver.keycloak.jwt.audience=account
-    marduk.oauth2.resourceserver.auth0.jwt.issuer-uri={{ .Values.auth0.url }}/
-    marduk.oauth2.resourceserver.auth0.jwt.jwkset-uri={{ .Values.auth0.url }}/.well-known/jwks.json
-    marduk.oauth2.resourceserver.auth0.jwt.audience={{ .Values.auth0.audience }}
-    marduk.oauth2.resourceserver.auth0.admin.activated={{ .Values.auth0.administratorAccessEnabled }}
-    marduk.oauth2.resourceserver.auth0.organisations={1:'RB', 14:'MOR', 20:'NSB', 35:'GOA', 41:'SJN', 56:'FLI', 23:'HUR', 58:'VYX', 59:'VYB', 68:'FAR', 29:'TRO', 74:'CON'}
+
+    marduk.oauth2.resourceserver.auth0.partner.jwt.issuer-uri={{ .Values.auth0.partner.url }}/
+    marduk.oauth2.resourceserver.auth0.partner.jwt.audience={{ .Values.auth0.partner.audience }}
+    marduk.oauth2.resourceserver.auth0.partner.admin.activated={{ .Values.auth0.partner.administratorAccessEnabled }}
+    marduk.oauth2.resourceserver.auth0.partner.organisations={1:'RB', 14:'MOR', 20:'NSB', 35:'GOA', 41:'SJN', 56:'FLI', 23:'HUR', 58:'VYX', 59:'VYB', 68:'FAR', 29:'TRO', 74:'CON'}
 
     # Logging
     logging.level.no.rutebanken=INFO
