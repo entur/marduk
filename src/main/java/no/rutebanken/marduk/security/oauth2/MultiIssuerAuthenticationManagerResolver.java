@@ -44,10 +44,10 @@ public class MultiIssuerAuthenticationManagerResolver
     @Value("${marduk.oauth2.resourceserver.keycloak.jwt.jwkset-uri}")
     private String keycloakJwksetUri;
 
-    @Value("${marduk.oauth2.resourceserver.auth0.jwt.audience}")
+    @Value("${marduk.oauth2.resourceserver.auth0.partner.jwt.audience}")
     private String auth0Audience;
 
-    @Value("${marduk.oauth2.resourceserver.auth0.jwt.issuer-uri}")
+    @Value("${marduk.oauth2.resourceserver.auth0.partner.jwt.issuer-uri}")
     private String auth0Issuer;
 
     @Autowired

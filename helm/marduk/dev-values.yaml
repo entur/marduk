@@ -26,13 +26,14 @@ google:
     cronSchedule: 0+30+4+?+*+*
     includeShapes: true
 
+keycloak:
+  url: https://kc-dev.devstage.entur.io/auth
 
-
-keycloakUrl: https://kc-dev.devstage.entur.io/auth
 auth0:
-  url: https://partner.dev.entur.org
-  audience: https://api.dev.entur.io
-  administratorAccessEnabled: true
+  partner:
+    url: https://partner.dev.entur.org
+    audience: https://api.dev.entur.io
+    administratorAccessEnabled: true
 
 ingress:
   loadBalancerIP: 35.205.170.68

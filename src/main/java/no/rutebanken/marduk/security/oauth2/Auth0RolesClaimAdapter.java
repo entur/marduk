@@ -33,10 +33,10 @@ public class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Ma
     private final MappedJwtClaimSetConverter delegate =
             MappedJwtClaimSetConverter.withDefaults(Collections.emptyMap());
 
-    @Value("#{${marduk.oauth2.resourceserver.auth0.organisations}}")
+    @Value("#{${marduk.oauth2.resourceserver.auth0.partner.organisations}}")
     private Map<Long, String> rutebankenOrganisations;
 
-    @Value("${marduk.oauth2.resourceserver.auth0.admin.activated:false}")
+    @Value("${marduk.oauth2.resourceserver.auth0.partner.admin.activated:false}")
     private boolean administratorAccessActivated;
 
     @Value("#{${netex.export.block.authorization}}")

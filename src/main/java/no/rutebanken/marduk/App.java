@@ -35,7 +35,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.web.client.ResourceAccessException;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -82,7 +81,7 @@ public class App extends RouteBuilder {
 		while (!providerRepository.isReady()){
 			try {
 				providerRepository.populate();
-			} catch (ResourceAccessException e) {
+			} catch (Exception e) {
 				LOGGER.warn("Provider Repository not available. Waiting {} secs before retrying...", providerRetryInterval/1000, e);
 				Thread.sleep(providerRetryInterval);
 			}
