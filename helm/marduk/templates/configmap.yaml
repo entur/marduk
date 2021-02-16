@@ -63,7 +63,7 @@ data:
     management.endpoints.web.exposure.include=info,health,prometheus
 
     # Keycloak
-    keycloak.auth-server-url={{ .Values.keycloakUrl}}
+    keycloak.auth-server-url={{ .Values.keycloak.url}}
     keycloak.resource=marduk
     keycloak.realm=rutebanken
     keycloak.bearer-only=true
