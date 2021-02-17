@@ -62,13 +62,6 @@ data:
     management.endpoint.prometheus.enabled=true
     management.endpoints.web.exposure.include=info,health,prometheus
 
-    # Keycloak
-    keycloak.auth-server-url={{ .Values.keycloak.url}}
-    keycloak.resource=marduk
-    keycloak.realm=rutebanken
-    keycloak.bearer-only=true
-    keycloak.principal-attribute=preferred_username
-
     # OAuth2 Resource Server
     marduk.oauth2.resourceserver.keycloak.jwt.issuer-uri={{ .Values.keycloak.url }}/realms/rutebanken
     marduk.oauth2.resourceserver.keycloak.jwt.jwkset-uri={{ .Values.keycloak.url }}/realms/rutebanken/protocol/openid-connect/certs
