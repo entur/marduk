@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.rest;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -50,6 +51,7 @@ import static no.rutebanken.marduk.Constants.FILE_APPLY_DUPLICATES_FILTER;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
+import static no.rutebanken.marduk.Constants.USERNAME;
 
 /**
  * REST interface for backdoor triggering of messages
@@ -817,11 +819,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:authorizeAdminRequest")
                 .doTry()
                 .process(e -> authorizationService.verifyAdministratorPrivileges())
+                .setHeader(USERNAME, method(Utils.class, "getUsername"))
                 .routeId("admin-authorize-admin-request");
 
         from("direct:authorizeEditorRequest")
                 .doTry()
                 .process(e -> authorizationService.verifyRouteDataEditorPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
+                .setHeader(USERNAME, method(Utils.class, "getUsername"))
                 .routeId("admin-authorize-editor-request");
 
         from("direct:authorizeBlocksDownloadRequest")
