@@ -40,7 +40,7 @@ auth0:
 
 oauth2:
   client:
-    id: nabu
+    id: marduk
     url: https://kc-dev.devstage.entur.io/auth/realms/rutebanken/protocol/openid-connect/token
     audience: account
 
