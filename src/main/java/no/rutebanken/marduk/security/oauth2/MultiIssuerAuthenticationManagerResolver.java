@@ -49,10 +49,10 @@ public class MultiIssuerAuthenticationManagerResolver
     private String keycloakJwksetUri;
 
     @Value("${marduk.oauth2.resourceserver.auth0.partner.jwt.audience}")
-    private String auth0Audience;
+    private String enturPartnerAuth0Audience;
 
     @Value("${marduk.oauth2.resourceserver.auth0.partner.jwt.issuer-uri}")
-    private String auth0Issuer;
+    private String enturPartnerAuth0Issuer;
 
     @Value("${marduk.oauth2.resourceserver.auth0.ror.jwt.audience}")
     private String rorAuth0Audience;
@@ -61,7 +61,7 @@ public class MultiIssuerAuthenticationManagerResolver
     private String rorAuth0Issuer;
 
     @Autowired
-    Auth0RolesClaimAdapter auth0RolesClaimAdapter;
+    EnturPartnerAuth0RolesClaimAdapter enturPartnerAuth0RolesClaimAdapter;
 
     @Autowired
     RorAuth0RolesClaimAdapter rorAuth0RolesClaimAdapter;
@@ -75,19 +75,19 @@ public class MultiIssuerAuthenticationManagerResolver
     /**
      * Build a @{@link JwtDecoder} for Entur Partner Auth0 tenant.
      * To ensure compatibility with the existing authorization process ({@link org.entur.oauth2.JwtRoleAssignmentExtractor}), a "roles"
-     * claim is inserted in the token thanks to @{@link Auth0RolesClaimAdapter}
+     * claim is inserted in the token thanks to @{@link EnturPartnerAuth0RolesClaimAdapter}
      *
      * @return a @{@link JwtDecoder} for Auth0.
      */
-    private JwtDecoder auth0JwtDecoder() {
+    private JwtDecoder enturPartnerAuth0JwtDecoder() {
         NimbusJwtDecoder jwtDecoder = (NimbusJwtDecoder)
-                JwtDecoders.fromOidcIssuerLocation(auth0Issuer);
+                JwtDecoders.fromOidcIssuerLocation(enturPartnerAuth0Issuer);
 
-        OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(auth0Audience);
-        OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(auth0Issuer);
+        OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(enturPartnerAuth0Audience);
+        OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(enturPartnerAuth0Issuer);
         OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
         jwtDecoder.setJwtValidator(withAudience);
-        jwtDecoder.setClaimSetConverter(auth0RolesClaimAdapter);
+        jwtDecoder.setClaimSetConverter(enturPartnerAuth0RolesClaimAdapter);
         return jwtDecoder;
     }
 
@@ -128,8 +128,8 @@ public class MultiIssuerAuthenticationManagerResolver
     }
 
     private JwtDecoder jwtDecoder(String issuer) {
-        if (auth0Issuer.equals(issuer)) {
-            return auth0JwtDecoder();
+        if (enturPartnerAuth0Issuer.equals(issuer)) {
+            return enturPartnerAuth0JwtDecoder();
         } else if (rorAuth0Issuer.equals(issuer)) {
             return rorAuth0JwtDecoder();
         } else if (keycloakIssuer.equals(issuer)) {

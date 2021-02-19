@@ -24,7 +24,7 @@ import java.util.Optional;
  * authorization process (@{@link org.entur.oauth2.JwtRoleAssignmentExtractor}).
  */
 @Component
-public class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<String, Object>> {
+public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<String, Object>> {
 
     static final String ORG_RUTEBANKEN = "RB";
 
