@@ -34,6 +34,15 @@ auth0:
     url: https://partner.staging.entur.org
     audience: https://api.staging.entur.io
     administratorAccessEnabled: false
+  ror:
+    url: https://ror-entur-dev.eu.auth0.com/
+    audience: https://ror.api.dev.entur.io
+
+oauth2:
+  client:
+    id: marduk
+    url: https://kc-stage.devstage.entur.io/auth/realms/rutebanken/protocol/openid-connect/token
+    audience: account
 
 ingress:
   loadBalancerIP: 130.211.80.129

@@ -101,7 +101,7 @@ spec:
                 secretKeyRef:
                   key: marduk-google-qa-sftp-password
                   name: ror-marduk-secret
-            - name: IAM_KEYCLOAK_CLIENT_SECRET
+            - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_MARDUK_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
                   key: marduk-keycloak-secret
