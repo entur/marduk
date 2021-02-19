@@ -35,7 +35,7 @@ auth0:
     audience: https://api.staging.entur.io
     administratorAccessEnabled: false
   ror:
-    url: https://ror-entur-dev.eu.auth0.com/
+    url: https://ror-entur-dev.eu.auth0.com
     audience: https://ror.api.dev.entur.io
 
 oauth2:
