@@ -80,9 +80,9 @@ data:
 
     # OAuth2 Client with Keycloak Authorization Server
     spring.security.oauth2.client.registration.marduk.authorization-grant-type=client_credentials
-    spring.security.oauth2.client.registration.marduk.client-id={{ .Values.configMap.oauth2.client.id }}
-    spring.security.oauth2.client.provider.marduk.token-uri={{ .Values.configMap.oauth2.client.url }}
-    marduk.oauth2.client.audience={{ .Values.configMap.oauth2.client.audience }}
+    spring.security.oauth2.client.registration.marduk.client-id={{ .Values.oauth2.client.id }}
+    spring.security.oauth2.client.provider.marduk.token-uri={{ .Values.oauth2.client.url }}
+    marduk.oauth2.client.audience={{ .Values.oauth2.client.audience }}
 
     # Logging
     logging.level.no.rutebanken=INFO
