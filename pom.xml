@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-        <version>1.0.18</version>
+        <version>1.0.19</version>
     </parent>
 
     <groupId>no.rutebanken.marduk</groupId>
@@ -25,7 +25,7 @@
     <properties>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>3.4.5</camel.version>
-        <entur.helpers.version>1.0.39</entur.helpers.version>
+        <entur.helpers.version>1.0.40</entur.helpers.version>
         <commons-io.version>2.8.0</commons-io.version>
         <commons-csv.version>1.8</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
