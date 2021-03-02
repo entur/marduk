@@ -96,6 +96,7 @@ resource "kubernetes_secret" "ror-marduk-secret" {
     "marduk-google-qa-sftp-username" = var.ror-marduk-google-qa-sftp-username
     "marduk-google-qa-sftp-password" = var.ror-marduk-google-qa-sftp-password
     "marduk-keycloak-secret" = var.ror-marduk-keycloak-secret
+    "marduk-auth0-secret" = var.ror-marduk-auth0-secret
   }
 }
 
