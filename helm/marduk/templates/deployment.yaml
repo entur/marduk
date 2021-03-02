@@ -104,7 +104,7 @@ spec:
             - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_MARDUK_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  key: marduk-keycloak-secret
+                  key: marduk-auth0-secret
                   name: ror-marduk-secret
           ports:
             - containerPort: {{ .Values.service.http.internalPort }}

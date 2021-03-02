@@ -40,9 +40,9 @@ auth0:
 
 oauth2:
   client:
-    id: marduk
-    url: https://auth.entur.org/auth/realms/rutebanken/protocol/openid-connect/token
-    audience: account
+    id: AmQFacYg4SnpwtmHhngrQk9PPgHiN55H
+    url: https://ror-entur.eu.auth0.com/oauth/token
+    audience: https://ror.api.entur.io
 
 
 ingress:

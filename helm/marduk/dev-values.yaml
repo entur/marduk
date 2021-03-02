@@ -40,9 +40,9 @@ auth0:
 
 oauth2:
   client:
-    id: marduk
-    url: https://kc-dev.devstage.entur.io/auth/realms/rutebanken/protocol/openid-connect/token
-    audience: account
+    id: tug4poFyfcqFSXYvJOn7yZCl5FFbIxQM
+    url: https://ror-entur-dev.eu.auth0.com/oauth/token
+    audience: https://ror.api.dev.entur.io
 
 ingress:
   loadBalancerIP: 35.205.170.68
