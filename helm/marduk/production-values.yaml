@@ -35,13 +35,13 @@ auth0:
     audience: https://api.entur.io
     administratorAccessEnabled: false
   ror:
-    url: https://ror-entur.eu.auth0.com
+    url: https://auth2.entur.org
     audience: https://ror.api.entur.io
 
 oauth2:
   client:
     id: AmQFacYg4SnpwtmHhngrQk9PPgHiN55H
-    url: https://ror-entur.eu.auth0.com/oauth/token
+    url: https://auth2.entur.org/oauth/token
     audience: https://ror.api.entur.io
 
 
