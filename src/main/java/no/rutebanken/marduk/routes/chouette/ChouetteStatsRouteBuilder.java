@@ -155,7 +155,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     boolean isMatch(Provider provider, String filter, List<String> whiteListedProviderIds) {
         boolean match = true;
 
-        if (provider.chouetteInfo == null || StringUtils.isEmpty(provider.chouetteInfo)) {
+        if (provider.chouetteInfo == null) {
             return false;
         }
 

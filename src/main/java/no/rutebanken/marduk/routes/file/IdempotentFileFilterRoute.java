@@ -57,7 +57,7 @@ public class IdempotentFileFilterRoute extends BaseRouteBuilder {
                     .end()
                 .end()
                 .choice()
-                .when(and(not(simple("{{idempotent.skip:false}}")),header(FILE_APPLY_DUPLICATES_FILTER).isEqualTo(true)))
+                .when(and(not(simple("${properties:idempotent.skip:false}")),header(FILE_APPLY_DUPLICATES_FILTER).isEqualTo(true)))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() +  "Checking duplicate on file ${header." + Exchange.FILE_NAME + "}")
                 .to("direct:runIdempotentConsumer")
                 .endChoice();

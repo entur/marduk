@@ -20,7 +20,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import org.apache.camel.*;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
@@ -63,7 +63,7 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 	void testTransferDataToDataspace() throws Exception {
 
 		// Mock initial call to Chouette to export job
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-send-transfer-job", a -> {
+		AdviceWith.adviceWith(context, "chouette-send-transfer-job", a -> {
 			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/transfer")
 					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
 
@@ -75,7 +75,7 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 		});
 
 		// Mock update status calls
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-transfer-status", a -> {
+		AdviceWith.adviceWith(context, "chouette-process-transfer-status", a -> {
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 					.to("mock:updateStatus");
 			a.interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation").skipSendToOriginalEndpoint()

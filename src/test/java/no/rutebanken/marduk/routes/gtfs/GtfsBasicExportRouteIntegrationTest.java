@@ -22,7 +22,7 @@ import no.rutebanken.marduk.gtfs.GtfsFileUtilsTransformationTest;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,7 +71,7 @@ class GtfsBasicExportRouteIntegrationTest extends MardukRouteBuilderIntegrationT
         mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
         mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_avi-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
 
-        AdviceWithRouteBuilder.adviceWith(context, "gtfs-export-merged-report-ok", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+        AdviceWith.adviceWith(context, "gtfs-export-merged-report-ok", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
                 .to("mock:updateStatus"));
 
         updateStatus.expectedMessageCount(2);

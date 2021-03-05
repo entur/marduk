@@ -24,7 +24,7 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
@@ -54,11 +54,11 @@ class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInteg
     void testBaseGraphCandidateBuilding() throws Exception {
 
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-base-graph-build-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWith.adviceWith(context, "otp2-base-graph-build-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-base-graph-build-and-send-status", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-and-send-status", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-base-graph-build-copy", a -> {
+        AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-copy", a -> {
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
             a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().process(exchange -> {
                 // create dummy graph file in the blob store

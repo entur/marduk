@@ -20,7 +20,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import org.apache.camel.*;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
@@ -80,7 +80,7 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 	void testExportNetex() throws Exception {
 
 		// Mock initial call to Chouette to import job
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-start-export-netex", a -> {
+		AdviceWith.adviceWith(context, "chouette-start-export-netex", a -> {
 			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/netexprofile")
 					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
@@ -88,11 +88,11 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 		});
 
 		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
+		AdviceWith.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
 				.to("mock:pollJobStatus"));
 
 		// Mock update status calls
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-export-netex-status", a -> {
+		AdviceWith.adviceWith(context, "chouette-process-export-netex-status", a -> {
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 					.to("mock:updateStatus");
 			a.interceptSendToEndpoint("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue").skipSendToOriginalEndpoint().to("mock:ChouetteMergeWithFlexibleLinesQueue");
@@ -100,7 +100,7 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 			a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexBlocksQueue").skipSendToOriginalEndpoint().to("mock:ExportNetexBlocksQueue");
 		});
 
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
+		AdviceWith.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
 				.skipSendToOriginalEndpoint().to("mock:chouetteGetData"));
 
 		chouetteGetData.expectedMessageCount(1);

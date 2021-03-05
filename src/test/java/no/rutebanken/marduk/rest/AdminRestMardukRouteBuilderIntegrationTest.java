@@ -26,7 +26,7 @@ import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
@@ -129,7 +129,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void runImport() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "admin-chouette-import", a -> a.interceptSendToEndpoint("entur-google-pubsub:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue"));
+        AdviceWith.adviceWith(context, "admin-chouette-import", a -> a.interceptSendToEndpoint("entur-google-pubsub:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue"));
 
         // we must manually start when we are done with all the advice with
         camelContext.start();
@@ -165,7 +165,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void runExport() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "admin-chouette-export", a -> a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportNetexQueue"));
+        AdviceWith.adviceWith(context, "admin-chouette-export", a -> a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportNetexQueue"));
 
         // we must manually start when we are done with all the advice with
         camelContext.start();
@@ -273,7 +273,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void uploadNetexDataset() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "file-upload-and-start-import", a -> {
+        AdviceWith.adviceWith(context, "file-upload-and-start-import", a -> {
                     a.interceptSendToEndpoint("direct:updateStatus")
                             .skipSendToOriginalEndpoint()
                             .to("mock:updateStatus");
@@ -297,7 +297,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void downloadNetexBlocks() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "admin-chouette-netex-blocks-download", a ->
+        AdviceWith.adviceWith(context, "admin-chouette-netex-blocks-download", a ->
                 a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexQueue")
                         .skipSendToOriginalEndpoint()
                         .to("mock:chouetteExportNetexQueue"));

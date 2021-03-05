@@ -34,7 +34,7 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 
 	protected void toGenericChouetteMultipart(Exchange exchange) {
 	    String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);
-	    if (StringUtils.isEmpty(jsonPart)) {
+		if (!StringUtils.hasText(jsonPart)) {
 	        throw new IllegalArgumentException("No json data");
 	    }
 
@@ -49,12 +49,12 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 
 	protected void toImportMultipart(Exchange exchange) {
 	    String fileName = exchange.getIn().getHeader(FILE_NAME, String.class);
-	    if (StringUtils.isEmpty(fileName)) {
+	    if (!StringUtils.hasText(fileName)) {
 	        throw new IllegalArgumentException("No file handle");
 	    }
 
 	    String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);
-	    if (StringUtils.isEmpty(jsonPart)) {
+	    if (!StringUtils.hasText(jsonPart)) {
 	        throw new IllegalArgumentException("No json data");
 	    }
 
