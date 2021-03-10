@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -42,7 +43,7 @@ import java.util.Set;
 /**
  * A spring-boot application that includes a Camel route builder to setup the Camel routes
  */
-@SpringBootApplication
+@SpringBootApplication(exclude={UserDetailsServiceAutoConfiguration.class})
 @EnableScheduling
 @Import({GcsStorageConfig.class, IdempotentRepositoryConfig.class, GooglePubSubCamelComponentConfig.class})
 public class App extends RouteBuilder {
