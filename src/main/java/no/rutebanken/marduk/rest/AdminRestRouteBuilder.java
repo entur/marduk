@@ -34,6 +34,7 @@ import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
@@ -66,6 +67,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     private static final String PLAIN = "text/plain";
     private static final String SWAGGER_DATA_TYPE_STRING = "string";
     private static final String SWAGGER_DATA_TYPE_INTEGER = "integer";
+
+    @Value("${server.port:8080}")
+    private String port;
+
+    @Value("${server.host:0.0.0.0}")
+    private String host;
 
     @Autowired
     private AuthorizationService authorizationService;
@@ -111,7 +118,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .put().route().routeId("admin-route-authorize-put").throwException(new NotFoundException()).endRest()
                 .delete().route().routeId("admin-route-authorize-delete").throwException(new NotFoundException()).endRest();
 
-    rest("/timetable_admin")
+        String commonApiDocEndpoint = "http:" + host + ":" + port + "/services/swagger.json?bridgeEndpoint=true";
+
+        rest("/timetable_admin")
                 .post("/idempotentfilter/clean")
                 .description("Clean unique filename and digest Idempotent Stores")
                 .responseMessage().code(200).endResponseMessage()
@@ -538,6 +547,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
                 .routeId("admin-chouette-netex-blocks-download")
+                .endRest()
+
+                .get("/swagger.json")
+                .apiDocs(false)
+                .bindingMode(RestBindingMode.off)
+                .route()
+                .to(commonApiDocEndpoint)
                 .endRest();
 
         rest("/timetable_admin/{providerId}")
