@@ -817,6 +817,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
+                .process(this::setNewCorrelationId)
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "OSM update map data")
                 .process(this::removeAllCamelHttpHeaders)
