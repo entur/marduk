@@ -73,7 +73,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         onException(MardukException.class)
-                .log(LoggingLevel.ERROR, correlation() + "Failed while fetching OSM file.")
+                .log(LoggingLevel.ERROR, correlation() + "Failed while fetching OSM file (${exception.stacktrace}).")
                 .handled(true);
 
         from("direct:fetchOsmMapOverNorway")
@@ -87,6 +87,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
                 .streamCaching()
                 .to(osmMapUrl)
+                .log(LoggingLevel.DEBUG, correlation() + "OSM map downloaded. Checking MD5")
                 .convertBodyTo(InputStream.class)
                 .process(p -> {
                     // Throw exception if the expected MD5 does not match MD5 from body
