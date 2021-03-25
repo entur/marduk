@@ -19,6 +19,7 @@ package no.rutebanken.marduk.domain;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 
 import java.io.IOException;
 
@@ -50,7 +51,7 @@ public class Provider {
 
     @JsonCreator
     public static Provider create(String jsonString) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
         return mapper.readValue(jsonString, Provider.class);
     }
 

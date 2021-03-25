@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 import no.rutebanken.marduk.routes.chouette.json.exporter.GtfsExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.exporter.NetexExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.exporter.TransferExportParameters;
@@ -65,7 +66,7 @@ public class Parameters {
                                                                                                     chouetteInfo.xmlns, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, true);
             GtfsExportParameters.Parameters parameters = new GtfsExportParameters.Parameters(gtfsExport);
             GtfsExportParameters importParameters = new GtfsExportParameters(parameters);
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
             StringWriter writer = new StringWriter();
             mapper.writeValue(writer, importParameters);
             return writer.toString();
@@ -89,7 +90,7 @@ public class Parameters {
             NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport(name, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, projectionType, exportStops, exportBlocks, chouetteInfo.xmlns);
             NetexExportParameters.Parameters parameters = new NetexExportParameters.Parameters(netexExport);
             NetexExportParameters exportParameters = new NetexExportParameters(parameters);
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
             StringWriter writer = new StringWriter();
             mapper.writeValue(writer, exportParameters);
             return writer.toString();
@@ -104,7 +105,7 @@ public class Parameters {
                                                                                                                         provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user, destProvider.chouetteInfo.referential);
             TransferExportParameters.Parameters parameters = new TransferExportParameters.Parameters(transferExport);
             TransferExportParameters importParameters = new TransferExportParameters(parameters);
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
             StringWriter writer = new StringWriter();
             mapper.writeValue(writer, importParameters);
             return writer.toString();

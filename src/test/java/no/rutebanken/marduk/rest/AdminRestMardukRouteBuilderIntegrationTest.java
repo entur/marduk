@@ -21,6 +21,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
@@ -138,7 +139,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         d.add(new BlobStoreFiles.File("file1", null, null, null));
         d.add(new BlobStoreFiles.File("file2", null, null, null));
 
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
         StringWriter writer = new StringWriter();
         mapper.writeValue(writer, d);
         String importJson = writer.toString();
@@ -207,7 +208,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         String s = new String(IOUtils.toByteArray(response));
 
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
         BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
         assertEquals(1, rsp.getFiles().size(), "The list should contain exactly one file");
         assertEquals(testFileName, rsp.getFiles().get(0).getName(), "The file name should not be prefixed by the file store path");
@@ -264,7 +265,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         String s = new String(IOUtils.toByteArray(response));
 
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
         BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
         assertEquals(exportFileStaticPrefixes.size(), rsp.getFiles().size());
         assertTrue(exportFileStaticPrefixes.stream().allMatch(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName()))));

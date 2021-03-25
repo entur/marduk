@@ -20,6 +20,7 @@ package no.rutebanken.marduk.domain;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -60,7 +61,7 @@ public class FileNameAndDigest {
 
 	public static FileNameAndDigest fromString(String string) {
 		try {
-			ObjectMapper mapper = new ObjectMapper();
+			ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
 			return mapper.readValue(string, FileNameAndDigest.class);
 		} catch (IOException e) {
 			throw new MardukException(e);
@@ -69,7 +70,7 @@ public class FileNameAndDigest {
 
 	public String toString() {
 		try {
-			ObjectMapper mapper = new ObjectMapper();
+			ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
 			StringWriter writer = new StringWriter();
 			mapper.writeValue(writer, this);
 			return writer.toString();

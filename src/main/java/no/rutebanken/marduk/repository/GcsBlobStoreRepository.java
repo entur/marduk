@@ -23,6 +23,7 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.routes.chouette.json.exporter.DateUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.rutebanken.helper.gcp.BlobStoreHelper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,6 @@ import org.springframework.stereotype.Repository;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -157,7 +157,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
 
     private BlobStoreFiles.File toBlobStoreFile(Blob blob, String fileName) {
-        BlobStoreFiles.File file = new BlobStoreFiles.File(fileName, new Date(blob.getCreateTime()), new Date(blob.getUpdateTime()), blob.getSize());
+        BlobStoreFiles.File file = new BlobStoreFiles.File(fileName, DateUtils.fromEpoch(blob.getCreateTime()), DateUtils.fromEpoch(blob.getUpdateTime()), blob.getSize());
         Provider provider = null;
         if (file.getName().contains("graphs/")) {
             file.setFormat(BlobStoreFiles.File.Format.GRAPH);

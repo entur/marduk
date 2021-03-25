@@ -16,6 +16,8 @@
 
 package no.rutebanken.marduk.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.ThreadPoolBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,4 +67,8 @@ public class CamelExecutorServiceConfig {
     }
 
 
+    @Bean("camelJacksonObjectMapper")
+    public ObjectMapper camelJacksonObjectMapper() {
+        return ObjectMapperFactory.getObjectMapper();
+    }
 }

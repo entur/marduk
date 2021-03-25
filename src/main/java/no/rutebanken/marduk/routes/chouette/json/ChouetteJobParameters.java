@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -33,7 +34,7 @@ public abstract class ChouetteJobParameters {
 
 	public String toJsonString() {
 		try {
-			ObjectMapper mapper = new ObjectMapper();
+			ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
 			if (enableValidation) {
 				// insert the validation node into the parameters node of the JSON message.
 				JsonNode importRootNode = mapper.valueToTree(this);

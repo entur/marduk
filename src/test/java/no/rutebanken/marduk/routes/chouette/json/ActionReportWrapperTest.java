@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.StringReader;
 
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,7 +28,7 @@ class ActionReportWrapperTest {
 
     @Test
     void testErrorResult() throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
         StringReader reader = new StringReader(ERROR_RESPONSE);
         ActionReportWrapper actionReport = mapper.readValue(reader, ActionReportWrapper.class);
         assertEquals("NOK", actionReport.actionReport.result);

@@ -2,6 +2,7 @@ package no.rutebanken.marduk.security.oauth2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.RoleAssignment;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +29,7 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
 
     static final String ORG_RUTEBANKEN = "RB";
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
 
     private final MappedJwtClaimSetConverter delegate =
             MappedJwtClaimSetConverter.withDefaults(Collections.emptyMap());

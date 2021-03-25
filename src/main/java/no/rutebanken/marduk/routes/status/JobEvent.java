@@ -22,6 +22,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.apache.camel.Exchange;
 
 import java.io.IOException;
@@ -135,9 +136,8 @@ public class JobEvent {
 
     public String toString() {
         try {
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
             StringWriter writer = new StringWriter();
-            mapper.registerModule(new JavaTimeModule());
             mapper.writeValue(writer, this);
             return writer.toString();
         } catch (IOException e) {
@@ -148,8 +148,7 @@ public class JobEvent {
 
     public static JobEvent fromString(String string) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.registerModule(new JavaTimeModule());
+            ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
             return mapper.readValue(string, JobEvent.class);
         } catch (IOException e) {
             throw new MardukException(e);

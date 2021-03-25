@@ -18,11 +18,15 @@ package no.rutebanken.marduk.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
 public class BlobStoreFiles {
@@ -56,7 +60,7 @@ public class BlobStoreFiles {
             this.name = name;
         }
 
-        public void setUpdated(Date updated) {
+        public void setUpdated(LocalDateTime updated) {
             this.updated = updated;
         }
 
@@ -64,7 +68,7 @@ public class BlobStoreFiles {
             this.fileSize = fileSize;
         }
 
-        public Date getUpdated() {
+        public LocalDateTime getUpdated() {
             return updated;
         }
 
@@ -72,11 +76,11 @@ public class BlobStoreFiles {
             return fileSize;
         }
 
-        public Date getCreated() {
+        public LocalDateTime getCreated() {
             return created;
         }
 
-        public void setCreated(Date created) {
+        public void setCreated(LocalDateTime created) {
             this.created = created;
         }
 
@@ -112,7 +116,7 @@ public class BlobStoreFiles {
             this.providerId = providerId;
         }
 
-        public File(String name, Date created, Date updated, Long fileSize) {
+        public File(String name, LocalDateTime created, LocalDateTime updated, Long fileSize) {
             super();
             this.name = name;
             this.created = created;
@@ -124,10 +128,14 @@ public class BlobStoreFiles {
         private String name;
 
         @JsonProperty(required = false)
-        private Date created;
+        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+        @JsonSerialize(using = LocalDateTimeSerializer.class)
+        private LocalDateTime created;
 
         @JsonProperty(required = false)
-        private Date updated;
+        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+        @JsonSerialize(using = LocalDateTimeSerializer.class)
+        private LocalDateTime updated;
 
         @JsonProperty(required = false)
         private Long fileSize;
@@ -149,7 +157,6 @@ public class BlobStoreFiles {
             if (name == null || name.endsWith("/")) {
                 return null;
             }
-
             return Paths.get(name).getFileName().toString();
         }
 

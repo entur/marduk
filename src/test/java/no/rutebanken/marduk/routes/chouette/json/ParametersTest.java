@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 import no.rutebanken.marduk.routes.chouette.json.importer.GtfsImportParameters;
 import org.junit.jupiter.api.Test;
 
@@ -51,7 +52,7 @@ class ParametersTest {
     void testGtfsExportParameters() throws JsonProcessingException {
         Provider provider = getProvider();
         String gtfsExportParametersAsString = Parameters.getGtfsExportParameters(provider);
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
         JsonNode gtfsExportParametersAsJson = mapper.readTree(gtfsExportParametersAsString);
         JsonNode providerIdNode = gtfsExportParametersAsJson.path("parameters").path("gtfs-export").path("referential_name");
         assertEquals(provider.getChouetteInfo().getReferential(), providerIdNode.asText(), "The referential_name parameter should reference the provider referential");
@@ -66,7 +67,7 @@ class ParametersTest {
         destProvider.chouetteInfo.referential = targetReferentialName;
         String transferExportParametersAsString = Parameters.getTransferExportParameters(provider, destProvider);
 
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
         JsonNode transferExportParametersasJson = mapper.readTree(transferExportParametersAsString);
         JsonNode targetReferentialNode = transferExportParametersasJson.path("parameters").path("transfer-export").path("dest_referential_name");
         assertEquals(targetReferentialName, targetReferentialNode.asText(), "The transfer parameter should reference the target referential");
