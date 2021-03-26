@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.datatype.joda.deser.InstantDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer;
 
 import java.nio.file.Paths;
@@ -133,7 +133,7 @@ public class BlobStoreFiles {
         private Instant created;
 
         @JsonProperty(required = false)
-        @JsonDeserialize(using = InstantDeserializer.class)
+        @JsonDeserialize(using = InstantDeserializer.class )
         @JsonSerialize(using = InstantSerializer.class)
         private Instant updated;
 
