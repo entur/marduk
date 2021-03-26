@@ -17,7 +17,6 @@ package no.rutebanken.marduk.repository;
 
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.routes.chouette.json.exporter.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -192,17 +191,17 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
         return false;
     }
 
-    private static LocalDateTime getFileCreationDate(Path path) {
+    private static Instant getFileCreationDate(Path path) {
         try {
             BasicFileAttributes attr = Files.readAttributes(path, BasicFileAttributes.class);
-            return DateUtils.fromEpoch(attr.creationTime().toMillis());
+            return Instant.ofEpochMilli(attr.creationTime().toMillis());
         } catch (IOException e) {
             throw new MardukException(e);
         }
     }
 
-    private static LocalDateTime getFileLastModifiedDate(Path path) {
-        return DateUtils.fromEpoch(path.toFile().lastModified());
+    private static Instant getFileLastModifiedDate(Path path) {
+        return Instant.ofEpochMilli(path.toFile().lastModified());
     }
 
     private static long getFileSize(Path path) {

@@ -30,7 +30,7 @@ import org.springframework.stereotype.Repository;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -76,7 +76,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
         LOGGER.debug("list blobs called in in-memory blob store");
         List<BlobStoreFiles.File> files = getBlobsForCurrentContainer().keySet().stream()
                 .filter(fileName -> prefixes.stream().anyMatch(fileName::startsWith))
-                .map(fileName -> new BlobStoreFiles.File(fileName, LocalDateTime.now(), LocalDateTime.now(), (long) getBlobsForCurrentContainer().get(fileName).length))
+                .map(fileName -> new BlobStoreFiles.File(fileName, Instant.now().now(), Instant.now(), (long) getBlobsForCurrentContainer().get(fileName).length))
                 .collect(Collectors.toList());
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(files);

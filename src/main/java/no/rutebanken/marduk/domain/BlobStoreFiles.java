@@ -20,11 +20,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import com.fasterxml.jackson.datatype.joda.deser.InstantDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer;
 
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -60,7 +60,7 @@ public class BlobStoreFiles {
             this.name = name;
         }
 
-        public void setUpdated(LocalDateTime updated) {
+        public void setUpdated(Instant updated) {
             this.updated = updated;
         }
 
@@ -68,7 +68,7 @@ public class BlobStoreFiles {
             this.fileSize = fileSize;
         }
 
-        public LocalDateTime getUpdated() {
+        public Instant getUpdated() {
             return updated;
         }
 
@@ -76,11 +76,11 @@ public class BlobStoreFiles {
             return fileSize;
         }
 
-        public LocalDateTime getCreated() {
+        public Instant getCreated() {
             return created;
         }
 
-        public void setCreated(LocalDateTime created) {
+        public void setCreated(Instant created) {
             this.created = created;
         }
 
@@ -116,7 +116,7 @@ public class BlobStoreFiles {
             this.providerId = providerId;
         }
 
-        public File(String name, LocalDateTime created, LocalDateTime updated, Long fileSize) {
+        public File(String name, Instant created, Instant updated, Long fileSize) {
             super();
             this.name = name;
             this.created = created;
@@ -128,14 +128,14 @@ public class BlobStoreFiles {
         private String name;
 
         @JsonProperty(required = false)
-        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-        @JsonSerialize(using = LocalDateTimeSerializer.class)
-        private LocalDateTime created;
+        @JsonDeserialize(using = InstantDeserializer.class)
+        @JsonSerialize(using = InstantSerializer.class)
+        private Instant created;
 
         @JsonProperty(required = false)
-        @JsonDeserialize(using = LocalDateTimeDeserializer.class)
-        @JsonSerialize(using = LocalDateTimeSerializer.class)
-        private LocalDateTime updated;
+        @JsonDeserialize(using = InstantDeserializer.class)
+        @JsonSerialize(using = InstantSerializer.class)
+        private Instant updated;
 
         @JsonProperty(required = false)
         private Long fileSize;
