@@ -19,10 +19,11 @@ package no.rutebanken.marduk.repository;
 
 import no.rutebanken.marduk.domain.FileNameAndDigest;
 import org.apache.camel.processor.idempotent.jdbc.AbstractJdbcMessageIdRepository;
-import org.apache.commons.lang3.time.DateUtils;
 
 import javax.sql.DataSource;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Custom impl of JDBC messageId repo considering both file name and digest as unique keys.
@@ -68,13 +69,13 @@ public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageId
 
     protected int delete(String keyAsString) {
         FileNameAndDigest key = FileNameAndDigest.fromString(keyAsString);
-        java.util.Date minCreatedAt;
+        Instant minCreatedAt;
         if (maxTransactionSeconds > 0) {
-            minCreatedAt = DateUtils.addSeconds(new java.util.Date(), -maxTransactionSeconds);
+            minCreatedAt = Instant.now().minus(maxTransactionSeconds, ChronoUnit.SECONDS);
         } else {
-            minCreatedAt = new java.util.Date(0);
+            minCreatedAt = Instant.ofEpochMilli(0L);
         }
-        return this.jdbcTemplate.update(DELETE_STRING, new Object[]{this.processorName, key.getDigest(), key.getFileName(), minCreatedAt});
+        return this.jdbcTemplate.update(DELETE_STRING, new Object[]{this.processorName, key.getDigest(), key.getFileName(), Timestamp.from(minCreatedAt)});
     }
 
     protected int delete() {
