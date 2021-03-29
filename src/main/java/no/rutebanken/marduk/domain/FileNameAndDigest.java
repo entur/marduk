@@ -18,7 +18,8 @@ package no.rutebanken.marduk.domain;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 
@@ -28,11 +29,15 @@ import java.util.Objects;
 
 public class FileNameAndDigest {
 
+	private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getObjectMapper().readerFor(FileNameAndDigest.class);
+	private static final ObjectWriter OBJECT_WRITER = ObjectMapperFactory.getObjectMapper().writerFor(FileNameAndDigest.class);
+
 	@JsonProperty("fileName")
 	private String fileName;
 
 	@JsonProperty("digest")
 	private String digest;
+
 
 	public FileNameAndDigest() {
 	}
@@ -61,8 +66,7 @@ public class FileNameAndDigest {
 
 	public static FileNameAndDigest fromString(String string) {
 		try {
-			ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
-			return mapper.readValue(string, FileNameAndDigest.class);
+			return OBJECT_READER.readValue(string);
 		} catch (IOException e) {
 			throw new MardukException(e);
 		}
@@ -70,9 +74,8 @@ public class FileNameAndDigest {
 
 	public String toString() {
 		try {
-			ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
 			StringWriter writer = new StringWriter();
-			mapper.writeValue(writer, this);
+			OBJECT_WRITER.writeValue(writer, this);
 			return writer.toString();
 		} catch (IOException e) {
 			throw new MardukException(e);

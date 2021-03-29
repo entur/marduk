@@ -17,8 +17,8 @@
 package no.rutebanken.marduk.routes.status;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.exceptions.MardukException;
@@ -100,7 +100,8 @@ public class JobEvent {
     public static final String CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED = "NO_DATA_PROCEEDED";
     public static final String CHOUETTE_JOB_FAILURE_CODE_NO_DATA_FOUND = "NO_DATA_FOUND";
 
-
+    private static final ObjectWriter OBJECT_WRITER = ObjectMapperFactory.getObjectMapper().writerFor(JobEvent.class);
+    private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getObjectMapper().readerFor(JobEvent.class);
 
 
     public enum JobDomain {TIMETABLE, GRAPH, TIMETABLE_PUBLISH}
@@ -136,9 +137,8 @@ public class JobEvent {
 
     public String toString() {
         try {
-            ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
             StringWriter writer = new StringWriter();
-            mapper.writeValue(writer, this);
+            OBJECT_WRITER.writeValue(writer, this);
             return writer.toString();
         } catch (IOException e) {
             throw new MardukException(e);
@@ -148,8 +148,7 @@ public class JobEvent {
 
     public static JobEvent fromString(String string) {
         try {
-            ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
-            return mapper.readValue(string, JobEvent.class);
+            return OBJECT_READER.readValue(string);
         } catch (IOException e) {
             throw new MardukException(e);
         }
