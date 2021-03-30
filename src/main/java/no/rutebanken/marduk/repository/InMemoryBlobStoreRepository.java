@@ -76,7 +76,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
         LOGGER.debug("list blobs called in in-memory blob store");
         List<BlobStoreFiles.File> files = getBlobsForCurrentContainer().keySet().stream()
                 .filter(fileName -> prefixes.stream().anyMatch(fileName::startsWith))
-                .map(fileName -> new BlobStoreFiles.File(fileName, Instant.now().now(), Instant.now(), (long) getBlobsForCurrentContainer().get(fileName).length))
+                .map(fileName -> new BlobStoreFiles.File(fileName, Instant.now(), Instant.now(), (long) getBlobsForCurrentContainer().get(fileName).length))
                 .collect(Collectors.toList());
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(files);

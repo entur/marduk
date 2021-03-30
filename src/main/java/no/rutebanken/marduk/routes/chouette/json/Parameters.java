@@ -29,7 +29,6 @@ import no.rutebanken.marduk.routes.chouette.json.importer.NetexImportParameters;
 import no.rutebanken.marduk.routes.file.FileType;
 
 import java.io.IOException;
-import java.io.StringWriter;
 
 public class Parameters {
 
@@ -70,9 +69,7 @@ public class Parameters {
                                                                                                     chouetteInfo.xmlns, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, true);
             GtfsExportParameters.Parameters parameters = new GtfsExportParameters.Parameters(gtfsExport);
             GtfsExportParameters importParameters = new GtfsExportParameters(parameters);
-            StringWriter writer = new StringWriter();
-            OBJECT_WRITER_FOR_GTFS_EXPORT_PARAMETERS.writeValue(writer, importParameters);
-            return writer.toString();
+            return OBJECT_WRITER_FOR_GTFS_EXPORT_PARAMETERS.writeValueAsString(importParameters);
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -93,9 +90,7 @@ public class Parameters {
             NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport(name, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, projectionType, exportStops, exportBlocks, chouetteInfo.xmlns);
             NetexExportParameters.Parameters parameters = new NetexExportParameters.Parameters(netexExport);
             NetexExportParameters exportParameters = new NetexExportParameters(parameters);
-            StringWriter writer = new StringWriter();
-            OBJECT_WRITER_FOR_NETEX_EXPORT_PARAMETERS.writeValue(writer, exportParameters);
-            return writer.toString();
+            return OBJECT_WRITER_FOR_NETEX_EXPORT_PARAMETERS.writeValueAsString(exportParameters);
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -107,9 +102,7 @@ public class Parameters {
                                                                                                                         provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user, destProvider.chouetteInfo.referential);
             TransferExportParameters.Parameters parameters = new TransferExportParameters.Parameters(transferExport);
             TransferExportParameters importParameters = new TransferExportParameters(parameters);
-            StringWriter writer = new StringWriter();
-            OBJECT_WRITER_FOR_TRANSFER_EXPORT_PARAMETERS.writeValue(writer, importParameters);
-            return writer.toString();
+            return OBJECT_WRITER_FOR_TRANSFER_EXPORT_PARAMETERS.writeValueAsString(importParameters);
         } catch (IOException e) {
             throw new MardukException(e);
         }

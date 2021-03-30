@@ -24,7 +24,6 @@ import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.Objects;
 
 public class FileNameAndDigest {
@@ -74,9 +73,7 @@ public class FileNameAndDigest {
 
 	public String toString() {
 		try {
-			StringWriter writer = new StringWriter();
-			OBJECT_WRITER.writeValue(writer, this);
-			return writer.toString();
+			return OBJECT_WRITER.writeValueAsString(this);
 		} catch (IOException e) {
 			throw new MardukException(e);
 		}

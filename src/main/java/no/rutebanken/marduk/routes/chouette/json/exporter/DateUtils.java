@@ -16,11 +16,7 @@
 
 package no.rutebanken.marduk.routes.chouette.json.exporter;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 public class DateUtils {
 
@@ -33,10 +29,6 @@ public class DateUtils {
 
     public static LocalDate endDateFor(long daysForward){
         return LocalDate.now().plusDays(daysForward);
-    }
-
-    public static LocalDateTime fromEpoch(long milliseconds) {
-        return ZonedDateTime.ofInstant(Instant.ofEpochMilli(milliseconds), ZoneId.systemDefault()).toLocalDateTime();
     }
 
 }

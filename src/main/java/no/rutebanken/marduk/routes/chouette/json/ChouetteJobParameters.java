@@ -25,7 +25,6 @@ import no.rutebanken.marduk.json.ObjectMapperFactory;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.StringWriter;
 
 public abstract class ChouetteJobParameters {
 
@@ -44,9 +43,7 @@ public abstract class ChouetteJobParameters {
 				((ObjectNode) (importRootNode).get("parameters")).set("validation", validationNode);
 				return mapper.writeValueAsString(importRootNode);
 			} else {
-				StringWriter writer = new StringWriter();
-				mapper.writeValue(writer, this);
-				return writer.toString();
+				return mapper.writeValueAsString(this);
 			}
 		} catch (IOException e) {
 			throw new MardukException(e);

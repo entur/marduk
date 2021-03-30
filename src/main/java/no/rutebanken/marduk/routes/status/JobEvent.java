@@ -26,7 +26,6 @@ import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.apache.camel.Exchange;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -137,9 +136,7 @@ public class JobEvent {
 
     public String toString() {
         try {
-            StringWriter writer = new StringWriter();
-            OBJECT_WRITER.writeValue(writer, this);
-            return writer.toString();
+            return OBJECT_WRITER.writeValueAsString(this);
         } catch (IOException e) {
             throw new MardukException(e);
         }

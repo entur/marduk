@@ -11,7 +11,6 @@ import org.springframework.security.oauth2.jwt.MappedJwtClaimSetConverter;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -92,10 +91,8 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
 
 
     private String toJSON(RoleAssignment roleAssignment) {
-        StringWriter writer = new StringWriter();
         try {
-            ROLE_ASSIGNMENT_OBJECT_WRITER.writeValue(writer, roleAssignment);
-            return writer.toString();
+            return ROLE_ASSIGNMENT_OBJECT_WRITER.writeValueAsString(roleAssignment);
         } catch (IOException e) {
             throw new MardukException(e);
         }
