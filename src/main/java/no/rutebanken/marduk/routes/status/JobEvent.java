@@ -100,8 +100,8 @@ public class JobEvent {
     public static final String CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED = "NO_DATA_PROCEEDED";
     public static final String CHOUETTE_JOB_FAILURE_CODE_NO_DATA_FOUND = "NO_DATA_FOUND";
 
-    private static final ObjectWriter OBJECT_WRITER = ObjectMapperFactory.getObjectMapper().writerFor(JobEvent.class);
-    private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getObjectMapper().readerFor(JobEvent.class);
+    private static final ObjectWriter OBJECT_WRITER = ObjectMapperFactory.getSharedObjectMapper().writerFor(JobEvent.class);
+    private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getSharedObjectMapper().readerFor(JobEvent.class);
 
 
     public enum JobDomain {TIMETABLE, GRAPH, TIMETABLE_PUBLISH}

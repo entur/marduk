@@ -33,9 +33,9 @@ import java.io.StringWriter;
 
 public class Parameters {
 
-    private static final ObjectWriter OBJECT_WRITER_FOR_GTFS_EXPORT_PARAMETERS = ObjectMapperFactory.getObjectMapper().writerFor(GtfsExportParameters.class);
-    private static final ObjectWriter OBJECT_WRITER_FOR_TRANSFER_EXPORT_PARAMETERS = ObjectMapperFactory.getObjectMapper().writerFor(TransferExportParameters.class);
-    private static final ObjectWriter OBJECT_WRITER_FOR_NETEX_EXPORT_PARAMETERS = ObjectMapperFactory.getObjectMapper().writerFor(NetexExportParameters.class);
+    private static final ObjectWriter OBJECT_WRITER_FOR_GTFS_EXPORT_PARAMETERS = ObjectMapperFactory.getSharedObjectMapper().writerFor(GtfsExportParameters.class);
+    private static final ObjectWriter OBJECT_WRITER_FOR_TRANSFER_EXPORT_PARAMETERS = ObjectMapperFactory.getSharedObjectMapper().writerFor(TransferExportParameters.class);
+    private static final ObjectWriter OBJECT_WRITER_FOR_NETEX_EXPORT_PARAMETERS = ObjectMapperFactory.getSharedObjectMapper().writerFor(NetexExportParameters.class);
 
     public static String createImportParameters(String fileName, String fileType, Provider provider) {
         if (FileType.GTFS.name().equals(fileType)) {

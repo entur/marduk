@@ -18,10 +18,6 @@ package no.rutebanken.marduk.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.InstantDeserializer;
-import com.fasterxml.jackson.datatype.jsr310.ser.InstantSerializer;
 
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -128,13 +124,9 @@ public class BlobStoreFiles {
         private String name;
 
         @JsonProperty(required = false)
-        //@JsonDeserialize(using = InstantDeserializer.class)
-        @JsonSerialize(using = InstantSerializer.class)
         private Instant created;
 
         @JsonProperty(required = false)
-        //@JsonDeserialize(using = InstantDeserializer.class )
-        @JsonSerialize(using = InstantSerializer.class)
         private Instant updated;
 
         @JsonProperty(required = false)
@@ -157,6 +149,7 @@ public class BlobStoreFiles {
             if (name == null || name.endsWith("/")) {
                 return null;
             }
+
             return Paths.get(name).getFileName().toString();
         }
 

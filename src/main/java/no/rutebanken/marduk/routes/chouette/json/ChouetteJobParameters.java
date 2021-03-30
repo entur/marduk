@@ -34,7 +34,7 @@ public abstract class ChouetteJobParameters {
 
 	public String toJsonString() {
 		try {
-			ObjectMapper mapper = ObjectMapperFactory.getObjectMapper();
+			ObjectMapper mapper = ObjectMapperFactory.getSharedObjectMapper().copy();
 			if (enableValidation) {
 				// insert the validation node into the parameters node of the JSON message.
 				JsonNode importRootNode = mapper.valueToTree(this);

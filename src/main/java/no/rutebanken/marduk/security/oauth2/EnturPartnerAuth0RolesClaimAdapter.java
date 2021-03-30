@@ -29,7 +29,7 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
 
     static final String ORG_RUTEBANKEN = "RB";
 
-    private static final ObjectWriter ROLE_ASSIGNMENT_OBJECT_WRITER = ObjectMapperFactory.getObjectMapper().writerFor(RoleAssignment.class);
+    private static final ObjectWriter ROLE_ASSIGNMENT_OBJECT_WRITER = ObjectMapperFactory.getSharedObjectMapper().writerFor(RoleAssignment.class);
 
     private final MappedJwtClaimSetConverter delegate =
             MappedJwtClaimSetConverter.withDefaults(Collections.emptyMap());

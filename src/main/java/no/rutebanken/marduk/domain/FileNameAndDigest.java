@@ -29,8 +29,8 @@ import java.util.Objects;
 
 public class FileNameAndDigest {
 
-	private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getObjectMapper().readerFor(FileNameAndDigest.class);
-	private static final ObjectWriter OBJECT_WRITER = ObjectMapperFactory.getObjectMapper().writerFor(FileNameAndDigest.class);
+	private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getSharedObjectMapper().readerFor(FileNameAndDigest.class);
+	private static final ObjectWriter OBJECT_WRITER = ObjectMapperFactory.getSharedObjectMapper().writerFor(FileNameAndDigest.class);
 
 	@JsonProperty("fileName")
 	private String fileName;

@@ -16,10 +16,12 @@
 
 package no.rutebanken.marduk.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import no.rutebanken.marduk.json.ObjectMapperFactory;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import no.rutebanken.marduk.domain.BlobStoreFiles;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.ThreadPoolBuilder;
+import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,7 +29,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.concurrent.ExecutorService;
 
 @Configuration
-public class CamelExecutorServiceConfig {
+public class CamelConfig {
 
     /**
      * Configure the Camel thread pool for bulk operations on providers.
@@ -66,9 +68,18 @@ public class CamelExecutorServiceConfig {
                 .build("gtfsExportExecutorService");
     }
 
-
-    @Bean("camelJacksonObjectMapper")
-    public ObjectMapper camelJacksonObjectMapper() {
-        return ObjectMapperFactory.getObjectMapper();
+    /**
+     * Configure a JSON dataformat for BlobstoreFiles.
+     * Data consumers (Ninkasi, Bel) expect the date to be serialized as epoch milliseconds.
+     * @return
+     */
+    @Bean("blobStoreFilesDataFormat")
+    JacksonDataFormat blobStoreFilesDataFormat() {
+        JacksonDataFormat df = new JacksonDataFormat(BlobStoreFiles.class);
+        df.addModule(new JavaTimeModule());
+        df.disableFeature(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS);
+        return df;
     }
+
+
 }

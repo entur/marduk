@@ -26,7 +26,7 @@ import java.io.IOException;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Provider {
 
-    private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getObjectMapper().readerFor(Provider.class);
+    private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getSharedObjectMapper().readerFor(Provider.class);
 
     public Long id;
 

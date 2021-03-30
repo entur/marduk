@@ -5,9 +5,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class ObjectMapperFactory {
 
-    public static ObjectMapper getObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        return mapper;
+    private static final ObjectMapper SHARED_OBJECT_MAPPER = new ObjectMapper().registerModule(new JavaTimeModule());
+
+    public static ObjectMapper getSharedObjectMapper() {
+        return SHARED_OBJECT_MAPPER;
     }
 }
