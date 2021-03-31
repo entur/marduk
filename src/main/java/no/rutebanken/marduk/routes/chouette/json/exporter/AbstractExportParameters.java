@@ -34,11 +34,11 @@ public class AbstractExportParameters extends AbstractParameters {
     public List<Long> ids;
 
     @JsonProperty("start_date")
-    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd", timezone="CET")
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd")
     public LocalDate startDate;
 
     @JsonProperty("end_date")
-    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd", timezone="CET")
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd")
     public LocalDate endDate;
 
     @JsonProperty("add_metadata")

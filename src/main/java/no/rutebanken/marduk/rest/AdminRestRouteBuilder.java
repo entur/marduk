@@ -319,7 +319,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .outType(BlobStoreFiles.class)
                 .consumes(PLAIN)
                 .produces(JSON)
-                .bindingMode(RestBindingMode.off)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .route()
@@ -328,7 +327,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "List time table and graph files")
                 .process(this::removeAllCamelHttpHeaders)
                 .to("direct:listTimetableExportAndGraphBlobs")
-                .marshal("blobStoreFilesDataFormat")
                 .routeId("admin-chouette-timetable-files-get")
                 .endRest()
 
@@ -595,7 +593,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .description("List files available for reimport into Chouette")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
                 .outType(BlobStoreFiles.class)
-                .bindingMode(RestBindingMode.off)
                 .consumes(PLAIN)
                 .produces(JSON)
                 .responseMessage().code(200).endResponseMessage()
@@ -608,7 +605,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "List files in blob store")
                 .process(this::removeAllCamelHttpHeaders)
                 .to("direct:listBlobsFlat")
-                .marshal("blobStoreFilesDataFormat")
                 .routeId("admin-chouette-import-list")
                 .endRest()
 

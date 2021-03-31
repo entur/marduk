@@ -37,7 +37,6 @@ public class FileNameAndDigest {
 	@JsonProperty("digest")
 	private String digest;
 
-
 	public FileNameAndDigest() {
 	}
 

@@ -11,7 +11,7 @@ data:
     spring.datasource.maxActive=10
     server.port={{ .Values.service.http.internalPort }}
     camel.springboot.name=Marduk
-    camel.dataformat.json-jackson.object-mapper=camelJacksonObjectMapper
+    camel.dataformat.json-jackson.module-refs=jacksonJavaTimeModule
 
     # PubSub
     spring.cloud.gcp.pubsub.project-id={{ .Values.gcp.pubsubProjectId }}

@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.domain;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -124,9 +125,13 @@ public class BlobStoreFiles {
         private String name;
 
         @JsonProperty(required = false)
+        // Clients (Ninkasi, Bel) expect the instant to be formatted as epoch milliseconds
+        @JsonFormat(without = JsonFormat.Feature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
         private Instant created;
 
         @JsonProperty(required = false)
+        // Clients (Ninkasi, Bel) expect the instant to be formatted as epoch milliseconds
+        @JsonFormat(without = JsonFormat.Feature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
         private Instant updated;
 
         @JsonProperty(required = false)
