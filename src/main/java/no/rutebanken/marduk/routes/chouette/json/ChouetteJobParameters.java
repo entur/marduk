@@ -28,22 +28,23 @@ import java.io.InputStreamReader;
 
 public abstract class ChouetteJobParameters {
 
+	private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getSharedObjectMapper().copy();
+
 	@JsonIgnore
 	public boolean enableValidation = false;
 
 	public String toJsonString() {
 		try {
-			ObjectMapper mapper = ObjectMapperFactory.getSharedObjectMapper().copy();
 			if (enableValidation) {
 				// insert the validation node into the parameters node of the JSON message.
-				JsonNode importRootNode = mapper.valueToTree(this);
-				JsonNode validationNode = mapper.readTree(new InputStreamReader(
+				JsonNode importRootNode = OBJECT_MAPPER.valueToTree(this);
+				JsonNode validationNode = OBJECT_MAPPER.readTree(new InputStreamReader(
 						this.getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/validation.json")));
 
 				((ObjectNode) (importRootNode).get("parameters")).set("validation", validationNode);
-				return mapper.writeValueAsString(importRootNode);
+				return OBJECT_MAPPER.writeValueAsString(importRootNode);
 			} else {
-				return mapper.writeValueAsString(this);
+				return OBJECT_MAPPER.writeValueAsString(this);
 			}
 		} catch (IOException e) {
 			throw new MardukException(e);
