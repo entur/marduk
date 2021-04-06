@@ -16,11 +16,10 @@
 
 package no.rutebanken.marduk.routes.chouette.json;
 
-import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.json.ObjectMapperFactory;
 import no.rutebanken.marduk.routes.chouette.json.exporter.GtfsExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.exporter.NetexExportParameters;
 import no.rutebanken.marduk.routes.chouette.json.exporter.TransferExportParameters;
@@ -29,12 +28,9 @@ import no.rutebanken.marduk.routes.chouette.json.importer.NetexImportParameters;
 import no.rutebanken.marduk.routes.file.FileType;
 
 import java.io.IOException;
+import java.io.StringWriter;
 
 public class Parameters {
-
-    private static final ObjectWriter OBJECT_WRITER_FOR_GTFS_EXPORT_PARAMETERS = ObjectMapperFactory.getSharedObjectMapper().writerFor(GtfsExportParameters.class);
-    private static final ObjectWriter OBJECT_WRITER_FOR_TRANSFER_EXPORT_PARAMETERS = ObjectMapperFactory.getSharedObjectMapper().writerFor(TransferExportParameters.class);
-    private static final ObjectWriter OBJECT_WRITER_FOR_NETEX_EXPORT_PARAMETERS = ObjectMapperFactory.getSharedObjectMapper().writerFor(NetexExportParameters.class);
 
     public static String createImportParameters(String fileName, String fileType, Provider provider) {
         if (FileType.GTFS.name().equals(fileType)) {
@@ -69,7 +65,10 @@ public class Parameters {
                                                                                                     chouetteInfo.xmlns, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, true);
             GtfsExportParameters.Parameters parameters = new GtfsExportParameters.Parameters(gtfsExport);
             GtfsExportParameters importParameters = new GtfsExportParameters(parameters);
-            return OBJECT_WRITER_FOR_GTFS_EXPORT_PARAMETERS.writeValueAsString(importParameters);
+            ObjectMapper mapper = new ObjectMapper();
+            StringWriter writer = new StringWriter();
+            mapper.writeValue(writer, importParameters);
+            return writer.toString();
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -90,7 +89,10 @@ public class Parameters {
             NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport(name, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, projectionType, exportStops, exportBlocks, chouetteInfo.xmlns);
             NetexExportParameters.Parameters parameters = new NetexExportParameters.Parameters(netexExport);
             NetexExportParameters exportParameters = new NetexExportParameters(parameters);
-            return OBJECT_WRITER_FOR_NETEX_EXPORT_PARAMETERS.writeValueAsString(exportParameters);
+            ObjectMapper mapper = new ObjectMapper();
+            StringWriter writer = new StringWriter();
+            mapper.writeValue(writer, exportParameters);
+            return writer.toString();
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -102,7 +104,10 @@ public class Parameters {
                                                                                                                         provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user, destProvider.chouetteInfo.referential);
             TransferExportParameters.Parameters parameters = new TransferExportParameters.Parameters(transferExport);
             TransferExportParameters importParameters = new TransferExportParameters(parameters);
-            return OBJECT_WRITER_FOR_TRANSFER_EXPORT_PARAMETERS.writeValueAsString(importParameters);
+            ObjectMapper mapper = new ObjectMapper();
+            StringWriter writer = new StringWriter();
+            mapper.writeValue(writer, importParameters);
+            return writer.toString();
         } catch (IOException e) {
             throw new MardukException(e);
         }

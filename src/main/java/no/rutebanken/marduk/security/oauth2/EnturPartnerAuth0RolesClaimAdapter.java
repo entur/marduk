@@ -1,8 +1,7 @@
 package no.rutebanken.marduk.security.oauth2;
 
-import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.RoleAssignment;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +10,7 @@ import org.springframework.security.oauth2.jwt.MappedJwtClaimSetConverter;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,7 +28,7 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
 
     static final String ORG_RUTEBANKEN = "RB";
 
-    private static final ObjectWriter ROLE_ASSIGNMENT_OBJECT_WRITER = ObjectMapperFactory.getSharedObjectMapper().writerFor(RoleAssignment.class);
+    private final ObjectMapper mapper = new ObjectMapper();
 
     private final MappedJwtClaimSetConverter delegate =
             MappedJwtClaimSetConverter.withDefaults(Collections.emptyMap());
@@ -91,8 +91,10 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
 
 
     private String toJSON(RoleAssignment roleAssignment) {
+        StringWriter writer = new StringWriter();
         try {
-            return ROLE_ASSIGNMENT_OBJECT_WRITER.writeValueAsString(roleAssignment);
+            mapper.writeValue(writer, roleAssignment);
+            return writer.toString();
         } catch (IOException e) {
             throw new MardukException(e);
         }

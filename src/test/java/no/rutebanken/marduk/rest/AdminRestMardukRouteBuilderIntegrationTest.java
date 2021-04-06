@@ -16,13 +16,11 @@
 
 package no.rutebanken.marduk.rest;
 
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
-import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
@@ -45,6 +43,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -139,8 +138,10 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         d.add(new BlobStoreFiles.File("file1", null, null, null));
         d.add(new BlobStoreFiles.File("file2", null, null, null));
 
-        ObjectWriter objectWriter = ObjectMapperFactory.getSharedObjectMapper().writerFor(BlobStoreFiles.class);
-        String importJson = objectWriter.writeValueAsString(d);
+        ObjectMapper mapper = new ObjectMapper();
+        StringWriter writer = new StringWriter();
+        mapper.writeValue(writer, d);
+        String importJson = writer.toString();
 
         // Do rest call
 
@@ -206,8 +207,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         String s = new String(IOUtils.toByteArray(response));
 
-        ObjectReader objectReader = ObjectMapperFactory.getSharedObjectMapper().readerFor(BlobStoreFiles.class);
-        BlobStoreFiles rsp = objectReader.readValue(s);
+        ObjectMapper mapper = new ObjectMapper();
+        BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
         assertEquals(1, rsp.getFiles().size(), "The list should contain exactly one file");
         assertEquals(testFileName, rsp.getFiles().get(0).getName(), "The file name should not be prefixed by the file store path");
 
@@ -263,8 +264,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         String s = new String(IOUtils.toByteArray(response));
 
-        ObjectReader objectReader = ObjectMapperFactory.getSharedObjectMapper().readerFor(BlobStoreFiles.class);
-        BlobStoreFiles rsp = objectReader.readValue(s);
+        ObjectMapper mapper = new ObjectMapper();
+        BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
         assertEquals(exportFileStaticPrefixes.size(), rsp.getFiles().size());
         assertTrue(exportFileStaticPrefixes.stream().allMatch(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName()))));
     }

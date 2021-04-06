@@ -18,15 +18,12 @@ package no.rutebanken.marduk.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectReader;
-import no.rutebanken.marduk.json.ObjectMapperFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Provider {
-
-    private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getSharedObjectMapper().readerFor(Provider.class);
 
     public Long id;
 
@@ -53,7 +50,8 @@ public class Provider {
 
     @JsonCreator
     public static Provider create(String jsonString) throws IOException {
-        return OBJECT_READER.readValue(jsonString);
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(jsonString, Provider.class);
     }
 
 }

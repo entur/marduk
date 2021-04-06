@@ -16,8 +16,7 @@
 
 package no.rutebanken.marduk.routes.chouette.json;
 
-import com.fasterxml.jackson.databind.ObjectReader;
-import no.rutebanken.marduk.json.ObjectMapperFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.io.StringReader;
@@ -43,9 +42,9 @@ class JobResponseTest {
 
     @Test
     void createInputJson() throws Exception {
-        ObjectReader objectReader = ObjectMapperFactory.getSharedObjectMapper().readerFor(JobResponseWithLinks.class);
+        ObjectMapper mapper = new ObjectMapper();
         StringReader reader = new StringReader(inputJson);
-        JobResponseWithLinks jobResponse = objectReader.readValue(reader);
+        JobResponseWithLinks jobResponse = mapper.readValue(reader, JobResponseWithLinks.class);
         assertEquals(Status.SCHEDULED, jobResponse.status);
         assertEquals("http://chouette:8080/chouette_iev/referentials/tds/data/130/parameters.json",
                 jobResponse.links.stream().filter(li -> li.rel.equals("parameters")).collect(Collectors.toList()).get(0).href);

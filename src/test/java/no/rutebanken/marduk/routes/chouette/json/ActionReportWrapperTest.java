@@ -16,10 +16,10 @@
 
 package no.rutebanken.marduk.routes.chouette.json;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.StringReader;
 
-import com.fasterxml.jackson.databind.ObjectReader;
-import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,9 +27,9 @@ class ActionReportWrapperTest {
 
     @Test
     void testErrorResult() throws Exception {
-        ObjectReader objectReader = ObjectMapperFactory.getSharedObjectMapper().readerFor(ActionReportWrapper.class);
+        ObjectMapper mapper = new ObjectMapper();
         StringReader reader = new StringReader(ERROR_RESPONSE);
-        ActionReportWrapper actionReport = objectReader.readValue(reader);
+        ActionReportWrapper actionReport = mapper.readValue(reader, ActionReportWrapper.class);
         assertEquals("NOK", actionReport.actionReport.result);
         assertTrue((actionReport.isFinalised()));
     }

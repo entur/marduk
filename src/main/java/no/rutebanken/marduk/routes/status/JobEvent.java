@@ -17,15 +17,15 @@
 package no.rutebanken.marduk.routes.status;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.apache.camel.Exchange;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -99,8 +99,7 @@ public class JobEvent {
     public static final String CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED = "NO_DATA_PROCEEDED";
     public static final String CHOUETTE_JOB_FAILURE_CODE_NO_DATA_FOUND = "NO_DATA_FOUND";
 
-    private static final ObjectWriter OBJECT_WRITER = ObjectMapperFactory.getSharedObjectMapper().writerFor(JobEvent.class);
-    private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getSharedObjectMapper().readerFor(JobEvent.class);
+
 
 
     public enum JobDomain {TIMETABLE, GRAPH, TIMETABLE_PUBLISH}
@@ -136,7 +135,11 @@ public class JobEvent {
 
     public String toString() {
         try {
-            return OBJECT_WRITER.writeValueAsString(this);
+            ObjectMapper mapper = new ObjectMapper();
+            StringWriter writer = new StringWriter();
+            mapper.registerModule(new JavaTimeModule());
+            mapper.writeValue(writer, this);
+            return writer.toString();
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -145,7 +148,9 @@ public class JobEvent {
 
     public static JobEvent fromString(String string) {
         try {
-            return OBJECT_READER.readValue(string);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
+            return mapper.readValue(string, JobEvent.class);
         } catch (IOException e) {
             throw new MardukException(e);
         }
