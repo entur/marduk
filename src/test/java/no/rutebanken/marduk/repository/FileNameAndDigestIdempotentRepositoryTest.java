@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -92,7 +91,7 @@ class FileNameAndDigestIdempotentRepositoryTest extends MardukRouteBuilderIntegr
         idempotentRepository.clear();
         FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
 
-        idempotentRepository.insert(fileNameAndDigest.toString(), Timestamp.from(Instant.now().minus(1, ChronoUnit.DAYS)));
+        idempotentRepository.insert(fileNameAndDigest.toString(), Instant.now().minus(1, ChronoUnit.DAYS));
 
         assertTrue(idempotentRepository.contains(fileNameAndDigest.toString()));
 
