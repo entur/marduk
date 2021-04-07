@@ -33,10 +33,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -191,17 +191,17 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
         return false;
     }
 
-    private static Date getFileCreationDate(Path path) {
+    private static Instant getFileCreationDate(Path path) {
         try {
             BasicFileAttributes attr = Files.readAttributes(path, BasicFileAttributes.class);
-            return new Date(attr.creationTime().toMillis());
+            return Instant.ofEpochMilli(attr.creationTime().toMillis());
         } catch (IOException e) {
             throw new MardukException(e);
         }
     }
 
-    private static Date getFileLastModifiedDate(Path path) {
-        return new Date(path.toFile().lastModified());
+    private static Instant getFileLastModifiedDate(Path path) {
+        return Instant.ofEpochMilli(path.toFile().lastModified());
     }
 
     private static long getFileSize(Path path) {

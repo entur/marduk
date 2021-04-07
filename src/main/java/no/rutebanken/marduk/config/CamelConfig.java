@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.config;
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.ThreadPoolBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.concurrent.ExecutorService;
 
 @Configuration
-public class CamelExecutorServiceConfig {
+public class CamelConfig {
 
     /**
      * Configure the Camel thread pool for bulk operations on providers.
@@ -62,6 +63,15 @@ public class CamelExecutorServiceConfig {
                 .maxPoolSize(1)
                 .maxQueueSize(100)
                 .build("gtfsExportExecutorService");
+    }
+
+    /**
+     * Register Java Time Module for JSON serialization/deserialization of Java Time objects.
+     * @return
+     */
+    @Bean("jacksonJavaTimeModule")
+    JavaTimeModule jacksonJavaTimeModule() {
+        return new JavaTimeModule();
     }
 
 

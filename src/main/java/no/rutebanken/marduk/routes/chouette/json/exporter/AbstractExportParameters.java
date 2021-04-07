@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import no.rutebanken.marduk.routes.chouette.json.AbstractParameters;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 public class AbstractExportParameters extends AbstractParameters {
@@ -34,12 +34,12 @@ public class AbstractExportParameters extends AbstractParameters {
     public List<Long> ids;
 
     @JsonProperty("start_date")
-    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd", timezone="CET")
-    public Date startDate;
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd")
+    public LocalDate startDate;
 
     @JsonProperty("end_date")
-    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd", timezone="CET")
-    public Date endDate;
+    @JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd")
+    public LocalDate endDate;
 
     @JsonProperty("add_metadata")
     public boolean addMetadata = false;

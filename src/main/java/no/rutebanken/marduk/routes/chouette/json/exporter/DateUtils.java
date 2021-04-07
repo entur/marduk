@@ -17,20 +17,18 @@
 package no.rutebanken.marduk.routes.chouette.json.exporter;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Date;
 
 public class DateUtils {
 
     private DateUtils() {
     }
 
-    public static Date startDateFor(long daysBack){
-        return Date.from(LocalDate.now().atStartOfDay().minusDays(daysBack).atZone(ZoneId.systemDefault()).toInstant());
+    public static LocalDate startDateFor(long daysBack){
+        return LocalDate.now().minusDays(daysBack);
     }
 
-    public static Date endDateFor(long daysForward){
-        return Date.from(LocalDate.now().atStartOfDay().plusDays(daysForward).atZone(ZoneId.systemDefault()).toInstant());
+    public static LocalDate endDateFor(long daysForward){
+        return LocalDate.now().plusDays(daysForward);
     }
 
 }
