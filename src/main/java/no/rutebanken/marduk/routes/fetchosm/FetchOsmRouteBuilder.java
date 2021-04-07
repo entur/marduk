@@ -27,6 +27,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
@@ -89,15 +90,15 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .to(osmMapUrl)
                 .log(LoggingLevel.DEBUG, correlation() + "OSM map downloaded. Checking MD5")
                 .convertBodyTo(InputStream.class)
-                .process(p -> {
-                    // Throw exception if the expected MD5 does not match MD5 from body
-                    InputStream body = (InputStream) p.getIn().getBody();
-                    String md5 = DigestUtils.md5Hex(body);
-                    String md5FromFile = (String) p.getIn().getHeader(Constants.FILE_TARGET_MD5);
-                    if (!md5.equals(md5FromFile)) {
-                        throw new Md5ChecksumValidationException("MD5 of body (" + md5 + ") does not match MD5 which was read from source (" + md5FromFile + ").");
-                    }
-                })
+
+                .doTry()
+                .process(this::checkMd5)
+                .doCatch(Md5ChecksumValidationException.class)
+                .log(LoggingLevel.ERROR, correlation() + "Failed while checking checksum of OSM file. Deleting MD5 file and retrying later. (${exception.stacktrace}).")
+                .to("direct:deleteBlob")
+                .stop()
+                .end()
+
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectoryForOsm + "/" + "norway-latest.osm.pbf"))
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .to("direct:uploadBlob")
@@ -156,6 +157,21 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .to("direct:considerToFetchOsmMapOverNorway")
                 .log(LoggingLevel.INFO, correlation() + "Quartz processing done for fetching OSM map over Norway.")
                 .routeId("osm-trigger-fetching");
+    }
+
+    /**
+     * Throw exception if the expected MD5 does not match MD5 from body.
+     * @param exchange
+     * @throws IOException
+     * @throws Md5ChecksumValidationException if the expected MD5 does not match MD5 from body.
+     */
+    private void checkMd5(Exchange exchange) throws IOException {
+        InputStream body = (InputStream) exchange.getIn().getBody();
+        String md5 = DigestUtils.md5Hex(body);
+        String md5FromFile = (String) exchange.getIn().getHeader(Constants.FILE_TARGET_MD5);
+        if (!md5.equals(md5FromFile)) {
+            throw new Md5ChecksumValidationException("MD5 of body (" + md5 + ") does not match MD5 which was read from source (" + md5FromFile + ").");
+        }
     }
 
 }

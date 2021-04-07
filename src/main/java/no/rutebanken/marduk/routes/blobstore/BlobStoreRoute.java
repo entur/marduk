@@ -125,6 +125,13 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store for multiple folders.")
                 .routeId("blobstore-list-in-folders");
 
+        from("direct:deleteBlob")
+                .to(logDebugShowAll())
+                .bean(mardukBlobStoreService, "deleteBlob")
+                .to(logDebugShowAll())
+                .log(LoggingLevel.INFO, correlation() + "Returning from deleting blob.")
+                .routeId("blobstore-delete");
+
         from("direct:deleteAllBlobsInFolder")
                 .to(logDebugShowAll())
                 .bean(mardukBlobStoreService, "deleteAllBlobsInFolder")
