@@ -21,6 +21,7 @@ import no.rutebanken.marduk.domain.FileNameAndDigest;
 import org.apache.camel.processor.idempotent.jdbc.AbstractJdbcMessageIdRepository;
 
 import javax.sql.DataSource;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -63,7 +64,7 @@ public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageId
 
     protected int insert(String keyAsString, Instant instant) {
         FileNameAndDigest key = FileNameAndDigest.fromString(keyAsString);
-        return this.jdbcTemplate.update(INSERT_STRING, new Object[]{this.processorName, key.getDigest(), key.getFileName(), instant});
+        return this.jdbcTemplate.update(INSERT_STRING, new Object[]{this.processorName, key.getDigest(), key.getFileName(), Timestamp.from(instant)});
     }
 
     protected int delete(String keyAsString) {
@@ -74,7 +75,7 @@ public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageId
         } else {
             minCreatedAt = Instant.ofEpochMilli(0L);
         }
-        return this.jdbcTemplate.update(DELETE_STRING, new Object[]{this.processorName, key.getDigest(), key.getFileName(), minCreatedAt});
+        return this.jdbcTemplate.update(DELETE_STRING, new Object[]{this.processorName, key.getDigest(), key.getFileName(), Timestamp.from(minCreatedAt)});
     }
 
     protected int delete() {
