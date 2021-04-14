@@ -373,6 +373,22 @@ resource "google_pubsub_subscription" "ProcessFileQueue" {
   }
 }
 
+resource "google_pubsub_topic" "NetexExportNotificationQueue" {
+  name = "NetexExportNotificationQueue"
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "NetexExportNotificationQueue" {
+  name = "NetexExportNotificationQueue"
+  topic = google_pubsub_topic.NetexExportNotificationQueue.name
+  project = var.gcp_pubsub_project
+  labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
 resource "google_pubsub_topic" "OtpBaseGraphBuildQueue" {
   name = "OtpBaseGraphBuildQueue"
   project = var.gcp_pubsub_project
