@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes;
 
+import com.google.cloud.spring.pubsub.support.BasicAcknowledgeablePubsubMessage;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
@@ -34,7 +35,6 @@ import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.quartz.CronExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.gcp.pubsub.support.BasicAcknowledgeablePubsubMessage;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.IOException;

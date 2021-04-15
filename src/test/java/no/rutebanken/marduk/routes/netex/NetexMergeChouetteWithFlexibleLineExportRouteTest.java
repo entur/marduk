@@ -22,7 +22,7 @@ import no.rutebanken.marduk.TestApp;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -54,7 +54,7 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
     void testExportMergedNetex() throws Exception {
 
         // Mock status update
-        AdviceWithRouteBuilder.adviceWith(context, "netex-export-merge-chouette-with-flexible-lines", a -> {
+        AdviceWith.adviceWith(context, "netex-export-merge-chouette-with-flexible-lines", a -> {
             a.interceptSendToEndpoint("entur-google-pubsub:OtpGraphBuildQueue").skipSendToOriginalEndpoint()
                     .to("mock:OtpGraphBuildQueue");
             a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
