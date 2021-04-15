@@ -47,6 +47,7 @@ public class HttpClientConfig {
             @Override
             public void configureHttpClient(HttpClientBuilder httpClientBuilder) {
                 httpClientBuilder.setDefaultHeaders(Arrays.asList(new BasicHeader(ET_CLIENT_ID_HEADER, clientId), new BasicHeader(ET_CLIENT_NAME_HEADER, clientName)));
+                httpClientBuilder.setConnectionManagerShared(true);
             }
         };
 
