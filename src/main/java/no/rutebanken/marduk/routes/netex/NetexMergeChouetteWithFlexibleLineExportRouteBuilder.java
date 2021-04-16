@@ -139,7 +139,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
 
         from("direct:notifyExportNetexWithFlexibleLines")
-                .setBody(simple("${header." + CHOUETTE_REFERENTIAL + "}"))
+                .setBody(header(CHOUETTE_REFERENTIAL).regexReplaceAll("rb_", ""))
                 .removeHeaders("*")
                 .to("entur-google-pubsub:NetexExportNotificationQueue")
                 .routeId("netex-notify-export");
