@@ -89,10 +89,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
         Throwable camelCaughtThrowable = exchange.getProperty("CamelExceptionCaught", Throwable.class);
         Throwable rootCause = ExceptionUtils.getRootCause(camelCaughtThrowable);
 
-        String rootCauseType = rootCause != null ? rootCause.getClass().getName() : "";
-        String rootCauseMessage = rootCause != null ? rootCause.getMessage() : "";
-
-        log.warn("Exchange failed ({}: {}) . Redelivering the message locally, attempt {}/{}...", rootCauseType, rootCauseMessage, redeliveryCounter, redeliveryMaxCounter);
+        log.warn("Exchange failed, redelivering the message locally, attempt {}/{}...", redeliveryCounter, redeliveryMaxCounter, rootCause);
     }
 
     protected String logDebugShowAll() {
