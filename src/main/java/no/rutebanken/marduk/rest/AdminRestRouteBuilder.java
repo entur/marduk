@@ -826,11 +826,11 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .endRest();
 
         from("direct:validateProvider")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null).id("validate-provider")
                 .routeId("admin-validate-provider");
 
         from("direct:validateReferential")
-                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null)
+                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null).id("validate-referential")
                 .routeId("admin-validate-referential");
         
         from("direct:authorizeAdminRequest")
