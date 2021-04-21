@@ -81,6 +81,8 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .to("direct:cleanUpLocalDirectory")
                 .end()
 
+                .wireTap("direct:notifyExportNetexWithFlexibleLines")
+
                 .setBody(constant(null))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
@@ -136,6 +138,11 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .routeId("netex-export-merge-chouette-with-flexible-lines-do-unpack-flexible-lines-export");
 
 
+        from("direct:notifyExportNetexWithFlexibleLines")
+                .setBody(header(CHOUETTE_REFERENTIAL).regexReplaceAll("rb_", ""))
+                .removeHeaders("*")
+                .to("entur-google-pubsub:NetexExportNotificationQueue")
+                .routeId("netex-notify-export");
 
     }
 }
