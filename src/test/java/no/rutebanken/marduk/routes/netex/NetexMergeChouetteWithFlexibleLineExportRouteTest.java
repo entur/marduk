@@ -91,7 +91,7 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
         updateStatus.assertIsSatisfied();
         otpBuildGraph.assertIsSatisfied();
         netexExportNotificationQueue.assertIsSatisfied();
-        assertEquals("rut", netexExportNotificationQueue.getExchanges().get(0).getIn().getHeader(CHOUETTE_REFERENTIAL));
+        assertEquals("rut", netexExportNotificationQueue.getExchanges().get(0).getIn().getBody());
 
     }
 
