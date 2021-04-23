@@ -26,7 +26,7 @@
 
     <logger name="org.apache.camel.component.jackson.JacksonDataFormat" level="WARN"/>
 
-    <logger name="org.springframework.cloud.gcp.core.DefaultCredentialsProvider" level="ERROR"/>
+    <logger name="com.google.auth.oauth2.DefaultCredentialsProvider" level="ERROR"/>
 
     <root level="DEBUG">
         <appender-ref ref="CONSOLE-ASYNC" />
