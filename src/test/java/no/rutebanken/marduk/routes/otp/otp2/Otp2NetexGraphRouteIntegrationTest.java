@@ -68,6 +68,10 @@ class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
                 // create dummy graph file in the blob store
                 String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_GRAPH_OBJ;
                 mardukInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+                // create dummy OTP report in the blob store
+                String reportFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/report/report.html";
+                mardukInMemoryBlobStoreRepository.uploadBlob(reportFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+
             });
         });
 
@@ -95,6 +99,11 @@ class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
         BlobStoreFiles blobsInVersionedSubDirectory = graphsInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
         Assertions.assertEquals(2, blobsInVersionedSubDirectory.getFiles().size());
 
+        // the OTP graph report file and the HTML index are present in the report blobstore
+        BlobStoreFiles indexHtmlInOtpReportBucket = otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_GRAPH_REPORT_INDEX_FILE);
+        Assertions.assertEquals(1, indexHtmlInOtpReportBucket.getFiles().size());
+        BlobStoreFiles reportFileInOtpReportBucket = otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
+        Assertions.assertEquals(1, reportFileInOtpReportBucket.getFiles().size());
     }
 
 

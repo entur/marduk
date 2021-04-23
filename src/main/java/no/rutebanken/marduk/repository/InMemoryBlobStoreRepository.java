@@ -125,7 +125,10 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic) {
-        // no-op implementation for in-memory blobstore
+        getBlobsForContainer(sourceContainerName).keySet()
+                .stream()
+                .filter(blobName -> blobName.startsWith(prefix))
+                .forEach(blobName -> copyBlob(sourceContainerName, blobName, targetContainerName, blobName.replace(prefix, targetPrefix), makePublic));
     }
 
     @Override

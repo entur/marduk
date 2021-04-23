@@ -37,6 +37,7 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.GRAPH_REPORT_INDEX_FILE;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_VERSION;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
@@ -186,7 +187,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:remoteUpdateCurrentGraphReportVersion")
                 .log(LoggingLevel.INFO, correlation() + "Uploading OTP graph build reports current version.")
                 .process(e ->
-                        otpReportBlobStoreService.uploadHtmlBlob("index.html", createRedirectPage(e.getProperty(OTP_GRAPH_VERSION, String.class)), true))
+                        otpReportBlobStoreService.uploadHtmlBlob(GRAPH_REPORT_INDEX_FILE, createRedirectPage(e.getProperty(OTP_GRAPH_VERSION, String.class)), true))
                 .routeId("otp-remote-graph-report-update-current");
 
         from("direct:remoteCleanUp")
