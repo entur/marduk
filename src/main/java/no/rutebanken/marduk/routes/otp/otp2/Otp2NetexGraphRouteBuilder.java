@@ -188,15 +188,15 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(TARGET_FILE_PARENT, e.getProperty(OTP_GRAPH_VERSION, String.class));
                     e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, true);
                 })
-                .log(LoggingLevel.INFO, correlation() + "Copying OTP graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
+                .log(LoggingLevel.INFO, correlation() + "Copying OTP2 graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
                 .to("direct:copyAllBlobs")
-                .log(LoggingLevel.INFO, correlation() + "Done copying OTP graph build reports.")
+                .log(LoggingLevel.INFO, correlation() + "Done copying OTP2 graph build reports.")
                 .routeId("otp2-remote-graph-build-report-versioned-upload");
 
         from("direct:remoteUpdateCurrentOtp2GraphReportVersion")
                 .log(LoggingLevel.INFO, correlation() + "Uploading OTP graph build reports current version.")
                 .process(e ->
-                        otpReportBlobStoreService.uploadHtmlBlob("index.html", createRedirectPage(e.getProperty(OTP_GRAPH_VERSION, String.class)), true))
+                        otpReportBlobStoreService.uploadHtmlBlob(Constants.OTP2_GRAPH_REPORT_INDEX_FILE, createRedirectPage(e.getProperty(OTP_GRAPH_VERSION, String.class)), true))
                 .routeId("otp2-remote-graph-report-update-current");
 
         from("direct:remoteOtp2CleanUp")
