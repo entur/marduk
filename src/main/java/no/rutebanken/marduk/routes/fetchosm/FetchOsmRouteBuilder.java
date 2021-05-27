@@ -104,8 +104,8 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple("File fetched, and blob store has been correctly updated"))
                 .setHeader(FINISHED, simple("true", Boolean.class))
                 .log(LoggingLevel.INFO, correlation() + "Map was updated, therefore triggering OSM base graph build")
-                .setBody(constant(null))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpBaseGraphBuildQueue")
+                .setBody(constant(""))
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpBaseGraphBuildQueue")
                 .log(LoggingLevel.DEBUG, correlation() + "Processing of OSM map finished")
                 .routeId("osm-fetch-map");
 

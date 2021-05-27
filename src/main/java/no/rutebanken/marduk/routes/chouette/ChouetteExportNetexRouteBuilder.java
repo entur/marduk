@@ -52,7 +52,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
     public void configure() throws Exception {
         super.configure();
 
-        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexQueue?synchronousPull=true").streamCaching()
+        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette Netex export")
@@ -72,8 +72,8 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processNetexExportResult"))
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT_NETEX.name()))
                 .removeHeader("loopCounter")
-                .setBody(constant(null))
-                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouettePollStatusQueue")
+                .setBody(constant(""))
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
                 .routeId("chouette-start-export-netex");
 
 
@@ -90,11 +90,11 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_CHOUETTE + "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:uploadBlob")
-                .setBody(constant(null))
+                .setBody(constant(""))
 
-                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteMergeWithFlexibleLinesQueue")
-                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportGtfsQueue")
-                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexBlocksQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportGtfsQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue")
 
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.OK).build())
 

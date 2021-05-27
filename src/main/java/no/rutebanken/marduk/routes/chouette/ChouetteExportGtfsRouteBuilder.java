@@ -58,7 +58,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
     public void configure() throws Exception {
         super.configure();
 
-        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportGtfsQueue?synchronousPull=true").streamCaching()
+        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportGtfsQueue").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette GTFS export")
@@ -82,8 +82,8 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processExportResult"))
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT.name()))
                 .removeHeader("loopCounter")
-                .setBody(constant(null))
-                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouettePollStatusQueue")
+                .setBody(constant(""))
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
                 .routeId("chouette-send-export-job");
 
 
@@ -103,7 +103,7 @@ public class ChouetteExportGtfsRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_GTFS_FILENAME))
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, correlation() + "GTFS zip file uploaded to blob sore. Triggering export of merged GTFS.")
-                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsExportMergedQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.EXPORT).state(State.OK).build())
                 .when(simple("${header.action_report_result} == 'NOK'"))
                 .log(LoggingLevel.WARN, correlation() + "Export failed")

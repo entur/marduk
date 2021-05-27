@@ -50,7 +50,7 @@ class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpGraphBuildQueue")
+    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
     protected ProducerTemplate producerTemplate;
 
     @Test

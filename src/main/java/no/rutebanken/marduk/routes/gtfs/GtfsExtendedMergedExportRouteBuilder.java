@@ -21,7 +21,6 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.MardukGroupedMessageAggregationStrategy;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -47,19 +46,20 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsExportMergedQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{gtfs.export.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue").autoStartup("{{gtfs.export.autoStartup:true}}")
+                .process(this::removeCompletionForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() +  "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:exportGtfsExtendedMerged")
-                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsBasicExportMergedQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue")
                 .routeId("gtfs-extended-export-merged-route");
 
 
         from("direct:exportGtfsExtendedMerged")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .setHeader(Constants.FILE_NAME, constant(gtfsNorwayMergedFileName))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GTFS_MERGED"))
                 .to("direct:exportMergedGtfs")

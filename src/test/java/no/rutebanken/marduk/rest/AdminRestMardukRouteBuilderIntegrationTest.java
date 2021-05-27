@@ -130,7 +130,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void runImport() throws Exception {
 
-        AdviceWith.adviceWith(context, "admin-chouette-import", a -> a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue"));
+        AdviceWith.adviceWith(context, "admin-chouette-import", a -> a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue"));
 
         // we must manually start when we are done with all the advice with
         camelContext.start();
@@ -164,7 +164,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void runExport() throws Exception {
 
-        AdviceWith.adviceWith(context, "admin-chouette-export", a -> a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportNetexQueue"));
+        AdviceWith.adviceWith(context, "admin-chouette-export", a -> a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportNetexQueue"));
 
         // we must manually start when we are done with all the advice with
         camelContext.start();
@@ -276,7 +276,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
                     a.interceptSendToEndpoint("direct:updateStatus")
                             .skipSendToOriginalEndpoint()
                             .to("mock:updateStatus");
-                    a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ProcessFileQueue")
+                    a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
                             .skipSendToOriginalEndpoint()
                             .to("mock:processFileQueue");
                 }
@@ -297,7 +297,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     void downloadNetexBlocks() throws Exception {
 
         AdviceWith.adviceWith(context, "admin-chouette-netex-blocks-download", a ->
-                a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexQueue")
+                a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue")
                         .skipSendToOriginalEndpoint()
                         .to("mock:chouetteExportNetexQueue"));
 

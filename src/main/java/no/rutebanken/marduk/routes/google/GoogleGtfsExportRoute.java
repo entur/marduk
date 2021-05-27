@@ -22,7 +22,6 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.MardukGroupedMessageAggregationStrategy;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -58,18 +57,19 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
         super.configure();
 
 
-        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleExportQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{google.export.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleExportQueue").autoStartup("{{google.export.autoStartup:true}}")
+                .process(this::removeCompletionForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} Google export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:exportGtfsGoogle")
-                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleQaExportQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleQaExportQueue")
                 .routeId("gtfs-google-export-merged-route");
 
         from("direct:exportGtfsGoogle")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .process(e -> e.setProperty(Constants.PROVIDER_WHITE_LIST, prepareProviderWhiteListGoogleUpload()))
                 .setHeader(Constants.FILE_NAME, constant(googleExportFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(googleExportIncludeShapes))
@@ -78,7 +78,8 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .routeId("gtfs-google-export-merged");
 
 
-        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:GtfsGoogleQaExportQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{google.export.qa.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleQaExportQueue").autoStartup("{{google.export.qa.autoStartup:true}}")
+                .process(this::removeCompletionForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .process(this::addOnCompletionForAggregatedExchange)
@@ -89,7 +90,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
 
         from("direct:exportQaGtfsGoogle")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .process(e -> e.setProperty(Constants.PROVIDER_WHITE_LIST, prepareProviderWhiteListGoogleQAUpload()))
                 .setHeader(Constants.FILE_NAME, constant(googleQaExportFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(googleQaExportIncludeShapes))

@@ -60,7 +60,7 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 	@EndpointInject("mock:chouetteGetValidationReport")
 	protected MockEndpoint chouetteGetValidationReport;
 
-	@Produce("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouettePollStatusQueue")
+	@Produce("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
 	protected ProducerTemplate pollStartTemplate;
 
 	@Produce("direct:checkValidationReport")

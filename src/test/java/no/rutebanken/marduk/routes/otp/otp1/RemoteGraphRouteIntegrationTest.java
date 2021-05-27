@@ -57,10 +57,10 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpGraphBuildQueue")
+    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
     protected ProducerTemplate graphProducerTemplate;
 
-    @Produce("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpBaseGraphBuildQueue")
+    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:OtpBaseGraphBuildQueue")
     protected ProducerTemplate baseGraphProducerTemplate;
 
     @Test

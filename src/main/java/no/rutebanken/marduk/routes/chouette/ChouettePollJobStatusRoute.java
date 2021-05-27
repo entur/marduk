@@ -121,11 +121,11 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
         from("direct:chouetteCancelJob")
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(this::removeAllCamelHeaders)
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.DELETE))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/scheduled_jobs/${header." + Constants.CHOUETTE_JOB_ID + "}"))
                 .toD("${exchangeProperty.chouette_url}")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .routeId("chouette-cancel-job");
 
         from("direct:chouetteCancelAllJobsForProvider")
@@ -135,7 +135,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .process(this::removeAllCamelHeaders)
                 .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
                 .setHeader(Constants.CHOUETTE_JOB_ID, simple("${body.id}"))
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .to("direct:chouetteCancelJob")
                 .routeId("chouette-cancel-all-jobs-for-provider");
 
@@ -143,7 +143,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
                 .setHeader(Constants.PROVIDER_ID, simple("${body.id}"))
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .process(this::removeAllCamelHeaders)
                 .to("direct:chouetteCancelAllJobsForProvider")
                 .routeId("chouette-cancel-all-jobs-for-all-providers");
@@ -160,7 +160,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-get-jobs-all");
 
 
-        from("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouettePollStatusQueue?synchronousPull=true&concurrentConsumers=" + maxConsumers)
+        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue?concurrentConsumers=" + maxConsumers)
                 .validate(header(Constants.CORRELATION_ID).isNotNull())
                 .validate(header(Constants.PROVIDER_ID).isNotNull())
                 .validate(header(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION).isNotNull())
@@ -203,7 +203,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 // Remove or ActiveMQ will think message is overdue and resend immediately
                 .removeHeader("scheduledJobId")
                 .setBody(constant(""))
-                .to("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouettePollStatusQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
                 .routeId("chouette-reschedule-job");
 
         from("direct:jobStatusDone")

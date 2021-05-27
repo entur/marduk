@@ -65,7 +65,7 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 	@EndpointInject("mock:ExportNetexBlocksQueue")
 	protected MockEndpoint exportNetexBlocksQueue;
 
-	@Produce("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexQueue")
+	@Produce("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue")
 	protected ProducerTemplate importTemplate;
 
 	@Produce("direct:processNetexExportResult")
@@ -95,9 +95,9 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 		AdviceWith.adviceWith(context, "chouette-process-export-netex-status", a -> {
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 					.to("mock:updateStatus");
-			a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteMergeWithFlexibleLinesQueue").skipSendToOriginalEndpoint().to("mock:ChouetteMergeWithFlexibleLinesQueue");
-			a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportGtfsQueue").skipSendToOriginalEndpoint().to("mock:ExportGtfsQueue");
-			a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexBlocksQueue").skipSendToOriginalEndpoint().to("mock:ExportNetexBlocksQueue");
+			a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue").skipSendToOriginalEndpoint().to("mock:ChouetteMergeWithFlexibleLinesQueue");
+			a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportGtfsQueue").skipSendToOriginalEndpoint().to("mock:ExportGtfsQueue");
+			a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue").skipSendToOriginalEndpoint().to("mock:ExportNetexBlocksQueue");
 		});
 
 		AdviceWith.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")

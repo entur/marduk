@@ -16,29 +16,25 @@
 
 package no.rutebanken.marduk.routes;
 
-import com.google.cloud.pubsub.v1.stub.SubscriberStub;
-import com.google.pubsub.v1.ProjectSubscriptionName;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import org.apache.camel.Exchange;
-import org.apache.camel.ExtendedExchange;
+import org.apache.camel.Message;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
-import org.apache.camel.component.google.pubsub.GooglePubsubEndpoint;
+import org.apache.camel.component.google.pubsub.consumer.AcknowledgeSync;
 import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.RoutePolicy;
-import org.apache.camel.spi.Synchronization;
+import org.apache.camel.support.DefaultExchange;
 import org.apache.commons.lang3.time.DateUtils;
 import org.quartz.CronExpression;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.gcp.pubsub.core.PubSubTemplate;
-import org.springframework.cloud.gcp.pubsub.support.BasicAcknowledgeablePubsubMessage;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.IOException;
@@ -61,13 +57,10 @@ import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NA
 public abstract class BaseRouteBuilder extends RouteBuilder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseRouteBuilder.class);
+    private static final String SYNCHRONIZATION_HOLDER = "SYNCHRONIZATION_HOLDER";
 
     @Autowired
     private ProviderRepository providerRepository;
-
-    @Autowired
-    private PubSubTemplate pubSubTemplate;
-
 
     @Value("${quartz.lenient.fire.time.ms:180000}")
     private int lenientFireTimeMs;
@@ -125,46 +118,6 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     protected String logDebugShowAll() {
         return "log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true";
     }
-
-    /**
-     * Add ACK/NACK completion callback for an aggregated exchange.
-     * The callback should be added after the aggregation is complete to prevent individual messages from being acked
-     * by the aggregator.
-     */
-    protected void addOnCompletionForAggregatedExchange(Exchange exchange) throws IOException {
-        GooglePubsubEndpoint googlePubsubEndpoint = (GooglePubsubEndpoint) exchange.getFromEndpoint();
-        SubscriberStub subscriber = googlePubsubEndpoint.getComponent().getSubscriberStub();
-        String subscriptionName = ProjectSubscriptionName.format(googlePubsubEndpoint.getProjectId(), googlePubsubEndpoint.getDestinationName());
-        if (googlePubsubEndpoint.isSynchronousPull()) {
-            LOGGER.debug("Add call back for synchronous pull to {}", subscriptionName);
-            exchange.adapt(ExtendedExchange.class).addOnCompletion(new MardukGroupedMessageAcknowledgeSync(subscriber, subscriptionName));
-        } else {
-            throw new IllegalStateException("Cannot add completion callback for Asynchronous pull");
-        }
-
-
-    }
-
-
-    private static class AckSynchronization implements Synchronization {
-
-        private final List<BasicAcknowledgeablePubsubMessage> ackList;
-
-        public AckSynchronization(List<BasicAcknowledgeablePubsubMessage> ackList) {
-            this.ackList = ackList;
-        }
-
-        @Override
-        public void onComplete(Exchange exchange) {
-            ackList.forEach(BasicAcknowledgeablePubsubMessage::ack);
-        }
-
-        @Override
-        public void onFailure(Exchange exchange) {
-            ackList.forEach(BasicAcknowledgeablePubsubMessage::nack);
-        }
-    }
-
 
     protected ProviderRepository getProviderRepository() {
         return providerRepository;
@@ -257,6 +210,22 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
         } catch (IOException e) {
             log.warn("Failed to delete directory {}", directory, e);
         }
+    }
+
+    public void removeCompletionForAggregatedExchange(Exchange e) {
+        DefaultExchange temporaryExchange = new DefaultExchange(e.getContext());
+        e.getUnitOfWork().handoverSynchronization(temporaryExchange, synchronization -> synchronization instanceof AcknowledgeSync);
+        e.getIn().setHeader(SYNCHRONIZATION_HOLDER, temporaryExchange);
+    }
+
+    /**
+     * Add ACK/NACK completion callback for an aggregated exchange.
+     * The callback should be added after the aggregation is complete to prevent individual messages from being acked
+     * by the aggregator.
+     */
+    protected void addOnCompletionForAggregatedExchange(Exchange aggregatedExchange) {
+        List<Message> messages = aggregatedExchange.getIn().getBody(List.class);
+        messages.forEach(m -> m.getHeader(SYNCHRONIZATION_HOLDER, Exchange.class).getUnitOfWork().handoverSynchronization(aggregatedExchange));
     }
 
 }

@@ -49,7 +49,7 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 	@EndpointInject("mock:updateStatus")
 	protected MockEndpoint updateStatus;
 
-	@Produce("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteTransferExportQueue")
+	@Produce("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteTransferExportQueue")
 	protected ProducerTemplate transferTemplate;
 
 	@Produce("direct:processTransferExportResult")
@@ -67,7 +67,7 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/transfer")
 					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
 
-			a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouettePollStatusQueue")
+			a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
 					.skipSendToOriginalEndpoint().to("mock:pollJobStatus");
 
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()

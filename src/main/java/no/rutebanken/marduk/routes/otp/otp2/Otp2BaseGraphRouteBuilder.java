@@ -24,7 +24,6 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
-import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -57,7 +56,8 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
-        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:Otp2BaseGraphBuildQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{otp2.graph.build.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
+                .process(this::removeCompletionForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
@@ -65,7 +65,8 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:buildOtp2BaseGraph")
                 .routeId("pubsub-otp2-base-graph-build");
 
-        singletonFrom("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:Otp2BaseGraphCandidateBuildQueue?ackMode=NONE&synchronousPull=true").autoStartup("{{otp2.graph.build.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
+                .process(this::removeCompletionForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
@@ -108,7 +109,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .when(PredicateBuilder.not(exchangeProperty(OTP_BUILD_CANDIDATE)))
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP2 base graph, triggering full OTP2 graph build")
                 .setBody(constant(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP2 candidate base graph")
                 .end()
