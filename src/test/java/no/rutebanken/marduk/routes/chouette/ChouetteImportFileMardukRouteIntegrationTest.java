@@ -24,7 +24,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.language.SimpleExpression;
 import org.apache.commons.io.IOUtils;
@@ -99,15 +99,15 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
         mardukInMemoryBlobStoreRepository.uploadBlob("rut/" + testFilename, testFile, false);
 
         // Mock initial call to Chouette to import job
-        AdviceWithRouteBuilder.adviceWith(context, "chouette-send-import-job", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/netexprofile")
+        AdviceWith.adviceWith(context, "chouette-send-import-job", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/netexprofile")
                 .skipSendToOriginalEndpoint().to("mock:chouetteCreateImport"));
 
         // Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
-        AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
+        AdviceWith.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
                 .to("mock:pollJobStatus"));
 
         // Mock update status calls
-        AdviceWithRouteBuilder.adviceWith(context, "chouette-process-import-status", a -> {
+        AdviceWith.adviceWith(context, "chouette-process-import-status", a -> {
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
             a.weaveByToUri("direct:checkScheduledJobsBeforeTriggeringNextAction").replace().to("mock:checkScheduledJobsBeforeTriggeringNextAction");
         });
@@ -162,7 +162,7 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
 
     void testJobListResponse(String jobListResponseClasspathReference, boolean expectExport) throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "chouette-process-job-list-after-import", a -> {
+        AdviceWith.adviceWith(context, "chouette-process-job-list-after-import", a -> {
             a.interceptSendToEndpoint(chouetteUrl + "/*")
                     .skipSendToOriginalEndpoint()
                     .to("mock:chouetteGetJobsForProvider");

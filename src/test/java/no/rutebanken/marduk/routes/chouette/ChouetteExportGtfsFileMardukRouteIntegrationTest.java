@@ -20,7 +20,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import org.apache.camel.*;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
@@ -68,7 +68,7 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 	void testExportDataspace() throws Exception {
 
 		// Mock initial call to Chouette to import job
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-send-export-job", a -> {
+		AdviceWith.adviceWith(context, "chouette-send-export-job", a -> {
 			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/gtfs")
 					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
@@ -76,14 +76,14 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 		});
 
 		// Mock update status calls
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-export-status", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+		AdviceWith.adviceWith(context, "chouette-process-export-status", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 				.to("mock:updateStatus"));
 
 		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
+		AdviceWith.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
 				.to("mock:pollJobStatus"));
 
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
+		AdviceWith.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
 				.skipSendToOriginalEndpoint().to("mock:chouetteGetData"));
 
 		

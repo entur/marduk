@@ -22,7 +22,7 @@ import no.rutebanken.marduk.TestApp;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -50,7 +50,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
     @Test
     void testOtpGraphMessageAggregationOneMessageWithoutException() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
+        AdviceWith.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
 
         buildOtpGraph.expectedMessageCount(1);
 
@@ -66,7 +66,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
     @Test
     void testOtpGraphMessageAggregationWithoutException() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
+        AdviceWith.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
 
         buildOtpGraph.expectedMessageCount(1);
 
@@ -85,7 +85,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
     @Test
     void testOtpGraphMessageAggregationWithException() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
+        AdviceWith.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
 
         buildOtpGraph.whenAnyExchangeReceived(exchange -> {
             throw new RuntimeException("Test - Triggering exception in Exchange");

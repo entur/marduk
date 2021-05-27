@@ -9,6 +9,7 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.GRAPH_COMPATIBILITY_VERSION;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ_PREFIX;
+import static no.rutebanken.marduk.Constants.OTP_GRAPH_VERSION;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
@@ -40,11 +41,14 @@ public class Otp2NetexGraphPublishingProcessor implements Processor {
                 + "/" + e.getProperty(TIMESTAMP, String.class)
                 + '-' + graphFileName;
 
+        String publishedGraphVersion = Constants.OTP2_NETEX_GRAPH_DIR + "/" + e.getProperty(TIMESTAMP, String.class) + "-report";
+
         e.getIn().setHeader(GRAPH_COMPATIBILITY_VERSION, graphCompatibilityVersion);
         e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
         e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
         e.getIn().setHeader(TARGET_CONTAINER, otpGraphsBucketName);
         e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, false);
+        e.setProperty(OTP_GRAPH_VERSION, publishedGraphVersion);
     }
 
     protected static String getGraphCompatibilityVersion(String graphFileName) {

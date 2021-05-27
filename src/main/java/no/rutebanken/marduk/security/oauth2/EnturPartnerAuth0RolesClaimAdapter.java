@@ -1,7 +1,8 @@
 package no.rutebanken.marduk.security.oauth2;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.RoleAssignment;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,7 +11,6 @@ import org.springframework.security.oauth2.jwt.MappedJwtClaimSetConverter;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,22 +21,22 @@ import java.util.Optional;
 
 /**
  * Insert a "roles" claim in the JWT token based on the organisationID claim, for compatibility with the existing
- * authorization process (@{@link JwtRoleAssignmentExtractor}).
+ * authorization process (@{@link org.entur.oauth2.JwtRoleAssignmentExtractor}).
  */
 @Component
-public class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<String, Object>> {
+public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<String, Object>> {
 
     static final String ORG_RUTEBANKEN = "RB";
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectWriter ROLE_ASSIGNMENT_OBJECT_WRITER = ObjectMapperFactory.getSharedObjectMapper().writerFor(RoleAssignment.class);
 
     private final MappedJwtClaimSetConverter delegate =
             MappedJwtClaimSetConverter.withDefaults(Collections.emptyMap());
 
-    @Value("#{${marduk.oauth2.resourceserver.auth0.organisations}}")
+    @Value("#{${marduk.oauth2.resourceserver.auth0.partner.organisations}}")
     private Map<Long, String> rutebankenOrganisations;
 
-    @Value("${marduk.oauth2.resourceserver.auth0.admin.activated:false}")
+    @Value("${marduk.oauth2.resourceserver.auth0.partner.admin.activated:false}")
     private boolean administratorAccessActivated;
 
     @Value("#{${netex.export.block.authorization}}")
@@ -91,10 +91,8 @@ public class Auth0RolesClaimAdapter implements Converter<Map<String, Object>, Ma
 
 
     private String toJSON(RoleAssignment roleAssignment) {
-        StringWriter writer = new StringWriter();
         try {
-            mapper.writeValue(writer, roleAssignment);
-            return writer.toString();
+            return ROLE_ASSIGNMENT_OBJECT_WRITER.writeValueAsString(roleAssignment);
         } catch (IOException e) {
             throw new MardukException(e);
         }

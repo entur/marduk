@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-        <version>1.0.18</version>
+        <version>1.0.23</version>
     </parent>
 
     <groupId>no.rutebanken.marduk</groupId>
@@ -24,17 +24,14 @@
     </scm>
     <properties>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
-        <camel.version>3.4.5</camel.version>
-        <keycloak.version>4.8.3.Final</keycloak.version>
-        <entur.helpers.version>1.0.36-SNAPSHOT</entur.helpers.version>
+        <camel.version>3.7.3</camel.version>
+        <spring-boot.version>2.4.5</spring-boot.version>
+        <entur.helpers.version>1.0.48</entur.helpers.version>
         <commons-io.version>2.8.0</commons-io.version>
         <commons-csv.version>1.8</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <zt-zip.version>1.14</zt-zip.version>
-
-        <!-- Override Spring Boot configuration -->
-        <!-- Camel 3 requires Hazelcast 4.x -->
-        <hazelcast.version>4.0.3</hazelcast.version>
+        <json-unit.version>2.25.0</json-unit.version>
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
         <argLine/>
@@ -43,10 +40,13 @@
     <dependencyManagement>
         <dependencies>
 
+            <!-- adding again the Spring Boot BOM to force dependencies broken by the Camel BOM-->
             <dependency>
-                <groupId>com.google.inject</groupId>
-                <artifactId>guice</artifactId>
-                <version>4.1.0</version>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <dependency>
@@ -106,6 +106,17 @@
             <groupId>org.entur.helpers</groupId>
             <artifactId>organisation</artifactId>
             <version>${entur.helpers.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.keycloak</groupId>
+                    <artifactId>keycloak-spring-security-adapter</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.entur.helpers</groupId>
+            <artifactId>logging</artifactId>
+            <version>${entur.helpers.version}</version>
         </dependency>
         <dependency>
             <groupId>org.entur.helpers</groupId>
@@ -116,22 +127,20 @@
         <!-- Spring Boot -->
 
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
+            <groupId>org.entur.helpers</groupId>
+            <artifactId>oauth2</artifactId>
+            <version>${entur.helpers.version}</version>
         </dependency>
+
+        <!-- Spring Boot -->
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jetty</artifactId>
+            <artifactId>spring-boot-starter-jersey</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -146,19 +155,6 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
             <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-oauth2-resource-server</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-oauth2-jose</artifactId>
         </dependency>
 
         <!-- Camel -->
@@ -221,6 +217,10 @@
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-google-pubsub-starter</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-google-pubsub-starter</artifactId>
+        </dependency>
 
         <!-- Keycloak -->
 
@@ -259,7 +259,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Other -->
+        <!-- Other-->
 
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -332,70 +332,16 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.junit.vintage</groupId>
-                    <artifactId>junit-vintage-engine</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
-
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test-spring-junit5</artifactId>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-spring-javaconfig</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>net.javacrumbs.json-unit</groupId>
             <artifactId>json-unit</artifactId>
-            <version>2.8.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-launcher</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockftpserver</groupId>
-            <artifactId>MockFtpServer</artifactId>
-            <version>2.7.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-contract-wiremock</artifactId>
-            <version>1.2.2.RELEASE</version>
+            <version>${json-unit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

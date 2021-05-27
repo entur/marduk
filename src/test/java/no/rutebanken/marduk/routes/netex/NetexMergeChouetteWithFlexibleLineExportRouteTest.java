@@ -22,7 +22,7 @@ import no.rutebanken.marduk.TestApp;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,13 +33,14 @@ import java.io.FileInputStream;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_CHOUETTE;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuilderIntegrationTestBase {
 
-  @Produce("direct:mergeChouetteExportWithFlexibleLinesExport")
+    @Produce("direct:mergeChouetteExportWithFlexibleLinesExport")
     protected ProducerTemplate startRoute;
 
     @EndpointInject("mock:updateStatus")
@@ -49,22 +50,29 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
     @EndpointInject("mock:OtpGraphBuildQueue")
     protected MockEndpoint otpBuildGraph;
 
+    @EndpointInject("mock:NetexExportNotificationQueue")
+    protected MockEndpoint netexExportNotificationQueue;
+
 
     @Test
     void testExportMergedNetex() throws Exception {
 
         // Mock status update
-        AdviceWithRouteBuilder.adviceWith(context, "netex-export-merge-chouette-with-flexible-lines", a -> {
+        AdviceWith.adviceWith(context, "netex-export-merge-chouette-with-flexible-lines", a -> {
             a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:OtpGraphBuildQueue").skipSendToOriginalEndpoint()
                     .to("mock:OtpGraphBuildQueue");
             a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
                     .to("mock:updateStatus");
+
+            a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:NetexExportNotificationQueue").skipSendToOriginalEndpoint()
+                    .to("mock:NetexExportNotificationQueue");
         });
 
         context.start();
 
         otpBuildGraph.expectedMessageCount(1);
         updateStatus.expectedMessageCount(1);
+        netexExportNotificationQueue.expectedMessageCount(1);
 
         // Create flexible line export in in memory blob store
         mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + CURRENT_FLEXIBLE_LINES_NETEX_FILENAME, new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex_with_two_files.zip")), false);
@@ -81,6 +89,9 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
 
         updateStatus.assertIsSatisfied();
         otpBuildGraph.assertIsSatisfied();
+        netexExportNotificationQueue.assertIsSatisfied();
+        assertEquals("rut", netexExportNotificationQueue.getExchanges().get(0).getIn().getBody());
+
     }
 
 }

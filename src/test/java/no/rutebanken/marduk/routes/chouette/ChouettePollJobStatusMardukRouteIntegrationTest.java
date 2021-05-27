@@ -22,7 +22,7 @@ import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.*;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.io.IOUtils;
@@ -79,13 +79,13 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 	void testPollJobStatus() throws Exception {
 
 		// Mock get status call to chouette
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> {
+		AdviceWith.adviceWith(context, "chouette-get-job-status", a -> {
 			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/scheduled_jobs/1")
 					.skipSendToOriginalEndpoint().to("mock:chouetteGetJobStatus");
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
 		});
 
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-job-reports", a -> {
+		AdviceWith.adviceWith(context, "chouette-process-job-reports", a -> {
 			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/action_report.json")
 					.skipSendToOriginalEndpoint().to("mock:chouetteGetActionReport");
 
@@ -93,7 +93,7 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 					.skipSendToOriginalEndpoint().to("mock:chouetteGetValidationReport");
 		});
 
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-reschedule-job", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus"));
+		AdviceWith.adviceWith(context, "chouette-reschedule-job", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus"));
 
 		// we must manually start when we are done with all the advice with
 		context.start();
@@ -206,7 +206,7 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 	@Test
 	void getJobs() throws Exception {
 
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-list-jobs", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?addActionParameters=false")
+		AdviceWith.adviceWith(context, "chouette-list-jobs", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?addActionParameters=false")
 				.skipSendToOriginalEndpoint()
 				.to("mock:chouetteGetJobsForProvider"));
 

@@ -20,14 +20,15 @@ package no.rutebanken.marduk.repository;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.domain.FileNameAndDigest;
-import org.apache.commons.lang3.time.DateUtils;
-import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.sql.Timestamp;
-import java.util.Date;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 class FileNameAndDigestIdempotentRepositoryTest extends MardukRouteBuilderIntegrationTestBase {
@@ -90,7 +91,7 @@ class FileNameAndDigestIdempotentRepositoryTest extends MardukRouteBuilderIntegr
         idempotentRepository.clear();
         FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
 
-        idempotentRepository.insert(fileNameAndDigest.toString(), new Timestamp(DateUtils.addDays(new Date(), -1).getTime()));
+        idempotentRepository.insert(fileNameAndDigest.toString(), Instant.now().minus(1, ChronoUnit.DAYS));
 
         assertTrue(idempotentRepository.contains(fileNameAndDigest.toString()));
 

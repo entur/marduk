@@ -22,7 +22,7 @@ class Auth0RolesClaimAdapterTest extends MardukRouteBuilderIntegrationTestBase {
     private static final String ORGANISATION_CLAIM = "https://entur.io/organisationID";
 
     @Autowired
-    private Auth0RolesClaimAdapter auth0RolesClaimAdapter;
+    private EnturPartnerAuth0RolesClaimAdapter auth0RolesClaimAdapter;
 
 
     @Test

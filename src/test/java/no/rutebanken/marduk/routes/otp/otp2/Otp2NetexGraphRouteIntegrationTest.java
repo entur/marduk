@@ -24,7 +24,7 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
@@ -54,20 +54,24 @@ class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
     void testGraphBuilding() throws Exception {
 
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWith.adviceWith(context, "otp2-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWith.adviceWith(context, "otp2-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-netex-graph-publish", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWith.adviceWith(context, "otp2-remote-netex-graph-publish", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-netex-graph-build", a -> a.weaveByToUri("direct:otp2ExportMergedNetex").replace().to("mock:sink"));
+        AdviceWith.adviceWith(context, "otp2-remote-netex-graph-build", a -> a.weaveByToUri("direct:otp2ExportMergedNetex").replace().to("mock:sink"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "otp2-remote-netex-graph-build-and-send-status", a -> {
+        AdviceWith.adviceWith(context, "otp2-remote-netex-graph-build-and-send-status", a -> {
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
             a.weaveByToUri("direct:remoteBuildOtp2NetexGraph").replace().process(exchange -> {
                 // create dummy graph file in the blob store
                 String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_GRAPH_OBJ;
                 mardukInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+                // create dummy OTP report in the blob store
+                String reportFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/report/report.html";
+                mardukInMemoryBlobStoreRepository.uploadBlob(reportFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+
             });
         });
 
@@ -95,6 +99,11 @@ class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
         BlobStoreFiles blobsInVersionedSubDirectory = graphsInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
         Assertions.assertEquals(2, blobsInVersionedSubDirectory.getFiles().size());
 
+        // the OTP graph report file and the HTML index are present in the report blobstore
+        BlobStoreFiles indexHtmlInOtpReportBucket = otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_GRAPH_REPORT_INDEX_FILE);
+        Assertions.assertEquals(1, indexHtmlInOtpReportBucket.getFiles().size());
+        BlobStoreFiles reportFileInOtpReportBucket = otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
+        Assertions.assertEquals(1, reportFileInOtpReportBucket.getFiles().size());
     }
 
 

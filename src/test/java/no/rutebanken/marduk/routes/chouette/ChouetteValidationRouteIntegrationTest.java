@@ -21,7 +21,7 @@ import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.*;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
@@ -94,7 +94,7 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 	void testRunChouetteValidation() throws Exception {
 
 		// Mock initial call to Chouette to validation job
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-send-validation-job", a -> {
+		AdviceWith.adviceWith(context, "chouette-send-validation-job", a -> {
 			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/validator")
 					.skipSendToOriginalEndpoint().to("mock:chouetteCreateValidation");
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
@@ -102,11 +102,11 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 		});
 
 		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well)
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
+		AdviceWith.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
 				.to("mock:pollJobStatus"));
 
 		// Mock update status calls
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-validation-status", a -> {
+		AdviceWith.adviceWith(context, "chouette-process-validation-status", a -> {
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 					.to("mock:updateStatus");
 			a.interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringExport").skipSendToOriginalEndpoint()
@@ -161,7 +161,7 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 
 	void testJobListResponse(String jobListResponseClasspathReference, boolean expectExport) throws Exception {
 
-		AdviceWithRouteBuilder.adviceWith(context, "chouette-process-job-list-after-validation", a -> {
+		AdviceWith.adviceWith(context, "chouette-process-job-list-after-validation", a -> {
 			a.interceptSendToEndpoint(chouetteUrl + "/*")
 					.skipSendToOriginalEndpoint()
 					.to("mock:chouetteGetJobsForProvider");

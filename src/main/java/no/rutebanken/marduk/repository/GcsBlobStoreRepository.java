@@ -31,9 +31,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -157,7 +157,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
 
     private BlobStoreFiles.File toBlobStoreFile(Blob blob, String fileName) {
-        BlobStoreFiles.File file = new BlobStoreFiles.File(fileName, new Date(blob.getCreateTime()), new Date(blob.getUpdateTime()), blob.getSize());
+        BlobStoreFiles.File file = new BlobStoreFiles.File(fileName, Instant.ofEpochMilli(blob.getCreateTime()), Instant.ofEpochMilli(blob.getUpdateTime()), blob.getSize());
         Provider provider = null;
         if (file.getName().contains("graphs/")) {
             file.setFormat(BlobStoreFiles.File.Format.GRAPH);

@@ -21,31 +21,30 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.StringWriter;
 
 public abstract class ChouetteJobParameters {
+
+	private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getSharedObjectMapper().copy();
 
 	@JsonIgnore
 	public boolean enableValidation = false;
 
 	public String toJsonString() {
 		try {
-			ObjectMapper mapper = new ObjectMapper();
 			if (enableValidation) {
 				// insert the validation node into the parameters node of the JSON message.
-				JsonNode importRootNode = mapper.valueToTree(this);
-				JsonNode validationNode = mapper.readTree(new InputStreamReader(
+				JsonNode importRootNode = OBJECT_MAPPER.valueToTree(this);
+				JsonNode validationNode = OBJECT_MAPPER.readTree(new InputStreamReader(
 						this.getClass().getResourceAsStream("/no/rutebanken/marduk/routes/chouette/validation.json")));
 
 				((ObjectNode) (importRootNode).get("parameters")).set("validation", validationNode);
-				return mapper.writeValueAsString(importRootNode);
+				return OBJECT_MAPPER.writeValueAsString(importRootNode);
 			} else {
-				StringWriter writer = new StringWriter();
-				mapper.writeValue(writer, this);
-				return writer.toString();
+				return OBJECT_MAPPER.writeValueAsString(this);
 			}
 		} catch (IOException e) {
 			throw new MardukException(e);

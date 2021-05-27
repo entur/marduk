@@ -16,17 +16,19 @@
 
 package no.rutebanken.marduk.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
+import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
@@ -43,7 +45,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -129,7 +130,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void runImport() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "admin-chouette-import", a -> a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue"));
+        AdviceWith.adviceWith(context, "admin-chouette-import", a -> a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue"));
 
         // we must manually start when we are done with all the advice with
         camelContext.start();
@@ -138,10 +139,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         d.add(new BlobStoreFiles.File("file1", null, null, null));
         d.add(new BlobStoreFiles.File("file2", null, null, null));
 
-        ObjectMapper mapper = new ObjectMapper();
-        StringWriter writer = new StringWriter();
-        mapper.writeValue(writer, d);
-        String importJson = writer.toString();
+        ObjectWriter objectWriter = ObjectMapperFactory.getSharedObjectMapper().writerFor(BlobStoreFiles.class);
+        String importJson = objectWriter.writeValueAsString(d);
 
         // Do rest call
 
@@ -165,7 +164,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void runExport() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "admin-chouette-export", a -> a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportNetexQueue"));
+        AdviceWith.adviceWith(context, "admin-chouette-export", a -> a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportNetexQueue"));
 
         // we must manually start when we are done with all the advice with
         camelContext.start();
@@ -207,8 +206,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         String s = new String(IOUtils.toByteArray(response));
 
-        ObjectMapper mapper = new ObjectMapper();
-        BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
+        ObjectReader objectReader = ObjectMapperFactory.getSharedObjectMapper().readerFor(BlobStoreFiles.class);
+        BlobStoreFiles rsp = objectReader.readValue(s);
         assertEquals(1, rsp.getFiles().size(), "The list should contain exactly one file");
         assertEquals(testFileName, rsp.getFiles().get(0).getName(), "The file name should not be prefixed by the file store path");
 
@@ -264,8 +263,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         String s = new String(IOUtils.toByteArray(response));
 
-        ObjectMapper mapper = new ObjectMapper();
-        BlobStoreFiles rsp = mapper.readValue(s, BlobStoreFiles.class);
+        ObjectReader objectReader = ObjectMapperFactory.getSharedObjectMapper().readerFor(BlobStoreFiles.class);
+        BlobStoreFiles rsp = objectReader.readValue(s);
         assertEquals(exportFileStaticPrefixes.size(), rsp.getFiles().size());
         assertTrue(exportFileStaticPrefixes.stream().allMatch(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName()))));
     }
@@ -273,7 +272,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void uploadNetexDataset() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "file-upload-and-start-import", a -> {
+        AdviceWith.adviceWith(context, "file-upload-and-start-import", a -> {
                     a.interceptSendToEndpoint("direct:updateStatus")
                             .skipSendToOriginalEndpoint()
                             .to("mock:updateStatus");
@@ -297,7 +296,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void downloadNetexBlocks() throws Exception {
 
-        AdviceWithRouteBuilder.adviceWith(context, "admin-chouette-netex-blocks-download", a ->
+        AdviceWith.adviceWith(context, "admin-chouette-netex-blocks-download", a ->
                 a.interceptSendToEndpoint("google-pubsub:{{spring.cloud.gcp.pubsub.project-id}}:ChouetteExportNetexQueue")
                         .skipSendToOriginalEndpoint()
                         .to("mock:chouetteExportNetexQueue"));

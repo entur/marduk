@@ -29,7 +29,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class AuthorizationService {
@@ -43,10 +42,6 @@ public class AuthorizationService {
 
     @Value("${authorization.enabled:true}")
     protected boolean authorizationEnabled;
-
-    @Value("#{${netex.export.block.authorization}}")
-    protected Map<String, String> authorizedProvidersForConsumer;
-
 
     public void verifyAdministratorPrivileges() {
         verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN));

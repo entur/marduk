@@ -24,7 +24,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
+import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
@@ -73,7 +73,7 @@ class ChouetteExportNetexBlocksMardukRouteIntegrationTest extends MardukRouteBui
     void testExportNetexBlocks() throws Exception {
 
         // Mock initial call to Chouette to import job
-        AdviceWithRouteBuilder.adviceWith(context, "chouette-start-export-netex-block", a -> {
+        AdviceWith.adviceWith(context, "chouette-start-export-netex-block", a -> {
             a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/netexprofile")
                     .skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
             a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
@@ -81,14 +81,14 @@ class ChouetteExportNetexBlocksMardukRouteIntegrationTest extends MardukRouteBui
         });
 
         // Mock job polling route - AFTER header validation (to ensure that we send correct headers in test as well
-        AdviceWithRouteBuilder.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
+        AdviceWith.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
                 .to("mock:pollJobStatus"));
 
         // Mock update status calls
-        AdviceWithRouteBuilder.adviceWith(context, "chouette-process-export-netex-status", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+        AdviceWith.adviceWith(context, "chouette-process-export-netex-status", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
                 .to("mock:updateStatus"));
 
-        AdviceWithRouteBuilder.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs/1/data")
+        AdviceWith.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs/1/data")
                 .skipSendToOriginalEndpoint().to("mock:chouetteGetData"));
 
         chouetteGetData.expectedMessageCount(1);

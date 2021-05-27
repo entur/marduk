@@ -8,6 +8,7 @@ provider "google" {
 }
 provider "kubernetes" {
   load_config_file = var.load_config_file
+  version = "~> 1.13.3"
 }
 
 # create service account
@@ -95,6 +96,7 @@ resource "kubernetes_secret" "ror-marduk-secret" {
     "marduk-google-qa-sftp-username" = var.ror-marduk-google-qa-sftp-username
     "marduk-google-qa-sftp-password" = var.ror-marduk-google-qa-sftp-password
     "marduk-keycloak-secret" = var.ror-marduk-keycloak-secret
+    "marduk-auth0-secret" = var.ror-marduk-auth0-secret
   }
 }
 
@@ -364,6 +366,22 @@ resource "google_pubsub_topic" "ProcessFileQueue" {
 resource "google_pubsub_subscription" "ProcessFileQueue" {
   name = "ProcessFileQueue"
   topic = google_pubsub_topic.ProcessFileQueue.name
+  project = var.gcp_pubsub_project
+  labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
+resource "google_pubsub_topic" "NetexExportNotificationQueue" {
+  name = "NetexExportNotificationQueue"
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "NetexExportNotificationQueue" {
+  name = "NetexExportNotificationQueue"
+  topic = google_pubsub_topic.NetexExportNotificationQueue.name
   project = var.gcp_pubsub_project
   labels = var.labels
   retry_policy {

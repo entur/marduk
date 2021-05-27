@@ -16,13 +16,14 @@
 
 package no.rutebanken.marduk.domain;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
 public class BlobStoreFiles {
@@ -56,7 +57,7 @@ public class BlobStoreFiles {
             this.name = name;
         }
 
-        public void setUpdated(Date updated) {
+        public void setUpdated(Instant updated) {
             this.updated = updated;
         }
 
@@ -64,7 +65,7 @@ public class BlobStoreFiles {
             this.fileSize = fileSize;
         }
 
-        public Date getUpdated() {
+        public Instant getUpdated() {
             return updated;
         }
 
@@ -72,11 +73,11 @@ public class BlobStoreFiles {
             return fileSize;
         }
 
-        public Date getCreated() {
+        public Instant getCreated() {
             return created;
         }
 
-        public void setCreated(Date created) {
+        public void setCreated(Instant created) {
             this.created = created;
         }
 
@@ -112,7 +113,7 @@ public class BlobStoreFiles {
             this.providerId = providerId;
         }
 
-        public File(String name, Date created, Date updated, Long fileSize) {
+        public File(String name, Instant created, Instant updated, Long fileSize) {
             super();
             this.name = name;
             this.created = created;
@@ -124,10 +125,14 @@ public class BlobStoreFiles {
         private String name;
 
         @JsonProperty(required = false)
-        private Date created;
+        // Clients (Ninkasi, Bel) expect the instant to be formatted as epoch milliseconds
+        @JsonFormat(without = JsonFormat.Feature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
+        private Instant created;
 
         @JsonProperty(required = false)
-        private Date updated;
+        // Clients (Ninkasi, Bel) expect the instant to be formatted as epoch milliseconds
+        @JsonFormat(without = JsonFormat.Feature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
+        private Instant updated;
 
         @JsonProperty(required = false)
         private Long fileSize;

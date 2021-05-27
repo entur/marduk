@@ -30,9 +30,9 @@ import org.springframework.stereotype.Repository;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +76,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
         LOGGER.debug("list blobs called in in-memory blob store");
         List<BlobStoreFiles.File> files = getBlobsForCurrentContainer().keySet().stream()
                 .filter(fileName -> prefixes.stream().anyMatch(fileName::startsWith))
-                .map(fileName -> new BlobStoreFiles.File(fileName, new Date(), new Date(), (long) getBlobsForCurrentContainer().get(fileName).length))
+                .map(fileName -> new BlobStoreFiles.File(fileName, Instant.now(), Instant.now(), (long) getBlobsForCurrentContainer().get(fileName).length))
                 .collect(Collectors.toList());
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(files);
@@ -125,7 +125,10 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic) {
-        // no-op implementation for in-memory blobstore
+        getBlobsForContainer(sourceContainerName).keySet()
+                .stream()
+                .filter(blobName -> blobName.startsWith(prefix))
+                .forEach(blobName -> copyBlob(sourceContainerName, blobName, targetContainerName, blobName.replace(prefix, targetPrefix), makePublic));
     }
 
     @Override

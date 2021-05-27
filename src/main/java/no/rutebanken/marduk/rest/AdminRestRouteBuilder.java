@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.rest;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
@@ -33,6 +34,7 @@ import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
@@ -50,6 +52,7 @@ import static no.rutebanken.marduk.Constants.FILE_APPLY_DUPLICATES_FILTER;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
+import static no.rutebanken.marduk.Constants.USERNAME;
 
 /**
  * REST interface for backdoor triggering of messages
@@ -64,6 +67,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     private static final String PLAIN = "text/plain";
     private static final String SWAGGER_DATA_TYPE_STRING = "string";
     private static final String SWAGGER_DATA_TYPE_INTEGER = "integer";
+
+    @Value("${server.port:8080}")
+    private String port;
+
+    @Value("${server.host:0.0.0.0}")
+    private String host;
 
     @Autowired
     private AuthorizationService authorizationService;
@@ -109,7 +118,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .put().route().routeId("admin-route-authorize-put").throwException(new NotFoundException()).endRest()
                 .delete().route().routeId("admin-route-authorize-delete").throwException(new NotFoundException()).endRest();
 
-    rest("/timetable_admin")
+        String commonApiDocEndpoint = "http:" + host + ":" + port + "/services/swagger.json?bridgeEndpoint=true";
+
+        rest("/timetable_admin")
                 .post("/idempotentfilter/clean")
                 .description("Clean unique filename and digest Idempotent Stores")
                 .responseMessage().code(200).endResponseMessage()
@@ -479,6 +490,20 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-build-graph-candidate")
                 .endRest()
 
+                .post("routing_graph/promote_base_graph")
+                .description("Replace the OTP2 base graph by the candidate base graph")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Command accepted").endResponseMessage()
+                .route()
+                .to("direct:authorizeAdminRequest")
+                .log(LoggingLevel.INFO, "OTP2 promoting candidate base graph")
+                .process(this::removeAllCamelHttpHeaders)
+                .setBody(simple(""))
+                .to(ExchangePattern.InOnly, "direct:promoteBaseGraphCandidate")
+                .routeId("admin-promote-base-graph-candidate")
+                .endRest()
+
                 .post("/upload/{codespace}")
                 .description("Upload NeTEx file")
                 .param().name("codespace").type(RestParamType.path).description("Provider Codespace").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
@@ -522,6 +547,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
                 .routeId("admin-chouette-netex-blocks-download")
+                .endRest()
+
+                .get("/swagger.json")
+                .apiDocs(false)
+                .bindingMode(RestBindingMode.off)
+                .route()
+                .to(commonApiDocEndpoint)
                 .endRest();
 
         rest("/timetable_admin/{providerId}")
@@ -785,6 +817,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .route()
+                .process(this::setNewCorrelationId)
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "OSM update map data")
                 .process(this::removeAllCamelHttpHeaders)
@@ -793,21 +826,23 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .endRest();
 
         from("direct:validateProvider")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
+                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null).id("validate-provider")
                 .routeId("admin-validate-provider");
 
         from("direct:validateReferential")
-                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null)
+                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null).id("validate-referential")
                 .routeId("admin-validate-referential");
         
         from("direct:authorizeAdminRequest")
                 .doTry()
                 .process(e -> authorizationService.verifyAdministratorPrivileges())
+                .setHeader(USERNAME, method(Utils.class, "getUsername"))
                 .routeId("admin-authorize-admin-request");
 
         from("direct:authorizeEditorRequest")
                 .doTry()
                 .process(e -> authorizationService.verifyRouteDataEditorPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
+                .setHeader(USERNAME, method(Utils.class, "getUsername"))
                 .routeId("admin-authorize-editor-request");
 
         from("direct:authorizeBlocksDownloadRequest")
