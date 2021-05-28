@@ -7,6 +7,7 @@ import io.fabric8.kubernetes.api.model.batch.CronJobSpec;
 import io.fabric8.kubernetes.api.model.batch.Job;
 import io.fabric8.kubernetes.api.model.batch.JobBuilder;
 import io.fabric8.kubernetes.api.model.batch.JobSpec;
+import io.fabric8.kubernetes.api.model.batch.JobStatus;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -66,7 +67,9 @@ public class KubernetesJobRunner {
                     throw new KubernetesJobRunnerException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
                 }
 
-                Integer succeeded = kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).withName(jobName).get().getStatus().getSucceeded();
+                JobStatus status = kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).withName(jobName).get().getStatus();
+                LOGGER.debug("Kubernetes Job status on completion: {}", status);
+                Integer succeeded = status.getSucceeded();
                 boolean jobSucceeded = succeeded != null && succeeded > 0;
                 if (jobSucceeded) {
                     LOGGER.info("The Graph Builder job {} completed successfully.", jobName);
