@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Run a Kubernetes job.
@@ -66,12 +67,10 @@ public class KubernetesJobRunner {
                 if (!jobCompletedBeforeTimeout) {
                     throw new KubernetesJobRunnerException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
                 }
-
                 JobStatus status = kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).withName(jobName).get().getStatus();
                 LOGGER.debug("Kubernetes Job status on completion: {}", status);
-                Integer succeeded = status.getSucceeded();
-                boolean jobSucceeded = succeeded != null && succeeded > 0;
-                if (jobSucceeded) {
+                // test the pod status rather than the job status since the job status may be out of sync with the pod status
+                if (mardukPodWatcher.isSucceeded()) {
                     LOGGER.info("The Graph Builder job {} completed successfully.", jobName);
                 } else if (mardukPodWatcher.isKubernetesClientError()) {
                     throw new KubernetesJobRunnerException("Kubernetes client error while watching the Graph Builder job " + jobName);
@@ -159,18 +158,23 @@ public class KubernetesJobRunner {
         private final CountDownLatch watchLatch;
         private final String jobName;
         private final int backoffLimit;
-        private int podFailureCounter;
-        private boolean kubernetesClientError;
+        private final AtomicInteger podFailureCounter;
+        private volatile boolean kubernetesClientError;
+        private volatile boolean succeeded;
 
         public boolean isKubernetesClientError() {
             return kubernetesClientError;
+        }
+
+        public boolean isSucceeded() {
+            return succeeded;
         }
 
         public MardukPodWatcher(Job job, CountDownLatch watchLatch, String jobName) {
             this.watchLatch = watchLatch;
             this.jobName = jobName;
             backoffLimit = job.getSpec().getBackoffLimit();
-            podFailureCounter = 0;
+            podFailureCounter = new AtomicInteger(0);
         }
 
         @Override
@@ -178,11 +182,11 @@ public class KubernetesJobRunner {
             String podName = pod.getMetadata().getName();
             LOGGER.info("The Graph Builder pod {} is in phase {} (Action: {}).", podName, pod.getStatus().getPhase(), action.name());
             if (pod.getStatus().getPhase().equals("Succeeded")) {
+                succeeded = true;
                 watchLatch.countDown();
             }
             if (pod.getStatus().getPhase().equals("Failed")) {
-                podFailureCounter++;
-                if (podFailureCounter >= backoffLimit) {
+                if (podFailureCounter.incrementAndGet() >= backoffLimit) {
                     LOGGER.error("The Graph Builder job {} failed after {} retries, exceeding the backoff limit. Giving up.", jobName, podFailureCounter);
                     watchLatch.countDown();
                 } else {
