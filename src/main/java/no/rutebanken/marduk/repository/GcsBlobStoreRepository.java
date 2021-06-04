@@ -181,6 +181,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
                 file.setUrl(blob.getMediaLink());
             }
         }
+        file.setGeneration(blob.getGeneration());
         return file;
     }
 
