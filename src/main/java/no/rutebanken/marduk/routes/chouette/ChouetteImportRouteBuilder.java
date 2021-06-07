@@ -50,8 +50,8 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
     @Value("${chouette.url}")
     private String chouetteUrl;
 
-    @Value("${blobstore.gcs.exchange.container.name}")
-    private String exchangeContainerName;
+    @Value("${blobstore.gcs.nisaba.exchange.container.name}")
+    private String nisabaExchangeContainerName;
 
     @Override
     public void configure() throws Exception {
@@ -216,14 +216,14 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .end()
                 .routeId("chouette-process-job-list-after-import");
 
-
+        // copy the original NeTEx archive and publish it on an exchange bucket
         from("direct:copyOriginalDataset")
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/last_update_date"))
                 .toD("${exchangeProperty.chouette_url}")
                 .convertBodyTo(String.class)
-                .setHeader(DATASET_IMPORT_KEY, simple("${header." + CHOUETTE_REFERENTIAL + ".toUpperCase()}_${body.replace(':','_')}"))
-                .setHeader(TARGET_FILE_HANDLE, simple("inbound/imported/${header." + CHOUETTE_REFERENTIAL + "}/${header." +  DATASET_IMPORT_KEY + "}.zip"))
-                .setHeader(TARGET_CONTAINER, constant(exchangeContainerName))
+                .setHeader(DATASET_IMPORT_KEY, simple("${header." + CHOUETTE_REFERENTIAL + "}_${body.replace(':','_')}"))
+                .setHeader(TARGET_FILE_HANDLE, simple("imported/${header." + CHOUETTE_REFERENTIAL + "}/${header." +  DATASET_IMPORT_KEY + "}.zip"))
+                .setHeader(TARGET_CONTAINER, constant(nisabaExchangeContainerName))
                 .to("direct:copyBlobToAnotherBucket")
                 .routeId("chouette-copy-original-dataset");
 

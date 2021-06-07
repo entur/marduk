@@ -90,6 +90,10 @@ variable "bucket_otpreport_instance_name" {
   description = "OTP report storage bucket name"
 }
 
+variable "bucket_nisaba_exchange_instance_name" {
+  description = "Nisaba Exchange storage bucket name"
+}
+
 variable "db_region" {
   description = "GCP  region"
   default = "europe-west1"
