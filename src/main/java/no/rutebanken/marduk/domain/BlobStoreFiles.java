@@ -44,9 +44,6 @@ public class BlobStoreFiles {
     }
 
     public static class File {
-        public void setGeneration(Long generation) {
-        }
-
         public enum Format {NETEX, GTFS, GRAPH, UNKOWN}
 
         public String getName() {
@@ -151,9 +148,6 @@ public class BlobStoreFiles {
 
         @JsonProperty(required = false)
         private String url;
-
-        @JsonProperty(required = false)
-        private String generation;
 
         @JsonIgnore
         public String getFileNameOnly() {

@@ -110,11 +110,11 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
-        copyBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName, makePublic);
+        copyVersionedBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName, makePublic);
     }
 
     @Override
-    public void copyBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic) {
+    public void copyVersionedBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic) {
 
         List<Storage.BlobTargetOption> blobTargetOptions = makePublic ? List.of(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ))
                                                                       : Collections.emptyList();
@@ -188,7 +188,6 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
                 file.setUrl(blob.getMediaLink());
             }
         }
-        file.setGeneration(blob.getGeneration());
         return file;
     }
 

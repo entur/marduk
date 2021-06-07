@@ -61,16 +61,24 @@ public abstract class AbstractBlobStoreService {
     }
 
     public void copyBlobInBucket(@Header(value = Constants.FILE_HANDLE) String sourceName, @Header(value = Constants.TARGET_FILE_HANDLE) String targetName, @Header(value = Constants.BLOBSTORE_MAKE_BLOB_PUBLIC) boolean makePublic, Exchange exchange) {
-        repository.copyBlob(containerName, sourceName, null, containerName, targetName, makePublic);
+        repository.copyBlob(containerName, sourceName, containerName, targetName, makePublic);
     }
 
     public void copyBlobToAnotherBucket(@Header(value = Constants.FILE_HANDLE) String sourceName,
+                                        @Header(value = Constants.TARGET_CONTAINER) String targetContainerName,
+                                        @Header(value = Constants.TARGET_FILE_HANDLE) String targetName,
+                                        @Header(value = Constants.BLOBSTORE_MAKE_BLOB_PUBLIC) boolean makePublic,
+                                        Exchange exchange) {
+        repository.copyBlob(containerName, sourceName, targetContainerName, targetName, makePublic);
+    }
+
+    public void copyVersionedBlobToAnotherBucket(@Header(value = Constants.FILE_HANDLE) String sourceName,
                                         @Header(value = Constants.FILE_VERSION) Long sourceVersion,
                                         @Header(value = Constants.TARGET_CONTAINER) String targetContainerName,
                                         @Header(value = Constants.TARGET_FILE_HANDLE) String targetName,
                                         @Header(value = Constants.BLOBSTORE_MAKE_BLOB_PUBLIC) boolean makePublic,
                                         Exchange exchange) {
-        repository.copyBlob(containerName, sourceName, sourceVersion, targetContainerName, targetName, makePublic);
+        repository.copyVersionedBlob(containerName, sourceName, sourceVersion, targetContainerName, targetName, makePublic);
     }
 
     public void copyAllBlobs(@Header(value = Exchange.FILE_PARENT) String sourceFolder, @Header(value = Constants.TARGET_CONTAINER) String targetContainerName, @Header(value = Constants.TARGET_FILE_PARENT) String targetFolder, @Header(value = Constants.BLOBSTORE_MAKE_BLOB_PUBLIC) boolean makePublic, Exchange exchange) {
