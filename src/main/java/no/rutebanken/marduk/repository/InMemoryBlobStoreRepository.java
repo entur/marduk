@@ -100,18 +100,20 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType) {
-        uploadBlob(objectName, inputStream, makePublic);
+    public long uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType) {
+        return uploadBlob(objectName, inputStream, makePublic);
     }
 
     @Override
-    public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
+    public long uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
         try {
             LOGGER.debug("upload blob called in in-memory blob store");
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             IOUtils.copy(inputStream, byteArrayOutputStream);
             byte[] data = byteArrayOutputStream.toByteArray();
             getBlobsForCurrentContainer().put(objectName, data);
+            // no blob versioning for the in memory implementation
+            return 0;
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -119,6 +121,11 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
+        copyBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName, makePublic);
+    }
+
+    @Override
+    public void copyBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic) {
         byte[] sourceData = getBlobsForContainer(sourceContainerName).get(sourceObjectName);
         getBlobsForContainer(targetContainerName).put(targetObjectName, sourceData);
     }

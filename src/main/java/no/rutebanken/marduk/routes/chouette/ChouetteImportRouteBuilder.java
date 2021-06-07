@@ -35,6 +35,8 @@ import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
 import static no.rutebanken.marduk.Constants.JSON_PART;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
 
 /**
@@ -44,8 +46,12 @@ import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
 public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
 
+    private static final String DATASET_IMPORT_KEY = "DATASET_IMPORT_KEY";
     @Value("${chouette.url}")
     private String chouetteUrl;
+
+    @Value("${blobstore.gcs.nisaba.exchange.container.name}")
+    private String nisabaExchangeContainerName;
 
     @Override
     public void configure() throws Exception {
@@ -161,9 +167,11 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setBody(constant(""))
                 .choice()
                 .when(PredicateBuilder.and(constant("false").isEqualTo(header(Constants.ENABLE_VALIDATION)), simple("${header.action_report_result} == 'OK'")))
+                .to("direct:copyOriginalDataset")
                 .to("direct:checkScheduledJobsBeforeTriggeringNextAction")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.IMPORT).state(State.OK).build())
                 .when(simple("${header.action_report_result} == 'OK' && ${header.validation_report_result} == 'OK'"))
+                .to("direct:copyOriginalDataset")
                 .to("direct:checkScheduledJobsBeforeTriggeringNextAction")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.OK).build())
                 .when(simple("${header.action_report_result} == 'OK' && ${header.validation_report_result} == 'NOK'"))
@@ -207,6 +215,17 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .end()
                 .end()
                 .routeId("chouette-process-job-list-after-import");
+
+        // copy the original NeTEx archive and publish it on an exchange bucket
+        from("direct:copyOriginalDataset")
+                .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/last_update_date"))
+                .toD("${exchangeProperty.chouette_url}")
+                .convertBodyTo(String.class)
+                .setHeader(DATASET_IMPORT_KEY, simple("${header." + CHOUETTE_REFERENTIAL + "}_${body.replace(':','_')}"))
+                .setHeader(TARGET_FILE_HANDLE, simple("imported/${header." + CHOUETTE_REFERENTIAL + "}/${header." +  DATASET_IMPORT_KEY + "}.zip"))
+                .setHeader(TARGET_CONTAINER, constant(nisabaExchangeContainerName))
+                .to("direct:copyBlobToAnotherBucket")
+                .routeId("chouette-copy-original-dataset");
 
     }
 

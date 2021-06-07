@@ -9,6 +9,7 @@ gcp:
   exchangeBucketName: ror-marduk-exchange-test
   otpReportBucketName: otpreport.staging.entur.org
   otpGraphBucketName: ror-otp-graphs-test
+  nisabaExchangeBucketName: ror-nisaba-exchange-test
 
 chouette:
   validateLevel1CronSchedule: 0+30+4+?+*+*

@@ -113,7 +113,7 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
+    public long uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
         LOGGER.debug("Upload blob called in local-disk blob store on {}", objectName);
         try {
             Path localPath = Paths.get(objectName);
@@ -125,6 +125,8 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
             Files.deleteIfExists(fullPath);
 
             Files.copy(inputStream, fullPath);
+            // no blob versioning for the Local disk implementation
+            return 0;
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -132,8 +134,16 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
+        copyBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName, makePublic);
+    }
+
+    @Override
+    public void copyBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic) {
         try {
-            Files.copy(Path.of(baseFolder, sourceContainerName, sourceObjectName), Path.of(baseFolder, targetContainerName, targetObjectName), StandardCopyOption.REPLACE_EXISTING);
+            Path sourcePath = Path.of(baseFolder, sourceContainerName, sourceObjectName);
+            Path targetPath = Path.of(baseFolder, targetContainerName, targetObjectName);
+            Files.createDirectories(targetPath.getParent());
+            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new MardukException(e);
         }
@@ -145,8 +155,8 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public void uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType) {
-        uploadBlob(objectName, inputStream, makePublic);
+    public long uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType) {
+        return uploadBlob(objectName, inputStream, makePublic);
     }
 
     @Override

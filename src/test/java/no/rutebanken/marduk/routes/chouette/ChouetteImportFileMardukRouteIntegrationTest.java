@@ -110,6 +110,9 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
         AdviceWith.adviceWith(context, "chouette-process-import-status", a -> {
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
             a.weaveByToUri("direct:checkScheduledJobsBeforeTriggeringNextAction").replace().to("mock:checkScheduledJobsBeforeTriggeringNextAction");
+            a.interceptSendToEndpoint("direct:copyOriginalDataset")
+                    .skipSendToOriginalEndpoint()
+                    .to("mock:sink");
         });
 
         // we must manually start when we are done with all the advice with
