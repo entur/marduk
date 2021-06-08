@@ -121,11 +121,11 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
-        copyBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName, makePublic);
+        copyVersionedBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName, makePublic);
     }
 
     @Override
-    public void copyBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic) {
+    public void copyVersionedBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic) {
         byte[] sourceData = getBlobsForContainer(sourceContainerName).get(sourceObjectName);
         getBlobsForContainer(targetContainerName).put(targetObjectName, sourceData);
     }

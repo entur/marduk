@@ -134,11 +134,11 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
 
     @Override
     public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
-        copyBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName, makePublic);
+        copyVersionedBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName, makePublic);
     }
 
     @Override
-    public void copyBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic) {
+    public void copyVersionedBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic) {
         try {
             Path sourcePath = Path.of(baseFolder, sourceContainerName, sourceObjectName);
             Path targetPath = Path.of(baseFolder, targetContainerName, targetObjectName);

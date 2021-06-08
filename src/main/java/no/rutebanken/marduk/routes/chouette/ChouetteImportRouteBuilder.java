@@ -224,7 +224,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setHeader(DATASET_IMPORT_KEY, simple("${header." + CHOUETTE_REFERENTIAL + "}_${body.replace(':','_')}"))
                 .setHeader(TARGET_FILE_HANDLE, simple("imported/${header." + CHOUETTE_REFERENTIAL + "}/${header." +  DATASET_IMPORT_KEY + "}.zip"))
                 .setHeader(TARGET_CONTAINER, constant(nisabaExchangeContainerName))
-                .to("direct:copyBlobToAnotherBucket")
+                .to("direct:copyVersionedBlobToAnotherBucket")
                 .routeId("chouette-copy-original-dataset");
 
     }
