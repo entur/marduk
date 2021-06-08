@@ -74,7 +74,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .end()
                 .bean(mardukBlobStoreService, "copyBlobToAnotherBucket")
                 .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} in blob store from Marduk bucket to another bucket (${header." + TARGET_CONTAINER + "}).")
+                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} from Marduk bucket to bucket ${header." + TARGET_CONTAINER + "}.")
                 .routeId("blobstore-copy-to-another-bucket");
 
         from("direct:copyVersionedBlobToAnotherBucket")
@@ -86,7 +86,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .end()
                 .bean(mardukBlobStoreService, "copyVersionedBlobToAnotherBucket")
                 .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} (generation: ${header." + FILE_VERSION + "}) to file ${header." + TARGET_FILE_HANDLE + "} in blob store in Marduk bucket.")
+                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} (generation: ${header." + FILE_VERSION + "}) to file ${header." + TARGET_FILE_HANDLE + "} from Marduk bucket to bucket ${header." + TARGET_CONTAINER + "}.")
                 .routeId("blobstore-copy-versioned-blob-to-another-bucket");
 
         from("direct:copyAllBlobs")
