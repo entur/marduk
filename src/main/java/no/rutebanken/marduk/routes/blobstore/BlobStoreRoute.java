@@ -26,6 +26,7 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_PREFIX;
+import static no.rutebanken.marduk.Constants.FILE_VERSION;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
@@ -75,6 +76,18 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} in blob store from Marduk bucket to another bucket (${header." + TARGET_CONTAINER + "}).")
                 .routeId("blobstore-copy-to-another-bucket");
+
+        from("direct:copyVersionedBlobToAnotherBucket")
+                .to(logDebugShowAll())
+                .choice()
+                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
+                //defaulting to private access if not specified
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
+                .end()
+                .bean(mardukBlobStoreService, "copyBlobToAnotherBucket")
+                .to(logDebugShowAll())
+                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} (generation: ${header." + FILE_VERSION + "}) to file ${header." + TARGET_FILE_HANDLE + "} in blob store in Marduk bucket.")
+                .routeId("blobstore-copy-versioned-blob-to-another-bucket");
 
         from("direct:copyAllBlobs")
                 .to(logDebugShowAll())
