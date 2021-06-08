@@ -84,7 +84,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 //defaulting to private access if not specified
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .end()
-                .bean(mardukBlobStoreService, "copyBlobToAnotherBucket")
+                .bean(mardukBlobStoreService, "copyVersionedBlobToAnotherBucket")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} (generation: ${header." + FILE_VERSION + "}) to file ${header." + TARGET_FILE_HANDLE + "} in blob store in Marduk bucket.")
                 .routeId("blobstore-copy-versioned-blob-to-another-bucket");
