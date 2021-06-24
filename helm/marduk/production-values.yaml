@@ -9,6 +9,7 @@ gcp:
   exchangeBucketName: ror-marduk-exchange-production
   otpReportBucketName: otpreport.entur.org
   otpGraphBucketName: ror-otp-graphs-production
+  nisabaExchangeBucketName: ror-nisaba-exchange-production
 
 chouette:
   validateLevel1CronSchedule: 0+30+23+?+*+*

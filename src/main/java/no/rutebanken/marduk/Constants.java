@@ -19,6 +19,7 @@ package no.rutebanken.marduk;
 public final class Constants {
     public static final String FILE_TYPE = "RutebankenFileType";
     public static final String FILE_HANDLE = "RutebankenFileHandle";
+    public static final String FILE_VERSION = "RutebankenFileVersion";
     public static final String FILE_PREFIX = "RutebankenFilePrefix";
     public static final String TARGET_FILE_HANDLE = "RutebankenTargetFileHandle";
     public static final String TARGET_FILE_PARENT = "RutebankenTargetFileParent";

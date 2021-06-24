@@ -48,11 +48,28 @@ public interface BlobStoreRepository {
 
     InputStream getBlob(String objectName);
 
-    void uploadBlob(String objectName, InputStream inputStream, boolean makePublic);
+    /**
+     * Upload a blob and returns its generation number
+     * @param objectName the name of the blob in GCS
+     * @param inputStream the blob data
+     * @param makePublic makes the blob publicly accessible
+     * @return the blob generation
+     */
+    long uploadBlob(String objectName, InputStream inputStream, boolean makePublic);
 
-    void uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType);
+    /**
+     * Upload a blob and returns its generation number
+     * @param objectName the name of the blob in GCS
+     * @param inputStream the blob data
+     * @param makePublic makes the blob publicly accessible
+     * @param contentType the blob content type
+     * @return the blob generation
+     */
+    long uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType);
 
     void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic);
+
+    void copyVersionedBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic);
 
     void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic);
 
