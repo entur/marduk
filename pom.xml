@@ -25,7 +25,7 @@
     <properties>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>3.7.4</camel.version>
-        <spring-boot.version>2.4.6</spring-boot.version>
+        <spring-boot.version>2.5.2</spring-boot.version>
         <entur.helpers.version>1.0.52</entur.helpers.version>
         <commons-io.version>2.9.0</commons-io.version>
         <commons-csv.version>1.8</commons-csv.version>
