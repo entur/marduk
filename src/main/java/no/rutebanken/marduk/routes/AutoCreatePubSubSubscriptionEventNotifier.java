@@ -32,11 +32,11 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Profile("google-pubsub-autocreate")
-public class EventNotifier extends EventNotifierSupport {
+public class AutoCreatePubSubSubscriptionEventNotifier extends EventNotifierSupport {
 
     private final EnturGooglePubSubAdmin enturGooglePubSubAdmin;
 
-    public EventNotifier(EnturGooglePubSubAdmin enturGooglePubSubAdmin) {
+    public AutoCreatePubSubSubscriptionEventNotifier(EnturGooglePubSubAdmin enturGooglePubSubAdmin) {
         this.enturGooglePubSubAdmin = enturGooglePubSubAdmin;
     }
 
