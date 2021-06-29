@@ -31,22 +31,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Resolve the @{@link AuthenticationManager} that should authenticate the current JWT token.
- * This is achieved by extracting the issuer from the token and matching it against either the Keycloak
- * issuer URI or the Auth0 issuer URI.
- * The two @{@link AuthenticationManager}s (one for Keycloak, one for Auth0) are instantiated during the first request and then cached.
+ * This is achieved by extracting the issuer from the token and matching it against either the Entur Partner
+ * issuer URI or the RoR Auth0 issuer URI.
+ * The two @{@link AuthenticationManager}s (one for Entur Partner Auth0, one for RoR Auth0) are instantiated during the first request and then cached.
  */
 @Component
 public class MultiIssuerAuthenticationManagerResolver
         implements AuthenticationManagerResolver<HttpServletRequest> {
 
-    @Value("${marduk.oauth2.resourceserver.keycloak.jwt.audience}")
-    private String keycloakAudience;
-
-    @Value("${marduk.oauth2.resourceserver.keycloak.jwt.issuer-uri}")
-    private String keycloakIssuer;
-
-    @Value("${marduk.oauth2.resourceserver.keycloak.jwt.jwkset-uri}")
-    private String keycloakJwksetUri;
 
     @Value("${marduk.oauth2.resourceserver.auth0.partner.jwt.audience}")
     private String enturPartnerAuth0Audience;
@@ -110,30 +102,11 @@ public class MultiIssuerAuthenticationManagerResolver
         return jwtDecoder;
     }
 
-    /**
-     * Build a @{@link JwtDecoder} for Keycloak.
-     * Keycloak exposes a non-standard JWK-Set URI that must be configured explicitly.
-     *
-     * @return a @{@link JwtDecoder} for Keycloak.
-     */
-    private JwtDecoder keycloakJwtDecoder() {
-
-        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(keycloakJwksetUri).build();
-
-        OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(keycloakAudience);
-        OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(keycloakIssuer);
-        OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
-        jwtDecoder.setJwtValidator(withAudience);
-        return jwtDecoder;
-    }
-
     private JwtDecoder jwtDecoder(String issuer) {
         if (enturPartnerAuth0Issuer.equals(issuer)) {
             return enturPartnerAuth0JwtDecoder();
         } else if (rorAuth0Issuer.equals(issuer)) {
             return rorAuth0JwtDecoder();
-        } else if (keycloakIssuer.equals(issuer)) {
-            return keycloakJwtDecoder();
         } else {
             throw new IllegalArgumentException("Received JWT token with unknown OAuth2 issuer: " + issuer);
         }
