@@ -2,9 +2,8 @@ package no.rutebanken.marduk.security.oauth2;
 
 import com.nimbusds.jwt.JWTParser;
 import org.entur.oauth2.AudienceValidator;
-import org.entur.oauth2.JwtGrantedAuthoritiesConverter;
-import org.entur.oauth2.JwtRoleAssignmentExtractor;
-import org.entur.oauth2.RorAuth0RolesClaimAdapter;
+import org.entur.oauth2.RoRJwtDecoderBuilder;
+import org.entur.oauth2.RorAuthenticationConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +17,6 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
@@ -52,11 +50,11 @@ public class MultiIssuerAuthenticationManagerResolver
     @Value("${marduk.oauth2.resourceserver.auth0.ror.jwt.issuer-uri}")
     private String rorAuth0Issuer;
 
-    @Autowired
-    EnturPartnerAuth0RolesClaimAdapter enturPartnerAuth0RolesClaimAdapter;
+    @Value("${marduk.oauth2.resourceserver.auth0.ror.claim.namespace}")
+    private String rorAuth0ClaimNamespace;
 
     @Autowired
-    RorAuth0RolesClaimAdapter rorAuth0RolesClaimAdapter;
+    EnturPartnerAuth0RolesClaimAdapter enturPartnerAuth0RolesClaimAdapter;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -85,21 +83,14 @@ public class MultiIssuerAuthenticationManagerResolver
 
     /**
      * Build a @{@link JwtDecoder} for Ror Auth0 tenant.
-     * To ensure compatibility with the existing authorization process ({@link JwtRoleAssignmentExtractor}), a "roles"
-     * claim is inserted in the token thanks to @{@link RorAuth0RolesClaimAdapter}
      *
      * @return a @{@link JwtDecoder} for Auth0.
      */
     private JwtDecoder rorAuth0JwtDecoder() {
-        NimbusJwtDecoder jwtDecoder = (NimbusJwtDecoder)
-                JwtDecoders.fromOidcIssuerLocation(rorAuth0Issuer);
-
-        OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(rorAuth0Audience);
-        OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(rorAuth0Issuer);
-        OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
-        jwtDecoder.setJwtValidator(withAudience);
-        jwtDecoder.setClaimSetConverter(rorAuth0RolesClaimAdapter);
-        return jwtDecoder;
+        return new RoRJwtDecoderBuilder().withIssuer(rorAuth0Issuer)
+                .withAudience(rorAuth0Audience)
+                .withAuth0ClaimNamespace(rorAuth0ClaimNamespace)
+                .build();
     }
 
     private JwtDecoder jwtDecoder(String issuer) {
@@ -138,14 +129,8 @@ public class MultiIssuerAuthenticationManagerResolver
 
     private JwtAuthenticationProvider jwtAuthenticationProvider(JwtDecoder jwtDecoder) {
         JwtAuthenticationProvider jwtAuthenticationProvider = new JwtAuthenticationProvider(jwtDecoder);
-        jwtAuthenticationProvider.setJwtAuthenticationConverter(jwtAuthenticationConverter());
+        jwtAuthenticationProvider.setJwtAuthenticationConverter(new RorAuthenticationConverter());
         return jwtAuthenticationProvider;
-    }
-
-    private JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtAuthenticationConverter j = new JwtAuthenticationConverter();
-        j.setJwtGrantedAuthoritiesConverter(new JwtGrantedAuthoritiesConverter());
-        return j;
     }
 
 }
