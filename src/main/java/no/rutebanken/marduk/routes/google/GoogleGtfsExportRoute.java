@@ -58,10 +58,10 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleExportQueue").autoStartup("{{google.export.autoStartup:true}}")
-                .process(this::removeCompletionForAggregatedExchange)
+                .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
-                .process(this::addOnCompletionForAggregatedExchange)
+                .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} Google export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:exportGtfsGoogle")
@@ -79,10 +79,10 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleQaExportQueue").autoStartup("{{google.export.qa.autoStartup:true}}")
-                .process(this::removeCompletionForAggregatedExchange)
+                .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
-                .process(this::addOnCompletionForAggregatedExchange)
+                .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() +"Aggregated ${exchangeProperty.CamelAggregatedSize} Google QA export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:exportQaGtfsGoogle")

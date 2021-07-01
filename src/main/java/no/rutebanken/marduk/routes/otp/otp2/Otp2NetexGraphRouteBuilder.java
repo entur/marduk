@@ -87,18 +87,18 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
-                .process(this::removeCompletionForAggregatedExchange)
+                .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
-                .process(this::addOnCompletionForAggregatedExchange)
+                .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:remoteBuildOtp2Graph")
                 .routeId("otp2-graph-build");
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphCandidateBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
-                .process(this::removeCompletionForAggregatedExchange)
+                .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
-                .process(this::addOnCompletionForAggregatedExchange)
+                .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .setProperty(OTP_BUILD_CANDIDATE, simple("true", Boolean.class))
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 graph candidate building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")

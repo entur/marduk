@@ -47,10 +47,10 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue").autoStartup("{{gtfs.export.autoStartup:true}}")
-                .process(this::removeCompletionForAggregatedExchange)
+                .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
-                .process(this::addOnCompletionForAggregatedExchange)
+                .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() +  "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:exportGtfsExtendedMerged")

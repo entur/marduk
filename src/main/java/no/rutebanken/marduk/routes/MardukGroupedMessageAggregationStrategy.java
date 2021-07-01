@@ -6,6 +6,6 @@ public class MardukGroupedMessageAggregationStrategy extends GroupedMessageAggre
 
     @Override
     public boolean isStoreAsBodyOnCompletion() {
-        return false;
+        return true;
     }
 }

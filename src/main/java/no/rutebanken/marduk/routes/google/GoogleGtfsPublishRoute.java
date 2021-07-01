@@ -99,9 +99,9 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsGooglePublishQueue")
-                .process(this::removeCompletionForAggregatedExchange)
+                .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
-                .process(this::addOnCompletionForAggregatedExchange)
+                .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() +"Start publish of GTFS file to Google")
@@ -116,9 +116,9 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsGooglePublishQaQueue")
-                .process(this::removeCompletionForAggregatedExchange)
+                .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
-                .process(this::addOnCompletionForAggregatedExchange)
+                .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() +"Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish QA requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() +"Start publish of GTFS QA file to Google")

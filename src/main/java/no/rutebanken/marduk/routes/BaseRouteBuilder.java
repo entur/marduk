@@ -20,11 +20,12 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import org.apache.camel.Exchange;
+import org.apache.camel.ExtendedExchange;
 import org.apache.camel.Message;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
-import org.apache.camel.component.google.pubsub.consumer.AcknowledgeSync;
+import org.apache.camel.component.google.pubsub.consumer.AcknowledgeAsync;
 import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.RoutePolicy;
@@ -212,9 +213,9 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
         }
     }
 
-    public void removeCompletionForAggregatedExchange(Exchange e) {
+    public void removeSynchronizationForAggregatedExchange(Exchange e) {
         DefaultExchange temporaryExchange = new DefaultExchange(e.getContext());
-        e.getUnitOfWork().handoverSynchronization(temporaryExchange, synchronization -> synchronization instanceof AcknowledgeSync);
+        e.getUnitOfWork().handoverSynchronization(temporaryExchange, synchronization -> synchronization instanceof AcknowledgeAsync);
         e.getIn().setHeader(SYNCHRONIZATION_HOLDER, temporaryExchange);
     }
 
@@ -223,9 +224,15 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
      * The callback should be added after the aggregation is complete to prevent individual messages from being acked
      * by the aggregator.
      */
-    protected void addOnCompletionForAggregatedExchange(Exchange aggregatedExchange) {
+    protected void addSynchronizationForAggregatedExchange(Exchange aggregatedExchange) {
         List<Message> messages = aggregatedExchange.getIn().getBody(List.class);
-        messages.forEach(m -> m.getHeader(SYNCHRONIZATION_HOLDER, Exchange.class).getUnitOfWork().handoverSynchronization(aggregatedExchange));
+        for (Message m : messages) {
+            Exchange temporaryExchange = m.getHeader(SYNCHRONIZATION_HOLDER, Exchange.class);
+            if(temporaryExchange == null) {
+                throw  new IllegalStateException("Synchronization holder not found");
+            }
+            temporaryExchange.adapt(ExtendedExchange.class).handoverCompletions(aggregatedExchange);
+        }
     }
 
 }
