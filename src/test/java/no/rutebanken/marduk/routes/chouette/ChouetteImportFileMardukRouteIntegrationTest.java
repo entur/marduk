@@ -169,9 +169,9 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
             a.interceptSendToEndpoint(chouetteUrl + "/*")
                     .skipSendToOriginalEndpoint()
                     .to("mock:chouetteGetJobsForProvider");
-            a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
-                    .skipSendToOriginalEndpoint()
-                    .to("mock:chouetteValidationQueue");
+
+            a.weaveByToUri("google-pubsub:(.*):ChouetteValidationQueue").replace().to("mock:chouetteValidationQueue");
+
         });
 
         context.start();

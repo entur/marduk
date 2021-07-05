@@ -95,9 +95,11 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 		AdviceWith.adviceWith(context, "chouette-process-export-netex-status", a -> {
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 					.to("mock:updateStatus");
-			a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue").skipSendToOriginalEndpoint().to("mock:ChouetteMergeWithFlexibleLinesQueue");
-			a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportGtfsQueue").skipSendToOriginalEndpoint().to("mock:ExportGtfsQueue");
-			a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue").skipSendToOriginalEndpoint().to("mock:ExportNetexBlocksQueue");
+
+			a.weaveByToUri("google-pubsub:(.*):ChouetteMergeWithFlexibleLinesQueue").replace().to("mock:ChouetteMergeWithFlexibleLinesQueue");
+			a.weaveByToUri("google-pubsub:(.*):ChouetteExportGtfsQueue").replace().to("mock:ExportGtfsQueue");
+			a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexBlocksQueue").replace().to("mock:ExportNetexBlocksQueue");
+
 		});
 
 		AdviceWith.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")

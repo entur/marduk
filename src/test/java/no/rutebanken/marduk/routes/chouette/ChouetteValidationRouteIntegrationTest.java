@@ -165,9 +165,11 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 			a.interceptSendToEndpoint(chouetteUrl + "/*")
 					.skipSendToOriginalEndpoint()
 					.to("mock:chouetteGetJobsForProvider");
-			a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteTransferExportQueue")
-					.skipSendToOriginalEndpoint()
-					.to("mock:chouetteTransferExportQueue");
+
+			//a.weaveById("to-google-pubsub-ChouetteTransferExportQueue").replace().to("mock:chouetteTransferExportQueue");
+			a.weaveByToUri("google-pubsub:(.*):ChouetteTransferExportQueue").replace().to("mock:chouetteTransferExportQueue");
+
+
 		});
 
 		context.start();
@@ -175,6 +177,19 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 		// 1 call to list other import jobs in referential
 		chouetteGetJobs.expectedMessageCount(1);
 		chouetteGetJobs.returnReplyBody(new Expression() {
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public <T> T evaluate(Exchange ex, Class<T> arg1) {
+				try {
+					return (T) IOUtils.toString(getClass().getResourceAsStream(jobListResponseClasspathReference), StandardCharsets.UTF_8);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		});
+
+		chouetteTransferExportQueue.returnReplyBody(new Expression() {
 
 			@SuppressWarnings("unchecked")
 			@Override

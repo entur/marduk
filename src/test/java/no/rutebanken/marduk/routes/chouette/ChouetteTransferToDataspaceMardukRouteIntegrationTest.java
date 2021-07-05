@@ -67,8 +67,7 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/transfer")
 					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
 
-			a.interceptSendToEndpoint("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
-					.skipSendToOriginalEndpoint().to("mock:pollJobStatus");
+			a.weaveByToUri("google-pubsub:(.*):ChouettePollStatusQueue").replace().to("mock:pollJobStatus");
 
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 					.to("mock:updateStatus");
