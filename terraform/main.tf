@@ -501,8 +501,8 @@ resource "google_sql_database_instance" "db_instance" {
     maintenance_window {
       // Sunday
       day = 7
-      // 01:00 UTC
-      hour = 1
+      // 02:00 UTC
+      hour = 2
     }
     ip_configuration {
       require_ssl = true
