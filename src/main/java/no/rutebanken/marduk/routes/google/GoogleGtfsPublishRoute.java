@@ -17,10 +17,10 @@
 package no.rutebanken.marduk.routes.google;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.MardukGroupedMessageAggregationStrategy;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -100,7 +100,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsGooglePublishQueue")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
@@ -117,7 +117,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsGooglePublishQaQueue")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() +"Aggregated ${exchangeProperty.CamelAggregatedSize} Google publish QA requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")

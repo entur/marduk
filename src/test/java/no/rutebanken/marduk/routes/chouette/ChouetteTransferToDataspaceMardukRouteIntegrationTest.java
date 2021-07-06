@@ -96,10 +96,9 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 		checkScheduledJobsBeforeTriggeringNextAction.expectedMessageCount(1);
 		
 		
-		Map<String, Object> headers = new HashMap<>();
+		Map<String, String> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
-		transferTemplate.sendBodyAndHeaders(null, headers);
-		
+		sendBodyAndHeadersToPubSub(transferTemplate, null, headers);
 
 		Map<String, Object> importJobCompletedHeaders = new HashMap<>();
 		importJobCompletedHeaders.put(Constants.PROVIDER_ID, "2");

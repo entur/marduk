@@ -18,12 +18,12 @@ package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.MardukGroupedMessageAggregationStrategy;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
+import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -58,7 +58,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
@@ -67,7 +67,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .setProperty(OTP_BUILD_CANDIDATE, simple("true", Boolean.class))

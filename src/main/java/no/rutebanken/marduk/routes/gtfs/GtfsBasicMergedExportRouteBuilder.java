@@ -18,9 +18,9 @@ package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.MardukGroupedMessageAggregationStrategy;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -57,7 +57,7 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue").autoStartup("{{gtfs.export.basic.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new MardukGroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
+                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)

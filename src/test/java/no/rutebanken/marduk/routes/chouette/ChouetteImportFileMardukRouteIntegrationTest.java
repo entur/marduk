@@ -131,12 +131,12 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
         checkScheduledJobsBeforeTriggeringNextAction.expectedMessageCount(1);
 
 
-        Map<String, Object> headers = new HashMap<>();
+        Map<String, String> headers = new HashMap<>();
         headers.put(Constants.PROVIDER_ID, "2");
         headers.put(Constants.FILE_NAME, testFilename);
         headers.put(Constants.CORRELATION_ID, "corr_id");
         headers.put(Constants.FILE_HANDLE, "rut/" + testFilename);
-        importTemplate.sendBodyAndHeaders(null, headers);
+        sendBodyAndHeadersToPubSub(importTemplate, null, headers);
 
         chouetteCreateImport.assertIsSatisfied();
         pollJobStatus.assertIsSatisfied();

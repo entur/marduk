@@ -295,9 +295,6 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void downloadNetexBlocks() throws Exception {
 
-        AdviceWith.adviceWith(context, "admin-chouette-netex-blocks-download", a ->
-                        a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue").replace().to("mock:chouetteExportNetexQueue"));
-
         // Preparations
         String filename = "rb_rut-aggregated-netex.zip";
         String fileStorePath = Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT;

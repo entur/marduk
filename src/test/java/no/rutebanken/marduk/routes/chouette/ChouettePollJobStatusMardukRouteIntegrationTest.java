@@ -162,7 +162,7 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 
 		updateStatus.expectedMessageCount(1);
 
-		Map<String, Object> headers = new HashMap<>();
+		Map<String, String> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
 		headers.put(Constants.FILE_NAME, "file_name");
 		headers.put(Constants.CORRELATION_ID, "corr_id");
@@ -170,7 +170,7 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 		headers.put(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, "mock:destination");
 		headers.put(Constants.CHOUETTE_JOB_STATUS_URL, chouetteUrl + "/chouette_iev/referentials/rut/scheduled_jobs/1");
 		headers.put(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, JobEvent.TimetableAction.IMPORT.name());
-		pollStartTemplate.sendBodyAndHeaders(null, headers);
+		sendBodyAndHeadersToPubSub(pollStartTemplate, null, headers);
 
 		chouetteGetJobStatus.assertIsSatisfied();
 		chouetteGetActionReport.assertIsSatisfied();

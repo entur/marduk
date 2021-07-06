@@ -22,6 +22,8 @@ import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
 import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.EndpointInject;
+import org.apache.camel.ProducerTemplate;
+import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
@@ -39,6 +41,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.mockito.Mockito.when;
 
@@ -125,4 +129,19 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
     protected InputStream getTestNetexArchiveAsStream() {
         return getClass().getResourceAsStream("/no/rutebanken/marduk/routes/file/beans/netex.zip");
     }
+
+    protected void sendBodyAndHeadersToPubSub(ProducerTemplate producerTemplate, Object body, Map<String, String> headers) {
+        producerTemplate.sendBodyAndHeader(body, GooglePubsubConstants.ATTRIBUTES  ,headers);
+    }
+
+    protected Map<String, String> createProviderJobHeaders(Long providerId, String ref, String correlationId) {
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put(Constants.PROVIDER_ID, providerId.toString());
+        headers.put(Constants.CHOUETTE_REFERENTIAL, ref);
+        headers.put(Constants.CORRELATION_ID, correlationId);
+
+        return headers;
+    }
 }
+
