@@ -18,7 +18,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 /**
  * Authentication and authorization configuration for Marduk.
  * All requests must be authenticated except for the Swagger endpoint.
- * The Oauth2 ID-provider (Keycloak or Auth0) is identified thanks to {@link MultiIssuerAuthenticationManagerResolver}.
+ * The Oauth2 ID-provider (Entur Partner Auth0 or RoR Auth0) is identified thanks to {@link MultiIssuerAuthenticationManagerResolver}.
  */
 @Profile("!test")
 @EnableWebSecurity

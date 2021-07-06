@@ -18,7 +18,6 @@ package no.rutebanken.marduk.config;
 
 import org.entur.oauth2.AuthorizedWebClientBuilder;
 import org.entur.oauth2.JwtRoleAssignmentExtractor;
-import org.entur.oauth2.RorAuth0RolesClaimAdapter;
 import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientProperties;
@@ -51,12 +50,6 @@ public class OAuth2Config {
     public RoleAssignmentExtractor roleAssignmentExtractor() {
         return new JwtRoleAssignmentExtractor();
     }
-
-    @Bean
-    public RorAuth0RolesClaimAdapter rorAuth0RolesClaimAdapter(@Value("${marduk.oauth2.resourceserver.auth0.ror.claim.namespace}") String rorAuth0ClaimNamespace) {
-        return new RorAuth0RolesClaimAdapter(rorAuth0ClaimNamespace);
-    }
-
 
 }
 

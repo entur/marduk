@@ -27,9 +27,6 @@ google:
     cronSchedule: 0+30+4+?+*+*
     includeShapes: false
 
-keycloak:
-  url: https://kc-stage.devstage.entur.io/auth
-
 auth0:
   partner:
     url: https://partner.staging.entur.org

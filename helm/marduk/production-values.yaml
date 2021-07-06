@@ -27,9 +27,6 @@ google:
     cronSchedule: 0+30+4+?+*+*
     includeShapes: false
 
-keycloak:
-  url: https://auth.entur.org/auth
-
 auth0:
   partner:
     url: https://partner.entur.org
