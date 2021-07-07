@@ -44,6 +44,9 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
+    @EndpointInject("mock:otpGraphBuildQueue")
+    protected MockEndpoint otpGraphBuildQueue;
+
     @Produce("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue")
     protected ProducerTemplate producerTemplate;
 
@@ -55,8 +58,14 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
 
         AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-and-send-status", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
+
+
         AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-copy", a -> {
+
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
+
+            a.weaveByToUri("google-pubsub:(.*):OtpGraphBuildQueue").replace().to("mock:otpGraphBuildQueue");
+
             a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().process(exchange -> {
                 // create dummy graph file in the blob store
                 String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_OBJ;
@@ -65,13 +74,14 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
         });
 
         updateStatus.expectedMessageCount(2);
-
+        otpGraphBuildQueue.expectedMessageCount(1);
         context.start();
 
         producerTemplate.sendBody(null);
         sendBodyAndHeadersToPubSub(producerTemplate, null, createProviderJobHeaders(2L, "ref", "corr-id"));
 
-        updateStatus.assertIsSatisfied(20000);
+        updateStatus.assertIsSatisfied();
+        otpGraphBuildQueue.assertIsSatisfied();
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
 

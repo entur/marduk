@@ -70,7 +70,6 @@ class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
             a.weaveByToUri("direct:remoteBuildNetexGraph").replace().to("mock:sink");
         });
 
-        updateStatus.setResultWaitTime(20000);
         updateStatus.expectedMessageCount(6);
 
         context.start();

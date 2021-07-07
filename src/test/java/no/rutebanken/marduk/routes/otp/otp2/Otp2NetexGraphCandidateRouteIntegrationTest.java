@@ -71,7 +71,6 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
             });
         });
 
-        updateStatus.setResultWaitTime(20000);
         updateStatus.expectedMessageCount(6);
 
         context.start();
