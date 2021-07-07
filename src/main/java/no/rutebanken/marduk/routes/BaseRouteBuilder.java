@@ -32,8 +32,6 @@ import org.apache.camel.spi.RoutePolicy;
 import org.apache.camel.support.DefaultExchange;
 import org.apache.commons.lang3.time.DateUtils;
 import org.quartz.CronExpression;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.FileSystemUtils;
@@ -57,7 +55,6 @@ import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NA
  */
 public abstract class BaseRouteBuilder extends RouteBuilder {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BaseRouteBuilder.class);
     private static final String SYNCHRONIZATION_HOLDER = "SYNCHRONIZATION_HOLDER";
 
     @Autowired
@@ -223,7 +220,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
      */
     public void removeSynchronizationForAggregatedExchange(Exchange e) {
         DefaultExchange temporaryExchange = new DefaultExchange(e.getContext());
-        e.getUnitOfWork().handoverSynchronization(temporaryExchange, synchronization -> synchronization instanceof AcknowledgeAsync);
+        e.getUnitOfWork().handoverSynchronization(temporaryExchange, AcknowledgeAsync.class::isInstance);
         e.getIn().setHeader(SYNCHRONIZATION_HOLDER, temporaryExchange);
     }
 
