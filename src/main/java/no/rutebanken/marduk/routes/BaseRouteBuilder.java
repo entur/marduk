@@ -213,6 +213,14 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
         }
     }
 
+    /**
+     * Remove the PubSub synchronization.
+     * This prevents an aggregator from acknowledging the aggregated PubSub messages before the end of the route.
+     * In case of failure during the routing this would make it impossible to retry the messages.
+     * The synchronization is stored temporarily in a header and is applied again after the aggregation is complete
+     * @see #addSynchronizationForAggregatedExchange(Exchange)
+     * @param e
+     */
     public void removeSynchronizationForAggregatedExchange(Exchange e) {
         DefaultExchange temporaryExchange = new DefaultExchange(e.getContext());
         e.getUnitOfWork().handoverSynchronization(temporaryExchange, synchronization -> synchronization instanceof AcknowledgeAsync);
@@ -220,9 +228,8 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     }
 
     /**
-     * Add ACK/NACK completion callback for an aggregated exchange.
-     * The callback should be added after the aggregation is complete to prevent individual messages from being acked
-     * by the aggregator.
+     * Add back the PubSub synchronization.
+     *  @see #removeSynchronizationForAggregatedExchange(Exchange)
      */
     protected void addSynchronizationForAggregatedExchange(Exchange aggregatedExchange) {
         List<Message> messages = aggregatedExchange.getIn().getBody(List.class);

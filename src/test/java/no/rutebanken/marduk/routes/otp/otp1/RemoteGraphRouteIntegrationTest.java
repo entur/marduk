@@ -73,6 +73,8 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
 
         AdviceWith.adviceWith(context, "otp-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
+        AdviceWith.adviceWith(context, "otp-remote-netex-graph-publish", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+
         AdviceWith.adviceWith(context, "otp-remote-netex-graph-build", a -> a.weaveByToUri("direct:exportMergedNetex").replace().to("mock:sink"));
 
         AdviceWith.adviceWith(context, "otp-remote-netex-graph-build-and-send-status", a -> {
@@ -88,16 +90,21 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
         });
 
 
-        updateStatus.expectedMessageCount(3);
+
+
+        updateStatus.expectedMessageCount(6);
+        updateStatus.setResultWaitTime(20000);
 
         context.start();
 
-        graphProducerTemplate.sendBody(null);
-        sendBodyAndHeadersToPubSub(graphProducerTemplate, null, createProviderJobHeaders(2L, "ref", "corr-id"));
+        for(long refId = 1; refId <= 2; refId++) {
+            sendBodyAndHeadersToPubSub(graphProducerTemplate, null, createProviderJobHeaders(refId, "ref" + refId, "corr-id-" + refId));
+        }
 
-        updateStatus.assertIsSatisfied(20000);
-
+        updateStatus.assertIsSatisfied();
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
+
+
 
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.STARTED.equals(je.state) && 2 == je.providerId));
