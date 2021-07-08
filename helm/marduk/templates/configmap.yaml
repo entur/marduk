@@ -17,8 +17,8 @@ data:
     camel.servlet.mapping.context-path=/services/*
 
     # PubSub
+    # project id and credential location are not set, they are retrieved automatically through the GOOGLE_APPLICATION_CREDENTIALS environment variable
     marduk.pubsub.project.id={{ .Values.gcp.pubsubProjectId }}
-    spring.cloud.gcp.project-id=${marduk.pubsub.project.id}
 
     # Blobstore
     blobstore.gcs.project.id={{ .Values.gcp.blobstoreProjectId }}
