@@ -60,9 +60,6 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
     @Value("${chouette.url}")
     private String chouetteUrl;
 
-    private int maxConsumers = 5;
-
-
     /**
      * This routebuilder polls a job until it is terminated. It expects a few headers set on the message it receives:
      * Constants.CHOUETTE_JOB_STATUS_URL - the url to poll
@@ -160,7 +157,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-get-jobs-all");
 
 
-        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue?concurrentConsumers=" + maxConsumers)
+        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue?concurrentConsumers=5")
                 .validate(header(Constants.CORRELATION_ID).isNotNull())
                 .validate(header(Constants.PROVIDER_ID).isNotNull())
                 .validate(header(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION).isNotNull())
