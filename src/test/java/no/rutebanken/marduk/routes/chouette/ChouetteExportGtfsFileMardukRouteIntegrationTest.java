@@ -55,6 +55,9 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 	@EndpointInject("mock:chouetteGetData")
 	protected MockEndpoint chouetteGetData;
 
+	@EndpointInject("mock:GtfsExportMergedQueue")
+	protected MockEndpoint gtfsExportMergedQueue;
+
 	@Produce("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportGtfsQueue")
 	protected ProducerTemplate importTemplate;
 
@@ -76,8 +79,13 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 		});
 
 		// Mock update status calls
-		AdviceWith.adviceWith(context, "chouette-process-export-status", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-				.to("mock:updateStatus"));
+		AdviceWith.adviceWith(context, "chouette-process-export-status", a -> {
+			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+					.to("mock:updateStatus");
+
+			a.weaveByToUri("google-pubsub:(.*):GtfsExportMergedQueue").replace().to("mock:GtfsExportMergedQueue");
+
+		});
 
 		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well
 		AdviceWith.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
@@ -86,7 +94,6 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 		AdviceWith.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
 				.skipSendToOriginalEndpoint().to("mock:chouetteGetData"));
 
-		
 		chouetteGetData.expectedMessageCount(1);
 		chouetteGetData.returnReplyBody(new Expression() {
 
@@ -102,8 +109,6 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 			}
 		});
 
-		// we must manually start when we are done with all the advice with
-		context.start();
 
 		// 1 initial import call
 		chouetteCreateExport.expectedMessageCount(1);
@@ -112,9 +117,12 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 
 	
 		pollJobStatus.expectedMessageCount(1);
-
 		updateStatus.expectedMessageCount(2);
+		gtfsExportMergedQueue.expectedMessageCount(1);
 
+
+		// we must manually start when we are done with all the advice with
+		context.start();
 
 		Map<String, String> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
@@ -130,6 +138,7 @@ class ChouetteExportGtfsFileMardukRouteIntegrationTest extends MardukRouteBuilde
 		
 		chouetteGetData.assertIsSatisfied();
 		updateStatus.assertIsSatisfied();
+		gtfsExportMergedQueue.assertIsSatisfied();
 
 	}
 
