@@ -98,7 +98,7 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 		
 		Map<String, String> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
-		sendBodyAndHeadersToPubSub(transferTemplate, null, headers);
+		sendBodyAndHeadersToPubSub(transferTemplate, "", headers);
 
 		Map<String, Object> importJobCompletedHeaders = new HashMap<>();
 		importJobCompletedHeaders.put(Constants.PROVIDER_ID, "2");
@@ -106,7 +106,7 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 		importJobCompletedHeaders.put("validation_report_result", "OK");
 		importJobCompletedHeaders.put(Constants.FILE_HANDLE, "None");
 		importJobCompletedHeaders.put(Constants.CORRELATION_ID, "None");
-		processTransferExportResultTemplate.sendBodyAndHeaders(null, importJobCompletedHeaders);
+		processTransferExportResultTemplate.sendBodyAndHeaders("", importJobCompletedHeaders);
 
 		chouetteCreateExport.assertIsSatisfied();
 		pollJobStatus.assertIsSatisfied();

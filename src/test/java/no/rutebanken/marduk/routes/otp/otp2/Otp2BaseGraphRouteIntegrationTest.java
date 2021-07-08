@@ -78,7 +78,7 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
         context.start();
 
         producerTemplate.sendBody(null);
-        sendBodyAndHeadersToPubSub(producerTemplate, null, createProviderJobHeaders(2L, "ref", "corr-id"));
+        sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(2L, "ref", "corr-id"));
 
         updateStatus.assertIsSatisfied();
         otpGraphBuildQueue.assertIsSatisfied();

@@ -76,7 +76,7 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
         context.start();
 
         for(long refId = 1; refId <= 2; refId++) {
-            sendBodyAndHeadersToPubSub(producerTemplate, null, createProviderJobHeaders(refId, "ref" + refId, "corr-id-" + refId));
+            sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(refId, "ref" + refId, "corr-id-" + refId));
         }
 
         updateStatus.assertIsSatisfied();

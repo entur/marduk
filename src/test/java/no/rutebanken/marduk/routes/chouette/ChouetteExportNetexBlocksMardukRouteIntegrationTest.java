@@ -121,7 +121,7 @@ class ChouetteExportNetexBlocksMardukRouteIntegrationTest extends MardukRouteBui
 
         Map<String, String> headers = new HashMap<>();
         headers.put(Constants.PROVIDER_ID, "2");
-        sendBodyAndHeadersToPubSub(importTemplate, null, headers);
+        sendBodyAndHeadersToPubSub(importTemplate, "", headers);
 
         chouetteCreateExport.assertIsSatisfied();
         pollJobStatus.assertIsSatisfied();

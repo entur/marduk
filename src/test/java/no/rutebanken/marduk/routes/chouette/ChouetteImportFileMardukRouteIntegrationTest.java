@@ -139,7 +139,7 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
         headers.put(Constants.FILE_NAME, testFilename);
         headers.put(Constants.CORRELATION_ID, "corr_id");
         headers.put(Constants.FILE_HANDLE, "rut/" + testFilename);
-        sendBodyAndHeadersToPubSub(importTemplate, null, headers);
+        sendBodyAndHeadersToPubSub(importTemplate, "", headers);
 
         chouetteCreateImport.assertIsSatisfied();
         pollJobStatus.assertIsSatisfied();

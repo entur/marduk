@@ -132,7 +132,7 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 		Map<String, String> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
 		headers.put(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.VALIDATION_LEVEL_2.toString());
-		sendBodyAndHeadersToPubSub(validationTemplate, null, headers);
+		sendBodyAndHeadersToPubSub(validationTemplate, "", headers);
 
 		chouetteCreateValidation.assertIsSatisfied();
 		pollJobStatus.assertIsSatisfied();

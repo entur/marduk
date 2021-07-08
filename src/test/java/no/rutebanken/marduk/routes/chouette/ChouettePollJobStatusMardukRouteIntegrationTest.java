@@ -95,8 +95,6 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 
 		AdviceWith.adviceWith(context, "chouette-reschedule-job", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus"));
 
-		// we must manually start when we are done with all the advice with
-		context.start();
 
 		// 2 status calls, first return SCHEDULED, then TERMINATED
 		final AtomicInteger reportCounter = new AtomicInteger(0);
@@ -162,6 +160,9 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 
 		updateStatus.expectedMessageCount(1);
 
+		// we must manually start when we are done with all the advice with
+		context.start();
+
 		Map<String, String> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
 		headers.put(Constants.FILE_NAME, "file_name");
@@ -170,7 +171,7 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 		headers.put(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, "mock:destination");
 		headers.put(Constants.CHOUETTE_JOB_STATUS_URL, chouetteUrl + "/chouette_iev/referentials/rut/scheduled_jobs/1");
 		headers.put(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, JobEvent.TimetableAction.IMPORT.name());
-		sendBodyAndHeadersToPubSub(pollStartTemplate, null, headers);
+		sendBodyAndHeadersToPubSub(pollStartTemplate, "", headers);
 
 		chouetteGetJobStatus.assertIsSatisfied();
 		chouetteGetActionReport.assertIsSatisfied();
@@ -189,7 +190,8 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 		testValidationReportResult("/no/rutebanken/marduk/chouette/getValidationReportResponseNOK.json", "NOK");
 	}
 
-	void testValidationReportResult(String validationReportClasspathReference, String expectedResult)
+
+	private void testValidationReportResult(String validationReportClasspathReference, String expectedResult)
 			throws Exception {
 
 		context.start();
@@ -204,7 +206,7 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 	}
 	
 	@Test
-	void getJobs() throws Exception {
+	void testGetJobs() throws Exception {
 
 		AdviceWith.adviceWith(context, "chouette-list-jobs", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?addActionParameters=false")
 				.skipSendToOriginalEndpoint()
