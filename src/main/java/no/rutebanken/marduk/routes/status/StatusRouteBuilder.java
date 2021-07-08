@@ -27,7 +27,7 @@ public class StatusRouteBuilder extends BaseRouteBuilder {
 	public void configure() {
 		from("direct:updateStatus")
 				.log(LoggingLevel.INFO, getClass().getName(), correlation() + "Sending off job status event: ${body}")
-				.to("entur-google-pubsub:JobEventQueue")
+				.to("google-pubsub:{{marduk.pubsub.project.id}}:JobEventQueue")
 				.routeId("update-status").startupOrder(1);
 	}
 

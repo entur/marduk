@@ -46,9 +46,9 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .setBody(simple(""))      //remove file data from body
-                .to("entur-google-pubsub:DeadLetterQueue");
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:DeadLetterQueue");
 
-        from("entur-google-pubsub:ProcessFileQueue")
+        from("google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.OK).build())
                 .to("direct:updateStatus")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.STARTED).build()).to("direct:updateStatus")
@@ -113,7 +113,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .setBody(simple(""))   //remove file data from body since this is in blobstore
-                .to("entur-google-pubsub:ChouetteImportQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
                 .end()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .routeId("file-classify");
@@ -129,7 +129,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 })
                 .log(LoggingLevel.INFO, correlation() + "Uploading file with new file name ${header." + FILE_HANDLE + "}")
                 .to("direct:uploadBlob")
-                .to("entur-google-pubsub:ProcessFileQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
                 .routeId("file-sanitize-filename");
     }
 

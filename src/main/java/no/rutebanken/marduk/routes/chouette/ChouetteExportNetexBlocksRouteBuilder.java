@@ -53,7 +53,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
     public void configure() throws Exception {
         super.configure();
 
-        from("entur-google-pubsub:ChouetteExportNetexBlocksQueue").streamCaching()
+        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .process( e -> e.setProperty(PROP_EXPORT_BLOCKS, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.enableBlocksExport))
@@ -78,8 +78,8 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processNetexBlocksExportResult"))
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS.name()))
                 .removeHeader("loopCounter")
-                .setBody(constant(null))
-                .to("entur-google-pubsub:ChouettePollStatusQueue")
+                .setBody(constant(""))
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
                 .endChoice()
                 .routeId("chouette-start-export-netex-block");
 
@@ -96,7 +96,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:uploadBlob")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS).state(JobEvent.State.OK).build())
 
                 .endChoice()

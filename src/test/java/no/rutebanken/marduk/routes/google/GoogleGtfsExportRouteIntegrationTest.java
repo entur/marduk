@@ -19,8 +19,12 @@ package no.rutebanken.marduk.routes.google;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.routes.status.JobEvent;
+import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.AdviceWith;
+import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,9 +37,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
@@ -50,6 +57,9 @@ class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegration
 
     @Produce("direct:exportQaGtfsGoogle")
     protected ProducerTemplate startQaRoute;
+
+    @EndpointInject("mock:updateStatus")
+    protected MockEndpoint updateStatus;
 
 
     @Value("${google.export.qa.file.name:google/google_norway-aggregated-qa-gtfs.zip}")
@@ -67,6 +77,12 @@ class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegration
 
     @Test
     void testUploadGtfsToGoogle() throws Exception {
+
+        AdviceWith.adviceWith(context, "gtfs-export-merged-report-ok", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+                .to("mock:updateStatus"));
+
+        updateStatus.expectedMessageCount(2);
+
         context.start();
 
         //populate fake blob repo
@@ -74,17 +90,35 @@ class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegration
 
         startRoute.requestBody(null);
 
+        updateStatus.assertIsSatisfied();
+        List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
+
+
         assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName)).as("Expected transformed gtfs file to have been uploaded").isNotNull();
     }
 
     @Test
     void testUploadQaGtfsToGoogle() throws Exception {
-        context.start();
+
+        AdviceWith.adviceWith(context, "gtfs-export-merged-report-ok", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
+                .to("mock:updateStatus"));
+
+        updateStatus.expectedMessageCount(2);
 
         //populate fake blob repo
         mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_opp-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
 
+        context.start();
+
         startQaRoute.requestBody(null);
+
+        updateStatus.assertIsSatisfied();
+        List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
+
 
         assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName)).as("Expected transformed gtfs file to have been uploaded").isNotNull();
     }
