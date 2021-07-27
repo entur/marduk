@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.rutebanken.superpom</groupId>
         <artifactId>superpom</artifactId>
-        <version>1.0.25</version>
+        <version>1.0.27</version>
     </parent>
 
     <groupId>no.rutebanken.marduk</groupId>
@@ -24,14 +24,14 @@
     </scm>
     <properties>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
-        <camel.version>3.7.4</camel.version>
-        <spring-boot.version>2.4.6</spring-boot.version>
-        <entur.helpers.version>1.0.55-SNAPSHOT</entur.helpers.version>
-        <commons-io.version>2.9.0</commons-io.version>
+        <camel.version>3.7.5</camel.version>
+        <spring-boot.version>2.4.9</spring-boot.version>
+        <entur.helpers.version>1.0.55</entur.helpers.version>
+        <commons-io.version>2.11.0</commons-io.version>
         <commons-csv.version>1.8</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <zt-zip.version>1.14</zt-zip.version>
-        <json-unit.version>2.26.0</json-unit.version>
+        <json-unit.version>2.27.0</json-unit.version>
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
         <argLine/>
