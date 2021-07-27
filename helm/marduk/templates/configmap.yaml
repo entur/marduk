@@ -108,8 +108,6 @@ data:
     netex.export.download.directory=/tmp/marduk/files/netex/merged
     otp2.netex.export.download.directory=/tmp/marduk/files/netex/merged-otp2
 
-    # Fix for Hazelcast exception message on shutdown
-    entur.hazelcast.shutdownhook.enabled=false
 
 
 kind: ConfigMap
