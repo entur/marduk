@@ -24,9 +24,8 @@
     </scm>
     <properties>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
-        <camel.version>3.7.5</camel.version>
-        <spring-boot.version>2.5.3</spring-boot.version>
-        <entur.helpers.version>1.0.57</entur.helpers.version>
+        <camel.version>3.11.0</camel.version>
+        <entur.helpers.version>1.0.58-SNAPSHOT</entur.helpers.version>
         <commons-io.version>2.11.0</commons-io.version>
         <commons-csv.version>1.8</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
@@ -40,18 +39,9 @@
     <dependencyManagement>
         <dependencies>
 
-            <!-- adding again the Spring Boot BOM to force dependencies broken by the Camel BOM-->
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
             <dependency>
                 <groupId>org.apache.camel.springboot</groupId>
-                <artifactId>camel-spring-boot-dependencies</artifactId>
+                <artifactId>camel-spring-boot-bom</artifactId>
                 <version>${camel.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
@@ -142,6 +132,10 @@
 
         <!-- Camel -->
 
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-spring-boot-starter</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-servlet-starter</artifactId>
