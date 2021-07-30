@@ -28,7 +28,7 @@
         <spring-boot.version>2.5.3</spring-boot.version>
         <entur.helpers.version>1.0.57</entur.helpers.version>
         <commons-io.version>2.11.0</commons-io.version>
-        <commons-csv.version>1.8</commons-csv.version>
+        <commons-csv.version>1.9.0</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <zt-zip.version>1.14</zt-zip.version>
         <json-unit.version>2.27.0</json-unit.version>
