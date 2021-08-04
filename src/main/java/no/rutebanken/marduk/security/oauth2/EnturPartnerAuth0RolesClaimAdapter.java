@@ -3,10 +3,12 @@ package no.rutebanken.marduk.security.oauth2;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
+import org.entur.oauth2.RoROAuth2Claims;
 import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.RoleAssignment;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import org.springframework.security.oauth2.jwt.MappedJwtClaimSetConverter;
 import org.springframework.stereotype.Component;
 
@@ -67,7 +69,11 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
             roleAssignments.add(toJSON(netexBlockRoleAssignmentBuilder.build()));
         }
 
-        convertedClaims.put("roles", roleAssignments);
+        convertedClaims.put(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS, roleAssignments);
+
+        // Add a preferred name to be displayed in Ninkasi
+        convertedClaims.put(StandardClaimNames.PREFERRED_USERNAME, rutebankenOrganisationId + " (File transfer via API)");
+
         return convertedClaims;
     }
 
