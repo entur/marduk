@@ -22,15 +22,12 @@
     <logger name="org" level="INFO"/>
     <logger name="io" level="INFO"/>
     <logger name="org.apache.camel" level="INFO"/>
-    <logger name="org.apache.camel.builder.AdviceWith" level="WARN"/>
     <logger name="org.apache.processor.DefaultErrorHandler" level="INFO"/>
 
     <logger name="org.apache.camel.component.jackson.JacksonDataFormat" level="WARN"/>
-
     <logger name="com.google.cloud.spring.core.DefaultCredentialsProvider" level="ERROR"/>
+    <logger name="org.apache.camel.builder.AdviceWith" level="WARN"/>
     <logger name="com.google.auth.oauth2.DefaultCredentialsProvider" level="ERROR"/>
-
-
     <logger name="io.grpc.internal.ManagedChannelOrphanWrapper" level="OFF"/>
 
     <root level="DEBUG">
