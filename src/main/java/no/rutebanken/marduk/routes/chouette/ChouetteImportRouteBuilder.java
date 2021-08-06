@@ -138,7 +138,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 // to ensure that multipart input streams are reset before retrying the web service call to chouette.
                 .errorHandler(noErrorHandler())
                 .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
-                .process(e -> toImportMultipart(e))
+                .process(this::toImportMultipart)
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .to(logDebugShowAll())
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/importer/${header." + FILE_TYPE + ".toLowerCase()}"))

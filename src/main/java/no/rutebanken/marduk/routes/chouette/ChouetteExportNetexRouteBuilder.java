@@ -62,7 +62,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(e -> e.getIn().setHeader(JSON_PART, Parameters.getDefaultNetexExportParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)), exportStops))) //Using header to addToExchange json data
                 .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
-                .process(e -> toGenericChouetteMultipart(e))
+                .process(this::toGenericChouetteMultipart)
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/netexprofile")
                 .process(e -> {
