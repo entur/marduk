@@ -26,9 +26,9 @@
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>3.7.5</camel.version>
         <spring-boot.version>2.5.3</spring-boot.version>
-        <entur.helpers.version>1.0.57</entur.helpers.version>
+        <entur.helpers.version>1.0.59</entur.helpers.version>
         <commons-io.version>2.11.0</commons-io.version>
-        <commons-csv.version>1.8</commons-csv.version>
+        <commons-csv.version>1.9.0</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <zt-zip.version>1.14</zt-zip.version>
         <json-unit.version>2.27.0</json-unit.version>
@@ -97,12 +97,6 @@
             <groupId>org.entur.helpers</groupId>
             <artifactId>organisation</artifactId>
             <version>${entur.helpers.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.keycloak</groupId>
-                    <artifactId>keycloak-spring-security-adapter</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.entur.helpers</groupId>
@@ -260,9 +254,8 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>javax.ws.rs-api</artifactId>
-            <version>2.1.1</version>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
         </dependency>
 
         <!-- testing -->

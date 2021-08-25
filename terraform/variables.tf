@@ -132,10 +132,6 @@ variable "ror-marduk-google-qa-sftp-password" {
   description = "marduk Google QA SFTP password"
 }
 
-variable "ror-marduk-keycloak-secret" {
-  description = "marduk keycloak secret"
-}
-
 variable "ror-marduk-auth0-secret" {
   description = "marduk auth0 secret"
 }
