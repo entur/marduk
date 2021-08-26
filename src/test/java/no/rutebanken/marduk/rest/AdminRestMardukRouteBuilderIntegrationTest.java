@@ -33,6 +33,7 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.http.HttpEntity;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -284,7 +285,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         updateStatus.expectedMessageCount(1);
         processFileQueue.expectedMessageCount(1);
 
-        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody("netex.zip", getTestNetexArchiveAsStream()).build();
+        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody("netex.zip", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, "netex.zip").build();
 
         camelContext.start();
         uploadFileTemplate.requestBody(httpEntity, String.class);

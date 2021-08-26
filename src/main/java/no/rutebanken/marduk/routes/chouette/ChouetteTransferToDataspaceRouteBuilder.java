@@ -60,7 +60,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 				.process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.DATASPACE_TRANSFER).state(State.PENDING).build())
 		        .to("direct:updateStatus")
 				.log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
-                .process(e -> toGenericChouetteMultipart(e))
+                .process(this::toGenericChouetteMultipart)
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/transfer")
                 .process(e -> {
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location", String.class));

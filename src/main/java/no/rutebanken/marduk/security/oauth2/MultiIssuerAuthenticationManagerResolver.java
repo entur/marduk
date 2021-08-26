@@ -70,8 +70,7 @@ public class MultiIssuerAuthenticationManagerResolver
      * @return a @{@link JwtDecoder} for Auth0.
      */
     private JwtDecoder enturPartnerAuth0JwtDecoder() {
-        NimbusJwtDecoder jwtDecoder = (NimbusJwtDecoder)
-                JwtDecoders.fromOidcIssuerLocation(enturPartnerAuth0Issuer);
+        NimbusJwtDecoder jwtDecoder = JwtDecoders.fromOidcIssuerLocation(enturPartnerAuth0Issuer);
 
         OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(enturPartnerAuth0Audience);
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(enturPartnerAuth0Issuer);

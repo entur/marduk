@@ -109,7 +109,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .to("direct:assertHeadersForChouetteValidation")
 
                 .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
-                .process(e -> toGenericChouetteMultipart(e))
+                .process(this::toGenericChouetteMultipart)
                 .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
                 .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/validator")
                 .process(e -> {

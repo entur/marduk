@@ -27,7 +27,7 @@
         <camel.version>3.11.1</camel.version>
         <entur.helpers.version>1.0.59</entur.helpers.version>
         <commons-io.version>2.11.0</commons-io.version>
-        <commons-csv.version>1.8</commons-csv.version>
+        <commons-csv.version>1.9.0</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
         <zt-zip.version>1.14</zt-zip.version>
         <json-unit.version>2.27.0</json-unit.version>
@@ -260,9 +260,8 @@
         </dependency>
 
         <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>javax.ws.rs-api</artifactId>
-            <version>2.1.1</version>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
         </dependency>
 
         <!-- testing -->
