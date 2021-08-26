@@ -65,10 +65,6 @@ data:
     management.endpoints.web.exposure.include=info,health,prometheus
 
     # OAuth2 Resource Server
-    marduk.oauth2.resourceserver.keycloak.jwt.issuer-uri={{ .Values.keycloak.url }}/realms/rutebanken
-    marduk.oauth2.resourceserver.keycloak.jwt.jwkset-uri={{ .Values.keycloak.url }}/realms/rutebanken/protocol/openid-connect/certs
-    marduk.oauth2.resourceserver.keycloak.jwt.audience=account
-
     marduk.oauth2.resourceserver.auth0.partner.jwt.issuer-uri={{ .Values.auth0.partner.url }}/
     marduk.oauth2.resourceserver.auth0.partner.jwt.audience={{ .Values.auth0.partner.audience }}
     marduk.oauth2.resourceserver.auth0.partner.admin.activated={{ .Values.auth0.partner.administratorAccessEnabled }}
@@ -78,9 +74,7 @@ data:
     marduk.oauth2.resourceserver.auth0.ror.jwt.audience={{ .Values.auth0.ror.audience }}
     marduk.oauth2.resourceserver.auth0.ror.claim.namespace=https://ror.entur.io/
 
-
-
-    # OAuth2 Client with Keycloak Authorization Server
+    # OAuth2 Client
     spring.security.oauth2.client.registration.marduk.authorization-grant-type=client_credentials
     spring.security.oauth2.client.registration.marduk.client-id={{ .Values.oauth2.client.id }}
     spring.security.oauth2.client.provider.marduk.token-uri={{ .Values.oauth2.client.url }}
@@ -108,8 +102,6 @@ data:
     netex.export.download.directory=/tmp/marduk/files/netex/merged
     otp2.netex.export.download.directory=/tmp/marduk/files/netex/merged-otp2
 
-    # Fix for Hazelcast exception message on shutdown
-    entur.hazelcast.shutdownhook.enabled=false
 
 
 kind: ConfigMap
