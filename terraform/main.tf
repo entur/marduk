@@ -123,6 +123,22 @@ resource "google_pubsub_subscription" "ChouetteExportGtfsQueue" {
   }
 }
 
+resource "google_pubsub_topic" "DamuExportGtfsQueue" {
+  name = "DamuExportGtfsQueue"
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "DamuExportGtfsQueue" {
+  name = "DamuExportGtfsQueue"
+  topic = google_pubsub_topic.DamuExportGtfsQueue.name
+  project = var.gcp_pubsub_project
+  labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
 resource "google_pubsub_topic" "ChouetteExportNetexQueue" {
   name = "ChouetteExportNetexQueue"
   project = var.gcp_pubsub_project

@@ -89,6 +89,10 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")
                 .to("entur-google-pubsub:OtpGraphBuildQueue")
 
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering GTFS export in Damu.")
+                .setBody(header(CHOUETTE_REFERENTIAL))
+                .to("entur-google-pubsub:DamuExportGtfsQueue")
+
                 .routeId("netex-export-merge-chouette-with-flexible-lines");
 
 
