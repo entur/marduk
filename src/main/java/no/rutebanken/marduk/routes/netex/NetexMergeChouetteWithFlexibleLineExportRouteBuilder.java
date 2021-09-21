@@ -91,7 +91,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering GTFS export in Damu.")
                 .setBody(header(CHOUETTE_REFERENTIAL))
-                .to("entur-google-pubsub:DamuExportGtfsQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:DamuExportGtfsQueue")
 
                 .routeId("netex-export-merge-chouette-with-flexible-lines");
 

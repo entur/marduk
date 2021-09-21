@@ -25,6 +25,7 @@
     <properties>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>3.11.2</camel.version>
+        <google.cloud.bom-version>20.4.0</google.cloud.bom-version>
         <entur.helpers.version>1.0.60</entur.helpers.version>
         <commons-io.version>2.11.0</commons-io.version>
         <commons-csv.version>1.9.0</commons-csv.version>
