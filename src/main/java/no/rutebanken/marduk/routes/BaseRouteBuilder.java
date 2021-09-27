@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.routes;
 
-import com.google.cloud.spring.pubsub.support.BasicAcknowledgeablePubsubMessage;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
@@ -25,12 +24,13 @@ import org.apache.camel.ExtendedExchange;
 import org.apache.camel.Message;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
+import org.apache.camel.component.google.pubsub.consumer.AcknowledgeAsync;
 import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.RoutePolicy;
-import org.apache.camel.spi.Synchronization;
+import org.apache.camel.support.DefaultExchange;
 import org.apache.commons.lang3.time.DateUtils;
-import org.entur.pubsub.camel.EnturGooglePubSubConstants;
 import org.quartz.CronExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,9 +41,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NAME;
 
@@ -52,6 +54,8 @@ import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NA
  * Defines common route behavior.
  */
 public abstract class BaseRouteBuilder extends RouteBuilder {
+
+    private static final String SYNCHRONIZATION_HOLDER = "SYNCHRONIZATION_HOLDER";
 
     @Autowired
     private ProviderRepository providerRepository;
@@ -80,6 +84,24 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                 .logExhausted(true)
                 .logRetryStackTrace(true));
 
+        interceptFrom("google-pubsub:*")
+                .process(exchange ->
+                {
+                    Map<String, String> pubSubAttributes = exchange.getIn().getHeader(GooglePubsubConstants.ATTRIBUTES, Map.class);
+                    pubSubAttributes.entrySet().stream().filter(entry -> !entry.getKey().startsWith("CamelGooglePubsub")).forEach(entry -> exchange.getIn().setHeader(entry.getKey(), entry.getValue()));
+                });
+
+        interceptSendToEndpoint("google-pubsub:*").process(
+                exchange -> {
+                    Map<String, String> pubSubAttributes = new HashMap<>();
+                    exchange.getIn().getHeaders().entrySet().stream()
+                            .filter(entry -> !entry.getKey().startsWith("CamelGooglePubsub"))
+                            .filter(entry -> Objects.toString(entry.getValue()).length() <= 1024)
+                            .forEach(entry -> pubSubAttributes.put(entry.getKey(), Objects.toString(entry.getValue(), "")));
+                    exchange.getIn().setHeader(GooglePubsubConstants.ATTRIBUTES, pubSubAttributes);
+
+                });
+
     }
 
     protected void logRedelivery(Exchange exchange) {
@@ -94,42 +116,6 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     protected String logDebugShowAll() {
         return "log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true";
     }
-
-    /**
-     * Add ACK/NACK completion callback for an aggregated exchange.
-     * The callback should be added after the aggregation is complete to prevent individual messages from being acked
-     * by the aggregator.
-     */
-    protected void addOnCompletionForAggregatedExchange(Exchange exchange) {
-
-        List<Message> messages = exchange.getIn().getBody(List.class);
-        List<BasicAcknowledgeablePubsubMessage> ackList = messages.stream()
-                .map(m->m.getHeader(EnturGooglePubSubConstants.ACK_ID, BasicAcknowledgeablePubsubMessage.class))
-                .collect(Collectors.toList());
-
-        exchange.adapt(ExtendedExchange.class).addOnCompletion(new AckSynchronization(ackList));
-    }
-
-
-    private static class AckSynchronization implements Synchronization {
-
-        private final List<BasicAcknowledgeablePubsubMessage> ackList;
-
-        public AckSynchronization(List<BasicAcknowledgeablePubsubMessage> ackList) {
-            this.ackList = ackList;
-        }
-
-        @Override
-        public void onComplete(Exchange exchange) {
-            ackList.forEach(BasicAcknowledgeablePubsubMessage::ack);
-        }
-
-        @Override
-        public void onFailure(Exchange exchange) {
-            ackList.forEach(BasicAcknowledgeablePubsubMessage::nack);
-        }
-    }
-
 
     protected ProviderRepository getProviderRepository() {
         return providerRepository;
@@ -148,11 +134,12 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     }
 
     protected void removeAllCamelHeaders(Exchange e) {
-        e.getIn().removeHeaders(Constants.CAMEL_ALL_HEADERS, EnturGooglePubSubConstants.ACK_ID);
+        e.getIn().removeHeaders(Constants.CAMEL_ALL_HEADERS, GooglePubsubConstants.ACK_ID);
+
     }
 
     protected void removeAllCamelHttpHeaders(Exchange e) {
-        e.getIn().removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS, EnturGooglePubSubConstants.ACK_ID);
+        e.getIn().removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS, GooglePubsubConstants.ACK_ID);
     }
 
     /**
@@ -220,6 +207,35 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
             }
         } catch (IOException e) {
             log.warn("Failed to delete directory {}", directory, e);
+        }
+    }
+
+    /**
+     * Remove the PubSub synchronization.
+     * This prevents an aggregator from acknowledging the aggregated PubSub messages before the end of the route.
+     * In case of failure during the routing this would make it impossible to retry the messages.
+     * The synchronization is stored temporarily in a header and is applied again after the aggregation is complete
+     * @see #addSynchronizationForAggregatedExchange(Exchange)
+     * @param e
+     */
+    public void removeSynchronizationForAggregatedExchange(Exchange e) {
+        DefaultExchange temporaryExchange = new DefaultExchange(e.getContext());
+        e.getUnitOfWork().handoverSynchronization(temporaryExchange, AcknowledgeAsync.class::isInstance);
+        e.getIn().setHeader(SYNCHRONIZATION_HOLDER, temporaryExchange);
+    }
+
+    /**
+     * Add back the PubSub synchronization.
+     *  @see #removeSynchronizationForAggregatedExchange(Exchange)
+     */
+    protected void addSynchronizationForAggregatedExchange(Exchange aggregatedExchange) {
+        List<Message> messages = aggregatedExchange.getIn().getBody(List.class);
+        for (Message m : messages) {
+            Exchange temporaryExchange = m.getHeader(SYNCHRONIZATION_HOLDER, Exchange.class);
+            if(temporaryExchange == null) {
+                throw  new IllegalStateException("Synchronization holder not found");
+            }
+            temporaryExchange.adapt(ExtendedExchange.class).handoverCompletions(aggregatedExchange);
         }
     }
 

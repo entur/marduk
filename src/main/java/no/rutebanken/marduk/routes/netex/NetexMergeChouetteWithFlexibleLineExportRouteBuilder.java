@@ -58,7 +58,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     public void configure() throws Exception {
         super.configure();
 
-        from("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue")
+        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
                 .to("direct:mergeChouetteExportWithFlexibleLinesExport")
                 .routeId("netex-export-merge-chouette-with-flexible-lines-queue");
 
@@ -83,15 +83,15 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
                 .wireTap("direct:notifyExportNetexWithFlexibleLines")
 
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")
-                .to("entur-google-pubsub:OtpGraphBuildQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
 
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering GTFS export in Damu.")
                 .setBody(header(CHOUETTE_REFERENTIAL))
-                .to("entur-google-pubsub:DamuExportGtfsQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:DamuExportGtfsQueue")
 
                 .routeId("netex-export-merge-chouette-with-flexible-lines");
 
@@ -145,7 +145,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
         from("direct:notifyExportNetexWithFlexibleLines")
                 .setBody(header(CHOUETTE_REFERENTIAL).regexReplaceAll("rb_", ""))
                 .removeHeaders("*")
-                .to("entur-google-pubsub:NetexExportNotificationQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:NetexExportNotificationQueue")
                 .routeId("netex-notify-export");
 
     }

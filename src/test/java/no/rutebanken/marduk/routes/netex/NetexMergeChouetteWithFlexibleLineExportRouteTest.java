@@ -59,14 +59,16 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
 
         // Mock status update
         AdviceWith.adviceWith(context, "netex-export-merge-chouette-with-flexible-lines", a -> {
-            a.interceptSendToEndpoint("entur-google-pubsub:OtpGraphBuildQueue").skipSendToOriginalEndpoint()
-                    .to("mock:OtpGraphBuildQueue");
+
+            a.weaveByToUri("google-pubsub:(.*):OtpGraphBuildQueue").replace().to("mock:OtpGraphBuildQueue");
+
             a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
                     .to("mock:updateStatus");
-
-            a.interceptSendToEndpoint("entur-google-pubsub:NetexExportNotificationQueue").skipSendToOriginalEndpoint()
-                    .to("mock:NetexExportNotificationQueue");
         });
+
+        AdviceWith.adviceWith(context, "netex-notify-export", a -> a.weaveByToUri("google-pubsub:(.*):NetexExportNotificationQueue").replace().to("mock:NetexExportNotificationQueue"));
+
+
 
         context.start();
 

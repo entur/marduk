@@ -65,7 +65,7 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 	@EndpointInject("mock:ExportNetexBlocksQueue")
 	protected MockEndpoint exportNetexBlocksQueue;
 
-	@Produce("entur-google-pubsub:ChouetteExportNetexQueue")
+	@Produce("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue")
 	protected ProducerTemplate importTemplate;
 
 	@Produce("direct:processNetexExportResult")
@@ -95,9 +95,11 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 		AdviceWith.adviceWith(context, "chouette-process-export-netex-status", a -> {
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 					.to("mock:updateStatus");
-			a.interceptSendToEndpoint("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue").skipSendToOriginalEndpoint().to("mock:ChouetteMergeWithFlexibleLinesQueue");
-			a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportGtfsQueue").skipSendToOriginalEndpoint().to("mock:ExportGtfsQueue");
-			a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexBlocksQueue").skipSendToOriginalEndpoint().to("mock:ExportNetexBlocksQueue");
+
+			a.weaveByToUri("google-pubsub:(.*):ChouetteMergeWithFlexibleLinesQueue").replace().to("mock:ChouetteMergeWithFlexibleLinesQueue");
+			a.weaveByToUri("google-pubsub:(.*):ChouetteExportGtfsQueue").replace().to("mock:ExportGtfsQueue");
+			a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexBlocksQueue").replace().to("mock:ExportNetexBlocksQueue");
+
 		});
 
 		AdviceWith.adviceWith(context, "chouette-get-job-status", a -> a.interceptSendToEndpoint(chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data")
@@ -136,10 +138,9 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 		exportGtfsQueue.expectedMessageCount(1);
 		exportNetexBlocksQueue.expectedMessageCount(1);
 
-		Map<String, Object> headers = new HashMap<>();
+		Map<String, String> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
-
-		importTemplate.sendBodyAndHeaders(null, headers);
+		sendBodyAndHeadersToPubSub(importTemplate, "", headers);
 
 		chouetteCreateExport.assertIsSatisfied();
 		pollJobStatus.assertIsSatisfied();

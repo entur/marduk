@@ -29,8 +29,6 @@
 
     <logger name="com.google.cloud.spring.core.DefaultCredentialsProvider" level="ERROR"/>
     <logger name="com.google.auth.oauth2.DefaultCredentialsProvider" level="ERROR"/>
-
-
     <logger name="io.grpc.internal.ManagedChannelOrphanWrapper" level="OFF"/>
 
     <root level="DEBUG">

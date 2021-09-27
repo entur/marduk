@@ -45,6 +45,7 @@ import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_PARENT;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 
+
 /**
  * Build remotely a full OTP graph (containing OSM data, elevation data and NeTEx data).
  */
@@ -67,9 +68,8 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${blobstore.gcs.otpreport.container.name}")
     String otpReportContainerName;
 
-    private static final String PROP_MESSAGES = "RutebankenPropMessages";
-
     private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
+    private static final String PROP_MESSAGES = "RutebankenPropMessages";
 
     private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
 
@@ -84,9 +84,10 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
-        singletonFrom("entur-google-pubsub:OtpGraphBuildQueue?ackMode=NONE").autoStartup("{{otp.graph.build.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue").autoStartup("{{otp.graph.build.autoStartup:true}}")
+                .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
-                .process(this::addOnCompletionForAggregatedExchange)
+                .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:remoteBuildOtpGraph")
