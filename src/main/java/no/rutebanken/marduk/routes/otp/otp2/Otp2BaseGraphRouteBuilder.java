@@ -25,10 +25,12 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_CANDIDATE_OBJ;
@@ -51,29 +53,46 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
     @Autowired
     private Otp2BaseGraphBuilder otp2BaseGraphBuilder;
 
+    @Autowired
+    private ExecutorService aggregationExecutorService;
+
+    @Qualifier("aggregationExecutorService")
+    @Autowired
+    private ExecutorService candidateAggregationExecutorService;
+
     @Override
     public void configure() throws Exception {
         super.configure();
 
-        // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
+                .to("direct:otp2BaseGraphBuildQueue")
+                .routeId("pubsub-otp2-base-graph-build");
+
+        from("direct:otp2BaseGraphBuildQueue").threads().executorService(aggregationExecutorService)
                 .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .executorService(aggregationExecutorService)
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:buildOtp2BaseGraph")
-                .routeId("pubsub-otp2-base-graph-build");
+                .routeId("direct-pubsub-otp2-base-graph-build");
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
+                .to("direct:otp2BaseGraphCandidateBuildQueue")
+                .routeId("pubsub-otp2-base-graph-candidate-build");
+
+        from("direct:otp2BaseGraphCandidateBuildQueue").threads().executorService(candidateAggregationExecutorService)
                 .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .executorService(candidateAggregationExecutorService)
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .setProperty(OTP_BUILD_CANDIDATE, simple("true", Boolean.class))
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 base graph candidate building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:buildOtp2BaseGraph")
-                .routeId("pubsub-otp2-base-graph-candidate-build");
+                .routeId("direct-pubsub-otp2-base-graph-candidate-build");
+
 
         from("direct:buildOtp2BaseGraph")
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
