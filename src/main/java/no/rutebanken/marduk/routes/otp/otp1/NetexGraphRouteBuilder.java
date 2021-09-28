@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
@@ -79,19 +80,27 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
     @Autowired
     private OtpReportBlobStoreService otpReportBlobStoreService;
 
+    @Autowired
+    private ExecutorService aggregationExecutorService;
+
     @Override
     public void configure() throws Exception {
         super.configure();
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue").autoStartup("{{otp.graph.build.autoStartup:true}}")
+                .to("direct:OtpGraphBuildQueue")
+                .routeId("otp-graph-build");
+
+        from("direct:OtpGraphBuildQueue").threads().executorService(aggregationExecutorService)
                 .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .executorService(aggregationExecutorService)
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:remoteBuildOtpGraph")
-                .routeId("otp-graph-build");
+                .routeId("direct-otp-graph-build");
 
         from("direct:remoteBuildOtpGraph")
                 .setProperty(PROP_MESSAGES, simple("${body}"))

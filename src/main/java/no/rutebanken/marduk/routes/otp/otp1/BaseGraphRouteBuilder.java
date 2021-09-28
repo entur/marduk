@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 import static no.rutebanken.marduk.Constants.BASE_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
@@ -46,19 +47,26 @@ public class BaseGraphRouteBuilder extends BaseRouteBuilder {
     @Autowired
     private BaseGraphBuilder baseGraphBuilder;
 
+    @Autowired
+    private ExecutorService aggregationExecutorService;
+
     @Override
     public void configure() throws Exception {
         super.configure();
 
-        // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:OtpBaseGraphBuildQueue").autoStartup("{{otp.graph.build.autoStartup:true}}")
+                .to("direct:otpBaseGraphBuildQueue")
+                .routeId("otp-base-graph-build");
+
+        from("direct:otpBaseGraphBuildQueue").threads().executorService(aggregationExecutorService)
                 .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
+                .executorService(aggregationExecutorService)
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:remoteBuildOtpBaseGraph")
-                .routeId("otp-base-graph-build");
+                .routeId("direct-otp-base-graph-build");
 
         from("direct:remoteBuildOtpBaseGraph")
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
