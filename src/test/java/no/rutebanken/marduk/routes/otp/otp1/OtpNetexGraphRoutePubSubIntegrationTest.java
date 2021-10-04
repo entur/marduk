@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.otp.otp1;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import org.apache.camel.EndpointInject;
@@ -25,6 +26,9 @@ import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class,
         properties = {
@@ -38,7 +42,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
     protected MockEndpoint buildOtpGraph;
 
 
-    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
+    @Produce("entur-google-pubsub:OtpGraphBuildQueue")
     protected ProducerTemplate producerTemplate;
 
 
@@ -52,9 +56,9 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
 
         context.start();
 
-        sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(2L, "ref", "corr-id"));
+        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2L, "ref", "corr-id"));
 
-        buildOtpGraph.assertIsSatisfied();
+        buildOtpGraph.assertIsSatisfied(20000);
 
     }
 
@@ -68,11 +72,13 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
 
         context.start();
 
-        for(int i = 0; i < 5; i++) {
-            sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(2L, "ref", "corr-id"));
-        }
+        producerTemplate.sendBody("");
+        producerTemplate.sendBody("");
+        producerTemplate.sendBody("");
+        producerTemplate.sendBody("");
+        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2L, "ref", "corr-id"));
 
-        buildOtpGraph.assertIsSatisfied();
+        buildOtpGraph.assertIsSatisfied(20000);
 
     }
 
@@ -90,11 +96,24 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
 
         context.start();
 
-        for(int i = 0; i < 5; i++) {
-            sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(2L, "ref", "corr-id"));
-        }
+        producerTemplate.sendBody("");
+        producerTemplate.sendBody("");
+        producerTemplate.sendBody("");
+        producerTemplate.sendBody("");
+        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2L, "ref", "corr-id"));
 
-        buildOtpGraph.assertIsSatisfied();
+        buildOtpGraph.assertIsSatisfied(20000);
 
+    }
+
+
+    private Map<String, Object> createProviderJobHeaders(Long providerId, String ref, String correlationId) {
+
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(Constants.PROVIDER_ID, providerId);
+        headers.put(Constants.CHOUETTE_REFERENTIAL, ref);
+        headers.put(Constants.CORRELATION_ID, correlationId);
+
+        return headers;
     }
 }

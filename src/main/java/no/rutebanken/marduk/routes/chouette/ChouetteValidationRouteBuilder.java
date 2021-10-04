@@ -77,8 +77,8 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
-                .setBody(constant(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
+                .setBody(constant(null))
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("chouette-validate-level1-all-providers");
 
 
@@ -91,12 +91,12 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
-                .setBody(constant(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
+                .setBody(constant(null))
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("chouette-validate-level2-all-providers");
 
 
-        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue").streamCaching()
+        from("entur-google-pubsub:ChouetteValidationQueue?concurrentConsumers=3").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette validation")
@@ -121,8 +121,8 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL))
                 )
                 .removeHeader("loopCounter")
-                .setBody(constant(""))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
+                .setBody(constant(null))
+                .to("entur-google-pubsub:ChouettePollStatusQueue")
                 .routeId("chouette-send-validation-job");
 
         from("direct:assertHeadersForChouetteValidation")
@@ -163,11 +163,11 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .when(method(getClass(), "shouldTransferData").isEqualTo(true))
                 .log(LoggingLevel.INFO, correlation() + "Validation ok, transfering data to next dataspace")
                 .setBody(constant(""))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteTransferExportQueue")
+                .to("entur-google-pubsub:ChouetteTransferExportQueue")
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Validation ok, triggering NeTEx export.")
                 .setBody(constant(""))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue") // Check on provider if should trigger transfer
+                .to("entur-google-pubsub:ChouetteExportNetexQueue") // Check on provider if should trigger transfer
                 .end()
                 .routeId("chouette-process-job-list-after-validation");
 

@@ -57,19 +57,18 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
         super.configure();
 
 
-        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleExportQueue").autoStartup("{{google.export.autoStartup:true}}")
-                .process(this::removeSynchronizationForAggregatedExchange)
+        singletonFrom("entur-google-pubsub:GtfsGoogleExportQueue?ackMode=NONE").autoStartup("{{google.export.autoStartup:true}}")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
-                .process(this::addSynchronizationForAggregatedExchange)
+                .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} Google export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:exportGtfsGoogle")
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleQaExportQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGoogleQaExportQueue")
                 .routeId("gtfs-google-export-merged-route");
 
         from("direct:exportGtfsGoogle")
-                .setBody(constant(""))
+                .setBody(constant(null))
                 .process(e -> e.setProperty(Constants.PROVIDER_WHITE_LIST, prepareProviderWhiteListGoogleUpload()))
                 .setHeader(Constants.FILE_NAME, constant(googleExportFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(googleExportIncludeShapes))
@@ -78,11 +77,10 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .routeId("gtfs-google-export-merged");
 
 
-        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleQaExportQueue").autoStartup("{{google.export.qa.autoStartup:true}}")
-                .process(this::removeSynchronizationForAggregatedExchange)
+        singletonFrom("entur-google-pubsub:GtfsGoogleQaExportQueue?ackMode=NONE").autoStartup("{{google.export.qa.autoStartup:true}}")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(googleExportAggregationTimeout)
                 .executorServiceRef("gtfsExportExecutorService")
-                .process(this::addSynchronizationForAggregatedExchange)
+                .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() +"Aggregated ${exchangeProperty.CamelAggregatedSize} Google QA export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:exportQaGtfsGoogle")
@@ -90,7 +88,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
 
         from("direct:exportQaGtfsGoogle")
-                .setBody(constant(""))
+                .setBody(constant(null))
                 .process(e -> e.setProperty(Constants.PROVIDER_WHITE_LIST, prepareProviderWhiteListGoogleQAUpload()))
                 .setHeader(Constants.FILE_NAME, constant(googleQaExportFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(googleQaExportIncludeShapes))

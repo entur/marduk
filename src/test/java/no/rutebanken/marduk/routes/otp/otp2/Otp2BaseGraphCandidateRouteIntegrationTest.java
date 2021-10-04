@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.otp.otp2;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
@@ -31,7 +32,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ;
@@ -44,7 +47,7 @@ class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInteg
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue")
+    @Produce("entur-google-pubsub:Otp2BaseGraphCandidateBuildQueue")
     protected ProducerTemplate producerTemplate;
 
     @Test
@@ -68,9 +71,9 @@ class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInteg
 
         context.start();
 
-        sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(2L, "ref", "corr-id"));
+        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2L, "ref", "corr-id"));
 
-        updateStatus.assertIsSatisfied();
+        updateStatus.assertIsSatisfied(20000);
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
 
@@ -81,5 +84,16 @@ class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInteg
         BlobStoreFiles blobsInVersionedSubDirectory = mardukInMemoryBlobStoreRepository.listBlobs("");
         Assertions.assertEquals(1, blobsInVersionedSubDirectory.getFiles().size());
 
+    }
+
+
+    private Map<String, Object> createProviderJobHeaders(Long providerId, String ref, String correlationId) {
+
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(Constants.PROVIDER_ID, providerId);
+        headers.put(Constants.CHOUETTE_REFERENTIAL, ref);
+        headers.put(Constants.CORRELATION_ID, correlationId);
+
+        return headers;
     }
 }

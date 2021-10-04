@@ -106,8 +106,6 @@ spec:
                 secretKeyRef:
                   key: marduk-auth0-secret
                   name: ror-marduk-secret
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /etc/marduk-service-account/credentials.json
           ports:
             - containerPort: {{ .Values.service.http.internalPort }}
               name: http

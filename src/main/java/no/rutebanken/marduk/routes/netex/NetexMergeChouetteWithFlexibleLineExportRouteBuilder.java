@@ -58,7 +58,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     public void configure() throws Exception {
         super.configure();
 
-        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
+        from("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue")
                 .to("direct:mergeChouetteExportWithFlexibleLinesExport")
                 .routeId("netex-export-merge-chouette-with-flexible-lines-queue");
 
@@ -83,15 +83,15 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
                 .wireTap("direct:notifyExportNetexWithFlexibleLines")
 
-                .setBody(constant(""))
+                .setBody(constant(null))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
+                .to("entur-google-pubsub:OtpGraphBuildQueue")
 
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering GTFS export in Damu.")
                 .setBody(header(CHOUETTE_REFERENTIAL))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:DamuExportGtfsQueue")
+                .to("entur-google-pubsub:DamuExportGtfsQueue")
 
                 .routeId("netex-export-merge-chouette-with-flexible-lines");
 
@@ -145,7 +145,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
         from("direct:notifyExportNetexWithFlexibleLines")
                 .setBody(header(CHOUETTE_REFERENTIAL).regexReplaceAll("rb_", ""))
                 .removeHeaders("*")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:NetexExportNotificationQueue")
+                .to("entur-google-pubsub:NetexExportNotificationQueue")
                 .routeId("netex-notify-export");
 
     }

@@ -32,7 +32,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ;
@@ -46,7 +48,7 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphCandidateBuildQueue")
+    @Produce("entur-google-pubsub:Otp2GraphCandidateBuildQueue")
     protected ProducerTemplate producerTemplate;
 
     @Test
@@ -71,24 +73,21 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
             });
         });
 
-        updateStatus.expectedMessageCount(6);
+        updateStatus.expectedMessageCount(4);
 
         context.start();
 
-        for(long refId = 1; refId <= 2; refId++) {
-            sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(refId, "ref" + refId, "corr-id-" + refId));
-        }
+        producerTemplate.sendBody(null);
+        producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2L, "ref", "corr-id"));
 
-        updateStatus.assertIsSatisfied();
+        updateStatus.assertIsSatisfied(20000);
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
 
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.STARTED.equals(je.state) && 1 == je.providerId));
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.OK.equals(je.state) && 1 == je.providerId));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.STARTED.equals(je.state) && 2 == je.providerId));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.OK.equals(je.state) && 2 == je.providerId));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
 
         // current file is not created
         BlobStoreFiles currentFileBlobStoreFiles = graphsInMemoryBlobStoreRepository.listBlobs("current-otp2");
@@ -98,5 +97,16 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
         BlobStoreFiles blobsInVersionedSubDirectory = graphsInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
         Assertions.assertEquals(2, blobsInVersionedSubDirectory.getFiles().size());
 
+    }
+
+
+    private Map<String, Object> createProviderJobHeaders(Long providerId, String ref, String correlationId) {
+
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(Constants.PROVIDER_ID, providerId);
+        headers.put(Constants.CHOUETTE_REFERENTIAL, ref);
+        headers.put(Constants.CORRELATION_ID, correlationId);
+
+        return headers;
     }
 }

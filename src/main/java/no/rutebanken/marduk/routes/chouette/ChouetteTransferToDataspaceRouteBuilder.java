@@ -45,7 +45,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
     public void configure() throws Exception {
         super.configure();
 
-        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteTransferExportQueue").streamCaching()
+        from("entur-google-pubsub:ChouetteTransferExportQueue").streamCaching()
 				.process(this::setCorrelationIdIfMissing)
 				.removeHeader(Constants.CHOUETTE_JOB_ID)
         		.log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette transfer")
@@ -72,7 +72,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 .to(logDebugShowAll())
 		        .removeHeader("loopCounter")
 				.setBody(constant(""))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
+                .to("entur-google-pubsub:ChouettePollStatusQueue")
                 .routeId("chouette-send-transfer-job");
 
  		 from("direct:processTransferExportResult")
@@ -116,7 +116,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 
  		        .to(logDebugShowAll())
 				.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
-				.to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
+				.to("entur-google-pubsub:ChouetteValidationQueue")
              .end()
              .routeId("chouette-process-job-list-after-transfer");
 

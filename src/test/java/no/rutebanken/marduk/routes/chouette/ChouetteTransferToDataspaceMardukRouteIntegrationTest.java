@@ -49,7 +49,7 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 	@EndpointInject("mock:updateStatus")
 	protected MockEndpoint updateStatus;
 
-	@Produce("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteTransferExportQueue")
+	@Produce("entur-google-pubsub:ChouetteTransferExportQueue")
 	protected ProducerTemplate transferTemplate;
 
 	@Produce("direct:processTransferExportResult")
@@ -67,7 +67,8 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/transfer")
 					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
 
-			a.weaveByToUri("google-pubsub:(.*):ChouettePollStatusQueue").replace().to("mock:pollJobStatus");
+			a.interceptSendToEndpoint("entur-google-pubsub:ChouettePollStatusQueue")
+					.skipSendToOriginalEndpoint().to("mock:pollJobStatus");
 
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 					.to("mock:updateStatus");
@@ -96,9 +97,10 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 		checkScheduledJobsBeforeTriggeringNextAction.expectedMessageCount(1);
 		
 		
-		Map<String, String> headers = new HashMap<>();
+		Map<String, Object> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
-		sendBodyAndHeadersToPubSub(transferTemplate, "", headers);
+		transferTemplate.sendBodyAndHeaders(null, headers);
+		
 
 		Map<String, Object> importJobCompletedHeaders = new HashMap<>();
 		importJobCompletedHeaders.put(Constants.PROVIDER_ID, "2");
@@ -106,7 +108,7 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 		importJobCompletedHeaders.put("validation_report_result", "OK");
 		importJobCompletedHeaders.put(Constants.FILE_HANDLE, "None");
 		importJobCompletedHeaders.put(Constants.CORRELATION_ID, "None");
-		processTransferExportResultTemplate.sendBodyAndHeaders("", importJobCompletedHeaders);
+		processTransferExportResultTemplate.sendBodyAndHeaders(null, importJobCompletedHeaders);
 
 		chouetteCreateExport.assertIsSatisfied();
 		pollJobStatus.assertIsSatisfied();

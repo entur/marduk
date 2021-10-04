@@ -25,7 +25,6 @@
     <properties>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>3.11.2</camel.version>
-        <google.cloud.bom-version>20.4.0</google.cloud.bom-version>
         <entur.helpers.version>1.0.60</entur.helpers.version>
         <commons-io.version>2.11.0</commons-io.version>
         <commons-csv.version>1.9.0</commons-csv.version>
@@ -48,14 +47,6 @@
                 <scope>import</scope>
             </dependency>
 
-            <dependency>
-                <groupId>com.google.cloud</groupId>
-                <artifactId>libraries-bom</artifactId>
-                <version>${google.cloud.bom-version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
         </dependencies>
     </dependencyManagement>
 
@@ -65,7 +56,7 @@
 
         <dependency>
             <groupId>org.entur.helpers</groupId>
-            <artifactId>entur-google-pubsub</artifactId>
+            <artifactId>camel3-entur-google-pubsub</artifactId>
             <version>${entur.helpers.version}</version>
         </dependency>
         <dependency>
@@ -192,10 +183,6 @@
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-sql-starter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel.springboot</groupId>
-            <artifactId>camel-google-pubsub-starter</artifactId>
         </dependency>
 
         <!-- Other-->

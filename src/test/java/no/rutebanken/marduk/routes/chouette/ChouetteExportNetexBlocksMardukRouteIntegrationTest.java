@@ -59,7 +59,7 @@ class ChouetteExportNetexBlocksMardukRouteIntegrationTest extends MardukRouteBui
     @EndpointInject("mock:chouetteGetData")
     protected MockEndpoint chouetteGetData;
 
-    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue")
+    @Produce("entur-google-pubsub:ChouetteExportNetexBlocksQueue")
     protected ProducerTemplate importTemplate;
 
     @Produce("direct:processNetexBlocksExportResult")
@@ -119,9 +119,10 @@ class ChouetteExportNetexBlocksMardukRouteIntegrationTest extends MardukRouteBui
         pollJobStatus.expectedMessageCount(1);
         updateStatus.expectedMessageCount(2);
 
-        Map<String, String> headers = new HashMap<>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put(Constants.PROVIDER_ID, "2");
-        sendBodyAndHeadersToPubSub(importTemplate, "", headers);
+
+        importTemplate.sendBodyAndHeaders(null, headers);
 
         chouetteCreateExport.assertIsSatisfied();
         pollJobStatus.assertIsSatisfied();

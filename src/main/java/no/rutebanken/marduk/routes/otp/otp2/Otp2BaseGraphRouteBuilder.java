@@ -56,19 +56,17 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
-        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
-                .process(this::removeSynchronizationForAggregatedExchange)
+        singletonFrom("entur-google-pubsub:Otp2BaseGraphBuildQueue?ackMode=NONE").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
-                .process(this::addSynchronizationForAggregatedExchange)
+                .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:buildOtp2BaseGraph")
                 .routeId("pubsub-otp2-base-graph-build");
 
-        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
-                .process(this::removeSynchronizationForAggregatedExchange)
+        singletonFrom("entur-google-pubsub:Otp2BaseGraphCandidateBuildQueue?ackMode=NONE").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)
-                .process(this::addSynchronizationForAggregatedExchange)
+                .process(this::addOnCompletionForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .setProperty(OTP_BUILD_CANDIDATE, simple("true", Boolean.class))
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 base graph candidate building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
@@ -109,7 +107,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .when(PredicateBuilder.not(exchangeProperty(OTP_BUILD_CANDIDATE)))
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP2 base graph, triggering full OTP2 graph build")
                 .setBody(constant(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphBuildQueue")
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP2 candidate base graph")
                 .end()

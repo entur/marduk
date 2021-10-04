@@ -66,7 +66,7 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 	@EndpointInject("mock:updateStatus")
 	protected MockEndpoint updateStatus;
 
-	@Produce("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
+	@Produce("entur-google-pubsub:ChouetteValidationQueue")
 	protected ProducerTemplate validationTemplate;
 
 	@Produce("direct:processValidationResult")
@@ -129,10 +129,10 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 		chouetteCheckScheduledJobs.expectedMessageCount(1);
 		
 		
-		Map<String, String> headers = new HashMap<>();
+		Map<String, Object> headers = new HashMap<>();
 		headers.put(Constants.PROVIDER_ID, "2");
 		headers.put(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.VALIDATION_LEVEL_2.toString());
-		sendBodyAndHeadersToPubSub(validationTemplate, "", headers);
+		validationTemplate.sendBodyAndHeaders(null, headers);
 
 		chouetteCreateValidation.assertIsSatisfied();
 		pollJobStatus.assertIsSatisfied();
@@ -165,11 +165,9 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 			a.interceptSendToEndpoint(chouetteUrl + "/*")
 					.skipSendToOriginalEndpoint()
 					.to("mock:chouetteGetJobsForProvider");
-
-			//a.weaveById("to-google-pubsub-ChouetteTransferExportQueue").replace().to("mock:chouetteTransferExportQueue");
-			a.weaveByToUri("google-pubsub:(.*):ChouetteTransferExportQueue").replace().to("mock:chouetteTransferExportQueue");
-
-
+			a.interceptSendToEndpoint("entur-google-pubsub:ChouetteTransferExportQueue")
+					.skipSendToOriginalEndpoint()
+					.to("mock:chouetteTransferExportQueue");
 		});
 
 		context.start();
@@ -177,19 +175,6 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 		// 1 call to list other import jobs in referential
 		chouetteGetJobs.expectedMessageCount(1);
 		chouetteGetJobs.returnReplyBody(new Expression() {
-
-			@SuppressWarnings("unchecked")
-			@Override
-			public <T> T evaluate(Exchange ex, Class<T> arg1) {
-				try {
-					return (T) IOUtils.toString(getClass().getResourceAsStream(jobListResponseClasspathReference), StandardCharsets.UTF_8);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			}
-		});
-
-		chouetteTransferExportQueue.returnReplyBody(new Expression() {
 
 			@SuppressWarnings("unchecked")
 			@Override

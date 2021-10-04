@@ -26,7 +26,7 @@ import no.rutebanken.marduk.config.GcsStorageConfig;
 import no.rutebanken.marduk.config.IdempotentRepositoryConfig;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
 import org.apache.camel.builder.RouteBuilder;
-import org.entur.pubsub.base.config.GooglePubSubConfig;
+import org.entur.pubsub.camel.config.GooglePubSubCamelComponentConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +45,7 @@ import java.util.Set;
  */
 @SpringBootApplication(exclude={UserDetailsServiceAutoConfiguration.class})
 @EnableScheduling
-@Import({GcsStorageConfig.class, IdempotentRepositoryConfig.class, GooglePubSubConfig.class})
+@Import({GcsStorageConfig.class, IdempotentRepositoryConfig.class, GooglePubSubCamelComponentConfig.class})
 public class App extends RouteBuilder {
 
 	@Value("${marduk.shutdown.timeout:300}")

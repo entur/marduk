@@ -57,10 +57,10 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
+    @Produce("entur-google-pubsub:OtpGraphBuildQueue")
     protected ProducerTemplate graphProducerTemplate;
 
-    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:OtpBaseGraphBuildQueue")
+    @Produce("entur-google-pubsub:OtpBaseGraphBuildQueue")
     protected ProducerTemplate baseGraphProducerTemplate;
 
     @Test
@@ -72,8 +72,6 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
         AdviceWith.adviceWith(context, "otp-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
         AdviceWith.adviceWith(context, "otp-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-        AdviceWith.adviceWith(context, "otp-remote-netex-graph-publish", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
         AdviceWith.adviceWith(context, "otp-remote-netex-graph-build", a -> a.weaveByToUri("direct:exportMergedNetex").replace().to("mock:sink"));
 
@@ -90,20 +88,16 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
         });
 
 
-
-
-        updateStatus.expectedMessageCount(6);
+        updateStatus.expectedMessageCount(3);
 
         context.start();
 
-        for(long refId = 1; refId <= 2; refId++) {
-            sendBodyAndHeadersToPubSub(graphProducerTemplate, "", createProviderJobHeaders(refId, "ref" + refId, "corr-id-" + refId));
-        }
+        graphProducerTemplate.sendBody(null);
+        graphProducerTemplate.sendBodyAndHeaders(null, createMessageHeaders(2L, "ref", "corr-id"));
 
-        updateStatus.assertIsSatisfied();
+        updateStatus.assertIsSatisfied(20000);
+
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
-
-
 
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain) && JobEvent.State.STARTED.equals(je.state) && 2 == je.providerId));
@@ -142,7 +136,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
         baseGraphProducerTemplate.sendBody(null);
         baseGraphProducerTemplate.sendBodyAndHeaders(null, createMessageHeaders(2L, "ref", "corr-id"));
 
-        updateStatus.assertIsSatisfied();
+        updateStatus.assertIsSatisfied(20000);
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
 
