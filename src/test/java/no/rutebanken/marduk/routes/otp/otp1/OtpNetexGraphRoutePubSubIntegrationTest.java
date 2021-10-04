@@ -46,7 +46,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
     @Test
     void testOtpGraphMessageAggregationOneMessageWithoutException() throws Exception {
 
-        AdviceWith.adviceWith(context, "direct-otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
+        AdviceWith.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
 
         buildOtpGraph.expectedMessageCount(1);
 
@@ -62,7 +62,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
     @Test
     void testOtpGraphMessageAggregationWithoutException() throws Exception {
 
-        AdviceWith.adviceWith(context, "direct-otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
+        AdviceWith.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
 
         buildOtpGraph.expectedMessageCount(1);
 
@@ -79,7 +79,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
     @Test
     void testOtpGraphMessageAggregationWithException() throws Exception {
 
-        AdviceWith.adviceWith(context, "direct-otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
+        AdviceWith.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
 
         buildOtpGraph.whenAnyExchangeReceived(exchange -> {
             throw new RuntimeException("Test - Triggering exception in Exchange");

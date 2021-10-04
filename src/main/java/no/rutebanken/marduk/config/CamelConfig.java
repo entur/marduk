@@ -22,7 +22,6 @@ import org.apache.camel.builder.ThreadPoolBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
 
 import java.util.concurrent.ExecutorService;
 
@@ -64,26 +63,6 @@ public class CamelConfig {
                 .maxPoolSize(1)
                 .maxQueueSize(100)
                 .build("gtfsExportExecutorService");
-    }
-
-    /**
-     * Single-thread executor service used to perform exchange aggregation.
-     * When the aggregator uses the same executor service as the aggregated exchange the aggregation is blocked until the aggregated exchange is completed,
-     * thus preventing too early aggregation of incoming messages
-     * Defined as a prototype so that each aggregated route gets its own thread pool.
-     * @param camelContext
-     * @return
-     * @throws Exception
-     */
-    @Bean
-    @Scope("prototype")
-    public ExecutorService aggregationExecutorService(@Autowired CamelContext camelContext) throws Exception {
-        ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder(camelContext);
-        return poolBuilder
-                .poolSize(1)
-                .maxPoolSize(1)
-                .maxQueueSize(100)
-                .build("aggregationExecutorService");
     }
 
     /**
