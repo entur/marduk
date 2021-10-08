@@ -48,9 +48,6 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
     @Value("${chouette.netex.export.stops:false}")
     private boolean exportStops;
 
-    @Value("${gtfs.export.chouette:true}")
-    private boolean useChouetteGtfsExport;
-
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -96,12 +93,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .setBody(constant(null))
 
                 .to("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue")
-
-                .filter(constant(useChouetteGtfsExport))
                 .to("entur-google-pubsub:ChouetteExportGtfsQueue")
-                // end filter
-                .end()
-
                 .to("entur-google-pubsub:ChouetteExportNetexBlocksQueue")
 
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.OK).build())

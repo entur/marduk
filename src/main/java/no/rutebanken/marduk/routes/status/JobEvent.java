@@ -272,12 +272,7 @@ public class JobEvent {
 
         private Builder initProviderJob() {
             jobEvent.name = exchange.getIn().getHeader(Constants.FILE_NAME, String.class);
-            String providerId = exchange.getIn().getHeader(PROVIDER_ID, String.class);
-            String originalProviderId = exchange.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID, providerId, String.class);
-            if(originalProviderId == null) {
-                throw new IllegalStateException("Neither the provider id nor the original provider id are defined in the current exchange");
-            }
-            jobEvent.providerId = Long.valueOf(originalProviderId);
+            jobEvent.providerId = Long.valueOf(exchange.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID, exchange.getIn().getHeader(PROVIDER_ID, String.class), String.class));
             jobEvent.correlationId = exchange.getIn().getHeader(CORRELATION_ID, String.class);
             jobEvent.externalId = exchange.getIn().getHeader(CHOUETTE_JOB_ID, Long.class);
             jobEvent.referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);

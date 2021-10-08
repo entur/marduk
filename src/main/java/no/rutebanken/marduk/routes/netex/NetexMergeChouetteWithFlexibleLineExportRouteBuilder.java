@@ -22,7 +22,6 @@ import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -52,9 +51,6 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
     @Value("${netex.export.merge.flexible.lines.enabled:false}")
     private String mergeFlexibleLinesEnabled;
-
-    @Value("${gtfs.export.chouette:true}")
-    private boolean useChouetteGtfsExport;
 
     private static final String EXPORT_FILE_NAME = "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
 
@@ -93,7 +89,9 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")
                 .to("entur-google-pubsub:OtpGraphBuildQueue")
 
-                .to("direct:startDamuGtfsExport")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering GTFS export in Damu.")
+                .setBody(header(CHOUETTE_REFERENTIAL))
+                .to("entur-google-pubsub:DamuExportGtfsQueue")
 
                 .routeId("netex-export-merge-chouette-with-flexible-lines");
 
@@ -149,19 +147,6 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .removeHeaders("*")
                 .to("entur-google-pubsub:NetexExportNotificationQueue")
                 .routeId("netex-notify-export");
-
-        from("direct:startDamuGtfsExport")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering GTFS export in Damu.")
-                .filter(PredicateBuilder.not(constant(useChouetteGtfsExport)))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT).state(JobEvent.State.PENDING).build())
-                //end filter
-                .end()
-                .setBody(header(CHOUETTE_REFERENTIAL))
-                .process(this::removeAllCamelHeaders)
-                .to("entur-google-pubsub:DamuExportGtfsQueue")
-                .routeId("start-damu-gtfs-export");
-
-
 
     }
 }
