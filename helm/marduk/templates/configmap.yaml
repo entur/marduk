@@ -94,7 +94,7 @@ data:
 
     # GTFS export
     gtfs.export.download.directory=/tmp/marduk/files/gtfs/merged
-    gtfs.export.chouette=true
+    gtfs.export.chouette={{ .Values.chouette.gtfsExport }}
 
     # Other
     # the Camel shutdown timeout must be shorter than the Kubernetes terminationGracePeriod
