@@ -158,7 +158,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .end()
                 .setBody(header(CHOUETTE_REFERENTIAL))
                 .process(this::removeAllCamelHeaders)
-                .to("entur-google-pubsub:DamuExportGtfsQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:DamuExportGtfsQueue")
                 .routeId("start-damu-gtfs-export");
 
 

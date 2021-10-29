@@ -55,7 +55,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        // acknowledgment mode switched to NONE so that the ack/nack callback can be set after message aggregation.
+        
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(1000)

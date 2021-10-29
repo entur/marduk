@@ -38,7 +38,7 @@ public class DamuExportGtfsStatusRouteBuilder extends AbstractChouetteRouteBuild
     public void configure() throws Exception {
         super.configure();
 
-        from("entur-google-pubsub:DamuExportGtfsStatusQueue")
+        from("google-pubsub:{{marduk.pubsub.project.id}}:DamuExportGtfsStatusQueue")
                 .process(this::setCorrelationIdIfMissing)
                 .choice()
                 .when(body().isEqualTo(constant(STATUS_EXPORT_STARTED)))
@@ -59,7 +59,7 @@ public class DamuExportGtfsStatusRouteBuilder extends AbstractChouetteRouteBuild
         from("direct:damuGtfsExportComplete")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Damu GTFS export complete for codespace ${header." + DATASET_CODESPACE + "}")
                 .filter(PredicateBuilder.not(constant(useChouetteGtfsExport)))
-                .to("entur-google-pubsub:GtfsExportMergedQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT).state(JobEvent.State.OK).build())
                 .to("direct:updateStatus")
                 .routeId("damu-complete-export-gtfs");
