@@ -128,7 +128,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .route().routeId("admin-application-clean-unique-filename-and-digest-idempotent-repos")
                 .to("direct:authorizeAdminRequest")
                 .to("direct:cleanIdempotentFileStore")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .endRest()
 
                 .post("/validate/level1")
@@ -141,7 +141,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation level1 for all providers")
                 .process(this::removeAllCamelHttpHeaders)
                 .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel1ForAllProviders")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .routeId("admin-chouette-validate-level1-all-providers")
                 .endRest()
 
@@ -155,7 +155,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation level2 for all providers")
                 .process(this::removeAllCamelHttpHeaders)
                 .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel2ForAllProviders")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .routeId("admin-chouette-validate-level2-all-providers")
                 .endRest()
 
@@ -199,7 +199,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::removeAllCamelHttpHeaders)
                 .to("direct:chouetteCancelAllJobsForAllProviders")
                 .routeId("admin-chouette-cancel-all-jobs-all")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .endRest()
 
                 .delete("/completed_jobs")
@@ -226,7 +226,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::removeAllCamelHttpHeaders)
                 .to("direct:chouetteRemoveOldJobs")
                 .routeId("admin-chouette-remove-old-jobs")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .endRest()
 
 
@@ -248,7 +248,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean all dataspaces")
                 .process(this::removeAllCamelHttpHeaders)
                 .to("direct:chouetteCleanAllReferentials")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .routeId("admin-chouette-clean-all")
                 .endRest()
 
@@ -263,7 +263,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean all stop places")
                 .process(this::removeAllCamelHttpHeaders)
                 .to("direct:chouetteCleanStopPlaces")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .routeId("admin-chouette-clean-stop-places")
                 .endRest()
 
@@ -340,7 +340,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS extended export")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsExportMergedQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue")
                 .routeId("admin-timetable-gtfs-extended-export")
                 .endRest()
 
@@ -355,7 +355,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS basic export")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsBasicExportMergedQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue")
                 .routeId("admin-timetable-gtfs-basic-export")
                 .endRest()
 
@@ -369,7 +369,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS export to Google")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGoogleExportQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleExportQueue")
                 .routeId("admin-timetable-google-export")
                 .endRest()
 
@@ -383,7 +383,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "Triggered GTFS QA export to Google")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGoogleQaExportQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleQaExportQueue")
                 .routeId("admin-timetable-google-qa-export")
                 .endRest()
 
@@ -397,7 +397,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS to Google")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsGooglePublishQueue")
                 .routeId("admin-timetable-google-publish")
                 .endRest()
 
@@ -411,7 +411,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "Triggered publish of GTFS QA export to Google")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:GtfsGooglePublishQaQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsGooglePublishQaQueue")
                 .routeId("admin-timetable-google-qa-publish")
                 .endRest()
 
@@ -426,7 +426,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "Triggered Netex export of merged file for Norway")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:NetexExportMergedQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:NetexExportMergedQueue")
                 .routeId("admin-timetable-netex-merged-export")
                 .endRest()
 
@@ -440,7 +440,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "Triggered build of OTP base graph with map data")
                 .process(this::removeAllCamelHttpHeaders)
                 .setBody(simple(""))
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpBaseGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpBaseGraphBuildQueue")
                 .routeId("admin-build-base-graph")
                 .endRest()
 
@@ -454,7 +454,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "OTP build graph from NeTEx")
                 .process(this::removeAllCamelHttpHeaders)
                 .setBody(simple(""))
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
                 .routeId("admin-build-graph-netex")
                 .endRest()
 
@@ -471,16 +471,16 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .choice()
                 .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp1_base")))
                 .log(LoggingLevel.INFO, "OTP1 build candidate base graph")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpBaseGraphCandidateBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpBaseGraphCandidateBuildQueue")
                 .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp1_netex")))
                 .log(LoggingLevel.INFO, "OTP1 build candidate NeTEx graph")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpGraphCandidateBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphCandidateBuildQueue")
                 .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp2_base")))
                 .log(LoggingLevel.INFO, "OTP2 build candidate base graph")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:Otp2BaseGraphCandidateBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue")
                 .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp2_netex")))
                 .log(LoggingLevel.INFO, "OTP2 build candidate NeTEx graph")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:Otp2GraphCandidateBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphCandidateBuildQueue")
                 .otherwise()
                 .setBody(constant("Unknown Graph Type"))
                 .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(400))
@@ -582,9 +582,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                     String fileNameForStatusLogging = "reimport-" + e.getIn().getBody(String.class);
                     e.getIn().setHeader(Constants.FILE_NAME, fileNameForStatusLogging);
                 })
-                .setBody(constant(null))
+                .setBody(constant(""))
 
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:ProcessFileQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
                 .routeId("admin-chouette-import")
                 .endRest()
 
@@ -751,7 +751,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Chouette start export")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteExportNetexQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue")
                 .routeId("admin-chouette-export")
                 .endRest()
 
@@ -773,7 +773,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .otherwise()
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
                 .end()
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteValidationQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
                 .routeId("admin-chouette-validate")
                 .endRest()
 
@@ -806,7 +806,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:validateProvider")
                 .to("direct:authorizeAdminRequest")
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteTransferExportQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteTransferExportQueue")
                 .routeId("admin-chouette-transfer")
                 .endRest();
 

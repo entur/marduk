@@ -120,7 +120,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
                 .to("direct:chouetteGetFreshStats")
                 .unmarshal().json(JsonLibrary.Jackson, JsonNode.class)
                 .process(e -> cache = e.getIn().getBody(JsonNode.class))
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .log(LoggingLevel.INFO, correlation() + "Refresh of line stats done")
                 .routeId("chouette-line-stats-cache-refresh");
     }

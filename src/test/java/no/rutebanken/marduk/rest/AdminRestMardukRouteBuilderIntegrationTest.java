@@ -131,8 +131,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void runImport() throws Exception {
 
-        AdviceWith.adviceWith(context, "admin-chouette-import", a -> a.interceptSendToEndpoint("entur-google-pubsub:ProcessFileQueue").skipSendToOriginalEndpoint().to("mock:chouetteImportQueue"));
-
+        AdviceWith.adviceWith(context, "admin-chouette-import", a ->
+                a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:chouetteImportQueue"));
         // we must manually start when we are done with all the advice with
         camelContext.start();
 
@@ -165,7 +165,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void runExport() throws Exception {
 
-        AdviceWith.adviceWith(context, "admin-chouette-export", a -> a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexQueue").skipSendToOriginalEndpoint().to("mock:chouetteExportNetexQueue"));
+        AdviceWith.adviceWith(context, "admin-chouette-export", a ->
+                        a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue").replace().to("mock:chouetteExportNetexQueue"));
 
         // we must manually start when we are done with all the advice with
         camelContext.start();
@@ -277,9 +278,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
                     a.interceptSendToEndpoint("direct:updateStatus")
                             .skipSendToOriginalEndpoint()
                             .to("mock:updateStatus");
-                    a.interceptSendToEndpoint("entur-google-pubsub:ProcessFileQueue")
-                            .skipSendToOriginalEndpoint()
-                            .to("mock:processFileQueue");
+                    a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue");
                 }
         );
 
@@ -296,11 +295,6 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
     @Test
     void downloadNetexBlocks() throws Exception {
-
-        AdviceWith.adviceWith(context, "admin-chouette-netex-blocks-download", a ->
-                a.interceptSendToEndpoint("entur-google-pubsub:ChouetteExportNetexQueue")
-                        .skipSendToOriginalEndpoint()
-                        .to("mock:chouetteExportNetexQueue"));
 
         // Preparations
         String filename = "rb_rut-aggregated-netex.zip";
