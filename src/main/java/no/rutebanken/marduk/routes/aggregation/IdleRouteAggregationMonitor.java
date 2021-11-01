@@ -1,4 +1,4 @@
-package no.rutebanken.marduk.config;
+package no.rutebanken.marduk.routes.aggregation;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.processor.aggregate.AggregateController;
@@ -6,7 +6,9 @@ import org.apache.camel.processor.aggregate.DefaultAggregateController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,31 +20,35 @@ public class IdleRouteAggregationMonitor {
     private static final Logger LOGGER = LoggerFactory.getLogger(IdleRouteAggregationMonitor.class);
 
     private final CamelContext camelContext;
-    private final Map<String, AggregateController> aggregateControllers;
+    private final Map<String, List<AggregateController>> aggregateControllerMap;
 
     public IdleRouteAggregationMonitor(CamelContext camelContext) {
         this.camelContext = camelContext;
-        this.aggregateControllers = new HashMap<>();
+        this.aggregateControllerMap = new HashMap<>();
     }
 
     /**
      * Return an aggregate controller for a given route.
+     *
      * @param routeId the Camel route id.
      * @return an aggregate controller that will trigger aggregation when the route is idle.
      */
     public AggregateController getAggregateControllerForRoute(String routeId) {
-        return aggregateControllers.computeIfAbsent(routeId, k -> new DefaultAggregateController());
+        List<AggregateController> aggregateControllers = this.aggregateControllerMap.computeIfAbsent(routeId, k -> new ArrayList<>());
+        AggregateController aggregateController = new DefaultAggregateController();
+        aggregateControllers.add(aggregateController);
+        return aggregateController;
     }
 
     /**
      * Scheduled method that checks each registered route and trigger aggregation if the route has no inflight exchange.
      */
     public void checkAggregation() {
-        aggregateControllers.forEach((routeId, aggregateController) -> {
+        aggregateControllerMap.forEach((routeId, aggregateControllers) -> {
             int nbInflightExchanges = camelContext.getInflightRepository().size(routeId);
             if (nbInflightExchanges == 0) {
                 LOGGER.debug("Route {} has no inflight exchange, triggering aggregation", routeId);
-                int nbGroups = aggregateController.forceCompletionOfAllGroups();
+                int nbGroups = aggregateControllers.stream().map(AggregateController::forceCompletionOfAllGroups).mapToInt(Integer::intValue).sum();
                 LOGGER.debug("{} groups aggregated for route {}", nbGroups, routeId);
             } else {
                 LOGGER.debug("Route {} has {} inflight exchanges, postponing aggregation", routeId, nbInflightExchanges);
