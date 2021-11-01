@@ -16,14 +16,18 @@
 
 package no.rutebanken.marduk.routes.aggregation;
 
+import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.AbstractChouetteRouteBuilder;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 
+/**
+ * Periodically check if a list of monitored routes are idle and trigger aggregation for Camel aggregators associated to these routes.
+ */
 @Component
-public class AggregationCheckerRouteBuilder extends AbstractChouetteRouteBuilder {
+public class AggregationCheckerRouteBuilder extends BaseRouteBuilder {
 
     @Value("${marduk.aggregation.checker.quartz.trigger:trigger.repeatInterval=5000&trigger.repeatCount=-1&startDelayedSeconds=10&stateful=true}")
     private String quartzTrigger;
