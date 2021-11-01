@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.config;
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import no.rutebanken.marduk.routes.aggregation.IdleRouteAggregationMonitor;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.ThreadPoolBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +73,12 @@ public class CamelConfig {
     @Bean("jacksonJavaTimeModule")
     JavaTimeModule jacksonJavaTimeModule() {
         return new JavaTimeModule();
+    }
+
+
+    @Bean("idleRouteAggregationMonitor")
+    IdleRouteAggregationMonitor idleRouteAggregationMonitor(@Autowired CamelContext camelContext) {
+        return new IdleRouteAggregationMonitor(camelContext);
     }
 
 
