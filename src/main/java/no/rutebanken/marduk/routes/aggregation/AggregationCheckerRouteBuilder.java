@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.routes.aggregation;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.chouette.AbstractChouetteRouteBuilder;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
