@@ -18,7 +18,7 @@ package no.rutebanken.marduk.routes;
 
 import com.google.cloud.spring.pubsub.support.BasicAcknowledgeablePubsubMessage;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.config.IdleRouteAggregationMonitor;
+import no.rutebanken.marduk.routes.aggregation.IdleRouteAggregationMonitor;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import org.apache.camel.Exchange;

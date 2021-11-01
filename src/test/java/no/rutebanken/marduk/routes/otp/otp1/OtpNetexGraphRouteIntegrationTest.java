@@ -71,13 +71,14 @@ class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
         });
 
         updateStatus.expectedMessageCount(3);
+        updateStatus.setResultWaitTime(20000);
 
         context.start();
 
         producerTemplate.sendBody(null);
         producerTemplate.sendBodyAndHeaders(null, createProviderJobHeaders(2L, "ref", "corr-id"));
 
-        updateStatus.assertIsSatisfied(20000);
+        updateStatus.assertIsSatisfied();
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
 
