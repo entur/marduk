@@ -75,4 +75,10 @@ public class CamelConfig {
     }
 
 
+    @Bean("idleRouteAggregationMonitor")
+    IdleRouteAggregationMonitor idleRouteAggregationMonitor(@Autowired CamelContext camelContext) {
+        return new IdleRouteAggregationMonitor(camelContext);
+    }
+
+
 }
