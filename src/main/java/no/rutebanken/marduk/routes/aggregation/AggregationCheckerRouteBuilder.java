@@ -35,7 +35,7 @@ public class AggregationCheckerRouteBuilder extends AbstractChouetteRouteBuilder
         singletonFrom(("quartz://marduk/checkAggregation?" + quartzTrigger))
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.DEBUG, correlation() + "Quartz triggers check aggregation.")
-                .bean("mardukAggregateController", "checkAggregation")
+                .bean("idleRouteAggregationMonitor", "checkAggregation")
                 .log(LoggingLevel.DEBUG, correlation() + "Quartz triggers check aggregation done.")
                 .routeId("aggregation-checker-quartz");
     }
