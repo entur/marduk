@@ -10,8 +10,11 @@ data:
     spring.datasource.driver-class-name=org.postgresql.Driver
     spring.datasource.maxActive=10
     server.port={{ .Values.service.http.internalPort }}
+
+    # Camel
     camel.springboot.name=Marduk
     camel.dataformat.json-jackson.module-refs=jacksonJavaTimeModule
+    camel.servlet.mapping.context-path=/services/*
 
     # PubSub
     spring.cloud.gcp.pubsub.project-id={{ .Values.gcp.pubsubProjectId }}
@@ -104,7 +107,6 @@ data:
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
     otp.graph.build.remote.kubernetes.timeout=12000
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
-    camel.component.servlet.mapping.context-path=/services/*
 
 kind: ConfigMap
 metadata:
