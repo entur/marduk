@@ -18,17 +18,17 @@ package no.rutebanken.marduk.routes;
 
 import com.google.cloud.spring.pubsub.support.BasicAcknowledgeablePubsubMessage;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.routes.aggregation.IdleRouteAggregationMonitor;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
+import no.rutebanken.marduk.routes.aggregation.IdleRouteAggregationMonitor;
+import org.apache.camel.Consumer;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExtendedExchange;
 import org.apache.camel.Message;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
+import org.apache.camel.component.master.MasterConsumer;
 import org.apache.camel.model.RouteDefinition;
-import org.apache.camel.spi.RoutePolicy;
 import org.apache.camel.spi.Synchronization;
 import org.apache.commons.lang3.time.DateUtils;
 import org.entur.pubsub.camel.EnturGooglePubSubConstants;
@@ -45,8 +45,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static no.rutebanken.marduk.Constants.SINGLETON_ROUTE_DEFINITION_GROUP_NAME;
 
 
 /**
@@ -108,7 +106,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
         List<Message> messages = exchange.getIn().getBody(List.class);
         List<BasicAcknowledgeablePubsubMessage> ackList = messages.stream()
-                .map(m->m.getHeader(EnturGooglePubSubConstants.ACK_ID, BasicAcknowledgeablePubsubMessage.class))
+                .map(m -> m.getHeader(EnturGooglePubSubConstants.ACK_ID, BasicAcknowledgeablePubsubMessage.class))
                 .collect(Collectors.toList());
 
         exchange.adapt(ExtendedExchange.class).addOnCompletion(new AckSynchronization(ackList));
@@ -163,7 +161,15 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
      * Create a new singleton route definition from URI. Only one such route should be active throughout the cluster at any time.
      */
     protected RouteDefinition singletonFrom(String uri) {
-        return this.from(uri).group(SINGLETON_ROUTE_DEFINITION_GROUP_NAME);
+        String lockName = getMasterLockName(uri);
+        return this.from("master:" + lockName + ':' + uri);
+    }
+
+    private String getMasterLockName(String uri) {
+        if (uri.indexOf('?') != -1) {
+            return uri.substring(uri.lastIndexOf(':') + 1, uri.indexOf('?'));
+        }
+        return uri.substring(uri.lastIndexOf(':') + 1);
     }
 
 
@@ -200,13 +206,9 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     }
 
     protected boolean isLeader(String routeId) {
-        List<RoutePolicy> routePolicyList = getContext().getRoute(routeId).getRoutePolicyList();
-        if (routePolicyList != null) {
-            for (RoutePolicy routePolicy : routePolicyList) {
-                if (routePolicy instanceof HazelcastRoutePolicy) {
-                    return ((HazelcastRoutePolicy) (routePolicy)).isLeader();
-                }
-            }
+        Consumer consumer = getContext().getRoute(routeId).getConsumer();
+        if (consumer instanceof MasterConsumer) {
+            return ((MasterConsumer) consumer).isMaster();
         }
         return false;
     }
