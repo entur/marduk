@@ -17,9 +17,9 @@
 package no.rutebanken.marduk.routes;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.routes.aggregation.IdleRouteAggregationMonitor;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
+import no.rutebanken.marduk.routes.aggregation.IdleRouteAggregationMonitor;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExtendedExchange;
 import org.apache.camel.Message;
@@ -88,13 +88,21 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                 .logExhausted(true)
                 .logRetryStackTrace(true));
 
+        // Copy all PubSub headers except the internal Camel PubSub headers from the PubSub message into the Camel message headers.
         interceptFrom("google-pubsub:*")
                 .process(exchange ->
                 {
                     Map<String, String> pubSubAttributes = exchange.getIn().getHeader(GooglePubsubConstants.ATTRIBUTES, Map.class);
-                    pubSubAttributes.entrySet().stream().filter(entry -> !entry.getKey().startsWith("CamelGooglePubsub")).forEach(entry -> exchange.getIn().setHeader(entry.getKey(), entry.getValue()));
+                    if (pubSubAttributes == null) {
+                        throw new IllegalStateException("Missing PubSub attribute maps in Exchange");
+                    }
+                    pubSubAttributes.entrySet()
+                            .stream()
+                            .filter(entry -> !entry.getKey().startsWith("CamelGooglePubsub"))
+                            .forEach(entry -> exchange.getIn().setHeader(entry.getKey(), entry.getValue()));
                 });
 
+        // Copy all PubSub headers except the internal Camel PubSub headers from the Camel message into the PubSub message.
         interceptSendToEndpoint("google-pubsub:*").process(
                 exchange -> {
                     Map<String, String> pubSubAttributes = new HashMap<>();
@@ -219,8 +227,9 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
      * This prevents an aggregator from acknowledging the aggregated PubSub messages before the end of the route.
      * In case of failure during the routing this would make it impossible to retry the messages.
      * The synchronization is stored temporarily in a header and is applied again after the aggregation is complete
-     * @see #addSynchronizationForAggregatedExchange(Exchange)
+     *
      * @param e
+     * @see #addSynchronizationForAggregatedExchange(Exchange)
      */
     public void removeSynchronizationForAggregatedExchange(Exchange e) {
         DefaultExchange temporaryExchange = new DefaultExchange(e.getContext());
@@ -230,14 +239,15 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
     /**
      * Add back the PubSub synchronization.
-     *  @see #removeSynchronizationForAggregatedExchange(Exchange)
+     *
+     * @see #removeSynchronizationForAggregatedExchange(Exchange)
      */
     protected void addSynchronizationForAggregatedExchange(Exchange aggregatedExchange) {
         List<Message> messages = aggregatedExchange.getIn().getBody(List.class);
         for (Message m : messages) {
             Exchange temporaryExchange = m.getHeader(SYNCHRONIZATION_HOLDER, Exchange.class);
-            if(temporaryExchange == null) {
-                throw  new IllegalStateException("Synchronization holder not found");
+            if (temporaryExchange == null) {
+                throw new IllegalStateException("Synchronization holder not found");
             }
             temporaryExchange.adapt(ExtendedExchange.class).handoverCompletions(aggregatedExchange);
         }
