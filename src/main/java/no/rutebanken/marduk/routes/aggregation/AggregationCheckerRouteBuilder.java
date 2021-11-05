@@ -35,7 +35,8 @@ public class AggregationCheckerRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom(("quartz://marduk/checkAggregation?" + quartzTrigger))
+        // run the trigger on every node, since the aggregators can be active on any node
+        from("quartz://marduk/checkAggregation?" + quartzTrigger)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.DEBUG, correlation() + "Quartz triggers check aggregation.")
                 .bean("idleRouteAggregationMonitor", "checkAggregation")
