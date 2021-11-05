@@ -49,6 +49,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
         AdviceWith.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
 
         buildOtpGraph.expectedMessageCount(1);
+        buildOtpGraph.setResultWaitTime(20000);
 
         context.start();
 
@@ -65,6 +66,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
         AdviceWith.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
 
         buildOtpGraph.expectedMessageCount(1);
+        buildOtpGraph.setResultWaitTime(20000);
 
         context.start();
 
@@ -87,6 +89,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
 
         // expect at least one failing first exchange  + one failing local delivery + one external delivery
         buildOtpGraph.expectedMinimumMessageCount(3);
+        buildOtpGraph.setResultWaitTime(20000);
 
         context.start();
 

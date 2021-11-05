@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.routes.aggregation.IdleRouteAggregationMonitor;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import org.apache.camel.Exchange;
@@ -59,6 +60,9 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
     @Autowired
     private ProviderRepository providerRepository;
+
+    @Autowired
+    protected IdleRouteAggregationMonitor idleRouteAggregationMonitor;
 
     @Value("${quartz.lenient.fire.time.ms:180000}")
     private int lenientFireTimeMs;
