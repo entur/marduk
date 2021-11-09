@@ -30,7 +30,7 @@ google:
 
 auth0:
   partner:
-    url: https://partner.entur.org
+    url: https://entur-partner.entur.org
     audience: https://api.entur.io
     administratorAccessEnabled: false
   ror:
