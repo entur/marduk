@@ -25,8 +25,8 @@
     <properties>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>3.11.3</camel.version>
-        <google.cloud.bom-version>20.4.0</google.cloud.bom-version>
-        <entur.helpers.version>1.0.60</entur.helpers.version>
+        <google.cloud.bom-version>24.0.0</google.cloud.bom-version>
+        <entur.helpers.version>1.0.61</entur.helpers.version>
         <commons-io.version>2.11.0</commons-io.version>
         <commons-csv.version>1.9.0</commons-csv.version>
         <commons-fileupload.version>1.4</commons-fileupload.version>
@@ -86,11 +86,6 @@
                     <artifactId>protobuf-lite</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.entur.helpers</groupId>
-            <artifactId>hazelcast4-helper</artifactId>
-            <version>${entur.helpers.version}</version>
         </dependency>
         <dependency>
             <groupId>org.entur.helpers</groupId>
@@ -187,11 +182,19 @@
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
-            <artifactId>camel-hazelcast-starter</artifactId>
+            <artifactId>camel-sql-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
-            <artifactId>camel-sql-starter</artifactId>
+            <artifactId>camel-master-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-kubernetes-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-file-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
