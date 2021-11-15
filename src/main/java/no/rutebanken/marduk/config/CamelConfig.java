@@ -76,6 +76,11 @@ public class CamelConfig {
     }
 
 
+    /**
+     * Configure an idle route monitor that triggers Camel aggregators when a monitored route is idle.
+     * @param camelContext
+     * @return
+     */
     @Bean("idleRouteAggregationMonitor")
     IdleRouteAggregationMonitor idleRouteAggregationMonitor(@Autowired CamelContext camelContext) {
         return new IdleRouteAggregationMonitor(camelContext);
