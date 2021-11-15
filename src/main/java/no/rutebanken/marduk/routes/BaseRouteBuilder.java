@@ -20,6 +20,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.routes.aggregation.IdleRouteAggregationMonitor;
+import org.apache.camel.Consumer;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExtendedExchange;
 import org.apache.camel.Message;
@@ -27,9 +28,8 @@ import org.apache.camel.ServiceStatus;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
 import org.apache.camel.component.google.pubsub.consumer.AcknowledgeAsync;
-import org.apache.camel.component.hazelcast.policy.HazelcastRoutePolicy;
+import org.apache.camel.component.master.MasterConsumer;
 import org.apache.camel.model.RouteDefinition;
-import org.apache.camel.spi.RoutePolicy;
 import org.apache.camel.support.DefaultExchange;
 import org.apache.commons.lang3.time.DateUtils;
 import org.quartz.CronExpression;
@@ -167,6 +167,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
      * Thus the lock name should be a valid file name.
      * The lock name is built by stripping the component type (example: "google-pubsub:") and the endpoint parameters.
      * (example: "?synchronousPull=true")
+     *
      * @param uri the endpoint URI
      * @return a lock name
      */
