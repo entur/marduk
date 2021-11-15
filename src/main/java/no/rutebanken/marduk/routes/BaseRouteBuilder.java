@@ -165,6 +165,16 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
         return this.from("master:" + lockName + ':' + uri);
     }
 
+    /**
+     * Create a lock name for an endpoint URI. The lock name should be unique across the Camel context so that each
+     * route gets its own lock.
+     * When using a file-based implementation for the camel-master lock (for local testing), the lock is created as a file in the local file system.
+     * Thus the lock name should be a valid file name.
+     * The lock name is built by stripping the component type (example: "google-pubsub:") and the endpoint parameters.
+     * (example: "?synchronousPull=true")
+     * @param uri the endpoint URI
+     * @return a lock name
+     */
     private String getMasterLockName(String uri) {
         if (uri.indexOf('?') != -1) {
             return uri.substring(uri.lastIndexOf(':') + 1, uri.indexOf('?'));
