@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.file;
 
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -25,6 +26,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
@@ -114,7 +116,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .setBody(simple(""))   //remove file data from body since this is in blobstore
                 .to("entur-google-pubsub:ChouetteImportQueue")
-                .to("entur-google-pubsub:AntuNetexValidationQueue")
+                .to("direct:antuNetexValidation")
                 .end()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .routeId("file-classify");
@@ -132,6 +134,14 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .to("entur-google-pubsub:ProcessFileQueue")
                 .routeId("file-sanitize-filename");
+
+        from("direct:antuNetexValidation")
+                .process(e -> {
+                    Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
+                    e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
+                })
+                .to("entur-google-pubsub:AntuNetexValidationQueue")
+                .routeId("antu-netex-validation");
     }
 
 }
