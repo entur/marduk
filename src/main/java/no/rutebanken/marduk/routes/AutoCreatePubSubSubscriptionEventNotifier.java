@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.component.google.pubsub.GooglePubsubEndpoint;
+import org.apache.camel.component.master.MasterEndpoint;
 import org.apache.camel.spi.CamelEvent;
 import org.apache.camel.support.DefaultInterceptSendToEndpoint;
 import org.apache.camel.support.EventNotifierSupport;
@@ -45,7 +46,7 @@ public class AutoCreatePubSubSubscriptionEventNotifier extends EventNotifierSupp
 
         if (event instanceof CamelEvent.CamelContextStartingEvent) {
             CamelContext context = ((CamelEvent.CamelContextStartingEvent) event).getContext();
-            context.getEndpoints().stream().filter(e -> e.getEndpointUri().startsWith("google-pubsub")).forEach(this::createSubscriptionIfMissing);
+            context.getEndpoints().stream().filter(e -> e.getEndpointUri().contains("google-pubsub:")).forEach(this::createSubscriptionIfMissing);
         }
 
     }
@@ -54,8 +55,12 @@ public class AutoCreatePubSubSubscriptionEventNotifier extends EventNotifierSupp
         GooglePubsubEndpoint gep;
         if (e instanceof GooglePubsubEndpoint) {
             gep = (GooglePubsubEndpoint) e;
-        } else if (e instanceof DefaultInterceptSendToEndpoint) {
+        } else if (e instanceof MasterEndpoint && ((MasterEndpoint) e).getEndpoint() instanceof GooglePubsubEndpoint) {
+            gep = (GooglePubsubEndpoint) ((MasterEndpoint) e).getEndpoint();
+        } else if (e instanceof DefaultInterceptSendToEndpoint && ((DefaultInterceptSendToEndpoint) e).getOriginalEndpoint() instanceof GooglePubsubEndpoint) {
             gep = (GooglePubsubEndpoint) ((DefaultInterceptSendToEndpoint) e).getOriginalEndpoint();
+        } else if (e instanceof MasterEndpoint && ((MasterEndpoint) e).getEndpoint() instanceof DefaultInterceptSendToEndpoint) {
+            gep = (GooglePubsubEndpoint) ((DefaultInterceptSendToEndpoint) ((MasterEndpoint) e).getEndpoint()).getOriginalEndpoint();
         } else {
             throw new IllegalStateException("Incompatible endpoint: " + e);
         }
