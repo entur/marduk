@@ -38,6 +38,11 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 @Component
 public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
+    /**
+     * Message header for sending the dataset codespace to Antu.
+     */
+    private static final String DATASET_CODESPACE = "EnturDatasetCodespace";
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -138,7 +143,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
         from("direct:antuNetexValidation")
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
+                    e.getIn().setHeader(DATASET_CODESPACE, provider.chouetteInfo.referential);
                 })
                 .to("entur-google-pubsub:AntuNetexValidationQueue")
                 .routeId("antu-netex-validation");
