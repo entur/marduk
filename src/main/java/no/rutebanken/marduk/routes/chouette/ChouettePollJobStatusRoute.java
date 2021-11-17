@@ -200,8 +200,6 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .to("direct:updateStatus")
                 .end()
                 .delay(retryDelay)
-                // Remove or ActiveMQ will think message is overdue and resend immediately
-                .removeHeader("scheduledJobId")
                 .setBody(constant(""))
                 .to("entur-google-pubsub:ChouettePollStatusQueue")
                 .routeId("chouette-reschedule-job");
