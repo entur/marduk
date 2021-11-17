@@ -24,9 +24,9 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
     private static final String DATASET_CODESPACE = "EnturDatasetCodespace";
 
-    private static final String STATUS_EXPORT_STARTED = "started";
-    private static final String STATUS_EXPORT_OK = "ok";
-    private static final String STATUS_EXPORT_FAILED = "failed";
+    private static final String STATUS_VALIDATION_STARTED = "started";
+    private static final String STATUS_VALIDATION_OK = "ok";
+    private static final String STATUS_VALIDATION_FAILED = "failed";
 
     @Override
     public void configure() throws Exception {
@@ -35,11 +35,11 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
         from("entur-google-pubsub:AntuNetexValidationStatusQueue")
                 .process(this::setCorrelationIdIfMissing)
                 .choice()
-                .when(body().isEqualTo(constant(STATUS_EXPORT_STARTED)))
+                .when(body().isEqualTo(constant(STATUS_VALIDATION_STARTED)))
                 .to("direct:antuNetexValidationStarted")
-                .when(body().isEqualTo(constant(STATUS_EXPORT_OK)))
+                .when(body().isEqualTo(constant(STATUS_VALIDATION_OK)))
                 .to("direct:antuNetexValidationComplete")
-                .when(body().isEqualTo(constant(STATUS_EXPORT_FAILED)))
+                .when(body().isEqualTo(constant(STATUS_VALIDATION_FAILED)))
                 .to("direct:antuNetexValidationFailed")
                 .routeId("antu-netex-validation-status");
 
