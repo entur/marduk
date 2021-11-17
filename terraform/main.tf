@@ -462,6 +462,22 @@ resource "google_pubsub_subscription" "AntuNetexValidationQueue" {
   }
 }
 
+resource "google_pubsub_topic" "AntuNetexValidationStatusQueue" {
+  name = "AntuNetexValidationStatusQueue"
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "AntuNetexValidationStatusQueue" {
+  name = "AntuNetexValidationStatusQueue"
+  topic = google_pubsub_topic.AntuNetexValidationStatusQueue.name
+  project = var.gcp_pubsub_project
+  labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
 resource "google_pubsub_topic" "OtpBaseGraphBuildQueue" {
   name = "OtpBaseGraphBuildQueue"
   project = var.gcp_pubsub_project
