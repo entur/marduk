@@ -141,6 +141,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .routeId("file-sanitize-filename");
 
         from("direct:antuNetexValidation")
+                .filter(header(FILE_TYPE).isEqualTo(FileType.NETEXPROFILE))
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(DATASET_CODESPACE, provider.chouetteInfo.referential);
