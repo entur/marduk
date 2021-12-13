@@ -93,7 +93,7 @@ data:
     logging.level.org.apache.camel.component.http.HttpComponent=WARN
 
     # NeTeX export
-    netex.export.block.authorization={FAR:'OST,ATB',CON:'TRO'}
+    netex.export.block.authorization={FAR:'OST,ATB,INN',CON:'TRO'}
     netex.export.merge.flexible.lines.enabled=true
     netex.export.download.directory=/tmp/marduk/files/netex/merged
     otp2.netex.export.download.directory=/tmp/marduk/files/netex/merged-otp2
