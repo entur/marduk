@@ -43,8 +43,4 @@ oauth2:
     url: https://auth2.entur.org/oauth/token
     audience: https://ror.api.entur.io
 
-
-ingress:
-  loadBalancerIP: 35.205.233.237
-
 monitoringEnabled: false

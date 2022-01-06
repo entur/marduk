@@ -43,7 +43,4 @@ oauth2:
     url: https://ror-entur-staging.eu.auth0.com/oauth/token
     audience: https://ror.api.staging.entur.io
 
-ingress:
-  loadBalancerIP: 130.211.80.129
-
 monitoringEnabled: true
