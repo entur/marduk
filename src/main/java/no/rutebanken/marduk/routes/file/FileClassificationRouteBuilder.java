@@ -26,7 +26,6 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
