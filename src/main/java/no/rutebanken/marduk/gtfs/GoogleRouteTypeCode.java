@@ -83,7 +83,7 @@ public enum GoogleRouteTypeCode {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GoogleRouteTypeCode.class);
 
-    private int code;
+    private final int code;
     private GoogleRouteTypeCode mapsTo;
 
 

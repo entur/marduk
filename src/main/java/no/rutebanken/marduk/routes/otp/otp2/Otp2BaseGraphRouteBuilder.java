@@ -76,7 +76,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:buildOtp2BaseGraph")
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtp2BaseGraphStartedEventsInNewTransaction")
-                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID().toString() + "/${exchangeProperty." + TIMESTAMP + "}"))
+                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID() + "/${exchangeProperty." + TIMESTAMP + "}"))
 
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 base graph building in directory ${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}.")
                 .to("direct:remoteBuildOtp2BaseGraphAndSendStatus")
