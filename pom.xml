@@ -307,14 +307,4 @@
         </plugins>
     </build>
 
-
-    <profiles>
-        <profile>
-            <id>rutebanken</id>
-            <build>
-                <defaultGoal>clean install</defaultGoal>
-            </build>
-        </profile>
-    </profiles>
-
 </project>
