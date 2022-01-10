@@ -3,34 +3,8 @@ variable "gcp_project" {
   description = "The GCP project hosting the workloads"
 }
 
-variable "gcp_cloudsql_project" {
-  description = "The GCP project hosting the CloudSQL resources"
-}
-
-variable "gcp_storage_project" {
-  description = "The GCP project hosting the Google Storage resources"
-}
-
-variable "gcp_pubsub_project" {
-  description = "The GCP project hosting the PubSub resources"
-}
-
 variable "gcp_resources_project" {
   description = "The GCP project hosting the project resources"
-}
-
-variable "location" {
-  description = "GCP bucket location"
-}
-
-variable "bucket_storage_class" {
-  description = "GCP storage class"
-  default     = "REGIONAL"
-}
-
-variable "bucket_retention_period" {
-  description = "Retention period for GCS objects, in days"
-  default     = "180"
 }
 
 variable "kube_namespace" {
@@ -46,17 +20,6 @@ variable "labels" {
     slack = "talk-ror"
     app = "marduk"
   }
-}
-
-variable "force_destroy" {
-  description = "(Optional, Default: false) When deleting a bucket, this boolean option will delete all contained objects. If you try to delete a bucket that contains objects, Terraform will fail that run"
-  default = false
-}
-
-variable "prevent_destroy" {
-  description = "Prevent destruction of bucket"
-  type = bool
-  default = false
 }
 
 variable "load_config_file" {
@@ -94,20 +57,6 @@ variable "bucket_nisaba_exchange_instance_name" {
   description = "Nisaba Exchange storage bucket name"
 }
 
-variable "db_region" {
-  description = "GCP  region"
-  default = "europe-west1"
-}
-
-variable "db_zone_letter" {
-  description = "GCP zone letter"
-  default = "b"
-}
-
-variable "db_availability_type" {
-  description = "Database availability type"
-}
-
 variable "ror-marduk-db-username" {
   description = "marduk database username"
 }
@@ -134,6 +83,26 @@ variable "ror-marduk-google-qa-sftp-password" {
 
 variable "ror-marduk-auth0-secret" {
   description = "marduk auth0 secret"
+}
+
+variable "db_region" {
+  description = "GCP  region"
+  default = "europe-west1"
+}
+
+variable "db_zone_letter" {
+  description = "GCP zone letter"
+  default = "b"
+}
+
+variable "db_tier" {
+  description = "Database instance tier"
+  default = "db-custom-1-3840"
+}
+
+variable "db_availability" {
+  description = "Database availablity"
+  default = "ZONAL"
 }
 
 
