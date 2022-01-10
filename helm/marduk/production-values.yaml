@@ -4,7 +4,7 @@ replicas: 2
 gcp:
   blobstoreProjectId: entur-ror-prod
   pubsubProjectId: entur-ror-prod
-  databaseInstance: entur-ror-prod:europe-west1:marduk-db-1=tcp:5432
+  databaseInstance: entur-ror-prod:europe-west1:marduk-db-pg13=tcp:5432
   bucketName: marduk-production
   exchangeBucketName: ror-marduk-exchange-production
   otpReportBucketName: otpreport.entur.org
