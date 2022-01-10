@@ -125,27 +125,27 @@ resource "google_pubsub_subscription" "ChouetteExportGtfsQueue" {
 
 resource "google_pubsub_topic" "DamuExportGtfsDeadLetterQueue" {
   name = "DamuExportGtfsDeadLetterQueue"
-  project = var.gcp_pubsub_project
+  project = var.gcp_resources_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "DamuExportGtfsDeadLetterQueue" {
   name = "DamuExportGtfsDeadLetterQueue"
   topic = google_pubsub_topic.DamuExportGtfsDeadLetterQueue.name
-  project = var.gcp_pubsub_project
+  project = var.gcp_resources_project
   labels = var.labels
 }
 
 resource "google_pubsub_topic" "DamuExportGtfsQueue" {
   name = "DamuExportGtfsQueue"
-  project = var.gcp_pubsub_project
+  project = var.gcp_resources_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "DamuExportGtfsQueue" {
   name = "DamuExportGtfsQueue"
   topic = google_pubsub_topic.DamuExportGtfsQueue.name
-  project = var.gcp_pubsub_project
+  project = var.gcp_resources_project
   labels = var.labels
   ack_deadline_seconds = 600
   dead_letter_policy {
@@ -159,14 +159,14 @@ resource "google_pubsub_subscription" "DamuExportGtfsQueue" {
 
 resource "google_pubsub_topic" "DamuExportGtfsStatusQueue" {
   name = "DamuExportGtfsStatusQueue"
-  project = var.gcp_pubsub_project
+  project = var.gcp_resources_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "DamuExportGtfsStatusQueue" {
   name = "DamuExportGtfsStatusQueue"
   topic = google_pubsub_topic.DamuExportGtfsStatusQueue.name
-  project = var.gcp_pubsub_project
+  project = var.gcp_resources_project
   labels = var.labels
   ack_deadline_seconds = 600
   retry_policy {
@@ -448,14 +448,14 @@ resource "google_pubsub_subscription" "NetexExportNotificationQueue" {
 
 resource "google_pubsub_topic" "AntuNetexValidationQueue" {
   name = "AntuNetexValidationQueue"
-  project = var.gcp_pubsub_project
+  project = var.gcp_resources_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "AntuNetexValidationQueue" {
   name = "AntuNetexValidationQueue"
   topic = google_pubsub_topic.AntuNetexValidationQueue.name
-  project = var.gcp_pubsub_project
+  project = var.gcp_resources_project
   labels = var.labels
   retry_policy {
     minimum_backoff = "10s"
@@ -464,14 +464,14 @@ resource "google_pubsub_subscription" "AntuNetexValidationQueue" {
 
 resource "google_pubsub_topic" "AntuNetexValidationStatusQueue" {
   name = "AntuNetexValidationStatusQueue"
-  project = var.gcp_pubsub_project
+  project = var.gcp_resources_project
   labels = var.labels
 }
 
 resource "google_pubsub_subscription" "AntuNetexValidationStatusQueue" {
   name = "AntuNetexValidationStatusQueue"
   topic = google_pubsub_topic.AntuNetexValidationStatusQueue.name
-  project = var.gcp_pubsub_project
+  project = var.gcp_resources_project
   labels = var.labels
   retry_policy {
     minimum_backoff = "10s"
@@ -570,7 +570,7 @@ resource "google_sql_database_instance" "db_instance" {
 
   settings {
     location_preference {
-      zone = var.db_zone_letter
+      zone = var.db_zone
     }
     tier = var.db_tier
     user_labels = var.labels

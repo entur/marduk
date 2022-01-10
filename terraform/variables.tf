@@ -90,9 +90,9 @@ variable "db_region" {
   default = "europe-west1"
 }
 
-variable "db_zone_letter" {
-  description = "GCP zone letter"
-  default = "b"
+variable "db_zone" {
+  description = "GCP zone"
+  default = "europe-west1-b"
 }
 
 variable "db_tier" {
