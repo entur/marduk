@@ -1,11 +1,11 @@
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   labels:
+    traffic-type: api
     {{- include "common.labels" . | indent 4 }}
   annotations:
     kubernetes.io/ingress.class: traefik
-    external-dns.alpha.kubernetes.io/target: {{ .Values.ingress.loadBalancerIP }}
   name: timetable-admin-v1-map
   namespace: {{ .Release.Namespace }}
 spec:
@@ -17,18 +17,21 @@ spec:
   {{- end}}
     http:
       paths:
-        - backend:
-            serviceName: {{ template "marduk.name" . }}
-            servicePort: {{ .Values.service.http.externalPort }}
+        - pathType: ImplementationSpecific
+          backend:
+            service:
+              name: {{ template "marduk.name" . }}
+              port:
+                number: {{ .Values.service.http.externalPort }}
 ---
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   labels:
-        {{- include "common.labels" . | indent 4 }}
+    traffic-type: api
+    {{- include "common.labels" . | indent 4 }}
   annotations:
     kubernetes.io/ingress.class: traefik
-    external-dns.alpha.kubernetes.io/target: {{ .Values.ingress.loadBalancerIP }}
   name: timetable-admin-v1-timetable
   namespace: {{ .Release.Namespace }}
 spec:
@@ -40,7 +43,9 @@ spec:
             {{- end}}
       http:
         paths:
-          - backend:
-              serviceName: {{ template "marduk.name" . }}
-              servicePort: {{ .Values.service.http.externalPort }}
----
+          - pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ template "marduk.name" . }}
+                port:
+                  number: {{ .Values.service.http.externalPort }}

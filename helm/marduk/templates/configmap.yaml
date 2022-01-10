@@ -10,8 +10,14 @@ data:
     spring.datasource.driver-class-name=org.postgresql.Driver
     spring.datasource.maxActive=10
     server.port={{ .Values.service.http.internalPort }}
+
+    # Camel
     camel.springboot.name=Marduk
     camel.dataformat.json-jackson.module-refs=jacksonJavaTimeModule
+    camel.servlet.mapping.context-path=/services/*
+    camel.cluster.kubernetes.enabled=true
+    camel.cluster.kubernetes.cluster-labels[app]=marduk
+    camel.cluster.kubernetes.config-map-name=marduk-leaders
 
     # PubSub
     spring.cloud.gcp.pubsub.project-id={{ .Values.gcp.pubsubProjectId }}
@@ -60,7 +66,7 @@ data:
     management.endpoints.enabled-by-default=false
     management.endpoint.info.enabled=true
     management.endpoint.health.enabled=true
-    management.endpoint.health.group.readiness.include=readinessState,hazelcast
+    management.endpoint.health.group.readiness.include=readinessState
     management.endpoint.prometheus.enabled=true
     management.endpoints.web.exposure.include=info,health,prometheus
 
@@ -86,23 +92,24 @@ data:
     logging.config=classpath:logback.xml
     logging.level.org.apache.camel.component.http.HttpComponent=WARN
 
+    # NeTeX export
+    netex.export.block.authorization={FAR:'OST,ATB,INN',CON:'TRO'}
+    netex.export.merge.flexible.lines.enabled=true
+    netex.export.download.directory=/tmp/marduk/files/netex/merged
+    otp2.netex.export.download.directory=/tmp/marduk/files/netex/merged-otp2
+
+    # GTFS export
+    gtfs.export.download.directory=/tmp/marduk/files/gtfs/merged
+    gtfs.export.chouette={{ .Values.chouette.gtfsExport }}
+
     # Other
     # the Camel shutdown timeout must be shorter than the Kubernetes terminationGracePeriod
     marduk.shutdown.timeout=25
     providers.api.url=http://baba/services/providers/
     fetch.osm.cron.schedule={{ .Values.osm.fetchCronSchedule }}
-    netex.export.block.authorization={FAR:'OST,ATB',CON:'TRO'}
-    netex.export.merge.flexible.lines.enabled=true
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
     otp.graph.build.remote.kubernetes.timeout=12000
-
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
-    camel.component.servlet.mapping.context-path=/services/*
-    gtfs.export.download.directory=/tmp/marduk/files/gtfs/merged
-    netex.export.download.directory=/tmp/marduk/files/netex/merged
-    otp2.netex.export.download.directory=/tmp/marduk/files/netex/merged-otp2
-
-
 
 kind: ConfigMap
 metadata:

@@ -22,7 +22,7 @@ public enum GtfsExport {
      */
     GTFS_GOOGLE(GtfsHeaders.HEADERS_FOR_GOOGLE_EXPORT);
 
-    private Map<String, String[]> headers;
+    private final Map<String, String[]> headers;
 
     GtfsExport(Map<String, String[]> headers) {
         this.headers = headers;

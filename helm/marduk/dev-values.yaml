@@ -14,6 +14,7 @@ gcp:
 chouette:
   validateLevel1CronSchedule: 0+30+23+?+*+MON-FRI
   refreshStatsCacheCronSchedule: 0+0/10+2-22+*+*+?
+  gtfsExport: false
 
 osm:
   fetchCronSchedule: 0+11+*+*+*+?
@@ -41,8 +42,5 @@ oauth2:
     id: tug4poFyfcqFSXYvJOn7yZCl5FFbIxQM
     url: https://ror-entur-dev.eu.auth0.com/oauth/token
     audience: https://ror.api.dev.entur.io
-
-ingress:
-  loadBalancerIP: 35.205.170.68
 
 monitoringEnabled: true

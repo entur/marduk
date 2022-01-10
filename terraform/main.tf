@@ -123,6 +123,57 @@ resource "google_pubsub_subscription" "ChouetteExportGtfsQueue" {
   }
 }
 
+resource "google_pubsub_topic" "DamuExportGtfsDeadLetterQueue" {
+  name = "DamuExportGtfsDeadLetterQueue"
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "DamuExportGtfsDeadLetterQueue" {
+  name = "DamuExportGtfsDeadLetterQueue"
+  topic = google_pubsub_topic.DamuExportGtfsDeadLetterQueue.name
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_topic" "DamuExportGtfsQueue" {
+  name = "DamuExportGtfsQueue"
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "DamuExportGtfsQueue" {
+  name = "DamuExportGtfsQueue"
+  topic = google_pubsub_topic.DamuExportGtfsQueue.name
+  project = var.gcp_pubsub_project
+  labels = var.labels
+  ack_deadline_seconds = 600
+  dead_letter_policy {
+    max_delivery_attempts = 5
+    dead_letter_topic = google_pubsub_topic.DamuExportGtfsDeadLetterQueue.id
+  }
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
+resource "google_pubsub_topic" "DamuExportGtfsStatusQueue" {
+  name = "DamuExportGtfsStatusQueue"
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "DamuExportGtfsStatusQueue" {
+  name = "DamuExportGtfsStatusQueue"
+  topic = google_pubsub_topic.DamuExportGtfsStatusQueue.name
+  project = var.gcp_pubsub_project
+  labels = var.labels
+  ack_deadline_seconds = 600
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
 resource "google_pubsub_topic" "ChouetteExportNetexQueue" {
   name = "ChouetteExportNetexQueue"
   project = var.gcp_resources_project
@@ -389,6 +440,38 @@ resource "google_pubsub_subscription" "NetexExportNotificationQueue" {
   name = "NetexExportNotificationQueue"
   topic = google_pubsub_topic.NetexExportNotificationQueue.name
   project = var.gcp_resources_project
+  labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
+resource "google_pubsub_topic" "AntuNetexValidationQueue" {
+  name = "AntuNetexValidationQueue"
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "AntuNetexValidationQueue" {
+  name = "AntuNetexValidationQueue"
+  topic = google_pubsub_topic.AntuNetexValidationQueue.name
+  project = var.gcp_pubsub_project
+  labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
+resource "google_pubsub_topic" "AntuNetexValidationStatusQueue" {
+  name = "AntuNetexValidationStatusQueue"
+  project = var.gcp_pubsub_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "AntuNetexValidationStatusQueue" {
+  name = "AntuNetexValidationStatusQueue"
+  topic = google_pubsub_topic.AntuNetexValidationStatusQueue.name
+  project = var.gcp_pubsub_project
   labels = var.labels
   retry_policy {
     minimum_backoff = "10s"

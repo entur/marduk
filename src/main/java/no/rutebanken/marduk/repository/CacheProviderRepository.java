@@ -21,13 +21,11 @@ import com.google.common.cache.CacheBuilder;
 import no.rutebanken.marduk.domain.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.client.ResourceAccessException;
 
-import javax.annotation.PostConstruct;
 import java.net.ConnectException;
 import java.util.Collection;
 import java.util.Map;
@@ -37,19 +35,17 @@ import java.util.stream.Collectors;
 @Repository
 public class CacheProviderRepository implements ProviderRepository {
 
-    @Autowired
-    RestProviderDAO restProviderService;
+    private static final Logger LOGGER = LoggerFactory.getLogger(CacheProviderRepository.class);
 
-    @Value("${marduk.provider.cache.refresh.max.size:1000}")
-    private Integer cacheMaxSize;
-
+    private final RestProviderDAO restProviderService;
+    private final int cacheMaxSize;
     private Cache<Long, Provider> cache;
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @PostConstruct
-    void init() {
-        cache = CacheBuilder.newBuilder().maximumSize(cacheMaxSize).build();
+    public CacheProviderRepository(RestProviderDAO restProviderService, @Value("${marduk.provider.cache.refresh.max.size:1000}") int cacheMaxSize) {
+        this.restProviderService = restProviderService;
+        this.cacheMaxSize = cacheMaxSize;
+        this.cache = CacheBuilder.newBuilder().maximumSize(cacheMaxSize).build();
     }
 
     @Scheduled(fixedRateString = "${marduk.provider.cache.refresh.interval:300000}")
@@ -58,19 +54,19 @@ public class CacheProviderRepository implements ProviderRepository {
             Collection<Provider> newProviders = restProviderService.getProviders();
             Map<Long, Provider> providerMap = newProviders.stream().collect(Collectors.toMap(Provider::getId, p -> p));
             if (providerMap.isEmpty()) {
-                logger.warn("Result from REST Provider Service is empty. Skipping provider cache update. Keeping {} existing elements.", cache.size());
+                LOGGER.warn("Result from REST Provider Service is empty. Skipping provider cache update. Keeping {} existing elements.", cache.size());
                 return;
             }
             Cache<Long, Provider> newCache = CacheBuilder.newBuilder().maximumSize(cacheMaxSize).build();
             newCache.putAll(providerMap);
             cache = newCache;
-            logger.debug("Updated provider cache with result from REST Provider Service. Cache now has {} elements", cache.size());
+            LOGGER.debug("Updated provider cache with result from REST Provider Service. Cache now has {} elements", cache.size());
         } catch (ResourceAccessException re) {
             if (re.getCause() instanceof ConnectException) {
                 if (isEmpty()) {
                     throw re;
                 } else {
-                    logger.warn("REST Provider Service is unavailable. Could not update provider cache, but keeping {} existing elements.", cache.size());
+                    LOGGER.warn("REST Provider Service is unavailable. Could not update provider cache, but keeping {} existing elements.", cache.size());
                 }
             } else {
                 throw re;

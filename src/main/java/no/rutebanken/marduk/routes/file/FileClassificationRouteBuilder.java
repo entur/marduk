@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.file;
 
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -35,6 +36,11 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
  */
 @Component
 public class FileClassificationRouteBuilder extends BaseRouteBuilder {
+
+    /**
+     * Message header for sending the dataset codespace to Antu.
+     */
+    private static final String DATASET_CODESPACE = "EnturDatasetCodespace";
 
     @Override
     public void configure() throws Exception {
@@ -114,6 +120,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .setBody(simple(""))   //remove file data from body since this is in blobstore
                 .to("entur-google-pubsub:ChouetteImportQueue")
+                .to("direct:antuNetexValidation")
                 .end()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .routeId("file-classify");
@@ -131,6 +138,15 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .to("entur-google-pubsub:ProcessFileQueue")
                 .routeId("file-sanitize-filename");
+
+        from("direct:antuNetexValidation")
+                .filter(header(FILE_TYPE).isEqualTo(FileType.NETEXPROFILE))
+                .process(e -> {
+                    Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
+                    e.getIn().setHeader(DATASET_CODESPACE, provider.chouetteInfo.referential);
+                })
+                .to("entur-google-pubsub:AntuNetexValidationQueue")
+                .routeId("antu-netex-validation");
     }
 
 }
