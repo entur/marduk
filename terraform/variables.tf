@@ -101,7 +101,7 @@ variable "db_tier" {
 }
 
 variable "db_availability" {
-  description = "Database availablity"
+  description = "Database availability"
   default = "ZONAL"
 }
 

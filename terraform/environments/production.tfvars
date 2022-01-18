@@ -7,5 +7,5 @@ bucket_graphs_instance_name = "ror-otp-graphs-production"
 bucket_otpreport_instance_name = "otpreport.entur.org"
 bucket_nisaba_exchange_instance_name="ror-nisaba-exchange-production"
 service_account_bucket_role = "roles/storage.admin"
-db_availability_type = "REGIONAL"
+db_availability = "REGIONAL"
 
