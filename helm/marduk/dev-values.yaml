@@ -12,7 +12,7 @@ gcp:
   nisabaExchangeBucketName: ror-nisaba-exchange-dev
 
 chouette:
-  validateLevel1CronSchedule: 0+30+23+?+*+MON-FRI
+  validateLevel1CronSchedule: 0+55+23+?+*+MON-FRI
   refreshStatsCacheCronSchedule: 0+0/10+2-22+*+*+?
   gtfsExport: false
 
