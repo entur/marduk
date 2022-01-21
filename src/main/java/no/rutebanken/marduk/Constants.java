@@ -105,6 +105,11 @@ public final class Constants {
     public static final String CAMEL_ALL_HEADERS = "Camel*";
     public static final String CAMEL_ALL_HTTP_HEADERS = "CamelHttp*";
 
+    /**
+     * Dataset codespace used for interacting with Damu and Antu
+     */
+    public static final String DATASET_CODESPACE = "EnturDatasetCodespace";
+
 
     private Constants() {
     }
