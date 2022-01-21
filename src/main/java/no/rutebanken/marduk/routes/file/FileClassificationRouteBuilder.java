@@ -26,7 +26,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.DATASET_CODESPACE;
+import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
@@ -139,7 +139,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .filter(header(FILE_TYPE).isEqualTo(FileType.NETEXPROFILE))
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(DATASET_CODESPACE, provider.chouetteInfo.xmlns);
+                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.chouetteInfo.referential);
                 })
                 .to("entur-google-pubsub:AntuNetexValidationQueue")
                 .routeId("antu-netex--pre-validation");

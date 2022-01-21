@@ -19,7 +19,7 @@ package no.rutebanken.marduk.routes.chouette;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.DATASET_CODESPACE;
+import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
 
 @Component
 public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRouteBuilder {
@@ -44,15 +44,15 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .routeId("antu-netex-validation-status");
 
         from("direct:antuNetexValidationStarted")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation started for codespace ${header." + DATASET_CODESPACE + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation started for codespace ${header." + DATASET_REFERENTIAL + "}")
                 .routeId("antu-netex-validation-started");
 
         from("direct:antuNetexValidationComplete")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation complete for codespace ${header." + DATASET_CODESPACE + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation complete for codespace ${header." + DATASET_REFERENTIAL + "}")
                 .routeId("antu-netex-validation-complete");
 
         from("direct:antuNetexValidationFailed")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation failed for codespace ${header." + DATASET_CODESPACE + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation failed for codespace ${header." + DATASET_REFERENTIAL + "}")
                 .routeId("antu-netex-validation-failed");
 
     }
