@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -29,6 +30,7 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_CHOUETTE;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_URL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.DATASET_CODESPACE;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.JSON_PART;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
@@ -94,7 +96,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_CHOUETTE + "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:uploadBlob")
                 .setBody(constant(null))
-
+                .to("direct:antuNetexPostValidation")
                 .to("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue")
 
                 .filter(constant(useChouetteGtfsExport))
@@ -127,6 +129,14 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .to("direct:updateStatus")
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .routeId("chouette-process-export-netex-status");
+
+        from("direct:antuNetexPostValidation")
+                .process(e -> {
+                    Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
+                    e.getIn().setHeader(DATASET_CODESPACE, provider.chouetteInfo.xmlns);
+                })
+                .to("entur-google-pubsub:AntuNetexValidationQueue")
+                .routeId("antu-netex-post-validation");
     }
 
 

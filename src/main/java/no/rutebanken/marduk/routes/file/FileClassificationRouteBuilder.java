@@ -26,6 +26,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.DATASET_CODESPACE;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
@@ -36,11 +37,6 @@ import static no.rutebanken.marduk.Constants.PROVIDER_ID;
  */
 @Component
 public class FileClassificationRouteBuilder extends BaseRouteBuilder {
-
-    /**
-     * Message header for sending the dataset codespace to Antu.
-     */
-    private static final String DATASET_CODESPACE = "EnturDatasetCodespace";
 
     @Override
     public void configure() throws Exception {
@@ -120,7 +116,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .setBody(simple(""))   //remove file data from body since this is in blobstore
                 .to("entur-google-pubsub:ChouetteImportQueue")
-                .to("direct:antuNetexValidation")
+                .to("direct:antuNetexPreValidation")
                 .end()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build()).to("direct:updateStatus")
                 .routeId("file-classify");
@@ -139,14 +135,14 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("entur-google-pubsub:ProcessFileQueue")
                 .routeId("file-sanitize-filename");
 
-        from("direct:antuNetexValidation")
+        from("direct:antuNetexPreValidation")
                 .filter(header(FILE_TYPE).isEqualTo(FileType.NETEXPROFILE))
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(DATASET_CODESPACE, provider.chouetteInfo.referential);
+                    e.getIn().setHeader(DATASET_CODESPACE, provider.chouetteInfo.xmlns);
                 })
                 .to("entur-google-pubsub:AntuNetexValidationQueue")
-                .routeId("antu-netex-validation");
+                .routeId("antu-netex--pre-validation");
     }
 
 }

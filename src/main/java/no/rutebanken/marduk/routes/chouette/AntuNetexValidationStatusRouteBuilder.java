@@ -19,10 +19,10 @@ package no.rutebanken.marduk.routes.chouette;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.DATASET_CODESPACE;
+
 @Component
 public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRouteBuilder {
-
-    private static final String DATASET_CODESPACE = "EnturDatasetCodespace";
 
     private static final String STATUS_VALIDATION_STARTED = "started";
     private static final String STATUS_VALIDATION_OK = "ok";

@@ -22,10 +22,10 @@ import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.DATASET_CODESPACE;
+
 @Component
 public class DamuExportGtfsStatusRouteBuilder extends AbstractChouetteRouteBuilder {
-
-    private static final String DATASET_CODESPACE = "EnturDatasetCodespace";
 
     private static final String STATUS_EXPORT_STARTED = "started";
     private static final String STATUS_EXPORT_OK = "ok";
