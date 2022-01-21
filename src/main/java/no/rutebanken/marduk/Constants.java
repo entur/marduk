@@ -108,7 +108,7 @@ public final class Constants {
     /**
      * Dataset codespace used for interacting with Damu and Antu
      */
-    public static final String DATASET_CODESPACE = "EnturDatasetCodespace";
+    public static final String DATASET_REFERENTIAL = "EnturDatasetReferential";
 
 
     private Constants() {
