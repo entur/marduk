@@ -75,6 +75,8 @@ public final class Constants {
     public static final String CHOUETTE_JOB_STATUS_JOB_TYPE = "RutebankenChouetteJobStatusType";
     public static final String CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL = "RutebankenChouetteJobStatusValidationLevel";
 
+    public static final String ANTU_VALIDATION_REPORT_ID = "EnturValidationReportId";
+
     public static final String USERNAME = "RutebankenUsername";
     public static final String JOB_ACTION = "RutebankenJobAction";
     public static final String JOB_ERROR_CODE = "RutebankenJobErrorCode";
