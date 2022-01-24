@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
 
+import static no.rutebanken.marduk.Constants.ANTU_VALIDATION_REPORT_ID;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_ID;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
@@ -105,7 +106,7 @@ public class JobEvent {
 
     public enum JobDomain {TIMETABLE, GRAPH, TIMETABLE_PUBLISH}
 
-    public enum TimetableAction {FILE_TRANSFER, FILE_CLASSIFICATION, IMPORT, EXPORT, VALIDATION_LEVEL_1, VALIDATION_LEVEL_2, CLEAN, DATASPACE_TRANSFER, BUILD_GRAPH, BUILD_BASE, OTP2_BUILD_GRAPH, OTP2_BUILD_BASE, EXPORT_NETEX, EXPORT_NETEX_MERGED, EXPORT_NETEX_BLOCKS}
+    public enum TimetableAction {FILE_TRANSFER, FILE_CLASSIFICATION, PREVALIDATION, IMPORT, EXPORT, VALIDATION_LEVEL_1, VALIDATION_LEVEL_2, CLEAN, DATASPACE_TRANSFER, BUILD_GRAPH, BUILD_BASE, OTP2_BUILD_GRAPH, OTP2_BUILD_BASE, EXPORT_NETEX, EXPORT_NETEX_MERGED, EXPORT_NETEX_BLOCKS}
 
     public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK, DUPLICATE, CANCELLED}
 
@@ -280,6 +281,9 @@ public class JobEvent {
             jobEvent.providerId = Long.valueOf(originalProviderId);
             jobEvent.correlationId = exchange.getIn().getHeader(CORRELATION_ID, String.class);
             jobEvent.externalId = exchange.getIn().getHeader(CHOUETTE_JOB_ID, Long.class);
+            if(jobEvent.externalId == null) {
+                jobEvent.externalId = exchange.getIn().getHeader(ANTU_VALIDATION_REPORT_ID, Long.class);
+            }
             jobEvent.referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);
             jobEvent.username = exchange.getIn().getHeader(USERNAME, String.class);
             jobEvent.errorCode = exchange.getIn().getHeader(JOB_ERROR_CODE, String.class);

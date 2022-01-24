@@ -142,7 +142,9 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.chouetteInfo.referential);
                 })
                 .to("entur-google-pubsub:AntuNetexValidationQueue")
-                .routeId("antu-netex--pre-validation");
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.PENDING).build())
+                .to("direct:updateStatus")
+                .routeId("antu-netex-pre-validation");
     }
 
 }
