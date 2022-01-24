@@ -20,7 +20,6 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
@@ -49,19 +48,43 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
         from("direct:antuNetexValidationStarted")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation started for referential ${header." + DATASET_REFERENTIAL + "}")
+                .choice()
+                .when(header(DATASET_REFERENTIAL).startsWith("rb_"))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.STARTED).build())
+                .otherwise()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.STARTED).build())
+                //end otherwise
+                .end()
+                // end choice
+                .end()
                 .to("direct:updateStatus")
                 .routeId("antu-netex-validation-started");
 
         from("direct:antuNetexValidationComplete")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation complete for referential ${header." + DATASET_REFERENTIAL + "}")
+                .choice()
+                .when(header(DATASET_REFERENTIAL).startsWith("rb_"))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
+                .otherwise()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
+                //end otherwise
+                .end()
+                // end choice
+                .end()
                 .to("direct:updateStatus")
                 .routeId("antu-netex-validation-complete");
 
         from("direct:antuNetexValidationFailed")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation failed for referential ${header." + DATASET_REFERENTIAL + "}")
+                .choice()
+                .when(header(DATASET_REFERENTIAL).startsWith("rb_"))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.FAILED).build())
+                .otherwise()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.FAILED).build())
+                //end otherwise
+                .end()
+                // end choice
+                .end()
                 .to("direct:updateStatus")
                 .routeId("antu-netex-validation-failed");
 
