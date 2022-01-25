@@ -129,7 +129,7 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 
 
 		pollJobStatus.expectedMessageCount(1);
-		updateStatus.expectedMessageCount(2);
+		updateStatus.expectedMessageCount(3);
 
 
 		mergeWithFlexibleLinesMock.expectedMessageCount(1);
