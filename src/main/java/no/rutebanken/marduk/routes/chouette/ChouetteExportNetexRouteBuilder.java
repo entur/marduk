@@ -34,6 +34,8 @@ import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.JSON_PART;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION;
 import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
 
 @Component
@@ -135,7 +137,14 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.chouetteInfo.referential);
                 })
+                .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
                 .to("entur-google-pubsub:AntuNetexValidationQueue")
+                .process(e -> JobEvent.providerJobBuilder(e)
+                        .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION)
+                        .state(JobEvent.State.PENDING)
+                        .jobId(null)
+                        .build())
+                .to("direct:updateStatus")
                 .routeId("antu-netex-post-validation");
     }
 
