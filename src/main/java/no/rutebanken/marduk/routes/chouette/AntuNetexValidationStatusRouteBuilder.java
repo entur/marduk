@@ -20,8 +20,12 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.ANTU_VALIDATION_REPORT_ID;
 import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_PREVALIDATION;
 
 @Component
 public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRouteBuilder {
@@ -48,11 +52,19 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
         from("direct:antuNetexValidationStarted")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation started for referential ${header." + DATASET_REFERENTIAL + "}")
+
                 .choice()
-                .when(header(DATASET_REFERENTIAL).startsWith("rb_"))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.STARTED).build())
-                .otherwise()
+                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.STARTED).build())
+                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
+                .process(e -> JobEvent.providerJobBuilder(e)
+                        .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION)
+                        .state(JobEvent.State.STARTED)
+                        .jobId(e.getIn().getHeader(ANTU_VALIDATION_REPORT_ID, Long.class))
+                        .build())
+                .otherwise()
+                .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
+                .stop()
                 //end otherwise
                 .end()
                 // end choice
@@ -63,10 +75,14 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
         from("direct:antuNetexValidationComplete")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation complete for referential ${header." + DATASET_REFERENTIAL + "}")
                 .choice()
-                .when(header(DATASET_REFERENTIAL).startsWith("rb_"))
+                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
+                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
                 .otherwise()
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
+                .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
+                .stop()
+
                 //end otherwise
                 .end()
                 // end choice
@@ -77,10 +93,12 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
         from("direct:antuNetexValidationFailed")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation failed for referential ${header." + DATASET_REFERENTIAL + "}")
                 .choice()
-                .when(header(DATASET_REFERENTIAL).startsWith("rb_"))
+                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.FAILED).build())
+                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.FAILED).build())
                 .otherwise()
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.FAILED).build())
+                .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
                 //end otherwise
                 .end()
                 // end choice

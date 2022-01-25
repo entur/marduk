@@ -112,6 +112,11 @@ public final class Constants {
      */
     public static final String DATASET_REFERENTIAL = "EnturDatasetReferential";
 
+    public static final String VALIDATION_STAGE_HEADER = "EnturValidationStage";
+    public static final String VALIDATION_STAGE_PREVALIDATION = "EnturValidationStagePreValidation";
+    public static final String VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION = "EnturValidationStageExportNetexPostValidation";
+
+
 
     private Constants() {
     }
