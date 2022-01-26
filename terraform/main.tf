@@ -446,37 +446,17 @@ resource "google_pubsub_subscription" "NetexExportNotificationQueue" {
   }
 }
 
-resource "google_pubsub_topic" "AntuNetexValidationQueue" {
-  name = "AntuNetexValidationQueue"
-  project = var.gcp_resources_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "AntuNetexValidationQueue" {
-  name = "AntuNetexValidationQueue"
-  topic = google_pubsub_topic.AntuNetexValidationQueue.name
-  project = var.gcp_resources_project
-  labels = var.labels
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "AntuNetexValidationStatusQueue" {
-  name = "AntuNetexValidationStatusQueue"
-  project = var.gcp_resources_project
-  labels = var.labels
-}
-
 resource "google_pubsub_subscription" "AntuNetexValidationStatusQueue" {
   name = "AntuNetexValidationStatusQueue"
-  topic = google_pubsub_topic.AntuNetexValidationStatusQueue.name
+  topic = "AntuNetexValidationStatusQueue"
+  filter = "attributes.EnturValidationClient = \"Marduk\""
   project = var.gcp_resources_project
   labels = var.labels
   retry_policy {
     minimum_backoff = "10s"
   }
 }
+
 
 resource "google_pubsub_topic" "OtpBaseGraphBuildQueue" {
   name = "OtpBaseGraphBuildQueue"

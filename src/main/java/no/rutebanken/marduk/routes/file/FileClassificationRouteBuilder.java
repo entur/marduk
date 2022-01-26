@@ -31,6 +31,8 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_PREVALIDATION;
 
@@ -144,6 +146,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.chouetteInfo.referential);
                 })
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_PREVALIDATION))
+                .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
                 .to("entur-google-pubsub:AntuNetexValidationQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
