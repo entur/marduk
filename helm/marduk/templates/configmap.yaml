@@ -54,6 +54,9 @@ data:
     chouette.export.days.forward=365
     chouette.max.retries=3000
 
+    # StopPlace Netex export
+    netex.export.stop.place.blob.path={{ .Values.netex.export }}
+
     # Google GTFS exports
     google.publish.scheduler.autoStartup={{ .Values.google.publish.autoStartup }}
     google.publish.cron.schedule={{ .Values.google.publish.cronSchedule }}

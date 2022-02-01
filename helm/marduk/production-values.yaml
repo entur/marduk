@@ -16,6 +16,9 @@ chouette:
   refreshStatsCacheCronSchedule: 0+0/10+2-22+*+*+?
   gtfsExport: false
 
+netex:
+  export: tiamat/Full_latest.zip
+
 osm:
   fetchCronSchedule: 0+11+*+*+*+?
 
