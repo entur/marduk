@@ -24,6 +24,7 @@ import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
+import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
@@ -33,6 +34,9 @@ import static no.rutebanken.marduk.Constants.FILE_TYPE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
+import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE;
+import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE_SWEDEN;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_PREVALIDATION;
 
@@ -147,10 +151,26 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 })
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_PREVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
+                .to("direct:setNetexValidationProfile")
                 .to("entur-google-pubsub:AntuNetexValidationQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .routeId("antu-netex-pre-validation");
+
+        /**
+         * TODO: temporary filtering of codespaces for swedish timetable data.
+         */
+        from("direct:setNetexValidationProfile")
+                .choice()
+                .when(PredicateBuilder.or(header(DATASET_REFERENTIAL).isEqualTo("sam"), header(DATASET_REFERENTIAL).isEqualTo("rb_sam")))
+                .log(LoggingLevel.INFO, correlation() + "Applying validation rules for Timetable data/Sweden")
+                .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE_SWEDEN))
+                .otherwise()
+                .log(LoggingLevel.INFO, correlation() + "Applying validation rules for Timetable data/Norway")
+                .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE))
+                .end()
+                .routeId("set-netex-validation-profile");
+
     }
 
 }
