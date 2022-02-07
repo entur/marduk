@@ -119,6 +119,10 @@ public final class Constants {
     public static final String VALIDATION_CLIENT_HEADER = "EnturValidationClient";
     public static final String VALIDATION_CLIENT_MARDUK = "Marduk";
 
+    public static final String VALIDATION_PROFILE_HEADER = "EnturValidationProfile";
+    public static final String VALIDATION_PROFILE_TIMETABLE = "Timetable";
+    public static final String VALIDATION_PROFILE_TIMETABLE_SWEDEN = "TimetableSweden";
+
 
     private Constants() {
     }

@@ -36,6 +36,8 @@ import static no.rutebanken.marduk.Constants.JSON_PART;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
+import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION;
 import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
@@ -141,6 +143,8 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 })
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
+                .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE))
+                .to("direct:setNetexValidationProfile")
                 .to("entur-google-pubsub:AntuNetexValidationQueue")
                 .process(e -> JobEvent.providerJobBuilder(e)
                         .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION)
