@@ -7,6 +7,8 @@ RUN apk add --no-cache tini
 WORKDIR /deployments
 RUN addgroup appuser && adduser --disabled-password appuser --ingroup appuser
 USER appuser
+RUN mkdir -p /home/appuser/.ssh \
+ && touch /home/appuser/.ssh/known_hosts
 COPY --from=builder dependencies/ ./
 COPY --from=builder snapshot-dependencies/ ./
 COPY --from=builder spring-boot-loader/ ./
