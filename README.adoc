@@ -59,7 +59,6 @@ spring.main.sources=no.rutebanken.marduk
 spring.profiles.active=gcs-blobstore
 otp.graph.deployment.notification.url=none
 
-idempotent.skip=false
 
 ----
 

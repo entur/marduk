@@ -24,7 +24,6 @@ import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.spi.IdempotentRepository;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
@@ -37,11 +36,13 @@ import static org.apache.camel.builder.PredicateBuilder.not;
 @Component
 public class IdempotentFileFilterRoute extends BaseRouteBuilder {
 
-    @Autowired
-    private IdempotentRepository fileNameAndDigestIdempotentRepository;
-
-
     private static final String HEADER_FILE_NAME_AND_DIGEST = "file_NameAndDigest";
+
+    private final IdempotentRepository fileNameAndDigestIdempotentRepository;
+
+    public IdempotentFileFilterRoute(IdempotentRepository fileNameAndDigestIdempotentRepository) {
+        this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
+    }
 
     @Override
     public void configure() throws Exception {
@@ -57,14 +58,22 @@ public class IdempotentFileFilterRoute extends BaseRouteBuilder {
                     .end()
                 .end()
                 .choice()
-                .when(and(not(simple("${properties:idempotent.skip:false}")),header(FILE_APPLY_DUPLICATES_FILTER).isEqualTo(true)))
+                .when(header(FILE_APPLY_DUPLICATES_FILTER).isEqualTo(true))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() +  "Checking duplicate on file ${header." + Exchange.FILE_NAME + "}")
                 .to("direct:runIdempotentConsumer")
                 .endChoice();
 
 
         from("direct:runIdempotentConsumer")
+                .choice()
+                .when(header(Constants.FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY))
+                // checking only duplicate file name
+                .process(e -> e.getIn().setHeader(HEADER_FILE_NAME_AND_DIGEST, new FileNameAndDigest(e.getIn().getHeader(Exchange.FILE_NAME, String.class), DigestUtils.md5Hex(e.getIn().getHeader(Exchange.FILE_NAME, String.class)))))
+                .otherwise()
+                // checking both duplicate file name and duplicate binary content
                 .process(e -> e.getIn().setHeader(HEADER_FILE_NAME_AND_DIGEST, new FileNameAndDigest(e.getIn().getHeader(Exchange.FILE_NAME, String.class), DigestUtils.md5Hex(e.getIn().getBody(InputStream.class)))))
+                .end()
+                .end()
                 .idempotentConsumer(header(HEADER_FILE_NAME_AND_DIGEST)).messageIdRepository(fileNameAndDigestIdempotentRepository).skipDuplicate(false).removeOnFailure(false)
                 .filter(exchangeProperty(Exchange.DUPLICATE_MESSAGE).isEqualTo(true))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Detected ${header." + Exchange.FILE_NAME + "} as duplicate.")

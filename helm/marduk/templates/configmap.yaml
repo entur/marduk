@@ -37,6 +37,10 @@ data:
     blobstore.gcs.nisaba.exchange.container.name={{ .Values.gcp.nisabaExchangeBucketName }}
     blobstore.delete.external.blobs=false
 
+    # Duplicate file filter
+    duplicate.filter.web={{ .Values.duplicateFileFilter.webFilter }}
+    duplicate.filter.rest=true
+
     # Chouette
     chouette.validate.level1.autoStartup=true
     chouette.validate.level1.cron.schedule={{ .Values.chouette.validateLevel1CronSchedule }}
