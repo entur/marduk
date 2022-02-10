@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.ActionReportWrapper;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -28,9 +29,17 @@ import org.springframework.stereotype.Component;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_URL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.JSON_PART;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
+import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
 import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
 
 @Component
@@ -98,7 +107,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .to("direct:uploadBlob")
                 .setBody(constant(null))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS).state(JobEvent.State.OK).build())
-
+                .to("direct:antuNetexPostValidation")
                 .endChoice()
                 .when(simple("${header.action_report_result} == 'NOK'"))
                 .process(e -> {
@@ -121,6 +130,24 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .routeId("chouette-process-export-netex-block-status");
 
+
+        from("direct:antuNetexBlocksPostValidation")
+                .process(e -> {
+                    Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
+                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.chouetteInfo.referential);
+                })
+                .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION))
+                .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
+                .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE))
+                .to("direct:setNetexValidationProfile")
+                .to("entur-google-pubsub:AntuNetexValidationQueue")
+                .process(e -> JobEvent.providerJobBuilder(e)
+                        .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION)
+                        .state(JobEvent.State.PENDING)
+                        .jobId(null)
+                        .build())
+                .to("direct:updateStatus")
+                .routeId("antu-netex-blocks-post-validation");
 
     }
 
