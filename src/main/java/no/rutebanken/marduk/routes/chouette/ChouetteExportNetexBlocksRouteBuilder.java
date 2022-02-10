@@ -38,7 +38,6 @@ import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
 import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION;
-import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
 import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
 
@@ -107,7 +106,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .to("direct:uploadBlob")
                 .setBody(constant(null))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS).state(JobEvent.State.OK).build())
-                .to("direct:antuNetexPostValidation")
+                .to("direct:antuNetexBlocksPostValidation")
                 .endChoice()
                 .when(simple("${header.action_report_result} == 'NOK'"))
                 .process(e -> {
