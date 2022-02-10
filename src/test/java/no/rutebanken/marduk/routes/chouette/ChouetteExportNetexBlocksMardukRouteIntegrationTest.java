@@ -117,7 +117,7 @@ class ChouetteExportNetexBlocksMardukRouteIntegrationTest extends MardukRouteBui
 
 
         pollJobStatus.expectedMessageCount(1);
-        updateStatus.expectedMessageCount(2);
+        updateStatus.expectedMessageCount(3);
 
         Map<String, Object> headers = new HashMap<>();
         headers.put(Constants.PROVIDER_ID, "2");
