@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.chouette;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
+import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEvent.State;
 import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
@@ -45,13 +46,19 @@ import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
 @Component
 public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
-
     private static final String DATASET_IMPORT_KEY = "DATASET_IMPORT_KEY";
-    @Value("${chouette.url}")
-    private String chouetteUrl;
 
-    @Value("${blobstore.gcs.nisaba.exchange.container.name}")
-    private String nisabaExchangeContainerName;
+    private final String chouetteUrl;
+    private final String nisabaExchangeContainerName;
+    private final boolean enablePreValidation;
+
+    public ChouetteImportRouteBuilder(@Value("${chouette.url}") String chouetteUrl,
+                                      @Value("${chouette.enablePreValidation:true}") boolean enablePreValidation,
+                                      @Value("${blobstore.gcs.nisaba.exchange.container.name}") String nisabaExchangeContainerName) {
+        this.chouetteUrl = chouetteUrl;
+        this.enablePreValidation = enablePreValidation;
+        this.nisabaExchangeContainerName = nisabaExchangeContainerName;
+    }
 
     @Override
     public void configure() throws Exception {
@@ -127,8 +134,10 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                     String fileName = e.getIn().getHeader(FILE_NAME, String.class);
                     String fileType = e.getIn().getHeader(Constants.FILE_TYPE, String.class);
                     Long providerId = e.getIn().getHeader(PROVIDER_ID, Long.class);
-                    e.getIn().setHeader(JSON_PART, getImportParameters(fileName, fileType, providerId));
-                }) //Using header to addToExchange json data
+                    // always activate pre-validation for GTFS files as this is not supported in Antu
+                    String importParameters = getImportParameters(fileName, fileType, providerId, FileType.GTFS.name().equals(fileType) || enablePreValidation);
+                    e.getIn().setHeader(JSON_PART, importParameters);
+                })
                 .log(LoggingLevel.DEBUG, correlation() + "import parameters: " + header(JSON_PART))
                 .to("direct:sendImportJobRequest")
                 .routeId("chouette-import-addToExchange-parameters");
@@ -143,7 +152,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .to(logDebugShowAll())
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/importer/${header." + FILE_TYPE + ".toLowerCase()}"))
                 .log(LoggingLevel.DEBUG, correlation() + "Calling Chouette with URL: ${exchangeProperty.chouette_url}")
-                .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.POST))
+                .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
                 // Attempt to retrigger delivery in case of errors
                 .toD("${exchangeProperty.chouette_url}")
                 .to(logDebugShowAll())
@@ -229,9 +238,9 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
     }
 
-    private String getImportParameters(String fileName, String fileType, Long providerId) {
+    private String getImportParameters(String fileName, String fileType, Long providerId, boolean enablePreValidation) {
         Provider provider = getProviderRepository().getProvider(providerId);
-        return Parameters.createImportParameters(fileName, fileType, provider);
+        return Parameters.createImportParameters(fileName, fileType, provider, enablePreValidation);
     }
 
 }

@@ -27,6 +27,7 @@ import org.apache.camel.ValidationException;
 import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
@@ -34,6 +35,8 @@ import static no.rutebanken.marduk.Constants.FILE_TYPE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
+import static no.rutebanken.marduk.Constants.VALIDATION_CORRELATION_ID_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_DATASET_FILE_HANDLE_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE;
 import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE_SWEDEN;
@@ -121,12 +124,8 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("direct:sanitizeFileName")
 
                 .otherwise()
-                .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
-                .setBody(simple(""))   //remove file data from body since this is in blobstore
-                .to("entur-google-pubsub:ChouetteImportQueue")
-                .to("direct:antuNetexPreValidation")
-                .end()
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build()).to("direct:updateStatus")
+                .to("direct:processValidFile")
+
                 .routeId("file-classify");
 
         from("direct:sanitizeFileName")
@@ -143,21 +142,36 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("entur-google-pubsub:ProcessFileQueue")
                 .routeId("file-sanitize-filename");
 
+
+        from("direct:processValidFile")
+                .setBody(constant(""))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build())
+                .to("direct:updateStatus")
+                .setBody(constant(""))
+                .to("direct:antuNetexPreValidation")
+                .filter(simple("{{chouette.enablePreValidation:true}}"))
+                .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
+                .to("entur-google-pubsub:ChouetteImportQueue")
+                .routeId("process-valid-file");
+
         from("direct:antuNetexPreValidation")
                 .filter(header(FILE_TYPE).isEqualTo(FileType.NETEXPROFILE))
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.chouetteInfo.referential);
                 })
-                .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_PREVALIDATION))
+                .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
+                .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
+                .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_PREVALIDATION))
+
                 .to("direct:setNetexValidationProfile")
                 .to("entur-google-pubsub:AntuNetexValidationQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .routeId("antu-netex-pre-validation");
 
-        /**
+        /*
          * TODO: temporary filtering of codespaces for swedish timetable data.
          */
         from("direct:setNetexValidationProfile")
