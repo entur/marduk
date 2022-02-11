@@ -105,8 +105,8 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:uploadBlob")
                 .setBody(constant(null))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS).state(JobEvent.State.OK).build())
                 .to("direct:antuNetexBlocksPostValidation")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS).state(JobEvent.State.OK).build())
                 .endChoice()
                 .when(simple("${header.action_report_result} == 'NOK'"))
                 .process(e -> {
