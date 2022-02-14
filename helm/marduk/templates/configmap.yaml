@@ -38,6 +38,8 @@ data:
     blobstore.delete.external.blobs=false
 
     # Chouette
+    chouette.enablePreValidation=true
+    chouette.enablePostValidation=true
     chouette.validate.level1.autoStartup=true
     chouette.validate.level1.cron.schedule={{ .Values.chouette.validateLevel1CronSchedule }}
     chouette.validate.level2.autoStartup=false

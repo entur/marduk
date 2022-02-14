@@ -60,7 +60,7 @@ public class NetexImportParameters extends ChouetteJobParameters {
 
     public static NetexImportParameters create(String name, String referentialName, String organisationName, String userName, boolean cleanRepository,
                                                       boolean enableValidation, boolean allowCreateMissingStopPlace, boolean enableStopPlaceIdMapping,
-                                                      String objectIdPrefix, Set<String> generateMissingRouteSectionsForModes) {
+                                                      String objectIdPrefix, Set<String> generateMissingRouteSectionsForModes, boolean validateAgainstSchema, boolean validateAgainstProfile) {
         Netex netexImport = new Netex();
         netexImport.name = name;
         netexImport.referentialName = referentialName;
@@ -73,11 +73,15 @@ public class NetexImportParameters extends ChouetteJobParameters {
         if (allowCreateMissingStopPlace) {
             netexImport.stopAreaImportMode = AbstractImportParameters.StopAreaImportMode.CREATE_NEW;
         }
+        netexImport.validateAgainstSchema = validateAgainstSchema;
+        netexImport.validateAgainstProfile = validateAgainstProfile;
         Parameters parameters = new Parameters();
         parameters.netexImport = netexImport;
         NetexImportParameters netexImportParameters = new NetexImportParameters();
         netexImportParameters.parameters = parameters;
         netexImportParameters.enableValidation = enableValidation;
+
+
         return netexImportParameters;
     }
 

@@ -30,7 +30,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.io.File;
 import java.io.FileInputStream;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_CHOUETTE;
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_NETEX_EXPORT;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,7 +78,7 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
         mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + CURRENT_FLEXIBLE_LINES_NETEX_FILENAME, new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex_with_two_files.zip")), false);
 
         // Create chouette netex export in in memory blob store
-        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_CHOUETTE + "netex/rb_rut-aggregated-netex.zip", new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip")), false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_NETEX_EXPORT + "rb_rut-aggregated-netex.zip", new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip")), false);
 
 
         startRoute.requestBodyAndHeader(null, Constants.CHOUETTE_REFERENTIAL, "rb_rut");

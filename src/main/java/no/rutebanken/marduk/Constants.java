@@ -65,8 +65,14 @@ public final class Constants {
 
     public static final String BLOBSTORE_PATH_INBOUND = "inbound/received/";
     public static final String BLOBSTORE_PATH_OUTBOUND = "outbound/";
+
     public static final String BLOBSTORE_PATH_CHOUETTE = "chouette/";
-    public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT = "chouette/netex-with-blocks/";
+
+    public static final String BLOBSTORE_PATH_NETEX_EXPORT_BEFORE_VALIDATION = BLOBSTORE_PATH_CHOUETTE + "netex-before-validation/";
+    public static final String BLOBSTORE_PATH_NETEX_EXPORT = BLOBSTORE_PATH_CHOUETTE + "netex/";
+
+    public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks/";
+    public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_BEFORE_VALIDATION = BLOBSTORE_PATH_CHOUETTE + "/netex-with-blocks-before-validation/";
 
 
     public static final String CHOUETTE_JOB_STATUS_URL = "RutebankenChouetteJobStatusURL";
@@ -111,6 +117,9 @@ public final class Constants {
      * Dataset codespace used for interacting with Damu and Antu
      */
     public static final String DATASET_REFERENTIAL = "EnturDatasetReferential";
+
+    public static final String VALIDATION_DATASET_FILE_HANDLE_HEADER = "EnturValidationDatasetFileHandle";
+    public static final String VALIDATION_CORRELATION_ID_HEADER  = "EnturValidationCorrelationId";
 
     public static final String VALIDATION_STAGE_HEADER = "EnturValidationStage";
     public static final String VALIDATION_STAGE_PREVALIDATION = "EnturValidationStagePreValidation";
