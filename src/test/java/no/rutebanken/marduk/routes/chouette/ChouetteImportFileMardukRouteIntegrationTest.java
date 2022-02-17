@@ -124,7 +124,7 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
         });
 
         pollJobStatus.expectedMessageCount(1);
-        updateStatus.expectedMessageCount(5);
+        updateStatus.expectedMessageCount(6);
         checkScheduledJobsBeforeTriggeringNextAction.expectedMessageCount(1);
         // 1 initial import call
         chouetteCreateImport.expectedMessageCount(1);
