@@ -92,12 +92,11 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 				.to("mock:pollJobStatus"));
 
 		// Mock update status calls
-		AdviceWith.adviceWith(context, "chouette-process-export-netex-status", a -> {
+		AdviceWith.adviceWith(context, "process-successful-export", a -> {
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 					.to("mock:updateStatus");
 
 			a.weaveByToUri("google-pubsub:(.*):ChouetteMergeWithFlexibleLinesQueue").replace().to("mock:ChouetteMergeWithFlexibleLinesQueue");
-			a.weaveByToUri("google-pubsub:(.*):ChouetteExportGtfsQueue").replace().to("mock:ExportGtfsQueue");
 			a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexBlocksQueue").replace().to("mock:ExportNetexBlocksQueue");
 
 		});
