@@ -198,10 +198,10 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     private boolean isScheduledQuartzFiring(Exchange exchange, CronExpression cron) {
         Date now = new Date();
         Date scheduledFireTime = cron.getNextValidTimeAfter(DateUtils.addMilliseconds(now, -lenientFireTimeMs));
-        boolean isScheduledFiring = scheduledFireTime.before(now);
+        boolean isScheduledFiring = scheduledFireTime.equals(now) || scheduledFireTime.before(now);
 
         if (!isScheduledFiring) {
-            log.warn("Ignoring quartz trigger for route:{} as this is probably not a match for cron expression: {}", exchange.getFromRouteId(), cron.getCronExpression());
+            log.warn("Ignoring quartz trigger for route {} at scheduled time {} as this is probably not a match for cron expression {} (checked at {})", exchange.getFromRouteId(), scheduledFireTime.getTime(), cron.getCronExpression(), now.getTime());
         }
         return isScheduledFiring;
     }

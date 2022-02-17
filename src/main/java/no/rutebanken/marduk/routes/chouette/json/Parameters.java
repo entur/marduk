@@ -36,11 +36,11 @@ public class Parameters {
     private static final ObjectWriter OBJECT_WRITER_FOR_TRANSFER_EXPORT_PARAMETERS = ObjectMapperFactory.getSharedObjectMapper().writerFor(TransferExportParameters.class);
     private static final ObjectWriter OBJECT_WRITER_FOR_NETEX_EXPORT_PARAMETERS = ObjectMapperFactory.getSharedObjectMapper().writerFor(NetexExportParameters.class);
 
-    public static String createImportParameters(String fileName, String fileType, Provider provider) {
+    public static String createImportParameters(String fileName, String fileType, Provider provider, boolean enablePreValidation) {
         if (FileType.GTFS.name().equals(fileType)) {
             return getGtfsImportParameters(fileName, provider);
         } else if (FileType.NETEXPROFILE.name().equals(fileType)) {
-            return getNetexImportParameters(fileName, provider);
+            return getNetexImportParameters(fileName, provider, enablePreValidation);
         } else {
             throw new IllegalArgumentException("Cannot create import parameters from file type '" + fileType + "'");
         }
@@ -54,11 +54,11 @@ public class Parameters {
         return gtfsImportParameters.toJsonString();
     }
 
-    static String getNetexImportParameters(String importName, Provider provider) {
+    static String getNetexImportParameters(String importName, Provider provider, boolean enablePreValidation) {
         ChouetteInfo chouetteInfo = provider.chouetteInfo;
         NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.name,
                 chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation,
-                chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping, chouetteInfo.xmlns, chouetteInfo.generateMissingServiceLinksForModes);
+                chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping, chouetteInfo.xmlns, chouetteInfo.generateMissingServiceLinksForModes, enablePreValidation, enablePreValidation);
         return netexImportParameters.toJsonString();
     }
 
@@ -75,19 +75,28 @@ public class Parameters {
         }
     }
 
-    public static String getDefaultNetexExportParameters(Provider provider, boolean exportStops) {
-        return getNetexExportParameters(provider, exportStops, false, "for journey planning");
+    public static String getDefaultNetexExportParameters(Provider provider, boolean exportStops, boolean validateAfterExport) {
+        return getNetexExportParameters(provider, exportStops, false, "for journey planning", validateAfterExport);
     }
 
-    public static String getNetexBlocksExportParameters(Provider provider, boolean exportStops) {
-        return getNetexExportParameters(provider, exportStops, true, "with blocks");
+    public static String getNetexBlocksExportParameters(Provider provider, boolean exportStops, boolean validateAfterExport) {
+        return getNetexExportParameters(provider, exportStops, true, "with blocks", validateAfterExport);
     }
 
-    private static String getNetexExportParameters(Provider provider, boolean exportStops, boolean exportBlocks, String name) {
+    private static String getNetexExportParameters(Provider provider, boolean exportStops, boolean exportBlocks, String name, boolean validateAfterExport) {
         try {
             ChouetteInfo chouetteInfo = provider.chouetteInfo;
             String projectionType = null;
-            NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport(name, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, projectionType, exportStops, exportBlocks, chouetteInfo.xmlns);
+            NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport(
+                    name,
+                    chouetteInfo.referential,
+                    chouetteInfo.organisation,
+                    chouetteInfo.user,
+                    projectionType,
+                    exportStops,
+                    exportBlocks,
+                    chouetteInfo.xmlns,
+                    validateAfterExport);
             NetexExportParameters.Parameters parameters = new NetexExportParameters.Parameters(netexExport);
             NetexExportParameters exportParameters = new NetexExportParameters(parameters);
             return OBJECT_WRITER_FOR_NETEX_EXPORT_PARAMETERS.writeValueAsString(exportParameters);

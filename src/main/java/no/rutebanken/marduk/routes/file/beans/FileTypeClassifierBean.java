@@ -118,7 +118,10 @@ public class FileTypeClassifierBean {
     }
 
     private static boolean containsDirectory(Set<ZipEntry> zipEntriesInZip) {
-        return zipEntriesInZip.stream().anyMatch(ZipEntry::isDirectory);
+        // Some ZIP tools can create a zip file containing zip entries in a subdirectory without creating a zip entry for the subdirectory itself.
+        // This is valid according to the ZIP spec.
+        // The test below checks both the presence of a subdirectory entry and the presence of "/" in entry names.
+        return zipEntriesInZip.stream().anyMatch(ZipEntry::isDirectory) || zipEntriesInZip.stream().anyMatch(zipEntry -> zipEntry.getName().contains("/"));
     }
 
     private static boolean isGtfsZip(final Set<ZipEntry> zipEntriesInZip) {

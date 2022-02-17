@@ -199,6 +199,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 // sending a new message to ChouettePollStatusQueue is delayed and processed asynchronously in another thread (asyncDelayed = true by default).
                 // Meanwhile the route is not blocked and can process other messages.
                 .delay(retryDelay)
+                .setBody(constant(""))
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
                 .routeId("chouette-reschedule-job");
 

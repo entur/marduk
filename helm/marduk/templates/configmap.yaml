@@ -35,6 +35,8 @@ data:
     blobstore.delete.external.blobs=false
 
     # Chouette
+    chouette.enablePreValidation=true
+    chouette.enablePostValidation=true
     chouette.validate.level1.autoStartup=true
     chouette.validate.level1.cron.schedule={{ .Values.chouette.validateLevel1CronSchedule }}
     chouette.validate.level2.autoStartup=false
@@ -50,6 +52,9 @@ data:
     chouette.export.days.back=365
     chouette.export.days.forward=365
     chouette.max.retries=3000
+
+    # StopPlace Netex export
+    netex.export.stop.place.blob.path={{ .Values.netex.export }}
 
     # Google GTFS exports
     google.publish.scheduler.autoStartup={{ .Values.google.publish.autoStartup }}
@@ -90,7 +95,7 @@ data:
     logging.level.org.apache.camel.component.http.HttpComponent=WARN
 
     # NeTeX export
-    netex.export.block.authorization={FAR:'OST,ATB',CON:'TRO'}
+    netex.export.block.authorization={FAR:'OST,ATB,INN',CON:'TRO'}
     netex.export.merge.flexible.lines.enabled=true
     netex.export.download.directory=/tmp/marduk/files/netex/merged
     otp2.netex.export.download.directory=/tmp/marduk/files/netex/merged-otp2
