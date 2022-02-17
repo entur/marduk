@@ -65,8 +65,14 @@ public final class Constants {
 
     public static final String BLOBSTORE_PATH_INBOUND = "inbound/received/";
     public static final String BLOBSTORE_PATH_OUTBOUND = "outbound/";
+
     public static final String BLOBSTORE_PATH_CHOUETTE = "chouette/";
-    public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT = "chouette/netex-with-blocks/";
+
+    public static final String BLOBSTORE_PATH_NETEX_EXPORT_BEFORE_VALIDATION = BLOBSTORE_PATH_CHOUETTE + "netex-before-validation/";
+    public static final String BLOBSTORE_PATH_NETEX_EXPORT = BLOBSTORE_PATH_CHOUETTE + "netex/";
+
+    public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks/";
+    public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_BEFORE_VALIDATION = BLOBSTORE_PATH_CHOUETTE + "/netex-with-blocks-before-validation/";
 
 
     public static final String CHOUETTE_JOB_STATUS_URL = "RutebankenChouetteJobStatusURL";
@@ -74,6 +80,8 @@ public final class Constants {
     public static final String CHOUETTE_JOB_STATUS_ROUTING_DESTINATION = "RutebankenChouetteJobStatusRoutingDestination";
     public static final String CHOUETTE_JOB_STATUS_JOB_TYPE = "RutebankenChouetteJobStatusType";
     public static final String CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL = "RutebankenChouetteJobStatusValidationLevel";
+
+    public static final String ANTU_VALIDATION_REPORT_ID = "EnturValidationReportId";
 
     public static final String USERNAME = "RutebankenUsername";
     public static final String JOB_ACTION = "RutebankenJobAction";
@@ -104,6 +112,26 @@ public final class Constants {
 
     public static final String CAMEL_ALL_HEADERS = "Camel*";
     public static final String CAMEL_ALL_HTTP_HEADERS = "CamelHttp*";
+
+    /**
+     * Dataset codespace used for interacting with Damu and Antu
+     */
+    public static final String DATASET_REFERENTIAL = "EnturDatasetReferential";
+
+    public static final String VALIDATION_DATASET_FILE_HANDLE_HEADER = "EnturValidationDatasetFileHandle";
+    public static final String VALIDATION_CORRELATION_ID_HEADER  = "EnturValidationCorrelationId";
+
+    public static final String VALIDATION_STAGE_HEADER = "EnturValidationStage";
+    public static final String VALIDATION_STAGE_PREVALIDATION = "EnturValidationStagePreValidation";
+    public static final String VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION = "EnturValidationStageExportNetexPostValidation";
+    public static final String VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION = "EnturValidationStageExportNetexBlocksPostValidation";
+
+    public static final String VALIDATION_CLIENT_HEADER = "EnturValidationClient";
+    public static final String VALIDATION_CLIENT_MARDUK = "Marduk";
+
+    public static final String VALIDATION_PROFILE_HEADER = "EnturValidationProfile";
+    public static final String VALIDATION_PROFILE_TIMETABLE = "Timetable";
+    public static final String VALIDATION_PROFILE_TIMETABLE_SWEDEN = "TimetableSweden";
 
 
     private Constants() {

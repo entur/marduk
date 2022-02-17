@@ -4,7 +4,7 @@ replicas: 2
 gcp:
   blobstoreProjectId: entur-ror-prod
   pubsubProjectId: entur-ror-prod
-  databaseInstance: entur-ror-prod:europe-west1:marduk-db-1=tcp:5432
+  databaseInstance: entur-ror-prod:europe-west1:marduk-db-pg13=tcp:5432
   bucketName: marduk-production
   exchangeBucketName: ror-marduk-exchange-production
   otpReportBucketName: otpreport.entur.org
@@ -15,6 +15,9 @@ chouette:
   validateLevel1CronSchedule: 0+30+23+?+*+*
   refreshStatsCacheCronSchedule: 0+0/10+2-22+*+*+?
   gtfsExport: false
+
+netex:
+  export: tiamat/Full_latest.zip
 
 osm:
   fetchCronSchedule: 0+11+*+*+*+?
@@ -42,9 +45,5 @@ oauth2:
     id: AmQFacYg4SnpwtmHhngrQk9PPgHiN55H
     url: https://auth2.entur.org/oauth/token
     audience: https://ror.api.entur.io
-
-
-ingress:
-  loadBalancerIP: 35.205.233.237
 
 monitoringEnabled: false

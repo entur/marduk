@@ -28,7 +28,7 @@ public enum BasicRouteTypeCode {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BasicRouteTypeCode.class);
 
-    private int code;
+    private final int code;
 
     BasicRouteTypeCode(int code) {
         this.code = code;

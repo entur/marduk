@@ -22,10 +22,10 @@ import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
+
 @Component
 public class DamuExportGtfsStatusRouteBuilder extends AbstractChouetteRouteBuilder {
-
-    private static final String DATASET_CODESPACE = "EnturDatasetCodespace";
 
     private static final String STATUS_EXPORT_STARTED = "started";
     private static final String STATUS_EXPORT_OK = "ok";
@@ -50,14 +50,14 @@ public class DamuExportGtfsStatusRouteBuilder extends AbstractChouetteRouteBuild
                 .routeId("damu-status-export-gtfs");
 
         from("direct:damuGtfsExportStarted")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Damu GTFS export started for codespace ${header." + DATASET_CODESPACE + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Damu GTFS export started for codespace ${header." + DATASET_REFERENTIAL + "}")
                 .filter(PredicateBuilder.not(constant(useChouetteGtfsExport)))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT).state(JobEvent.State.STARTED).build())
                 .to("direct:updateStatus")
                 .routeId("damu-started-export-gtfs");
 
         from("direct:damuGtfsExportComplete")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Damu GTFS export complete for codespace ${header." + DATASET_CODESPACE + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Damu GTFS export complete for codespace ${header." + DATASET_REFERENTIAL + "}")
                 .filter(PredicateBuilder.not(constant(useChouetteGtfsExport)))
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT).state(JobEvent.State.OK).build())
@@ -65,7 +65,7 @@ public class DamuExportGtfsStatusRouteBuilder extends AbstractChouetteRouteBuild
                 .routeId("damu-complete-export-gtfs");
 
         from("direct:damuGtfsExportFailed")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Damu GTFS export failed for codespace ${header." + DATASET_CODESPACE + "}")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Damu GTFS export failed for codespace ${header." + DATASET_REFERENTIAL + "}")
                 .filter(PredicateBuilder.not(constant(useChouetteGtfsExport)))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")

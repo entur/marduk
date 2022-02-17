@@ -2,17 +2,18 @@ package no.rutebanken.marduk.kubernetes;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.batch.CronJob;
-import io.fabric8.kubernetes.api.model.batch.CronJobSpec;
-import io.fabric8.kubernetes.api.model.batch.Job;
-import io.fabric8.kubernetes.api.model.batch.JobBuilder;
-import io.fabric8.kubernetes.api.model.batch.JobSpec;
-import io.fabric8.kubernetes.api.model.batch.JobStatus;
+import io.fabric8.kubernetes.api.model.batch.v1.Job;
+import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
+import io.fabric8.kubernetes.api.model.batch.v1.JobSpec;
+import io.fabric8.kubernetes.api.model.batch.v1.JobStatus;
+import io.fabric8.kubernetes.api.model.batch.v1beta1.CronJob;
+import io.fabric8.kubernetes.api.model.batch.v1beta1.CronJobSpec;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.WatcherException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -67,7 +68,7 @@ public class KubernetesJobRunner {
                 if (!jobCompletedBeforeTimeout) {
                     throw new KubernetesJobRunnerException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
                 }
-                JobStatus status = kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).withName(jobName).get().getStatus();
+                JobStatus status = kubernetesClient.batch().v1().jobs().inNamespace(kubernetesNamespace).withName(jobName).get().getStatus();
                 LOGGER.debug("Kubernetes Job status on completion: {}", status);
                 // test the pod status rather than the job status since the job status may be out of sync with the pod status
                 if (mardukPodWatcher.isSucceeded()) {
@@ -105,28 +106,28 @@ public class KubernetesJobRunner {
      * @return the Kubernetes job
      */
     private Job retrieveOrCreateJob(String jobName, String cronJobName, List<EnvVar> envVars, KubernetesClient kubernetesClient) {
-        Job job = kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).withName(jobName).get();
+        Job job = kubernetesClient.batch().v1().jobs().inNamespace(kubernetesNamespace).withName(jobName).get();
         if (job != null) {
             LOGGER.info("Reconnecting to existing Graph builder job with name {} ", jobName);
         } else {
             LOGGER.info("Creating Graph builder job with name {} ", jobName);
             CronJobSpec specTemplate = getCronJobSpecTemplate(cronJobName, kubernetesClient);
             job = buildJobFromCronJobSpecTemplate(specTemplate, jobName, envVars);
-            kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).create(job);
+            kubernetesClient.batch().v1().jobs().inNamespace(kubernetesNamespace).create(job);
         }
         return job;
     }
 
     private void deleteKubernetesJob(KubernetesClient kubernetesClient, Job job) {
         try {
-            kubernetesClient.batch().jobs().inNamespace(kubernetesNamespace).delete(job);
+            kubernetesClient.batch().v1().jobs().inNamespace(kubernetesNamespace).delete(job);
         } catch (Exception e) {
             LOGGER.warn("Unable to delete Kubernetes job after completion", e);
         }
     }
 
     protected CronJobSpec getCronJobSpecTemplate(String cronJobName, KubernetesClient client) {
-        CronJob matchingCronJob = client.batch().cronjobs().inNamespace(kubernetesNamespace).withName(cronJobName).get();
+        CronJob matchingCronJob = client.batch().v1beta1().cronjobs().inNamespace(kubernetesNamespace).withName(cronJobName).get();
         if (matchingCronJob == null) {
             throw new KubernetesJobRunnerException("Job with name=" + cronJobName + " not found in namespace " + kubernetesNamespace);
         }
@@ -196,9 +197,9 @@ public class KubernetesJobRunner {
         }
 
         @Override
-        public void onClose(KubernetesClientException e) {
-            if (e != null) {
-                LOGGER.warn("Kubernetes client error while watching the Graph Builder job {}. Trying to reconnect...", jobName, e);
+        public void onClose(WatcherException cause) {
+            if (cause != null) {
+                LOGGER.warn("Kubernetes client error while watching the Graph Builder job {}. Trying to reconnect...", jobName, cause);
                 kubernetesClientError = true;
                 watchLatch.countDown();
             }

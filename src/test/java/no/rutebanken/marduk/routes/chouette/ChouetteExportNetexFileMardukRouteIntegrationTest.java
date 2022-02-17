@@ -131,11 +131,10 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 
 
 		pollJobStatus.expectedMessageCount(1);
-		updateStatus.expectedMessageCount(2);
+		updateStatus.expectedMessageCount(3);
 
 
 		mergeWithFlexibleLinesMock.expectedMessageCount(1);
-		exportGtfsQueue.expectedMessageCount(1);
 		exportNetexBlocksQueue.expectedMessageCount(1);
 
 		Map<String, String> headers = new HashMap<>();

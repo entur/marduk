@@ -4,7 +4,7 @@ replicas: 2
 gcp:
   blobstoreProjectId: entur-ror-dev
   pubsubProjectId: entur-ror-dev
-  databaseInstance: entur-ror-dev:europe-west1:marduk-db-1=tcp:5432
+  databaseInstance: entur-ror-dev:europe-west1:marduk-db-pg13=tcp:5432
   bucketName: marduk-dev
   exchangeBucketName: ror-marduk-exchange-dev
   otpReportBucketName: otpreport.dev.entur.org
@@ -12,9 +12,12 @@ gcp:
   nisabaExchangeBucketName: ror-nisaba-exchange-dev
 
 chouette:
-  validateLevel1CronSchedule: 0+30+23+?+*+MON-FRI
+  validateLevel1CronSchedule: 0+55+23+?+*+MON-FRI
   refreshStatsCacheCronSchedule: 0+0/10+2-22+*+*+?
   gtfsExport: false
+
+netex:
+  export: tiamat/CurrentAndFuture_latest.zip
 
 osm:
   fetchCronSchedule: 0+11+*+*+*+?
@@ -42,8 +45,5 @@ oauth2:
     id: tug4poFyfcqFSXYvJOn7yZCl5FFbIxQM
     url: https://ror-entur-dev.eu.auth0.com/oauth/token
     audience: https://ror.api.dev.entur.io
-
-ingress:
-  loadBalancerIP: 35.205.170.68
 
 monitoringEnabled: true
