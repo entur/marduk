@@ -51,7 +51,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
     public void configure() throws Exception {
         super.configure();
 
-        from("entur-google-pubsub:AntuNetexValidationStatusQueue")
+        from("google-pubsub:{{marduk.pubsub.project.id}}:AntuNetexValidationStatusQueue")
                 .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(DATASET_REFERENTIAL, String.class))))
                 .setHeader(CORRELATION_ID, header(VALIDATION_CORRELATION_ID_HEADER))
                 .setHeader(FILE_HANDLE, header(VALIDATION_DATASET_FILE_HANDLE_HEADER))
@@ -103,7 +103,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                 .filter(PredicateBuilder.not(simple("{{chouette.enablePreValidation:true}}")))
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
-                .to("entur-google-pubsub:ChouetteImportQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
                 .endChoice()
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
@@ -111,8 +111,8 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
                 .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_NETEX_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:copyBlobInBucket")
-                .to("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue")
-                .to("entur-google-pubsub:ChouetteExportNetexBlocksQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue")
                 .endChoice()
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION))

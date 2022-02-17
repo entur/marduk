@@ -26,6 +26,8 @@ import org.apache.camel.ExtendedExchange;
 import org.apache.camel.Message;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
+import org.apache.camel.component.google.pubsub.consumer.AcknowledgeAsync;
 import org.apache.camel.component.master.MasterConsumer;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.support.DefaultExchange;
@@ -85,7 +87,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                 .logRetryStackTrace(true));
 
         // Copy all PubSub headers except the internal Camel PubSub headers from the PubSub message into the Camel message headers.
-        interceptFrom("google-pubsub:*")
+        interceptFrom(".*google-pubsub:.*")
                 .process(exchange ->
                 {
                     Map<String, String> pubSubAttributes = exchange.getIn().getHeader(GooglePubsubConstants.ATTRIBUTES, Map.class);
