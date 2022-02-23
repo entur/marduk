@@ -74,6 +74,7 @@ public class NetexImportParameters extends ChouetteJobParameters {
             netexImport.stopAreaImportMode = AbstractImportParameters.StopAreaImportMode.CREATE_NEW;
         }
         if (allowUpdatingStopPlace) {
+            netexImport.parseSiteFrames = true;
             netexImport.stopAreaImportMode = AbstractImportParameters.StopAreaImportMode.CREATE_OR_UPDATE;
         }
         netexImport.validateAgainstSchema = validateAgainstSchema;
