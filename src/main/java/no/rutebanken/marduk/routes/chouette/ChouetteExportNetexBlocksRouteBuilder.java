@@ -85,7 +85,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(e ->  {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    String codespace = e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toUpperCase(Locale.ROOT);
+                    String codespace = e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).replace("rb_", "").toUpperCase(Locale.ROOT);
                     String netexBlocksExportParameters = Parameters.getNetexBlocksExportParameters(provider, isAllowedCodespacesForStopExport(codespace), enablePostValidation);
                     e.getIn().setHeader(JSON_PART, netexBlocksExportParameters);
                 })
