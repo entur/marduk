@@ -16,13 +16,26 @@
 
 package no.rutebanken.marduk.routes.chouette;
 
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.ANTU_VALIDATION_REPORT_ID;
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_NETEX_EXPORT;
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_NAME;
+import static no.rutebanken.marduk.Constants.FILE_TYPE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.VALIDATION_CORRELATION_ID_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_DATASET_FILE_HANDLE_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_PREVALIDATION;
@@ -40,7 +53,11 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
         from("entur-google-pubsub:AntuNetexValidationStatusQueue")
                 .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(DATASET_REFERENTIAL, String.class))))
-                .process(this::setCorrelationIdIfMissing)
+                .setHeader(CORRELATION_ID, header(VALIDATION_CORRELATION_ID_HEADER))
+                .setHeader(FILE_HANDLE, header(VALIDATION_DATASET_FILE_HANDLE_HEADER))
+                .setHeader(FILE_TYPE, constant(FileType.NETEXPROFILE))
+                .setHeader(CHOUETTE_REFERENTIAL, header(DATASET_REFERENTIAL))
+                .process(e -> e.getIn().setHeader(FILE_NAME, getFileName(e.getIn().getHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, String.class))))
                 .choice()
                 .when(body().isEqualTo(constant(STATUS_VALIDATION_STARTED)))
                 .to("direct:antuNetexValidationStarted")
@@ -62,6 +79,12 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                         .state(JobEvent.State.STARTED)
                         .jobId(e.getIn().getHeader(ANTU_VALIDATION_REPORT_ID, Long.class))
                         .build())
+                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION))
+                .process(e -> JobEvent.providerJobBuilder(e)
+                        .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION)
+                        .state(JobEvent.State.STARTED)
+                        .jobId(e.getIn().getHeader(ANTU_VALIDATION_REPORT_ID, Long.class))
+                        .build())
                 .otherwise()
                 .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
                 .stop()
@@ -75,10 +98,30 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
         from("direct:antuNetexValidationComplete")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation complete for referential ${header." + DATASET_REFERENTIAL + "}")
                 .choice()
+
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
+                .filter(PredicateBuilder.not(simple("{{chouette.enablePreValidation:true}}")))
+                .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
+                .to("entur-google-pubsub:ChouetteImportQueue")
+                .endChoice()
+
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
+                .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
+                .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_NETEX_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                .to("direct:copyBlobInBucket")
+                .to("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue")
+                .to("entur-google-pubsub:ChouetteExportNetexBlocksQueue")
+                .endChoice()
+
+                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION).state(JobEvent.State.OK).build())
+                .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
+                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                .to("direct:copyBlobInBucket")
+                .endChoice()
+
                 .otherwise()
                 .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
                 .stop()
@@ -97,6 +140,8 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.FAILED).build())
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.FAILED).build())
+                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION))
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION).state(JobEvent.State.FAILED).build())
                 .otherwise()
                 .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
                 //end otherwise
@@ -106,5 +151,14 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .to("direct:updateStatus")
                 .routeId("antu-netex-validation-failed");
 
+    }
+
+    /**
+     * Extract the NeTEx file name from the NeTEx file path.
+     * @param filePath the Netex file path.
+     * @return the NeTEx file name.
+     */
+    private String getFileName(String filePath) {
+        return filePath.substring(filePath.lastIndexOf('/') + 1);
     }
 }
