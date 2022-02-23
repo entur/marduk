@@ -44,6 +44,7 @@ data:
     # Chouette
     chouette.enablePreValidation=true
     chouette.enablePostValidation=true
+    chouette.include.stops.codespaces=SAM
     chouette.validate.level1.autoStartup=true
     chouette.validate.level1.cron.schedule={{ .Values.chouette.validateLevel1CronSchedule }}
     chouette.validate.level2.autoStartup=false
@@ -56,8 +57,6 @@ data:
     chouette.url=http://chouette:8080
     chouette.remove.old.jobs.keep.days=30
     chouette.remove.old.jobs.keep.jobs=50
-    chouette.export.days.back=365
-    chouette.export.days.forward=365
     chouette.max.retries=3000
 
     # StopPlace Netex export
