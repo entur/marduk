@@ -60,9 +60,6 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
     @Value("${chouette.url}")
     private String chouetteUrl;
 
-    private int maxConsumers = 5;
-
-
     /**
      * This routebuilder polls a job until it is terminated. It expects a few headers set on the message it receives:
      * Constants.CHOUETTE_JOB_STATUS_URL - the url to poll
@@ -160,7 +157,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-get-jobs-all");
 
 
-        from("entur-google-pubsub:ChouettePollStatusQueue?concurrentConsumers=" + maxConsumers)
+        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
                 .validate(header(Constants.CORRELATION_ID).isNotNull())
                 .validate(header(Constants.PROVIDER_ID).isNotNull())
                 .validate(header(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION).isNotNull())
@@ -194,15 +191,16 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
 
         from("direct:rescheduleJob")
-                .choice()
-                .when(simple("${exchangeProperty.current_status} == '" + STARTED + "' && ${header.loopCounter} == 1"))
+                .filter(simple("${exchangeProperty.current_status} == '" + STARTED + "' && ${header.loopCounter} == 1"))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.STARTED).jobId(e.getIn().getHeader(Constants.CHOUETTE_JOB_ID, Long.class)).build())
                 .to("direct:updateStatus")
                 .end()
                 .setBody(constant(""))
+                // sending a new message to ChouettePollStatusQueue is delayed and processed asynchronously in another thread (asyncDelayed = true by default).
+                // Meanwhile the route is not blocked and can process other messages.
                 .delay(retryDelay)
                 .setBody(constant(""))
-                .to("entur-google-pubsub:ChouettePollStatusQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
                 .routeId("chouette-reschedule-job");
 
         from("direct:jobStatusDone")

@@ -105,7 +105,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FINISHED, simple("true", Boolean.class))
                 .log(LoggingLevel.INFO, correlation() + "Map was updated, therefore triggering OSM base graph build")
                 .setBody(constant(""))
-                .to(ExchangePattern.InOnly, "entur-google-pubsub:OtpBaseGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpBaseGraphBuildQueue")
                 .log(LoggingLevel.DEBUG, correlation() + "Processing of OSM map finished")
                 .routeId("osm-fetch-map");
 

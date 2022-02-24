@@ -20,12 +20,9 @@ data:
     camel.cluster.kubernetes.config-map-name=marduk-leaders
 
     # PubSub
-    spring.cloud.gcp.pubsub.project-id={{ .Values.gcp.pubsubProjectId }}
-    spring.cloud.gcp.pubsub.credentials.location=file:/etc/marduk-service-account/credentials.json
-    spring.cloud.gcp.pubsub.subscriber.parallel-pull-count=1
-    spring.cloud.gcp.pubsub.subscriber.executor-threads=30
-    spring.cloud.gcp.pubsub.subscriber.max-ack-extension-period=36000
-    entur.pubsub.subscriber.autocreate=false
+    # project id and credential location are not set, they are retrieved automatically through the GOOGLE_APPLICATION_CREDENTIALS environment variable
+    marduk.pubsub.project.id={{ .Values.gcp.pubsubProjectId }}
+    camel.component.google-pubsub.service-account-key=file:/etc/marduk-service-account/credentials.json
 
     # Blobstore
     blobstore.gcs.project.id={{ .Values.gcp.blobstoreProjectId }}

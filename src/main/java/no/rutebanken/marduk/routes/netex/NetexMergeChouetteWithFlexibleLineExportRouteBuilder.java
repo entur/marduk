@@ -63,7 +63,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     public void configure() throws Exception {
         super.configure();
 
-        from("entur-google-pubsub:ChouetteMergeWithFlexibleLinesQueue")
+        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
                 .to("direct:mergeChouetteExportWithFlexibleLinesExport")
                 .routeId("netex-export-merge-chouette-with-flexible-lines-queue");
 
@@ -92,7 +92,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")
-                .to("entur-google-pubsub:OtpGraphBuildQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
 
                 .to("direct:startDamuGtfsExport")
 
@@ -148,7 +148,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
         from("direct:notifyExportNetexWithFlexibleLines")
                 .setBody(header(CHOUETTE_REFERENTIAL).regexReplaceAll("rb_", ""))
                 .removeHeaders("*")
-                .to("entur-google-pubsub:NetexExportNotificationQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:NetexExportNotificationQueue")
                 .routeId("netex-notify-export");
 
         from("direct:startDamuGtfsExport")
@@ -160,7 +160,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .removeHeader(DATASET_REFERENTIAL)
                 .setBody(header(CHOUETTE_REFERENTIAL))
                 .process(this::removeAllCamelHeaders)
-                .to("entur-google-pubsub:DamuExportGtfsQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:DamuExportGtfsQueue")
                 .routeId("start-damu-gtfs-export");
 
 

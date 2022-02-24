@@ -114,7 +114,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .toD("${exchangeProperty.chouette_url}")
                 .routeId("chouette-clean-dataspace");
 
-        from("entur-google-pubsub:ChouetteImportQueue").streamCaching()
+        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue").streamCaching()
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette import")
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.PENDING).build())
@@ -171,7 +171,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.IMPORT.name()))
                 .removeHeader("loopCounter")
                 .setBody(constant(""))
-                .to("entur-google-pubsub:ChouettePollStatusQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
                 .routeId("chouette-send-import-job");
 
 
@@ -221,13 +221,13 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .when(constant("true").isEqualTo(header(Constants.ENABLE_VALIDATION)))
                 .log(LoggingLevel.INFO, correlation() + "Import ok, triggering validation")
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
-                .to("entur-google-pubsub:ChouetteValidationQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
                 .when(method(getClass(), "shouldTransferData").isEqualTo(true))
                 .log(LoggingLevel.INFO, correlation() + "Import ok, transfering data to next dataspace")
-                .to("entur-google-pubsub:ChouetteTransferExportQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteTransferExportQueue")
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Import ok, triggering export")
-                .to("entur-google-pubsub:ChouetteExportNetexQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue")
                 .end()
                 .end()
                 .routeId("chouette-process-job-list-after-import");
