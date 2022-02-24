@@ -26,6 +26,9 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Locale;
+
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_URL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
@@ -50,24 +53,17 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
     private static final String PROP_EXPORT_BLOCKS = "exportBlocks";
 
     private final String chouetteUrl;
-    private final int daysForward;
-    private final int daysBack;
-    private final boolean exportStops;
     private final boolean enablePostValidation;
-
+    private final List<String> allowedCodespacesForStopExport;
 
     public ChouetteExportNetexBlocksRouteBuilder(
             @Value("${chouette.url}") String chouetteUrl,
             @Value("${chouette.enablePostValidation:true}") boolean enablePostValidation,
-            @Value("${chouette.export.days.forward:365}") int daysForward,
-            @Value("${chouette.export.days.back:365}") int daysBack,
-            @Value("${chouette.netex.export.stops:false}") boolean exportStops
+            @Value("${chouette.include.stops.codespaces:}") List<String> allowedCodespacesForStopExport
             ) {
         this.chouetteUrl = chouetteUrl;
         this.enablePostValidation = enablePostValidation;
-        this.daysForward = daysForward;
-        this.daysBack = daysBack;
-        this.exportStops = exportStops;
+        this.allowedCodespacesForStopExport = allowedCodespacesForStopExport;
     }
 
     @Override
@@ -89,7 +85,8 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(e ->  {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    String netexBlocksExportParameters = Parameters.getNetexBlocksExportParameters(provider, exportStops, enablePostValidation);
+                    String codespace = e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).replace("rb_", "").toUpperCase(Locale.ROOT);
+                    String netexBlocksExportParameters = Parameters.getNetexBlocksExportParameters(provider, isAllowedCodespacesForStopExport(codespace), enablePostValidation);
                     e.getIn().setHeader(JSON_PART, netexBlocksExportParameters);
                 })
                 .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
@@ -185,6 +182,10 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .to("direct:updateStatus")
                 .routeId("antu-netex-blocks-post-validation");
 
+    }
+
+    private boolean isAllowedCodespacesForStopExport(String codespace) {
+        return allowedCodespacesForStopExport.contains(codespace);
     }
 
 }

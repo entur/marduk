@@ -30,6 +30,9 @@ import org.apache.camel.component.http.HttpMethods;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Locale;
+
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
@@ -51,13 +54,16 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
     private final String chouetteUrl;
     private final String nisabaExchangeContainerName;
     private final boolean enablePreValidation;
+    private final List<String> allowedCodespacesForStopUpdate;
 
     public ChouetteImportRouteBuilder(@Value("${chouette.url}") String chouetteUrl,
                                       @Value("${chouette.enablePreValidation:true}") boolean enablePreValidation,
+                                      @Value("${chouette.include.stops.codespaces:}") List<String> allowedCodespacesForStopUpdate,
                                       @Value("${blobstore.gcs.nisaba.exchange.container.name}") String nisabaExchangeContainerName) {
         this.chouetteUrl = chouetteUrl;
         this.enablePreValidation = enablePreValidation;
         this.nisabaExchangeContainerName = nisabaExchangeContainerName;
+        this.allowedCodespacesForStopUpdate= allowedCodespacesForStopUpdate;
     }
 
     @Override
@@ -132,10 +138,11 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
         from("direct:addImportParameters")
                 .process(e -> {
                     String fileName = e.getIn().getHeader(FILE_NAME, String.class);
-                    String fileType = e.getIn().getHeader(Constants.FILE_TYPE, String.class);
+                    String fileType = e.getIn().getHeader(FILE_TYPE, String.class);
                     Long providerId = e.getIn().getHeader(PROVIDER_ID, Long.class);
+                    String codespace = e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toUpperCase(Locale.ROOT);
                     // always activate pre-validation for GTFS files as this is not supported in Antu
-                    String importParameters = getImportParameters(fileName, fileType, providerId, FileType.GTFS.name().equals(fileType) || enablePreValidation);
+                    String importParameters = getImportParameters(fileName, fileType, providerId, FileType.GTFS.name().equals(fileType) || enablePreValidation, isAllowedCodespaceForStopUpdate(codespace));
                     e.getIn().setHeader(JSON_PART, importParameters);
                 })
                 .log(LoggingLevel.DEBUG, correlation() + "import parameters: " + header(JSON_PART))
@@ -238,9 +245,13 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
 
     }
 
-    private String getImportParameters(String fileName, String fileType, Long providerId, boolean enablePreValidation) {
+    private boolean isAllowedCodespaceForStopUpdate(String codespace) {
+        return allowedCodespacesForStopUpdate.contains(codespace);
+    }
+
+    private String getImportParameters(String fileName, String fileType, Long providerId, boolean enablePreValidation, boolean allowUpdatingStopPlace) {
         Provider provider = getProviderRepository().getProvider(providerId);
-        return Parameters.createImportParameters(fileName, fileType, provider, enablePreValidation);
+        return Parameters.createImportParameters(fileName, fileType, provider, enablePreValidation, allowUpdatingStopPlace);
     }
 
 }

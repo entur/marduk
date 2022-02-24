@@ -36,11 +36,11 @@ public class Parameters {
     private static final ObjectWriter OBJECT_WRITER_FOR_TRANSFER_EXPORT_PARAMETERS = ObjectMapperFactory.getSharedObjectMapper().writerFor(TransferExportParameters.class);
     private static final ObjectWriter OBJECT_WRITER_FOR_NETEX_EXPORT_PARAMETERS = ObjectMapperFactory.getSharedObjectMapper().writerFor(NetexExportParameters.class);
 
-    public static String createImportParameters(String fileName, String fileType, Provider provider, boolean enablePreValidation) {
+    public static String createImportParameters(String fileName, String fileType, Provider provider, boolean enablePreValidation, boolean allowUpdatingStopPlace) {
         if (FileType.GTFS.name().equals(fileType)) {
             return getGtfsImportParameters(fileName, provider);
         } else if (FileType.NETEXPROFILE.name().equals(fileType)) {
-            return getNetexImportParameters(fileName, provider, enablePreValidation);
+            return getNetexImportParameters(fileName, provider, enablePreValidation, allowUpdatingStopPlace);
         } else {
             throw new IllegalArgumentException("Cannot create import parameters from file type '" + fileType + "'");
         }
@@ -54,11 +54,11 @@ public class Parameters {
         return gtfsImportParameters.toJsonString();
     }
 
-    static String getNetexImportParameters(String importName, Provider provider, boolean enablePreValidation) {
+    static String getNetexImportParameters(String importName, Provider provider, boolean enablePreValidation, boolean allowUpdatingStopPlace) {
         ChouetteInfo chouetteInfo = provider.chouetteInfo;
         NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.name,
                 chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation,
-                chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping, chouetteInfo.xmlns, chouetteInfo.generateMissingServiceLinksForModes, enablePreValidation, enablePreValidation);
+                chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping, chouetteInfo.xmlns, chouetteInfo.generateMissingServiceLinksForModes, enablePreValidation, enablePreValidation, allowUpdatingStopPlace);
         return netexImportParameters.toJsonString();
     }
 
