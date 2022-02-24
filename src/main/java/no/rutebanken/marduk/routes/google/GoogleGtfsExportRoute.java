@@ -68,7 +68,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
                 .routeId("gtfs-google-export-merged-route");
 
         from("direct:exportGtfsGoogle")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .process(e -> e.setProperty(Constants.PROVIDER_WHITE_LIST, prepareProviderWhiteListGoogleUpload()))
                 .setHeader(Constants.FILE_NAME, constant(googleExportFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(googleExportIncludeShapes))
@@ -88,7 +88,7 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
 
 
         from("direct:exportQaGtfsGoogle")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .process(e -> e.setProperty(Constants.PROVIDER_WHITE_LIST, prepareProviderWhiteListGoogleQAUpload()))
                 .setHeader(Constants.FILE_NAME, constant(googleQaExportFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(googleQaExportIncludeShapes))

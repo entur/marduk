@@ -121,11 +121,11 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
         from("direct:chouetteCancelJob")
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
                 .process(this::removeAllCamelHeaders)
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.DELETE))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/scheduled_jobs/${header." + Constants.CHOUETTE_JOB_ID + "}"))
                 .toD("${exchangeProperty.chouette_url}")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .routeId("chouette-cancel-job");
 
         from("direct:chouetteCancelAllJobsForProvider")
@@ -135,7 +135,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .process(this::removeAllCamelHeaders)
                 .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
                 .setHeader(Constants.CHOUETTE_JOB_ID, simple("${body.id}"))
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .to("direct:chouetteCancelJob")
                 .routeId("chouette-cancel-all-jobs-for-provider");
 
@@ -143,7 +143,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
                 .setHeader(Constants.PROVIDER_ID, simple("${body.id}"))
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .process(this::removeAllCamelHeaders)
                 .to("direct:chouetteCancelAllJobsForProvider")
                 .routeId("chouette-cancel-all-jobs-for-all-providers");
@@ -199,6 +199,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.STARTED).jobId(e.getIn().getHeader(Constants.CHOUETTE_JOB_ID, Long.class)).build())
                 .to("direct:updateStatus")
                 .end()
+                .setBody(constant(""))
                 .delay(retryDelay)
                 .setBody(constant(""))
                 .to("entur-google-pubsub:ChouettePollStatusQueue")

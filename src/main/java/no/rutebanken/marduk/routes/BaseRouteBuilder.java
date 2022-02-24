@@ -175,7 +175,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
      * @param uri the endpoint URI
      * @return a lock name
      */
-    private String getMasterLockName(String uri) {
+    private static String getMasterLockName(String uri) {
         if (uri.indexOf('?') != -1) {
             return uri.substring(uri.lastIndexOf(':') + 1, uri.indexOf('?'));
         }

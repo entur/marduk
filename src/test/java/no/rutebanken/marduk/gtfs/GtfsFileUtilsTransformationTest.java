@@ -141,7 +141,7 @@ public class GtfsFileUtilsTransformationTest {
         assertThat(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.SHAPES_TXT)).as("All Shapes should have been removed").isNull();
 
         List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.TRIPS_TXT)), StandardCharsets.UTF_8);
-        String tripWithShape = trips.stream().filter(t -> t.startsWith("9797,262919,")).findFirst().get();
+        String tripWithShape = trips.stream().filter(t -> t.startsWith("9797,262919,")).findFirst().orElseThrow();
 
         assertFalse(tripWithShape.contains("SKY:JourneyPattern:1-362_0_10446_1"));
     }
@@ -150,7 +150,7 @@ public class GtfsFileUtilsTransformationTest {
         assertThat(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.SHAPES_TXT)).as("All Shapes should be present").isNotNull();
 
         List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.TRIPS_TXT)), StandardCharsets.UTF_8);
-        String tripWithShape = trips.stream().filter(t -> t.startsWith("9797,262919,")).findFirst().get();
+        String tripWithShape = trips.stream().filter(t -> t.startsWith("9797,262919,")).findFirst().orElseThrow();
 
         assertTrue(tripWithShape.contains("SKY:JourneyPattern:1-362_0_10446_1"));
     }

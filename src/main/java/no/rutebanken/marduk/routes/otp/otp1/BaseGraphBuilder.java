@@ -2,7 +2,6 @@
 package no.rutebanken.marduk.routes.otp.otp1;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
-import no.rutebanken.marduk.routes.otp.OtpGraphBuilder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -11,7 +10,7 @@ import java.util.List;
  * Build an OTP base graph.
  */
 @Component
-public class BaseGraphBuilder extends AbstractOtpGraphBuilder implements OtpGraphBuilder {
+public class BaseGraphBuilder extends AbstractOtpGraphBuilder {
 
     protected List<EnvVar> getEnvVars(String otpWorkDir) {
         return List.of(
