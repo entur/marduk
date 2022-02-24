@@ -88,7 +88,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
                 .wireTap("direct:notifyExportNetexWithFlexibleLines")
 
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")

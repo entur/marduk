@@ -58,7 +58,7 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
 
 
         from("direct:exportGtfsExtendedMerged")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .setHeader(Constants.FILE_NAME, constant(gtfsNorwayMergedFileName))
                 .setHeader(Constants.JOB_ACTION, constant("EXPORT_GTFS_MERGED"))
                 .to("direct:exportMergedGtfs")

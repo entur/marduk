@@ -49,10 +49,10 @@ class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegratio
     void testExportMergedNetex() throws Exception {
 
         // Create stop file in in memory blob store
-        mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip")), false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"), false);
 
         // Create provider netex export in in memory blob store
-        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-aggregated-netex.zip", new FileInputStream(new File("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip")), false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-aggregated-netex.zip", new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip"), false);
 
         context.start();
 

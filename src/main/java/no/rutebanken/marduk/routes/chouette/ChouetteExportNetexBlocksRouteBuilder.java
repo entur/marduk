@@ -100,7 +100,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processNetexBlocksExportResult"))
                 .setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, constant(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS.name()))
                 .removeHeader("loopCounter")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .to("entur-google-pubsub:ChouettePollStatusQueue")
                 .endChoice()
                 .routeId("chouette-start-export-netex-block");
@@ -132,12 +132,12 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:uploadBlob")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .otherwise()
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_BEFORE_VALIDATION + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:uploadBlob")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 // end otherwise
                 .end()
                 // end choice

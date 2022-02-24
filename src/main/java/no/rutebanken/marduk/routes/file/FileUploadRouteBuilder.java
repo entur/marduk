@@ -78,7 +78,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .to("direct:filterDuplicateFile")
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, correlation() + "Finished uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .to(ExchangePattern.InOnly, "entur-google-pubsub:ProcessFileQueue")
                 .log(LoggingLevel.INFO, correlation() + "Triggered import pipeline for timetable file: ${header." + FILE_HANDLE + "}")
                 .doCatch(Exception.class)

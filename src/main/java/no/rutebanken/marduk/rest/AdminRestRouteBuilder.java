@@ -129,7 +129,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .route().routeId("admin-application-clean-unique-filename-and-digest-idempotent-repos")
                 .to("direct:authorizeAdminRequest")
                 .to("direct:cleanIdempotentFileStore")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .endRest()
 
                 .post("/validate/level1")
@@ -142,7 +142,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation level1 for all providers")
                 .process(this::removeAllCamelHttpHeaders)
                 .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel1ForAllProviders")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .routeId("admin-chouette-validate-level1-all-providers")
                 .endRest()
 
@@ -156,7 +156,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation level2 for all providers")
                 .process(this::removeAllCamelHttpHeaders)
                 .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel2ForAllProviders")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .routeId("admin-chouette-validate-level2-all-providers")
                 .endRest()
 
@@ -200,7 +200,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::removeAllCamelHttpHeaders)
                 .to("direct:chouetteCancelAllJobsForAllProviders")
                 .routeId("admin-chouette-cancel-all-jobs-all")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .endRest()
 
                 .delete("/completed_jobs")
@@ -227,7 +227,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::removeAllCamelHttpHeaders)
                 .to("direct:chouetteRemoveOldJobs")
                 .routeId("admin-chouette-remove-old-jobs")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .endRest()
 
 
@@ -249,7 +249,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean all dataspaces")
                 .process(this::removeAllCamelHttpHeaders)
                 .to("direct:chouetteCleanAllReferentials")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .routeId("admin-chouette-clean-all")
                 .endRest()
 
@@ -264,7 +264,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean all stop places")
                 .process(this::removeAllCamelHttpHeaders)
                 .to("direct:chouetteCleanStopPlaces")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .routeId("admin-chouette-clean-stop-places")
                 .endRest()
 
@@ -583,7 +583,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                     String fileNameForStatusLogging = "reimport-" + e.getIn().getBody(String.class);
                     e.getIn().setHeader(Constants.FILE_NAME, fileNameForStatusLogging);
                 })
-                .setBody(constant(null))
+                .setBody(constant(""))
 
                 .to(ExchangePattern.InOnly, "entur-google-pubsub:ProcessFileQueue")
                 .routeId("admin-chouette-import")

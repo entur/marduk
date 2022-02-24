@@ -77,7 +77,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("chouette-validate-level1-all-providers");
 
@@ -91,7 +91,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .to(ExchangePattern.InOnly, "entur-google-pubsub:ChouetteValidationQueue")
                 .routeId("chouette-validate-level2-all-providers");
 
@@ -121,7 +121,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                     e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL))
                 )
                 .removeHeader("loopCounter")
-                .setBody(constant(null))
+                .setBody(constant(""))
                 .to("entur-google-pubsub:ChouettePollStatusQueue")
                 .routeId("chouette-send-validation-job");
 
