@@ -2,7 +2,6 @@
 package no.rutebanken.marduk.routes.otp.otp1;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
-import no.rutebanken.marduk.routes.otp.OtpGraphBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +12,7 @@ import java.util.List;
  * Build an OTP full graph (with transit data) based on NeTEx input data.
  */
 @Component
-public class NetexGraphBuilder extends AbstractOtpGraphBuilder implements OtpGraphBuilder {
+public class NetexGraphBuilder extends AbstractOtpGraphBuilder {
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreGraphSubdirectory;

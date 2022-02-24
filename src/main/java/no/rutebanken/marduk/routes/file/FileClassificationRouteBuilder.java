@@ -58,7 +58,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Could not process file ${header." + FILE_HANDLE + "}")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
-                .setBody(simple(""))      //remove file data from body
+                .setBody(constant(""))
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:DeadLetterQueue");
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
