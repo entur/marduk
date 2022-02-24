@@ -16,6 +16,9 @@ chouette:
   refreshStatsCacheCronSchedule: 0+0/10+7-23+*+*+?
   gtfsExport: false
 
+duplicateFileFilter:
+  webFilter: false
+
 netex:
   export: tiamat/CurrentAndFuture_latest.zip
 

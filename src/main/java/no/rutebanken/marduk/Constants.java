@@ -61,6 +61,7 @@ public final class Constants {
     public static final String ENABLE_BLOCKS_EXPORT = "RutebankenEnableBlockExport";
 
     public static final String FILE_APPLY_DUPLICATES_FILTER = "RutebankenApplyDuplicateFilter";
+    public static final String FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY = "RutebankenApplyDuplicateFilterOnNameOnly";
     public static final String FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES = "RutebankenSkipStatusUpdateForDuplicateFiles";
 
     public static final String BLOBSTORE_PATH_INBOUND = "inbound/received/";

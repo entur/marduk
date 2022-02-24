@@ -49,6 +49,7 @@ import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_APPLY_DUPLICATES_FILTER;
+import static no.rutebanken.marduk.Constants.FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
@@ -521,7 +522,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, correlation() + "Authorization OK for HTTP endpoint, uploading files and starting import pipeline")
                 .process(this::removeAllCamelHttpHeaders)
-                .setHeader(FILE_APPLY_DUPLICATES_FILTER, constant(true))
+                .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.rest:true}", Boolean.class))
                 .to("direct:uploadFilesAndStartImport")
                 .routeId("admin-upload-file")
                 .endRest()
@@ -624,6 +625,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))))
                 .log(LoggingLevel.INFO, correlation() + "Upload files and start import pipeline")
                 .process(this::removeAllCamelHttpHeaders)
+                .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.web:true}", Boolean.class))
+                .setHeader(FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY, constant(true))
                 .to("direct:uploadFilesAndStartImport")
                 .routeId("admin-chouette-upload-file")
                 .endRest()
