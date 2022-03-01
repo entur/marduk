@@ -17,7 +17,7 @@ chouette:
   gtfsExport: false
 
 duplicateFileFilter:
-  webFilter: false
+  webFilter: true
 
 netex:
   export: tiamat/CurrentAndFuture_latest.zip
