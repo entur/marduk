@@ -24,8 +24,11 @@ import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
-import org.apache.camel.builder.PredicateBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Locale;
 
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
@@ -48,6 +51,12 @@ import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_PREVALIDATION;
  */
 @Component
 public class FileClassificationRouteBuilder extends BaseRouteBuilder {
+
+    private final List<String> swedishCodespaces;
+
+    public FileClassificationRouteBuilder(@Value("${antu.validation.sweden.codespaces:}") List<String> swedishCodespaces) {
+        this.swedishCodespaces = swedishCodespaces;
+    }
 
     @Override
     public void configure() throws Exception {
@@ -171,12 +180,9 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("direct:updateStatus")
                 .routeId("antu-netex-pre-validation");
 
-        /*
-         * TODO: temporary filtering of codespaces for swedish timetable data.
-         */
         from("direct:setNetexValidationProfile")
                 .choice()
-                .when(PredicateBuilder.or(header(DATASET_REFERENTIAL).isEqualTo("sam"), header(DATASET_REFERENTIAL).isEqualTo("rb_sam")))
+                .when(e -> isSwedishReferential(e.getIn().getHeader(DATASET_REFERENTIAL, String.class)))
                 .log(LoggingLevel.INFO, correlation() + "Applying validation rules for Timetable data/Sweden")
                 .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE_SWEDEN))
                 .otherwise()
@@ -185,6 +191,11 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .end()
                 .routeId("set-netex-validation-profile");
 
+    }
+
+    private boolean isSwedishReferential(String referential) {
+        String codespace = referential.replace("rb_", "").toUpperCase(Locale.ROOT);
+        return swedishCodespaces.contains(codespace);
     }
 
 }
