@@ -39,8 +39,8 @@ data:
     duplicate.filter.rest=true
 
     # Chouette
-    chouette.enablePreValidation=true
-    chouette.enablePostValidation=true
+    chouette.enablePreValidation={{ .Values.chouette.enablePreValidation }}
+    chouette.enablePostValidation={{ .Values.chouette.enablePostValidation }}
     chouette.validate.level1.autoStartup=true
     chouette.validate.level1.cron.schedule={{ .Values.chouette.validateLevel1CronSchedule }}
     chouette.validate.level2.autoStartup=false
