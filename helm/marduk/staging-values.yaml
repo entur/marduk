@@ -12,11 +12,15 @@ gcp:
   nisabaExchangeBucketName: ror-nisaba-exchange-test
 
 chouette:
+  service: http://chouette.tst.entur.internal
   validateLevel1CronSchedule: 0+30+4+?+*+*
   refreshStatsCacheCronSchedule: 0+0/10+7-23+*+*+?
   gtfsExport: false
   enablePreValidation: true
   enablePostValidation: true
+
+baba:
+  service: http://baba.tst.entur.internal
 
 duplicateFileFilter:
   webFilter: true
