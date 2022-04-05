@@ -24,6 +24,7 @@ import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
+import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -158,7 +159,8 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("direct:updateStatus")
                 .setBody(constant(""))
                 .to("direct:antuNetexPreValidation")
-                .filter(simple("{{chouette.enablePreValidation:true}}"))
+                // launch the import process if this is a GTFS file or if the pre-validation is activated in chouette
+                .filter(PredicateBuilder.or(simple("{{chouette.enablePreValidation:true}}"), header(FILE_TYPE).isEqualTo(FileType.GTFS)))
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
                 .routeId("process-valid-file");
