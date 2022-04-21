@@ -16,8 +16,8 @@ chouette:
   validateLevel1CronSchedule: 0+30+4+?+*+*
   refreshStatsCacheCronSchedule: 0+0/10+7-23+*+*+?
   gtfsExport: false
-  enablePreValidation: true
-  enablePostValidation: true
+  enablePreValidation: false
+  enablePostValidation: false
 
 baba:
   service: http://baba.tst.entur.internal
