@@ -26,7 +26,7 @@ duplicateFileFilter:
   webFilter: true
 
 netex:
-  export: tiamat/Full_latest.zip
+  export: tiamat/CurrentAndFuture_latest.zip
 
 osm:
   fetchCronSchedule: 0+11+*+*+*+?
