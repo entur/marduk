@@ -124,31 +124,31 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce("http:localhost:28080/services/timetable_admin/2/import")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/import")
     protected ProducerTemplate importTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/2/export")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/export")
     protected ProducerTemplate exportTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/2/files")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files")
     protected ProducerTemplate listFilesTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/2/files/netex.zip")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files/netex.zip")
     protected ProducerTemplate getFileTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/2/files")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files")
     protected ProducerTemplate postFileTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/2/files/unknown-file.zip")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files/unknown-file.zip")
     protected ProducerTemplate getUnknownFileTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/export/files")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/export/files")
     protected ProducerTemplate listExportFilesTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/download_netex_blocks/rut")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/download_netex_blocks/rut")
     protected ProducerTemplate downloadNetexBlocksTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/upload/rut")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/upload/rut")
     protected ProducerTemplate uploadFileTemplate;
 
     @Value("#{'${timetable.export.blob.prefixes:outbound/gtfs/,outbound/netex/}'.split(',')}")
