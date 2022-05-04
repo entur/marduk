@@ -12,17 +12,21 @@ gcp:
   nisabaExchangeBucketName: ror-nisaba-exchange-production
 
 chouette:
+  service: http://chouette.prd.entur.internal
   validateLevel1CronSchedule: 0+30+23+?+*+*
   refreshStatsCacheCronSchedule: 0+0/10+2-22+*+*+?
   gtfsExport: false
-  enablePreValidation: true
-  enablePostValidation: true
+  enablePreValidation: false
+  enablePostValidation: false
+
+baba:
+  service: http://baba.prd.entur.internal
 
 duplicateFileFilter:
   webFilter: true
 
 netex:
-  export: tiamat/Full_latest.zip
+  export: tiamat/CurrentAndFuture_latest.zip
 
 osm:
   fetchCronSchedule: 0+11+*+*+*+?

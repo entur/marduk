@@ -138,7 +138,7 @@ public class JobEvent {
 
     public JobDomain domain;
 
-    public Long externalId;
+    public String externalId;
 
     public String action;
 
@@ -219,7 +219,7 @@ public class JobEvent {
             return this;
         }
 
-        public Builder jobId(Long jobId) {
+        public Builder jobId(String jobId) {
             jobEvent.externalId = jobId;
             return this;
         }
@@ -300,9 +300,9 @@ public class JobEvent {
             }
             jobEvent.providerId = Long.valueOf(originalProviderId);
             jobEvent.correlationId = exchange.getIn().getHeader(CORRELATION_ID, String.class);
-            jobEvent.externalId = exchange.getIn().getHeader(CHOUETTE_JOB_ID, Long.class);
+            jobEvent.externalId = exchange.getIn().getHeader(CHOUETTE_JOB_ID, String.class);
             if(jobEvent.externalId == null) {
-                jobEvent.externalId = exchange.getIn().getHeader(ANTU_VALIDATION_REPORT_ID, Long.class);
+                jobEvent.externalId = exchange.getIn().getHeader(ANTU_VALIDATION_REPORT_ID, String.class);
             }
             jobEvent.referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);
             if(jobEvent.referential == null) {

@@ -18,6 +18,7 @@ package no.rutebanken.marduk.rest;
 
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.nimbusds.jose.JWSAlgorithm;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
@@ -33,6 +34,7 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,24 +43,36 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_INBOUND;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.config.Customizer.withDefaults;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes= TestApp.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = TestApp.class)
 class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 
@@ -66,19 +80,60 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @EnableWebSecurity
     static class AdminRestMardukRouteBuilderTestContextConfiguration extends WebSecurityConfigurerAdapter {
 
+        @Bean
+        CorsConfigurationSource corsConfigurationSource() {
+            CorsConfiguration configuration = new CorsConfiguration();
+            configuration.setAllowedHeaders(Arrays.asList("Origin", "Accept", "X-Requested-With", "Content-Type", "Access-Control-Request-Method", "Access-Control-Request-Headers", "Authorization", "x-correlation-id"));
+            configuration.addAllowedOrigin("*");
+            configuration.setAllowedMethods(Arrays.asList("GET", "PUT", "POST", "DELETE"));
+            UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+            source.registerCorsConfiguration("/**", configuration);
+            return source;
+        }
+
         @Override
-        protected void configure(HttpSecurity http) throws Exception {
-                    http.csrf().disable()
-                            .authorizeRequests(authorizeRequests ->
-                                    authorizeRequests
-                                            .anyRequest().permitAll()
-                            );
+        public void configure(HttpSecurity http) throws Exception {
+            http.cors(withDefaults())
+                    .csrf().disable()
+                    .authorizeRequests()
+                    .antMatchers("/services/swagger.json").permitAll()
+                    .antMatchers("/services/timetable_admin/swagger.json").permitAll()
+                    // exposed internally only, on a different port (pod-level)
+                    .antMatchers("/actuator/prometheus").permitAll()
+                    .antMatchers("/actuator/health").permitAll()
+                    .antMatchers("/actuator/health/liveness").permitAll()
+                    .antMatchers("/actuator/health/readiness").permitAll()
+                    .anyRequest().authenticated()
+                    .and()
+                    .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
+                    .oauth2Client();
+        }
 
+
+        @Bean
+        public JwtDecoder jwtdecoder() {
+            return new JwtDecoder() {
+                @Override
+                public Jwt decode(String token) throws JwtException {
+                    return createTestJwtToken();
                 }
+            };
+        }
 
-            }
+        private Jwt createTestJwtToken() {
+            String userId = "test-user";
+            String userName = "JTest User";
 
-
+            return Jwt.withTokenValue("test-token")
+                    .header("typ", "JWT")
+                    .header("alg", JWSAlgorithm.RS256.getName())
+                    .claim("iss", "https://test-issuer.entur.org")
+                    .claim("scope", "openid profile email")
+                    .subject(userId)
+                    .audience(Set.of("test-audience"))
+                    .build();
+        }
+    }
 
     @Autowired
     ModelCamelContext camelContext;
@@ -95,28 +150,31 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce("http:localhost:28080/services/timetable_admin/2/import")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/import")
     protected ProducerTemplate importTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/2/export")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/export")
     protected ProducerTemplate exportTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/2/files")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files")
     protected ProducerTemplate listFilesTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/2/files/netex.zip")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files/netex.zip")
     protected ProducerTemplate getFileTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/2/files/unknown-file.zip")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files")
+    protected ProducerTemplate postFileTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files/unknown-file.zip")
     protected ProducerTemplate getUnknownFileTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/export/files")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/export/files")
     protected ProducerTemplate listExportFilesTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/download_netex_blocks/RUT")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/download_netex_blocks/rut")
     protected ProducerTemplate downloadNetexBlocksTemplate;
 
-    @Produce("http:localhost:28080/services/timetable_admin/upload/RUT")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/upload/rut")
     protected ProducerTemplate uploadFileTemplate;
 
     @Value("#{'${timetable.export.blob.prefixes:outbound/gtfs/,outbound/netex/}'.split(',')}")
@@ -147,6 +205,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "POST");
+        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
         importTemplate.sendBodyAndHeaders(importJson, headers);
 
         // setup expectations on the mocks
@@ -166,7 +226,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     void runExport() throws Exception {
 
         AdviceWith.adviceWith(context, "admin-chouette-export", a ->
-                        a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue").replace().to("mock:chouetteExportNetexQueue"));
+                a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue").replace().to("mock:chouetteExportNetexQueue"));
 
         // we must manually start when we are done with all the advice with
         camelContext.start();
@@ -174,6 +234,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         // Do rest call
         Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "POST");
+        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
         exportTemplate.sendBodyAndHeaders(null, headers);
 
         // setup expectations on the mocks
@@ -203,6 +264,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         // Do rest call
         Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "GET");
+        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
         InputStream response = (InputStream) listFilesTemplate.requestBodyAndHeaders(null, headers);
         // Parse response
 
@@ -217,7 +279,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
 
     @Test
-    void getBlobStoreFile() throws Exception {
+    void getFile() throws Exception {
         // Preparations
         String filename = "netex.zip";
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
@@ -229,9 +291,10 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "GET");
+        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
         InputStream response = (InputStream) getFileTemplate.requestBodyAndHeaders(null, headers);
 
-		assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
+        assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
     }
 
 
@@ -242,6 +305,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "GET");
+        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
 
         assertThrows(CamelExecutionException.class, () -> getUnknownFileTemplate.requestBodyAndHeaders(null, headers));
     }
@@ -260,6 +324,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         // Do rest call
         Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "GET");
+        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
         InputStream response = (InputStream) listExportFilesTemplate.requestBodyAndHeaders(null, headers);
         // Parse response
 
@@ -271,8 +336,50 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         assertTrue(exportFileStaticPrefixes.stream().allMatch(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName()))));
     }
 
+
+    @Test
+    void postSmallFile() throws Exception {
+        postFile(getTestNetexArchiveAsStream());
+    }
+
+    @Test
+    void postLargeFile() throws Exception {
+        postFile(getLargeTestNetexArchiveAsStream());
+    }
+
+    private  void postFile(InputStream testFile) throws Exception {
+        // Preparations
+        String fileName = "netex-test-POST.zip";
+        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
+
+        AdviceWith.adviceWith(context, "file-upload-and-start-import", a -> {
+                    a.interceptSendToEndpoint("direct:updateStatus")
+                            .skipSendToOriginalEndpoint()
+                            .to("mock:updateStatus");
+                    a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue");
+                }
+        );
+
+        camelContext.start();
+
+        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, testFile, ContentType.DEFAULT_BINARY, fileName).build();
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(Exchange.HTTP_METHOD, "POST");
+        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        postFileTemplate.requestBodyAndHeaders(httpEntity, headers);
+
+        InputStream receivedFile = mardukInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
+        assertNotNull(receivedFile);
+        byte[] fileContent = receivedFile.readAllBytes();
+        assertTrue(fileContent.length > 0);
+
+    }
+
     @Test
     void uploadNetexDataset() throws Exception {
+
+        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
+        String fileName = "netex-test-http-upload.zip";
 
         AdviceWith.adviceWith(context, "file-upload-and-start-import", a -> {
                     a.interceptSendToEndpoint("direct:updateStatus")
@@ -285,12 +392,20 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         updateStatus.expectedMessageCount(1);
         processFileQueue.expectedMessageCount(1);
 
-        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody("netex.zip", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, "netex.zip").build();
+        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName).build();
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
 
         camelContext.start();
-        uploadFileTemplate.requestBody(httpEntity, String.class);
+        uploadFileTemplate.requestBodyAndHeaders(httpEntity, headers);
+
         updateStatus.assertIsSatisfied();
         processFileQueue.assertIsSatisfied();
+
+        InputStream receivedFile = mardukInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
+        assertNotNull(receivedFile);
+        byte[] fileContent = receivedFile.readAllBytes();
+        assertTrue(fileContent.length > 0);
     }
 
     @Test
@@ -303,8 +418,11 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         //populate fake blob repo
         mardukInMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
 
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
         camelContext.start();
-        InputStream response = (InputStream) downloadNetexBlocksTemplate.requestBodyAndHeaders(null, null);
+        InputStream response = (InputStream) downloadNetexBlocksTemplate.requestBodyAndHeaders(null, headers);
         assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
     }
 

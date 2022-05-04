@@ -130,6 +130,10 @@ public abstract class MardukRouteBuilderIntegrationTestBase {
         return getClass().getResourceAsStream("/no/rutebanken/marduk/routes/file/beans/netex.zip");
     }
 
+    protected InputStream getLargeTestNetexArchiveAsStream() {
+        return getClass().getResourceAsStream("/no/rutebanken/marduk/routes/file/beans/AOR.zip");
+    }
+
     protected void sendBodyAndHeadersToPubSub(ProducerTemplate producerTemplate, Object body, Map<String, String> headers) {
         producerTemplate.sendBodyAndHeader(body, GooglePubsubConstants.ATTRIBUTES  ,headers);
     }

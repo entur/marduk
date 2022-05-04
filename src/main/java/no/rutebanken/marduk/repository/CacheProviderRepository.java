@@ -39,7 +39,7 @@ public class CacheProviderRepository implements ProviderRepository {
 
     private final RestProviderDAO restProviderService;
     private final int cacheMaxSize;
-    private Cache<Long, Provider> cache;
+    private volatile Cache<Long, Provider> cache;
 
 
     public CacheProviderRepository(RestProviderDAO restProviderService, @Value("${marduk.provider.cache.refresh.max.size:1000}") int cacheMaxSize) {
@@ -60,7 +60,7 @@ public class CacheProviderRepository implements ProviderRepository {
             Cache<Long, Provider> newCache = CacheBuilder.newBuilder().maximumSize(cacheMaxSize).build();
             newCache.putAll(providerMap);
             cache = newCache;
-            LOGGER.debug("Updated provider cache with result from REST Provider Service. Cache now has {} elements", cache.size());
+            LOGGER.info("Updated provider cache with result from REST Provider Service. Cache now has {} elements", cache.size());
         } catch (ResourceAccessException re) {
             if (re.getCause() instanceof ConnectException) {
                 if (isEmpty()) {
