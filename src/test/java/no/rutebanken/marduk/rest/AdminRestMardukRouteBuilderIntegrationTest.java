@@ -338,7 +338,16 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
 
     @Test
-    void postFile() throws Exception {
+    void postSmallFile() throws Exception {
+        postFile(getTestNetexArchiveAsStream());
+    }
+
+    @Test
+    void postLargeFile() throws Exception {
+        postFile(getLargeTestNetexArchiveAsStream());
+    }
+
+    private  void postFile(InputStream testFile) throws Exception {
         // Preparations
         String fileName = "netex-test-POST.zip";
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
@@ -353,7 +362,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         camelContext.start();
 
-        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName).build();
+        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, testFile, ContentType.DEFAULT_BINARY, fileName).build();
         Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "POST");
         headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
