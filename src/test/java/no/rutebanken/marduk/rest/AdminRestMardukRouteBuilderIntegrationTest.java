@@ -51,8 +51,12 @@ import org.springframework.security.config.annotation.web.configurers.oauth2.ser
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = TestApp.class)
 class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
@@ -75,14 +80,35 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @EnableWebSecurity
     static class AdminRestMardukRouteBuilderTestContextConfiguration extends WebSecurityConfigurerAdapter {
 
+        @Bean
+        CorsConfigurationSource corsConfigurationSource() {
+            CorsConfiguration configuration = new CorsConfiguration();
+            configuration.setAllowedHeaders(Arrays.asList("Origin", "Accept", "X-Requested-With", "Content-Type", "Access-Control-Request-Method", "Access-Control-Request-Headers", "Authorization", "x-correlation-id"));
+            configuration.addAllowedOrigin("*");
+            configuration.setAllowedMethods(Arrays.asList("GET", "PUT", "POST", "DELETE"));
+            UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+            source.registerCorsConfiguration("/**", configuration);
+            return source;
+        }
+
         @Override
-        protected void configure(HttpSecurity http) throws Exception {
-            http.csrf().disable()
+        public void configure(HttpSecurity http) throws Exception {
+            http.cors(withDefaults())
+                    .csrf().disable()
                     .authorizeRequests()
+                    .antMatchers("/services/swagger.json").permitAll()
+                    .antMatchers("/services/timetable_admin/swagger.json").permitAll()
+                    // exposed internally only, on a different port (pod-level)
+                    .antMatchers("/actuator/prometheus").permitAll()
+                    .antMatchers("/actuator/health").permitAll()
+                    .antMatchers("/actuator/health/liveness").permitAll()
+                    .antMatchers("/actuator/health/readiness").permitAll()
                     .anyRequest().authenticated()
                     .and()
-                    .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt);
+                    .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
+                    .oauth2Client();
         }
+
 
         @Bean
         public JwtDecoder jwtdecoder() {
