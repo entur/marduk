@@ -191,6 +191,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
 
         from("direct:rescheduleJob")
+                .log(LoggingLevel.DEBUG, correlation() + "Rescheduling job. Polling counter: ${header.loopCounter}}")
                 .filter(simple("${exchangeProperty.current_status} == '" + STARTED + "' && ${header.loopCounter} == 1"))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.STARTED).jobId(e.getIn().getHeader(Constants.CHOUETTE_JOB_ID, String.class)).build())
                 .to("direct:updateStatus")
