@@ -99,6 +99,8 @@ data:
     logging.level.org.apache=INFO
     logging.config=classpath:logback.xml
     logging.level.org.apache.camel.component.http.HttpComponent=WARN
+    logging.level.chouette-reschedule-job=DEBUG
+    logging.level.chouette-process-job-reports=DEBUG
 
     # NeTeX export
     netex.export.block.authorization={FAR:'OST,ATB,INN',CON:'TRO'}
