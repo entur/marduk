@@ -191,7 +191,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
 
         from("direct:rescheduleJob")
-                .log(LoggingLevel.DEBUG, correlation() + "Rescheduling job. Polling counter: ${header.loopCounter}}")
+                .log(LoggingLevel.DEBUG, correlation() + "Rescheduling job ${header."+ Constants.CHOUETTE_JOB_ID + "}. Polling counter: ${header.loopCounter}")
                 .filter(simple("${exchangeProperty.current_status} == '" + STARTED + "' && ${header.loopCounter} == 1"))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.STARTED).jobId(e.getIn().getHeader(Constants.CHOUETTE_JOB_ID, String.class)).build())
                 .to("direct:updateStatus")
@@ -205,7 +205,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-reschedule-job");
 
         from("direct:jobStatusDone")
-                .log(LoggingLevel.DEBUG, correlation() + "Exited retry loop with status ${header.current_status}")
+                .log(LoggingLevel.DEBUG, correlation() + "Exited retry loop with status ${header.current_status} for job ${header."+ Constants.CHOUETTE_JOB_ID + "}")
                 .to(logDebugShowAll())
                 .choice()
                 .when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "' || ${header.current_status} == '" + RESCHEDULED + "'"))
