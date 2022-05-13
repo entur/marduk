@@ -667,7 +667,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeEditorRequest")
                 .to("direct:validateProvider")
-                .log(LoggingLevel.INFO, correlation() + "Get lines statistics")
+                .log(LoggingLevel.INFO, correlation() + "Get line statistics for provider ${header.providerId}")
                 .process(this::removeAllCamelHttpHeaders)
                 .to("direct:chouetteGetStatsSingleProvider")
                 .routeId("admin-chouette-stats")

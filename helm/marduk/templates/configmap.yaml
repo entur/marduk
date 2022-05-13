@@ -44,7 +44,7 @@ data:
     chouette.validate.level1.autoStartup=true
     chouette.validate.level1.cron.schedule={{ .Values.chouette.validateLevel1CronSchedule }}
     chouette.validate.level2.autoStartup=false
-    chouette.retry.delay=60000
+    chouette.retry.delay=30000
     chouette.stats.days=180
     chouette.stats.validity.categories=-1;INVALID,0;EXPIRING,120;VALID
     # Refresh the line stats cache. For performance reasons this should not run while the nightly validation is running
@@ -99,6 +99,8 @@ data:
     logging.level.org.apache=INFO
     logging.config=classpath:logback.xml
     logging.level.org.apache.camel.component.http.HttpComponent=WARN
+    logging.level.chouette-reschedule-job=DEBUG
+    logging.level.chouette-process-job-reports=DEBUG
 
     # NeTeX export
     netex.export.block.authorization={FAR:'OST,ATB,INN',CON:'TRO'}
