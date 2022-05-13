@@ -28,6 +28,7 @@ import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
+import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
 import org.apache.camel.component.http.HttpMethods;
 import org.apache.camel.component.jackson.ListJacksonDataFormat;
 import org.apache.camel.model.dataformat.JsonLibrary;
@@ -50,6 +51,8 @@ import static no.rutebanken.marduk.routes.chouette.json.Status.STARTED;
 @Component
 public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
+
+    private static final String PUBSUB_MESSAGE_ID = "PUBSUB_MESSAGE_ID";
 
     @Value("${chouette.max.retries:3000}")
     private int maxRetries;
@@ -170,6 +173,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .process(e ->
                     e.getIn().setHeader("loopCounter", e.getIn().getHeader("loopCounter", 0, Integer.class) + 1)
                 )
+                .setHeader(PUBSUB_MESSAGE_ID, header(GooglePubsubConstants.MESSAGE_ID))
                 .setProperty(Constants.CHOUETTE_REFERENTIAL, header(Constants.CHOUETTE_REFERENTIAL))
                 .setProperty("url", header(Constants.CHOUETTE_JOB_STATUS_URL))
                 .process(this::removeAllCamelHeaders)
@@ -191,7 +195,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
 
         from("direct:rescheduleJob")
-                .log(LoggingLevel.DEBUG, correlation() + "Rescheduling job ${header."+ Constants.CHOUETTE_JOB_ID + "}. Polling counter: ${header.loopCounter}")
+                .log(LoggingLevel.DEBUG, correlation() + "Rescheduling job ${header."+ Constants.CHOUETTE_JOB_ID + "}. Polling counter: ${header.loopCounter} [PubSub message id: ${header." + PUBSUB_MESSAGE_ID + "}]")
                 .filter(simple("${exchangeProperty.current_status} == '" + STARTED + "' && ${header.loopCounter} == 1"))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.valueOf((String) e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE))).state(State.STARTED).jobId(e.getIn().getHeader(Constants.CHOUETTE_JOB_ID, String.class)).build())
                 .to("direct:updateStatus")
@@ -205,7 +209,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .routeId("chouette-reschedule-job");
 
         from("direct:jobStatusDone")
-                .log(LoggingLevel.DEBUG, correlation() + "Exited retry loop with status ${header.current_status} for job ${header."+ Constants.CHOUETTE_JOB_ID + "}")
+                .log(LoggingLevel.DEBUG, correlation() + "Exited retry loop with status ${header.current_status} for job ${header."+ Constants.CHOUETTE_JOB_ID + "} [PubSub message id: ${header." + PUBSUB_MESSAGE_ID + "}]")
                 .to(logDebugShowAll())
                 .choice()
                 .when(simple("${header.current_status} == '" + SCHEDULED + "' || ${header.current_status} == '" + STARTED + "' || ${header.current_status} == '" + RESCHEDULED + "'"))
