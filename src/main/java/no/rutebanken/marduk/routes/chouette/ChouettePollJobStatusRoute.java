@@ -174,12 +174,15 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                     e.getIn().setHeader("loopCounter", e.getIn().getHeader("loopCounter", 0, Integer.class) + 1)
                 )
                 .setHeader(PUBSUB_MESSAGE_ID, header(GooglePubsubConstants.MESSAGE_ID))
+                .log(LoggingLevel.DEBUG, correlation() + "Checking status for job ${header."+ Constants.CHOUETTE_JOB_ID + "}. Polling counter: ${header.loopCounter} [PubSub message id: ${header." + PUBSUB_MESSAGE_ID + "}]")
                 .setProperty(Constants.CHOUETTE_REFERENTIAL, header(Constants.CHOUETTE_REFERENTIAL))
                 .setProperty("url", header(Constants.CHOUETTE_JOB_STATUS_URL))
                 .process(this::removeAllCamelHeaders)
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.GET))
+                .log(LoggingLevel.DEBUG, correlation() + "Calling chouette status url ${exchangeProperty.url} for job ${header."+ Constants.CHOUETTE_JOB_ID + "}. Polling counter: ${header.loopCounter} [PubSub message id: ${header." + PUBSUB_MESSAGE_ID + "}]")
                 .toD("${exchangeProperty.url}")
+                .log(LoggingLevel.DEBUG, correlation() + "Called chouette status url ${exchangeProperty.url} for job ${header."+ Constants.CHOUETTE_JOB_ID + "}. Polling counter: ${header.loopCounter} [PubSub message id: ${header." + PUBSUB_MESSAGE_ID + "}]")
                 .unmarshal().json(JsonLibrary.Jackson, JobResponseWithLinks.class)
                 .setProperty("current_status", simple("${body.status}"))
                 .choice()
@@ -205,7 +208,9 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 // Meanwhile the route is not blocked and can process other messages.
                 .delay(retryDelay)
                 .setBody(constant(""))
+                .log(LoggingLevel.DEBUG, correlation() + "Resuming rescheduling job ${header."+ Constants.CHOUETTE_JOB_ID + "}. Polling counter: ${header.loopCounter} [PubSub message id: ${header." + PUBSUB_MESSAGE_ID + "}]")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
+                .log(LoggingLevel.DEBUG, correlation() + "Rescheduled job ${header."+ Constants.CHOUETTE_JOB_ID + "}. Polling counter: ${header.loopCounter} [PubSub message id: ${header." + PUBSUB_MESSAGE_ID + "}]")
                 .routeId("chouette-reschedule-job");
 
         from("direct:jobStatusDone")
@@ -287,6 +292,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .setBody(simple(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.GET))
                 .toD("${header.validation_report_url}")
+                .log(LoggingLevel.DEBUG, correlation() + "Called validation report url ${header.validation_report_url}")
                 .to("direct:checkValidationReport")
                 .otherwise()
                 .setHeader("validation_report_result", constant("NOT_PRESENT"))
