@@ -10,7 +10,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   rules:
-  {{- if eq .Values.env "production"}}
+  {{- if eq .Values.env "prod"}}
   - host: timetable-admin-v1-map-{{ .Release.Namespace }}.entur.io
   {{ else }}
   - host: timetable-admin-v1-map-{{ .Release.Namespace }}.{{ .Release.Namespace }}.entur.io
@@ -36,7 +36,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   rules:
-          {{- if eq .Values.env "production"}}
+          {{- if eq .Values.env "prod"}}
     - host: timetable-admin-v1-timetable-{{ .Release.Namespace }}.entur.io
           {{ else }}
     - host: timetable-admin-v1-timetable-{{ .Release.Namespace }}.{{ .Release.Namespace }}.entur.io
