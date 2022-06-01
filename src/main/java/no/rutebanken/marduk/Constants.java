@@ -127,6 +127,10 @@ public final class Constants {
     public static final String VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION = "EnturValidationStageExportNetexPostValidation";
     public static final String VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION = "EnturValidationStageExportNetexBlocksPostValidation";
 
+    public static final String VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION = "EnturValidationStageExportFlexPostValidation";
+
+
+
     public static final String VALIDATION_CLIENT_HEADER = "EnturValidationClient";
     public static final String VALIDATION_CLIENT_MARDUK = "Marduk";
 

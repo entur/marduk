@@ -226,6 +226,23 @@ resource "google_pubsub_subscription" "ChouetteImportQueue" {
   }
 }
 
+resource "google_pubsub_topic" "FlexibleLinesExportQueue" {
+  name = "FlexibleLinesExportQueue"
+  project = var.gcp_resources_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "FlexibleLinesExportQueue" {
+  name = "FlexibleLinesExportQueue"
+  topic = google_pubsub_topic.FlexibleLinesExportQueue.name
+  project = var.gcp_resources_project
+  labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
+
 resource "google_pubsub_topic" "ChouetteMergeWithFlexibleLinesQueue" {
   name = "ChouetteMergeWithFlexibleLinesQueue"
   project = var.gcp_resources_project
