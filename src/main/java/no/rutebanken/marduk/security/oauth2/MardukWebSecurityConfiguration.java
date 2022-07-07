@@ -2,11 +2,11 @@ package no.rutebanken.marduk.security.oauth2;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.stereotype.Component;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -22,8 +22,8 @@ import static org.springframework.security.config.Customizer.withDefaults;
  */
 @Profile("!test")
 @EnableWebSecurity
-@Component
-public class MardukWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
+@Configuration
+public class MardukWebSecurityConfiguration {
 
     @Autowired
     MultiIssuerAuthenticationManagerResolver multiIssuerAuthenticationManagerResolver;
@@ -39,24 +39,21 @@ public class MardukWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
         return source;
     }
 
-    @Override
-    public void configure(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(withDefaults())
                 .csrf().disable()
-                .authorizeRequests()
-                .antMatchers("/services/swagger.json").permitAll()
-                .antMatchers("/services/timetable_admin/swagger.json").permitAll()
-                // exposed internally only, on a different port (pod-level)
-                .antMatchers("/actuator/prometheus").permitAll()
-                .antMatchers("/actuator/health").permitAll()
-                .antMatchers("/actuator/health/liveness").permitAll()
-                .antMatchers("/actuator/health/readiness").permitAll()
-                .anyRequest().authenticated()
-                .and()
-                .oauth2ResourceServer().authenticationManagerResolver(this.multiIssuerAuthenticationManagerResolver)
-                .and()
-                .oauth2Client();
-
+                .authorizeHttpRequests(authz -> authz
+                        .antMatchers("/services/swagger.json").permitAll()
+                        .antMatchers("/services/timetable_admin/swagger.json").permitAll()
+                        // exposed internally only, on a different port (pod-level)
+                        .antMatchers("/actuator/prometheus").permitAll()
+                        .antMatchers("/actuator/health").permitAll()
+                        .antMatchers("/actuator/health/liveness").permitAll()
+                        .antMatchers("/actuator/health/readiness").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer().authenticationManagerResolver(this.multiIssuerAuthenticationManagerResolver);
+        return http.build();
     }
 
 }
