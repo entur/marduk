@@ -39,6 +39,7 @@ public class MardukWebSecurityConfiguration {
         return source;
     }
 
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(withDefaults())
                 .csrf().disable()
@@ -52,7 +53,9 @@ public class MardukWebSecurityConfiguration {
                         .antMatchers("/actuator/health/readiness").permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer().authenticationManagerResolver(this.multiIssuerAuthenticationManagerResolver);
+                .oauth2ResourceServer().authenticationManagerResolver(this.multiIssuerAuthenticationManagerResolver)
+                .and()
+                .oauth2Client();
         return http.build();
     }
 
