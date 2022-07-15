@@ -133,7 +133,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .to("direct:chouetteGetJobsForProvider")
                 .sort(body(), new JobResponseDescendingSorter())
                 .process(this::removeAllCamelHeaders)
-                .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
+                .split().body().parallelProcessing().executorService("allProvidersExecutorService")
                 .setHeader(Constants.CHOUETTE_JOB_ID, simple("${body.id}"))
                 .setBody(constant(""))
                 .to("direct:chouetteCancelJob")
@@ -141,7 +141,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
         from("direct:chouetteCancelAllJobsForAllProviders")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
-                .split().body().parallelProcessing().executorServiceRef("allProvidersExecutorService")
+                .split().body().parallelProcessing().executorService("allProvidersExecutorService")
                 .setHeader(Constants.PROVIDER_ID, simple("${body.id}"))
                 .setBody(constant(""))
                 .process(this::removeAllCamelHeaders)

@@ -74,7 +74,7 @@ public class IdempotentFileFilterRoute extends BaseRouteBuilder {
                 .process(e -> e.getIn().setHeader(HEADER_FILE_NAME_AND_DIGEST, new FileNameAndDigest(e.getIn().getHeader(Exchange.FILE_NAME, String.class), DigestUtils.md5Hex(e.getIn().getBody(InputStream.class)))))
                 .end()
                 .end()
-                .idempotentConsumer(header(HEADER_FILE_NAME_AND_DIGEST)).messageIdRepository(fileNameAndDigestIdempotentRepository).skipDuplicate(false).removeOnFailure(false)
+                .idempotentConsumer(header(HEADER_FILE_NAME_AND_DIGEST)).idempotentRepository(fileNameAndDigestIdempotentRepository).skipDuplicate(false).removeOnFailure(false)
                 .filter(exchangeProperty(Exchange.DUPLICATE_MESSAGE).isEqualTo(true))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Detected ${header." + Exchange.FILE_NAME + "} as duplicate.")
                 .to("direct:updateStatusForDuplicateFile")

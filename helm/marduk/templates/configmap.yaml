@@ -13,7 +13,7 @@ data:
 
     # Camel
     camel.springboot.name=Marduk
-    camel.dataformat.json-jackson.module-refs=jacksonJavaTimeModule
+    camel.dataformat.jackson.module-refs=jacksonJavaTimeModule
     camel.servlet.mapping.context-path=/services/*
     camel.cluster.kubernetes.enabled=true
     camel.cluster.kubernetes.cluster-labels[app]=marduk
@@ -49,7 +49,7 @@ data:
     chouette.stats.validity.categories=-1;INVALID,0;EXPIRING,120;VALID
     # Refresh the line stats cache. For performance reasons this should not run while the nightly validation is running
     # (see chouette.validate.level1.cron.schedule)
-    chouette.stats.cache.refresh.quartz.trigger=cron={{ .Values.chouette.refreshStatsCacheCronSchedule }}&startDelayedSeconds=20&stateful=true
+    chouette.stats.cache.refresh.quartz.trigger=cron={{ .Values.chouette.refreshStatsCacheCronSchedule }}&stateful=true
     chouette.url={{ .Values.chouette.service }}
     chouette.remove.old.jobs.keep.days=30
     chouette.remove.old.jobs.keep.jobs=50

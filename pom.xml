@@ -24,7 +24,7 @@
     </scm>
     <properties>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
-        <camel.version>3.14.4</camel.version>
+        <camel.version>3.18.0</camel.version>
         <entur.helpers.version>1.0.80</entur.helpers.version>
         <commons-io.version>2.11.0</commons-io.version>
         <commons-csv.version>1.9.0</commons-csv.version>
