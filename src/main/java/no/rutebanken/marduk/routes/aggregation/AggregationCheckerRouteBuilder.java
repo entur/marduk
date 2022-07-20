@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AggregationCheckerRouteBuilder extends BaseRouteBuilder {
 
-    @Value("${marduk.aggregation.checker.quartz.trigger:trigger.repeatInterval=5000&trigger.repeatCount=-1&startDelayedSeconds=20&stateful=true}")
+    @Value("${marduk.aggregation.checker.quartz.trigger:trigger.repeatInterval=5000&trigger.repeatCount=-1&stateful=true}")
     private String quartzTrigger;
 
     @Override
