@@ -57,6 +57,9 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     @Value("${chouette.stats.cache.refresh.quartz.trigger:trigger.repeatInterval=600000&trigger.repeatCount=-1&stateful=true}")
     private String quartzTrigger;
 
+    @Value("${chouette.stats.cache.initial.refresh.quartz.trigger:trigger.repeatInterval=600000&trigger.repeatCount=-1&stateful=true}")
+    private String initialQuartzTrigger;
+
     private JsonNode cache;
 
     @Override
@@ -66,7 +69,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
 
         // Fire only once at startup to initialize the cache.
         // Quartz job must run on all nodes.
-        from("quartz://marduk/initialRefreshLine?trigger.repeatInterval=600000&trigger.repeatCount=-1&stateful=true")
+        from("quartz://marduk/initialRefreshLine?" + initialQuartzTrigger)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.DEBUG, correlation() + "Quartz triggers initial refresh of line stats.")
                 .to("direct:chouetteRefreshStatsCache")
