@@ -57,7 +57,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     @Value("${chouette.stats.cache.refresh.quartz.trigger:trigger.repeatInterval=600000&trigger.repeatCount=-1&stateful=true}")
     private String quartzTrigger;
 
-    @Value("${chouette.stats.cache.initial.refresh.quartz.trigger:trigger.repeatInterval=600000&trigger.repeatCount=-1&stateful=true}")
+    @Value("${chouette.stats.cache.initial.refresh.quartz.trigger:trigger.repeatInterval=600000&trigger.repeatCount=0&stateful=true}")
     private String initialQuartzTrigger;
 
     private JsonNode cache;
