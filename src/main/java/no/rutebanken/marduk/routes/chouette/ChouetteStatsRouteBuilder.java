@@ -54,8 +54,11 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     /**
      * Every ten minutes as default.
      */
-    @Value("${chouette.stats.cache.refresh.quartz.trigger:trigger.repeatInterval=600000&trigger.repeatCount=-1&startDelayedSeconds=20&stateful=true}")
+    @Value("${chouette.stats.cache.refresh.quartz.trigger:trigger.repeatInterval=600000&trigger.repeatCount=-1&stateful=true}")
     private String quartzTrigger;
+
+    @Value("${chouette.stats.cache.initial.refresh.quartz.trigger:trigger.repeatInterval=600000&trigger.repeatCount=0&stateful=true}")
+    private String initialQuartzTrigger;
 
     private JsonNode cache;
 
@@ -63,7 +66,19 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        // Quartz job must run on all nodes
+
+        // Fire only once at startup to initialize the cache.
+        // Quartz job must run on all nodes.
+        from("quartz://marduk/initialRefreshLine?" + initialQuartzTrigger)
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.DEBUG, correlation() + "Quartz triggers initial refresh of line stats.")
+                .to("direct:chouetteRefreshStatsCache")
+
+                .log(LoggingLevel.DEBUG, correlation() + "Quartz initial refresh of line stats done.")
+                .routeId("chouette-line-stats-cache-initial-refresh-quartz");
+
+        // Periodically refresh the cache.
+        // Quartz job must run on all nodes.
         from("quartz://marduk/refreshLine?" + quartzTrigger)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.DEBUG, correlation() + "Quartz triggers refresh of line stats.")
@@ -75,7 +90,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
 
         from("direct:chouetteGetStatsSingleProvider")
                 .choice().when(e -> cache == null)
-                .to("direct:chouetteRefreshStatsCache")
+                .to("direct:chouetteRejectGetStats")
                 .end()
                 .process(e -> e.getIn().setBody(cache.get(e.getIn().getHeader(PROVIDER_ID, String.class))))
                 .choice().when(body().isNull())
@@ -85,11 +100,22 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
 
         from("direct:chouetteGetStats")
                 .choice().when(e -> cache == null)
-                .to("direct:chouetteRefreshStatsCache")
+                .to("direct:chouetteRejectGetStats")
                 .end()
                 .process(this::populateWithMatchingLineStatsFromCache)
                 .routeId("chouette-line-stats-get");
 
+        // Rejecting calls to statistics while Marduk is starting up (i.e. the stats cache is not initialized yet).
+        // This is safer than triggering the initialization of the cache
+        // since this could happen multiple times in multiple threads in parallel and result in
+        // uncontrolled load on the database.
+        from("direct:chouetteRejectGetStats")
+                .log(LoggingLevel.INFO, correlation() + "Rejecting call to get statistics while Marduk is starting up")
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(503))
+                .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                .setBody(constant("Statistics are temporarily unavailable"))
+                .stop()
+                .routeId("chouette-line-reject-stats-get");
 
         from("direct:chouetteGetFreshStats")
                 .process(this::removeAllCamelHeaders)
