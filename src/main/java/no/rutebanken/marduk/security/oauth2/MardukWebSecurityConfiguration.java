@@ -1,6 +1,5 @@
 package no.rutebanken.marduk.security.oauth2;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -25,9 +24,6 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 public class MardukWebSecurityConfiguration {
 
-    @Autowired
-    MultiIssuerAuthenticationManagerResolver multiIssuerAuthenticationManagerResolver;
-
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -40,7 +36,7 @@ public class MardukWebSecurityConfiguration {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, MultiIssuerAuthenticationManagerResolver multiIssuerAuthenticationManagerResolver) throws Exception {
         http.cors(withDefaults())
                 .csrf().disable()
                 .authorizeHttpRequests(authz -> authz
@@ -53,7 +49,7 @@ public class MardukWebSecurityConfiguration {
                         .antMatchers("/actuator/health/readiness").permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer().authenticationManagerResolver(this.multiIssuerAuthenticationManagerResolver)
+                .oauth2ResourceServer().authenticationManagerResolver(multiIssuerAuthenticationManagerResolver)
                 .and()
                 .oauth2Client();
         return http.build();

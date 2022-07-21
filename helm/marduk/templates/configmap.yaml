@@ -9,6 +9,8 @@ data:
     spring.datasource.platform=postgresql
     spring.datasource.driver-class-name=org.postgresql.Driver
     spring.datasource.maxActive=10
+    spring.servlet.multipart.max-file-size=100MB
+    spring.servlet.multipart.max-request-size=100MB
     server.port={{ .Values.service.http.internalPort }}
 
     # Camel
