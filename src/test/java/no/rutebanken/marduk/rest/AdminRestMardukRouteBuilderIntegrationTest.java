@@ -46,11 +46,11 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -78,7 +78,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
     @TestConfiguration
     @EnableWebSecurity
-    static class AdminRestMardukRouteBuilderTestContextConfiguration extends WebSecurityConfigurerAdapter {
+    static class AdminRestMardukRouteBuilderTestContextConfiguration {
 
         @Bean
         CorsConfigurationSource corsConfigurationSource() {
@@ -91,22 +91,23 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
             return source;
         }
 
-        @Override
-        public void configure(HttpSecurity http) throws Exception {
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             http.cors(withDefaults())
                     .csrf().disable()
-                    .authorizeRequests()
-                    .antMatchers("/services/swagger.json").permitAll()
-                    .antMatchers("/services/timetable_admin/swagger.json").permitAll()
-                    // exposed internally only, on a different port (pod-level)
-                    .antMatchers("/actuator/prometheus").permitAll()
-                    .antMatchers("/actuator/health").permitAll()
-                    .antMatchers("/actuator/health/liveness").permitAll()
-                    .antMatchers("/actuator/health/readiness").permitAll()
-                    .anyRequest().authenticated()
-                    .and()
+                    .authorizeHttpRequests(authz -> authz
+                            .antMatchers("/services/swagger.json").permitAll()
+                            .antMatchers("/services/timetable_admin/swagger.json").permitAll()
+                            // exposed internally only, on a different port (pod-level)
+                            .antMatchers("/actuator/prometheus").permitAll()
+                            .antMatchers("/actuator/health").permitAll()
+                            .antMatchers("/actuator/health/liveness").permitAll()
+                            .antMatchers("/actuator/health/readiness").permitAll()
+                            .anyRequest().authenticated()
+                    )
                     .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
                     .oauth2Client();
+            return http.build();
         }
 
 
@@ -347,7 +348,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         postFile(getLargeTestNetexArchiveAsStream());
     }
 
-    private  void postFile(InputStream testFile) throws Exception {
+    private void postFile(InputStream testFile) throws Exception {
         // Preparations
         String fileName = "netex-test-POST.zip";
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
