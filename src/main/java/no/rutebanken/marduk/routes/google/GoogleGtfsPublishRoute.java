@@ -35,6 +35,10 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 @Component
 public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
 
+    // TODO fix for https://github.com/mwiede/jsch/issues/155
+    // TODO this fix add back old ciphers for compatibility with Google SFTP server, this should be removed when the server supports newer ciphers
+    @Deprecated
+    private static final String CIPHERS = "ssh-rsa,ssh-dss,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521";
     /**
      * Every morning at 4 AM.
      */
@@ -109,7 +113,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName))
                 .to("direct:getBlob")
                 .setHeader(Exchange.FILE_NAME, constant(googleExportFileName))
-                .to("sftp:" + googleSftpUsername + ":" + googleSftpPassword + "@" + googleSftpHost + ":" + googleSftpPort)
+                .to("sftp:" + googleSftpUsername + ":" + googleSftpPassword + "@" + googleSftpHost + ":" + googleSftpPort + "?ciphers=" + CIPHERS)
 
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Completed publish of GTFS file to Google")
                 .routeId("google-publish-route");
@@ -125,7 +129,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName))
                 .to("direct:getBlob")
                 .setHeader(Exchange.FILE_NAME, constant(googleQaExportFileName))
-                .to("sftp:" + googleQaSftpUsername + ":" + googleQAaSftpPassword + "@" + googleSftpHost + ":" + googleSftpPort)
+                .to("sftp:" + googleQaSftpUsername + ":" + googleQAaSftpPassword + "@" + googleSftpHost + ":" + googleSftpPort + "?ciphers=" + CIPHERS)
 
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() +"Completed publish of GTFS QA file to Google")
                 .routeId("google-publish-qa-route");
