@@ -106,6 +106,9 @@ data:
     logging.level.chouette-process-job-reports=DEBUG
     logging.level.chouette-process-validation-report=DEBUG
 
+    # NeTeX import
+    netex.import.delegation.authorization={CON:'AKT'}
+
     # NeTeX export
     netex.export.block.authorization={FAR:'OST,ATB,INN',CON:'TRO'}
     netex.export.merge.flexible.lines.enabled=true

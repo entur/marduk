@@ -44,6 +44,9 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
     @Value("#{${netex.export.block.authorization}}")
     protected Map<String, String> authorizedProvidersForNetexBlocksConsumer = Collections.emptyMap();
 
+    @Value("#{${netex.import.delegation.authorization}}")
+    private Map<String, String> delegatedNetexDataProviders = Collections.emptyMap();
+
     @Override
     public Map<String, Object> convert(Map<String, Object> claims) {
         Map<String, Object> convertedClaims = this.delegate.convert(claims);
@@ -51,7 +54,7 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
         String rutebankenOrganisationId = getRutebankenOrganisationId(enturOrganisationId);
         List<String> roleAssignments = new ArrayList<>(2);
 
-        // Add route data role
+        // Add role to edit data from own organization
         String roleRouteData = administratorAccessActivated && isEnturUser(rutebankenOrganisationId)
                 ? AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN
                 : AuthorizationConstants.ROLE_ROUTE_DATA_EDIT;
@@ -61,12 +64,20 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
         routeDataRoleAssignmentBuilder.withOrganisation(rutebankenOrganisationId);
         roleAssignments.add(toJSON(routeDataRoleAssignmentBuilder.build()));
 
-        // Add NeTEx Blocks view roles
-        for(String authorizedNetexBlocksProviderForConsumer: getNetexBlocksProvidersForConsumer(rutebankenOrganisationId)) {
+        // Add role to view NeTEx Blocks belonging to other organizations
+        for (String authorizedNetexBlocksProviderForConsumer : getNetexBlocksProvidersForConsumer(rutebankenOrganisationId)) {
             RoleAssignment.Builder netexBlockRoleAssignmentBuilder = RoleAssignment.builder();
             netexBlockRoleAssignmentBuilder.withRole(AuthorizationConstants.ROLE_NETEX_BLOCKS_DATA_VIEW);
             netexBlockRoleAssignmentBuilder.withOrganisation(authorizedNetexBlocksProviderForConsumer);
             roleAssignments.add(toJSON(netexBlockRoleAssignmentBuilder.build()));
+        }
+
+        // Add role to edit data belonging to other organizations
+        for (String delegatedNetexDataProvider : getDelegatedNetexDataProviders(rutebankenOrganisationId)) {
+            RoleAssignment.Builder delegatedRouteDataRoleAssignmentBuilder = RoleAssignment.builder();
+            delegatedRouteDataRoleAssignmentBuilder.withRole(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT);
+            delegatedRouteDataRoleAssignmentBuilder.withOrganisation(delegatedNetexDataProvider);
+            roleAssignments.add(toJSON(delegatedRouteDataRoleAssignmentBuilder.build()));
         }
 
         convertedClaims.put(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS, roleAssignments);
@@ -77,17 +88,32 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
         return convertedClaims;
     }
 
+
     private boolean isEnturUser(String rutebankenOrganisationId) {
         return ORG_RUTEBANKEN.equals(rutebankenOrganisationId);
     }
 
+    /**
+     * Return the list of codespaces for which the organization can view NeTEx block data.
+     */
     private List<String> getNetexBlocksProvidersForConsumer(String rutebankenOrganisationId) {
-        if( authorizedProvidersForNetexBlocksConsumer.get(rutebankenOrganisationId) == null) {
+        if (authorizedProvidersForNetexBlocksConsumer.get(rutebankenOrganisationId) == null) {
             return Collections.emptyList();
         } else {
             return Arrays.asList(authorizedProvidersForNetexBlocksConsumer.get(rutebankenOrganisationId).split(","));
         }
 
+    }
+
+    /**
+     * Return the list of codespaces for which the organization can edit NeTEx data.
+     */
+    private List<String> getDelegatedNetexDataProviders(String rutebankenOrganisationId) {
+        if (delegatedNetexDataProviders.get(rutebankenOrganisationId) == null) {
+            return Collections.emptyList();
+        } else {
+            return Arrays.asList(delegatedNetexDataProviders.get(rutebankenOrganisationId).split(","));
+        }
     }
 
     private String getRutebankenOrganisationId(Long enturOrganisationId) {
