@@ -148,6 +148,13 @@
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-ftp-starter</artifactId>
         </dependency>
+        <!-- TODO temporary downgrading JSCH library until Google SFTP server supports newer ciphers-->
+        <dependency>
+            <groupId>com.github.mwiede</groupId>
+            <artifactId>jsch</artifactId>
+            <version>0.1.72</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-jackson-starter</artifactId>
