@@ -140,7 +140,10 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     }
 
     protected String correlation() {
-        return "[providerId=${header." + Constants.PROVIDER_ID + "} referential=${header." + Constants.CHOUETTE_REFERENTIAL + "} correlationId=${header." + Constants.CORRELATION_ID + "}] ";
+        return "[providerId=${header." + Constants.PROVIDER_ID
+                + "} referential=${header." + Constants.CHOUETTE_REFERENTIAL
+                + "} correlationId=${header." + Constants.CORRELATION_ID
+                +  "} clientName=${header." + Constants.ET_CLIENT_NAME_HEADER+ "}] ";
     }
 
     protected void removeAllCamelHeaders(Exchange e) {
