@@ -25,7 +25,7 @@
     <properties>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>3.18.0</camel.version>
-        <entur.helpers.version>1.0.80</entur.helpers.version>
+        <entur.helpers.version>1.0.81</entur.helpers.version>
         <commons-io.version>2.11.0</commons-io.version>
         <commons-csv.version>1.9.0</commons-csv.version>
         <zt-zip.version>1.15</zt-zip.version>
@@ -148,6 +148,13 @@
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-ftp-starter</artifactId>
         </dependency>
+        <!-- TODO temporary downgrading JSCH library until Google SFTP server supports newer ciphers-->
+        <dependency>
+            <groupId>com.github.mwiede</groupId>
+            <artifactId>jsch</artifactId>
+            <version>0.1.72</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-jackson-starter</artifactId>
