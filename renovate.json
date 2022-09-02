@@ -1,5 +1,9 @@
 {
   "extends": [
-    "config:base"
-  ]
+    "github>entur/ror-renovate-config"
+  ],
+  "automergeSchedule": "after 5am and before 7am every weekday",
+  "minor": {
+    "automerge": false
+  }
 }

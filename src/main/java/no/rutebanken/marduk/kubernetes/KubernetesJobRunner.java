@@ -2,12 +2,12 @@ package no.rutebanken.marduk.kubernetes;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.batch.v1.CronJob;
+import io.fabric8.kubernetes.api.model.batch.v1.CronJobSpec;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.JobSpec;
 import io.fabric8.kubernetes.api.model.batch.v1.JobStatus;
-import io.fabric8.kubernetes.api.model.batch.v1beta1.CronJob;
-import io.fabric8.kubernetes.api.model.batch.v1beta1.CronJobSpec;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -127,7 +127,7 @@ public class KubernetesJobRunner {
     }
 
     protected CronJobSpec getCronJobSpecTemplate(String cronJobName, KubernetesClient client) {
-        CronJob matchingCronJob = client.batch().v1beta1().cronjobs().inNamespace(kubernetesNamespace).withName(cronJobName).get();
+        CronJob matchingCronJob = client.batch().v1().cronjobs().inNamespace(kubernetesNamespace).withName(cronJobName).get();
         if (matchingCronJob == null) {
             throw new KubernetesJobRunnerException("Job with name=" + cronJobName + " not found in namespace " + kubernetesNamespace);
         }
