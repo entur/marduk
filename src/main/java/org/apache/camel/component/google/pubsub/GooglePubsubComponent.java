@@ -204,7 +204,7 @@ public class GooglePubsubComponent extends DefaultComponent {
         }
         builder.setCredentialsProvider(getCredentialsProvider(googlePubsubEndpoint));
         // TODO temporary fix to increase lease extension beyond the default maximum (1 hour)
-        builder.setMaxAckExtensionPeriod(Duration.ofHours(4));
+        builder.setMaxAckExtensionPeriod(Duration.ofSeconds(googlePubsubEndpoint.getMaxExtensionPeriod()));
         return builder.build();
     }
 

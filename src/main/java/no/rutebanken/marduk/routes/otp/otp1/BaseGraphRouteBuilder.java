@@ -51,7 +51,7 @@ public class BaseGraphRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
 
-        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:OtpBaseGraphBuildQueue").autoStartup("{{otp.graph.build.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:OtpBaseGraphBuildQueue?maxExtensionPeriod=14400").autoStartup("{{otp.graph.build.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.getAggregateControllerForRoute("otp-remote-base-graph-build"))
                 .process(this::addSynchronizationForAggregatedExchange)
