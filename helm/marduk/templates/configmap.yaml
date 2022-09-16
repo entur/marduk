@@ -15,6 +15,8 @@ data:
 
     # Camel
     camel.springboot.name=Marduk
+    camel.springboot.streamCachingEnabled=false
+    camel.springboot.streamCachingSpoolEnabled=true
     camel.dataformat.jackson.module-refs=jacksonJavaTimeModule
     camel.servlet.mapping.context-path=/services/*
     camel.cluster.kubernetes.enabled=true
