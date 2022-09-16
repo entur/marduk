@@ -54,7 +54,8 @@ import org.slf4j.LoggerFactory;
  * Built on top of the Google Cloud Pub/Sub libraries.
  */
 @UriEndpoint(firstVersion = "2.19.0", scheme = "google-pubsub", title = "Google Pubsub",
-             syntax = "google-pubsub:projectId:destinationName", category = { Category.CLOUD, Category.MESSAGING })
+             syntax = "google-pubsub:projectId:destinationName", category = { Category.CLOUD, Category.MESSAGING },
+             headersClass = GooglePubsubConstants.class)
 public class GooglePubsubEndpoint extends DefaultEndpoint {
 
     private Logger log;
@@ -117,7 +118,7 @@ public class GooglePubsubEndpoint extends DefaultEndpoint {
     @Metadata(autowired = true)
     private GooglePubsubSerializer serializer;
 
-    public GooglePubsubEndpoint(String uri, Component component, String remaining) {
+    public GooglePubsubEndpoint(String uri, Component component) {
         super(uri, component);
 
         if (!(component instanceof GooglePubsubComponent)) {
