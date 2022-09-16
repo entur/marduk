@@ -6,5 +6,6 @@
   "automergeSchedule": "after 5am and before 7am every weekday",
   "minor": {
     "automerge": false
-  }
+  },
+  "separateMinorPatch": true
 }
