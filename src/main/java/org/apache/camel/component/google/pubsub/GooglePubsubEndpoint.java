@@ -98,9 +98,9 @@ public class GooglePubsubEndpoint extends DefaultEndpoint {
               description = "AUTO = exchange gets ack'ed/nack'ed on completion. NONE = downstream process has to ack/nack explicitly")
     private GooglePubsubConstants.AckMode ackMode = GooglePubsubConstants.AckMode.AUTO;
 
-    @UriParam(label = "consumer", name = "maxExtensionPeriod", description = "Set the maximum period a message ack deadline will be extended. Value in seconds",
+    @UriParam(label = "consumer", name = "maxAckExtensionPeriod", description = "Set the maximum period a message ack deadline will be extended. Value in seconds",
             defaultValue = "3600")
-    private int maxExtensionPeriod = 3600;
+    private int maxAckExtensionPeriod = 3600;
 
     @UriParam(defaultValue = "false",
               description = "Should message ordering be enabled",
@@ -241,12 +241,12 @@ public class GooglePubsubEndpoint extends DefaultEndpoint {
         this.ackMode = ackMode;
     }
 
-    public int getMaxExtensionPeriod() {
-        return maxExtensionPeriod;
+    public int getMaxAckExtensionPeriod() {
+        return maxAckExtensionPeriod;
     }
 
-    public void setMaxExtensionPeriod(int maxExtensionPeriod) {
-        this.maxExtensionPeriod = maxExtensionPeriod;
+    public void setMaxAckExtensionPeriod(int maxAckExtensionPeriod) {
+        this.maxAckExtensionPeriod = maxAckExtensionPeriod;
     }
 
     public GooglePubsubSerializer getSerializer() {
