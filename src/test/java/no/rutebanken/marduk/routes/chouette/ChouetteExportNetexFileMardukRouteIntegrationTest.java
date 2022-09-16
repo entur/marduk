@@ -36,6 +36,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TestApp.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
@@ -81,8 +83,8 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 
 		// Mock initial call to Chouette to import job
 		AdviceWith.adviceWith(context, "chouette-start-export-netex", a -> {
-			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/netexprofile")
-					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
+			a.weaveByToUri(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/netexprofile")
+					.replace().to("mock:chouetteCreateExport");
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 					.to("mock:updateStatus");
 		});
