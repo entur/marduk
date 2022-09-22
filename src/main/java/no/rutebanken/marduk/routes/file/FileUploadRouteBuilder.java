@@ -49,7 +49,9 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
 
         from("direct:uploadFilesAndStartImport")
                 .setBody(simple("${exchange.getIn().getRequest().getParts()}"))
+                .log(LoggingLevel.DEBUG, correlation() + "Received multipart request containing ${body.size()} parts")
                 .split().body()
+                .log(LoggingLevel.DEBUG, correlation() + "Processing part: name=${body.name}, submittedFileName=${body.submittedFileName}, size=${body.size}, contentType=${body.contentType}")
                 .process(this::setCorrelationIdIfMissing)
                 .setHeader(FILE_NAME, simple("${body.submittedFileName}"))
                 .setHeader(FILE_HANDLE, simple("inbound/received/${header." + CHOUETTE_REFERENTIAL + "}/${header." + FILE_NAME + "}"))
