@@ -38,6 +38,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TestApp.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
@@ -95,8 +97,8 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 
 		// Mock initial call to Chouette to validation job
 		AdviceWith.adviceWith(context, "chouette-send-validation-job", a -> {
-			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/validator")
-					.skipSendToOriginalEndpoint().to("mock:chouetteCreateValidation");
+			a.weaveByToUri(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/validator")
+					.replace().to("mock:chouetteCreateValidation");
 			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
 					.to("mock:updateStatus");
 		});
@@ -203,7 +205,7 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 		});
 
 		Map<String, Object> headers = new HashMap<>();
-		headers.put(Constants.CHOUETTE_REFERENTIAL, "rut");
+		headers.put(CHOUETTE_REFERENTIAL, "rut");
 		headers.put(Constants.PROVIDER_ID,2);
 		
 		triggerJobListTemplate.sendBodyAndHeaders(null,headers);

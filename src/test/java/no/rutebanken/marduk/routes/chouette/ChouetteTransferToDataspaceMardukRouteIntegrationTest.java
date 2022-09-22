@@ -31,6 +31,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.HashMap;
 import java.util.Map;
 
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TestApp.class)
 class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
@@ -64,8 +66,9 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 
 		// Mock initial call to Chouette to export job
 		AdviceWith.adviceWith(context, "chouette-send-transfer-job", a -> {
-			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/exporter/transfer")
-					.skipSendToOriginalEndpoint().to("mock:chouetteCreateExport");
+
+			a.weaveByToUri(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/exporter/transfer")
+					.replace().to("mock:chouetteCreateExport");
 
 			a.weaveByToUri("google-pubsub:(.*):ChouettePollStatusQueue").replace().to("mock:pollJobStatus");
 

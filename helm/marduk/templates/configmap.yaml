@@ -15,7 +15,9 @@ data:
 
     # Camel
     camel.springboot.name=Marduk
-    camel.dataformat.json-jackson.module-refs=jacksonJavaTimeModule
+    camel.springboot.streamCachingEnabled=false
+    camel.springboot.streamCachingSpoolEnabled=true
+    camel.dataformat.jackson.module-refs=jacksonJavaTimeModule
     camel.servlet.mapping.context-path=/services/*
     camel.cluster.kubernetes.enabled=true
     camel.cluster.kubernetes.cluster-labels[app]=marduk
@@ -101,10 +103,6 @@ data:
     logging.level.org.apache=INFO
     logging.config=classpath:logback.xml
     logging.level.org.apache.camel.component.http.HttpComponent=WARN
-    logging.level.chouette-get-job-status=DEBUG
-    logging.level.chouette-reschedule-job=DEBUG
-    logging.level.chouette-process-job-reports=DEBUG
-    logging.level.chouette-process-validation-report=DEBUG
 
     # NeTeX import
     netex.import.delegation.authorization={CON:'AKT'}
