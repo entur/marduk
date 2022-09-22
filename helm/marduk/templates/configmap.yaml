@@ -104,6 +104,9 @@ data:
     logging.config=classpath:logback.xml
     logging.level.org.apache.camel.component.http.HttpComponent=WARN
 
+    # NeTeX import
+    netex.import.delegation.authorization={CON:'AKT'}
+
     # NeTeX export
     netex.export.block.authorization={FAR:'OST,ATB,INN',CON:'TRO'}
     netex.export.merge.flexible.lines.enabled=true
