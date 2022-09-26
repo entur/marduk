@@ -186,7 +186,8 @@ public class KubernetesJobRunner {
                 succeeded = true;
                 watchLatch.countDown();
             }
-            if (pod.getStatus().getPhase().equals("Failed")) {
+            // counting only actions of type "MODIFIED" since Kubernetes can send multiple events in the phase "Failed" (action=MODIFIED, action=DELETED)
+            if (pod.getStatus().getPhase().equals("Failed") && action.name().equals("MODIFIED")) {
                 if (podFailureCounter.incrementAndGet() >= backoffLimit) {
                     LOGGER.error("The Graph Builder job {} failed after {} retries, exceeding the backoff limit. Giving up.", jobName, podFailureCounter);
                     watchLatch.countDown();
