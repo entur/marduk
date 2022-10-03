@@ -126,7 +126,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .to("direct:getBlob")
                 .setHeader(Exchange.FILE_NAME, constant(googleQaExportFileName))
                 // TODO temporary setting deprecated cipher ssh-rsa until Google SFTP server supports newer ciphers
-                .to("sftp:" + googleQaSftpUsername + ":" + googleQAaSftpPassword + "@" + googleSftpHost + ":" + googleSftpPort + "?serverHostKeys=ssh-rsa&jschLoggingLevel=DEBUG")
+                .to("sftp:" + googleQaSftpUsername + ":" + googleQAaSftpPassword + "@" + googleSftpHost + ":" + googleSftpPort + "?serverHostKeys=ssh-rsa")
 
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() +"Completed publish of GTFS QA file to Google")
                 .routeId("google-publish-qa-route");
