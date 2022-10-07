@@ -109,7 +109,7 @@ public class GoogleGtfsPublishRoute extends BaseRouteBuilder {
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName))
                 .to("direct:getBlob")
                 .setHeader(Exchange.FILE_NAME, constant(googleExportFileName))
-                .to("sftp:" + googleSftpUsername + ":" + googleSftpPassword + "@" + googleSftpHost + ":" + googleSftpPort)
+                .to("sftp:" + googleSftpUsername + ":" + googleSftpPassword + "@" + googleSftpHost + ":" + googleSftpPort + "?serverHostKeys=ssh-rsa")
 
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Completed publish of GTFS file to Google")
                 .routeId("google-publish-route");
