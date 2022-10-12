@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.entur.ror</groupId>
         <artifactId>superpom</artifactId>
-        <version>1.46</version>
+        <version>1.47</version>
     </parent>
 
     <groupId>no.rutebanken.marduk</groupId>
@@ -26,11 +26,11 @@
         <java.version>17</java.version>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>3.18.2</camel.version>
-        <entur.helpers.version>1.83</entur.helpers.version>
+        <entur.helpers.version>1.85</entur.helpers.version>
         <commons-io.version>2.11.0</commons-io.version>
         <commons-csv.version>1.9.0</commons-csv.version>
         <zt-zip.version>1.15</zt-zip.version>
-        <json-unit.version>2.35.0</json-unit.version>
+        <json-unit.version>2.36.0</json-unit.version>
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
         <argLine/>
@@ -148,12 +148,6 @@
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-ftp-starter</artifactId>
-        </dependency>
-        <!-- TODO temporary downgrading JSCH library until Google SFTP server supports newer ciphers-->
-        <dependency>
-            <groupId>com.github.mwiede</groupId>
-            <artifactId>jsch</artifactId>
-            <version>0.1.72</version>
         </dependency>
 
         <dependency>
