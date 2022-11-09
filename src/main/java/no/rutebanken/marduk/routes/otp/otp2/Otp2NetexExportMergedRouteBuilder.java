@@ -140,6 +140,7 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .process(e -> e.getIn().setBody(ZipFileUtils.zipFilesInFolder( e.getProperty(FOLDER_NAME, String.class) + UNPACKED_NETEX_SUBFOLDER,  e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUBFOLDER + "/merged.zip")))
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploading new combined Netex for Norway for OTP2")
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploaded new combined Netex for Norway for OTP2")
                 .routeId("otp2-netex-export-merge-file");
