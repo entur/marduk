@@ -118,6 +118,7 @@ resource "google_pubsub_subscription" "ChouetteExportGtfsQueue" {
   topic = google_pubsub_topic.ChouetteExportGtfsQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -147,11 +148,11 @@ resource "google_pubsub_subscription" "DamuExportGtfsQueue" {
   topic = google_pubsub_topic.DamuExportGtfsQueue.name
   project = var.gcp_resources_project
   labels = var.labels
-  ack_deadline_seconds = 600
   dead_letter_policy {
     max_delivery_attempts = 5
     dead_letter_topic = google_pubsub_topic.DamuExportGtfsDeadLetterQueue.id
   }
+  ack_deadline_seconds = 600
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -185,6 +186,7 @@ resource "google_pubsub_subscription" "ChouetteExportNetexQueue" {
   topic = google_pubsub_topic.ChouetteExportNetexQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -201,6 +203,7 @@ resource "google_pubsub_subscription" "ChouetteExportNetexBlocksQueue" {
   topic = google_pubsub_topic.ChouetteExportNetexBlocksQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -217,6 +220,7 @@ resource "google_pubsub_subscription" "ChouetteImportQueue" {
   topic = google_pubsub_topic.ChouetteImportQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -233,6 +237,7 @@ resource "google_pubsub_subscription" "ChouetteMergeWithFlexibleLinesQueue" {
   topic = google_pubsub_topic.ChouetteMergeWithFlexibleLinesQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -249,6 +254,7 @@ resource "google_pubsub_subscription" "ChouettePollStatusQueue" {
   topic = google_pubsub_topic.ChouettePollStatusQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -265,6 +271,7 @@ resource "google_pubsub_subscription" "ChouetteTransferExportQueue" {
   topic = google_pubsub_topic.ChouetteTransferExportQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -281,6 +288,7 @@ resource "google_pubsub_subscription" "ChouetteValidationQueue" {
   topic = google_pubsub_topic.ChouetteValidationQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -297,6 +305,7 @@ resource "google_pubsub_subscription" "GtfsBasicExportMergedQueue" {
   topic = google_pubsub_topic.GtfsBasicExportMergedQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -313,6 +322,7 @@ resource "google_pubsub_subscription" "GtfsExportMergedQueue" {
   topic = google_pubsub_topic.GtfsExportMergedQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -329,6 +339,7 @@ resource "google_pubsub_subscription" "GtfsGoogleExportQueue" {
   topic = google_pubsub_topic.GtfsGoogleExportQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -345,6 +356,7 @@ resource "google_pubsub_subscription" "GtfsGooglePublishQaQueue" {
   topic = google_pubsub_topic.GtfsGooglePublishQaQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -361,6 +373,7 @@ resource "google_pubsub_subscription" "GtfsGooglePublishQueue" {
   topic = google_pubsub_topic.GtfsGooglePublishQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -377,6 +390,7 @@ resource "google_pubsub_subscription" "GtfsGoogleQaExportQueue" {
   topic = google_pubsub_topic.GtfsGoogleQaExportQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -393,6 +407,7 @@ resource "google_pubsub_subscription" "MardukInboundQueue" {
   topic = google_pubsub_topic.MardukInboundQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -409,6 +424,7 @@ resource "google_pubsub_subscription" "NetexExportMergedQueue" {
   topic = google_pubsub_topic.NetexExportMergedQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -425,6 +441,7 @@ resource "google_pubsub_subscription" "ProcessFileQueue" {
   topic = google_pubsub_topic.ProcessFileQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -441,6 +458,7 @@ resource "google_pubsub_subscription" "NetexExportNotificationQueue" {
   topic = google_pubsub_topic.NetexExportNotificationQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -452,6 +470,7 @@ resource "google_pubsub_subscription" "AntuNetexValidationStatusQueue" {
   filter = "attributes.EnturValidationClient = \"Marduk\""
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -469,6 +488,7 @@ resource "google_pubsub_subscription" "OtpBaseGraphBuildQueue" {
   topic = google_pubsub_topic.OtpBaseGraphBuildQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -479,6 +499,7 @@ resource "google_pubsub_subscription" "Otp2BaseGraphBuildQueue" {
   topic = google_pubsub_topic.OtpBaseGraphBuildQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -495,6 +516,7 @@ resource "google_pubsub_subscription" "OtpGraphBuildQueue" {
   topic = google_pubsub_topic.OtpGraphBuildQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -505,6 +527,7 @@ resource "google_pubsub_subscription" "Otp2GraphBuildQueue" {
   topic = google_pubsub_topic.OtpGraphBuildQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -521,6 +544,7 @@ resource "google_pubsub_subscription" "Otp2GraphCandidateBuildQueue" {
   topic = google_pubsub_topic.Otp2GraphCandidateBuildQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
@@ -537,6 +561,7 @@ resource "google_pubsub_subscription" "Otp2BaseGraphCandidateBuildQueue" {
   topic = google_pubsub_topic.Otp2BaseGraphCandidateBuildQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  ack_deadline_seconds = 60
   retry_policy {
     minimum_backoff = "10s"
   }
