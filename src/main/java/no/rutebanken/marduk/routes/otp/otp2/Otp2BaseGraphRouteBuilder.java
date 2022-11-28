@@ -58,7 +58,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue?maxAckExtensionPeriod=14400").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.getAggregateControllerForRoute("otp2-base-graph-build"))
+                .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.registerDefaultAggregateControllerForRoute("otp2-base-graph-build"))
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
@@ -67,7 +67,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.getAggregateControllerForRoute("otp2-base-graph-build"))
+                .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.registerDefaultAggregateControllerForRoute("otp2-base-graph-build"))
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .setProperty(OTP_BUILD_CANDIDATE, simple("true", Boolean.class))

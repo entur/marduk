@@ -28,14 +28,23 @@ public class IdleRouteAggregationMonitor {
     }
 
     /**
-     * Return an aggregate controller for a given route.
+     * Register a default aggregate controller for a given route.
      *
      * @param routeId the Camel route id.
      * @return an aggregate controller that will trigger aggregation when the route is idle.
      */
-    public AggregateController getAggregateControllerForRoute(String routeId) {
+    public AggregateController registerDefaultAggregateControllerForRoute(String routeId) {
+        return registerCustomAggregateControllerForRoute(routeId,  new DefaultAggregateController());
+    }
+
+    /**
+     * Register a custom aggregate controller for a given route.
+     *
+     * @param routeId the Camel route id.
+     * @return the provided aggregate controller.
+     */
+    public AggregateController registerCustomAggregateControllerForRoute(String routeId, AggregateController aggregateController ) {
         List<AggregateController> aggregateControllers = this.aggregateControllerMap.computeIfAbsent(routeId, k -> new ArrayList<>());
-        AggregateController aggregateController = new DefaultAggregateController();
         aggregateControllers.add(aggregateController);
         return aggregateController;
     }
@@ -56,5 +65,6 @@ public class IdleRouteAggregationMonitor {
         });
 
     }
+
 
 }

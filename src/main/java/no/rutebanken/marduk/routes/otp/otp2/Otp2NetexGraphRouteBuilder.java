@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.aggregation.DisabledOnPeriodAggregateController;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalTime;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
@@ -68,6 +70,12 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
     String otpReportContainerName;
 
 
+    @Value("${otp2.graph.build.disabled.start:00:00}")
+    private LocalTime startDisabledPeriod;
+
+    @Value("${otp2.graph.build.disabled.end:00:00}")
+    private LocalTime endDisabledPeriod;
+
     private static final String PROP_MESSAGES = "RutebankenPropMessages";
 
     private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
@@ -81,14 +89,21 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
     private OtpReportBlobStoreService otpReportBlobStoreService;
 
 
+
     @Override
     public void configure() throws Exception {
         super.configure();
 
-
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue?maxAckExtensionPeriod=14400").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.getAggregateControllerForRoute("otp2-remote-netex-graph-build"))
+                .filter(header(Exchange.AGGREGATION_COMPLETE_ALL_GROUPS_INCLUSIVE).isNotNull())
+                .setProperty(Exchange.AGGREGATION_COMPLETE_ALL_GROUPS_INCLUSIVE, header(Exchange.AGGREGATION_COMPLETE_ALL_GROUPS_INCLUSIVE))
+                .end()
+                .aggregate(new GroupedMessageAggregationStrategy())
+                .constant(true)
+                .completionSize(100)
+                .aggregateController(idleRouteAggregationMonitor.registerCustomAggregateControllerForRoute("otp2-remote-netex-graph-build",
+                                new DisabledOnPeriodAggregateController(startDisabledPeriod, endDisabledPeriod)))
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
@@ -97,7 +112,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphCandidateBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.getAggregateControllerForRoute("otp2-remote-netex-graph-build"))
+                .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.registerDefaultAggregateControllerForRoute("otp2-remote-netex-graph-build"))
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .setProperty(OTP_BUILD_CANDIDATE, simple("true", Boolean.class))

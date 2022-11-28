@@ -318,11 +318,18 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:adminBuildBaseGraph")
 
                 .post("routing_graph/build")
-                .description("Triggers building of the OTP graph using existing NeTEx and and a pre-prepared base graph with map data")
+                .description("Triggers building of the OTP graph using existing NeTEx and a pre-built base graph with map data")
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminBuildGraphNetex")
+
+                .post("routing_graph/force_build")
+                .description("Immediately triggers building of the OTP graph using existing NeTEx and a pre-built base graph with map data. The build will start even if another build is in progress")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Command accepted").endResponseMessage()
+                .to("direct:adminForceBuildGraphNetex")
 
                 .post("routing_graph/build_candidate/{graphType}")
                 .description("Triggers graph building for a candidate OTP version")
@@ -682,6 +689,15 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(simple(""))
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
                 .routeId("admin-build-graph-netex");
+
+        from("direct:adminForceBuildGraphNetex")
+                .to("direct:authorizeAdminRequest")
+                .log(LoggingLevel.INFO, "OTP force build graph from NeTEx")
+                .process(this::removeAllCamelHttpHeaders)
+                .setBody(simple(""))
+                .setHeader(Exchange.AGGREGATION_COMPLETE_ALL_GROUPS_INCLUSIVE, constant(true))
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
+                .routeId("admin-force-build-graph-netex");
 
         from("direct:adminBuildGraphCandidate")
                 .to("direct:authorizeAdminRequest")

@@ -73,6 +73,10 @@ data:
     google.publish.qa.cron.schedule={{ .Values.google.publishQA.cronSchedule }}
     google.export.qa.includes.shapes={{ .Values.google.publishQA.includeShapes }}
 
+    # OTP2
+    otp2.graph.build.disabled.start=06:00
+    otp2.graph.build.disabled.end=08:00
+
     # Actuator
     management.server.port=9001
     management.endpoints.enabled-by-default=false
