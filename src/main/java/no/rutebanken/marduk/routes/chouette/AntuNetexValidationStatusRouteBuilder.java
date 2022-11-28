@@ -124,7 +124,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .endChoice()
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_FLEX_POSTVALIDATION).state(JobEvent.State.OK).build())
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:copyBlobInBucket")
                 .endChoice()
