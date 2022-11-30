@@ -139,7 +139,6 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
 
         context.start();
 
-        baseGraphProducerTemplate.sendBody(null);
         baseGraphProducerTemplate.sendBodyAndHeaders(null, createMessageHeaders(2L, "ref", "corr-id"));
 
         updateStatus.assertIsSatisfied();
