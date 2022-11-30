@@ -36,6 +36,7 @@ import static no.rutebanken.marduk.Constants.VALIDATION_CORRELATION_ID_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_DATASET_FILE_HANDLE_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE;
+import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE_FLEX;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
 
@@ -91,10 +92,9 @@ public class NetexFlexibleLinesExportRouteBuilder extends BaseRouteBuilder {
 
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
-                .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE))
+                .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE_FLEX))
                 .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(TARGET_FILE_HANDLE))
                 .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
-                .to("direct:setNetexValidationProfile")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:AntuNetexValidationQueue")
                 .process(e -> JobEvent.providerJobBuilder(e)
                         .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION)
