@@ -23,7 +23,10 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 
 @Component
 public class ExternalBlobStoreRoute extends BaseRouteBuilder {
@@ -49,6 +52,18 @@ public class ExternalBlobStoreRoute extends BaseRouteBuilder {
                 .to(logDebugShowAll())
                 .bean(exchangeBlobStoreService,"deleteBlob")
                 .to(logDebugShowAll());
+
+        from("direct:copyExchangeBlobToAnotherBucket")
+                .to(logDebugShowAll())
+                .choice()
+                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
+                //defaulting to private access if not specified
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
+                .end()
+                .bean(exchangeBlobStoreService, "copyBlobToAnotherBucket")
+                .to(logDebugShowAll())
+                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} from Marduk Exchange bucket to bucket ${header." + TARGET_CONTAINER + "}.")
+                .routeId("blobstore-exchange-copy-to-another-bucket");
 
     }
 }
