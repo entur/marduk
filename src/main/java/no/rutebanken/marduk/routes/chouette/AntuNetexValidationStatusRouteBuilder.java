@@ -24,6 +24,7 @@ import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.ANTU_VALIDATION_REPORT_ID;
+import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_NETEX_EXPORT;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
@@ -146,8 +147,11 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .endChoice()
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION))
-                .to("direct:copyMergedFileAfterSuccessfulValidation")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION).state(JobEvent.State.OK).build())
+                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
+                .to("direct:copyBlobInBucket")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:PublishMergedNetexQueue")
                 .endChoice()
 
                 .otherwise()
@@ -180,7 +184,11 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION).state(JobEvent.State.FAILED).build())
                 // TODO temporarily ignore validation errors in NeTEx flex dataset
-                .to("direct:copyMergedFileAfterSuccessfulValidation")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION).state(JobEvent.State.FAILED).build())
+                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
+                .to("direct:copyBlobInBucket")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:PublishMergedNetexQueue")
                 .otherwise()
                 .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
                 //end otherwise

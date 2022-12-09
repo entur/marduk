@@ -242,6 +242,22 @@ resource "google_pubsub_subscription" "FlexibleLinesExportQueue" {
   }
 }
 
+resource "google_pubsub_topic" "PublishMergedNetexQueue" {
+  name = "PublishMergedNetexQueue"
+  project = var.gcp_resources_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "PublishMergedNetexQueue" {
+  name = "PublishMergedNetexQueue"
+  topic = google_pubsub_topic.PublishMergedNetexQueue.name
+  project = var.gcp_resources_project
+  labels = var.labels
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
 
 resource "google_pubsub_topic" "ChouetteMergeWithFlexibleLinesQueue" {
   name = "ChouetteMergeWithFlexibleLinesQueue"

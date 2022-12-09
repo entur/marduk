@@ -27,7 +27,6 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.io.File;
 import java.io.FileInputStream;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_NETEX_EXPORT;
@@ -58,7 +57,7 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
     void testExportMergedNetex() throws Exception {
 
         // Mock status update
-        AdviceWith.adviceWith(context, "netex-export-merge-chouette-with-flexible-lines", a -> {
+        AdviceWith.adviceWith(context, "publish-merged-dataset", a -> {
 
             a.weaveByToUri("google-pubsub:(.*):OtpGraphBuildQueue").replace().to("mock:OtpGraphBuildQueue");
 
@@ -68,13 +67,14 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
 
         AdviceWith.adviceWith(context, "netex-notify-export", a -> a.weaveByToUri("google-pubsub:(.*):NetexExportNotificationQueue").replace().to("mock:NetexExportNotificationQueue"));
 
-
+        otpBuildGraph.expectedMessageCount(1);
+        otpBuildGraph.setResultWaitTime(20000);
+        updateStatus.expectedMessageCount(1);
+        updateStatus.setResultWaitTime(20000);
+        netexExportNotificationQueue.expectedMessageCount(1);
+        netexExportNotificationQueue.setResultWaitTime(20000);
 
         context.start();
-
-        otpBuildGraph.expectedMessageCount(1);
-        updateStatus.expectedMessageCount(1);
-        netexExportNotificationQueue.expectedMessageCount(1);
 
         // Create flexible line export in in memory blob store
         mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + CURRENT_FLEXIBLE_LINES_NETEX_FILENAME, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex_with_two_files.zip"), false);
@@ -85,13 +85,12 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
 
         startRoute.requestBodyAndHeader(null, Constants.CHOUETTE_REFERENTIAL, "rb_rut");
 
-        assertNotNull(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME), "Expected merged netex file to have been uploaded");
-        assertTrue(exchangeInMemoryBlobStoreRepository.listBlobs(BLOBSTORE_PATH_OUTBOUND + "dated").getFiles().size() > 0, "Expected merged netex file to have been uploaded to marduk exchange for DatedServiceJourneyId-generation");
-
-
         updateStatus.assertIsSatisfied();
         otpBuildGraph.assertIsSatisfied();
         netexExportNotificationQueue.assertIsSatisfied();
+
+        assertNotNull(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME), "Expected merged netex file to have been uploaded");
+        assertTrue(exchangeInMemoryBlobStoreRepository.listBlobs(BLOBSTORE_PATH_OUTBOUND + "dated").getFiles().size() > 0, "Expected merged netex file to have been uploaded to marduk exchange for DatedServiceJourneyId-generation");
         assertEquals("rut", netexExportNotificationQueue.getExchanges().get(0).getIn().getBody());
 
     }

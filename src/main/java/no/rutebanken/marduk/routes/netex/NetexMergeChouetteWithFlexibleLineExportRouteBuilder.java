@@ -34,11 +34,9 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_CHOUETTE;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
-import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
 import static no.rutebanken.marduk.Constants.VALIDATION_CORRELATION_ID_HEADER;
@@ -58,8 +56,10 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     private static final String MERGED_NETEX_SUB_FOLDER = "/result";
 
     private static final String BLOBSTORE_PATH_UTTU = "uttu/";
-    public static final String PROP_HAS_CHOUETTE_DATA = "PROP_HAS_CHOUETTE_DATA";
-    public static final String PROP_AS_FLEXIBLE_DATA = "PROP_HAS_FLEXIBLE_DATA";
+    private static final String PROP_HAS_CHOUETTE_DATA = "PROP_HAS_CHOUETTE_DATA";
+    private static final String PROP_AS_FLEXIBLE_DATA = "PROP_HAS_FLEXIBLE_DATA";
+
+    private static final String EXPORT_FILE_NAME = "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
 
     @Value("${netex.export.download.directory:files/netex/merged}")
     private String localWorkingDirectory;
@@ -67,10 +67,6 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     @Value("${netex.export.merge.flexible.lines.enabled:false}")
     private String mergeFlexibleLinesEnabled;
 
-    @Value("${gtfs.export.chouette:true}")
-    private boolean useChouetteGtfsExport;
-
-    private static final String EXPORT_FILE_NAME = "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
 
     @Override
     public void configure() throws Exception {
@@ -102,7 +98,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
                 .otherwise()
                 .to("direct:uploadMergedFileToOutboundBucket")
-                .to("direct:publishMergedDataset")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:PublishMergedNetexQueue")
 
                 .endDoTry()
                 .doFinally()
@@ -121,20 +117,6 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .to("direct:uploadBlob")
                 .routeId("netex-upload-merged-netex-to-outbound-bucket");
 
-        from("direct:publishMergedDataset")
-
-                .filter(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.generateDatedServiceJourneyIds)
-                .to("direct:copyDatedExport")
-                .end()
-
-                .wireTap("direct:notifyExportNetexWithFlexibleLines")
-                .setBody(constant(""))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
-                .to("direct:updateStatus")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
-                .to("direct:startDamuGtfsExport")
-                .routeId("publish-merged-dataset");
 
         from("direct:uploadMergedFileToValidationFolder")
                 .process(e -> new File(e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUB_FOLDER).mkdir())
@@ -142,13 +124,6 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_UTTU + EXPORT_FILE_NAME))
                 .to("direct:uploadBlob")
                 .routeId("netex-merged-upload-to-validation-folder");
-
-        from("direct:copyMergedFileAfterSuccessfulValidation")
-                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
-                .to("direct:copyBlobInBucket")
-                .to("direct:publishMergedDataset")
-                .routeId("netex-merged-copy-after-validation");
 
 
         from("direct:unpackChouetteExportToWorkingFolder")
@@ -181,26 +156,6 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "No flexible line data found: ${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
                 .routeId("netex-export-merge-chouette-with-flexible-lines-do-unpack-flexible-lines-export");
-
-
-        from("direct:notifyExportNetexWithFlexibleLines")
-                .setBody(header(CHOUETTE_REFERENTIAL).regexReplaceAll("rb_", ""))
-                .removeHeaders("*")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:NetexExportNotificationQueue")
-                .routeId("netex-notify-export");
-
-        from("direct:startDamuGtfsExport")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering GTFS export in Damu.")
-                .filter(PredicateBuilder.not(constant(useChouetteGtfsExport)))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT).state(JobEvent.State.PENDING).build())
-                //end filter
-                .end()
-                .removeHeader(DATASET_REFERENTIAL)
-                .setBody(header(CHOUETTE_REFERENTIAL))
-                .process(this::removeAllCamelHeaders)
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:DamuExportGtfsQueue")
-                .routeId("start-damu-gtfs-export");
-
 
         // start the validation in antu
         from("direct:antuMergedNetexPostValidation")
