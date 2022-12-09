@@ -129,6 +129,8 @@ public final class Constants {
 
     public static final String VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION = "EnturValidationStageExportFlexPostValidation";
 
+    public static final String VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION = "EnturValidationStageExportMergedPostValidation";
+
 
 
     public static final String VALIDATION_CLIENT_HEADER = "EnturValidationClient";
@@ -137,6 +139,8 @@ public final class Constants {
     public static final String VALIDATION_PROFILE_HEADER = "EnturValidationProfile";
     public static final String VALIDATION_PROFILE_TIMETABLE = "Timetable";
     public static final String VALIDATION_PROFILE_TIMETABLE_FLEX = "TimetableFlexibleTransport";
+
+    public static final String VALIDATION_PROFILE_TIMETABLE_FLEX_MERGING = "TimetableFlexibleTransportMerging";
     public static final String VALIDATION_PROFILE_TIMETABLE_SWEDEN = "TimetableSweden";
 
 
