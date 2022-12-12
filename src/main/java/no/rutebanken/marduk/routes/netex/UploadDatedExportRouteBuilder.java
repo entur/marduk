@@ -21,8 +21,11 @@ import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 
 /**
  * Upload a dated version of an exported file with a unique name to the marduk-exchange blobstore.
@@ -37,12 +40,13 @@ public class UploadDatedExportRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        from("direct:uploadDatedExport").streamCaching()
+        from("direct:copyDatedExport").streamCaching()
                 .setProperty("datedVersionFileName", simple("${header." + CHOUETTE_REFERENTIAL + "}-${date:now:yyyyMMddHHmmssSSS}.zip"))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Start uploading dated version of ${exchangeProperty.datedVersionFileName} to marduk-exchange")
-                .setHeader(FILE_HANDLE, simple(blobStorePath + "/${exchangeProperty.datedVersionFileName}"))
-                .to("direct:uploadExternalBlob")
-                .routeId("upload-dated-export");
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Start copying dated version of ${exchangeProperty.datedVersionFileName} to marduk-exchange")
+                .setHeader(TARGET_FILE_HANDLE, simple(blobStorePath + "/${exchangeProperty.datedVersionFileName}"))
+                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
+                .to("direct:copyBlobToAnotherBucket")
+                .routeId("copy-dated-export");
 
     }
 }
