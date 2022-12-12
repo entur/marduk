@@ -28,7 +28,7 @@ import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 /**
- * Publish merged NeTEx dataset and notify downstream consumers (dated NeTEx export, GTFS export, OTP Graph builder, Kafka topic)
+ * Publish dated merged NeTEx dataset and notify downstream consumers (GTFS export, OTP Graph builder, Kafka topic)
  */
 @Component
 public class PublishMergedNetexRouteBuilder extends BaseRouteBuilder {

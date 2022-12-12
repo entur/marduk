@@ -35,7 +35,6 @@ import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
 import static no.rutebanken.marduk.Constants.VALIDATION_CORRELATION_ID_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_DATASET_FILE_HANDLE_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_HEADER;
-import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE;
 import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE_FLEX;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION;
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
@@ -52,6 +51,7 @@ import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
 public class NetexFlexibleLinesExportRouteBuilder extends BaseRouteBuilder {
 
     private static final String BLOBSTORE_PATH_UTTU = "uttu";
+    public static final String EXPORT_FLEX_FOR_VALIDATION = BLOBSTORE_PATH_UTTU + "/netex/${header." + CHOUETTE_REFERENTIAL + "}" + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME;
 
     @Override
     public void configure() throws Exception {
@@ -82,7 +82,7 @@ public class NetexFlexibleLinesExportRouteBuilder extends BaseRouteBuilder {
         from("direct:copyInboundFileToValidationFolder")
                 .setHeader(FILE_HANDLE, simple( "inbound/netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME))
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.container.name}"))
-                .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_UTTU + "/netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME))
+                .setHeader(TARGET_FILE_HANDLE, simple(EXPORT_FLEX_FOR_VALIDATION))
                 .to("direct:copyExchangeBlobToAnotherBucket")
                 .routeId("netex-flexible-copy-to-validation-folder");
 

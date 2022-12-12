@@ -60,6 +60,8 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     private static final String PROP_AS_FLEXIBLE_DATA = "PROP_HAS_FLEXIBLE_DATA";
 
     private static final String EXPORT_FILE_NAME = "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+    private static final String EXPORT_MERGED_FOR_VALIDATION = BLOBSTORE_PATH_UTTU +   "netex/${header." + CHOUETTE_REFERENTIAL + "}" + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+
 
     @Value("${netex.export.download.directory:files/netex/merged}")
     private String localWorkingDirectory;
@@ -98,7 +100,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
                 .otherwise()
                 .to("direct:uploadMergedFileToOutboundBucket")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:PublishMergedNetexQueue")
+                .to("direct:publishMergedDataset")
 
                 .endDoTry()
                 .doFinally()
@@ -121,7 +123,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
         from("direct:uploadMergedFileToValidationFolder")
                 .process(e -> new File(e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUB_FOLDER).mkdir())
                 .process(e -> e.getIn().setBody(ZipFileUtils.zipFilesInFolder(e.getProperty(FOLDER_NAME, String.class) + UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER, e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUB_FOLDER + "/merged.zip")))
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_UTTU + EXPORT_FILE_NAME))
+                .setHeader(FILE_HANDLE, simple(EXPORT_MERGED_FOR_VALIDATION))
                 .to("direct:uploadBlob")
                 .routeId("netex-merged-upload-to-validation-folder");
 
