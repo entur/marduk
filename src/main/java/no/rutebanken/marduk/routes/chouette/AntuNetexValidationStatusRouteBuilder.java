@@ -76,7 +76,11 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
                 .choice()
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.STARTED).build())
+                .process(e -> JobEvent.providerJobBuilder(e)
+                        .timetableAction(JobEvent.TimetableAction.PREVALIDATION)
+                        .state(JobEvent.State.STARTED)
+                        .jobId(null)
+                        .build())
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e)
                         .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION)
