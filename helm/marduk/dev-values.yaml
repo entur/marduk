@@ -3,7 +3,9 @@ replicas: 2
 
 gcp:
   blobstoreProjectId: entur-ror-dev
-  pubsubProjectId: entur-ror-dev
+  mardukPubsubProjectId: entur-ror-dev
+  antuPubsubProjectId: entur-ror-dev
+  nabuPubsubProjectId: entur-ror-dev
   databaseInstance: entur-ror-dev:europe-west1:marduk-db-pg13=tcp:5432
   bucketName: marduk-dev
   exchangeBucketName: ror-marduk-exchange-dev

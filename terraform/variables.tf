@@ -105,5 +105,9 @@ variable "db_availability" {
   default = "ZONAL"
 }
 
+variable "antu_netex_validation_status_queue_topic" {
+  description = "PubSub topic receiving NeTEx validation request status"
+}
+
 
 

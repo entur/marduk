@@ -8,4 +8,5 @@ bucket_otpreport_instance_name = "otpreport.entur.org"
 bucket_nisaba_exchange_instance_name="ror-nisaba-exchange-production"
 service_account_bucket_role = "roles/storage.admin"
 db_availability = "REGIONAL"
+antu_netex_validation_status_queue_topic =" projects/entur-ror-prod/topics/AntuNetexValidationStatusQueue"
 

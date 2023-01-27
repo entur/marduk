@@ -95,7 +95,7 @@ public class NetexFlexibleLinesExportRouteBuilder extends BaseRouteBuilder {
                 .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE_FLEX))
                 .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(TARGET_FILE_HANDLE))
                 .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:AntuNetexValidationQueue")
+                .to("google-pubsub:{{antu.pubsub.project.id}}:AntuNetexValidationQueue")
                 .process(e -> JobEvent.providerJobBuilder(e)
                         .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION)
                         .state(JobEvent.State.PENDING)

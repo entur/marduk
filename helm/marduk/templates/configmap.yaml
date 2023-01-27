@@ -25,7 +25,9 @@ data:
 
     # PubSub
     # project id and credential location are not set, they are retrieved automatically through the GOOGLE_APPLICATION_CREDENTIALS environment variable
-    marduk.pubsub.project.id={{ .Values.gcp.pubsubProjectId }}
+    marduk.pubsub.project.id={{ .Values.gcp.mardukPubsubProjectId }}
+    antu.pubsub.project.id={{ .Values.gcp.antuPubsubProjectId }}
+    nabu.pubsub.project.id={{ .Values.gcp.nabuPubsubProjectId }}
     camel.component.google-pubsub.service-account-key=file:/etc/marduk-service-account/credentials.json
 
     # Blobstore

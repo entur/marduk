@@ -177,7 +177,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_PREVALIDATION))
 
                 .to("direct:setNetexValidationProfile")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:AntuNetexValidationQueue")
+                .to("google-pubsub:{{antu.pubsub.project.id}}:AntuNetexValidationQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .routeId("antu-netex-pre-validation");
