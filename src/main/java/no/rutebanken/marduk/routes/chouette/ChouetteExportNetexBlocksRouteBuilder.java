@@ -173,7 +173,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
                 .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
                 .to("direct:setNetexValidationProfile")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:AntuNetexValidationQueue")
+                .to("google-pubsub:{{antu.pubsub.project.id}}:AntuNetexValidationQueue")
                 .process(e -> JobEvent.providerJobBuilder(e)
                         .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION)
                         .state(JobEvent.State.PENDING)

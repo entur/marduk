@@ -497,9 +497,10 @@ resource "google_pubsub_subscription" "NetexExportNotificationQueue" {
   }
 }
 
+
 resource "google_pubsub_subscription" "AntuNetexValidationStatusQueue" {
   name = "AntuNetexValidationStatusQueue"
-  topic = "AntuNetexValidationStatusQueue"
+  topic = var.antu_netex_validation_status_queue_topic
   filter = "attributes.EnturValidationClient = \"Marduk\""
   project = var.gcp_resources_project
   labels = var.labels
