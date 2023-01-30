@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Profile;
 @Profile("gcs-blobstore")
 public class GcsStorageConfig {
 
-    @Value("${blobstore.gcs.credential.path}")
+    @Value("${blobstore.gcs.credential.path:#{null}}")
     private String credentialPath;
 
     @Value("${blobstore.gcs.project.id}")
@@ -35,7 +35,12 @@ public class GcsStorageConfig {
 
     @Bean
     public Storage storage() {
-        return BlobStoreHelper.getStorage(credentialPath, projectId);
+        if (credentialPath == null || credentialPath.isEmpty()) {
+            // Use Default gcp credentials
+            return BlobStoreHelper.getStorage(projectId);
+        } else {
+            return BlobStoreHelper.getStorage(credentialPath, projectId);
+        }
     }
 
 }
