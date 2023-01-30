@@ -1,0 +1,136 @@
+apiVersion: v1
+data:
+  application.properties: |+
+
+    # Spring
+    spring.main.sources=no.rutebanken.marduk
+    spring.profiles.active=gcs-blobstore
+    spring.datasource.url=jdbc:postgresql://localhost:5432/marduk
+    spring.datasource.platform=postgresql
+    spring.datasource.driver-class-name=org.postgresql.Driver
+    spring.datasource.maxActive=10
+    spring.servlet.multipart.max-file-size=100MB
+    spring.servlet.multipart.max-request-size=100MB
+    server.port={{ .Values.common.service.internalPort }}
+
+    # Camel
+    camel.springboot.name=Marduk
+    camel.springboot.streamCachingEnabled=false
+    camel.springboot.streamCachingSpoolEnabled=true
+    camel.dataformat.jackson.module-refs=jacksonJavaTimeModule
+    camel.servlet.mapping.context-path=/services/*
+    camel.cluster.kubernetes.enabled=true
+    camel.cluster.kubernetes.cluster-labels[app]=marduk
+    camel.cluster.kubernetes.config-map-name=marduk-leaders
+
+    # PubSub
+    # project id and credential location are not set, they are retrieved automatically through the GOOGLE_APPLICATION_CREDENTIALS environment variable
+    marduk.pubsub.project.id={{ .Values.gcp.mardukPubsubProjectId }}
+    antu.pubsub.project.id={{ .Values.gcp.antuPubsubProjectId }}
+    nabu.pubsub.project.id={{ .Values.gcp.nabuPubsubProjectId }}
+
+
+    # Blobstore
+    blobstore.gcs.project.id={{ .Values.gcp.blobstoreProjectId }}
+    blobstore.gcs.container.name={{ .Values.gcp.bucketName }}
+    blobstore.gcs.otpreport.container.name={{ .Values.gcp.otpReportBucketName }}
+    blobstore.gcs.exchange.container.name={{ .Values.gcp.exchangeBucketName }}
+    blobstore.gcs.graphs.container.name={{ .Values.gcp.otpGraphBucketName }}
+    blobstore.gcs.nisaba.exchange.container.name={{ .Values.gcp.nisabaExchangeBucketName }}
+    blobstore.delete.external.blobs=false
+
+    # Duplicate file filter
+    duplicate.filter.web={{ .Values.duplicateFileFilter.webFilter }}
+    duplicate.filter.rest=true
+
+    # Chouette
+    chouette.enablePreValidation={{ .Values.chouette.enablePreValidation }}
+    chouette.enablePostValidation={{ .Values.chouette.enablePostValidation }}
+    chouette.validate.level1.autoStartup=true
+    chouette.validate.level1.cron.schedule={{ .Values.chouette.validateLevel1CronSchedule }}
+    chouette.validate.level2.autoStartup=false
+    chouette.retry.delay=30000
+    chouette.stats.days=180
+    chouette.stats.validity.categories=-1;INVALID,0;EXPIRING,120;VALID
+    # Refresh the line stats cache. For performance reasons this should not run while the nightly validation is running
+    # (see chouette.validate.level1.cron.schedule)
+    chouette.stats.cache.refresh.quartz.trigger=cron={{ .Values.chouette.refreshStatsCacheCronSchedule }}&stateful=true
+    chouette.url={{ .Values.chouette.service }}
+    chouette.remove.old.jobs.cron.schedule={{ .Values.chouette.removeOldJobsCronSchedule }}
+    chouette.remove.old.jobs.keep.days=30
+    chouette.remove.old.jobs.keep.jobs=50
+    chouette.max.retries=3000
+    chouette.include.stops.codespaces=SAM,VAN,VAS,VTR
+
+    # Antu
+    antu.validation.sweden.codespaces=${chouette.include.stops.codespaces}
+
+    # StopPlace Netex export
+    netex.export.stop.place.blob.path={{ .Values.netex.export }}
+
+    # Google GTFS exports
+    google.publish.scheduler.autoStartup={{ .Values.google.publish.autoStartup }}
+    google.publish.cron.schedule={{ .Values.google.publish.cronSchedule }}
+    google.publish.qa.scheduler.autoStartup={{ .Values.google.publishQA.autoStartup }}
+    google.publish.qa.cron.schedule={{ .Values.google.publishQA.cronSchedule }}
+    google.export.qa.includes.shapes={{ .Values.google.publishQA.includeShapes }}
+
+    # Actuator
+    management.server.port=9001
+    management.endpoints.enabled-by-default=false
+    management.endpoint.info.enabled=true
+    management.endpoint.health.enabled=true
+    management.endpoint.health.group.readiness.include=readinessState
+    management.endpoint.prometheus.enabled=true
+    management.endpoints.web.exposure.include=info,health,prometheus
+
+    # OAuth2 Resource Server
+    marduk.oauth2.resourceserver.auth0.partner.jwt.issuer-uri={{ .Values.auth0.partner.url }}/
+    marduk.oauth2.resourceserver.auth0.partner.jwt.audience={{ .Values.auth0.partner.audience }}
+    marduk.oauth2.resourceserver.auth0.partner.admin.activated={{ .Values.auth0.partner.administratorAccessEnabled }}
+    marduk.oauth2.resourceserver.auth0.partner.organisations={1:'RB', 14:'MOR', 20:'NSB', 35:'GOA', 41:'SJN', 56:'FLI', 23:'HUR', 58:'VYX', 59:'VYB', 68:'FAR', 29:'TRO', 74:'CON', 60:'HAV'}
+
+    marduk.oauth2.resourceserver.auth0.ror.jwt.issuer-uri={{ .Values.auth0.ror.url }}/
+    marduk.oauth2.resourceserver.auth0.ror.jwt.audience={{ .Values.auth0.ror.audience }}
+    marduk.oauth2.resourceserver.auth0.ror.claim.namespace=https://ror.entur.io/
+
+    # OAuth2 Client
+    spring.security.oauth2.client.registration.marduk.authorization-grant-type=client_credentials
+    spring.security.oauth2.client.registration.marduk.client-id={{ .Values.oauth2.client.id }}
+    spring.security.oauth2.client.provider.marduk.token-uri={{ .Values.oauth2.client.url }}
+    marduk.oauth2.client.audience={{ .Values.oauth2.client.audience }}
+
+    # Logging
+    logging.level.no.rutebanken=INFO
+    logging.level.org.apache=INFO
+    logging.config=classpath:logback.xml
+    logging.level.org.apache.camel.component.http.HttpComponent=WARN
+
+    # NeTeX import
+    netex.import.delegation.authorization={CON:'AKT'}
+
+    # NeTeX export
+    netex.export.block.authorization={FAR:'OST,ATB,INN',CON:'TRO'}
+    netex.export.merge.flexible.lines.enabled=true
+    netex.export.download.directory=/tmp/marduk/files/netex/merged
+    otp2.netex.export.download.directory=/tmp/marduk/files/netex/merged-otp2
+
+    # GTFS export
+    gtfs.export.download.directory=/tmp/marduk/files/gtfs/merged
+    gtfs.export.chouette={{ .Values.chouette.gtfsExport }}
+
+    # Other
+    # the Camel shutdown timeout must be shorter than the Kubernetes terminationGracePeriod
+    marduk.shutdown.timeout=25
+    providers.api.url={{ .Values.baba.service }}/services/providers/
+    fetch.osm.cron.schedule={{ .Values.osm.fetchCronSchedule }}
+    otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
+    otp.graph.build.remote.kubernetes.timeout=12000
+    rutebanken.kubernetes.namespace={{ .Release.Namespace }}
+
+kind: ConfigMap
+metadata:
+  name: marduk-application
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "marduk.common.labels" . | indent 4 }}

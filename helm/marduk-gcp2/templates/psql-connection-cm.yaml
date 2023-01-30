@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: marduk-psql-connection
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{.Release.Name}}
+    shortname: marduk
+    team: ror
+data:
+  INSTANCES: {{.Values.sql.instance}}

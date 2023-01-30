@@ -1,0 +1,17 @@
+apiVersion: v2
+appVersion: "0.0.1"
+description: timetable admin backend
+name: marduk
+version: 0.1.0
+keywords:
+- marduk
+sources:
+- https://github.com/entur/kingu
+maintainers:
+- name: 'team-ror'
+  email: team.rutedata@entur.org
+engine: gotpl
+dependencies:
+  - name: common
+    version: 1.8.1
+    repository: "https://entur.github.io/helm-charts"

@@ -1,0 +1,59 @@
+marduk:
+  database: marduk
+common:
+  app: marduk
+  shortname: marduk
+  team: ror
+  container:
+    image: ${artifact.metadata.image}
+    cpuLimit: 3000m
+    memoryLimit: 8000
+    memory: 7000
+    cpu: 2
+    probes:
+      liveness:
+        path: /actuator/health/liveness
+        periodSeconds: 10
+        failureThreshold: 3
+        port: 9001
+
+      readiness:
+        path: /actuator/health/readiness
+        periodSeconds: 10
+        failureThreshold: 3
+        port: 9001
+    prometheus:
+      enabled: true
+      path: /health/scrape
+      port: 9001
+    volumeMounts:
+      - mountPath: /etc/application-config
+        name: application-config
+        readOnly: true
+    volumes:
+      - configMap:
+          defaultMode: 420
+          name: marduk-application
+        name: application-config
+
+  postgres:
+    enabled: true
+    memory: 40
+    credentialsSecret: ror-marduk-secret
+
+  service:
+    enabled: true
+    internalPort: 8080
+    externalPort: 8080
+
+  ingress:
+    enabled: true
+  configmap:
+    data:
+      JDK_JAVA_OPTIONS: -server -Xss512m -Xmx5g -XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90
+        -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40 -XX:ActiveProcessorCount=2
+        -Dspring.config.location=/etc/application-config/application.properties
+        -Dfile.encoding=UTF-8
+      TZ: Europe/Oslo
+    enabled: true
+    toEnv: true
