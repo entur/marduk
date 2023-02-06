@@ -20,13 +20,13 @@ resource "kubernetes_secret" "ror-marduk-secret" {
   }
 
   data = {
-    "marduk-db-username" = var.ror-marduk-db-username
-    "marduk-db-password" = var.ror-marduk-db-password
-    "marduk-google-sftp-username" = var.ror-marduk-google-sftp-username
-    "marduk-google-sftp-password" = var.ror-marduk-google-sftp-password
-    "marduk-google-qa-sftp-username" = var.ror-marduk-google-qa-sftp-username
-    "marduk-google-qa-sftp-password" = var.ror-marduk-google-qa-sftp-password
-    "marduk-auth0-secret" = var.ror-marduk-auth0-secret
+    "SPRING_DATASOURCE_USERNAME" = var.ror-marduk-db-username
+    "SPRING_DATASOURCE_PASSWORD" = var.ror-marduk-db-password
+    "GOOGLE_PUBLISH_SFTP_USERNAME" = var.ror-marduk-google-sftp-username
+    "GOOGLE_PUBLISH_SFTP_PASSWORD" = var.ror-marduk-google-sftp-password
+    "GOOGLE_PUBLISH_QA_SFTP_USERNAME" = var.ror-marduk-google-qa-sftp-username
+    "GOOGLE_PUBLISH_QA_SFTP_PASSWORD" = var.ror-marduk-google-qa-sftp-password
+    "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_MARDUK_CLIENT_SECRET" = var.ror-marduk-auth0-secret
   }
 }
 
