@@ -24,6 +24,6 @@
     </PreFlow>
     <HTTPTargetConnection>
         <Properties/>
-        <URL>https://timetable-admin-v1-map-NAMESPACE.INGRESS_ENVIRONMENT/services/map_admin</URL>
+        <URL>https://timetable-admin-v1-map-gcp2.INGRESS_ENVIRONMENT/services/map_admin</URL>
     </HTTPTargetConnection>
 </TargetEndpoint>

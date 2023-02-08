@@ -27,6 +27,6 @@
             <Property name="response.streaming.enabled">true</Property>
             <Property name="request.streaming.enabled">true</Property>
         </Properties>
-        <URL>https://timetable-admin-v1-timetable-NAMESPACE.INGRESS_ENVIRONMENT/services/timetable_admin</URL>
+        <URL>https://timetable-admin-v1-timetable-gcp2.INGRESS_ENVIRONMENT/services/timetable_admin</URL>
     </HTTPTargetConnection>
 </TargetEndpoint>

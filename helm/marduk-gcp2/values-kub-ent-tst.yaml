@@ -1,0 +1,69 @@
+common:
+  env: tst
+
+  ingresses:
+    - name : timetable-admin-v1-map
+      trafficType: api
+      host: timetable-admin-v1-map-gcp2.staging.entur.io
+    - name: timetable-admin-v1-timetable
+      trafficType: api
+      host: timetable-admin-v1-timetable-gcp2.staging.entur.io
+sql:
+  instance: ent-marduk-tst:europe-west1:marduk-db-pg13=tcp:5432
+
+
+gcp:
+  blobstoreProjectId: entur-ror-test
+  mardukPubsubProjectId: entur-ror-test
+  antuPubsubProjectId: entur-ror-test
+  nabuPubsubProjectId: entur-ror-test
+  bucketName: marduk-test
+  exchangeBucketName: ror-marduk-exchange-test
+  otpReportBucketName: otpreport.staging.entur.org
+  otpGraphBucketName: ror-otp-graphs-test
+  nisabaExchangeBucketName: ror-nisaba-exchange-test
+
+chouette:
+  service: http://chouette.tst.entur.internal
+  validateLevel1CronSchedule: 0+30+4+?+*+*
+  refreshStatsCacheCronSchedule: 0+0/10+7-23+*+*+?
+  removeOldJobsCronSchedule: 0+00+02+?+*+MON-FRI
+  gtfsExport: false
+  enablePreValidation: false
+  enablePostValidation: false
+
+baba:
+  service: http://baba.tst.entur.internal
+
+duplicateFileFilter:
+  webFilter: true
+
+netex:
+  export: tiamat/CurrentAndFuture_latest.zip
+
+osm:
+  fetchCronSchedule: 0+11+*+*+*+?
+
+google:
+  publish:
+    autoStartup: false
+    cronSchedule: 0+0+4+?+*+*
+  publishQA:
+    autoStartup: false
+    cronSchedule: 0+30+4+?+*+*
+    includeShapes: false
+
+auth0:
+  partner:
+    url: https://partner.staging.entur.org
+    audience: https://api.staging.entur.io
+    administratorAccessEnabled: false
+  ror:
+    url: https://ror-entur-staging.eu.auth0.com
+    audience: https://ror.api.staging.entur.io
+
+oauth2:
+  client:
+    id: zFGUwEQIna314508z8ZojIl7HiJ32KIh
+    url: https://ror-entur-staging.eu.auth0.com/oauth/token
+    audience: https://ror.api.staging.entur.io

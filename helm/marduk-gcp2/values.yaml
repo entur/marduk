@@ -5,6 +5,8 @@ common:
   shortname: marduk
   team: ror
   container:
+    labels: { customLogRetention: enabled }
+    forceReplicas: 2
     image: ${artifact.metadata.image}
     cpuLimit: 3000m
     memoryLimit: 8000

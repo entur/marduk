@@ -1,0 +1,69 @@
+common:
+  env: prd
+
+  ingresses:
+    - name : timetable-admin-v1-map
+      trafficType: api
+      host: timetable-admin-v1-map-gcp2.entur.io
+    - name: timetable-admin-v1-timetable
+      trafficType: api
+      host: timetable-admin-v1-timetable-gcp2.entur.io
+sql:
+  instance: ent-marduk-prd:europe-west1:marduk-db-pg13=tcp:5432
+
+
+gcp:
+  blobstoreProjectId: entur-ror-prod
+  mardukPubsubProjectId: entur-ror-prod
+  antuPubsubProjectId: entur-ror-prod
+  nabuPubsubProjectId: entur-ror-prod
+  bucketName: marduk-production
+  exchangeBucketName: ror-marduk-exchange-production
+  otpReportBucketName: otpreport.entur.org
+  otpGraphBucketName: ror-otp-graphs-production
+  nisabaExchangeBucketName: ror-nisaba-exchange-production
+
+chouette:
+  service: http://chouette.prd.entur.internal
+  validateLevel1CronSchedule: 0+30+23+?+*+*
+  refreshStatsCacheCronSchedule: 0+0/10+2-22+*+*+?
+  removeOldJobsCronSchedule: 0+15+23+?+*+MON-FRI
+  gtfsExport: false
+  enablePreValidation: false
+  enablePostValidation: false
+
+baba:
+  service: http://baba.prd.entur.internal
+
+duplicateFileFilter:
+  webFilter: true
+
+netex:
+  export: tiamat/CurrentAndFuture_latest.zip
+
+osm:
+  fetchCronSchedule: 0+11+*+*+*+?
+
+google:
+  publish:
+    autoStartup: true
+    cronSchedule: 0+0+4+?+*+*
+  publishQA:
+    autoStartup: false
+    cronSchedule: 0+30+4+?+*+*
+    includeShapes: false
+
+auth0:
+  partner:
+    url: https://partner.entur.org
+    audience: https://api.entur.io
+    administratorAccessEnabled: false
+  ror:
+    url: https://auth2.entur.org
+    audience: https://ror.api.entur.io
+
+oauth2:
+  client:
+    id: AmQFacYg4SnpwtmHhngrQk9PPgHiN55H
+    url: https://auth2.entur.org/oauth/token
+    audience: https://ror.api.entur.io
