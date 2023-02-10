@@ -26,7 +26,7 @@ common:
         port: 9001
     prometheus:
       enabled: true
-      path: /health/scrape
+      path: /actuator/prometheus
       port: 9001
     volumeMounts:
       - mountPath: /etc/application-config
