@@ -38,7 +38,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,6 +71,8 @@ class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegration
                 provider("opp", 3, rbOppProvider.id, false, true), rbOppProvider));
 
         when(providerRepository.getProvider(rbOppProvider.id)).thenReturn(rbOppProvider);
+
+        updateStatus.reset();
     }
 
 
@@ -91,7 +92,7 @@ class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegration
         startRoute.requestBody(null);
 
         updateStatus.assertIsSatisfied();
-        List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
+        List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
 
@@ -115,7 +116,7 @@ class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegration
         startQaRoute.requestBody(null);
 
         updateStatus.assertIsSatisfied();
-        List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).collect(Collectors.toList());
+        List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
 
