@@ -1,6 +1,6 @@
 package no.rutebanken.marduk.security.oauth2;
 
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.MardukSpringBootBaseTest;
 import no.rutebanken.marduk.TestApp;
 import org.entur.oauth2.RoROAuth2Claims;
 import org.junit.jupiter.api.Assertions;
@@ -9,14 +9,12 @@ import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
-import org.springframework.test.annotation.DirtiesContext;
 
 import java.util.List;
 import java.util.Map;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class Auth0RolesClaimAdapterTest extends MardukRouteBuilderIntegrationTestBase {
+class Auth0RolesClaimAdapterTest extends MardukSpringBootBaseTest {
 
     private static final Long RUTEBANKEN_ORG_ID = 1L;
     private static final Long PROVIDER_ORG_ID = 2L;
