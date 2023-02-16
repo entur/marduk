@@ -23,7 +23,9 @@ import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
 import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.apache.camel.test.spring.junit5.UseAdviceWith;
+import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -31,6 +33,7 @@ import java.util.Map;
 
 @CamelSpringBootTest
 @UseAdviceWith
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public abstract class MardukRouteBuilderIntegrationTestBase extends MardukSpringBootBaseTest{
 
     @Autowired
@@ -74,5 +77,11 @@ public abstract class MardukRouteBuilderIntegrationTestBase extends MardukSpring
 
         return headers;
     }
+
+    @AfterEach
+    void stopContext() {
+        context.stop();
+    }
+
 }
 
