@@ -25,7 +25,6 @@ import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class,
         properties = {
@@ -33,7 +32,6 @@ import org.springframework.test.annotation.DirtiesContext;
                 "marduk.camel.redelivery.delay=0",
                 "marduk.camel.redelivery.backoff.multiplier=1",
         })
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @EndpointInject("mock:buildOtpGraph")

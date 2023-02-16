@@ -5,14 +5,12 @@ import no.rutebanken.marduk.TestApp;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
 @ActiveProfiles({"test", "default", "in-memory-blobstore", "google-pubsub-emulator", "google-pubsub-autocreate"})
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class MultiIssuerAuthenticationManagerResolverTest extends MardukSpringBootBaseTest {
 
     @Autowired

@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -43,7 +42,6 @@ import java.util.Map;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ChouetteExportNetexBlocksMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Autowired
