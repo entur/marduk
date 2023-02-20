@@ -26,11 +26,9 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.language.SimpleExpression;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -43,9 +41,6 @@ import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes = TestApp.class)
 class ChouetteExportNetexBlocksMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
-
-    @Autowired
-    private ModelCamelContext context;
 
     @EndpointInject("mock:chouetteCreateExport")
     protected MockEndpoint chouetteCreateExport;

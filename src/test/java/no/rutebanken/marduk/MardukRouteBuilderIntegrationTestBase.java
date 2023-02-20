@@ -18,9 +18,9 @@ package no.rutebanken.marduk;
 
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
+import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
-import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.test.spring.junit5.CamelSpringBootTest;
 import org.apache.camel.test.spring.junit5.UseAdviceWith;
 import org.junit.jupiter.api.AfterEach;
@@ -37,7 +37,7 @@ import java.util.Map;
 public abstract class MardukRouteBuilderIntegrationTestBase extends MardukSpringBootBaseTest{
 
     @Autowired
-    protected ModelCamelContext context;
+    protected CamelContext context;
 
     protected Provider provider(String ref, long id, Long migrateToProvider) {
         return provider(ref, id, migrateToProvider, false, false);
