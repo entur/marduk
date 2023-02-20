@@ -40,7 +40,7 @@ import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes = TestApp.class)
 class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Autowired

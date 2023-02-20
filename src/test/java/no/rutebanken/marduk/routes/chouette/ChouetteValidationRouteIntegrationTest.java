@@ -39,7 +39,7 @@ import java.util.Map;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,classes = TestApp.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,classes = TestApp.class)
 class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@Autowired

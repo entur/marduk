@@ -13,7 +13,7 @@ import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import java.util.List;
 import java.util.Map;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestApp.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes = TestApp.class)
 class Auth0RolesClaimAdapterTest extends MardukSpringBootBaseTest {
 
     private static final Long RUTEBANKEN_ORG_ID = 1L;
