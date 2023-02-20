@@ -31,7 +31,6 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.model.ModelCamelContext;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -39,7 +38,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -131,10 +129,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
                     .build();
         }
     }
-
-    @Autowired
-    ModelCamelContext camelContext;
-
+    
     @EndpointInject("mock:chouetteImportQueue")
     protected MockEndpoint importQueue;
 
@@ -189,7 +184,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         AdviceWith.adviceWith(context, "admin-chouette-import", a ->
                 a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:chouetteImportQueue"));
         // we must manually start when we are done with all the advice with
-        camelContext.start();
+        context.start();
 
         BlobStoreFiles d = new BlobStoreFiles();
         d.add(new BlobStoreFiles.File("file1", null, null, null));
@@ -226,7 +221,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
                 a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue").replace().to("mock:chouetteExportNetexQueue"));
 
         // we must manually start when we are done with all the advice with
-        camelContext.start();
+        context.start();
 
         // Do rest call
         Map<String, Object> headers = new HashMap<>();
@@ -256,7 +251,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         //populate fake blob repo
         mardukInMemoryBlobStoreRepository.uploadBlob(testFileStorePath + testFileName, testFile, false);
 
-        camelContext.start();
+        context.start();
 
         // Do rest call
         Map<String, Object> headers = new HashMap<>();
@@ -284,7 +279,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         //populate fake blob repo
         mardukInMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
 
-        camelContext.start();
+        context.start();
 
         Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "GET");
@@ -298,7 +293,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void getBlobStoreFile_unknownFile() {
 
-        camelContext.start();
+        context.start();
 
         Map<String, Object> headers = new HashMap<>();
         headers.put(Exchange.HTTP_METHOD, "GET");
@@ -316,7 +311,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         for (String prefix : exportFileStaticPrefixes) {
             mardukInMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, testFile, false);
         }
-        camelContext.start();
+        context.start();
 
         // Do rest call
         Map<String, Object> headers = new HashMap<>();
@@ -357,7 +352,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
                 }
         );
 
-        camelContext.start();
+        context.start();
 
         HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, testFile, ContentType.DEFAULT_BINARY, fileName).build();
         Map<String, Object> headers = new HashMap<>();
@@ -393,7 +388,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         Map<String, Object> headers = new HashMap<>();
         headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
 
-        camelContext.start();
+        context.start();
         uploadFileTemplate.requestBodyAndHeaders(httpEntity, headers);
 
         updateStatus.assertIsSatisfied();
@@ -418,7 +413,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         Map<String, Object> headers = new HashMap<>();
         headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
 
-        camelContext.start();
+        context.start();
         InputStream response = (InputStream) downloadNetexBlocksTemplate.requestBodyAndHeaders(null, headers);
         assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
     }
