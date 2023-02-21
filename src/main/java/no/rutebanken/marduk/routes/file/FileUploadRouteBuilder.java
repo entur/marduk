@@ -16,7 +16,7 @@
 
 package no.rutebanken.marduk.routes.file;
 
-import no.rutebanken.marduk.routes.TransactionalBaseRouteBuilder;
+import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
@@ -34,16 +34,17 @@ import static no.rutebanken.marduk.Constants.FILE_NAME;
  * Upload file to blob store and trigger import pipeline.
  */
 @Component
-public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
+public class FileUploadRouteBuilder extends BaseRouteBuilder {
 
     private static final String FILE_CONTENT_HEADER = "RutebankenFileContent";
 
     @Override
-    public void configure() {
+    public void configure() throws Exception {
         super.configure();
 
 
         from("direct:uploadFilesAndStartImport")
+                .transacted()
                 .setBody(simple("${exchange.getIn().getRequest().getParts()}"))
                 .log(LoggingLevel.DEBUG, correlation() + "Received multipart request containing ${body.size()} parts")
                 .split().body()
@@ -57,6 +58,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
 
 
         from("direct:uploadFileAndStartImport").streamCaching()
+                .transacted()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
                 .doTry()
                 .log(LoggingLevel.INFO, correlation() + "Uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
