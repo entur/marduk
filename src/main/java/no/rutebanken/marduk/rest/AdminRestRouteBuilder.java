@@ -43,7 +43,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
@@ -150,7 +149,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .name("status")
                 .type(RestParamType.query)
                 .description("Chouette job statuses")
-                .allowableValues(Arrays.stream(Status.values()).map(Status::name).collect(Collectors.toList()))
+                .allowableValues(Arrays.stream(Status.values()).map(Status::name).toList())
                 .endParam()
                 .param()
                 .required(Boolean.FALSE)
@@ -424,7 +423,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .name("status")
                 .type(RestParamType.query)
                 .description("Chouette job statuses")
-                .allowableValues(Arrays.stream(Status.values()).map(Status::name).collect(Collectors.toList()))
+                .allowableValues(Arrays.stream(Status.values()).map(Status::name).toList())
                 .endParam()
                 .param()
                 .required(Boolean.FALSE)
@@ -912,7 +911,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
     public static class ImportFilesSplitter {
         public List<String> splitFiles(@Body BlobStoreFiles files) {
-            return files.getFiles().stream().map(File::getName).collect(Collectors.toList());
+            return files.getFiles().stream().map(File::getName).toList();
         }
     }
 }

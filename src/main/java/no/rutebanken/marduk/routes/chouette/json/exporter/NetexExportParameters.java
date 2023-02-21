@@ -46,13 +46,13 @@ public class NetexExportParameters {
         private boolean addExtension = false;
 
         @JsonProperty("export_stops")
-        public boolean exportStops = false;
+        public boolean exportStops;
 
         @JsonProperty("export_blocks")
-        public boolean exportBlocks = false;
+        public boolean exportBlocks;
 
         @JsonProperty("default_codespace_prefix")
-        public String defaultCodespacePrefix = null;
+        public String defaultCodespacePrefix;
 
         public NetexExport(String name, String referentialName, String organisationName, String userName, String projectionType, boolean exportStops, boolean exportBlocks, String defaultCodespacePrefix, boolean validateAfterExport) {
             this.name = name;

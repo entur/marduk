@@ -151,7 +151,7 @@ public class NetexExportMergedRouteBuilder extends BaseRouteBuilder {
         return getProviderRepository().getProviders().stream()
                        .filter(p -> p.chouetteInfo.migrateDataToProvider == null)
                        .map(p -> p.chouetteInfo.referential + "-" + CURRENT_AGGREGATED_NETEX_FILENAME)
-                       .collect(Collectors.toList());
+                       .toList();
     }
 
 

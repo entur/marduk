@@ -17,7 +17,7 @@
 package no.rutebanken.marduk.security;
 
 public class AuthorizationClaim {
-    private String requiredRole;
+    private final String requiredRole;
     private Long providerId;
 
     public AuthorizationClaim(String requiredRole, Long providerId) {

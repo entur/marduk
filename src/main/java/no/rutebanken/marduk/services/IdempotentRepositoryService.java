@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class IdempotentRepositoryService {
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     IdempotentRepository fileNameAndDigestIdempotentRepository;

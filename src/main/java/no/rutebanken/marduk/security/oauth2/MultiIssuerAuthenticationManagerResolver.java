@@ -56,7 +56,7 @@ public class MultiIssuerAuthenticationManagerResolver
     @Autowired
     EnturPartnerAuth0RolesClaimAdapter enturPartnerAuth0RolesClaimAdapter;
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final BearerTokenResolver resolver = new DefaultBearerTokenResolver();
 

@@ -22,7 +22,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static no.rutebanken.marduk.gtfs.GtfsExport.GTFS_EXTENDED;
@@ -43,12 +42,12 @@ public class GtfsFileMerger {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GtfsFileMerger.class);
 
-    private Path workingDirectory;
-    private GtfsExport gtfsExport;
-    private boolean includeShapes;
+    private final Path workingDirectory;
+    private final GtfsExport gtfsExport;
+    private final boolean includeShapes;
 
-    private Set<String> stopIds = new HashSet<>(150000);
-    private Set<List<String>> transfers = new HashSet<>(15000);
+    private final Set<String> stopIds = new HashSet<>(150000);
+    private final Set<List<String>> transfers = new HashSet<>(15000);
 
 
     /**
@@ -110,7 +109,7 @@ public class GtfsFileMerger {
                 String stopId = csvRecord.get("stop_id");
                 if (!stopIds.contains(stopId)) {
                     stopIds.add(stopId);
-                    List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).collect(Collectors.toList());
+                    List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).toList();
                     csvPrinter.printRecord(targetValues);
                 } else {
                     LOGGER.trace("Ignored duplicated stop: {}", stopId);
@@ -144,7 +143,7 @@ public class GtfsFileMerger {
                     : new CSVPrinter(writer, getCsvFormatWithHeaders(targetHeaders));
 
             for (CSVRecord csvRecord : csvParser) {
-                List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).collect(Collectors.toList());
+                List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).toList();
                 if (!transfers.contains(targetValues)) {
                     transfers.add(targetValues);
                     csvPrinter.printRecord(targetValues);
@@ -179,7 +178,7 @@ public class GtfsFileMerger {
                     : new CSVPrinter(writer, getCsvFormatWithHeaders(targetHeaders));
 
             for (CSVRecord csvRecord : csvParser) {
-                List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).collect(Collectors.toList());
+                List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).toList();
                 csvPrinter.printRecord(targetValues);
             }
             csvPrinter.flush();
@@ -220,7 +219,7 @@ public class GtfsFileMerger {
             if (gtfsExport == GTFS_EXTENDED) {
                 return value;
             }
-            int routeTypeCode = 0;
+            int routeTypeCode;
             try {
                 routeTypeCode = Integer.parseInt(value);
             } catch (NumberFormatException e) {

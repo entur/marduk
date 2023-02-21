@@ -30,7 +30,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -97,7 +96,7 @@ public class GtfsFileUtilsTransformationTest {
         routeLines.remove(0); // remove header
         assertEquals(10, routeLines.size());
 
-        List<String> transformedRouteTypes = routeLines.stream().map(routeLine -> routeLine.split(",")[4]).collect(Collectors.toList());
+        List<String> transformedRouteTypes = routeLines.stream().map(routeLine -> routeLine.split(",")[4]).toList();
         assertThat(transformedRouteTypes.stream().allMatch(routeType -> GoogleRouteTypeCode.fromCode(Integer.parseInt(routeType)) != null)).as("Expected all route types to have been converted to google valid codes").isTrue();
         assertEquals("200", transformedRouteTypes.get(0));
         assertEquals("201", transformedRouteTypes.get(1));
@@ -119,7 +118,7 @@ public class GtfsFileUtilsTransformationTest {
         routeLines.remove(0); // remove header
         assertEquals(10, routeLines.size());
 
-        List<String> transformedRouteTypes = routeLines.stream().map(routeLine -> routeLine.split(",")[4]).collect(Collectors.toList());
+        List<String> transformedRouteTypes = routeLines.stream().map(routeLine -> routeLine.split(",")[4]).toList();
         assertThat(transformedRouteTypes.stream().allMatch(routeType -> Arrays.stream(BasicRouteTypeCode.values()).anyMatch(basic -> Integer.toString(basic.getCode()).equals(routeType)))).as("Expected all route types to have been converted to basic codes").isTrue();
         assertEquals("3", transformedRouteTypes.get(0));
         assertEquals("3", transformedRouteTypes.get(1));

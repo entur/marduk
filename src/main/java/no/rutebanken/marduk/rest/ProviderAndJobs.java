@@ -23,9 +23,9 @@ import java.util.Collection;
 import java.util.List;
 
 public class ProviderAndJobs {
-	private Long providerId;
+	private final Long providerId;
 
-	private List<JobResponse> pendingJobs=new ArrayList<>();
+	private final List<JobResponse> pendingJobs=new ArrayList<>();
 
 	public ProviderAndJobs(Long id, Collection<JobResponse> pendingJobs) {
 		super();

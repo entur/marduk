@@ -27,7 +27,6 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Route creating a merged GTFS basic file for all providers and uploading it to GCS.
@@ -86,6 +85,6 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
             return Collections.emptyList();
         }
 
-        return agencyBlackList.stream().map(agency -> agency.startsWith("rb_") ? agency : "rb_" + agency).collect(Collectors.toList());
+        return agencyBlackList.stream().map(agency -> agency.startsWith("rb_") ? agency : "rb_" + agency).toList();
     }
 }

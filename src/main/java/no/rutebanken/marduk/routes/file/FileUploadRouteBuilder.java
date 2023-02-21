@@ -22,8 +22,6 @@ import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.commons.io.input.CloseShieldInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.Part;
@@ -39,8 +37,6 @@ import static no.rutebanken.marduk.Constants.FILE_NAME;
 public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
 
     private static final String FILE_CONTENT_HEADER = "RutebankenFileContent";
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(FileUploadRouteBuilder.class);
 
     @Override
     public void configure() {

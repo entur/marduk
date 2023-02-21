@@ -31,7 +31,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
@@ -151,7 +150,7 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
         return getProviderRepository().getProviders().stream()
                        .filter(p -> p.chouetteInfo.migrateDataToProvider == null)
                        .map(p -> p.chouetteInfo.referential + "-" + CURRENT_AGGREGATED_NETEX_FILENAME)
-                       .collect(Collectors.toList());
+                       .toList();
     }
 
 

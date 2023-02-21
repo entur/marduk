@@ -33,7 +33,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
@@ -155,7 +154,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                                  .filter(p -> p.chouetteInfo.migrateDataToProvider == null)
                                  .filter(p -> isMatch(p, providerBlackList, providerWhiteList))
                                  .map(p -> p.chouetteInfo.referential + "-" + CURRENT_AGGREGATED_GTFS_FILENAME)
-                                 .collect(Collectors.toList());
+                                 .toList();
     }
 
     private boolean isMatch(Provider p, Collection<String> providerBlackList, Collection<String> providerWhiteList) {

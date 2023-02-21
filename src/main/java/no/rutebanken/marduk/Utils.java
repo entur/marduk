@@ -35,8 +35,8 @@ public class Utils {
     public static String getUsername() {
         String user = null;
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() != null && auth.getPrincipal() instanceof Jwt) {
-            user = ((Jwt) auth.getPrincipal()).getClaimAsString("preferred_username");
+        if (auth != null && auth.getPrincipal() != null && auth.getPrincipal() instanceof Jwt jwt) {
+            user = jwt.getClaimAsString("preferred_username");
         }
         return (user == null) ? "unknown" : user;
     }

@@ -49,7 +49,7 @@ public class GtfsExportParameters {
         public String routeTypeIdScheme = "extended";
 
         @JsonProperty("keep_original_id")
-        public boolean keepOriginalId = false;
+        public boolean keepOriginalId;
 
         @JsonProperty("use_tpeg_hvt")
         public boolean useTpegHvt = true;

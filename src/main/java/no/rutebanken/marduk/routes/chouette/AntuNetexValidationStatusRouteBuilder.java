@@ -23,7 +23,6 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.ANTU_VALIDATION_REPORT_ID;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_NETEX_EXPORT;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;

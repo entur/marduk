@@ -55,7 +55,7 @@ public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageId
 
     protected int queryForInt(String keyAsString) {
         FileNameAndDigest key = FileNameAndDigest.fromString(keyAsString);
-        return this.jdbcTemplate.queryForObject(QUERY_STRING, Integer.class, new Object[]{this.processorName, key.getDigest(), key.getFileName()});
+        return this.jdbcTemplate.queryForObject(QUERY_STRING, Integer.class, this.processorName, key.getDigest(), key.getFileName());
     }
 
     protected int insert(String keyAsString) {
@@ -64,7 +64,7 @@ public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageId
 
     protected int insert(String keyAsString, Instant instant) {
         FileNameAndDigest key = FileNameAndDigest.fromString(keyAsString);
-        return this.jdbcTemplate.update(INSERT_STRING, new Object[]{this.processorName, key.getDigest(), key.getFileName(), Timestamp.from(instant)});
+        return this.jdbcTemplate.update(INSERT_STRING, this.processorName, key.getDigest(), key.getFileName(), Timestamp.from(instant));
     }
 
     protected int delete(String keyAsString) {
@@ -75,11 +75,11 @@ public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageId
         } else {
             minCreatedAt = Instant.ofEpochMilli(0L);
         }
-        return this.jdbcTemplate.update(DELETE_STRING, new Object[]{this.processorName, key.getDigest(), key.getFileName(), Timestamp.from(minCreatedAt)});
+        return this.jdbcTemplate.update(DELETE_STRING, this.processorName, key.getDigest(), key.getFileName(), Timestamp.from(minCreatedAt));
     }
 
     protected int delete() {
-        return this.jdbcTemplate.update(CLEAR_STRING, new Object[]{this.processorName});
+        return this.jdbcTemplate.update(CLEAR_STRING, this.processorName);
     }
 
 }

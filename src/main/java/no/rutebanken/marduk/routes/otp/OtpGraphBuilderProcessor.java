@@ -16,7 +16,7 @@ public class OtpGraphBuilderProcessor implements Processor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OtpGraphBuilderProcessor.class);
 
-    private OtpGraphBuilder otpGraphBuilder;
+    private final OtpGraphBuilder otpGraphBuilder;
 
     public OtpGraphBuilderProcessor(OtpGraphBuilder otpGraphBuilder) {
         this.otpGraphBuilder = otpGraphBuilder;
