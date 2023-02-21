@@ -24,7 +24,7 @@ import java.util.List;
 
 class RoleAssignmentListBuilder {
 
-    private List<RoleAssignment> roleAssignments = new ArrayList<>();
+    private final List<RoleAssignment> roleAssignments = new ArrayList<>();
 
     public static RoleAssignmentListBuilder builder() {
         return new RoleAssignmentListBuilder();

@@ -37,7 +37,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class GtfsFileUtils {
 
@@ -72,7 +71,7 @@ public class GtfsFileUtils {
 
         List<File> sortedZipFiles = zipFiles.stream()
                 .sorted(Comparator.comparing(File::getName))
-                .collect(Collectors.toList());
+                .toList();
 
         try {
             return MardukFileUtils.createDeleteOnCloseInputStream(mergeGtfsFiles(sortedZipFiles, gtfsExport, includeShapes));

@@ -36,7 +36,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Simple memory-based blob store repository for testing purpose.
@@ -77,7 +76,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
         List<BlobStoreFiles.File> files = getBlobsForCurrentContainer().keySet().stream()
                 .filter(fileName -> prefixes.stream().anyMatch(fileName::startsWith))
                 .map(fileName -> new BlobStoreFiles.File(fileName, Instant.now(), Instant.now(), (long) getBlobsForCurrentContainer().get(fileName).length))
-                .collect(Collectors.toList());
+                .toList();
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(files);
         return blobStoreFiles;
@@ -86,7 +85,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     @Override
     public BlobStoreFiles listBlobsFlat(String prefix) {
         List<BlobStoreFiles.File> files = listBlobs(prefix).getFiles();
-        List<BlobStoreFiles.File> result = files.stream().map(file -> new BlobStoreFiles.File(file.getName().replaceFirst(prefix, ""), file.getCreated(), file.getUpdated(), file.getFileSize())).collect(Collectors.toList());
+        List<BlobStoreFiles.File> result = files.stream().map(file -> new BlobStoreFiles.File(file.getName().replaceFirst(prefix, ""), file.getCreated(), file.getUpdated(), file.getFileSize())).toList();
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         blobStoreFiles.add(result);
         return blobStoreFiles;

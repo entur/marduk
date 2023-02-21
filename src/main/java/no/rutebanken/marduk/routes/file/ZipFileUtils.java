@@ -66,7 +66,7 @@ public class ZipFileUtils {
      * The byte array is first saved to disk to avoid using a ZipInputStream that would parse the whole stream to
      * find entries.
      * @param data a byte array containing a zip archive.
-     * @return the list of entries in the zip archive.
+     * @return the set of entries in the zip archive.
      * @throws IOException
      * @throws MardukZipFileEntryNameEncodingException if an entry is not UTF8-encoded.
      */
@@ -82,7 +82,7 @@ public class ZipFileUtils {
      * The byte array is first saved to disk to avoid using a ZipInputStream that would parse the whole stream to
      * find entries.
      * @param file the zip archive.
-     * @return the list of entries in the zip archive.
+     * @return the set of entries in the zip archive.
      * @throws IOException
      * @throws MardukZipFileEntryNameEncodingException if an entry is not UTF8-encoded.
      */

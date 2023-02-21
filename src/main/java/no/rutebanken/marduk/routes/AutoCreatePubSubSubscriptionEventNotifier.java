@@ -44,8 +44,8 @@ public class AutoCreatePubSubSubscriptionEventNotifier extends EventNotifierSupp
     @Override
     public void notify(CamelEvent event) {
 
-        if (event instanceof CamelEvent.CamelContextStartingEvent) {
-            CamelContext context = ((CamelEvent.CamelContextStartingEvent) event).getContext();
+        if (event instanceof CamelEvent.CamelContextStartingEvent camelContextStartingEvent) {
+            CamelContext context = camelContextStartingEvent.getContext();
             context.getEndpoints().stream().filter(e -> e.getEndpointUri().contains("google-pubsub:")).forEach(this::createSubscriptionIfMissing);
         }
 
@@ -53,14 +53,14 @@ public class AutoCreatePubSubSubscriptionEventNotifier extends EventNotifierSupp
 
     private void createSubscriptionIfMissing(Endpoint e) {
         GooglePubsubEndpoint gep;
-        if (e instanceof GooglePubsubEndpoint) {
-            gep = (GooglePubsubEndpoint) e;
-        } else if (e instanceof MasterEndpoint && ((MasterEndpoint) e).getEndpoint() instanceof GooglePubsubEndpoint) {
-            gep = (GooglePubsubEndpoint) ((MasterEndpoint) e).getEndpoint();
-        } else if (e instanceof DefaultInterceptSendToEndpoint && ((DefaultInterceptSendToEndpoint) e).getOriginalEndpoint() instanceof GooglePubsubEndpoint) {
-            gep = (GooglePubsubEndpoint) ((DefaultInterceptSendToEndpoint) e).getOriginalEndpoint();
-        } else if (e instanceof MasterEndpoint && ((MasterEndpoint) e).getEndpoint() instanceof DefaultInterceptSendToEndpoint) {
-            gep = (GooglePubsubEndpoint) ((DefaultInterceptSendToEndpoint) ((MasterEndpoint) e).getEndpoint()).getOriginalEndpoint();
+        if (e instanceof GooglePubsubEndpoint googlePubsubEndpoint) {
+            gep = googlePubsubEndpoint;
+        } else if (e instanceof MasterEndpoint masterEndpoint && ((MasterEndpoint) e).getEndpoint() instanceof GooglePubsubEndpoint) {
+            gep = (GooglePubsubEndpoint) masterEndpoint.getEndpoint();
+        } else if (e instanceof DefaultInterceptSendToEndpoint defaultInterceptSendToEndpoint && defaultInterceptSendToEndpoint.getOriginalEndpoint() instanceof GooglePubsubEndpoint googlePubsubEndpoint) {
+            gep = googlePubsubEndpoint;
+        } else if (e instanceof MasterEndpoint masterEndpoint && masterEndpoint.getEndpoint() instanceof DefaultInterceptSendToEndpoint defaultInterceptSendToEndpoint) {
+            gep = (GooglePubsubEndpoint) defaultInterceptSendToEndpoint.getOriginalEndpoint();
         } else {
             throw new IllegalStateException("Incompatible endpoint: " + e);
         }

@@ -35,148 +35,149 @@ class ActionReportWrapperTest {
     }
 
 
-    public static final String ERROR_RESPONSE = "{\"action_report\": {\n" +
-                                                        "  \"progression\":    {\n" +
-                                                        "      \"current_step\": 3,\n" +
-                                                        "      \"steps_count\": 3,\n" +
-                                                        "      \"steps\": [\n" +
-                                                        "        {\n" +
-                                                        "          \"step\": \"INITIALISATION\",\n" +
-                                                        "          \"total\": 2,\n" +
-                                                        "          \"realized\": 2\n" +
-                                                        "        },\n" +
-                                                        "        {\n" +
-                                                        "          \"step\": \"PROCESSING\",\n" +
-                                                        "          \"total\": 1,\n" +
-                                                        "          \"realized\": 1\n" +
-                                                        "        },\n" +
-                                                        "        {\n" +
-                                                        "          \"step\": \"FINALISATION\",\n" +
-                                                        "          \"total\": 4,\n" +
-                                                        "          \"realized\": 4\n" +
-                                                        "        }\n" +
-                                                        "      ]\n" +
-                                                        "    },\n" +
-                                                        "  \"result\": \"NOK\",\n" +
-                                                        "  \"failure\":    {\n" +
-                                                        "      \"code\": \"INVALID_DATA\",\n" +
-                                                        "      \"description\": \"MISSING_FILE agency.txt\"\n" +
-                                                        "    },\n" +
-                                                        "  \"files\": [\n" +
-                                                        "    {\n" +
-                                                        "      \"name\": \"stops.txt\",\n" +
-                                                        "      \"status\": \"IGNORED\",\n" +
-                                                        "      \"io_type\": \"OUTPUT\",\n" +
-                                                        "      \"check_point_error_count\": 0,\n" +
-                                                        "      \"check_point_warning_count\": 0,\n" +
-                                                        "      \"check_point_info_count\": 0\n" +
-                                                        "    },\n" +
-                                                        "    {\n" +
-                                                        "      \"name\": \"agency.txt\",\n" +
-                                                        "      \"status\": \"ERROR\",\n" +
-                                                        "      \"io_type\": \"INPUT\",\n" +
-                                                        "      \"errors\": [\n" +
-                                                        "        {\n" +
-                                                        "          \"code\": \"FILE_NOT_FOUND\",\n" +
-                                                        "          \"description\": \"The file \\\"agency.txt\\\" must be provided (rule 1-GTFS-Common-1)\"\n" +
-                                                        "        }\n" +
-                                                        "      ],\n" +
-                                                        "      \"check_point_errors\": [0],\n" +
-                                                        "      \"check_point_error_count\": 1,\n" +
-                                                        "      \"check_point_warning_count\": 0,\n" +
-                                                        "      \"check_point_info_count\": 0\n" +
-                                                        "    }\n" +
-                                                        "  ],\n" +
-                                                        "  \"objects\": [\n" +
-                                                        "    {\n" +
-                                                        "      \"type\": \"connection_link\",\n" +
-                                                        "      \"description\": \"connection links\",\n" +
-                                                        "      \"objectid\": \"merged\",\n" +
-                                                        "      \"status\": \"OK\",\n" +
-                                                        "      \"io_type\": \"OUTPUT\",\n" +
-                                                        "      \"stats\":      {\n" +
-                                                        "        \"connection_link\": 0\n" +
-                                                        "      },\n" +
-                                                        "      \"check_point_error_count\": 0,\n" +
-                                                        "      \"check_point_warning_count\": 0,\n" +
-                                                        "      \"check_point_info_count\": 0\n" +
-                                                        "    },\n" +
-                                                        "    {\n" +
-                                                        "      \"type\": \"company\",\n" +
-                                                        "      \"description\": \"companies\",\n" +
-                                                        "      \"objectid\": \"merged\",\n" +
-                                                        "      \"status\": \"OK\",\n" +
-                                                        "      \"io_type\": \"OUTPUT\",\n" +
-                                                        "      \"stats\":      {\n" +
-                                                        "        \"company\": 0\n" +
-                                                        "      },\n" +
-                                                        "      \"check_point_error_count\": 0,\n" +
-                                                        "      \"check_point_warning_count\": 0,\n" +
-                                                        "      \"check_point_info_count\": 0\n" +
-                                                        "    },\n" +
-                                                        "    {\n" +
-                                                        "      \"type\": \"timetable\",\n" +
-                                                        "      \"description\": \"calendars\",\n" +
-                                                        "      \"objectid\": \"merged\",\n" +
-                                                        "      \"status\": \"OK\",\n" +
-                                                        "      \"io_type\": \"OUTPUT\",\n" +
-                                                        "      \"stats\":      {\n" +
-                                                        "        \"timetable\": 1\n" +
-                                                        "      },\n" +
-                                                        "      \"check_point_error_count\": 0,\n" +
-                                                        "      \"check_point_warning_count\": 0,\n" +
-                                                        "      \"check_point_info_count\": 0\n" +
-                                                        "    },\n" +
-                                                        "    {\n" +
-                                                        "      \"type\": \"stop_area\",\n" +
-                                                        "      \"description\": \"stop areas\",\n" +
-                                                        "      \"objectid\": \"merged\",\n" +
-                                                        "      \"status\": \"OK\",\n" +
-                                                        "      \"io_type\": \"OUTPUT\",\n" +
-                                                        "      \"stats\":      {\n" +
-                                                        "        \"stop_area\": 5\n" +
-                                                        "      },\n" +
-                                                        "      \"check_point_error_count\": 0,\n" +
-                                                        "      \"check_point_warning_count\": 0,\n" +
-                                                        "      \"check_point_info_count\": 0\n" +
-                                                        "    }\n" +
-                                                        "  ],\n" +
-                                                        "  \"collections\": [\n" +
-                                                        "    {\n" +
-                                                        "      \"type\": \"line\",\n" +
-                                                        "      \"objects\": [\n" +
-                                                        "        {\n" +
-                                                        "          \"type\": \"line\",\n" +
-                                                        "          \"description\": \"Flexx 809 Gamvik - Mehamn\",\n" +
-                                                        "          \"objectid\": \"FIN:FlexibleLine:809\",\n" +
-                                                        "          \"status\": \"ERROR\",\n" +
-                                                        "          \"io_type\": \"OUTPUT\",\n" +
-                                                        "          \"stats\":          {\n" +
-                                                        "            \"route\": 1,\n" +
-                                                        "            \"journey_pattern\": 1,\n" +
-                                                        "            \"vehicle_journey\": 2,\n" +
-                                                        "            \"line\": 0,\n" +
-                                                        "            \"interchange\": 0\n" +
-                                                        "          },\n" +
-                                                        "          \"errors\": [\n" +
-                                                        "            {\n" +
-                                                        "              \"code\": \"NO_DATA_ON_PERIOD\",\n" +
-                                                        "              \"description\": \"no data on period\"\n" +
-                                                        "            }\n" +
-                                                        "          ],\n" +
-                                                        "          \"check_point_error_count\": 0,\n" +
-                                                        "          \"check_point_warning_count\": 0,\n" +
-                                                        "          \"check_point_info_count\": 0\n" +
-                                                        "        }\n" +
-                                                        "      ],\n" +
-                                                        "      \"stats\":      {\n" +
-                                                        "        \"route\": 1,\n" +
-                                                        "        \"journey_pattern\": 1,\n" +
-                                                        "        \"vehicle_journey\": 2,\n" +
-                                                        "        \"line\": 0,\n" +
-                                                        "        \"interchange\": 0\n" +
-                                                        "      }\n" +
-                                                        "    }\n" +
-                                                        "  ]\n" +
-                                                        "}}";
+    public static final String ERROR_RESPONSE = """
+            {"action_report": {
+              "progression":    {
+                  "current_step": 3,
+                  "steps_count": 3,
+                  "steps": [
+                    {
+                      "step": "INITIALISATION",
+                      "total": 2,
+                      "realized": 2
+                    },
+                    {
+                      "step": "PROCESSING",
+                      "total": 1,
+                      "realized": 1
+                    },
+                    {
+                      "step": "FINALISATION",
+                      "total": 4,
+                      "realized": 4
+                    }
+                  ]
+                },
+              "result": "NOK",
+              "failure":    {
+                  "code": "INVALID_DATA",
+                  "description": "MISSING_FILE agency.txt"
+                },
+              "files": [
+                {
+                  "name": "stops.txt",
+                  "status": "IGNORED",
+                  "io_type": "OUTPUT",
+                  "check_point_error_count": 0,
+                  "check_point_warning_count": 0,
+                  "check_point_info_count": 0
+                },
+                {
+                  "name": "agency.txt",
+                  "status": "ERROR",
+                  "io_type": "INPUT",
+                  "errors": [
+                    {
+                      "code": "FILE_NOT_FOUND",
+                      "description": "The file \\"agency.txt\\" must be provided (rule 1-GTFS-Common-1)"
+                    }
+                  ],
+                  "check_point_errors": [0],
+                  "check_point_error_count": 1,
+                  "check_point_warning_count": 0,
+                  "check_point_info_count": 0
+                }
+              ],
+              "objects": [
+                {
+                  "type": "connection_link",
+                  "description": "connection links",
+                  "objectid": "merged",
+                  "status": "OK",
+                  "io_type": "OUTPUT",
+                  "stats":      {
+                    "connection_link": 0
+                  },
+                  "check_point_error_count": 0,
+                  "check_point_warning_count": 0,
+                  "check_point_info_count": 0
+                },
+                {
+                  "type": "company",
+                  "description": "companies",
+                  "objectid": "merged",
+                  "status": "OK",
+                  "io_type": "OUTPUT",
+                  "stats":      {
+                    "company": 0
+                  },
+                  "check_point_error_count": 0,
+                  "check_point_warning_count": 0,
+                  "check_point_info_count": 0
+                },
+                {
+                  "type": "timetable",
+                  "description": "calendars",
+                  "objectid": "merged",
+                  "status": "OK",
+                  "io_type": "OUTPUT",
+                  "stats":      {
+                    "timetable": 1
+                  },
+                  "check_point_error_count": 0,
+                  "check_point_warning_count": 0,
+                  "check_point_info_count": 0
+                },
+                {
+                  "type": "stop_area",
+                  "description": "stop areas",
+                  "objectid": "merged",
+                  "status": "OK",
+                  "io_type": "OUTPUT",
+                  "stats":      {
+                    "stop_area": 5
+                  },
+                  "check_point_error_count": 0,
+                  "check_point_warning_count": 0,
+                  "check_point_info_count": 0
+                }
+              ],
+              "collections": [
+                {
+                  "type": "line",
+                  "objects": [
+                    {
+                      "type": "line",
+                      "description": "Flexx 809 Gamvik - Mehamn",
+                      "objectid": "FIN:FlexibleLine:809",
+                      "status": "ERROR",
+                      "io_type": "OUTPUT",
+                      "stats":          {
+                        "route": 1,
+                        "journey_pattern": 1,
+                        "vehicle_journey": 2,
+                        "line": 0,
+                        "interchange": 0
+                      },
+                      "errors": [
+                        {
+                          "code": "NO_DATA_ON_PERIOD",
+                          "description": "no data on period"
+                        }
+                      ],
+                      "check_point_error_count": 0,
+                      "check_point_warning_count": 0,
+                      "check_point_info_count": 0
+                    }
+                  ],
+                  "stats":      {
+                    "route": 1,
+                    "journey_pattern": 1,
+                    "vehicle_journey": 2,
+                    "line": 0,
+                    "interchange": 0
+                  }
+                }
+              ]
+            }}""";
 }

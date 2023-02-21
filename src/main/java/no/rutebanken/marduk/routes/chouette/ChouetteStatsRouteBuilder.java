@@ -160,7 +160,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     private String getAllReferentialsAsParam() {
         List<String> referentials = getProviderRepository().getProviders().stream()
                 .filter(provider -> provider.chouetteInfo != null && provider.chouetteInfo.referential != null)
-                .map(provider -> provider.chouetteInfo.referential).collect(Collectors.toList());
+                .map(provider -> provider.chouetteInfo.referential).toList();
         return "&referentials=" + String.join(",", referentials);
     }
 

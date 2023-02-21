@@ -216,8 +216,8 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
     protected boolean isLeader(String routeId) {
         Consumer consumer = getContext().getRoute(routeId).getConsumer();
-        if (consumer instanceof MasterConsumer) {
-            return ((MasterConsumer) consumer).isMaster();
+        if (consumer instanceof MasterConsumer masterConsumer) {
+            return masterConsumer.isMaster();
         }
         return false;
     }

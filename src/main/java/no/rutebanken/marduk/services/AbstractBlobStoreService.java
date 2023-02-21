@@ -16,7 +16,7 @@ public abstract class AbstractBlobStoreService {
 
     protected BlobStoreRepository repository;
 
-    private String containerName;
+    private final String containerName;
 
     protected AbstractBlobStoreService(String containerName, BlobStoreRepository repository) {
         this.containerName = containerName;

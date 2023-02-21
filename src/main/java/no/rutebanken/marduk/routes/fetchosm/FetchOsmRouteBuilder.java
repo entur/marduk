@@ -33,8 +33,8 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 
 /**
- * Fetch data file as listed on: https://download.geofabrik.de/europe/norway.html
- * This is expected to be https://download.geofabrik.de/europe/norway-latest.osm.pbf
+ * Fetch data file as listed on: <a href="https://download.geofabrik.de/europe/norway.html">...</a>
+ * This <a href="is">expected to be https://download.geofabrik.de/europe/nor</a>way-latest.osm.pbf
  *
  * <p>
  * The MD5 sum is found by adding <code>.md5</code> to the URL

@@ -21,7 +21,6 @@ import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.junit.jupiter.api.Test;
 
 import java.io.StringReader;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -48,7 +47,7 @@ class JobResponseTest {
         JobResponseWithLinks jobResponse = objectReader.readValue(reader);
         assertEquals(Status.SCHEDULED, jobResponse.status);
         assertEquals("http://chouette:8080/chouette_iev/referentials/tds/data/130/parameters.json",
-                jobResponse.links.stream().filter(li -> li.rel.equals("parameters")).collect(Collectors.toList()).get(0).href);
+                jobResponse.links.stream().filter(li -> li.rel.equals("parameters")).toList().get(0).href);
     }
 
 }
