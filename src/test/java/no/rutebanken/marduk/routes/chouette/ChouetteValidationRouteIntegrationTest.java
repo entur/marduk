@@ -18,7 +18,6 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWith;
@@ -28,7 +27,6 @@ import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -37,7 +35,7 @@ import java.util.Map;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,classes = TestApp.class)
+
 class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
 	@EndpointInject("mock:chouetteCreateValidation")

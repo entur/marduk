@@ -18,7 +18,6 @@ package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
@@ -29,7 +28,6 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.nio.charset.Charset;
 import java.util.List;
@@ -39,7 +37,7 @@ import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes = TestApp.class)
+
 class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @EndpointInject("mock:updateStatus")

@@ -18,7 +18,6 @@ package no.rutebanken.marduk.routes.otp.otp1;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
@@ -28,7 +27,6 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.nio.charset.Charset;
 import java.util.List;
@@ -36,7 +34,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes =  TestApp.class)
+
 class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
