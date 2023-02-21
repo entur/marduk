@@ -18,12 +18,10 @@ package no.rutebanken.marduk.repository;
 
 
 import no.rutebanken.marduk.MardukSpringBootBaseTest;
-import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.domain.FileNameAndDigest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -31,7 +29,7 @@ import java.time.temporal.ChronoUnit;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes = TestApp.class)
+
 class FileNameAndDigestIdempotentRepositoryTest extends MardukSpringBootBaseTest {
 
     @Autowired
