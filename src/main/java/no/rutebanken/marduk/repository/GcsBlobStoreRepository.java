@@ -31,7 +31,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Repository;
 
 import java.io.InputStream;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -117,7 +116,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
     public void copyVersionedBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic) {
 
         List<Storage.BlobTargetOption> blobTargetOptions = makePublic ? List.of(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ))
-                                                                      : Collections.emptyList();
+                : Collections.emptyList();
         Storage.CopyRequest request =
                 Storage.CopyRequest.newBuilder()
                         .setSource(BlobId.of(sourceContainerName, sourceObjectName, sourceVersion))
@@ -133,7 +132,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
             Blob blob = blobIterator.next();
 
             List<Storage.BlobTargetOption> blobTargetOptions = makePublic ? List.of(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ))
-                                                                          : Collections.emptyList();
+                    : Collections.emptyList();
 
             BlobInfo.Builder targetBlobInfoBuilder = BlobInfo.newBuilder(targetContainerName, blob.getName().replace(prefix, targetPrefix));
             BlobId targetBlobId = targetBlobInfoBuilder.build().getBlobId();
@@ -164,7 +163,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
 
 
     private BlobStoreFiles.File toBlobStoreFile(Blob blob, String fileName) {
-        BlobStoreFiles.File file = new BlobStoreFiles.File(fileName, Instant.ofEpochMilli(blob.getCreateTime()), Instant.ofEpochMilli(blob.getUpdateTime()), blob.getSize());
+        BlobStoreFiles.File file = new BlobStoreFiles.File(fileName, blob.getCreateTimeOffsetDateTime().toInstant(), blob.getUpdateTimeOffsetDateTime().toInstant(), blob.getSize());
         Provider provider = null;
         if (file.getName().contains("graphs/")) {
             file.setFormat(BlobStoreFiles.File.Format.GRAPH);
