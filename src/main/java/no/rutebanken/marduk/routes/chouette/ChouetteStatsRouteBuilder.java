@@ -168,7 +168,7 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
         List<String> providerIds = e.getIn().getHeader(PROVIDER_IDS, List.class);
         String filter = e.getIn().getHeader("filter", String.class);
 
-        return getProviderRepository().getProviders().stream().filter(provider -> isMatch(provider, filter, providerIds)).collect(Collectors.toList());
+        return getProviderRepository().getProviders().stream().filter(provider -> isMatch(provider, filter, providerIds)).toList();
     }
 
     private void populateWithMatchingLineStatsFromCache(Exchange e) {
