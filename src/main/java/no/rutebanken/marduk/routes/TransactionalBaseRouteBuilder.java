@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.routes;
 
-import org.apache.camel.spring.spi.LegacyTransactionErrorHandlerBuilder;
 import org.springframework.beans.factory.annotation.Value;
 
 
@@ -40,7 +39,7 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
 
     @Override
     public void configure() {
-        errorHandler(transactionErrorHandler()
+        errorHandler(springTransactionErrorHandler()
                 .redeliveryDelay(redeliveryDelay)
                 .maximumRedeliveries(maxRedelivery)
                 .onRedelivery(this::logRedelivery)
@@ -50,16 +49,4 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
                 .logRetryStackTrace(true));
 
     }
-
-    /**
-     * Creates a transaction error handler that will lookup in application context for
-     * an exiting transaction manager.
-     *
-     * @return the created error handler
-     */
-    public LegacyTransactionErrorHandlerBuilder transactionErrorHandler() {
-        return new LegacyTransactionErrorHandlerBuilder();
-    }
-
-
 }
