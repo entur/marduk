@@ -79,15 +79,16 @@ public class App extends RouteBuilder {
 	}
 
 	protected void waitForProviderRepository() throws InterruptedException {
-		while (!providerRepository.isReady()){
+		while (true){
 			try {
 				providerRepository.populate();
+				LOGGER.info("Provider Repository available. Starting camel routes...");
+				return;
 			} catch (Exception e) {
 				LOGGER.warn("Provider Repository not available. Waiting {} secs before retrying...", providerRetryInterval/1000, e);
 				Thread.sleep(providerRetryInterval);
 			}
         }
-		LOGGER.info("Provider Repository available. Starting camel routes...");
 	}
 
 	private static void configureJsonPath() {
