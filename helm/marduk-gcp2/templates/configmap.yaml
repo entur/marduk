@@ -39,6 +39,9 @@ data:
     blobstore.gcs.nisaba.exchange.container.name={{ .Values.gcp.nisabaExchangeBucketName }}
     blobstore.delete.external.blobs=false
 
+    # database configuration
+    spring.flyway.enabled=false
+
     # Duplicate file filter
     duplicate.filter.web={{ .Values.duplicateFileFilter.webFilter }}
     duplicate.filter.rest=true
