@@ -30,9 +30,7 @@ public class Otp2NetexGraphBuilder extends AbstractOtp2GraphBuilder {
         return List.of(
                 new EnvVar(OTP_GCS_WORK_DIR_ENV_VAR, otpWorkDir, null),
                 new EnvVar(OTP_GRAPH_MODE, "--loadStreet", null),
-                new EnvVar(OTP_GCS_BASE_GRAPH_PATH_ENV_VAR, baseGraphPath, null),
-                // TODO for backward compatibility, to be removed when OTP is updated
-                new EnvVar(OTP_GCS_BASE_GRAPH_DIR_ENV_VAR, blobStoreGraphSubdirectory, null));
+                new EnvVar(OTP_GCS_BASE_GRAPH_PATH_ENV_VAR, baseGraphPath, null));
     }
 
     @Override

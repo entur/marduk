@@ -14,8 +14,6 @@ import java.util.List;
 public abstract class AbstractOtp2GraphBuilder implements OtpGraphBuilder {
 
     protected static final String OTP_GCS_WORK_DIR_ENV_VAR = "OTP_GCS_WORK_DIR";
-    // TODO for backward compatibility, to be removed when OTP is updated
-    protected static final String OTP_GCS_BASE_GRAPH_DIR_ENV_VAR = "OTP_GCS_BASE_GRAPH_DIR";
     protected static final String OTP_GCS_BASE_GRAPH_PATH_ENV_VAR = "OTP_GCS_BASE_GRAPH_PATH";
     protected static final String OTP_GRAPH_MODE = "OTP_GRAPH_MODE";
 
