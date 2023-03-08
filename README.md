@@ -47,3 +47,70 @@ Marduk merges the NeTEx datasets containing flexible timetables generated in NPl
 # Journey planner street graph update
 [OpenTripPlanner](https://github.com/opentripplanner) relies on OpenStreetMap data to calculate the first/last leg of a journey (walk from start point or to destination point).
 Marduk schedules a nightly download of OpenStreetMap data that in turn is used by OpenTripPlanner to build an updated street graph.
+
+# Local environment configuration
+
+A minimal local setup requires a database, a Google PubSub emulator and access to a providers repository service ([Baba](https://github.com/entur/baba))
+
+## Marduk database
+Marduk uses a database to store the history of imported file names and checksums.  
+This is used by the idempotent filter to reject files that have been already imported.
+A Docker PostgreSQL database instance can be used for local testing:
+```
+docker run -p 5432:5432 --name marduk-database -e POSTGRES_PASSWORD=myPostgresPassword postgres:13
+```
+
+A test database can be created with the following commands from the psql client:  
+
+```
+create database marduk;
+create user marduk with password 'mypassword';
+ALTER ROLE marduk SUPERUSER;
+```
+
+The database configuration is specified in the Spring Boot application.properties file:  
+
+```
+# Datasource
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.datasource.url=jdbc:postgresql://localhost:5432/marduk
+spring.datasource.username=marduk
+spring.datasource.password=mypassword
+spring.flyway.enabled=true
+```
+
+When setting the property `spring.flyway.enabled=true`, the database will be auto-created at application startup.
+
+## Google PubSub emulator
+See https://cloud.google.com/pubsub/docs/emulator for details on how to install the Google PubSub emulator.  
+The emulator is started with the following command:
+```
+gcloud beta emulators pubsub start
+```
+and will listen by default on port 8085.  
+
+The emulator port must be set in the Spring Boot application.properties file as well:  
+
+```
+spring.cloud.gcp.pubsub.emulatorHost=localhost:8085
+camel.component.google-pubsub.endpoint=localhost:8085
+```
+
+## Access to the providers repository service
+Access to the providers database is configured in the Spring Boot application.properties file:
+```
+providers.api.url=http://localhost:11101/services/providers/
+```
+
+
+
+## Spring boot configuration file
+The application.properties file used in unit tests src/test/resources/application.properties can be used as a template.  
+The Kubernetes configmap helm/marduk/templates/configmap.yaml can also be used as a template.
+
+## Starting the application locally
+- Run `mvn package` to generate the Spring Boot jar.
+- The application can be started with the following command line:  
+  ```java -Xmx500m -Dspring.config.location=/path/to/application.properties -Dfile.encoding=UTF-8 -jar target/marduk-0.0.1-SNAPSHOT.jar```
+
+
