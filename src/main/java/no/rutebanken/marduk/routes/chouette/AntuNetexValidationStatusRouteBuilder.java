@@ -46,15 +46,17 @@ import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_PREVALIDATION;
 @Component
 public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRouteBuilder {
 
-    private static final String STATUS_VALIDATION_STARTED = "started";
-    private static final String STATUS_VALIDATION_OK = "ok";
-    private static final String STATUS_VALIDATION_FAILED = "failed";
+    protected static final String STATUS_VALIDATION_STARTED = "started";
+    protected static final String STATUS_VALIDATION_OK = "ok";
+    protected static final String STATUS_VALIDATION_FAILED = "failed";
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:AntuNetexValidationStatusQueue")
+                .validate(header(Constants.VALIDATION_DATASET_FILE_HANDLE_HEADER).isNotNull())
+                .validate(header(Constants.VALIDATION_CORRELATION_ID_HEADER).isNotNull())
                 .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(DATASET_REFERENTIAL, String.class))))
                 .setHeader(CORRELATION_ID, header(VALIDATION_CORRELATION_ID_HEADER))
                 .setHeader(FILE_HANDLE, header(VALIDATION_DATASET_FILE_HANDLE_HEADER))
@@ -179,19 +181,8 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION).state(JobEvent.State.FAILED).build())
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.FAILED).build())
-                // TODO temporarily ignore validation errors in NeTEx flex dataset
-                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME))
-                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
-                .to("direct:copyBlobToAnotherBucket")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION).state(JobEvent.State.FAILED).build())
-                // TODO temporarily ignore validation errors in NeTEx flex dataset
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION).state(JobEvent.State.FAILED).build())
-                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
-                .to("direct:copyBlobInBucket")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:PublishMergedNetexQueue")
                 .otherwise()
                 .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
                 //end otherwise
@@ -205,6 +196,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
     /**
      * Extract the NeTEx file name from the NeTEx file path.
+     *
      * @param filePath the Netex file path.
      * @return the NeTEx file name.
      */
