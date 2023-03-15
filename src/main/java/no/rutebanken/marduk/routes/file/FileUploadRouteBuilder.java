@@ -42,7 +42,6 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
     public void configure() {
         super.configure();
 
-
         from("direct:uploadFilesAndStartImport")
                 .setBody(simple("${exchange.getIn().getRequest().getParts()}"))
                 .log(LoggingLevel.DEBUG, correlation() + "Received multipart request containing ${body.size()} parts")
@@ -53,7 +52,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .setHeader(FILE_HANDLE, simple("inbound/received/${header." + CHOUETTE_REFERENTIAL + "}/${header." + FILE_NAME + "}"))
                 .process(e -> e.getIn().setHeader(FILE_CONTENT_HEADER, CloseShieldInputStream.wrap(e.getIn().getBody(Part.class).getInputStream())))
                 .to("direct:uploadFileAndStartImport")
-                .routeId("files-upload");
+                .routeId("upload-files-and-start-import");
 
 
         from("direct:uploadFileAndStartImport").streamCaching()
@@ -72,6 +71,6 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .log(LoggingLevel.WARN, correlation() + "Upload of timetable data to blob store failed for file: ${header." + FILE_HANDLE + "} (${exception.stacktrace})")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.FAILED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
                 .end()
-                .routeId("file-upload-and-start-import");
+                .routeId("upload-file-and-start-import");
     }
 }
