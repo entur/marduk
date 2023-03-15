@@ -45,14 +45,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
-import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
-import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.FILE_APPLY_DUPLICATES_FILTER;
-import static no.rutebanken.marduk.Constants.FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
-import static no.rutebanken.marduk.Constants.USERNAME;
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * REST interface for backdoor triggering of messages
@@ -348,7 +341,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Internal server error").endResponseMessage()
                 .to("direct:adminUploadFile")
 
-
                 .get("/download_netex_blocks/{codespace}")
                 .description("Download NeTEx dataset with blocks")
                 .param().name("codespace").type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
@@ -394,6 +386,16 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .to("direct:adminChouetteUploadFile")
+
+                .post("flex/files")
+                .description("Upload Flexible line file for import")
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .consumes(MULTIPART_FORM_DATA)
+                .produces(PLAIN)
+                .bindingMode(RestBindingMode.off)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
+                .to("direct:adminUploadFlexFile")
 
                 .get("/files/{fileName}")
                 .description("Download file for reimport into Chouette")
@@ -784,6 +786,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:listBlobsFlat")
                 .routeId("admin-chouette-import-list");
 
+        from("direct:adminUploadFlexFile")
+                .setHeader(IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
+                .to("direct:adminChouetteUploadFile");
+
         from("direct:adminChouetteUploadFile")
                 .streamCaching()
                 .process(this::setNewCorrelationId)
@@ -797,7 +803,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY, constant(true))
                 .to("direct:uploadFilesAndStartImport")
                 .routeId("admin-chouette-upload-file");
-
 
         from("direct:adminChouetteListJobs")
                 .process(this::setNewCorrelationId)

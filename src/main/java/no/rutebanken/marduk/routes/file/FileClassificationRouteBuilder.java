@@ -31,21 +31,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Locale;
 
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
-import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.FILE_NAME;
-import static no.rutebanken.marduk.Constants.FILE_TYPE;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
-import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
-import static no.rutebanken.marduk.Constants.VALIDATION_CORRELATION_ID_HEADER;
-import static no.rutebanken.marduk.Constants.VALIDATION_DATASET_FILE_HANDLE_HEADER;
-import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_HEADER;
-import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE;
-import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_TIMETABLE_SWEDEN;
-import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
-import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_PREVALIDATION;
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Receives file handle, pulls file from blob store, classifies files and performs initial validation.
@@ -82,49 +68,49 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
                 .when(header(FILE_TYPE).isEqualTo(FileType.UNKNOWN_FILE_EXTENSION.name()))
                 .log(LoggingLevel.WARN, correlation() + "The file ${header." + FILE_HANDLE + "} does not end with a .zip or .ZIP extension")
-                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_FILE_UNKNOWN_FILE_EXTENSION))
+                .process(e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_FILE_UNKNOWN_FILE_EXTENSION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .stop()
 
                 .when(header(FILE_TYPE).isEqualTo(FileType.UNKNOWN_FILE_TYPE.name()))
                 .log(LoggingLevel.WARN, correlation() + "The file ${header." + FILE_HANDLE + "} cannot be processed: unknown file type")
-                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_UNKNOWN_FILE_TYPE))
+                .process(e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_UNKNOWN_FILE_TYPE))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .stop()
 
                 .when(header(FILE_TYPE).isEqualTo(FileType.NOT_A_ZIP_FILE.name()))
                 .log(LoggingLevel.WARN, correlation() + "The file ${header." + FILE_HANDLE + "} is not a valid zip archive")
-                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_FILE_NOT_A_ZIP_FILE))
+                .process(e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_FILE_NOT_A_ZIP_FILE))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .stop()
 
                 .when(header(FILE_TYPE).isEqualTo(FileType.ZIP_CONTAINS_SUBDIRECTORIES.name()))
                 .log(LoggingLevel.WARN, correlation() + "The file ${header." + FILE_HANDLE + "} contains one or more subdirectories")
-                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_FILE_ZIP_CONTAINS_SUB_DIRECTORIES))
+                .process(e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_FILE_ZIP_CONTAINS_SUB_DIRECTORIES))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .stop()
 
                 .when(header(FILE_TYPE).isEqualTo(FileType.INVALID_ZIP_FILE_ENTRY_CONTENT_ENCODING.name()))
                 .log(LoggingLevel.WARN, correlation() + "The file ${header." + FILE_HANDLE + "} contains one or more invalid XML files: invalid encoding")
-                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_INVALID_XML_ENCODING))
+                .process(e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_INVALID_XML_ENCODING))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .stop()
 
                 .when(header(FILE_TYPE).isEqualTo(FileType.INVALID_ZIP_FILE_ENTRY_XML_CONTENT.name()))
                 .log(LoggingLevel.WARN, correlation() + "The file ${header." + FILE_HANDLE + "} contains one or more invalid XML files: unparseable XML")
-                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_INVALID_XML_CONTENT))
+                .process(e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_INVALID_XML_CONTENT))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .stop()
 
                 .when(header(FILE_TYPE).isEqualTo(FileType.INVALID_ZIP_FILE_ENTRY_NAME_ENCODING.name()))
                 .log(LoggingLevel.WARN, correlation() + "The file ${header." + FILE_HANDLE + "} contains one or more invalid zip entry names: invalid encoding")
-                .process( e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_INVALID_ZIP_ENTRY_ENCODING))
+                .process(e -> e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_INVALID_ZIP_ENTRY_ENCODING))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .stop()
@@ -143,8 +129,8 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                     String originalFileName = e.getIn().getHeader(Constants.FILE_NAME, String.class);
                     String sanitizedFileName = MardukFileUtils.sanitizeFileName(originalFileName);
                     e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
-                                                             + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
-                                                             + "/" + sanitizedFileName);
+                            + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
+                            + "/" + sanitizedFileName);
                     e.getIn().setHeader(FILE_NAME, sanitizedFileName);
                 })
                 .log(LoggingLevel.INFO, correlation() + "Uploading file with new file name ${header." + FILE_HANDLE + "}")
@@ -152,12 +138,15 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
                 .routeId("file-sanitize-filename");
 
-
         from("direct:processValidFile")
                 .setBody(constant(""))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build())
                 .to("direct:updateStatus")
                 .setBody(constant(""))
+                .choice()
+                .when(header(IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX))
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:FlexibleLinesImportQueue")
+                .otherwise()
                 .to("direct:antuNetexPreValidation")
                 // launch the import process if this is a GTFS file or if the pre-validation is activated in chouette
                 .filter(PredicateBuilder.or(simple("{{chouette.enablePreValidation:true}}"), header(FILE_TYPE).isEqualTo(FileType.GTFS)))
