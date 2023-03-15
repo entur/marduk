@@ -128,6 +128,7 @@ public final class Constants {
     public static final String VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION = "EnturValidationStageExportNetexBlocksPostValidation";
 
     public static final String VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION = "EnturValidationStageExportFlexPostValidation";
+    public static final String VALIDATION_STAGE_IMPORT_FLEX_POSTVALIDATION = "EnturValidationStageImportFlexPostValidation";
 
     public static final String VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION = "EnturValidationStageExportMergedPostValidation";
 
@@ -143,6 +144,11 @@ public final class Constants {
     public static final String VALIDATION_PROFILE_TIMETABLE_FLEX_MERGING = "TimetableFlexibleTransportMerging";
     public static final String VALIDATION_PROFILE_TIMETABLE_SWEDEN = "TimetableSweden";
 
+    public static final String IMPORT_TYPE = "ImportType";
+
+    public static final String IMPORT_TYPE_NETEX = "ImportType_netex";
+
+    public static final String IMPORT_TYPE_NETEX_FLEX = "ImportType_netex_flex";
 
     private Constants() {
     }
