@@ -60,9 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_INBOUND;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -92,20 +90,9 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         @Bean
         @ConditionalOnWebApplication
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-            http.cors(withDefaults())
-                    .csrf().disable()
-                    .authorizeHttpRequests(authz -> authz
-                            .antMatchers("/services/swagger.json").permitAll()
-                            .antMatchers("/services/timetable_admin/swagger.json").permitAll()
-                            // exposed internally only, on a different port (pod-level)
-                            .antMatchers("/actuator/prometheus").permitAll()
-                            .antMatchers("/actuator/health").permitAll()
-                            .antMatchers("/actuator/health/liveness").permitAll()
-                            .antMatchers("/actuator/health/readiness").permitAll()
-                            .anyRequest().authenticated()
-                    )
-                    .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
-                    .oauth2Client();
+            http.cors(withDefaults()).csrf().disable().authorizeHttpRequests(authz -> authz.antMatchers("/services/swagger.json").permitAll().antMatchers("/services/timetable_admin/swagger.json").permitAll()
+                    // exposed internally only, on a different port (pod-level)
+                    .antMatchers("/actuator/prometheus").permitAll().antMatchers("/actuator/health").permitAll().antMatchers("/actuator/health/liveness").permitAll().antMatchers("/actuator/health/readiness").permitAll().anyRequest().authenticated()).oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt).oauth2Client();
             return http.build();
         }
 
@@ -119,17 +106,10 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
             String userId = "test-user";
             String userName = "JTest User";
 
-            return Jwt.withTokenValue("test-token")
-                    .header("typ", "JWT")
-                    .header("alg", JWSAlgorithm.RS256.getName())
-                    .claim("iss", "https://test-issuer.entur.org")
-                    .claim("scope", "openid profile email")
-                    .subject(userId)
-                    .audience(Set.of("test-audience"))
-                    .build();
+            return Jwt.withTokenValue("test-token").header("typ", "JWT").header("alg", JWSAlgorithm.RS256.getName()).claim("iss", "https://test-issuer.entur.org").claim("scope", "openid profile email").subject(userId).audience(Set.of("test-audience")).build();
         }
     }
-    
+
     @EndpointInject("mock:chouetteImportQueue")
     protected MockEndpoint importQueue;
 
@@ -157,6 +137,9 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files")
     protected ProducerTemplate postFileTemplate;
 
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/flex/files")
+    protected ProducerTemplate postFlexFileTemplate;
+
     @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files/unknown-file.zip")
     protected ProducerTemplate getUnknownFileTemplate;
 
@@ -181,8 +164,11 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void runImport() throws Exception {
 
-        AdviceWith.adviceWith(context, "admin-chouette-import", a ->
-                a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:chouetteImportQueue"));
+        AdviceWith.adviceWith(context, "admin-chouette-import",
+                a -> a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue")
+                        .replace()
+                        .to("mock:chouetteImportQueue")
+        );
         // we must manually start when we are done with all the advice with
         context.start();
 
@@ -217,8 +203,11 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void runExport() throws Exception {
 
-        AdviceWith.adviceWith(context, "admin-chouette-export", a ->
-                a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue").replace().to("mock:chouetteExportNetexQueue"));
+        AdviceWith.adviceWith(context, "admin-chouette-export",
+                a -> a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue")
+                        .replace()
+                        .to("mock:chouetteExportNetexQueue")
+        );
 
         // we must manually start when we are done with all the advice with
         context.start();
@@ -266,9 +255,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         BlobStoreFiles rsp = objectReader.readValue(s);
         assertEquals(1, rsp.getFiles().size(), "The list should contain exactly one file");
         assertEquals(testFileName, rsp.getFiles().get(0).getName(), "The file name should not be prefixed by the file store path");
-
     }
-
 
     @Test
     void getFile() throws Exception {
@@ -289,7 +276,6 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
     }
 
-
     @Test
     void getBlobStoreFile_unknownFile() {
 
@@ -301,7 +287,6 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         assertThrows(CamelExecutionException.class, () -> getUnknownFileTemplate.requestBodyAndHeaders(null, headers));
     }
-
 
     @Test
     void getBlobStoreExportFiles() throws Exception {
@@ -328,7 +313,6 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         assertTrue(exportFileStaticPrefixes.stream().allMatch(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName()))));
     }
 
-
     @Test
     void postSmallFile() throws Exception {
         postFile(getTestNetexArchiveAsStream());
@@ -344,13 +328,14 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         String fileName = "netex-test-POST.zip";
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
 
-        AdviceWith.adviceWith(context, "file-upload-and-start-import", a -> {
-                    a.interceptSendToEndpoint("direct:updateStatus")
-                            .skipSendToOriginalEndpoint()
-                            .to("mock:updateStatus");
-                    a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue");
-                }
-        );
+        AdviceWith.adviceWith(context, "upload-file-and-start-import", a -> {
+            a.interceptSendToEndpoint("direct:updateStatus")
+                    .skipSendToOriginalEndpoint()
+                    .to("mock:updateStatus");
+            a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue")
+                    .replace()
+                    .to("mock:processFileQueue");
+        });
 
         context.start();
 
@@ -368,18 +353,57 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     }
 
     @Test
+    public void postFlexFile() throws Exception {
+
+        InputStream testFile = getTestNetexArchiveAsStream();
+        // Preparations
+        String fileName = "netex-test-flex-POST.zip";
+        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
+
+        AdviceWith.adviceWith(context, "upload-file-and-start-import", a -> {
+            a.interceptSendToEndpoint("direct:updateStatus")
+                    .skipSendToOriginalEndpoint()
+                    .to("mock:updateStatus");
+            a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue")
+                    .replace()
+                    .to("mock:processFileQueue");
+        });
+
+        processFileQueue.expectedMessageCount(1);
+
+        context.start();
+
+        HttpEntity httpEntity = MultipartEntityBuilder.create()
+                .addBinaryBody(fileName, testFile, ContentType.DEFAULT_BINARY, fileName)
+                .build();
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(Exchange.HTTP_METHOD, "POST");
+        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        postFlexFileTemplate.requestBodyAndHeaders(httpEntity, headers);
+
+        processFileQueue.assertIsSatisfied();
+        List<Exchange> exchanges = processFileQueue.getExchanges();
+
+        assertEquals(IMPORT_TYPE_NETEX_FLEX,
+                exchanges.get(0).getIn().getHeader(IMPORT_TYPE),
+                "Flex import should have expected IMPORT_TYPE header");
+
+        InputStream receivedFile = mardukInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
+        assertNotNull(receivedFile);
+        byte[] fileContent = receivedFile.readAllBytes();
+        assertTrue(fileContent.length > 0);
+    }
+
+    @Test
     void uploadNetexDataset() throws Exception {
 
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
         String fileName = "netex-test-http-upload.zip";
 
-        AdviceWith.adviceWith(context, "file-upload-and-start-import", a -> {
-                    a.interceptSendToEndpoint("direct:updateStatus")
-                            .skipSendToOriginalEndpoint()
-                            .to("mock:updateStatus");
-                    a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue");
-                }
-        );
+        AdviceWith.adviceWith(context, "upload-file-and-start-import", a -> {
+            a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
+            a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue");
+        });
 
         updateStatus.expectedMessageCount(1);
         processFileQueue.expectedMessageCount(1);
@@ -417,6 +441,4 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         InputStream response = (InputStream) downloadNetexBlocksTemplate.requestBodyAndHeaders(null, headers);
         assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
     }
-
-
 }
