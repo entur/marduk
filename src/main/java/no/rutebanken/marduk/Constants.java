@@ -128,6 +128,7 @@ public final class Constants {
     public static final String VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION = "EnturValidationStageExportNetexBlocksPostValidation";
 
     public static final String VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION = "EnturValidationStageExportFlexPostValidation";
+    public static final String VALIDATION_STAGE_IMPORT_FLEX_POSTVALIDATION = "EnturValidationStageImportFlexPostValidation";
 
     public static final String VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION = "EnturValidationStageExportMergedPostValidation";
 

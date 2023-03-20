@@ -31,7 +31,7 @@ public class NetexFlexibleLinesImportRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        from("google-pubsub:{{marduk.pubsub.project.id}}:FlexibleLinesImportQueue")
+        from("direct:flexibleLinesImport")
                 .log(LoggingLevel.INFO, correlation() + "Received notification of new flexible NeTEx dataset import")
 
                 .process(e -> {
@@ -42,13 +42,13 @@ public class NetexFlexibleLinesImportRouteBuilder extends BaseRouteBuilder {
                 })
 
                 .to("direct:antuFlexibleNetexValidation")
-                .routeId("netex-flexible-lines-export-queue");
+                .routeId("flexible-lines-import");
 
         // start the validation in antu
         from("direct:antuFlexibleNetexValidation")
                 .log(LoggingLevel.INFO, correlation() + "Post-validating flexible NeTEx dataset")
 
-                .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION))
+                .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_IMPORT_FLEX_POSTVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
                 .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE_FLEX))
                 .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
@@ -60,7 +60,7 @@ public class NetexFlexibleLinesImportRouteBuilder extends BaseRouteBuilder {
                         .jobId(null)
                         .build())
                 .to("direct:updateStatus")
-                .routeId("antu-flex-netex-post-validation");
+                .routeId("antu-flexible-netex-validation");
     }
 
 }

@@ -27,19 +27,15 @@ public class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegr
     @EndpointInject("mock:antuNetexPreValidation")
     protected MockEndpoint antuNetexPreValidationMock;
 
-    @EndpointInject("mock:flexibleLinesImportQueue")
-    protected MockEndpoint flexibleLinesImportQueueMock;
-
-    @EndpointInject("mock:chouetteImportQueue")
-    protected MockEndpoint chouetteImportQueueMock;
+    @EndpointInject("mock:flexibleLinesImport")
+    protected MockEndpoint flexibleLinesImportMock;
 
     @BeforeEach
     protected void setUp() throws IOException {
         super.setUp();
         updateStatusMock.reset();
-        flexibleLinesImportQueueMock.reset();
+        flexibleLinesImportMock.reset();
         antuNetexPreValidationMock.reset();
-        chouetteImportQueueMock.reset();
     }
 
     @Test
@@ -55,12 +51,9 @@ public class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegr
                     a.interceptSendToEndpoint("direct:antuNetexPreValidation")
                             .skipSendToOriginalEndpoint()
                             .to("mock:antuNetexPreValidation");
-                    a.weaveByToUri("google-pubsub:(.*):FlexibleLinesImportQueue")
-                            .replace()
-                            .to("mock:flexibleLinesImportQueue");
-                    a.weaveByToUri("google-pubsub:(.*):ChouetteImportQueue")
-                            .replace()
-                            .to("mock:chouetteImportQueue");
+                    a.interceptSendToEndpoint("direct:flexibleLinesImport")
+                            .skipSendToOriginalEndpoint()
+                            .to("mock:flexibleLinesImport");
                 });
 
         // we must manually start when we are done with all the advice with
@@ -68,8 +61,7 @@ public class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegr
 
         updateStatusMock.expectedMessageCount(1);
         antuNetexPreValidationMock.expectedMessageCount(0);
-        flexibleLinesImportQueueMock.expectedMessageCount(1);
-        chouetteImportQueueMock.expectedMessageCount(0);
+        flexibleLinesImportMock.expectedMessageCount(1);
 
         Map<String, Object> headers = new HashMap<>();
         headers.put(Constants.PROVIDER_ID, "2");
@@ -79,8 +71,7 @@ public class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegr
 
         updateStatusMock.assertIsSatisfied();
         antuNetexPreValidationMock.assertIsSatisfied();
-        flexibleLinesImportQueueMock.assertIsSatisfied();
-        chouetteImportQueueMock.assertIsSatisfied();
+        flexibleLinesImportMock.assertIsSatisfied();
     }
 
     @Test
@@ -96,13 +87,9 @@ public class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegr
                     a.interceptSendToEndpoint("direct:antuNetexPreValidation")
                             .skipSendToOriginalEndpoint()
                             .to("mock:antuNetexPreValidation");
-                    a.weaveByToUri("google-pubsub:(.*):FlexibleLinesImportQueue")
-                            .replace()
-                            .to("mock:flexibleLinesImportQueue");
-                    a.weaveByToUri("google-pubsub:(.*):ChouetteImportQueue")
-                            .replace()
-                            .to("mock:chouetteImportQueue");
-
+                    a.interceptSendToEndpoint("direct:flexibleLinesImport")
+                            .skipSendToOriginalEndpoint()
+                            .to("mock:flexibleLinesImport");
                 });
 
         // we must manually start when we are done with all the advice with
@@ -110,8 +97,7 @@ public class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegr
 
         updateStatusMock.expectedMessageCount(1);
         antuNetexPreValidationMock.expectedMessageCount(1);
-        flexibleLinesImportQueueMock.expectedMessageCount(0);
-        chouetteImportQueueMock.expectedMessageCount(1);
+        flexibleLinesImportMock.expectedMessageCount(0);
 
         Map<String, Object> headers = new HashMap<>();
         headers.put(Constants.PROVIDER_ID, "2");
@@ -120,7 +106,6 @@ public class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegr
 
         updateStatusMock.assertIsSatisfied();
         antuNetexPreValidationMock.assertIsSatisfied();
-        flexibleLinesImportQueueMock.assertIsSatisfied();
-        chouetteImportQueueMock.assertIsSatisfied();
+        flexibleLinesImportMock.assertIsSatisfied();
     }
 }

@@ -145,7 +145,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(""))
                 .choice()
                 .when(header(IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:FlexibleLinesImportQueue")
+                .to("direct:flexibleLinesImport")
                 .otherwise()
                 .to("direct:antuNetexPreValidation")
                 // launch the import process if this is a GTFS file or if the pre-validation is activated in chouette
