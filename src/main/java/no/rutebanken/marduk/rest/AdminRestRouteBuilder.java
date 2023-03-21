@@ -25,10 +25,7 @@ import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.security.AuthorizationService;
-import org.apache.camel.Body;
-import org.apache.camel.Exchange;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.LoggingLevel;
+import org.apache.camel.*;
 import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
@@ -367,6 +364,17 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .to("direct:adminChouetteImport")
 
+                .post("/flex/import")
+                .description("Triggers the import->validate->export process in Chouette for each blob store file handle. Use /files call to obtain available files. Files are imported in the same order as they are provided")
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .type(BlobStoreFiles.class)
+                .outType(String.class)
+                .consumes(JSON)
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Job accepted").endResponseMessage()
+                .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
+                .to("direct:adminFlexImport")
+
                 .get("/files")
                 .description("List files available for reimport into Chouette")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
@@ -387,7 +395,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
                 .to("direct:adminChouetteUploadFile")
 
-                .post("flex/files")
+                .post("/flex/files")
                 .description("Upload Flexible line file for import")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
                 .consumes(MULTIPART_FORM_DATA)
@@ -746,6 +754,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         from("direct:adminChouetteImport")
                 .process(this::removeAllCamelHttpHeaders)
+                .process(e -> {
+                    Message in = e.getIn();
+                })
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeAdminRequest")
                 .to("direct:validateProvider")
@@ -765,6 +776,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
                 .routeId("admin-chouette-import");
+
+        from("direct:adminFlexImport")
+                .setHeader(IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
+                .to("direct:adminChouetteImport");
 
         from("direct:adminChouetteStats")
                 .process(this::setNewCorrelationId)
