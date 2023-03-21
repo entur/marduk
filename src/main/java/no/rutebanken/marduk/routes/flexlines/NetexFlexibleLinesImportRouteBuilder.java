@@ -35,9 +35,7 @@ public class NetexFlexibleLinesImportRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Received notification of new flexible NeTEx dataset import")
 
                 .process(e -> {
-                    Long providerId = getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class));
-                    Provider provider = getProviderRepository().getProvider(providerId);
-                    e.getIn().setHeader(PROVIDER_ID, providerId);
+                    Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.chouetteInfo.referential);
                 })
 
