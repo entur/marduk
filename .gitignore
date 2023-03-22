@@ -42,3 +42,8 @@ gradlew.bat
 
 # Terraform
 /terraform/.terraform
+
+
+# Mac
+.DS_Store
+/.DS_Store

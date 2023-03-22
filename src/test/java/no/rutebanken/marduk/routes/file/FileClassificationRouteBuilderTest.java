@@ -16,7 +16,7 @@ import java.util.Map;
 
 import static no.rutebanken.marduk.Constants.IMPORT_TYPE_NETEX_FLEX;
 
-public class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
+class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Produce("direct:processValidFile")
     protected ProducerTemplate processValidFileTemplate;
@@ -39,7 +39,7 @@ public class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegr
     }
 
     @Test
-    public void testMessagesWithImportTypeFlexShouldBeSendToFlexibleLinesImportQueue() throws Exception {
+    void testMessagesWithImportTypeFlexShouldBeSendToFlexibleLinesImportQueue() throws Exception {
 
         // Mock initial call to Chouette to validation job
         AdviceWith.adviceWith(
@@ -75,7 +75,7 @@ public class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegr
     }
 
     @Test
-    public void testMessagesWithoutImportTypeFlexShouldBeSendToChouetteImportQueue() throws Exception {
+    void testMessagesWithoutImportTypeFlexShouldBeSendToChouetteImportQueue() throws Exception {
 
         // Mock initial call to Chouette to validation job
         AdviceWith.adviceWith(

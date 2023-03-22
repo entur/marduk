@@ -362,10 +362,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Job accepted").endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
-                .to("direct:adminChouetteImport")
+                .to("direct:adminDatasetImport")
 
                 .post("/flex/import")
-                .description("Triggers the import->validate->export process in Chouette for each blob store file handle. Use /files call to obtain available files. Files are imported in the same order as they are provided")
+                .description("Triggers the import->validate->export for each blob store file handle. Use /files call to obtain available files. Files are imported in the same order as they are provided")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
                 .type(BlobStoreFiles.class)
                 .outType(String.class)
@@ -376,14 +376,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:adminFlexImport")
 
                 .get("/files")
-                .description("List files available for reimport into Chouette")
+                .description("List files available for reimport")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
                 .outType(BlobStoreFiles.class)
                 .consumes(PLAIN)
                 .produces(JSON)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
-                .to("direct:adminChouetteImportList")
+                .to("direct:adminDatasetImportList")
 
                 .post("/files")
                 .description("Upload file for import into Chouette")
@@ -393,10 +393,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .bindingMode(RestBindingMode.off)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
-                .to("direct:adminChouetteUploadFile")
+                .to("direct:adminDatasetUploadFile")
 
                 .post("/flex/files")
-                .description("Upload Flexible line file for import")
+                .description("Upload flexible line file for import")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
                 .consumes(MULTIPART_FORM_DATA)
                 .produces(PLAIN)
@@ -406,14 +406,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:adminUploadFlexFile")
 
                 .get("/files/{fileName}")
-                .description("Download file for reimport into Chouette")
+                .description("Download file for reimport")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
                 .param().name("fileName").type(RestParamType.path).description("Name of file to fetch").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
                 .consumes(PLAIN)
                 .produces(X_OCTET_STREAM)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid fileName").endResponseMessage()
-                .to("direct:adminChouetteFileDownload")
+                .to("direct:adminDatasetFileDownload")
 
                 .get("/line_statistics")
                 .description("List stats about data in chouette for a given provider")
@@ -613,7 +613,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:listTimetableExportAndGraphBlobs")
                 .routeId("admin-chouette-timetable-files-get");
 
-        from("direct:adminChouetteFileDownload")
+        from("direct:adminDatasetFileDownload")
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeAdminRequest")
                 .to("direct:validateProvider")
@@ -752,11 +752,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
                 .routeId("admin-chouette-netex-blocks-download");
 
-        from("direct:adminChouetteImport")
+        from("direct:adminDatasetImport")
                 .process(this::removeAllCamelHttpHeaders)
-                .process(e -> {
-                    Message in = e.getIn();
-                })
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeAdminRequest")
                 .to("direct:validateProvider")
@@ -779,7 +776,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         from("direct:adminFlexImport")
                 .setHeader(IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
-                .to("direct:adminChouetteImport");
+                .to("direct:adminDatasetImport");
 
         from("direct:adminChouetteStats")
                 .process(this::setNewCorrelationId)
@@ -791,7 +788,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:chouetteGetStatsSingleProvider")
                 .routeId("admin-chouette-stats");
 
-        from("direct:adminChouetteImportList")
+        from("direct:adminDatasetImportList")
                 .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeAdminRequest")
@@ -803,9 +800,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         from("direct:adminUploadFlexFile")
                 .setHeader(IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
-                .to("direct:adminChouetteUploadFile");
+                .to("direct:adminDatasetUploadFile");
 
-        from("direct:adminChouetteUploadFile")
+        from("direct:adminDatasetUploadFile")
                 .streamCaching()
                 .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, header("providerId"))
