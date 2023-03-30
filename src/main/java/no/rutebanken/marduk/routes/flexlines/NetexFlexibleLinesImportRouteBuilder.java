@@ -31,24 +31,16 @@ public class NetexFlexibleLinesImportRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
+        // start the validation in antu
         from("direct:flexibleLinesImport")
-                .log(LoggingLevel.INFO, correlation() + "Received notification of new flexible NeTEx dataset import")
-
+                .log(LoggingLevel.INFO, correlation() + "Post-validating flexible NeTEx dataset")
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.chouetteInfo.referential);
                 })
-
-                .to("direct:antuFlexibleNetexValidation")
-                .routeId("flexible-lines-import");
-
-        // start the validation in antu
-        from("direct:antuFlexibleNetexValidation")
-                .log(LoggingLevel.INFO, correlation() + "Post-validating flexible NeTEx dataset")
-
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_IMPORT_FLEX_POSTVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
-                .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE_FLEX))
+                .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_IMPORT_TIMETABLE_FLEX))
                 .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
                 .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
                 .to("google-pubsub:{{antu.pubsub.project.id}}:AntuNetexValidationQueue")
@@ -58,7 +50,7 @@ public class NetexFlexibleLinesImportRouteBuilder extends BaseRouteBuilder {
                         .jobId(null)
                         .build())
                 .to("direct:updateStatus")
-                .routeId("antu-flexible-netex-validation");
+                .routeId("flexible-lines-import");
     }
 
 }

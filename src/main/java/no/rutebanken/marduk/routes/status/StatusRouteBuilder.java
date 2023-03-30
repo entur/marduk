@@ -23,18 +23,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class StatusRouteBuilder extends BaseRouteBuilder {
 
-	@Override
-	public void configure() {
-		from("direct:updateStatus")
-				.process(exchange ->
-						{ if(exchange.getIn().getBody(String.class).equals("rb_nsb")) {
-						throw new RuntimeException();}
-						}
-						)
-				.log(LoggingLevel.INFO, getClass().getName(), correlation() + "Sending off job status event: ${body}")
-				.to("google-pubsub:{{nabu.pubsub.project.id}}:JobEventQueue")
-				.routeId("update-status").startupOrder(1);
-	}
+    @Override
+    public void configure() {
+        from("direct:updateStatus")
+                .process(exchange -> {
+                    if (exchange.getIn().getBody(String.class).equals("rb_nsb")) {
+                        throw new RuntimeException();
+                    }
+                })
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Sending off job status event: ${body}")
+                .to("google-pubsub:{{nabu.pubsub.project.id}}:JobEventQueue")
+                .routeId("update-status").startupOrder(1);
+    }
 
 
 }
