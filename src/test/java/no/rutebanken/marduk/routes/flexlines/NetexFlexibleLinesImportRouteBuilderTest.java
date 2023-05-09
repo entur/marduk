@@ -42,7 +42,7 @@ class NetexFlexibleLinesImportRouteBuilderTest extends MardukRouteBuilderIntegra
         });
 
         when(providerRepository.getProvider(anyLong()))
-                .thenReturn(provider("rb_atb", 1, null));
+                .thenReturn(provider("atb", 1, null));
 
         context.start();
 
