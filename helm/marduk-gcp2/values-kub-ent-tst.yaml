@@ -14,9 +14,9 @@ sql:
 
 gcp:
   blobstoreProjectId: entur-ror-test
-  mardukPubsubProjectId: entur-ror-test
-  antuPubsubProjectId: entur-ror-test
-  nabuPubsubProjectId: entur-ror-test
+  mardukPubsubProjectId: ent-marduk-tst
+  antuPubsubProjectId: ent-antu-tst
+  nabuPubsubProjectId: ent-nabu-tst
   bucketName: marduk-test
   exchangeBucketName: ror-marduk-exchange-test
   otpReportBucketName: otpreport.staging.entur.org
