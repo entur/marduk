@@ -775,6 +775,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-chouette-import");
 
         from("direct:adminFlexImport")
+                .routeId("admin-flex-import")
                 .setHeader(IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
                 .to("direct:adminDatasetImport");
 
@@ -799,6 +800,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-chouette-import-list");
 
         from("direct:adminUploadFlexFile")
+                .routeId("admin-upload-flex-file")
                 .setHeader(IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
                 .to("direct:adminDatasetUploadFile");
 

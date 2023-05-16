@@ -123,12 +123,12 @@ public final class Constants {
     public static final String VALIDATION_CORRELATION_ID_HEADER  = "EnturValidationCorrelationId";
 
     public static final String VALIDATION_STAGE_HEADER = "EnturValidationStage";
+    public static final String VALIDATION_IMPORT_TYPE = "EnturValidationImportType";
     public static final String VALIDATION_STAGE_PREVALIDATION = "EnturValidationStagePreValidation";
     public static final String VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION = "EnturValidationStageExportNetexPostValidation";
     public static final String VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION = "EnturValidationStageExportNetexBlocksPostValidation";
 
-    public static final String VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION = "EnturValidationStageExportFlexPostValidation";
-    public static final String VALIDATION_STAGE_IMPORT_FLEX_POSTVALIDATION = "EnturValidationStageImportFlexPostValidation";
+    public static final String VALIDATION_STAGE_FLEX_POSTVALIDATION = "EnturValidationStageFlexPostValidation";
 
     public static final String VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION = "EnturValidationStageExportMergedPostValidation";
 
@@ -147,9 +147,11 @@ public final class Constants {
 
     public static final String IMPORT_TYPE = "ImportType";
 
-    public static final String IMPORT_TYPE_NETEX = "ImportType_netex";
+    public static final String IMPORT_TYPE_NETEX_TIMETABLE = "ImportType_netex_timetable";
 
     public static final String IMPORT_TYPE_NETEX_FLEX = "ImportType_netex_flex";
+
+    public static final String IMPORT_TYPE_UTTU_EXPORT = "ImportType_uttu_export";
 
     private Constants() {
     }

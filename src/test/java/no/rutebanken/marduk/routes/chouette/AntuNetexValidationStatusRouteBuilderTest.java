@@ -18,7 +18,7 @@ import static no.rutebanken.marduk.routes.chouette.AntuNetexValidationStatusRout
 import static no.rutebanken.marduk.routes.chouette.AntuNetexValidationStatusRouteBuilder.STATUS_VALIDATION_OK;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
+class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Produce("google-pubsub:{{marduk.pubsub.project.id}}:AntuNetexValidationStatusQueue")
     protected ProducerTemplate importTemplate;
@@ -47,7 +47,7 @@ public class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilde
     }
 
     @Test
-    public void testAntuStatusValidationOk() throws Exception {
+    void testAntuStatusValidationOk() throws Exception {
 
         AdviceWith.adviceWith(context, "antu-netex-validation-complete", a -> {
             a.interceptSendToEndpoint("direct:updateStatus")
@@ -72,7 +72,7 @@ public class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilde
 
 
         Map<String, String> headers = new HashMap<>();
-        headers.put(VALIDATION_STAGE_HEADER, VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION);
+        headers.put(VALIDATION_STAGE_HEADER, VALIDATION_STAGE_FLEX_POSTVALIDATION);
         headers.put(VALIDATION_DATASET_FILE_HANDLE_HEADER, "testFileName");
         headers.put(VALIDATION_CORRELATION_ID_HEADER, "testCorrelationId");
         sendBodyAndHeadersToPubSub(importTemplate, STATUS_VALIDATION_OK, headers);
@@ -88,7 +88,7 @@ public class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilde
     }
 
     @Test
-    public void testAntuStatusValidationFailedShouldStopMergeWithFlexibleLine() throws Exception {
+    void testAntuStatusValidationFailedShouldStopMergeWithFlexibleLine() throws Exception {
 
         AdviceWith.adviceWith(context, "antu-netex-validation-failed", a -> {
             a.interceptSendToEndpoint("direct:updateStatus")
@@ -110,7 +110,7 @@ public class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilde
         chouetteMergeWithFlexibleLinesQueueMock.expectedMessageCount(0);
 
         Map<String, String> headers = new HashMap<>();
-        headers.put(VALIDATION_STAGE_HEADER, VALIDATION_STAGE_EXPORT_FLEX_POSTVALIDATION);
+        headers.put(VALIDATION_STAGE_HEADER, VALIDATION_STAGE_FLEX_POSTVALIDATION);
         headers.put(VALIDATION_DATASET_FILE_HANDLE_HEADER, "testFileName");
         headers.put(VALIDATION_CORRELATION_ID_HEADER, "testCorrelationId");
         sendBodyAndHeadersToPubSub(importTemplate, STATUS_VALIDATION_FAILED, headers);
@@ -126,7 +126,7 @@ public class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilde
     }
 
     @Test
-    public void testAntuFailedValidationShouldStopPublishMergedNetexQueue() throws Exception {
+    void testAntuFailedValidationShouldStopPublishMergedNetexQueue() throws Exception {
 
         // Mock update status calls
         AdviceWith.adviceWith(context, "antu-netex-validation-failed", a -> {
