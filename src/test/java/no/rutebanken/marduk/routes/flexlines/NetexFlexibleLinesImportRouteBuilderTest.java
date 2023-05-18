@@ -60,7 +60,7 @@ class NetexFlexibleLinesImportRouteBuilderTest extends MardukRouteBuilderIntegra
 
         Exchange message = messages.get(0);
 
-        assertEquals("rb_atb", message.getIn().getHeader(DATASET_REFERENTIAL));
+        assertEquals("atb", message.getIn().getHeader(DATASET_REFERENTIAL));
         assertEquals(VALIDATION_STAGE_FLEX_POSTVALIDATION, message.getIn().getHeader(VALIDATION_STAGE_HEADER));
         assertEquals(VALIDATION_CLIENT_MARDUK, message.getIn().getHeader(VALIDATION_CLIENT_HEADER));
         assertEquals(VALIDATION_PROFILE_IMPORT_TIMETABLE_FLEX, message.getIn().getHeader(VALIDATION_PROFILE_HEADER));
