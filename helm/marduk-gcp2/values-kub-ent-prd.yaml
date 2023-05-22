@@ -14,9 +14,9 @@ sql:
 
 gcp:
   blobstoreProjectId: entur-ror-prod
-  mardukPubsubProjectId: entur-ror-prod
-  antuPubsubProjectId: entur-ror-prod
-  nabuPubsubProjectId: entur-ror-prod
+  mardukPubsubProjectId: ent-marduk-prd
+  antuPubsubProjectId: ent-antu-prd
+  nabuPubsubProjectId: ent-nabu-prd
   bucketName: marduk-production
   exchangeBucketName: ror-marduk-exchange-production
   otpReportBucketName: otpreport.entur.org
