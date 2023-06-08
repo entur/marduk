@@ -27,7 +27,7 @@
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
         <camel.version>3.18.7</camel.version>
         <entur.helpers.version>1.96</entur.helpers.version>
-        <commons-io.version>2.12.0</commons-io.version>
+        <commons-io.version>2.13.0</commons-io.version>
         <commons-csv.version>1.10.0</commons-csv.version>
         <zt-zip.version>1.15</zt-zip.version>
         <json-unit.version>2.38.0</json-unit.version>
