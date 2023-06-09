@@ -22,6 +22,7 @@ gcp:
   otpReportBucketName: otpreport.entur.org
   otpGraphBucketName: ror-otp-graphs-production
   nisabaExchangeBucketName: ror-nisaba-exchange-production
+  osmSubDirectory: osm
 
 chouette:
   service: http://chouette.prd.entur.internal

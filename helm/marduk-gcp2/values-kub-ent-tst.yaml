@@ -22,6 +22,7 @@ gcp:
   otpReportBucketName: otpreport.staging.entur.org
   otpGraphBucketName: ror-otp-graphs-test
   nisabaExchangeBucketName: ror-nisaba-exchange-test
+  osmSubDirectory: osm
 
 chouette:
   service: http://chouette.tst.entur.internal
