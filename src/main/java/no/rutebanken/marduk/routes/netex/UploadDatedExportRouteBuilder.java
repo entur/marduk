@@ -43,7 +43,7 @@ public class UploadDatedExportRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Start copying dated version of ${exchangeProperty.datedVersionFileName} to marduk-exchange")
                 .setHeader(TARGET_FILE_HANDLE, simple(blobStorePath + "/${exchangeProperty.datedVersionFileName}"))
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
-                .to("direct:copyBlobToAnotherBucket")
+                .to("direct:copyBlobMardukExternalToAnotherBucket")
                 .routeId("copy-dated-export");
 
     }
