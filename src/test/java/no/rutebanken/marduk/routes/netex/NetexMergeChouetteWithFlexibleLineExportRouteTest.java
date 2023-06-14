@@ -74,10 +74,10 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
 
         context.start();
 
-        // Create flexible line export in in memory blob store
-        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + CURRENT_FLEXIBLE_LINES_NETEX_FILENAME, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex_with_two_files.zip"), false);
+        // Create flexible line export in memory blob store
+        mardukExternalInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + CURRENT_FLEXIBLE_LINES_NETEX_FILENAME, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex_with_two_files.zip"), false);
 
-        // Create chouette netex export in in memory blob store
+        // Create chouette netex export in memory blob store
         mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_NETEX_EXPORT + "rb_rut-aggregated-netex.zip", new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip"), false);
 
 
@@ -87,7 +87,7 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
         otpBuildGraph.assertIsSatisfied();
         netexExportNotificationQueue.assertIsSatisfied();
 
-        assertNotNull(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME), "Expected merged netex file to have been uploaded");
+        assertNotNull(mardukExternalInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME), "Expected merged netex file to have been uploaded");
         assertTrue(exchangeInMemoryBlobStoreRepository.listBlobs(BLOBSTORE_PATH_OUTBOUND + "dated").getFiles().size() > 0, "Expected merged netex file to have been uploaded to marduk exchange for DatedServiceJourneyId-generation");
         assertEquals("rut", netexExportNotificationQueue.getExchanges().get(0).getIn().getBody());
 

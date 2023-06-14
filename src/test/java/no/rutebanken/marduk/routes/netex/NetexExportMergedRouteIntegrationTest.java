@@ -58,11 +58,11 @@ class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegratio
         AdviceWith.adviceWith(context, "netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
 
-        // Create stop file in in memory blob store
-        mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"), false);
+        // Create stop file in memory blob store
+        mardukExternalInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"), false);
 
         // Create provider netex export in in memory blob store
-        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-aggregated-netex.zip", new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip"), false);
+        mardukExternalInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-aggregated-netex.zip", new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip"), false);
 
         updateStatus.expectedMessageCount(2);
 
@@ -76,7 +76,7 @@ class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegratio
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
 
-        assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath)).as("Expected merged netex file to have been uploaded").isNotNull();
+        assertThat(mardukExternalInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath)).as("Expected merged netex file to have been uploaded").isNotNull();
     }
 
 }

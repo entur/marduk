@@ -30,6 +30,10 @@ public abstract class MardukSpringBootBaseTest {
     @Value("${blobstore.gcs.container.name}")
     private String mardukContainerName;
 
+
+    @Value("${blobstore.gcs.external.container.name}")
+    private String mardukExternalContainerName;
+
     @Value("${blobstore.gcs.exchange.container.name}")
     private String exchangeContainerName;
 
@@ -44,6 +48,10 @@ public abstract class MardukSpringBootBaseTest {
 
     @Autowired
     protected InMemoryBlobStoreRepository mardukInMemoryBlobStoreRepository;
+
+    @Autowired
+    protected InMemoryBlobStoreRepository mardukExternalInMemoryBlobStoreRepository;
+
 
     @Autowired
     protected InMemoryBlobStoreRepository exchangeInMemoryBlobStoreRepository;
@@ -64,6 +72,7 @@ public abstract class MardukSpringBootBaseTest {
     @PostConstruct
     void initInMemoryBlobStoreRepositories() {
         mardukInMemoryBlobStoreRepository.setContainerName(mardukContainerName);
+        mardukExternalInMemoryBlobStoreRepository.setContainerName(mardukExternalContainerName);
         exchangeInMemoryBlobStoreRepository.setContainerName(exchangeContainerName);
         graphsInMemoryBlobStoreRepository.setContainerName(graphsContainerName);
         otpReportInMemoryBlobStoreRepository.setContainerName(otpReportContainerName);
