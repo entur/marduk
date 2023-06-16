@@ -145,8 +145,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .end()
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
-                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.external.container.name}"))
-                .to("direct:copyBlobToAnotherBucket")
+                .to("direct:copyBlobInBucket")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:PublishMergedNetexQueue")
                 .endChoice()
 
