@@ -18,7 +18,6 @@ gcp:
   antuPubsubProjectId: ent-antu-prd
   nabuPubsubProjectId: ent-nabu-prd
   bucketName: marduk-production
-  externalBucketName: marduk-production
   exchangeBucketName: ror-marduk-exchange-production
   otpReportBucketName: otpreport.entur.org
   otpGraphBucketName: ror-otp-graphs-production

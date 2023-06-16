@@ -103,7 +103,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Fetching " + BLOBSTORE_PATH_OUTBOUND + "gtfs/${body}")
                 .setProperty("fileName", body())
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${exchangeProperty.fileName}"))
-                .to("direct:getMardukExternalBlob")
+                .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
                 .toD("file:${header." + FILE_PARENT + "}" + ORIGINAL_GTFS_FILES_SUB_FOLDER + "?fileName=${exchangeProperty.fileName}")
@@ -142,7 +142,7 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
         from("direct:uploadMergedGtfs")
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + FILE_NAME + "}"))
-                .to("direct:uploadMardukExternalBlob")
+                .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploaded new merged GTFS file: ${header." + FILE_NAME + "}")
                 .routeId("gtfs-export-upload-merged");
 
