@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class JobResponseTest {
 
-    String inputJson = "{\"id\":130,\"referential\":\"tds\",\"action\":\"importer\",\"type\":\"gtfs\"," +
+    final String inputJson = "{\"id\":130,\"referential\":\"tds\",\"action\":\"importer\",\"type\":\"gtfs\"," +
             "\"created\":1450177618732,\"updated\":1450177618732,\"status\":\"SCHEDULED\"," +
             "\"links\":[{\"rel\":\"parameters\",\"href\":\"http://chouette:8080/chouette_iev/referentials/tds/data/130/parameters.json\"," +
             "\"type\":\"application/json\",\"method\":\"get\"},{\"rel\":\"action_params\"," +

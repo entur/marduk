@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class NetexExportParameters {
 
-    public NetexExportParameters.Parameters parameters;
+    public final NetexExportParameters.Parameters parameters;
 
     public NetexExportParameters(NetexExportParameters.Parameters parameters) {
         this.parameters = parameters;

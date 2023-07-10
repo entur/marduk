@@ -24,11 +24,7 @@ import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
-import org.apache.camel.CamelExecutionException;
-import org.apache.camel.EndpointInject;
-import org.apache.camel.Exchange;
-import org.apache.camel.Produce;
-import org.apache.camel.ProducerTemplate;
+import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.compress.utils.IOUtils;
@@ -36,6 +32,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,16 +52,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static no.rutebanken.marduk.Constants.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -181,9 +174,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         // Do rest call
 
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Exchange.HTTP_METHOD, "POST");
-        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        Map<String, Object> headers = getTestHeaders("POST");
 
         importTemplate.sendBodyAndHeaders(importJson, headers);
 
@@ -213,9 +204,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         // Do rest call
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Exchange.HTTP_METHOD, "POST");
-        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        Map<String, Object> headers = getTestHeaders("POST");
         exportTemplate.sendBodyAndHeaders(null, headers);
 
         // setup expectations on the mocks
@@ -243,9 +232,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         // Do rest call
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Exchange.HTTP_METHOD, "GET");
-        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        Map<String, Object> headers = getTestHeaders("GET");
         InputStream response = (InputStream) listFilesTemplate.requestBodyAndHeaders(null, headers);
         // Parse response
 
@@ -268,9 +255,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         context.start();
 
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Exchange.HTTP_METHOD, "GET");
-        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        Map<String, Object> headers = getTestHeaders("GET");
         InputStream response = (InputStream) getFileTemplate.requestBodyAndHeaders(null, headers);
 
         assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
@@ -281,9 +266,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         context.start();
 
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Exchange.HTTP_METHOD, "GET");
-        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        Map<String, Object> headers = getTestHeaders("GET");
 
         assertThrows(CamelExecutionException.class, () -> getUnknownFileTemplate.requestBodyAndHeaders(null, headers));
     }
@@ -299,9 +282,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         // Do rest call
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Exchange.HTTP_METHOD, "GET");
-        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        Map<String, Object> headers = getTestHeaders("GET");
         InputStream response = (InputStream) listExportFilesTemplate.requestBodyAndHeaders(null, headers);
         // Parse response
 
@@ -340,9 +321,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, testFile, ContentType.DEFAULT_BINARY, fileName).build();
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Exchange.HTTP_METHOD, "POST");
-        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        Map<String, Object> headers = getTestHeaders("POST");
         postFileTemplate.requestBodyAndHeaders(httpEntity, headers);
 
         InputStream receivedFile = mardukInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
@@ -353,7 +332,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     }
 
     @Test
-    public void postFlexFile() throws Exception {
+    void postFlexFile() throws Exception {
 
         InputStream testFile = getTestNetexArchiveAsStream();
         // Preparations
@@ -376,9 +355,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         HttpEntity httpEntity = MultipartEntityBuilder.create()
                 .addBinaryBody(fileName, testFile, ContentType.DEFAULT_BINARY, fileName)
                 .build();
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(Exchange.HTTP_METHOD, "POST");
-        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        Map<String, Object> headers = getTestHeaders("POST");
         postFlexFileTemplate.requestBodyAndHeaders(httpEntity, headers);
 
         processFileQueue.assertIsSatisfied();
@@ -409,8 +386,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         processFileQueue.expectedMessageCount(1);
 
         HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName).build();
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        Map<String, Object> headers = getTestHeaders("POST");
 
         context.start();
         uploadFileTemplate.requestBodyAndHeaders(httpEntity, headers);
@@ -429,16 +405,21 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         // Preparations
         String filename = "rb_rut-aggregated-netex.zip";
-        String fileStorePath = Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT;
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
-        mardukInMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + filename, testFile, false);
 
-        Map<String, Object> headers = new HashMap<>();
-        headers.put(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        Map<String, Object> headers = getTestHeaders("GET");
 
         context.start();
         InputStream response = (InputStream) downloadNetexBlocksTemplate.requestBodyAndHeaders(null, headers);
         assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
+    }
+
+    @NotNull
+    private static Map<String, Object> getTestHeaders(String method) {
+        return Map.of(
+                Exchange.HTTP_METHOD, method,
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
     }
 }

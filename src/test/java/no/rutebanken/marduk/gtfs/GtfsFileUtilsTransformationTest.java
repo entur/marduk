@@ -91,7 +91,7 @@ public class GtfsFileUtilsTransformationTest {
         assertShapesAreIncluded(target);
     }
 
-    public static void assertRouteRouteTypesAreConvertedToGoogleSupportedValues(File out) throws IOException {
+    public static void assertRouteRouteTypesAreConvertedToGoogleSupportedValues(File out) {
         List<String> routeLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.ROUTES_TXT)), StandardCharsets.UTF_8);
         routeLines.remove(0); // remove header
         assertEquals(10, routeLines.size());
@@ -104,7 +104,7 @@ public class GtfsFileUtilsTransformationTest {
         assertEquals("1501", transformedRouteTypes.get(3));
     }
 
-    public static void assertStopVehicleTypesAreConvertedToGoogleSupportedValues(File out) throws IOException {
+    public static void assertStopVehicleTypesAreConvertedToGoogleSupportedValues(File out) {
         List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.STOPS_TXT)), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
         assertThat(stopLines.get(0)).as("Line without vehicle type should not be changed").endsWith(",");
@@ -113,7 +113,7 @@ public class GtfsFileUtilsTransformationTest {
         assertThat(stopLines.get(3)).as("Line with extended value 1601 should be converted to 1700 (default)").endsWith(",1700,");
     }
 
-    public static void assertRouteRouteTypesAreConvertedToBasicGtfsValues(File out) throws IOException {
+    public static void assertRouteRouteTypesAreConvertedToBasicGtfsValues(File out) {
         List<String> routeLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.ROUTES_TXT)), StandardCharsets.UTF_8);
         routeLines.remove(0); // remove header
         assertEquals(10, routeLines.size());
@@ -126,7 +126,7 @@ public class GtfsFileUtilsTransformationTest {
         assertEquals("3", transformedRouteTypes.get(3));
     }
 
-    public static void assertStopVehicleTypesAreConvertedToBasicGtfsValues(File out) throws IOException {
+    public static void assertStopVehicleTypesAreConvertedToBasicGtfsValues(File out) {
         List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.STOPS_TXT)), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
         assertThat(stopLines.get(1)).as("Line with valid value 701 should be converted to 3").endsWith(",3,");
@@ -136,7 +136,7 @@ public class GtfsFileUtilsTransformationTest {
 
     }
 
-    public static void assertShapesAreRemoved(File out) throws IOException {
+    public static void assertShapesAreRemoved(File out) {
         assertThat(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.SHAPES_TXT)).as("All Shapes should have been removed").isNull();
 
         List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.TRIPS_TXT)), StandardCharsets.UTF_8);
@@ -145,7 +145,7 @@ public class GtfsFileUtilsTransformationTest {
         assertFalse(tripWithShape.contains("SKY:JourneyPattern:1-362_0_10446_1"));
     }
 
-    public static void assertShapesAreIncluded(File out) throws IOException {
+    public static void assertShapesAreIncluded(File out) {
         assertThat(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.SHAPES_TXT)).as("All Shapes should be present").isNotNull();
 
         List<String> trips = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.TRIPS_TXT)), StandardCharsets.UTF_8);

@@ -190,7 +190,7 @@ public class JobEvent {
 
     public static class Builder {
 
-        protected JobEvent jobEvent = new JobEvent();
+        protected final JobEvent jobEvent = new JobEvent();
 
         private Builder() {
         }

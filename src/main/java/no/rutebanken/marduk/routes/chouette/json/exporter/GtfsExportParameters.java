@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class GtfsExportParameters {
 
-    public Parameters parameters;
+    public final Parameters parameters;
 
     public GtfsExportParameters(Parameters parameters) {
         this.parameters = parameters;
