@@ -905,7 +905,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-validate-provider");
 
         from("direct:validateReferential")
-                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null).id("validate-referential")
+                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null)
+                .predicateExceptionFactory((exchange, predicate, nodeId) -> new NotFoundException("Unknown chouette referential"))
                 .routeId("admin-validate-referential");
 
         from("direct:authorizeAdminRequest")
