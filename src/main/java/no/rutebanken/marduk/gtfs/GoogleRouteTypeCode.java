@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Google Transit does not (yet) support all Extended Route Type codes :https://developers.google.com/transit/gtfs/reference/extended-route-types
+ * Google Transit does not (yet) support all Extended Route Type codes :<a href="https://developers.google.com/transit/gtfs/reference/extended-route-types">...</a>
  * <p>
  * This class contains supported codes and mapping for unsupported codes.
  */

@@ -26,7 +26,6 @@ import no.rutebanken.marduk.routes.chouette.json.Status;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.security.AuthorizationService;
 import org.apache.camel.*;
-import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
@@ -43,6 +42,7 @@ import java.util.List;
 
 import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static no.rutebanken.marduk.Constants.*;
+import static org.apache.camel.support.builder.PredicateBuilder.isEqualTo;
 
 /**
  * REST interface for backdoor triggering of messages
@@ -697,16 +697,16 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::removeAllCamelHttpHeaders)
                 .setBody(simple(""))
                 .choice()
-                .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp1_base")))
+                .when(isEqualTo(header("graphType"), constant("otp1_base")))
                 .log(LoggingLevel.INFO, "OTP1 build candidate base graph")
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpBaseGraphCandidateBuildQueue")
-                .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp1_netex")))
+                .when(isEqualTo(header("graphType"), constant("otp1_netex")))
                 .log(LoggingLevel.INFO, "OTP1 build candidate NeTEx graph")
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphCandidateBuildQueue")
-                .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp2_base")))
+                .when(isEqualTo(header("graphType"), constant("otp2_base")))
                 .log(LoggingLevel.INFO, "OTP2 build candidate base graph")
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue")
-                .when(PredicateBuilder.isEqualTo(header("graphType"), constant("otp2_netex")))
+                .when(isEqualTo(header("graphType"), constant("otp2_netex")))
                 .log(LoggingLevel.INFO, "OTP2 build candidate NeTEx graph")
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphCandidateBuildQueue")
                 .otherwise()

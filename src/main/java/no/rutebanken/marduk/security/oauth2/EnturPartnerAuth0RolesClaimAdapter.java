@@ -42,10 +42,10 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
     private boolean administratorAccessActivated;
 
     @Value("#{${netex.export.block.authorization}}")
-    protected Map<String, String> authorizedProvidersForNetexBlocksConsumer = Collections.emptyMap();
+    protected final Map<String, String> authorizedProvidersForNetexBlocksConsumer = Collections.emptyMap();
 
     @Value("#{${netex.import.delegation.authorization}}")
-    private Map<String, String> delegatedNetexDataProviders = Collections.emptyMap();
+    private final Map<String, String> delegatedNetexDataProviders = Collections.emptyMap();
 
     @Override
     public Map<String, Object> convert(Map<String, Object> claims) {

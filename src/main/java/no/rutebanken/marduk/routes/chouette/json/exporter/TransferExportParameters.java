@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class TransferExportParameters {
 
-	public Parameters parameters;
+	public final Parameters parameters;
 
 	public TransferExportParameters(Parameters parameters) {
 		this.parameters = parameters;

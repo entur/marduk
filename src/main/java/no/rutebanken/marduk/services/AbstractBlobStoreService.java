@@ -14,7 +14,7 @@ import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 
 public abstract class AbstractBlobStoreService {
 
-    protected BlobStoreRepository repository;
+    protected final BlobStoreRepository repository;
 
     private final String containerName;
 

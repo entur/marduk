@@ -29,7 +29,7 @@ import java.util.List;
 public class BlobStoreFiles {
 
     @JsonProperty("files")
-    private List<File> files = new ArrayList<>();
+    private final List<File> files = new ArrayList<>();
 
     public void add(File file) {
         files.add(file);

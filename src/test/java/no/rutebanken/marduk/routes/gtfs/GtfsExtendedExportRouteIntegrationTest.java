@@ -96,7 +96,7 @@ class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderIntegrat
         assertStopVehicleTypesAreNotConverted(mergedFile);
     }
 
-   private void assertStopVehicleTypesAreNotConverted(File out) throws IOException {
+   private void assertStopVehicleTypesAreNotConverted(File out) {
         List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.STOPS_TXT)), StandardCharsets.UTF_8);
         stopLines.remove(0); // remove header
         
