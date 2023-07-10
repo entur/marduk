@@ -742,6 +742,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
                 .log(LoggingLevel.INFO, correlation() + "Received Blocks download request for provider ${header." + CHOUETTE_REFERENTIAL + "} through the HTTP endpoint")
                 .to("direct:validateReferential")
+                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
                 .to("direct:authorizeBlocksDownloadRequest")
                 .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
                         + "rb_" + e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toLowerCase()
