@@ -46,33 +46,104 @@ public class GtfsImportParameters extends ChouetteJobParameters {
 
         @JsonProperty("object_id_prefix")
         @JsonInclude()
-        public String objectIdPrefix;
+        private String objectIdPrefix;
 
     	@JsonProperty("split_id_on_dot")
         @JsonInclude()
     	private String splitIdOnDot = "0";
 
     	@JsonProperty("max_distance_for_commercial")
-        public String maxDistanceForCommercial = "0";
+        private String maxDistanceForCommercial = "0";
 
         @JsonProperty("ignore_last_word")
-        public String ignoreLastWord = "0";
+        private String ignoreLastWord = "0";
 
         @JsonProperty("ignore_end_chars")
-        public String ignoreEndChars = "0";
+        private String ignoreEndChars = "0";
 
         @JsonProperty("max_distance_for_connection_link")
         @JsonInclude()
-        public String maxDistanceForConnectionLink = "0";
+        private String maxDistanceForConnectionLink = "0";
 
         @JsonProperty("route_type_id_scheme")
         @JsonInclude()
-        public String routeTypeIdScheme = "any";
+        private String routeTypeIdScheme = "any";
 
         @JsonProperty("parse_connection_links")
         @JsonInclude()
-        public Boolean parseConnectionLinks = false;
+        private Boolean parseConnectionLinks = false;
 
+        public String getObjectIdPrefix() {
+            return objectIdPrefix;
+        }
+
+        public Gtfs setObjectIdPrefix(String objectIdPrefix) {
+            this.objectIdPrefix = objectIdPrefix;
+            return this;
+        }
+
+        public String getSplitIdOnDot() {
+            return splitIdOnDot;
+        }
+
+        public Gtfs setSplitIdOnDot(String splitIdOnDot) {
+            this.splitIdOnDot = splitIdOnDot;
+            return this;
+        }
+
+        public String getMaxDistanceForCommercial() {
+            return maxDistanceForCommercial;
+        }
+
+        public Gtfs setMaxDistanceForCommercial(String maxDistanceForCommercial) {
+            this.maxDistanceForCommercial = maxDistanceForCommercial;
+            return this;
+        }
+
+        public String getIgnoreLastWord() {
+            return ignoreLastWord;
+        }
+
+        public Gtfs setIgnoreLastWord(String ignoreLastWord) {
+            this.ignoreLastWord = ignoreLastWord;
+            return this;
+        }
+
+        public String getIgnoreEndChars() {
+            return ignoreEndChars;
+        }
+
+        public Gtfs setIgnoreEndChars(String ignoreEndChars) {
+            this.ignoreEndChars = ignoreEndChars;
+            return this;
+        }
+
+        public String getMaxDistanceForConnectionLink() {
+            return maxDistanceForConnectionLink;
+        }
+
+        public Gtfs setMaxDistanceForConnectionLink(String maxDistanceForConnectionLink) {
+            this.maxDistanceForConnectionLink = maxDistanceForConnectionLink;
+            return this;
+        }
+
+        public String getRouteTypeIdScheme() {
+            return routeTypeIdScheme;
+        }
+
+        public Gtfs setRouteTypeIdScheme(String routeTypeIdScheme) {
+            this.routeTypeIdScheme = routeTypeIdScheme;
+            return this;
+        }
+
+        public Boolean getParseConnectionLinks() {
+            return parseConnectionLinks;
+        }
+
+        public Gtfs setParseConnectionLinks(Boolean parseConnectionLinks) {
+            this.parseConnectionLinks = parseConnectionLinks;
+            return this;
+        }
     }
 
     public static GtfsImportParameters create(String name, String objectIdPrefix, String referentialName, String organisationName,

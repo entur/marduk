@@ -37,7 +37,16 @@ public class NetexImportParameters extends ChouetteJobParameters {
 
     static class Parameters {
         @JsonProperty("netexprofile-import")
-        public Netex netexImport;
+        private Netex netexImport;
+
+        public Netex getNetexImport() {
+            return netexImport;
+        }
+
+        public Parameters setNetexImport(Netex netexImport) {
+            this.netexImport = netexImport;
+            return this;
+        }
     }
 
     static class Netex extends AbstractImportParameters {
