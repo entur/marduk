@@ -60,6 +60,6 @@ public class AbstractImportParameters extends AbstractParameters {
     public boolean keepObsoleteLines = true;
 
     @JsonProperty("generate_missing_route_sections_for_modes")
-    @JsonInclude(JsonInclude.Include.ALWAYS)
+    @JsonInclude()
     public Set<String> generateMissingRouteSectionsForModes;
 }

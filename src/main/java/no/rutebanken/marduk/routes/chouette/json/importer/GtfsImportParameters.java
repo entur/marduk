@@ -45,11 +45,11 @@ public class GtfsImportParameters extends ChouetteJobParameters {
     static class Gtfs extends AbstractImportParameters {
 
         @JsonProperty("object_id_prefix")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @JsonInclude()
         public String objectIdPrefix;
 
     	@JsonProperty("split_id_on_dot")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @JsonInclude()
     	private String splitIdOnDot = "0";
 
     	@JsonProperty("max_distance_for_commercial")
@@ -62,15 +62,15 @@ public class GtfsImportParameters extends ChouetteJobParameters {
         public String ignoreEndChars = "0";
 
         @JsonProperty("max_distance_for_connection_link")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @JsonInclude()
         public String maxDistanceForConnectionLink = "0";
 
         @JsonProperty("route_type_id_scheme")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @JsonInclude()
         public String routeTypeIdScheme = "any";
 
         @JsonProperty("parse_connection_links")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @JsonInclude()
         public Boolean parseConnectionLinks = false;
 
     }

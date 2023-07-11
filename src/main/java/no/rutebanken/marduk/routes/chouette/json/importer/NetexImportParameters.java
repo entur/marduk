@@ -42,27 +42,27 @@ public class NetexImportParameters extends ChouetteJobParameters {
 
     static class Netex extends AbstractImportParameters {
         @JsonProperty("parse_site_frames")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @JsonInclude()
     	private boolean parseSiteFrames = false;
 
         @JsonProperty("validate_against_schema")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @JsonInclude()
     	private boolean validateAgainstSchema = true;
 
         @JsonProperty("validate_against_profile")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @JsonInclude()
     	private boolean validateAgainstProfile = true;
 
         @JsonProperty("continue_on_line_errors")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @JsonInclude()
     	private boolean continueOnLineErrors = true;
 
         @JsonProperty("clean_on_error")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @JsonInclude()
         private boolean cleanOnErrors = true;
 
     	@JsonProperty("object_id_prefix")
-        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @JsonInclude()
     	private String objectIdPrefix;
 
     }
