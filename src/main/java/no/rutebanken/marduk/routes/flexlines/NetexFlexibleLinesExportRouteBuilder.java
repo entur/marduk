@@ -66,7 +66,7 @@ public class NetexFlexibleLinesExportRouteBuilder extends BaseRouteBuilder {
                     Long providerId =  getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class));
                     Provider provider = getProviderRepository().getProvider(providerId);
                     e.getIn().setHeader(PROVIDER_ID, providerId);
-                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.chouetteInfo.referential);
+                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
                 })
 
                 .process(e -> JobEvent.providerJobBuilder(e)

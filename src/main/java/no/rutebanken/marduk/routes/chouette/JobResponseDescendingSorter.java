@@ -24,7 +24,7 @@ public class JobResponseDescendingSorter implements Comparator<JobResponse> {
 
 	@Override
 	public int compare(JobResponse o1, JobResponse o2) {
-		return o2.id.compareTo(o1.id);
+		return o2.getId().compareTo(o1.getId());
 	}
 
 }

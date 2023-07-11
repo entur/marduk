@@ -106,7 +106,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Starting Chouette dataspace clean")
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
+                    e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.getChouetteInfo().getReferential());
                 })
                 .process(this::removeAllCamelHeaders)
                 .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST))
@@ -127,8 +127,8 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .otherwise()
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
-                    e.getIn().setHeader(Constants.ENABLE_VALIDATION, provider.chouetteInfo.enableValidation);
+                    e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.getChouetteInfo().getReferential());
+                    e.getIn().setHeader(Constants.ENABLE_VALIDATION, provider.getChouetteInfo().isEnableValidation());
                 })
                 .to(logDebugShowAll())
                 .to("direct:addImportParameters")

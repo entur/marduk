@@ -77,7 +77,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
         from("direct:chouetteGetJobsForProvider")
                 .log(LoggingLevel.DEBUG, correlation() + "Fetching jobs for provider id '${header." + PROVIDER_ID + "}'")
-                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential()))
                 .setProperty("chouette_url", simple(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs"))
                 .to("direct:chouetteGetJobs")
                 .routeId("chouette-list-jobs-for-provider");
@@ -119,7 +119,7 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
 
 
         from("direct:chouetteCancelJob")
-                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential()))
                 .process(this::removeAllCamelHeaders)
                 .setBody(constant(""))
                 .setHeader(Exchange.HTTP_METHOD, constant(org.apache.camel.component.http.HttpMethods.DELETE))
@@ -235,11 +235,11 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .end()
                 .process(e -> {
                     JobResponseWithLinks response = e.getIn().getBody(JobResponseWithLinks.class);
-                    Optional<String> actionReportUrlOptional = response.links.stream().filter(li -> "action_report".equals(li.rel)).findFirst().map(li -> li.href);
+                    Optional<String> actionReportUrlOptional = response.getLinks().stream().filter(li -> "action_report".equals(li.getRel())).findFirst().map(li -> li.getHref());
                     e.getIn().setHeader("action_report_url", actionReportUrlOptional.orElseThrow(() -> new IllegalArgumentException("No URL found for action report.")));
-                    Optional<String> validationReportUrlOptional = response.links.stream().filter(li -> "validation_report".equals(li.rel)).findFirst().map(li -> li.href);
+                    Optional<String> validationReportUrlOptional = response.getLinks().stream().filter(li -> "validation_report".equals(li.getRel())).findFirst().map(li -> li.getHref());
                     e.getIn().setHeader("validation_report_url", validationReportUrlOptional.orElse(null));
-                    Optional<String> dataUrlOptional = response.links.stream().filter(li -> "data".equals(li.rel)).findFirst().map(li -> li.href);
+                    Optional<String> dataUrlOptional = response.getLinks().stream().filter(li -> "data".equals(li.getRel())).findFirst().map(li -> li.getHref());
                     e.getIn().setHeader("data_url", dataUrlOptional.orElse(null));
                 })
                 // Fetch and parse action report
@@ -274,10 +274,10 @@ public class ChouettePollJobStatusRoute extends AbstractChouetteRouteBuilder {
                 .end()
 
                 .process(e -> {
-                            ActionReportWrapper.ActionReport actionReport = e.getIn().getBody(ActionReportWrapper.class).actionReport;
-                            e.getIn().setHeader("action_report_result", actionReport.result);
-                            ActionReportWrapper.Failure failure = actionReport.failure;
-                            if (failure != null && JobEvent.CHOUETTE_JOB_FAILURE_CODE_NO_DATA_FOUND.equals(failure.code)) {
+                            ActionReportWrapper.ActionReport actionReport = e.getIn().getBody(ActionReportWrapper.class).getActionReport();
+                            e.getIn().setHeader("action_report_result", actionReport.getResult());
+                            ActionReportWrapper.Failure failure = actionReport.getFailure();
+                            if (failure != null && JobEvent.CHOUETTE_JOB_FAILURE_CODE_NO_DATA_FOUND.equals(failure.getCode())) {
                                 e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_VALIDATION_NO_DATA);
                             }
                         }

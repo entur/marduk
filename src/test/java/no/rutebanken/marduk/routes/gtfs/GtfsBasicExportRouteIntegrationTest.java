@@ -83,8 +83,8 @@ class GtfsBasicExportRouteIntegrationTest extends MardukRouteBuilderIntegrationT
 
         updateStatus.assertIsSatisfied();
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.getDomain()) && JobEvent.State.STARTED.equals(je.getState())));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState())));
 
 
         InputStream mergedIS = mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + exportFileName);

@@ -75,7 +75,7 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 
 	public boolean shouldTransferData(Exchange exchange) {
 		Provider currentProvider = getProviderRepository().getProvider(exchange.getIn().getHeader(Constants.PROVIDER_ID,Long.class));
-		return currentProvider.chouetteInfo.migrateDataToProvider != null;
+		return currentProvider.getChouetteInfo().getMigrateDataToProvider() != null;
 	}
 
 }

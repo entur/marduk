@@ -45,9 +45,9 @@ class JobResponseTest {
         ObjectReader objectReader = ObjectMapperFactory.getSharedObjectMapper().readerFor(JobResponseWithLinks.class);
         StringReader reader = new StringReader(inputJson);
         JobResponseWithLinks jobResponse = objectReader.readValue(reader);
-        assertEquals(Status.SCHEDULED, jobResponse.status);
+        assertEquals(Status.SCHEDULED, jobResponse.getStatus());
         assertEquals("http://chouette:8080/chouette_iev/referentials/tds/data/130/parameters.json",
-                jobResponse.links.stream().filter(li -> li.rel.equals("parameters")).toList().get(0).href);
+                jobResponse.getLinks().stream().filter(li -> li.getRel().equals("parameters")).toList().get(0).getHref());
     }
 
 }

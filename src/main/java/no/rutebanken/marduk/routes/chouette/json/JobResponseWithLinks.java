@@ -23,11 +23,38 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class JobResponseWithLinks extends JobResponse {
 
-    public List<LinkInfo> links;
+    private List<LinkInfo> links;
+
+    public List<LinkInfo> getLinks() {
+        return links;
+    }
+
+    public JobResponseWithLinks setLinks(List<LinkInfo> links) {
+        this.links = links;
+        return this;
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class LinkInfo {
-        public String rel;
-        public String href;
+        private String rel;
+        private String href;
+
+        public String getRel() {
+            return rel;
+        }
+
+        public LinkInfo setRel(String rel) {
+            this.rel = rel;
+            return this;
+        }
+
+        public String getHref() {
+            return href;
+        }
+
+        public LinkInfo setHref(String href) {
+            this.href = href;
+            return this;
+        }
     }
 }

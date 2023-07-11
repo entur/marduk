@@ -153,14 +153,14 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
 
 
     private Map<Long, Object> mapReferentialToProviderId(Map<String, Object> statsPerReferential) {
-        return getProviderRepository().getProviders().stream().filter(provider -> statsPerReferential.containsKey(provider.chouetteInfo.referential))
-                .collect(Collectors.toMap(Provider::getId, provider -> statsPerReferential.get(provider.chouetteInfo.referential)));
+        return getProviderRepository().getProviders().stream().filter(provider -> statsPerReferential.containsKey(provider.getChouetteInfo().getReferential()))
+                .collect(Collectors.toMap(Provider::getId, provider -> statsPerReferential.get(provider.getChouetteInfo().getReferential())));
     }
 
     private String getAllReferentialsAsParam() {
         List<String> referentials = getProviderRepository().getProviders().stream()
-                .filter(provider -> provider.chouetteInfo != null && provider.chouetteInfo.referential != null)
-                .map(provider -> provider.chouetteInfo.referential).toList();
+                .filter(provider -> provider.getChouetteInfo() != null && provider.getChouetteInfo().getReferential() != null)
+                .map(provider -> provider.getChouetteInfo().getReferential()).toList();
         return "&referentials=" + String.join(",", referentials);
     }
 
@@ -181,22 +181,22 @@ public class ChouetteStatsRouteBuilder extends AbstractChouetteRouteBuilder {
     boolean isMatch(Provider provider, String filter, List<String> whiteListedProviderIds) {
         boolean match = true;
 
-        if (provider.chouetteInfo == null) {
+        if (provider.getChouetteInfo() == null) {
             return false;
         }
 
         if (StringUtils.hasLength(filter) && !"all".equalsIgnoreCase(filter)) {
             if ("level1".equalsIgnoreCase(filter)) {
-                match &= provider.getChouetteInfo().migrateDataToProvider != null;
+                match &= provider.getChouetteInfo().getMigrateDataToProvider() != null;
             } else if ("level2".equalsIgnoreCase(filter)) {
-                match &= provider.getChouetteInfo().migrateDataToProvider == null;
+                match &= provider.getChouetteInfo().getMigrateDataToProvider() == null;
             } else {
                 match = false;
             }
         }
 
         if (!CollectionUtils.isEmpty(whiteListedProviderIds)) {
-            match &= whiteListedProviderIds.contains(provider.id.toString());
+            match &= whiteListedProviderIds.contains(provider.getId().toString());
         }
         return match;
     }

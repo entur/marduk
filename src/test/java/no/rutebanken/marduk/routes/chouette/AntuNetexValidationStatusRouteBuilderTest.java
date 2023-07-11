@@ -82,9 +82,9 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
         chouetteMergeWithFlexibleLinesQueueMock.assertIsSatisfied();
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain)
-                && JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION.name().equals(je.action)
-                && JobEvent.State.OK.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain())
+                && JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION.name().equals(je.getAction())
+                && JobEvent.State.OK.equals(je.getState())));
     }
 
     @Test
@@ -120,9 +120,9 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
         chouetteMergeWithFlexibleLinesQueueMock.assertIsSatisfied();
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain)
-                && JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION.name().equals(je.action)
-                && JobEvent.State.FAILED.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain())
+                && JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION.name().equals(je.getAction())
+                && JobEvent.State.FAILED.equals(je.getState())));
     }
 
     @Test
@@ -159,8 +159,8 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
         publishMergedNetexQueueMock.assertIsSatisfied();
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain)
-                && JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION.name().equals(je.action)
-                && JobEvent.State.FAILED.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain())
+                && JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION.name().equals(je.getAction())
+                && JobEvent.State.FAILED.equals(je.getState())));
     }
 }

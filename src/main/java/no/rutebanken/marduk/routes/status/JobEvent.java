@@ -104,6 +104,105 @@ public class JobEvent {
     private static final ObjectWriter OBJECT_WRITER = ObjectMapperFactory.getSharedObjectMapper().writerFor(JobEvent.class);
     private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getSharedObjectMapper().readerFor(JobEvent.class);
 
+    public String getName() {
+        return name;
+    }
+
+    public JobEvent setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public String getCorrelationId() {
+        return correlationId;
+    }
+
+    public JobEvent setCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
+        return this;
+    }
+
+    public Long getProviderId() {
+        return providerId;
+    }
+
+    public JobEvent setProviderId(Long providerId) {
+        this.providerId = providerId;
+        return this;
+    }
+
+    public JobDomain getDomain() {
+        return domain;
+    }
+
+    public JobEvent setDomain(JobDomain domain) {
+        this.domain = domain;
+        return this;
+    }
+
+    public String getExternalId() {
+        return externalId;
+    }
+
+    public JobEvent setExternalId(String externalId) {
+        this.externalId = externalId;
+        return this;
+    }
+
+    public String getAction() {
+        return action;
+    }
+
+    public JobEvent setAction(String action) {
+        this.action = action;
+        return this;
+    }
+
+    public State getState() {
+        return state;
+    }
+
+    public JobEvent setState(State state) {
+        this.state = state;
+        return this;
+    }
+
+    public Instant getEventTime() {
+        return eventTime;
+    }
+
+    public JobEvent setEventTime(Instant eventTime) {
+        this.eventTime = eventTime;
+        return this;
+    }
+
+    public String getReferential() {
+        return referential;
+    }
+
+    public JobEvent setReferential(String referential) {
+        this.referential = referential;
+        return this;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public JobEvent setUsername(String username) {
+        this.username = username;
+        return this;
+    }
+
+    public String getErrorCode() {
+        return errorCode;
+    }
+
+    public JobEvent setErrorCode(String errorCode) {
+        this.errorCode = errorCode;
+        return this;
+    }
+
 
     public enum JobDomain {TIMETABLE, GRAPH, TIMETABLE_PUBLISH}
 
@@ -132,27 +231,27 @@ public class JobEvent {
 
     public enum State {PENDING, STARTED, TIMEOUT, FAILED, OK, DUPLICATE, CANCELLED}
 
-    public String name;
+    private String name;
 
-    public String correlationId;
+    private String correlationId;
 
-    public Long providerId;
+    private Long providerId;
 
-    public JobDomain domain;
+    private JobDomain domain;
 
-    public String externalId;
+    private String externalId;
 
-    public String action;
+    private String action;
 
-    public State state;
+    private State state;
 
-    public Instant eventTime;
+    private Instant eventTime;
 
-    public String referential;
+    private String referential;
 
-    public String username;
+    private String username;
 
-    public String errorCode;
+    private String errorCode;
 
     private JobEvent() {
     }

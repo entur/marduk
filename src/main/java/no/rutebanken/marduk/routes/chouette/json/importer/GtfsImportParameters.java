@@ -24,9 +24,18 @@ import java.util.Set;
 
 public class GtfsImportParameters extends ChouetteJobParameters {
 
-    public Parameters parameters;
+    private Parameters parameters;
 
-	static class Parameters {
+    public Parameters getParameters() {
+        return parameters;
+    }
+
+    public GtfsImportParameters setParameters(Parameters parameters) {
+        this.parameters = parameters;
+        return this;
+    }
+
+    static class Parameters {
 
         @JsonProperty("gtfs-import")
         public Gtfs gtfsImport;

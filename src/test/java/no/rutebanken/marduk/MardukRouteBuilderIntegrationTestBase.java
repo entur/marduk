@@ -45,13 +45,13 @@ public abstract class MardukRouteBuilderIntegrationTestBase extends MardukSpring
 
     protected Provider provider(String ref, long id, Long migrateToProvider, boolean googleUpload, boolean googleQAUpload) {
         Provider provider = new Provider();
-        provider.chouetteInfo = new ChouetteInfo();
-        provider.chouetteInfo.referential = ref;
-        provider.chouetteInfo.migrateDataToProvider = migrateToProvider;
-        provider.id = id;
-        provider.chouetteInfo.googleUpload = googleUpload;
-        provider.chouetteInfo.googleQAUpload = googleQAUpload;
-        provider.chouetteInfo.enableBlocksExport = true;
+        provider.setChouetteInfo(new ChouetteInfo());
+        provider.getChouetteInfo().setReferential(ref);
+        provider.getChouetteInfo().setMigrateDataToProvider(migrateToProvider);
+        provider.setId(id);
+        provider.getChouetteInfo().setGoogleUpload(googleUpload);
+        provider.getChouetteInfo().setGoogleQAUpload(googleQAUpload);
+        provider.getChouetteInfo().setEnableBlocksExport(true);
 
         return provider;
     }

@@ -76,7 +76,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
 
-                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential()))
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     String codespace = e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).replace("rb_", "").toUpperCase(Locale.ROOT);
@@ -148,9 +148,9 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
         from("direct:processFailedExport")
         .process(e -> {
                     ActionReportWrapper actionReportWrapper = e.getIn().getBody(ActionReportWrapper.class);
-                    if (actionReportWrapper != null && actionReportWrapper.actionReport != null && actionReportWrapper.actionReport.failure != null) {
-                        ActionReportWrapper.Failure failure = actionReportWrapper.actionReport.failure;
-                        if (JobEvent.CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED.equals(failure.code)) {
+                    if (actionReportWrapper != null && actionReportWrapper.getActionReport() != null && actionReportWrapper.getActionReport().getFailure() != null) {
+                        ActionReportWrapper.Failure failure = actionReportWrapper.getActionReport().getFailure();
+                        if (JobEvent.CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED.equals(failure.getCode())) {
                             e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_NETEX_EXPORT_EMPTY);
                         }
                     }
@@ -163,7 +163,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
         from("direct:antuNetexPostValidation")
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.chouetteInfo.referential);
+                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
                 })
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))

@@ -111,7 +111,7 @@ import java.util.List;
 public class ActionReportWrapper {
 
     @JsonProperty("action_report")
-    public ActionReport actionReport;
+    private ActionReport actionReport;
 
     /**
      * Check if report signals a completed job.
@@ -133,33 +133,112 @@ public class ActionReportWrapper {
         return false;
     }
 
+    public ActionReport getActionReport() {
+        return actionReport;
+    }
+
+    public ActionReportWrapper setActionReport(ActionReport actionReport) {
+        this.actionReport = actionReport;
+        return this;
+    }
+
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ActionReport {
-        public String result;
+        private String result;
 
-        public Progression progression;
+        private Progression progression;
 
-        public Failure failure;
+        private Failure failure;
+
+        public String getResult() {
+            return result;
+        }
+
+        public ActionReport setResult(String result) {
+            this.result = result;
+            return this;
+        }
+
+        public Progression getProgression() {
+            return progression;
+        }
+
+        public ActionReport setProgression(Progression progression) {
+            this.progression = progression;
+            return this;
+        }
+
+        public Failure getFailure() {
+            return failure;
+        }
+
+        public ActionReport setFailure(Failure failure) {
+            this.failure = failure;
+            return this;
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Progression {
-        public List<Step> steps;
+        private List<Step> steps;
 
+        public List<Step> getSteps() {
+            return steps;
+        }
+
+        public Progression setSteps(List<Step> steps) {
+            this.steps = steps;
+            return this;
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Step {
-        public String step;
-        public int total;
-        public int realized;
+        private String step;
+        private int total;
+        private int realized;
+
+        public String getStep() {
+            return step;
+        }
+
+        public Step setStep(String step) {
+            this.step = step;
+            return this;
+        }
+
+        public int getTotal() {
+            return total;
+        }
+
+        public Step setTotal(int total) {
+            this.total = total;
+            return this;
+        }
+
+        public int getRealized() {
+            return realized;
+        }
+
+        public Step setRealized(int realized) {
+            this.realized = realized;
+            return this;
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Failure {
-        public String code;
+        private String code;
 
+        public String getCode() {
+            return code;
+        }
+
+        public Failure setCode(String code) {
+            this.code = code;
+            return this;
+        }
     }
 
 

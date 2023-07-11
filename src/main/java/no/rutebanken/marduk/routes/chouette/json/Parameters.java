@@ -47,26 +47,26 @@ public class Parameters {
     }
 
     static String getGtfsImportParameters(String importName, Provider provider) {
-        ChouetteInfo chouetteInfo = provider.chouetteInfo;
-        GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.xmlns,
-                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport,
-                chouetteInfo.enableValidation, chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping, chouetteInfo.generateMissingServiceLinksForModes);
+        ChouetteInfo chouetteInfo = provider.getChouetteInfo();
+        GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.getXmlns(),
+                chouetteInfo.getReferential(), chouetteInfo.getOrganisation(), chouetteInfo.getUser(), chouetteInfo.isEnableCleanImport(),
+                chouetteInfo.isEnableValidation(), chouetteInfo.isAllowCreateMissingStopPlace(), chouetteInfo.isEnableStopPlaceIdMapping(), chouetteInfo.getGenerateMissingServiceLinksForModes());
         return gtfsImportParameters.toJsonString();
     }
 
     static String getNetexImportParameters(String importName, Provider provider, boolean enablePreValidation, boolean allowUpdatingStopPlace) {
-        ChouetteInfo chouetteInfo = provider.chouetteInfo;
-        NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.name,
-                chouetteInfo.organisation, chouetteInfo.user, chouetteInfo.enableCleanImport, chouetteInfo.enableValidation,
-                chouetteInfo.allowCreateMissingStopPlace, chouetteInfo.enableStopPlaceIdMapping, chouetteInfo.xmlns, chouetteInfo.generateMissingServiceLinksForModes, enablePreValidation, enablePreValidation, allowUpdatingStopPlace);
+        ChouetteInfo chouetteInfo = provider.getChouetteInfo();
+        NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.getName(),
+                chouetteInfo.getOrganisation(), chouetteInfo.getUser(), chouetteInfo.isEnableCleanImport(), chouetteInfo.isEnableValidation(),
+                chouetteInfo.isAllowCreateMissingStopPlace(), chouetteInfo.isEnableStopPlaceIdMapping(), chouetteInfo.getXmlns(), chouetteInfo.getGenerateMissingServiceLinksForModes(), enablePreValidation, enablePreValidation, allowUpdatingStopPlace);
         return netexImportParameters.toJsonString();
     }
 
     public static String getGtfsExportParameters(Provider provider) {
         try {
-            ChouetteInfo chouetteInfo = provider.chouetteInfo;
+            ChouetteInfo chouetteInfo = provider.getChouetteInfo();
             GtfsExportParameters.GtfsExport gtfsExport = new GtfsExportParameters.GtfsExport("for journey planning",
-                                                                                                    chouetteInfo.xmlns, chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user, true);
+                    chouetteInfo.getXmlns(), chouetteInfo.getReferential(), chouetteInfo.getOrganisation(), chouetteInfo.getUser(), true);
             GtfsExportParameters.Parameters parameters = new GtfsExportParameters.Parameters(gtfsExport);
             GtfsExportParameters importParameters = new GtfsExportParameters(parameters);
             return OBJECT_WRITER_FOR_GTFS_EXPORT_PARAMETERS.writeValueAsString(importParameters);
@@ -85,17 +85,17 @@ public class Parameters {
 
     private static String getNetexExportParameters(Provider provider, boolean exportStops, boolean exportBlocks, String name, boolean validateAfterExport) {
         try {
-            ChouetteInfo chouetteInfo = provider.chouetteInfo;
+            ChouetteInfo chouetteInfo = provider.getChouetteInfo();
             String projectionType = null;
             NetexExportParameters.NetexExport netexExport = new NetexExportParameters.NetexExport(
                     name,
-                    chouetteInfo.referential,
-                    chouetteInfo.organisation,
-                    chouetteInfo.user,
+                    chouetteInfo.getReferential(),
+                    chouetteInfo.getOrganisation(),
+                    chouetteInfo.getUser(),
                     projectionType,
                     exportStops,
                     exportBlocks,
-                    chouetteInfo.xmlns,
+                    chouetteInfo.getXmlns(),
                     validateAfterExport);
             NetexExportParameters.Parameters parameters = new NetexExportParameters.Parameters(netexExport);
             NetexExportParameters exportParameters = new NetexExportParameters(parameters);
@@ -108,7 +108,7 @@ public class Parameters {
     public static String getTransferExportParameters(Provider provider, Provider destProvider) {
         try {
             TransferExportParameters.TransferExport transferExport = new TransferExportParameters.TransferExport("data transfer",
-                                                                                                                        provider.name, provider.chouetteInfo.organisation, provider.chouetteInfo.user, destProvider.chouetteInfo.referential);
+                    provider.getName(), provider.getChouetteInfo().getOrganisation(), provider.getChouetteInfo().getUser(), destProvider.getChouetteInfo().getReferential());
             TransferExportParameters.Parameters parameters = new TransferExportParameters.Parameters(transferExport);
             TransferExportParameters importParameters = new TransferExportParameters(parameters);
             return OBJECT_WRITER_FOR_TRANSFER_EXPORT_PARAMETERS.writeValueAsString(importParameters);
@@ -118,10 +118,10 @@ public class Parameters {
     }
 
     public static String getValidationParameters(Provider provider) {
-        ChouetteInfo chouetteInfo = provider.chouetteInfo;
+        ChouetteInfo chouetteInfo = provider.getChouetteInfo();
 
         ValidationParameters validationParameters = ValidationParameters.create("Automatisk",
-                chouetteInfo.referential, chouetteInfo.organisation, chouetteInfo.user);
+                chouetteInfo.getReferential(), chouetteInfo.getOrganisation(), chouetteInfo.getUser());
         validationParameters.enableValidation = true;
         return validationParameters.toJsonString();
     }

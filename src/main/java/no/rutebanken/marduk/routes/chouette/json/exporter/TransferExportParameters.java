@@ -18,41 +18,36 @@ package no.rutebanken.marduk.routes.chouette.json.exporter;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class TransferExportParameters {
+public record TransferExportParameters(
+        no.rutebanken.marduk.routes.chouette.json.exporter.TransferExportParameters.Parameters parameters) {
 
-	public final Parameters parameters;
+    public static class Parameters {
 
-	public TransferExportParameters(Parameters parameters) {
-		this.parameters = parameters;
-	}
+        @JsonProperty("transfer-export")
+        public TransferExport transferExport;
 
-	public static class Parameters {
+        public Parameters(TransferExport transferExport) {
+            this.transferExport = transferExport;
+        }
+    }
 
-		@JsonProperty("transfer-export")
-		public TransferExport transferExport;
+    public static class TransferExport extends AbstractExportParameters {
 
-		public Parameters(TransferExport transferExport) {
-			this.transferExport = transferExport;
-		}
-	}
 
-	public static class TransferExport extends AbstractExportParameters {
-
-		
         @JsonProperty("dest_referential_name")
         public String destReferentialName;
 
-		
-		public TransferExport(String name, String referentialName, String organisationName, String userName, String destReferentialName) {
-			this.name = name;
-			this.referentialName = referentialName;
-			this.organisationName = organisationName;
-			this.userName = userName;
-			this.startDate = DateUtils.startDateFor(2L);
-			this.endDate = DateUtils.endDateFor(365L);
-			this.destReferentialName = destReferentialName;
-		}
 
-	}
+        public TransferExport(String name, String referentialName, String organisationName, String userName, String destReferentialName) {
+            this.name = name;
+            this.referentialName = referentialName;
+            this.organisationName = organisationName;
+            this.userName = userName;
+            this.startDate = DateUtils.startDateFor(2L);
+            this.endDate = DateUtils.endDateFor(365L);
+            this.destReferentialName = destReferentialName;
+        }
+
+    }
 
 }

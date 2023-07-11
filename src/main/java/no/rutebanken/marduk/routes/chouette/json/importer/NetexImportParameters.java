@@ -24,9 +24,18 @@ import java.util.Set;
 
 public class NetexImportParameters extends ChouetteJobParameters {
 
-    public Parameters parameters;
+    private Parameters parameters;
 
-	static class Parameters {
+    public Parameters getParameters() {
+        return parameters;
+    }
+
+    public NetexImportParameters setParameters(Parameters parameters) {
+        this.parameters = parameters;
+        return this;
+    }
+
+    static class Parameters {
         @JsonProperty("netexprofile-import")
         public Netex netexImport;
     }

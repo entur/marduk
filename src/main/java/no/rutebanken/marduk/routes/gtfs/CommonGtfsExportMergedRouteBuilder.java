@@ -151,17 +151,17 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
 
     private List<String> getAggregatedGtfsFiles(Collection<String> providerBlackList, Collection<String> providerWhiteList) {
         return getProviderRepository().getProviders().stream()
-                                 .filter(p -> p.chouetteInfo.migrateDataToProvider == null)
+                                 .filter(p -> p.getChouetteInfo().getMigrateDataToProvider() == null)
                                  .filter(p -> isMatch(p, providerBlackList, providerWhiteList))
-                                 .map(p -> p.chouetteInfo.referential + "-" + CURRENT_AGGREGATED_GTFS_FILENAME)
+                                 .map(p -> p.getChouetteInfo().getReferential() + "-" + CURRENT_AGGREGATED_GTFS_FILENAME)
                                  .toList();
     }
 
     private boolean isMatch(Provider p, Collection<String> providerBlackList, Collection<String> providerWhiteList) {
         if (providerWhiteList == null) {
-            return providerBlackList.stream().noneMatch(blacklisted -> blacklisted.equalsIgnoreCase(p.chouetteInfo.referential));
+            return providerBlackList.stream().noneMatch(blacklisted -> blacklisted.equalsIgnoreCase(p.getChouetteInfo().getReferential()));
         }
-        return providerWhiteList.stream().anyMatch(whiteListed -> whiteListed.equalsIgnoreCase(p.chouetteInfo.referential));
+        return providerWhiteList.stream().anyMatch(whiteListed -> whiteListed.equalsIgnoreCase(p.getChouetteInfo().getReferential()));
     }
 
     private Collection<String> getProviderBlackList(Exchange e) {

@@ -117,7 +117,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:listBlobs")
                 .to(logDebugShowAll())
-                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential()))
                 .bean(mardukBlobStoreService, "listBlobs")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store.")
@@ -125,7 +125,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:listBlobsFlat")
                 .to(logDebugShowAll())
-                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential()))
                 .bean(mardukBlobStoreService, "listBlobsFlat")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching flat file list from blob store.")

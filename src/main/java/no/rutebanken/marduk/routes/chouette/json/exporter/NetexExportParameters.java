@@ -18,13 +18,8 @@ package no.rutebanken.marduk.routes.chouette.json.exporter;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class NetexExportParameters {
-
-    public final NetexExportParameters.Parameters parameters;
-
-    public NetexExportParameters(NetexExportParameters.Parameters parameters) {
-        this.parameters = parameters;
-    }
+public record NetexExportParameters(
+        no.rutebanken.marduk.routes.chouette.json.exporter.NetexExportParameters.Parameters parameters) {
 
     public static class Parameters {
 
@@ -61,7 +56,7 @@ public class NetexExportParameters {
             this.organisationName = organisationName;
             this.userName = userName;
             this.startDate = DateUtils.startDateFor(2L);
-			this.endDate = DateUtils.endDateFor(365L);
+            this.endDate = DateUtils.endDateFor(365L);
             this.exportStops = exportStops;
             this.exportBlocks = exportBlocks;
             this.defaultCodespacePrefix = defaultCodespacePrefix;

@@ -18,13 +18,8 @@ package no.rutebanken.marduk.routes.chouette.json.exporter;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class GtfsExportParameters {
-
-    public final Parameters parameters;
-
-    public GtfsExportParameters(Parameters parameters) {
-        this.parameters = parameters;
-    }
+public record GtfsExportParameters(
+        no.rutebanken.marduk.routes.chouette.json.exporter.GtfsExportParameters.Parameters parameters) {
 
     public static class Parameters {
 

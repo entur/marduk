@@ -66,9 +66,9 @@ class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegration
     void prepare() {
         Provider rbOppProvider = provider("rb_opp", 4, null, false, false);
         when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null, false, false), provider("rb_rut", 2, null, true, false),
-                provider("opp", 3, rbOppProvider.id, false, true), rbOppProvider));
+                provider("opp", 3, rbOppProvider.getId(), false, true), rbOppProvider));
 
-        when(providerRepository.getProvider(rbOppProvider.id)).thenReturn(rbOppProvider);
+        when(providerRepository.getProvider(rbOppProvider.getId())).thenReturn(rbOppProvider);
 
         updateStatus.reset();
     }
@@ -91,8 +91,8 @@ class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegration
 
         updateStatus.assertIsSatisfied();
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.getDomain()) && JobEvent.State.STARTED.equals(je.getState())));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState())));
 
 
         assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleExportFileName)).as("Expected transformed gtfs file to have been uploaded").isNotNull();
@@ -115,8 +115,8 @@ class GoogleGtfsExportRouteIntegrationTest extends MardukRouteBuilderIntegration
 
         updateStatus.assertIsSatisfied();
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.STARTED.equals(je.state)));
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.domain) && JobEvent.State.OK.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.getDomain()) && JobEvent.State.STARTED.equals(je.getState())));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState())));
 
 
         assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/" + googleQaExportFileName)).as("Expected transformed gtfs file to have been uploaded").isNotNull();
