@@ -30,10 +30,10 @@ public class ChouetteInfo {
     public String organisation;
     public String user;
     public String dataFormat;
-    public final boolean enableValidation = false;
-    public final boolean allowCreateMissingStopPlace = false;
-    public final boolean enableStopPlaceIdMapping = false;
-    public final boolean enableCleanImport = false;
+    public boolean enableValidation = false;
+    public boolean allowCreateMissingStopPlace = false;
+    public boolean enableStopPlaceIdMapping = false;
+    public boolean enableCleanImport = false;
     public boolean enableAutoImport;
     public boolean enableAutoValidation;
     public boolean generateDatedServiceJourneyIds;
