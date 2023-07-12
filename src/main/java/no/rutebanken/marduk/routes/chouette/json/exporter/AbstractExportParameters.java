@@ -27,7 +27,7 @@ import java.util.List;
 public class AbstractExportParameters extends AbstractParameters {
 
     @JsonProperty("references_type")
-    @JsonInclude(JsonInclude.Include.ALWAYS)
+    @JsonInclude()
     public String referencesType;
 
     @JsonProperty("reference_ids")

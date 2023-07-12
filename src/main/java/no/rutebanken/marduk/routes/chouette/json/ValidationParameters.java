@@ -20,9 +20,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ValidationParameters extends ChouetteJobParameters{
 
-    public Parameters parameters;
+    private Parameters parameters;
 
-	static class Parameters {
+    public Parameters getParameters() {
+        return parameters;
+    }
+
+    public ValidationParameters setParameters(Parameters parameters) {
+        this.parameters = parameters;
+        return this;
+    }
+
+    static class Parameters {
 
         @JsonProperty("validate")
         public Validate validate;
@@ -43,21 +52,65 @@ public class ValidationParameters extends ChouetteJobParameters{
      */
     static class Validate {
 
-        public String name;
+        private String name;
 
         @JsonProperty("user_name")
-        public String userName;
+        private String userName;
 
         @JsonProperty("organisation_name")
-        public String organisationName;
+        private String organisationName;
 
         @JsonProperty("referential_name")
-        public String referentialName;
+        private String referentialName;
 
         @JsonProperty("references_type")
-        public String referencesType = "";
+        private String referencesType = "";
 
 
+        public String getName() {
+            return name;
+        }
+
+        public Validate setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public String getUserName() {
+            return userName;
+        }
+
+        public Validate setUserName(String userName) {
+            this.userName = userName;
+            return this;
+        }
+
+        public String getOrganisationName() {
+            return organisationName;
+        }
+
+        public Validate setOrganisationName(String organisationName) {
+            this.organisationName = organisationName;
+            return this;
+        }
+
+        public String getReferentialName() {
+            return referentialName;
+        }
+
+        public Validate setReferentialName(String referentialName) {
+            this.referentialName = referentialName;
+            return this;
+        }
+
+        public String getReferencesType() {
+            return referencesType;
+        }
+
+        public Validate setReferencesType(String referencesType) {
+            this.referencesType = referencesType;
+            return this;
+        }
     }
 
     public static ValidationParameters create(String name, String referentialName, String organisationName, String userName) {

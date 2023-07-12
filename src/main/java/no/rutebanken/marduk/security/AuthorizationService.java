@@ -100,7 +100,7 @@ public class AuthorizationService {
         }
 
         return roleAssignments.stream()
-                       .filter(ra -> claim.getRequiredRole().equals(ra.r)).anyMatch(ra ->  provider.chouetteInfo.referential.toUpperCase().equals(ra.o));
+                       .filter(ra -> claim.getRequiredRole().equals(ra.r)).anyMatch(ra ->  provider.getChouetteInfo().getReferential().toUpperCase().equals(ra.o));
 
     }
 

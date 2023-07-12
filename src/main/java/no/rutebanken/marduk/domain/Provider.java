@@ -28,18 +28,18 @@ public class Provider {
 
     private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getSharedObjectMapper().readerFor(Provider.class);
 
-    public Long id;
+    private Long id;
 
     public Long getId() {
     	return id;
     }
-    public String name;
-    public String sftpAccount;
+    private String name;
+    private String sftpAccount;
 
     public ChouetteInfo getChouetteInfo() {
 		return chouetteInfo;
 	}
-	public ChouetteInfo chouetteInfo;
+	private ChouetteInfo chouetteInfo;
 
     @Override
     public String toString() {
@@ -56,4 +56,31 @@ public class Provider {
         return OBJECT_READER.readValue(jsonString);
     }
 
+    public Provider setId(Long id) {
+        this.id = id;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Provider setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public String getSftpAccount() {
+        return sftpAccount;
+    }
+
+    public Provider setSftpAccount(String sftpAccount) {
+        this.sftpAccount = sftpAccount;
+        return this;
+    }
+
+    public Provider setChouetteInfo(ChouetteInfo chouetteInfo) {
+        this.chouetteInfo = chouetteInfo;
+        return this;
+    }
 }

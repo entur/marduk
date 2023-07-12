@@ -30,7 +30,7 @@ class ActionReportWrapperTest {
         ObjectReader objectReader = ObjectMapperFactory.getSharedObjectMapper().readerFor(ActionReportWrapper.class);
         StringReader reader = new StringReader(ERROR_RESPONSE);
         ActionReportWrapper actionReport = objectReader.readValue(reader);
-        assertEquals("NOK", actionReport.actionReport.result);
+        assertEquals("NOK", actionReport.getActionReport().getResult());
         assertTrue((actionReport.isFinalised()));
     }
 

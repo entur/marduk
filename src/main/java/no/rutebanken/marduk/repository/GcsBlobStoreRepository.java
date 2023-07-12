@@ -178,8 +178,8 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
         }
 
         if (provider != null) {
-            file.setProviderId(provider.id);
-            file.setReferential(provider.chouetteInfo.referential);
+            file.setProviderId(provider.getId());
+            file.setReferential(provider.getChouetteInfo().getReferential());
         }
 
         if (blob.getAcl() != null) {
@@ -200,6 +200,6 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
         String potentialRef = fileParts[fileParts.length - 1].split("-")[0];
 
 
-        return providerRepository.getProviders().stream().filter(provider -> potentialRef.equalsIgnoreCase((provider.chouetteInfo.referential))).findFirst().orElse(null);
+        return providerRepository.getProviders().stream().filter(provider -> potentialRef.equalsIgnoreCase((provider.getChouetteInfo().getReferential()))).findFirst().orElse(null);
     }
 }

@@ -22,22 +22,85 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class JobResponse {
 
-	public Integer id;
+	private Integer id;
 	public Integer getId() {
 		return id;
 	}
 	
-	public String referential;
-	public String action;
-	public String type;
-	public Long created;
+	private String referential;
+	private String action;
+	private String type;
+	private Long created;
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public Long started;
-	public Long updated;
-	public Status status;
+	private Long started;
+	private Long updated;
+	private Status status;
 
 	public Status getStatus() {
 		return status;
 	}
 
+	public JobResponse setId(Integer id) {
+		this.id = id;
+		return this;
+	}
+
+	public String getReferential() {
+		return referential;
+	}
+
+	public JobResponse setReferential(String referential) {
+		this.referential = referential;
+		return this;
+	}
+
+	public String getAction() {
+		return action;
+	}
+
+	public JobResponse setAction(String action) {
+		this.action = action;
+		return this;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public JobResponse setType(String type) {
+		this.type = type;
+		return this;
+	}
+
+	public Long getCreated() {
+		return created;
+	}
+
+	public JobResponse setCreated(Long created) {
+		this.created = created;
+		return this;
+	}
+
+	public Long getStarted() {
+		return started;
+	}
+
+	public JobResponse setStarted(Long started) {
+		this.started = started;
+		return this;
+	}
+
+	public Long getUpdated() {
+		return updated;
+	}
+
+	public JobResponse setUpdated(Long updated) {
+		this.updated = updated;
+		return this;
+	}
+
+	public JobResponse setStatus(Status status) {
+		this.status = status;
+		return this;
+	}
 }

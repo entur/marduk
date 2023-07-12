@@ -74,7 +74,7 @@ class NetexFlexibleLinesImportRouteBuilderTest extends MardukRouteBuilderIntegra
 
         String jobEvent = jobEvents.get(0).getIn().getBody(String.class);
 
-        assertEquals(JobEvent.State.PENDING, JobEvent.fromString(jobEvent).state);
-        assertEquals(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION.toString(), JobEvent.fromString(jobEvent).action);
+        assertEquals(JobEvent.State.PENDING, JobEvent.fromString(jobEvent).getState());
+        assertEquals(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION.toString(), JobEvent.fromString(jobEvent).getAction());
     }
 }

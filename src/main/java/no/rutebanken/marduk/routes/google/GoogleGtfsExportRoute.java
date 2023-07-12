@@ -102,11 +102,11 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
     }
 
     private Set<String> prepareProviderWhiteListGoogleUpload() {
-        return getProviderRepository().getProviders().stream().filter(p -> p.chouetteInfo.googleUpload).map(this::getExportReferentialForProvider).collect(Collectors.toSet());
+        return getProviderRepository().getProviders().stream().filter(p -> p.getChouetteInfo().isGoogleUpload()).map(this::getExportReferentialForProvider).collect(Collectors.toSet());
     }
 
     private Set<String> prepareProviderWhiteListGoogleQAUpload() {
-        return getProviderRepository().getProviders().stream().filter(p -> p.chouetteInfo.googleQAUpload).map(this::getExportReferentialForProvider).collect(Collectors.toSet());
+        return getProviderRepository().getProviders().stream().filter(p -> p.getChouetteInfo().isGoogleQAUpload()).map(this::getExportReferentialForProvider).collect(Collectors.toSet());
     }
 
     /**
@@ -116,13 +116,13 @@ public class GoogleGtfsExportRoute extends BaseRouteBuilder {
      * @return
      */
     private String getExportReferentialForProvider(Provider provider) {
-        if (provider.chouetteInfo.migrateDataToProvider != null) {
+        if (provider.getChouetteInfo().getMigrateDataToProvider() != null) {
 
-            Provider migrateToProvider = getProviderRepository().getProvider(provider.chouetteInfo.migrateDataToProvider);
+            Provider migrateToProvider = getProviderRepository().getProvider(provider.getChouetteInfo().getMigrateDataToProvider());
             if (migrateToProvider != null) {
-                return migrateToProvider.chouetteInfo.referential;
+                return migrateToProvider.getChouetteInfo().getReferential();
             }
         }
-        return provider.chouetteInfo.referential;
+        return provider.getChouetteInfo().getReferential();
     }
 }

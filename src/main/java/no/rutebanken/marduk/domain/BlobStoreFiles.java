@@ -124,29 +124,29 @@ public class BlobStoreFiles {
         @JsonProperty(required = true)
         private String name;
 
-        @JsonProperty(required = false)
+        @JsonProperty()
         // Clients (Ninkasi, Bel) expect the instant to be formatted as epoch milliseconds
         @JsonFormat(without = JsonFormat.Feature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
         private Instant created;
 
-        @JsonProperty(required = false)
+        @JsonProperty()
         // Clients (Ninkasi, Bel) expect the instant to be formatted as epoch milliseconds
         @JsonFormat(without = JsonFormat.Feature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
         private Instant updated;
 
-        @JsonProperty(required = false)
+        @JsonProperty()
         private Long fileSize;
 
-        @JsonProperty(required = false)
+        @JsonProperty()
         private String referential;
 
-        @JsonProperty(required = false)
+        @JsonProperty()
         private Long providerId;
 
-        @JsonProperty(required = false)
+        @JsonProperty()
         private Format format;
 
-        @JsonProperty(required = false)
+        @JsonProperty()
         private String url;
 
         @JsonIgnore

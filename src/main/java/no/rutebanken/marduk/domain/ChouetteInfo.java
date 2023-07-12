@@ -23,26 +23,26 @@ import java.util.Set;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ChouetteInfo {
 
-    public Long id;
-    public String xmlns;
-    public String xmlnsurl;
-    public String referential;
-    public String organisation;
-    public String user;
-    public String dataFormat;
-    public boolean enableValidation = false;
-    public boolean allowCreateMissingStopPlace = false;
-    public boolean enableStopPlaceIdMapping = false;
-    public boolean enableCleanImport = false;
-    public boolean enableAutoImport;
-    public boolean enableAutoValidation;
-    public boolean generateDatedServiceJourneyIds;
-    public Set<String> generateMissingServiceLinksForModes;
-    public boolean googleUpload;
-    public boolean googleQAUpload;
-    public boolean enableBlocksExport;
+    private Long id;
+    private String xmlns;
+    private String xmlnsurl;
+    private String referential;
+    private String organisation;
+    private String user;
+    private String dataFormat;
+    private boolean enableValidation;
+    private boolean allowCreateMissingStopPlace;
+    private boolean enableStopPlaceIdMapping;
+    private boolean enableCleanImport;
+    private boolean enableAutoImport;
+    private boolean enableAutoValidation;
+    private boolean generateDatedServiceJourneyIds;
+    private Set<String> generateMissingServiceLinksForModes;
+    private boolean googleUpload;
+    private boolean googleQAUpload;
+    private boolean enableBlocksExport;
 
-    public Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
+    private Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
 
     public Long getMigrateDataToProvider() {
         return migrateDataToProvider;
@@ -139,5 +139,104 @@ public class ChouetteInfo {
 
     public boolean isEnableAutoValidation() {
         return enableAutoValidation;
+    }
+
+    public ChouetteInfo setId(Long id) {
+        this.id = id;
+        return this;
+    }
+
+    public ChouetteInfo setXmlns(String xmlns) {
+        this.xmlns = xmlns;
+        return this;
+    }
+
+    public ChouetteInfo setXmlnsurl(String xmlnsurl) {
+        this.xmlnsurl = xmlnsurl;
+        return this;
+    }
+
+    public ChouetteInfo setReferential(String referential) {
+        this.referential = referential;
+        return this;
+    }
+
+    public ChouetteInfo setOrganisation(String organisation) {
+        this.organisation = organisation;
+        return this;
+    }
+
+    public ChouetteInfo setUser(String user) {
+        this.user = user;
+        return this;
+    }
+
+    public ChouetteInfo setDataFormat(String dataFormat) {
+        this.dataFormat = dataFormat;
+        return this;
+    }
+
+    public ChouetteInfo setEnableValidation(boolean enableValidation) {
+        this.enableValidation = enableValidation;
+        return this;
+    }
+
+    public ChouetteInfo setAllowCreateMissingStopPlace(boolean allowCreateMissingStopPlace) {
+        this.allowCreateMissingStopPlace = allowCreateMissingStopPlace;
+        return this;
+    }
+
+    public ChouetteInfo setEnableStopPlaceIdMapping(boolean enableStopPlaceIdMapping) {
+        this.enableStopPlaceIdMapping = enableStopPlaceIdMapping;
+        return this;
+    }
+
+    public ChouetteInfo setEnableCleanImport(boolean enableCleanImport) {
+        this.enableCleanImport = enableCleanImport;
+        return this;
+    }
+
+    public ChouetteInfo setEnableAutoImport(boolean enableAutoImport) {
+        this.enableAutoImport = enableAutoImport;
+        return this;
+    }
+
+    public ChouetteInfo setEnableAutoValidation(boolean enableAutoValidation) {
+        this.enableAutoValidation = enableAutoValidation;
+        return this;
+    }
+
+    public ChouetteInfo setGenerateDatedServiceJourneyIds(boolean generateDatedServiceJourneyIds) {
+        this.generateDatedServiceJourneyIds = generateDatedServiceJourneyIds;
+        return this;
+    }
+
+    public ChouetteInfo setGenerateMissingServiceLinksForModes(Set<String> generateMissingServiceLinksForModes) {
+        this.generateMissingServiceLinksForModes = generateMissingServiceLinksForModes;
+        return this;
+    }
+
+    public ChouetteInfo setGoogleUpload(boolean googleUpload) {
+        this.googleUpload = googleUpload;
+        return this;
+    }
+
+    public ChouetteInfo setGoogleQAUpload(boolean googleQAUpload) {
+        this.googleQAUpload = googleQAUpload;
+        return this;
+    }
+
+    public boolean isEnableBlocksExport() {
+        return enableBlocksExport;
+    }
+
+    public ChouetteInfo setEnableBlocksExport(boolean enableBlocksExport) {
+        this.enableBlocksExport = enableBlocksExport;
+        return this;
+    }
+
+    public ChouetteInfo setMigrateDataToProvider(Long migrateDataToProvider) {
+        this.migrateDataToProvider = migrateDataToProvider;
+        return this;
     }
 }

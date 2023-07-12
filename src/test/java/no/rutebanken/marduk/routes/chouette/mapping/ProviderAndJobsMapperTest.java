@@ -53,15 +53,15 @@ class ProviderAndJobsMapperTest {
 
 	private JobResponse job(String ref) {
 		JobResponse job = new JobResponse();
-		job.referential = ref;
+		job.setReferential(ref);
 		return job;
 	}
 
 	private Provider provider(long id, String ref) {
 		Provider provider = new Provider();
-		provider.id = id;
-		provider.chouetteInfo = new ChouetteInfo();
-		provider.chouetteInfo.referential = ref;
+		provider.setId(id);
+		provider.setChouetteInfo(new ChouetteInfo());
+		provider.getChouetteInfo().setReferential(ref);
 		return provider;
 	}
 }

@@ -52,8 +52,8 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
                 .process(e -> {
                 	e.getIn().setHeader(Constants.FILE_HANDLE,"transfer.zip");
                 	Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                	Provider destProvider = getProviderRepository().getProvider(provider.chouetteInfo.migrateDataToProvider);
-					e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.chouetteInfo.referential);
+                	Provider destProvider = getProviderRepository().getProvider(provider.getChouetteInfo().getMigrateDataToProvider());
+					e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.getChouetteInfo().getReferential());
                 	e.getIn().setHeader(JSON_PART, Parameters.getTransferExportParameters(provider,destProvider));
 
                 })
@@ -89,7 +89,7 @@ public class ChouetteTransferToDataspaceRouteBuilder extends AbstractChouetteRou
 	                	// Update provider, now context switches to next provider level
 	                	Provider currentProvider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
 	                	e.getIn().setHeader(Constants.ORIGINAL_PROVIDER_ID,e.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID,e.getIn().getHeader(Constants.PROVIDER_ID)));
-	                	e.getIn().setHeader(Constants.PROVIDER_ID, currentProvider.chouetteInfo.migrateDataToProvider);
+	                	e.getIn().setHeader(Constants.PROVIDER_ID, currentProvider.getChouetteInfo().getMigrateDataToProvider());
 	                })
  		            .to("direct:checkScheduledJobsBeforeTriggeringRBSpaceValidation")
  		        .when(simple("${header.action_report_result} == 'NOK'"))

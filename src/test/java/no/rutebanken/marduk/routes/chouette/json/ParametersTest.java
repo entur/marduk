@@ -62,9 +62,9 @@ class ParametersTest {
     void testTransferExportParameters() throws JsonProcessingException {
         Provider provider = getProvider();
         Provider destProvider = new Provider();
-        destProvider.chouetteInfo = new ChouetteInfo();
+        destProvider.setChouetteInfo(new ChouetteInfo());
         String targetReferentialName = "rb_ost";
-        destProvider.chouetteInfo.referential = targetReferentialName;
+        destProvider.getChouetteInfo().setReferential(targetReferentialName);
         String transferExportParametersAsString = Parameters.getTransferExportParameters(provider, destProvider);
 
         final ObjectMapper mapper = ObjectMapperFactory.getSharedObjectMapper().copy();
@@ -75,14 +75,14 @@ class ParametersTest {
 
     private static Provider getProvider() {
         ChouetteInfo chouetteInfo = new ChouetteInfo();
-        chouetteInfo.id = 3L;
-        chouetteInfo.organisation = "Ruter";
-        chouetteInfo.user = "rut";
-        chouetteInfo.referential = "rut";
+        chouetteInfo.setId(3L);
+        chouetteInfo.setOrganisation("Ruter");
+        chouetteInfo.setUser("rut");
+        chouetteInfo.setReferential("rut");
 
         Provider provider = new Provider();
-        provider.id = 2L;
-        provider.chouetteInfo = chouetteInfo;
+        provider.setId(2L);
+        provider.setChouetteInfo(chouetteInfo);
         return provider;
     }
 

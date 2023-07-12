@@ -73,7 +73,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
         from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
-                .process(e -> e.setProperty(PROP_EXPORT_BLOCKS, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.enableBlocksExport))
+                .process(e -> e.setProperty(PROP_EXPORT_BLOCKS, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().isEnableBlocksExport()))
                 .choice()
                 .when(simple("${exchangeProperty." + PROP_EXPORT_BLOCKS + "} != 'true'"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Skipping Chouette Netex Blocks export")
@@ -82,7 +82,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
 
-                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.referential))
+                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential()))
                 .process(e ->  {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     String codespace = e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).replace("rb_", "").toUpperCase(Locale.ROOT);
@@ -150,9 +150,9 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
         from("direct:processFailedBlockExport")
                 .process(e -> {
                             ActionReportWrapper actionReportWrapper = e.getIn().getBody(ActionReportWrapper.class);
-                            if (actionReportWrapper != null && actionReportWrapper.actionReport != null && actionReportWrapper.actionReport.failure != null) {
-                                ActionReportWrapper.Failure failure = actionReportWrapper.actionReport.failure;
-                                if (JobEvent.CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED.equals(failure.code)) {
+                            if (actionReportWrapper != null && actionReportWrapper.getActionReport() != null && actionReportWrapper.getActionReport().getFailure() != null) {
+                                ActionReportWrapper.Failure failure = actionReportWrapper.getActionReport().getFailure();
+                                if (JobEvent.CHOUETTE_JOB_FAILURE_CODE_NO_DATA_PROCEEDED.equals(failure.getCode())) {
                                     e.getIn().setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_NETEX_EXPORT_EMPTY);
                                 }
                             }
@@ -165,7 +165,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
         from("direct:antuNetexBlocksPostValidation")
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.chouetteInfo.referential);
+                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
                 })
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))

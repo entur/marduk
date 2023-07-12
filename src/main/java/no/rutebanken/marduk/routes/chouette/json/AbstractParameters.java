@@ -22,11 +22,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class AbstractParameters {
 
     @JsonProperty("name")
-    @JsonInclude(JsonInclude.Include.ALWAYS)
+    @JsonInclude()
     public String name;
 
     @JsonProperty("user_name")
-    @JsonInclude(JsonInclude.Include.ALWAYS)
+    @JsonInclude()
     public String userName;
 
     @JsonProperty("organisation_name")

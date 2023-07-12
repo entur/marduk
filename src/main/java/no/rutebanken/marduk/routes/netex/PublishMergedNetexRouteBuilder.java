@@ -46,7 +46,7 @@ public class PublishMergedNetexRouteBuilder extends BaseRouteBuilder {
 
 
         from("direct:publishMergedDataset")
-                .filter(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).chouetteInfo.generateDatedServiceJourneyIds)
+                .filter(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().isGenerateDatedServiceJourneyIds())
                 .to("direct:copyDatedExport")
                 .end()
 

@@ -68,9 +68,9 @@ class ChouetteStatsRouteBuilderTest {
 
     Provider provider(Long id, Long migrateDataToProviderId) {
         Provider provider = new Provider();
-        provider.id = id;
-        provider.chouetteInfo = new ChouetteInfo();
-        provider.chouetteInfo.migrateDataToProvider = migrateDataToProviderId;
+        provider.setId(id);
+        provider.setChouetteInfo(new ChouetteInfo());
+        provider.getChouetteInfo().setMigrateDataToProvider(migrateDataToProviderId);
         return provider;
     }
 }

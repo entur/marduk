@@ -33,13 +33,13 @@ public class ProviderAndJobsMapper {
 		Map<String, List<JobResponse>> jobsPerProvider = new HashMap<>();
 
 		for (JobResponse jobResponse : jobs) {
-			List<JobResponse> jobsForProvider = jobsPerProvider.computeIfAbsent(jobResponse.referential, k -> new ArrayList<>());
+			List<JobResponse> jobsForProvider = jobsPerProvider.computeIfAbsent(jobResponse.getReferential(), k -> new ArrayList<>());
 			jobsForProvider.add(jobResponse);
 		}
 
 		List<ProviderAndJobs> providerAndJobsList = new ArrayList<>();
 		for (Provider provider : providers) {
-			String referential = provider.getChouetteInfo().referential;
+			String referential = provider.getChouetteInfo().getReferential();
 			providerAndJobsList.add(new ProviderAndJobs(provider.getId(), jobsPerProvider.get(referential)));
 		}
 		return providerAndJobsList;

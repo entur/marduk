@@ -148,8 +148,8 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
 
     List<String> getAggregatedNetexFiles() {
         return getProviderRepository().getProviders().stream()
-                       .filter(p -> p.chouetteInfo.migrateDataToProvider == null)
-                       .map(p -> p.chouetteInfo.referential + "-" + CURRENT_AGGREGATED_NETEX_FILENAME)
+                       .filter(p -> p.getChouetteInfo().getMigrateDataToProvider() == null)
+                       .map(p -> p.getChouetteInfo().getReferential() + "-" + CURRENT_AGGREGATED_NETEX_FILENAME)
                        .toList();
     }
 

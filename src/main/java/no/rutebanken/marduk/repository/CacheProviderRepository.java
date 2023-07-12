@@ -94,12 +94,12 @@ public class CacheProviderRepository implements ProviderRepository {
 
     @Override
     public String getReferential(Long id) {
-        return getProvider(id).chouetteInfo.referential;
+        return getProvider(id).getChouetteInfo().getReferential();
     }
 
     @Override
     public Long getProviderId(String referential) {
-        Provider provider = cache.asMap().values().stream().filter(p -> referential.equals(p.chouetteInfo.referential)).findFirst().orElse(null);
+        Provider provider = cache.asMap().values().stream().filter(p -> referential.equals(p.getChouetteInfo().getReferential())).findFirst().orElse(null);
         if (provider != null) {
             return provider.getId();
         }

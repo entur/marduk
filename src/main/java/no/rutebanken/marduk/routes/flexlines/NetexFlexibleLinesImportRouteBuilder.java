@@ -36,7 +36,7 @@ public class NetexFlexibleLinesImportRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Post-validating flexible NeTEx dataset")
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.chouetteInfo.referential);
+                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
                 })
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_FLEX_POSTVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))

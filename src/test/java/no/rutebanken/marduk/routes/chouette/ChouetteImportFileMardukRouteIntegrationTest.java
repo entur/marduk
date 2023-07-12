@@ -148,25 +148,25 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
 
         updateStatus.assertIsSatisfied();
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain)
-                && JobEvent.TimetableAction.FILE_TRANSFER.name().equals(je.action)
-                && JobEvent.State.OK.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain())
+                && JobEvent.TimetableAction.FILE_TRANSFER.name().equals(je.getAction())
+                && JobEvent.State.OK.equals(je.getState())));
 
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain)
-                && JobEvent.TimetableAction.FILE_CLASSIFICATION.name().equals(je.action)
-                && JobEvent.State.STARTED.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain())
+                && JobEvent.TimetableAction.FILE_CLASSIFICATION.name().equals(je.getAction())
+                && JobEvent.State.STARTED.equals(je.getState())));
 
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain)
-                && JobEvent.TimetableAction.FILE_CLASSIFICATION.name().equals(je.action)
-                && JobEvent.State.OK.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain())
+                && JobEvent.TimetableAction.FILE_CLASSIFICATION.name().equals(je.getAction())
+                && JobEvent.State.OK.equals(je.getState())));
 
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain)
-                && JobEvent.TimetableAction.IMPORT.name().equals(je.action)
-                && JobEvent.State.PENDING.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain())
+                && JobEvent.TimetableAction.IMPORT.name().equals(je.getAction())
+                && JobEvent.State.PENDING.equals(je.getState())));
 
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.domain)
-                && JobEvent.TimetableAction.IMPORT.name().equals(je.action)
-                && JobEvent.State.OK.equals(je.state)));
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain())
+                && JobEvent.TimetableAction.IMPORT.name().equals(je.getAction())
+                && JobEvent.State.OK.equals(je.getState())));
 
 
     }
