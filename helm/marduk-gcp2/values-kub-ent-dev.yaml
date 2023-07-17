@@ -20,7 +20,7 @@ gcp:
   bucketName: marduk-dev
   exchangeBucketName: marduk-exchange-dev
   otpReportBucketName: otpreport.dev.entur.org
-  otpGraphBucketName: ror-otp-graphs-dev
+  otpGraphBucketName: ror-otp-graphs-gcp2-dev
   nisabaExchangeBucketName: ror-nisaba-exchange-dev
   osmSubDirectory: osm
 
