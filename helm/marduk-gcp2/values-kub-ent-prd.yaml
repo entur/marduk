@@ -13,7 +13,7 @@ sql:
 
 
 gcp:
-  blobstoreProjectId: entur-ror-prod
+  blobstoreProjectId: ent-marduk-prd
   mardukPubsubProjectId: ent-marduk-prd
   antuPubsubProjectId: ent-antu-prd
   nabuPubsubProjectId: ent-nabu-prd
