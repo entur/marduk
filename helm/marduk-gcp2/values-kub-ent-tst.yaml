@@ -20,7 +20,7 @@ gcp:
   bucketName: marduk-test
   exchangeBucketName: marduk-exchange-test
   otpReportBucketName: otpreport.staging.entur.org
-  otpGraphBucketName: ror-otp-graphs-test
+  otpGraphBucketName: ror-otp-graphs-gcp2-test
   nisabaExchangeBucketName: ror-nisaba-exchange-test
   osmSubDirectory: osm
 
