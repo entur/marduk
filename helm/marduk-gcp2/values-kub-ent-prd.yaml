@@ -20,7 +20,7 @@ gcp:
   bucketName: marduk-production
   exchangeBucketName: marduk-exchange-production
   otpReportBucketName: otpreport.entur.org
-  otpGraphBucketName: ror-otp-graphs-production
+  otpGraphBucketName: ror-otp-graphs-gcp2-production
   nisabaExchangeBucketName: ror-nisaba-exchange-production
   osmSubDirectory: osm
 
