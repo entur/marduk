@@ -28,10 +28,10 @@ import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.compress.utils.IOUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,10 +42,11 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -83,9 +84,16 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         @Bean
         @ConditionalOnWebApplication
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-            http.cors(withDefaults()).csrf().disable().authorizeHttpRequests(authz -> authz.antMatchers("/services/swagger.json").permitAll().antMatchers("/services/timetable_admin/swagger.json").permitAll()
-                    // exposed internally only, on a different port (pod-level)
-                    .antMatchers("/actuator/prometheus").permitAll().antMatchers("/actuator/health").permitAll().antMatchers("/actuator/health/liveness").permitAll().antMatchers("/actuator/health/readiness").permitAll().anyRequest().authenticated()).oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt).oauth2Client();
+            http.cors(withDefaults()).csrf(AbstractHttpConfigurer::disable)
+                    .authorizeHttpRequests(authz -> authz.requestMatchers(AntPathRequestMatcher.antMatcher("/services/openapi.json")).permitAll()
+                            .requestMatchers(AntPathRequestMatcher.antMatcher("/services/timetable_admin/openapi.json")).permitAll()
+                    .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/prometheus")).permitAll()
+                            .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health")).permitAll()
+                            .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health/liveness")).permitAll()
+                            .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health/readiness")).permitAll()
+                            .anyRequest().authenticated())
+                    .oauth2ResourceServer(configurer -> configurer.jwt(withDefaults()))
+                    .oauth2Client(withDefaults());
             return http.build();
         }
 

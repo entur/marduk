@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.entur.ror</groupId>
         <artifactId>superpom</artifactId>
-        <version>1.62</version>
+        <version>2.1</version>
     </parent>
 
     <groupId>no.rutebanken.marduk</groupId>
@@ -25,8 +25,8 @@
     <properties>
         <java.version>17</java.version>
         <entur.google.pubsub.emulator.download.skip>false</entur.google.pubsub.emulator.download.skip>
-        <camel.version>3.20.6</camel.version>
-        <entur.helpers.version>1.98</entur.helpers.version>
+        <camel.version>4.0.0-RC2</camel.version>
+        <entur.helpers.version>2.1</entur.helpers.version>
         <commons-io.version>2.13.0</commons-io.version>
         <commons-csv.version>1.10.0</commons-csv.version>
         <zt-zip.version>1.15</zt-zip.version>
@@ -159,13 +159,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
-            <artifactId>camel-swagger-java-starter</artifactId>
-            <exclusions>
-                <exclusion>
-                    <artifactId>jsr311-api</artifactId>
-                    <groupId>javax.ws.rs</groupId>
-                </exclusion>
-            </exclusions>
+            <artifactId>camel-openapi-java-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
@@ -197,12 +191,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpmime</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
         </dependency>
 
         <dependency>
