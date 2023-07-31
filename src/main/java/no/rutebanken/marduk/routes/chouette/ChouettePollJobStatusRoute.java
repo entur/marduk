@@ -32,7 +32,7 @@ import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
 import org.apache.camel.component.http.HttpMethods;
 import org.apache.camel.component.jackson.ListJacksonDataFormat;
 import org.apache.camel.model.dataformat.JsonLibrary;
-import org.apache.http.client.utils.URIBuilder;
+import org.apache.hc.core5.net.URIBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
