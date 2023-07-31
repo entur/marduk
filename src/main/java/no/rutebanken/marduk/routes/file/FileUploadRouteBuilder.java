@@ -24,7 +24,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.http.Part;
+import jakarta.servlet.http.Part;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
