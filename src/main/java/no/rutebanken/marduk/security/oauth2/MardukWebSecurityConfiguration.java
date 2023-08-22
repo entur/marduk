@@ -16,7 +16,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
  * Authentication and authorization configuration for Marduk.
- * All requests must be authenticated except for the Swagger endpoint.
+ * All requests must be authenticated except for the OpenAPI endpoint.
  * The Oauth2 ID-provider (Entur Partner Auth0 or RoR Auth0) is identified thanks to {@link MultiIssuerAuthenticationManagerResolver}.
  */
 @Profile("!test")
@@ -40,8 +40,8 @@ public class MardukWebSecurityConfiguration {
         http.cors(withDefaults())
                 .csrf().disable()
                 .authorizeHttpRequests(authz -> authz
-                        .antMatchers("/services/swagger.json").permitAll()
-                        .antMatchers("/services/timetable_admin/swagger.json").permitAll()
+                        .antMatchers("/services/openapi.json").permitAll()
+                        .antMatchers("/services/timetable_admin/openapi.json").permitAll()
                         // exposed internally only, on a different port (pod-level)
                         .antMatchers("/actuator/prometheus").permitAll()
                         .antMatchers("/actuator/health").permitAll()
