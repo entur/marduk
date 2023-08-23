@@ -54,8 +54,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     private static final String JSON = "application/json";
     private static final String X_OCTET_STREAM = "application/x-octet-stream";
     private static final String PLAIN = "text/plain";
-    private static final String SWAGGER_DATA_TYPE_STRING = "string";
-    private static final String SWAGGER_DATA_TYPE_INTEGER = "integer";
+    private static final String OPENAPI_DATA_TYPE_STRING = "string";
+    private static final String OPENAPI_DATA_TYPE_INTEGER = "integer";
 
     @Value("${server.port:8080}")
     private String port;
@@ -94,7 +94,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .contextPath("/services")
                 .bindingMode(RestBindingMode.json)
                 .endpointProperty("matchOnUriPrefix", "true")
-                .apiContextPath("/swagger.json")
+                .apiContextPath("/openapi.json")
                 .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0");
 
         rest("")
@@ -109,7 +109,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .delete()
                 .to("direct:adminRouteAuthorizeDelete");
 
-        String commonApiDocEndpoint = "http:" + host + ":" + port + "/services/swagger.json?bridgeEndpoint=true";
+        String commonApiDocEndpoint = "http:" + host + ":" + port + "/services/openapi.json?bridgeEndpoint=true";
 
         rest("/timetable_admin")
                 .post("/idempotentfilter/clean")
@@ -167,14 +167,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .required(Boolean.FALSE)
                 .name("keepJobs")
                 .type(RestParamType.query)
-                .dataType(SWAGGER_DATA_TYPE_INTEGER)
+                .dataType(OPENAPI_DATA_TYPE_INTEGER)
                 .description("No of jobs to keep, regardless of age")
                 .endParam()
                 .param()
                 .required(Boolean.FALSE)
                 .name("keepDays")
                 .type(RestParamType.query)
-                .dataType(SWAGGER_DATA_TYPE_INTEGER)
+                .dataType(OPENAPI_DATA_TYPE_INTEGER)
                 .description("No of days to keep jobs for")
                 .endParam()
                 .responseMessage().code(200).message("Completed jobs removed").endResponseMessage()
@@ -207,7 +207,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .get("/line_statistics/{filter}")
                 .description("List stats about data in chouette for multiple providers")
                 .param().name("providerIds")
-                .type(RestParamType.query).dataType(SWAGGER_DATA_TYPE_INTEGER)
+                .type(RestParamType.query).dataType(OPENAPI_DATA_TYPE_INTEGER)
                 .required(Boolean.FALSE)
                 .description("Comma separated list of id for providers to fetch line stats for")
                 .endParam()
@@ -315,7 +315,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("routing_graph/build_candidate/{graphType}")
                 .description("Triggers graph building for a candidate OTP version")
-                .param().name("graphType").type(RestParamType.path).description("Type of graph").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
+                .param().name("graphType").type(RestParamType.path).description("Type of graph").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
@@ -330,7 +330,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("/upload/{codespace}")
                 .description("Upload NeTEx file")
-                .param().name("codespace").type(RestParamType.path).description("Provider Codespace").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
+                .param().name("codespace").type(RestParamType.path).description("Provider Codespace").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
                 .consumes(MULTIPART_FORM_DATA)
                 .produces(PLAIN)
                 .bindingMode(RestBindingMode.off)
@@ -340,14 +340,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .get("/download_netex_blocks/{codespace}")
                 .description("Download NeTEx dataset with blocks")
-                .param().name("codespace").type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
+                .param().name("codespace").type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
                 .consumes(PLAIN)
                 .produces(X_OCTET_STREAM)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
                 .to("direct:adminChouetteNetexBlocksDownload")
 
-                .get("/swagger.json")
+                .get("/openapi.json")
                 .apiDocs(false)
                 .bindingMode(RestBindingMode.off)
                 .to(commonApiDocEndpoint);
@@ -355,7 +355,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         rest("/timetable_admin/{providerId}")
                 .post("/import")
                 .description("Triggers the import->validate->export process in Chouette for each blob store file handle. Use /files call to obtain available files. Files are imported in the same order as they are provided")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .type(BlobStoreFiles.class)
                 .outType(String.class)
                 .consumes(JSON)
@@ -366,7 +366,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("/flex/import")
                 .description("Triggers the import->validate->export for each blob store file handle. Use /files call to obtain available files. Files are imported in the same order as they are provided")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .type(BlobStoreFiles.class)
                 .outType(String.class)
                 .consumes(JSON)
@@ -377,7 +377,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .get("/files")
                 .description("List files available for reimport")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .outType(BlobStoreFiles.class)
                 .consumes(PLAIN)
                 .produces(JSON)
@@ -387,7 +387,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("/files")
                 .description("Upload file for import into Chouette")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .consumes(MULTIPART_FORM_DATA)
                 .produces(PLAIN)
                 .bindingMode(RestBindingMode.off)
@@ -397,7 +397,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("/flex/files")
                 .description("Upload flexible line file for import")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .consumes(MULTIPART_FORM_DATA)
                 .produces(PLAIN)
                 .bindingMode(RestBindingMode.off)
@@ -407,8 +407,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .get("/files/{fileName}")
                 .description("Download file for reimport")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
-                .param().name("fileName").type(RestParamType.path).description("Name of file to fetch").dataType(SWAGGER_DATA_TYPE_STRING).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
+                .param().name("fileName").type(RestParamType.path).description("Name of file to fetch").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
                 .consumes(PLAIN)
                 .produces(X_OCTET_STREAM)
                 .responseMessage().code(200).endResponseMessage()
@@ -417,7 +417,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .get("/line_statistics")
                 .description("List stats about data in chouette for a given provider")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .bindingMode(RestBindingMode.off)
                 .consumes(PLAIN)
                 .produces(JSON)
@@ -427,7 +427,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .get("/jobs")
                 .description("List Chouette jobs for a given provider")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .param()
                 .required(Boolean.FALSE)
                 .name("status")
@@ -451,7 +451,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .delete("/jobs")
                 .description("Cancel all Chouette jobs for a given provider")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Job deleted").endResponseMessage()
@@ -460,8 +460,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .delete("/jobs/{jobId}")
                 .description("Cancel a Chouette job for a given provider")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
-                .param().name("jobId").type(RestParamType.path).description("Job id as returned in any of the /jobs GET calls").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
+                .param().name("jobId").type(RestParamType.path).description("Job id as returned in any of the /jobs GET calls").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Job deleted").endResponseMessage()
@@ -470,7 +470,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("/export")
                 .description("Triggers the export process in Chouette. Note that NO validation is performed before export, and that the data must be guaranteed to be error free")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
@@ -478,7 +478,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("/validate")
                 .description("Triggers the validate->export process in Chouette")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
@@ -486,7 +486,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("/clean")
                 .description("Triggers the clean dataspace process in Chouette. Only timetable data are deleted, not job data (imports, exports, validations)")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
@@ -494,7 +494,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("/transfer")
                 .description("Triggers transfer of data from one dataspace to the next")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(SWAGGER_DATA_TYPE_INTEGER).endParam()
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()

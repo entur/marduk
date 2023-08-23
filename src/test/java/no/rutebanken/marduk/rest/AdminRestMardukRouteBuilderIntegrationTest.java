@@ -83,7 +83,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         @Bean
         @ConditionalOnWebApplication
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-            http.cors(withDefaults()).csrf().disable().authorizeHttpRequests(authz -> authz.antMatchers("/services/swagger.json").permitAll().antMatchers("/services/timetable_admin/swagger.json").permitAll()
+            http.cors(withDefaults()).csrf().disable().authorizeHttpRequests(authz -> authz.antMatchers("/services/openapi.json").permitAll().antMatchers("/services/timetable_admin/openapi.json").permitAll()
                     // exposed internally only, on a different port (pod-level)
                     .antMatchers("/actuator/prometheus").permitAll().antMatchers("/actuator/health").permitAll().antMatchers("/actuator/health/liveness").permitAll().antMatchers("/actuator/health/readiness").permitAll().anyRequest().authenticated()).oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt).oauth2Client();
             return http.build();

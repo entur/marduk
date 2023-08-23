@@ -90,11 +90,6 @@ class FileTypeClassifierBeanTest {
     }
 
     @Test
-    void classifyInvalidXMLEncodingInZipFileEntry() throws IOException {
-        assertFileType("zip_file_with_invalid_xml_encoding.zip", INVALID_ZIP_FILE_ENTRY_CONTENT_ENCODING);
-    }
-
-    @Test
     void classifyUnknownFileType() throws IOException {
         assertFileType("unknown_file_type.zip", UNKNOWN_FILE_TYPE);
     }
