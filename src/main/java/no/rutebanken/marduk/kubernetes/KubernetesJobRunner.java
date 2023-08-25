@@ -8,7 +8,12 @@ import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.JobSpec;
 import io.fabric8.kubernetes.api.model.batch.v1.JobStatus;
-import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.Watch;
+import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.kubernetes.client.WatcherException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,7 +54,7 @@ public class KubernetesJobRunner {
      * @param timestamp     timestamp used to create a unique name for the Kubernetes job.
      */
     public void runJob(String cronJobName, String jobNamePrefix, List<EnvVar> envVars, String timestamp) {
-        try (final KubernetesClient kubernetesClient =  new KubernetesClientBuilder().build()) {
+        try (final KubernetesClient kubernetesClient = new DefaultKubernetesClient()) {
             String jobName = jobNamePrefix + '-' + timestamp;
 
             final Job job = retrieveOrCreateJob(jobName, cronJobName, envVars, kubernetesClient);
@@ -108,14 +113,14 @@ public class KubernetesJobRunner {
             LOGGER.info("Creating Graph builder job with name {} ", jobName);
             CronJobSpec specTemplate = getCronJobSpecTemplate(cronJobName, kubernetesClient);
             job = buildJobFromCronJobSpecTemplate(specTemplate, jobName, envVars);
-            kubernetesClient.batch().v1().jobs().inNamespace(kubernetesNamespace).resource(job).create();
+            kubernetesClient.batch().v1().jobs().inNamespace(kubernetesNamespace).create(job);
         }
         return job;
     }
 
     private void deleteKubernetesJob(KubernetesClient kubernetesClient, Job job) {
         try {
-            kubernetesClient.batch().v1().jobs().inNamespace(kubernetesNamespace).resource(job).delete();
+            kubernetesClient.batch().v1().jobs().inNamespace(kubernetesNamespace).delete(job);
         } catch (Exception e) {
             LOGGER.warn("Unable to delete Kubernetes job after completion", e);
         }
