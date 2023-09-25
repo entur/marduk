@@ -18,6 +18,7 @@ gcp:
   antuPubsubProjectId: ent-antu-tst
   nabuPubsubProjectId: ent-nabu-tst
   bucketName: marduk-test
+  internalBucketName: ror-marduk-internal-test
   exchangeBucketName: marduk-exchange-test
   otpReportBucketName: otpreport.staging.entur.org
   otpGraphBucketName: ror-otp-graphs-gcp2-test

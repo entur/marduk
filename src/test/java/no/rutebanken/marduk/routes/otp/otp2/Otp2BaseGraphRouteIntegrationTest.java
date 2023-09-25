@@ -66,7 +66,7 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
             a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().process(exchange -> {
                 // create dummy graph file in the blob store
                 String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_OBJ;
-                mardukInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+                internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
             });
         });
 
@@ -87,7 +87,7 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState())));
 
         // the graph object is present in the main bucket
-        BlobStoreFiles blobsInVersionedSubDirectory = mardukInMemoryBlobStoreRepository.listBlobs("");
+        BlobStoreFiles blobsInVersionedSubDirectory = internalInMemoryBlobStoreRepository.listBlobs("");
         Assertions.assertEquals(1, blobsInVersionedSubDirectory.getFiles().size());
 
     }

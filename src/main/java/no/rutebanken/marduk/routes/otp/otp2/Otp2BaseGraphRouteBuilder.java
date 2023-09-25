@@ -100,10 +100,10 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:remoteBuildOtp2BaseGraph")
                 // copy new base graph in remote storage
                 .setHeader(Constants.FILE_PREFIX, simple("${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}/" + OTP2_BASE_GRAPH_OBJ_PREFIX))
-                .to("direct:findBlob")
+                .to("direct:findInternalBlob")
                 .log(LoggingLevel.INFO, correlation() + "Found OTP2 base graph named ${body.fileNameOnly} matching file prefix ${header." + Constants.FILE_PREFIX + "}")
                 .process(new Otp2BaseGraphPublishingProcessor(blobStoreSubdirectory))
-                .to("direct:copyBlobInBucket")
+                .to("direct:copyInternalBlobInBucket")
                 .to(logDebugShowAll())
                 .choice()
                 .when(PredicateBuilder.not(exchangeProperty(OTP_BUILD_CANDIDATE)))
@@ -131,7 +131,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
         from("direct:promoteBaseGraphCandidate")
                 .setHeader(FILE_HANDLE, simple(blobStoreSubdirectory + "/" + OTP2_BASE_GRAPH_CANDIDATE_OBJ))
                 .setHeader(TARGET_FILE_HANDLE, simple(blobStoreSubdirectory + "/" + OTP2_BASE_GRAPH_OBJ))
-                .to("direct:copyBlobInBucket")
+                .to("direct:copyInternalBlobInBucket")
                 .log(LoggingLevel.INFO, correlation() + "Promoted OTP2 base graph candidate")
                 .routeId("otp2-base-graph-promote-base-graph-candidate");
     }

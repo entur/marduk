@@ -35,6 +35,7 @@ data:
     # Blobstore
     blobstore.gcs.project.id={{ .Values.gcp.blobstoreProjectId }}
     blobstore.gcs.container.name={{ .Values.gcp.bucketName }}
+    blobstore.gcs.internal.container.name={{ .Values.gcp.internalBucketName }}
     blobstore.gcs.otpreport.container.name={{ .Values.gcp.otpReportBucketName }}
     blobstore.gcs.exchange.container.name={{ .Values.gcp.exchangeBucketName }}
     blobstore.gcs.graphs.container.name={{ .Values.gcp.otpGraphBucketName }}
