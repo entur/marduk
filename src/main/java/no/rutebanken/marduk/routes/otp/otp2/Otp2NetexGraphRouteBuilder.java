@@ -146,12 +146,13 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:remoteOtp2GraphPublishing")
                 .setHeader(Constants.FILE_PREFIX, simple("${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}/" + OTP2_GRAPH_OBJ_PREFIX))
-                .to("direct:findBlob")
+                .to("direct:findInternalBlob")
+                .validate(body().isNotNull())
                 .log(LoggingLevel.INFO, correlation() + "Found OTP2 graph named ${body.fileNameOnly} matching file prefix ${header." + Constants.FILE_PREFIX + "}")
 
                 // copy the new graph from the OTP remote work directory to the graphs directory in GCS
                 .process(new Otp2NetexGraphPublishingProcessor(otpGraphsBucketName))
-                .to("direct:copyBlobToAnotherBucket")
+                .to("direct:copyInternalBlobToAnotherBucket")
                 .log(LoggingLevel.INFO, correlation() + "Done copying new OTP2 graph: ${header." + FILE_HANDLE + "}")
 
                 .setProperty(GRAPH_PATH_PROPERTY, header(FILE_HANDLE))
@@ -191,7 +192,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, true);
                 })
                 .log(LoggingLevel.INFO, correlation() + "Copying OTP2 graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
-                .to("direct:copyAllBlobs")
+                .to("direct:copyAllInternalBlobs")
                 .log(LoggingLevel.INFO, correlation() + "Done copying OTP2 graph build reports.")
                 .routeId("otp2-remote-graph-build-report-versioned-upload");
 
@@ -206,7 +207,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .when(constant(deleteOtpRemoteWorkDir))
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(OTP_REMOTE_WORK_DIR))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP2 remote work directory ${header." + Exchange.FILE_PARENT + "} ...")
-                .to("direct:deleteAllBlobsInFolder")
+                .to("direct:deleteAllInternalBlobsInFolder")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleted OTP2 remote work directory ${header." + Exchange.FILE_PARENT + "}")
                 .end()
                 .routeId("otp2-remote-graph-cleanup");

@@ -18,6 +18,7 @@ gcp:
   antuPubsubProjectId: ent-antu-dev
   nabuPubsubProjectId: ent-nabu-dev
   bucketName: marduk-dev
+  internalBucketName: ror-marduk-internal-dev
   exchangeBucketName: marduk-exchange-dev
   otpReportBucketName: otpreport.dev.entur.org
   otpGraphBucketName: ror-otp-graphs-gcp2-dev
