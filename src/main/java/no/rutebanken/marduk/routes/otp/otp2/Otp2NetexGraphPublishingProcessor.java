@@ -5,7 +5,6 @@ import no.rutebanken.marduk.domain.BlobStoreFiles;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.GRAPH_COMPATIBILITY_VERSION;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ_PREFIX;
@@ -16,7 +15,9 @@ import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 
 /**
- * Camel processor that prepares the graph file,
+ * Camel processor that constructs the file name of the newly built NeTEx graph.
+ * The new graph is saved in a directory whose name is the compatibility version of the graph (example: EN-0051).
+ * The compatibility version is extracted from the name of the graph file produced by the graph builder (example: Graph-otp2-EN-0051.obj).
  */
 public class Otp2NetexGraphPublishingProcessor implements Processor {
 
@@ -47,7 +48,6 @@ public class Otp2NetexGraphPublishingProcessor implements Processor {
         e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
         e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
         e.getIn().setHeader(TARGET_CONTAINER, otpGraphsBucketName);
-        e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, false);
         e.setProperty(OTP_GRAPH_VERSION, publishedGraphVersion);
     }
 
@@ -57,8 +57,6 @@ public class Otp2NetexGraphPublishingProcessor implements Processor {
         } else {
             return "unknown-version";
         }
-
-
     }
 
 }
