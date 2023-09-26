@@ -16,7 +16,7 @@ import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 
 /**
- * Camel processor that prepares the graph file,
+ * Camel processor that builds NeTEx graph file names.
  */
 public class Otp2NetexGraphPublishingProcessor implements Processor {
 
@@ -57,8 +57,6 @@ public class Otp2NetexGraphPublishingProcessor implements Processor {
         } else {
             return "unknown-version";
         }
-
-
     }
 
 }

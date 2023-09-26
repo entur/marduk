@@ -51,8 +51,6 @@ public final class Constants {
     public static final String OTP2_GRAPH_OBJ = "Graph-otp2.obj";
     public static final String OTP2_GRAPH_OBJ_PREFIX = "Graph-otp2";
     public static final String OTP2_BASE_GRAPH_OBJ_PREFIX = "streetGraph-otp2";
-    public static final String OTP2_BASE_GRAPH_OBJ = OTP2_BASE_GRAPH_OBJ_PREFIX + ".obj";
-    public static final String OTP2_BASE_GRAPH_CANDIDATE_OBJ = OTP2_BASE_GRAPH_OBJ_PREFIX + "-candidate.obj";
     public static final String OTP2_NETEX_GRAPH_DIR = "netex-otp2";
     public static final String OTP2_GRAPH_REPORT_INDEX_FILE = "index_otp2.html";
 
