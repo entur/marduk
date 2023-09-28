@@ -9,7 +9,7 @@ resource "google_storage_bucket" "storage_bucket" {
   labels                   = var.labels
   uniform_bucket_level_access = true
   versioning {
-    enabled = var.versioning
+    enabled = true
   }
   logging {
     log_bucket           = var.log_bucket
