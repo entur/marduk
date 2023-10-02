@@ -31,8 +31,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.charset.Charset;
 import java.util.List;
 
-import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ;
-import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
+import static no.rutebanken.marduk.Constants.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
@@ -64,8 +63,8 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
             a.weaveByToUri("google-pubsub:(.*):OtpGraphBuildQueue").replace().to("mock:otpGraphBuildQueue");
 
             a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().process(exchange -> {
-                // create dummy graph file in the blob store
-                String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_OBJ;
+                // create dummy base graph file in the blob store with an arbitrary serialization id
+                String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_OBJ_PREFIX + "-XXX.obj";
                 internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
             });
         });

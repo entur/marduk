@@ -321,13 +321,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminBuildGraphCandidate")
 
-                .post("routing_graph/promote_base_graph")
-                .description("Replace the OTP2 base graph by the candidate base graph")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminPromoteBaseGraphCandidate")
-
                 .post("/upload/{codespace}")
                 .description("Upload NeTEx file")
                 .param().name("codespace").type(RestParamType.path).description("Provider Codespace").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
@@ -715,14 +708,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
                 .end()
                 .routeId("admin-build-graph-candidate");
-
-        from("direct:adminPromoteBaseGraphCandidate")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "OTP2 promoting candidate base graph")
-                .process(this::removeAllCamelHttpHeaders)
-                .setBody(simple(""))
-                .to(ExchangePattern.InOnly, "direct:promoteBaseGraphCandidate")
-                .routeId("admin-promote-base-graph-candidate");
 
         from("direct:adminUploadFile")
                 .streamCaching()
