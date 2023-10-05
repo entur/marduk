@@ -13,7 +13,7 @@ resource "google_storage_bucket" "storage_bucket" {
   }
   lifecycle_rule {
       condition {
-        matches_prefix = "graphs/work"
+        matches_prefix = ["graphs/work"]
         age = 1
         with_state = "ANY"
       }
