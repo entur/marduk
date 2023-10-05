@@ -11,6 +11,16 @@ resource "google_storage_bucket" "storage_bucket" {
   versioning {
     enabled = true
   }
+  lifecycle_rule {
+      condition {
+        match_prefix = "graphs/work"
+        age = 1
+        with_state = "ANY"
+      }
+      action {
+        type = "Delete"
+      }
+    }
   logging {
     log_bucket           = var.log_bucket
     log_object_prefix = "${var.bucket_instance_prefix}-${var.bucket_instance_suffix}"
