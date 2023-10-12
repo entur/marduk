@@ -29,7 +29,7 @@ public class Otp2BaseGraphPublishingProcessor implements Processor {
         String graphFileName = file.getFileNameOnly();
         String builtBaseGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + graphFileName;
         String publishedBaseGraphPath;
-        publishedBaseGraphPath = blobStoreSubdirectory + "/street/" + graphFileName;
+        publishedBaseGraphPath = blobStoreSubdirectory + "/" + OTP2_STREET_GRAPH_DIR + "/" + graphFileName;
 
         e.getIn().setHeader(FILE_HANDLE, builtBaseGraphPath);
         e.getIn().setHeader(TARGET_FILE_HANDLE, publishedBaseGraphPath);
