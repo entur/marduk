@@ -20,6 +20,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
+import no.rutebanken.marduk.domain.OtpGraphsInfo;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
@@ -320,6 +321,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminBuildGraphCandidate")
+
+                .get("routing_graph/graphs")
+                .description("List latest generated OTP2 graphs")
+                .outType(OtpGraphsInfo[].class)
+                .consumes(PLAIN)
+                .produces(JSON)
+                .responseMessage().code(200).endResponseMessage()
+                .to("direct:adminListGraphs")
 
                 .post("/upload/{codespace}")
                 .description("Upload NeTEx file")
@@ -708,6 +717,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
                 .end()
                 .routeId("admin-build-graph-candidate");
+
+        from("direct:adminListGraphs")
+                .process(this::setNewCorrelationId)
+                .to("direct:authorizeAdminRequest")
+                .log(LoggingLevel.INFO, correlation() + "List graphs status")
+                .process(this::removeAllCamelHttpHeaders)
+                .to("direct:listGraphs")
+                .routeId("admin-chouette-graph-list");
 
         from("direct:adminUploadFile")
                 .streamCaching()
