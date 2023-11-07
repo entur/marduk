@@ -52,21 +52,21 @@ import static no.rutebanken.marduk.Constants.IMPORT_TYPE_UTTU_EXPORT;
 @Component
 public class NetexFlexibleLinesExportRouteBuilder extends BaseRouteBuilder {
 
-    private static final String BLOBSTORE_PATH_UTTU = "uttu";
-    public static final String EXPORT_FLEX_FOR_VALIDATION = BLOBSTORE_PATH_UTTU + "/netex/${header." + CHOUETTE_REFERENTIAL + "}" + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME;
+    private static final String BLOBSTORE_PATH_UTTU = "inbound/uttu/";
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:FlexibleLinesExportQueue")
-                .log(LoggingLevel.INFO, correlation() + "Received notification of new flexible NeTEx dataset")
+                .log(LoggingLevel.INFO, correlation() + "Received notification from Uttu of new flexible NeTEx dataset ${body}")
 
                 .process(e -> {
                     Long providerId =  getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class));
                     Provider provider = getProviderRepository().getProvider(providerId);
                     e.getIn().setHeader(PROVIDER_ID, providerId);
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
+                    e.getIn().setHeader(FILE_HANDLE, BLOBSTORE_PATH_UTTU +  e.getIn().getBody(String.class));
                 })
 
                 .process(e -> JobEvent.providerJobBuilder(e)
@@ -82,9 +82,9 @@ public class NetexFlexibleLinesExportRouteBuilder extends BaseRouteBuilder {
 
         // copy the inbound file to a bucket accessible from antu
         from("direct:copyInboundFileToValidationFolder")
-                .setHeader(FILE_HANDLE, simple( "inbound/netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME))
+
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.container.name}"))
-                .setHeader(TARGET_FILE_HANDLE, simple(EXPORT_FLEX_FOR_VALIDATION))
+                .setHeader(TARGET_FILE_HANDLE, header(FILE_HANDLE))
                 .to("direct:copyExchangeBlobToAnotherBucket")
                 .routeId("netex-flexible-copy-to-validation-folder");
 
