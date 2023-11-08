@@ -53,6 +53,18 @@ public class ExternalBlobStoreRoute extends BaseRouteBuilder {
                 .bean(exchangeBlobStoreService,"deleteBlob")
                 .to(logDebugShowAll());
 
+        from("direct:copyExternalBlobInBucket")
+                .to(logDebugShowAll())
+                .choice()
+                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
+                //defaulting to private access if not specified
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
+                .end()
+                .bean(exchangeBlobStoreService, "copyBlobInBucket")
+                .to(logDebugShowAll())
+                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} in blob store in Marduk exchange bucket.")
+                .routeId("blobstore-external-copy-in-bucket");
+
         from("direct:copyExchangeBlobToAnotherBucket")
                 .to(logDebugShowAll())
                 .choice()
