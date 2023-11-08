@@ -29,6 +29,9 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
     @EndpointInject("mock:copyInternalBlobToAnotherBucket")
     protected MockEndpoint copyInternalBlobToAnotherBucket;
 
+    @EndpointInject("mock:copyExternalBlobInBucket")
+    protected MockEndpoint copyExternalBlobInBucket;
+
     @EndpointInject("mock:copyBlobInBucket")
     protected MockEndpoint copyBlobInBucketMock;
 
@@ -43,6 +46,7 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
         super.setUp();
         updateStatus.reset();
         copyInternalBlobToAnotherBucket.reset();
+        copyExternalBlobInBucket.reset();
         chouetteMergeWithFlexibleLinesQueueMock.reset();
     }
 
@@ -53,9 +57,9 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
             a.interceptSendToEndpoint("direct:updateStatus")
                     .skipSendToOriginalEndpoint()
                     .to("mock:updateStatus");
-            a.interceptSendToEndpoint("direct:copyInternalBlobToAnotherBucket")
+            a.interceptSendToEndpoint("direct:copyExternalBlobInBucket")
                     .skipSendToOriginalEndpoint()
-                    .to("mock:copyInternalBlobToAnotherBucket");
+                    .to("mock:copyExternalBlobInBucket");
 
             a.weaveByToUri("google-pubsub:(.*):ChouetteMergeWithFlexibleLinesQueue")
                     .replace()
@@ -67,7 +71,7 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
         context.start();
 
         updateStatus.expectedMessageCount(1);
-        copyInternalBlobToAnotherBucket.expectedMessageCount(1);
+        copyExternalBlobInBucket.expectedMessageCount(1);
         chouetteMergeWithFlexibleLinesQueueMock.expectedMessageCount(1);
 
 
@@ -78,7 +82,7 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
         sendBodyAndHeadersToPubSub(importTemplate, STATUS_VALIDATION_OK, headers);
 
         updateStatus.assertIsSatisfied();
-        copyInternalBlobToAnotherBucket.assertIsSatisfied();
+        copyExternalBlobInBucket.assertIsSatisfied();
         chouetteMergeWithFlexibleLinesQueueMock.assertIsSatisfied();
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
