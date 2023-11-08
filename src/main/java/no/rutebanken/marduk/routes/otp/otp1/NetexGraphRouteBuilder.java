@@ -146,7 +146,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                             e.setProperty(OTP_GRAPH_VERSION, publishedGraphVersion);
                         }
                 )
-                .to("direct:copyBlobToAnotherBucket")
+                .to("direct:copyInternalBlobToAnotherBucket")
                 .log(LoggingLevel.INFO, correlation() + "Done copying new OTP graph: ${header." + FILE_HANDLE + "}")
 
                 .setProperty(GRAPH_PATH_PROPERTY, header(FILE_HANDLE))
@@ -181,7 +181,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, true);
                 })
                 .log(LoggingLevel.INFO, correlation() + "Copying OTP graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
-                .to("direct:copyAllBlobs")
+                .to("direct:copyAllInternalBlobs")
                 .log(LoggingLevel.INFO, correlation() + "Done copying OTP graph build reports.")
                 .routeId("otp-remote-graph-build-report-versioned-upload");
 
@@ -196,7 +196,7 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .when(constant(deleteOtpRemoteWorkDir))
                 .setHeader(Exchange.FILE_PARENT, exchangeProperty(OTP_REMOTE_WORK_DIR))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleting OTP remote work directory ${header." + Exchange.FILE_PARENT + "} ...")
-                .to("direct:deleteAllBlobsInFolder")
+                .to("direct:deleteAllInternalBlobsInFolder")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Deleted OTP remote work directory ${header." + Exchange.FILE_PARENT + "}")
                 .end()
                 .routeId("otp-remote-graph-cleanup");
