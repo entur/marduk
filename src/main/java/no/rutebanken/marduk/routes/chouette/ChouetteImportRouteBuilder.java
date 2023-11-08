@@ -119,7 +119,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.IMPORT).state(State.PENDING).build())
                 .to("direct:updateStatus")
-                .to("direct:getBlob")
+                .to("direct:getInternalBlob")
                 .choice()
                 .when(body().isNull())
                 .log(LoggingLevel.WARN, correlation() + "Import failed because blob could not be found")
@@ -240,7 +240,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setHeader(DATASET_IMPORT_KEY, simple("${header." + CHOUETTE_REFERENTIAL + "}_${body.replace(':','_')}"))
                 .setHeader(TARGET_FILE_HANDLE, simple("imported/${header." + CHOUETTE_REFERENTIAL + "}/${header." +  DATASET_IMPORT_KEY + "}.zip"))
                 .setHeader(TARGET_CONTAINER, constant(nisabaExchangeContainerName))
-                .to("direct:copyVersionedBlobToAnotherBucket")
+                .to("direct:copyVersionedInternalBlobToAnotherBucket")
                 .routeId("chouette-copy-original-dataset");
 
     }

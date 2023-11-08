@@ -625,7 +625,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                         + "/" + e.getIn().getHeader("fileName", String.class)))
                 .log(LoggingLevel.INFO, correlation() + "blob store download file by name")
                 .process(this::removeAllCamelHttpHeaders)
-                .to("direct:getBlob")
+                .to("direct:getInternalBlob")
                 .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
                 .routeId("admin-chouette-file-download");
 
@@ -751,7 +751,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                         + "-aggregated-netex.zip"))
                 .log(LoggingLevel.INFO, correlation() + "Downloading NeTEx dataset with blocks: ${header." + FILE_HANDLE + "}")
                 .process(this::removeAllCamelHttpHeaders)
-                .to("direct:getBlob")
+                .to("direct:getInternalBlob")
                 .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
                 .routeId("admin-chouette-netex-blocks-download");
 
@@ -799,7 +799,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "List files in blob store")
                 .process(this::removeAllCamelHttpHeaders)
-                .to("direct:listBlobsFlat")
+                .to("direct:listInternalBlobsFlat")
                 .routeId("admin-chouette-import-list");
 
         from("direct:adminUploadFlexFile")

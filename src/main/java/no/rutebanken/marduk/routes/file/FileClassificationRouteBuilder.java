@@ -61,7 +61,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.OK).build())
                 .to("direct:updateStatus")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.STARTED).build()).to("direct:updateStatus")
-                .to("direct:getBlob")
+                .to("direct:getInternalBlob")
                 .convertBodyTo(byte[].class)
                 .validate().method(FileTypeClassifierBean.class, "validateFile")
                 .choice()
@@ -134,7 +134,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(FILE_NAME, sanitizedFileName);
                 })
                 .log(LoggingLevel.INFO, correlation() + "Uploading file with new file name ${header." + FILE_HANDLE + "}")
-                .to("direct:uploadBlob")
+                .to("direct:uploadInternalBlob")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
                 .routeId("file-sanitize-filename");
 
@@ -156,6 +156,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
         from("direct:antuNetexPreValidation")
                 .filter(header(FILE_TYPE).isEqualTo(FileType.NETEXPROFILE))
+                .to("direct:copyInternalBlobToValidationBucket")
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());

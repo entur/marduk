@@ -113,7 +113,7 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential()))
                 .bean(mardukInternalBlobStoreService, "listBlobs")
                 .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store.")
+                .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from internal blob store.")
                 .routeId("blobstore-internal-list");
 
         from("direct:listInternalBlobsFlat")
@@ -121,14 +121,14 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential()))
                 .bean(mardukInternalBlobStoreService, "listBlobsFlat")
                 .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Returning from fetching flat file list from blob store.")
+                .log(LoggingLevel.INFO, correlation() + "Returning from fetching flat file list from internal blob store.")
                 .routeId("blobstore-internal-list-flat");
 
         from("direct:listInternalBlobsInFolders")
                 .to(logDebugShowAll())
                 .bean(mardukInternalBlobStoreService, "listBlobsInFolders")
                 .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store for multiple folders.")
+                .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from internal blob store for multiple folders.")
                 .routeId("blobstore-internal-list-in-folders");
 
         from("direct:deleteAllInternalBlobsInFolder")
@@ -137,6 +137,13 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from deleting all blobs in folder.")
                 .routeId("blobstore-internal-delete-in-folder");
+
+        from("direct:copyInternalBlobToValidationBucket")
+
+                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.container.name}"))
+                .setHeader(TARGET_FILE_HANDLE, header(FILE_HANDLE))
+                .to("direct:copyInternalBlobToAnotherBucket")
+                .routeId("copy-internal-to-validation-folder");
 
 
     }

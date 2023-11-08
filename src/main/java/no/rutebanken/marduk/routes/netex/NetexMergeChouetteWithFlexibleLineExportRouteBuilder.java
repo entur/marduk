@@ -130,13 +130,13 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                                 e.getProperty(FOLDER_NAME, String.class) + UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER,
                                 e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUB_FOLDER + "/merged.zip")))
                 .setHeader(FILE_HANDLE, simple(EXPORT_MERGED_FOR_VALIDATION))
-                .to("direct:uploadBlob")
+                .to("direct:uploadInternalBlob")
                 .routeId("netex-merged-upload-to-validation-folder");
 
 
         from("direct:unpackChouetteExportToWorkingFolder")
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_CHOUETTE + EXPORT_FILE_NAME))
-                .to("direct:getBlob")
+                .to("direct:getInternalBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
                 .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class) + UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER))
@@ -168,6 +168,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
         // start the validation in antu
         from("direct:antuMergedNetexPostValidation")
                 .log(LoggingLevel.INFO, correlation() + "validating Merged NeTEx dataset")
+                .to("direct:copyInternalBlobToValidationBucket")
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
                 .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE_FLEX_MERGING))

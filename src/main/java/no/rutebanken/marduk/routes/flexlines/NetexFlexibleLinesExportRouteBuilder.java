@@ -91,7 +91,7 @@ public class NetexFlexibleLinesExportRouteBuilder extends BaseRouteBuilder {
         // start the validation in antu
         from("direct:antuFlexibleNetexPostValidation")
                 .log(LoggingLevel.INFO, correlation() + "Post-validating flexible NeTEx dataset")
-
+                .to("direct:copyInternalBlobToValidationBucket")
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_FLEX_POSTVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
                 .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE_FLEX))

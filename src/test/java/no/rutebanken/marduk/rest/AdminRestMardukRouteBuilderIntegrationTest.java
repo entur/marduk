@@ -227,7 +227,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         InputStream testFile = getTestNetexArchiveAsStream();
 
         //populate fake blob repo
-        mardukInMemoryBlobStoreRepository.uploadBlob(testFileStorePath + testFileName, testFile, false);
+        internalInMemoryBlobStoreRepository.uploadBlob(testFileStorePath + testFileName, testFile, false);
 
         context.start();
 
@@ -251,7 +251,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
-        mardukInMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
+        internalInMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
 
         context.start();
 
@@ -277,7 +277,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
         for (String prefix : exportFileStaticPrefixes) {
-            mardukInMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, testFile, false);
+            internalInMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, testFile, false);
         }
         context.start();
 
@@ -324,7 +324,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         Map<String, Object> headers = getTestHeaders("POST");
         postFileTemplate.requestBodyAndHeaders(httpEntity, headers);
 
-        InputStream receivedFile = mardukInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
+        InputStream receivedFile = internalInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
         assertNotNull(receivedFile);
         byte[] fileContent = receivedFile.readAllBytes();
         assertTrue(fileContent.length > 0);
@@ -365,7 +365,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
                 exchanges.get(0).getIn().getHeader(IMPORT_TYPE),
                 "Flex import should have expected IMPORT_TYPE header");
 
-        InputStream receivedFile = mardukInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
+        InputStream receivedFile = internalInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
         assertNotNull(receivedFile);
         byte[] fileContent = receivedFile.readAllBytes();
         assertTrue(fileContent.length > 0);
@@ -394,7 +394,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         updateStatus.assertIsSatisfied();
         processFileQueue.assertIsSatisfied();
 
-        InputStream receivedFile = mardukInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
+        InputStream receivedFile = internalInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
         assertNotNull(receivedFile);
         byte[] fileContent = receivedFile.readAllBytes();
         assertTrue(fileContent.length > 0);
@@ -407,7 +407,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         String filename = "rb_rut-aggregated-netex.zip";
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
-        mardukInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + filename, testFile, false);
+        internalInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + filename, testFile, false);
 
         Map<String, Object> headers = getTestHeaders("GET");
 

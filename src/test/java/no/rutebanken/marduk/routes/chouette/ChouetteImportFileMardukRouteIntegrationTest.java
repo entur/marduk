@@ -99,7 +99,7 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
         InputStream testFile = getTestNetexArchiveAsStream();
 
         //populate fake blob repo
-        mardukInMemoryBlobStoreRepository.uploadBlob("rut/" + testFilename, testFile, false);
+        internalInMemoryBlobStoreRepository.uploadBlob("rut/" + testFilename, testFile, false);
 
         // Mock initial call to Chouette to import job
         AdviceWith.adviceWith(context, "chouette-send-import-job", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/importer/netexprofile")

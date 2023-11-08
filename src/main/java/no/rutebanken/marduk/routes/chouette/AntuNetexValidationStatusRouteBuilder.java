@@ -113,7 +113,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
                 .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
                 .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_NETEX_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
-                .to("direct:copyBlobInBucket")
+                .to("direct:copyInternalBlobInBucket")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue")
                 .endChoice()
@@ -122,7 +122,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION).state(JobEvent.State.OK).build())
                 .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
-                .to("direct:copyBlobInBucket")
+                .to("direct:copyInternalBlobInBucket")
                 .endChoice()
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_FLEX_POSTVALIDATION))
@@ -133,7 +133,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .end()
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME))
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
-                .to("direct:copyBlobToAnotherBucket")
+                .to("direct:copyInternalBlobToAnotherBucket")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
                 .endChoice()
 
@@ -144,8 +144,9 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + CHOUETTE_REFERENTIAL + "}"))
                 .end()
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.container.name}"))
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
-                .to("direct:copyBlobInBucket")
+                .to("direct:copyInternalBlobToAnotherBucket")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:PublishMergedNetexQueue")
                 .endChoice()
 

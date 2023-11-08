@@ -131,12 +131,12 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .when(constant(enablePostValidation))
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
-                .to("direct:uploadBlob")
+                .to("direct:uploadInternalBlob")
                 .setBody(constant(""))
                 .otherwise()
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_BEFORE_VALIDATION + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
-                .to("direct:uploadBlob")
+                .to("direct:uploadInternalBlob")
                 .setBody(constant(""))
                 // end otherwise
                 .end()
@@ -163,6 +163,7 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .routeId("process-failed-block-export");
 
         from("direct:antuNetexBlocksPostValidation")
+                .to("direct:copyInternalBlobToValidationBucket")
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
