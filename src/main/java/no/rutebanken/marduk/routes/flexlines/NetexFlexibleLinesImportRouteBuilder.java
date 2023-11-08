@@ -34,6 +34,7 @@ public class NetexFlexibleLinesImportRouteBuilder extends BaseRouteBuilder {
         // start the validation in antu
         from("direct:flexibleLinesImport")
                 .log(LoggingLevel.INFO, correlation() + "Post-validating flexible NeTEx dataset")
+                .to("direct:copyInternalBlobToValidationBucket")
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());

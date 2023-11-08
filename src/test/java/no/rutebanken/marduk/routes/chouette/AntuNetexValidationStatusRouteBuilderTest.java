@@ -26,8 +26,8 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @EndpointInject("mock:copyBlobToAnotherBucket")
-    protected MockEndpoint copyBlobToAnotherBucket;
+    @EndpointInject("mock:copyInternalBlobToAnotherBucket")
+    protected MockEndpoint copyInternalBlobToAnotherBucket;
 
     @EndpointInject("mock:copyBlobInBucket")
     protected MockEndpoint copyBlobInBucketMock;
@@ -42,7 +42,7 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
     protected void setUp() throws IOException {
         super.setUp();
         updateStatus.reset();
-        copyBlobToAnotherBucket.reset();
+        copyInternalBlobToAnotherBucket.reset();
         chouetteMergeWithFlexibleLinesQueueMock.reset();
     }
 
@@ -53,9 +53,9 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
             a.interceptSendToEndpoint("direct:updateStatus")
                     .skipSendToOriginalEndpoint()
                     .to("mock:updateStatus");
-            a.interceptSendToEndpoint("direct:copyBlobToAnotherBucket")
+            a.interceptSendToEndpoint("direct:copyInternalBlobToAnotherBucket")
                     .skipSendToOriginalEndpoint()
-                    .to("mock:copyBlobToAnotherBucket");
+                    .to("mock:copyInternalBlobToAnotherBucket");
 
             a.weaveByToUri("google-pubsub:(.*):ChouetteMergeWithFlexibleLinesQueue")
                     .replace()
@@ -67,7 +67,7 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
         context.start();
 
         updateStatus.expectedMessageCount(1);
-        copyBlobToAnotherBucket.expectedMessageCount(1);
+        copyInternalBlobToAnotherBucket.expectedMessageCount(1);
         chouetteMergeWithFlexibleLinesQueueMock.expectedMessageCount(1);
 
 
@@ -78,7 +78,7 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
         sendBodyAndHeadersToPubSub(importTemplate, STATUS_VALIDATION_OK, headers);
 
         updateStatus.assertIsSatisfied();
-        copyBlobToAnotherBucket.assertIsSatisfied();
+        copyInternalBlobToAnotherBucket.assertIsSatisfied();
         chouetteMergeWithFlexibleLinesQueueMock.assertIsSatisfied();
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
@@ -106,7 +106,7 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
         context.start();
 
         updateStatus.expectedMessageCount(1);
-        copyBlobToAnotherBucket.expectedMessageCount(0);
+        copyInternalBlobToAnotherBucket.expectedMessageCount(0);
         chouetteMergeWithFlexibleLinesQueueMock.expectedMessageCount(0);
 
         Map<String, String> headers = new HashMap<>();
@@ -116,7 +116,7 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
         sendBodyAndHeadersToPubSub(importTemplate, STATUS_VALIDATION_FAILED, headers);
 
         updateStatus.assertIsSatisfied();
-        copyBlobToAnotherBucket.assertIsSatisfied();
+        copyInternalBlobToAnotherBucket.assertIsSatisfied();
         chouetteMergeWithFlexibleLinesQueueMock.assertIsSatisfied();
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();

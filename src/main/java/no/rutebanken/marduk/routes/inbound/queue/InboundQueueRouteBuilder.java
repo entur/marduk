@@ -58,7 +58,7 @@ public class InboundQueueRouteBuilder extends BaseRouteBuilder {
                 .validate().method(FileTypeClassifierBean.class, "validateFile")
                 .log(LoggingLevel.INFO, correlation() + "File handle is: ${header." + FILE_HANDLE + "}")
                 .to(logDebugShowAll())
-                .to("direct:uploadBlob")
+                .to("direct:uploadInternalBlob")
                 .to(logDebugShowAll())
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build())
                 .to("direct:updateStatus")

@@ -47,7 +47,7 @@ public class TimetableGetExportBlobRouteBuilder extends BaseRouteBuilder {
 
         from("direct:listTimetableExportAndGraphBlobs")
                 .process(e -> e.getIn().setHeader(Constants.FILE_PARENT_COLLECTION, calculatePrefixes()))
-                .to("direct:listBlobsInFolders")
+                .to("direct:listInternalBlobsInFolders")
                 .routeId("timetable-get-export-blobs");
     }
 

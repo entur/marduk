@@ -62,7 +62,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .setBody(header(FILE_CONTENT_HEADER))
                 .setHeader(Exchange.FILE_NAME, header(FILE_NAME))
                 .to("direct:filterDuplicateFile")
-                .to("direct:uploadBlob")
+                .to("direct:uploadInternalBlob")
                 .log(LoggingLevel.INFO, correlation() + "Finished uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
                 .setBody(constant(""))
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
