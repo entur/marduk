@@ -65,6 +65,13 @@ public class ExternalBlobStoreRoute extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} from Marduk Exchange bucket to bucket ${header." + TARGET_CONTAINER + "}.")
                 .routeId("blobstore-exchange-copy-to-another-bucket");
 
+        from("direct:copyExternalBlobToValidationBucket")
+
+                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.container.name}"))
+                .setHeader(TARGET_FILE_HANDLE, header(FILE_HANDLE))
+                .to("direct:copyExchangeBlobToAnotherBucket")
+                .routeId("netex-flexible-copy-to-validation-folder");
+
     }
 }
 
