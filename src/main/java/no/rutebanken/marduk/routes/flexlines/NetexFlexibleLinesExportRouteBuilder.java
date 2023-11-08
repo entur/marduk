@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.routes.flexlines;
 
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -28,7 +27,6 @@ import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
-import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
@@ -76,22 +74,14 @@ public class NetexFlexibleLinesExportRouteBuilder extends BaseRouteBuilder {
                         .build())
                 .to("direct:updateStatus")
 
-                .to("direct:copyInboundFileToValidationFolder")
                 .to("direct:antuFlexibleNetexPostValidation")
                 .routeId("netex-flexible-lines-export-queue");
 
-        // copy the inbound file to a bucket accessible from antu
-        from("direct:copyInboundFileToValidationFolder")
-
-                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.container.name}"))
-                .setHeader(TARGET_FILE_HANDLE, header(FILE_HANDLE))
-                .to("direct:copyExchangeBlobToAnotherBucket")
-                .routeId("netex-flexible-copy-to-validation-folder");
 
         // start the validation in antu
         from("direct:antuFlexibleNetexPostValidation")
                 .log(LoggingLevel.INFO, correlation() + "Post-validating flexible NeTEx dataset")
-                .to("direct:copyInternalBlobToValidationBucket")
+                .to("direct:copyExternalBlobToValidationBucket")
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_FLEX_POSTVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
                 .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE_FLEX))
