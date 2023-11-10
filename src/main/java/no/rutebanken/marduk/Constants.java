@@ -73,7 +73,7 @@ public final class Constants {
     public static final String BLOBSTORE_PATH_NETEX_EXPORT = BLOBSTORE_PATH_CHOUETTE + "netex/";
 
     public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks/";
-    public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_BEFORE_VALIDATION = BLOBSTORE_PATH_CHOUETTE + "/netex-with-blocks-before-validation/";
+    public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_BEFORE_VALIDATION = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks-before-validation/";
 
 
     public static final String CHOUETTE_JOB_STATUS_URL = "RutebankenChouetteJobStatusURL";
@@ -90,15 +90,12 @@ public final class Constants {
 
     public static final String BLOBSTORE_MAKE_BLOB_PUBLIC = "RutebankenBlobstoreMakeBlobPublic";
 
-    public static final String SINGLETON_ROUTE_DEFINITION_GROUP_NAME = "RutebankenSingletonRouteDefinitionGroup";
-
     public static final String FOLDER_NAME = "RutebankenFolderName";
     public static final String SYSTEM_STATUS = "RutebankenSystemStatus";
 
     public static final String TIMESTAMP = "RutebankenTimeStamp";
 
     public static final String ET_CLIENT_NAME_HEADER = "ET-Client-Name";
-    public static final String ET_CLIENT_ID_HEADER = "ET-Client-ID";
 
     public static final String PROVIDER_BLACK_LIST = "RutebankenProviderBlackList";
     public static final String PROVIDER_WHITE_LIST = "RutebankenProviderWhiteList";
@@ -132,8 +129,6 @@ public final class Constants {
 
     public static final String VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION = "EnturValidationStageExportMergedPostValidation";
 
-
-
     public static final String VALIDATION_CLIENT_HEADER = "EnturValidationClient";
     public static final String VALIDATION_CLIENT_MARDUK = "Marduk";
 
@@ -146,8 +141,6 @@ public final class Constants {
     public static final String VALIDATION_PROFILE_TIMETABLE_SWEDEN = "TimetableSweden";
 
     public static final String IMPORT_TYPE = "ImportType";
-
-    public static final String IMPORT_TYPE_NETEX_TIMETABLE = "ImportType_netex_timetable";
 
     public static final String IMPORT_TYPE_NETEX_FLEX = "ImportType_netex_flex";
 
