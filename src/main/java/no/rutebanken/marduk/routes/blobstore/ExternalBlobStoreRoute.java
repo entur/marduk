@@ -79,7 +79,7 @@ public class ExternalBlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:copyExternalBlobToValidationBucket")
 
-                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.container.name}"))
+                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.antu.exchange.container.name}"))
                 .setHeader(TARGET_FILE_HANDLE, header(FILE_HANDLE))
                 .to("direct:copyExchangeBlobToAnotherBucket")
                 .routeId("netex-flexible-copy-to-validation-folder");

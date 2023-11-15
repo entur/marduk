@@ -23,6 +23,7 @@ gcp:
   otpReportBucketName: otpreport.dev.entur.org
   otpGraphBucketName: ror-otp-graphs-gcp2-dev
   nisabaExchangeBucketName: ror-nisaba-exchange-dev
+  antuExchangeBucketName: ror-antu-exchange-gcp2-dev
   osmSubDirectory: osm
 
 chouette:
