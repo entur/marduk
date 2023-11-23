@@ -492,3 +492,16 @@ resource "google_pubsub_subscription" "Otp2BaseGraphCandidateBuildQueue" {
     minimum_backoff = "10s"
   }
 }
+
+resource "google_pubsub_topic" "MardukDeadLetterQueue" {
+  name = "MardukDeadLetterQueue"
+  project = var.gcp_resources_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "MardukDeadLetterQueue" {
+  name = "MardukDeadLetterQueue"
+  topic = google_pubsub_topic.MardukDeadLetterQueue.name
+  project = var.gcp_resources_project
+  labels = var.labels
+}
