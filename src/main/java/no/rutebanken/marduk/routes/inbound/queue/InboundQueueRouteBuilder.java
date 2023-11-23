@@ -45,7 +45,7 @@ public class InboundQueueRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .setBody(simple(""))      //remove file data from body
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:DeadLetterQueue");
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:MardukDeadLetterQueue");
 
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:MardukInboundQueue").streamCaching()
