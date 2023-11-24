@@ -38,8 +38,6 @@ public class ChouetteInfo {
     private boolean enableAutoValidation;
     private boolean generateDatedServiceJourneyIds;
     private Set<String> generateMissingServiceLinksForModes;
-    private boolean googleUpload;
-    private boolean googleQAUpload;
     private boolean enableBlocksExport;
 
     private Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
@@ -67,8 +65,6 @@ public class ChouetteInfo {
                        ", generateMissingServiceLinksForModes='" + generateMissingServiceLinksForModes + '\'' +
                        ", migrateDataToProvider='" + migrateDataToProvider + '\'' +
                        ", generateDatedServiceJourneyIds='" + generateDatedServiceJourneyIds + '\'' +
-                       ", googleUpload='" + googleUpload + '\'' +
-                       ", googleQAUpload='" + googleQAUpload + '\'' +
                        ", enableBlocksExport='" + enableBlocksExport + '\'' +
                        '}';
     }
@@ -127,14 +123,6 @@ public class ChouetteInfo {
 
     public boolean isGenerateDatedServiceJourneyIds() {
         return generateDatedServiceJourneyIds;
-    }
-
-    public boolean isGoogleUpload() {
-        return googleUpload;
-    }
-
-    public boolean isGoogleQAUpload() {
-        return googleQAUpload;
     }
 
     public boolean isEnableAutoValidation() {
@@ -213,16 +201,6 @@ public class ChouetteInfo {
 
     public ChouetteInfo setGenerateMissingServiceLinksForModes(Set<String> generateMissingServiceLinksForModes) {
         this.generateMissingServiceLinksForModes = generateMissingServiceLinksForModes;
-        return this;
-    }
-
-    public ChouetteInfo setGoogleUpload(boolean googleUpload) {
-        this.googleUpload = googleUpload;
-        return this;
-    }
-
-    public ChouetteInfo setGoogleQAUpload(boolean googleQAUpload) {
-        this.googleQAUpload = googleQAUpload;
         return this;
     }
 

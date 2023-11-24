@@ -39,18 +39,13 @@ public abstract class MardukRouteBuilderIntegrationTestBase extends MardukSpring
     @Autowired
     protected CamelContext context;
 
-    protected Provider provider(String ref, long id, Long migrateToProvider) {
-        return provider(ref, id, migrateToProvider, false, false);
-    }
 
-    protected Provider provider(String ref, long id, Long migrateToProvider, boolean googleUpload, boolean googleQAUpload) {
+    protected Provider provider(String ref, long id, Long migrateToProvider) {
         Provider provider = new Provider();
         provider.setChouetteInfo(new ChouetteInfo());
         provider.getChouetteInfo().setReferential(ref);
         provider.getChouetteInfo().setMigrateDataToProvider(migrateToProvider);
         provider.setId(id);
-        provider.getChouetteInfo().setGoogleUpload(googleUpload);
-        provider.getChouetteInfo().setGoogleQAUpload(googleQAUpload);
         provider.getChouetteInfo().setEnableBlocksExport(true);
 
         return provider;

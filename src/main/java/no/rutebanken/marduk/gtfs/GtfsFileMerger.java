@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static no.rutebanken.marduk.gtfs.GtfsExport.GTFS_EXTENDED;
-import static no.rutebanken.marduk.gtfs.GtfsExport.GTFS_GOOGLE;
 
 /**
  * Merge a collection of GTFS archives into a single zip.
@@ -226,11 +225,8 @@ public class GtfsFileMerger {
                 LOGGER.warn("Invalid route type {}", value);
                 return value;
             }
-            if (gtfsExport == GTFS_GOOGLE) {
-                return Integer.toString(GoogleRouteTypeCode.toGoogleSupportedRouteTypeCode(routeTypeCode));
-            } else {
-                return Integer.toString(BasicRouteTypeCode.convertRouteType(routeTypeCode));
-            }
+            return Integer.toString(BasicRouteTypeCode.convertRouteType(routeTypeCode));
+
         }
 
         if ("shape_id".equals(header) && ! includeShapes) {

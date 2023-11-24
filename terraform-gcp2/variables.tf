@@ -27,22 +27,6 @@ variable "ror-marduk-db-password" {
   description = "marduk database password"
 }
 
-variable "ror-marduk-google-sftp-username" {
-  description = "marduk Google SFTP username"
-}
-
-variable "ror-marduk-google-sftp-password" {
-  description = "marduk Google SFTP password"
-}
-
-variable "ror-marduk-google-qa-sftp-username" {
-  description = "marduk Google QA SFTP username"
-}
-
-variable "ror-marduk-google-qa-sftp-password" {
-  description = "marduk Google QA SFTP password"
-}
-
 variable "ror-marduk-auth0-secret" {
   description = "marduk auth0 secret"
 }
