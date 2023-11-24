@@ -76,13 +76,6 @@ data:
     # StopPlace Netex export
     netex.export.stop.place.blob.path={{ .Values.netex.export }}
 
-    # Google GTFS exports
-    google.publish.scheduler.autoStartup={{ .Values.google.publish.autoStartup }}
-    google.publish.cron.schedule={{ .Values.google.publish.cronSchedule }}
-    google.publish.qa.scheduler.autoStartup={{ .Values.google.publishQA.autoStartup }}
-    google.publish.qa.cron.schedule={{ .Values.google.publishQA.cronSchedule }}
-    google.export.qa.includes.shapes={{ .Values.google.publishQA.includeShapes }}
-
     # Actuator
     management.server.port=9001
     management.endpoints.enabled-by-default=false

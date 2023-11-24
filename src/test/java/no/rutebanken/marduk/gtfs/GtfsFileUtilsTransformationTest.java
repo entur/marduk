@@ -44,28 +44,6 @@ public class GtfsFileUtilsTransformationTest {
         return extendedGTFSFile.toFile();
     }
 
-    @Test
-    void transformToGoogleFormatExcludeShapes() throws Exception {
-
-        File target = GtfsFileUtils.mergeGtfsFiles(Collections.singleton(getExtendedGtfsTestFile()), GtfsExport.GTFS_GOOGLE, false);
-
-        assertRouteRouteTypesAreConvertedToGoogleSupportedValues(target);
-        assertStopVehicleTypesAreConvertedToGoogleSupportedValues(target);
-
-        assertShapesAreRemoved(target);
-    }
-
-    @Test
-    void transformToGoogleFormatIncludeShapes() throws Exception {
-
-        File target = GtfsFileUtils.mergeGtfsFiles(Collections.singleton(getExtendedGtfsTestFile()), GtfsExport.GTFS_GOOGLE, true);
-
-        assertRouteRouteTypesAreConvertedToGoogleSupportedValues(target);
-        assertStopVehicleTypesAreConvertedToGoogleSupportedValues(target);
-
-        assertShapesAreIncluded(target);
-    }
-
 
     @Test
     void transformToBasicGTFSFormatExcludeShapes() throws Exception {
@@ -89,28 +67,6 @@ public class GtfsFileUtilsTransformationTest {
         assertStopVehicleTypesAreConvertedToBasicGtfsValues(target);
 
         assertShapesAreIncluded(target);
-    }
-
-    public static void assertRouteRouteTypesAreConvertedToGoogleSupportedValues(File out) {
-        List<String> routeLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.ROUTES_TXT)), StandardCharsets.UTF_8);
-        routeLines.remove(0); // remove header
-        assertEquals(10, routeLines.size());
-
-        List<String> transformedRouteTypes = routeLines.stream().map(routeLine -> routeLine.split(",")[4]).toList();
-        assertThat(transformedRouteTypes.stream().allMatch(routeType -> GoogleRouteTypeCode.fromCode(Integer.parseInt(routeType)) != null)).as("Expected all route types to have been converted to google valid codes").isTrue();
-        assertEquals("200", transformedRouteTypes.get(0));
-        assertEquals("201", transformedRouteTypes.get(1));
-        assertEquals("200", transformedRouteTypes.get(2));
-        assertEquals("1501", transformedRouteTypes.get(3));
-    }
-
-    public static void assertStopVehicleTypesAreConvertedToGoogleSupportedValues(File out) {
-        List<String> stopLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsConstants.STOPS_TXT)), StandardCharsets.UTF_8);
-        stopLines.remove(0); // remove header
-        assertThat(stopLines.get(0)).as("Line without vehicle type should not be changed").endsWith(",");
-        assertThat(stopLines.get(1)).as("Line with valid value 701 should be kept").endsWith(",701,");
-        assertThat(stopLines.get(2)).as("Line with extended value 1012 should be converted to 1000").endsWith(",1000,");
-        assertThat(stopLines.get(3)).as("Line with extended value 1601 should be converted to 1700 (default)").endsWith(",1700,");
     }
 
     public static void assertRouteRouteTypesAreConvertedToBasicGtfsValues(File out) {

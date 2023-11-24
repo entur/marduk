@@ -15,12 +15,7 @@ public enum GtfsExport {
     /**
      * GTFS export that contains only standard route types.
      */
-    GTFS_BASIC(GtfsHeaders.HEADERS_FOR_BASIC_AND_EXTENDED_EXPORT),
-
-    /**
-     * GTFS export for Google.
-     */
-    GTFS_GOOGLE(GtfsHeaders.HEADERS_FOR_GOOGLE_EXPORT);
+    GTFS_BASIC(GtfsHeaders.HEADERS_FOR_BASIC_AND_EXTENDED_EXPORT);
 
     private final Map<String, String[]> headers;
 
@@ -48,11 +43,6 @@ public enum GtfsExport {
         private static final String[] TRANSFERS_TXT_HEADERS = splitHeaders("from_stop_id,from_trip_id,to_stop_id,to_trip_id,transfer_type");
         private static final String[] TRIPS_TXT_HEADERS = splitHeaders("route_id,trip_id,service_id,trip_headsign,direction_id,shape_id,wheelchair_accessible");
 
-        // Headers used only for Google GTFS exports
-        private static final String[] ROUTES_TXT_GOOGLE_HEADERS = splitHeaders("agency_id,route_id,route_short_name,route_long_name,route_type,route_desc,route_color,route_text_color");
-        private static final String[] STOPS_TXT_GOOGLE_HEADERS = splitHeaders("stop_id,stop_name,stop_lat,stop_lon,stop_desc,location_type,parent_station,wheelchair_boarding,vehicle_type,platform_code");
-
-
         private static final Map<String, String[]> HEADERS_FOR_BASIC_AND_EXTENDED_EXPORT = Map.of(
                 GtfsConstants.AGENCY_TXT, AGENCY_TXT_HEADERS,
                 GtfsConstants.CALENDAR_TXT, CALENDAR_TXT_HEADERS,
@@ -60,17 +50,6 @@ public enum GtfsExport {
                 GtfsConstants.ROUTES_TXT, ROUTES_TXT_HEADERS,
                 GtfsConstants.SHAPES_TXT, SHAPES_TXT_HEADERS,
                 GtfsConstants.STOPS_TXT, STOPS_TXT_HEADERS,
-                GtfsConstants.STOP_TIMES_TXT, STOP_TIMES_TXT_HEADERS,
-                GtfsConstants.TRANSFERS_TXT, TRANSFERS_TXT_HEADERS,
-                GtfsConstants.TRIPS_TXT, TRIPS_TXT_HEADERS);
-
-        private static final Map<String, String[]> HEADERS_FOR_GOOGLE_EXPORT = Map.of(
-                GtfsConstants.AGENCY_TXT, AGENCY_TXT_HEADERS,
-                GtfsConstants.CALENDAR_TXT, CALENDAR_TXT_HEADERS,
-                GtfsConstants.CALENDAR_DATES_TXT, CALENDAR_DATES_TXT_HEADERS,
-                GtfsConstants.ROUTES_TXT, ROUTES_TXT_GOOGLE_HEADERS,
-                GtfsConstants.SHAPES_TXT, SHAPES_TXT_HEADERS,
-                GtfsConstants.STOPS_TXT, STOPS_TXT_GOOGLE_HEADERS,
                 GtfsConstants.STOP_TIMES_TXT, STOP_TIMES_TXT_HEADERS,
                 GtfsConstants.TRANSFERS_TXT, TRANSFERS_TXT_HEADERS,
                 GtfsConstants.TRIPS_TXT, TRIPS_TXT_HEADERS);

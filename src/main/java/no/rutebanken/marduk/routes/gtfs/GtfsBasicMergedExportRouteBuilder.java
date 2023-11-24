@@ -62,7 +62,6 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS Basics export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:exportGtfsBasicMerged")
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleExportQueue")
                 .routeId("gtfs-basic-export-merged-route");
 
         from("direct:exportGtfsBasicMerged")

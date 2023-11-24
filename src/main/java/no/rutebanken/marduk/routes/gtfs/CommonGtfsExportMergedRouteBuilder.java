@@ -125,9 +125,6 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                             } else if ("EXPORT_GTFS_BASIC_MERGED".equals(jobAction)) {
                                 includeShapes =  exchange.getIn().getHeader(Constants.INCLUDE_SHAPES, Boolean.class);
                                 gtfsExport = GtfsExport.GTFS_BASIC;
-                            } else if ("EXPORT_GOOGLE_GTFS".equals(jobAction) || "EXPORT_GOOGLE_GTFS_QA".equals(jobAction)) {
-                                includeShapes =  exchange.getIn().getHeader(Constants.INCLUDE_SHAPES, Boolean.class);
-                                gtfsExport = GtfsExport.GTFS_GOOGLE;
                             }
                             exchange.getIn().setBody(GtfsFileUtils.mergeGtfsFilesInDirectory(sourceDirectory, gtfsExport, includeShapes));
                         }

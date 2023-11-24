@@ -47,15 +47,6 @@ netex:
 osm:
   fetchCronSchedule: 0+11+*+*+*+?
 
-google:
-  publish:
-    autoStartup: false
-    cronSchedule: 0+0+4+?+*+*
-  publishQA:
-    autoStartup: false
-    cronSchedule: 0+30+4+?+*+*
-    includeShapes: true
-
 auth0:
   partner:
     url: https://partner.dev.entur.org
