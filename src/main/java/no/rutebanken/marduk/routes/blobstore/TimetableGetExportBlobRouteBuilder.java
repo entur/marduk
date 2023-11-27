@@ -33,37 +33,14 @@ public class TimetableGetExportBlobRouteBuilder extends BaseRouteBuilder {
     @Value("#{'${timetable.export.blob.prefixes:outbound/gtfs/,outbound/netex/}'.split(',')}")
     private List<String> staticPrefixes;
 
-    @Value("${timetable.export.graph.months:2}")
-    private int noOfMonthsToFetchGraphBlobsFor;
-
-
-    @Value("${otp.graph.blobstore.subdirectory:graphs}")
-    private String blobStoreSubdirectory;
-
     @Override
     public void configure() throws Exception {
         super.configure();
 
 
         from("direct:listTimetableExportAndGraphBlobs")
-                .process(e -> e.getIn().setHeader(Constants.FILE_PARENT_COLLECTION, calculatePrefixes()))
-                .to("direct:listInternalBlobsInFolders")
+                .process(e -> e.getIn().setHeader(Constants.FILE_PARENT_COLLECTION, staticPrefixes))
+                .to("direct:listBlobsInFolders")
                 .routeId("timetable-get-export-blobs");
-    }
-
-    private Set<String> calculatePrefixes() {
-        Set<String> prefixes = new HashSet<>(staticPrefixes);
-
-        DateTimeFormatter graphPrefixFormatter = DateTimeFormatter.ofPattern("yyyyMM");
-        int monthsAgo = 0;
-        LocalDate today = LocalDate.now();
-
-        while (monthsAgo < noOfMonthsToFetchGraphBlobsFor) {
-            String graphPrefixForMonth = today.minusMonths(monthsAgo).format(graphPrefixFormatter);
-            prefixes.add(blobStoreSubdirectory + "/" + Constants.NETEX_GRAPH_DIR + "/" + graphPrefixForMonth);
-            monthsAgo++;
-        }
-
-        return prefixes;
     }
 }
