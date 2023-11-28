@@ -277,7 +277,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
         for (String prefix : exportFileStaticPrefixes) {
-            internalInMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, testFile, false);
+            mardukInMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, testFile, false);
         }
         context.start();
 
