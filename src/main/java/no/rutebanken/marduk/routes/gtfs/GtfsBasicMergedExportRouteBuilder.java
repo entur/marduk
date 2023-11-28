@@ -18,7 +18,6 @@ package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,7 +61,6 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS Basics export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .to("direct:exportGtfsBasicMerged")
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleExportQueue")
                 .routeId("gtfs-basic-export-merged-route");
 
         from("direct:exportGtfsBasicMerged")

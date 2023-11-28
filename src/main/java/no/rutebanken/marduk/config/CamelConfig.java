@@ -49,7 +49,7 @@ public class CamelConfig {
     /**
      * Configure the Camel thread pool for GTFS export routes.
      * The pool size is set to 1 in order to limit resource usage and prioritize other routes.
-     * This means that at most one route among GTFS extended, GTFS basic, GTFS Google and GTFS Google QA export routes
+     * This means that at most one route among GTFS extended and GTFS basic export routes
      * can be running at any given time.
      *
      * @param camelContext

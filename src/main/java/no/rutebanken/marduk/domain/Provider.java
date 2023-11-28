@@ -34,7 +34,6 @@ public class Provider {
     	return id;
     }
     private String name;
-    private String sftpAccount;
 
     public ChouetteInfo getChouetteInfo() {
 		return chouetteInfo;
@@ -46,7 +45,6 @@ public class Provider {
         return "Provider{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", sftpAccount='" + sftpAccount + '\'' +
                 ", chouetteInfo=" + chouetteInfo +
                 '}';
     }
@@ -67,15 +65,6 @@ public class Provider {
 
     public Provider setName(String name) {
         this.name = name;
-        return this;
-    }
-
-    public String getSftpAccount() {
-        return sftpAccount;
-    }
-
-    public Provider setSftpAccount(String sftpAccount) {
-        this.sftpAccount = sftpAccount;
         return this;
     }
 

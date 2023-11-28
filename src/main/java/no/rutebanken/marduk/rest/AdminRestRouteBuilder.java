@@ -260,38 +260,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .to("direct:adminTimetableGtfsBasicExport")
 
-                .post("/export/gtfs/google")
-                .description("Prepare and upload GTFS export to Google")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminTimetableGoogleExport")
-
-                .post("/export/gtfs/google-qa")
-                .description("Prepare and upload GTFS QA export to Google")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminTimetableGoogleQaExport")
-
-                .post("/export/google/publish")
-                .description("Upload GTFS export to Google")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminTimetableGooglePublish")
-
-                .post("/export/google-qa/publish/")
-                .description("Upload GTFS QA export to Google")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminTimetableGoogleQaPublish")
-
                 .post("/export/netex/merged")
                 .description("Prepare and upload a merged Netex file for Norway")
                 .consumes(PLAIN)
@@ -642,34 +610,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::removeAllCamelHttpHeaders)
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue")
                 .routeId("admin-timetable-gtfs-basic-export");
-
-        from("direct:adminTimetableGoogleExport")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "Triggered GTFS export to Google")
-                .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleExportQueue")
-                .routeId("admin-timetable-google-export");
-
-        from("direct:adminTimetableGoogleQaExport")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "Triggered GTFS QA export to Google")
-                .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsGoogleQaExportQueue")
-                .routeId("admin-timetable-google-qa-export");
-
-        from("direct:adminTimetableGooglePublish")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "Triggered publish of GTFS to Google")
-                .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsGooglePublishQueue")
-                .routeId("admin-timetable-google-publish");
-
-        from("direct:adminTimetableGoogleQaPublish")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "Triggered publish of GTFS QA export to Google")
-                .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsGooglePublishQaQueue")
-                .routeId("admin-timetable-google-qa-publish");
 
         from("direct:adminTimetableNetexMergedExport")
                 .to("direct:authorizeAdminRequest")
