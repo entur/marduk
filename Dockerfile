@@ -1,4 +1,4 @@
-FROM bellsoft/liberica-openjdk-alpine:17.0.8-7 AS builder
+FROM bellsoft/liberica-openjdk-alpine:17.0.9-11 AS builder
 COPY target/marduk-*-SNAPSHOT.jar application.jar
 RUN java -Djarmode=layertools -jar application.jar extract
 
