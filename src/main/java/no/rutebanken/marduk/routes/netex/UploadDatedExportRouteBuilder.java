@@ -16,14 +16,13 @@
 
 package no.rutebanken.marduk.routes.netex;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
-import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Upload a dated version of an exported file with a unique name to the marduk-exchange blobstore.
@@ -41,6 +40,7 @@ public class UploadDatedExportRouteBuilder extends BaseRouteBuilder {
         from("direct:copyDatedExport").streamCaching()
                 .setProperty("datedVersionFileName", simple("${header." + CHOUETTE_REFERENTIAL + "}-${date:now:yyyyMMddHHmmssSSS}.zip"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Start copying dated version of ${exchangeProperty.datedVersionFileName} to marduk-exchange")
+                .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .setHeader(TARGET_FILE_HANDLE, simple(blobStorePath + "/${exchangeProperty.datedVersionFileName}"))
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
                 .to("direct:copyBlobToAnotherBucket")
