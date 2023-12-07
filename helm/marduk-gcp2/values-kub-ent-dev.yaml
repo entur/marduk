@@ -58,6 +58,6 @@ auth0:
 
 oauth2:
   client:
-    id: tug4poFyfcqFSXYvJOn7yZCl5FFbIxQM
-    url: https://ror-entur-dev.eu.auth0.com/oauth/token
+    id: AGlUqV7eXeRUPrXQejItcJZglPHoxSiH
+    url: https://internal.dev.entur.org/oauth/token
     audience: https://ror.api.dev.entur.io

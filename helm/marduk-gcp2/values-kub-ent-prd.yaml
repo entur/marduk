@@ -58,6 +58,6 @@ auth0:
 
 oauth2:
   client:
-    id: AmQFacYg4SnpwtmHhngrQk9PPgHiN55H
-    url: https://auth2.entur.org/oauth/token
+    id: k1NXIZccSXMOg3r9adJphfGgESS2PaZ5
+    url: https://internal.entur.org/oauth/token
     audience: https://ror.api.entur.io

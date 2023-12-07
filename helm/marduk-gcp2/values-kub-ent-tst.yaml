@@ -58,6 +58,6 @@ auth0:
 
 oauth2:
   client:
-    id: zFGUwEQIna314508z8ZojIl7HiJ32KIh
-    url: https://ror-entur-staging.eu.auth0.com/oauth/token
+    id: 5wxWPHwd5Tvly9IVWN5m1iyHIDLVJTBH
+    url: https://internal.staging.entur.org/oauth/token
     audience: https://ror.api.staging.entur.io
