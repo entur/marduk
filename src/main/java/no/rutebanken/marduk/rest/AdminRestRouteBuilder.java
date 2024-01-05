@@ -678,7 +678,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::removeAllCamelHttpHeaders)
                 .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.rest:true}", Boolean.class))
                 .to("direct:uploadFilesAndStartImport")
-                .routeId("admin-upload-file");
+                .routeId("admin-upload-file")
+                .autoStartup("{{netex.import.http.autoStartup:true}}");
 
         from("direct:adminChouetteNetexBlocksDownload")
                 .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
