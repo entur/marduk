@@ -42,6 +42,9 @@ duplicateFileFilter:
   webFilter: true
 
 netex:
+  import:
+    http:
+      autoStartup: true
   export: tiamat/CurrentAndFuture_latest.zip
 
 osm:

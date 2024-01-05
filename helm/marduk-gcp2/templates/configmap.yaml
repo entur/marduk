@@ -108,6 +108,7 @@ data:
     logging.level.org.apache.camel.component.http.HttpComponent=WARN
 
     # NeTeX import
+    netex.import.http.autoStartup={{ .Values.netex.import.http.autoStartup }}
     netex.import.delegation.authorization={CON:'AKT'}
 
     # NeTeX export
