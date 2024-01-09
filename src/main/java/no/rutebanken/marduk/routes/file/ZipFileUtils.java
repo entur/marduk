@@ -97,7 +97,7 @@ public class ZipFileUtils {
                 throw new MardukException(e);
             }
         } catch (ZipException e) {
-            if ("invalid CEN header (bad entry name)".equals(e.getMessage())) {
+            if ("invalid CEN header (bad entry name or comment)".equals(e.getMessage())) {
                 throw new MardukZipFileEntryNameEncodingException(e);
             } else {
                 throw new MardukException(e);
