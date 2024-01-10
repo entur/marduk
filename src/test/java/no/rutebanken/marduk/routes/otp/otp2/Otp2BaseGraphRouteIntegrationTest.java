@@ -27,6 +27,7 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.nio.charset.Charset;
 import java.util.List;
@@ -37,14 +38,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
+    private static final String OTP2_BASE_GRAPH_FILE_NAME = OTP2_BASE_GRAPH_OBJ_PREFIX + "-XXX.obj";
+
+    @Value("${otp.graph.blobstore.subdirectory}")
+    private String graphSubdirectory;
+
     @EndpointInject("mock:updateStatus")
-    protected MockEndpoint updateStatus;
+    private MockEndpoint updateStatus;
 
     @EndpointInject("mock:otpGraphBuildQueue")
-    protected MockEndpoint otpGraphBuildQueue;
+    private MockEndpoint otpGraphBuildQueue;
 
     @Produce("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue")
-    protected ProducerTemplate producerTemplate;
+    private ProducerTemplate producerTemplate;
 
     @Test
     void testBaseGraphBuilding() throws Exception {
@@ -64,7 +70,7 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
 
             a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().process(exchange -> {
                 // create dummy base graph file in the blob store with an arbitrary serialization id
-                String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_OBJ_PREFIX + "-XXX.obj";
+                String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_FILE_NAME;
                 internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
             });
         });
@@ -86,7 +92,7 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState())));
 
         // the graph object is present in the main bucket
-        BlobStoreFiles blobsInVersionedSubDirectory = internalInMemoryBlobStoreRepository.listBlobs("");
+        BlobStoreFiles blobsInVersionedSubDirectory = internalInMemoryBlobStoreRepository.listBlobs(graphSubdirectory + '/'  + OTP2_STREET_GRAPH_DIR + '/' + OTP2_BASE_GRAPH_FILE_NAME);
         Assertions.assertEquals(1, blobsInVersionedSubDirectory.getFiles().size());
 
     }
