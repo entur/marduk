@@ -42,9 +42,7 @@ public final class Constants {
 
     public static final String GRAPH_COMPATIBILITY_VERSION = "RutebankenGraphCompatibilityVersion";
     public static final String GRAPH_OBJ = "Graph.obj";
-    public static final String GRAPH_OBJ_PREFIX = "Graph";
     public static final String BASE_GRAPH_OBJ = "baseGraph.obj";
-    public static final String BASE_GRAPH_OBJ_PREFIX = "baseGraph";
     public static final String NETEX_GRAPH_DIR = "netex";
     public static final String GRAPH_REPORT_INDEX_FILE = "index_otp1.html";
 

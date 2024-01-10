@@ -272,7 +272,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>@{argLine} -Xms500m -Xmx500m -Xss256k</argLine>
+                    <argLine>@{argLine} -Xms700m -Xmx700m -Xss256k</argLine>
                     <systemPropertyVariables combine.children="override">
                         <spring.output.ansi.enabled>ALWAYS</spring.output.ansi.enabled>
                     </systemPropertyVariables>
