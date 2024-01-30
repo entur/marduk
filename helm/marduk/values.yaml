@@ -5,13 +5,16 @@ common:
   shortname: marduk
   team: ror
   container:
-    labels: {customLogRetention: enabled}
+    labels: { customLogRetention: enabled }
     forceReplicas: 2
     image: <+artifacts.primary.image>
     cpuLimit: 3000m
     memoryLimit: 8000
     memory: 7000
     cpu: 2
+    envFrom:
+      - secretRef:
+          name: marduk-auth
     probes:
       liveness:
         path: /actuator/health/liveness
@@ -39,7 +42,7 @@ common:
   postgres:
     enabled: true
     memory: 40
-    credentialsSecret: ror-marduk-secret
+    credentialsSecret: marduk-psql-credentials
   service:
     enabled: true
     internalPort: 8080
@@ -48,7 +51,8 @@ common:
     enabled: true
   configmap:
     data:
-      JDK_JAVA_OPTIONS: -server -Xss512m -Xmx5g -XX:+UseParallelGC -XX:GCTimeRatio=4
+      JDK_JAVA_OPTIONS:
+        -server -Xss512m -Xmx5g -XX:+UseParallelGC -XX:GCTimeRatio=4
         -XX:AdaptiveSizePolicyWeight=90 -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40
         -XX:ActiveProcessorCount=2 -Dspring.config.location=/etc/application-config/application.properties
         -Dfile.encoding=UTF-8
@@ -56,4 +60,8 @@ common:
     enabled: true
     toEnv: true
   secrets:
-    ror-marduk-secret: [SPRING_DATASOURCE_PASSWORD, SPRING_DATASOURCE_USERNAME, SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_MARDUK_CLIENT_SECRET]
+    psql-credentials:
+      - SPRING_DATASOURCE_PASSWORD
+      - SPRING_DATASOURCE_USERNAME
+    auth:
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_MARDUK_CLIENT_SECRET
