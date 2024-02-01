@@ -5,50 +5,38 @@ variable "gcp_resources_project" {
 
 variable "kube_namespace" {
   description = "The Kubernetes namespace"
-  default = "marduk"
+  default     = "marduk"
 }
 
 variable "labels" {
   description = "Labels used in all resources"
-  type = map(string)
+  type        = map(string)
   default = {
     manager = "terraform"
-    team = "ror"
-    slack = "talk-ror"
-    app = "marduk"
+    team    = "ror"
+    slack   = "talk-ror"
+    app     = "marduk"
   }
-}
-
-variable "ror-marduk-db-username" {
-  description = "marduk database username"
-}
-
-variable "ror-marduk-db-password" {
-  description = "marduk database password"
-}
-
-variable "ror-marduk-auth0-secret" {
-  description = "marduk auth0 secret"
 }
 
 variable "db_region" {
   description = "GCP  region"
-  default = "europe-west1"
+  default     = "europe-west1"
 }
 
 variable "db_zone" {
   description = "GCP zone"
-  default = "europe-west1-b"
+  default     = "europe-west1-b"
 }
 
 variable "db_tier" {
   description = "Database instance tier"
-  default = "db-custom-1-3840"
+  default     = "db-custom-1-3840"
 }
 
 variable "db_availability" {
   description = "Database availability"
-  default = "ZONAL"
+  default     = "ZONAL"
 }
 
 variable "antu_netex_validation_status_queue_topic" {
@@ -57,7 +45,7 @@ variable "antu_netex_validation_status_queue_topic" {
 
 variable "location" {
   description = "GCP bucket location"
-  default = "europe-west1"
+  default     = "europe-west1"
 }
 
 variable "bucket_instance_suffix" {
@@ -66,7 +54,7 @@ variable "bucket_instance_suffix" {
 
 variable "bucket_instance_prefix" {
   description = "A prefix for the bucket instance, may be changed if environment is destroyed and then needed again (name collision workaround) - also bucket names must be globally unique"
-  default = "ror-marduk-internal"
+  default     = "ror-marduk-internal"
 }
 
 variable "force_destroy" {
