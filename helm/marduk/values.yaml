@@ -10,7 +10,6 @@ common:
     labels: { customLogRetention: enabled }
     forceReplicas: 2
     image: <+artifacts.primary.image>
-    cpuLimit: 3000m
     memoryLimit: 8000
     memory: 7000
     cpu: 2
