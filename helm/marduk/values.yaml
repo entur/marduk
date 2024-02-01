@@ -4,6 +4,8 @@ common:
   app: marduk
   shortname: marduk
   team: ror
+  deployment:
+    replicas: 2
   container:
     labels: { customLogRetention: enabled }
     forceReplicas: 2
