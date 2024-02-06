@@ -112,7 +112,7 @@ data:
     netex.import.delegation.authorization={CON:'AKT'}
 
     # NeTeX export
-    netex.export.block.authorization={FAR:'OST,ATB,INN',CON:'TRO', DGR:'FIN'}
+    netex.export.block.authorization={FAR:'OST,ATB,INN',CON:'TRO,BRA', DGR:'FIN'}
     netex.export.merge.flexible.lines.enabled=true
     netex.export.download.directory=/tmp/marduk/files/netex/merged
     otp2.netex.export.download.directory=/tmp/marduk/files/netex/merged-otp2
