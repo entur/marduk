@@ -65,8 +65,8 @@ data:
     chouette.stats.cache.refresh.quartz.trigger=cron={{ .Values.chouette.refreshStatsCacheCronSchedule }}&stateful=true
     chouette.url={{ .Values.chouette.service }}
     chouette.remove.old.jobs.cron.schedule={{ .Values.chouette.removeOldJobsCronSchedule }}
-    chouette.remove.old.jobs.keep.days=30
-    chouette.remove.old.jobs.keep.jobs=50
+    chouette.remove.old.jobs.keep.days=20
+    chouette.remove.old.jobs.keep.jobs=20
     chouette.max.retries=3000
     chouette.include.stops.codespaces=SAM,VAN,VAS,VTR
 
