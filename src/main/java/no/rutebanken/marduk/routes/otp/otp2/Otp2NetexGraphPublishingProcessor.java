@@ -41,7 +41,6 @@ public class Otp2NetexGraphPublishingProcessor implements Processor {
         e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
         e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
         e.getIn().setHeader(TARGET_CONTAINER, otpGraphsBucketName);
-        e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, false);
         e.setProperty(OTP_GRAPH_VERSION, publishedGraphVersion);
     }
 
