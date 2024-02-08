@@ -29,7 +29,7 @@
         <entur.helpers.version>2.5</entur.helpers.version>
         <commons-io.version>2.15.1</commons-io.version>
         <commons-csv.version>1.10.0</commons-csv.version>
-        <zt-zip.version>1.16</zt-zip.version>
+        <zt-zip.version>1.17</zt-zip.version>
         <json-unit.version>3.2.4</json-unit.version>
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
