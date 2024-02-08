@@ -159,7 +159,6 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
                 // update file containing the reference to the latest graph for the current graph compatibility version
                 .setBody(header(TARGET_FILE_HANDLE))
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(Constants.OTP2_NETEX_GRAPH_DIR + "/${header." + Constants.GRAPH_COMPATIBILITY_VERSION + "}/"  + otpGraphCurrentFile))
                 .to("direct:uploadOtpGraphsBlob")
                 .log(LoggingLevel.INFO, correlation() + "Done uploading reference to versioned current OTP2graph: ${header." + FILE_HANDLE + "}")
@@ -189,10 +188,11 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(Exchange.FILE_PARENT, e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/report");
                     e.getIn().setHeader(TARGET_CONTAINER, otpReportContainerName);
                     e.getIn().setHeader(TARGET_FILE_PARENT, e.getProperty(OTP_GRAPH_VERSION, String.class));
-                    e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, true);
                 })
                 .log(LoggingLevel.INFO, correlation() + "Copying OTP2 graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .to("direct:copyAllInternalBlobs")
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .log(LoggingLevel.INFO, correlation() + "Done copying OTP2 graph build reports.")
                 .routeId("otp2-remote-graph-build-report-versioned-upload");
 

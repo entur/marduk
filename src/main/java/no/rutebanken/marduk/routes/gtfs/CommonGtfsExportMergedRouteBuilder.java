@@ -34,7 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CURRENT_AGGREGATED_GTFS_FILENAME;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
@@ -137,7 +136,6 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .routeId("gtfs-export-merged-transform");
 
         from("direct:uploadMergedGtfs")
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + FILE_NAME + "}"))
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploaded new merged GTFS file: ${header." + FILE_NAME + "}")

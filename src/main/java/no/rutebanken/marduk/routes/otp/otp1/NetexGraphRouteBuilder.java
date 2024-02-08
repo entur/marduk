@@ -142,7 +142,6 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                             e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
                             e.getIn().setHeader(TARGET_CONTAINER, otpGraphsBucketName);
                             e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
-                            e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, false);
                             e.setProperty(OTP_GRAPH_VERSION, publishedGraphVersion);
                         }
                 )
@@ -154,7 +153,6 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                 // update file containing the reference to the latest graph
                 .setBody(header(TARGET_FILE_HANDLE))
                 .setHeader(FILE_HANDLE, constant(otpGraphCurrentFile))
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .to("direct:uploadOtpGraphsBlob")
                 .log(LoggingLevel.INFO, correlation() + "Done uploading reference to current graph: ${header." + FILE_HANDLE + "}")
 
@@ -178,10 +176,11 @@ public class NetexGraphRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(Exchange.FILE_PARENT, e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/report");
                     e.getIn().setHeader(TARGET_CONTAINER, otpReportContainerName);
                     e.getIn().setHeader(TARGET_FILE_PARENT, e.getProperty(OTP_GRAPH_VERSION, String.class));
-                    e.getIn().setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, true);
                 })
                 .log(LoggingLevel.INFO, correlation() + "Copying OTP graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .to("direct:copyAllInternalBlobs")
+                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .log(LoggingLevel.INFO, correlation() + "Done copying OTP graph build reports.")
                 .routeId("otp-remote-graph-build-report-versioned-upload");
 
