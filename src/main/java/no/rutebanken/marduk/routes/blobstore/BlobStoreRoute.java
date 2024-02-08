@@ -25,7 +25,6 @@ import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_PREFIX;
-import static no.rutebanken.marduk.Constants.FILE_VERSION;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
@@ -63,31 +62,15 @@ public class BlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:copyBlobToAnotherBucket")
                 .to(logDebugShowAll())
-                // Do not try to make the blob public, the bucket is uniformly public
+                .choice()
+                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
+                //defaulting to private access if not specified
                 .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
+                .end()
                 .bean(mardukBlobStoreService, "copyBlobToAnotherBucket")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} from Marduk bucket to bucket ${header." + TARGET_CONTAINER + "}.")
                 .routeId("blobstore-copy-to-another-bucket");
-
-        from("direct:copyVersionedBlobToAnotherBucket")
-                .to(logDebugShowAll())
-                // Do not try to make the blob public, the bucket is uniformly public
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
-                .end()
-                .bean(mardukBlobStoreService, "copyVersionedBlobToAnotherBucket")
-                .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} (generation: ${header." + FILE_VERSION + "}) to file ${header." + TARGET_FILE_HANDLE + "} from Marduk bucket to bucket ${header." + TARGET_CONTAINER + "}.")
-                .routeId("blobstore-copy-versioned-blob-to-another-bucket");
-
-        from("direct:copyAllBlobs")
-                .to(logDebugShowAll())
-                // Do not try to make the blob public, the bucket is uniformly public
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
-                .bean(mardukBlobStoreService, "copyAllBlobs")
-                .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Returning from copying all files in folder ${header." + FILE_HANDLE + "} in blob store.")
-                .routeId("blobstore-copy-all");
 
         from("direct:getBlob")
                 .to(logDebugShowAll())
