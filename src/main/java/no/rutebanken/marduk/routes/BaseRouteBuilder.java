@@ -26,7 +26,7 @@ import org.apache.camel.Message;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
-import org.apache.camel.component.google.pubsub.consumer.AcknowledgeAsync;
+import org.apache.camel.component.google.pubsub.consumer.AcknowledgeCompletion;
 import org.apache.camel.component.master.MasterConsumer;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.support.DefaultExchange;
@@ -166,7 +166,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
      * Create a lock name for an endpoint URI. The lock name should be unique across the Camel context so that each
      * route gets its own lock.
      * When using a file-based implementation for the camel-master lock (for local testing), the lock is created as a file in the local file system.
-     * Thus the lock name should be a valid file name.
+     * Thus, the lock name should be a valid file name.
      * The lock name is built by stripping the component type (example: "google-pubsub:") and the endpoint parameters.
      * (example: "?synchronousPull=true")
      *
@@ -243,12 +243,11 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
      * In case of failure during the routing this would make it impossible to retry the messages.
      * The synchronization is stored temporarily in a header and is applied again after the aggregation is complete
      *
-     * @param e
      * @see #addSynchronizationForAggregatedExchange(Exchange)
      */
     public void removeSynchronizationForAggregatedExchange(Exchange e) {
         DefaultExchange temporaryExchange = new DefaultExchange(e.getContext());
-        e.getUnitOfWork().handoverSynchronization(temporaryExchange, AcknowledgeAsync.class::isInstance);
+        e.getUnitOfWork().handoverSynchronization(temporaryExchange, AcknowledgeCompletion.class::isInstance);
         e.getIn().setHeader(SYNCHRONIZATION_HOLDER, temporaryExchange);
     }
 
