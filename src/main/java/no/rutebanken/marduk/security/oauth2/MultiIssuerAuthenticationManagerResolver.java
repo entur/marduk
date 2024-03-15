@@ -23,6 +23,8 @@ import org.springframework.security.oauth2.server.resource.web.DefaultBearerToke
 import org.springframework.stereotype.Component;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,7 +74,7 @@ public class MultiIssuerAuthenticationManagerResolver
     private JwtDecoder enturPartnerAuth0JwtDecoder() {
         NimbusJwtDecoder jwtDecoder = JwtDecoders.fromOidcIssuerLocation(enturPartnerAuth0Issuer);
 
-        OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(enturPartnerAuth0Audience);
+        OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(List.of(enturPartnerAuth0Audience, rorAuth0Audience));
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(enturPartnerAuth0Issuer);
         OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
         jwtDecoder.setJwtValidator(withAudience);
