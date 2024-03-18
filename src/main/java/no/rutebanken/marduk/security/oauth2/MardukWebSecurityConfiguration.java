@@ -19,7 +19,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 /**
  * Authentication and authorization configuration for Marduk.
  * All requests must be authenticated except for the OpenAPI endpoint.
- * The Oauth2 ID-provider (Entur Partner Auth0 or RoR Auth0) is identified thanks to {@link MultiIssuerAuthenticationManagerResolver}.
+ * The Oauth2 ID-provider (Entur Partner Auth0 or RoR Auth0) is identified thanks to {@link MardukMultiIssuerAuthenticationManagerResolver}.
  */
 @Profile("!test")
 @EnableWebSecurity
@@ -38,7 +38,7 @@ public class MardukWebSecurityConfiguration {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, MultiIssuerAuthenticationManagerResolver multiIssuerAuthenticationManagerResolver) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, MardukMultiIssuerAuthenticationManagerResolver mardukMultiIssuerAuthenticationManagerResolver) throws Exception {
         http.cors(withDefaults()).csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/services/openapi.json")).permitAll()
@@ -48,7 +48,7 @@ public class MardukWebSecurityConfiguration {
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health/liveness")).permitAll()
                         .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health/readiness")).permitAll()
                         .anyRequest().authenticated()
-                ).oauth2ResourceServer(configurer -> configurer.authenticationManagerResolver(multiIssuerAuthenticationManagerResolver))
+                ).oauth2ResourceServer(configurer -> configurer.authenticationManagerResolver(mardukMultiIssuerAuthenticationManagerResolver))
                 .oauth2Client(withDefaults());
         return http.build();
     }
