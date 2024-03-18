@@ -11,15 +11,16 @@ import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
 import java.util.List;
 import java.util.Map;
 
+import static no.rutebanken.marduk.security.oauth2.EnturPartnerAuth0RolesClaimAdapter.OPENID_AUDIENCE_CLAIM;
+import static no.rutebanken.marduk.security.oauth2.EnturPartnerAuth0RolesClaimAdapter.ORGANISATION_ID_CLAIM;
 
-class Auth0RolesClaimAdapterTest extends MardukSpringBootBaseTest {
+
+class EnturPartnerAuth0RolesClaimAdapterTest extends MardukSpringBootBaseTest {
 
     private static final Long RUTEBANKEN_ORG_ID = 1L;
     private static final Long PROVIDER_ORG_ID = 2L;
     private static final Long ORG_NETEX_BLOCKS_VIEWER_ID = 100L;
-
     private static final Long ORG_DELEGATED_EDITOR_ID = 200L;
-    private static final String ORGANISATION_CLAIM = "https://entur.io/organisationID";
 
     @Autowired
     private EnturPartnerAuth0RolesClaimAdapter auth0RolesClaimAdapter;
@@ -27,12 +28,8 @@ class Auth0RolesClaimAdapterTest extends MardukSpringBootBaseTest {
 
     @Test
     void testVerifyRoleAdmin() {
-        Map<String, Object> claims = Map.of(ORGANISATION_CLAIM, RUTEBANKEN_ORG_ID);
-        Map<String, Object> convertedClaims = auth0RolesClaimAdapter.convert(claims);
-        Assertions.assertNotNull(convertedClaims);
-        Assertions.assertEquals(3, convertedClaims.size());
-        Assertions.assertNotNull(convertedClaims.get(ORGANISATION_CLAIM));
-        Long organisationId = (Long) convertedClaims.get(ORGANISATION_CLAIM);
+        Map<String, Object> convertedClaims = claimsForOrganisationId(RUTEBANKEN_ORG_ID);
+        Long organisationId = (Long) convertedClaims.get(ORGANISATION_ID_CLAIM);
         Assertions.assertEquals(RUTEBANKEN_ORG_ID, organisationId);
         Assertions.assertNotNull(convertedClaims.get(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS));
         List<String> roles = (List<String>) convertedClaims.get(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS);
@@ -45,12 +42,8 @@ class Auth0RolesClaimAdapterTest extends MardukSpringBootBaseTest {
 
     @Test
     void testVerifyRoleEditor() {
-        Map<String, Object> claims = Map.of(ORGANISATION_CLAIM, PROVIDER_ORG_ID);
-        Map<String, Object> convertedClaims = auth0RolesClaimAdapter.convert(claims);
-        Assertions.assertNotNull(convertedClaims);
-        Assertions.assertEquals(3, convertedClaims.size());
-        Assertions.assertNotNull(convertedClaims.get(ORGANISATION_CLAIM));
-        Long organisationId = (Long) convertedClaims.get(ORGANISATION_CLAIM);
+        Map<String, Object> convertedClaims = claimsForOrganisationId(PROVIDER_ORG_ID);
+        Long organisationId = (Long) convertedClaims.get(ORGANISATION_ID_CLAIM);
         Assertions.assertEquals(PROVIDER_ORG_ID, organisationId);
         Assertions.assertNotNull(convertedClaims.get(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS));
         List<String> roles = (List<String>) convertedClaims.get(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS);
@@ -63,12 +56,8 @@ class Auth0RolesClaimAdapterTest extends MardukSpringBootBaseTest {
 
     @Test
     void testVerifyRoleNetexBlocksViewer() {
-        Map<String, Object> claims = Map.of(ORGANISATION_CLAIM, ORG_NETEX_BLOCKS_VIEWER_ID);
-        Map<String, Object> convertedClaims = auth0RolesClaimAdapter.convert(claims);
-        Assertions.assertNotNull(convertedClaims);
-        Assertions.assertEquals(3, convertedClaims.size());
-        Assertions.assertNotNull(convertedClaims.get(ORGANISATION_CLAIM));
-        Long organisationId = (Long) convertedClaims.get(ORGANISATION_CLAIM);
+        Map<String, Object> convertedClaims = claimsForOrganisationId(ORG_NETEX_BLOCKS_VIEWER_ID);
+        Long organisationId = (Long) convertedClaims.get(ORGANISATION_ID_CLAIM);
         Assertions.assertEquals(ORG_NETEX_BLOCKS_VIEWER_ID, organisationId);
         Assertions.assertNotNull(convertedClaims.get(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS));
         List<String> roles = (List<String>) convertedClaims.get(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS);
@@ -80,12 +69,8 @@ class Auth0RolesClaimAdapterTest extends MardukSpringBootBaseTest {
 
     @Test
     void testVerifyRoleDelegatedEditor() {
-        Map<String, Object> claims = Map.of(ORGANISATION_CLAIM, ORG_DELEGATED_EDITOR_ID);
-        Map<String, Object> convertedClaims = auth0RolesClaimAdapter.convert(claims);
-        Assertions.assertNotNull(convertedClaims);
-        Assertions.assertEquals(3, convertedClaims.size());
-        Assertions.assertNotNull(convertedClaims.get(ORGANISATION_CLAIM));
-        Long organisationId = (Long) convertedClaims.get(ORGANISATION_CLAIM);
+        Map<String, Object> convertedClaims = claimsForOrganisationId(ORG_DELEGATED_EDITOR_ID);
+        Long organisationId = (Long) convertedClaims.get(ORGANISATION_ID_CLAIM);
         Assertions.assertEquals(ORG_DELEGATED_EDITOR_ID, organisationId);
         Assertions.assertNotNull(convertedClaims.get(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS));
         List<String> roles = (List<String>) convertedClaims.get(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS);
@@ -93,6 +78,19 @@ class Auth0RolesClaimAdapterTest extends MardukSpringBootBaseTest {
         Assertions.assertTrue(roles.stream().anyMatch(r -> r.contains(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT)), "Clients should have Route data privileges for their delegated providers");
 
         Assertions.assertNotNull(convertedClaims.get(StandardClaimNames.PREFERRED_USERNAME));
+    }
+
+    private Map<String, Object> claimsForOrganisationId(Long organisationId) {
+        Map<String, Object> claims = Map.of(
+                ORGANISATION_ID_CLAIM, organisationId,
+                OPENID_AUDIENCE_CLAIM, "audience");
+        Map<String, Object> convertedClaims = auth0RolesClaimAdapter.convert(claims);
+        Assertions.assertNotNull(convertedClaims);
+        Assertions.assertEquals(4, convertedClaims.size());
+        Assertions.assertNotNull(convertedClaims.get(ORGANISATION_ID_CLAIM));
+        Assertions.assertNotNull(convertedClaims.get(OPENID_AUDIENCE_CLAIM));
+
+        return convertedClaims;
     }
 
 }
