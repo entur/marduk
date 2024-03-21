@@ -123,7 +123,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     }
 
     protected String logDebugShowAll() {
-        return "log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true";
+        return "log:" + getClass().getName() + "?level=DEBUG&showAll=true&multiline=true&showCachedStreams=false";
     }
 
     protected ProviderRepository getProviderRepository() {
