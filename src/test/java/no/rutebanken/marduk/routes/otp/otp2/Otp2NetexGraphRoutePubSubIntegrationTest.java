@@ -14,7 +14,7 @@
  *
  */
 
-package no.rutebanken.marduk.routes.otp.otp1;
+package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
@@ -32,13 +32,13 @@ import org.springframework.boot.test.context.SpringBootTest;
                 "marduk.camel.redelivery.delay=0",
                 "marduk.camel.redelivery.backoff.multiplier=1",
         })
-class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class Otp2NetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
-    @EndpointInject("mock:buildOtpGraph")
-    protected MockEndpoint buildOtpGraph;
+    @EndpointInject("mock:buildOtp2Graph")
+    protected MockEndpoint buildOtp2Graph;
 
 
-    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
+    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue")
     protected ProducerTemplate producerTemplate;
 
 
@@ -46,16 +46,16 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
     @Test
     void testOtpGraphMessageAggregationOneMessageWithoutException() throws Exception {
 
-        AdviceWith.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
+        AdviceWith.adviceWith(context, "otp2-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtp2Graph").replace().to("mock:buildOtp2Graph"));
 
-        buildOtpGraph.expectedMessageCount(1);
-        buildOtpGraph.setResultWaitTime(20000);
+        buildOtp2Graph.expectedMessageCount(1);
+        buildOtp2Graph.setResultWaitTime(20000);
 
         context.start();
 
         sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(2L, "ref", "corr-id"));
 
-        buildOtpGraph.assertIsSatisfied();
+        buildOtp2Graph.assertIsSatisfied();
 
     }
 
@@ -63,10 +63,10 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
     @Test
     void testOtpGraphMessageAggregationWithoutException() throws Exception {
 
-        AdviceWith.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
+        AdviceWith.adviceWith(context, "otp2-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtp2Graph").replace().to("mock:buildOtp2Graph"));
 
-        buildOtpGraph.expectedMessageCount(1);
-        buildOtpGraph.setResultWaitTime(20000);
+        buildOtp2Graph.expectedMessageCount(1);
+        buildOtp2Graph.setResultWaitTime(20000);
 
         context.start();
 
@@ -74,23 +74,23 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
             sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(2L, "ref", "corr-id"));
         }
 
-        buildOtpGraph.assertIsSatisfied();
+        buildOtp2Graph.assertIsSatisfied();
 
     }
 
     @Test
     void testOtpGraphMessageAggregationWithException() throws Exception {
 
-        AdviceWith.adviceWith(context, "otp-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtpGraph").replace().to("mock:buildOtpGraph"));
+        AdviceWith.adviceWith(context, "otp2-graph-build", a -> a.weaveByToUri("direct:remoteBuildOtp2Graph").replace().to("mock:buildOtp2Graph"));
 
-        buildOtpGraph.whenAnyExchangeReceived(exchange -> {
+        buildOtp2Graph.whenAnyExchangeReceived(exchange -> {
             throw new RuntimeException("Test - Triggering exception in Exchange");
         });
 
         // expect at least one failing first exchange  + one failing local redelivery + external redelivery through PubSub,
         // thus at least 3 messages
-        buildOtpGraph.expectedMinimumMessageCount(3);
-        buildOtpGraph.setResultWaitTime(20000);
+        buildOtp2Graph.expectedMinimumMessageCount(3);
+        buildOtp2Graph.setResultWaitTime(20000);
 
         context.start();
 
@@ -98,7 +98,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
             sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(2L, "ref", "corr-id"));
         }
 
-        buildOtpGraph.assertIsSatisfied();
+        buildOtp2Graph.assertIsSatisfied();
 
     }
 }
