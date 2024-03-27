@@ -24,6 +24,9 @@ data:
     camel.cluster.kubernetes.cluster-labels[app]=marduk
     camel.cluster.kubernetes.config-map-name=marduk-leaders
     camel.component.http.follow-redirects=true
+    camel.metrics.enable-route-event-notifier=false
+    camel.metrics.enable-route-policy=false
+    camel.metrics.enable-exchange-event-notifier=false
 
     # PubSub
     # project id and credential location are not set, they are retrieved automatically through the GOOGLE_APPLICATION_CREDENTIALS environment variable
