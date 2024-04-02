@@ -71,8 +71,11 @@ public enum BasicRouteTypeCode {
         } else if (extendedType >= 1400 && extendedType < 1500) {
             return BasicRouteTypeCode.FUNICULAR.code;
         }
-
-        LOGGER.warn("Attempted to map unsupported extend route type to basic GTFS route type: {}. Using BUS as default. ", extendedType);
+        if(extendedType >= 1500 && extendedType < 1600) {
+            LOGGER.info("Taxi extended route type {} is not supported in basic GTFS route type. Mapping to bus as default. ", extendedType);
+        } else {
+            LOGGER.warn("Attempted to map unsupported extended route type to basic GTFS route type: {}. Mapping to bus as default. ", extendedType);
+        }
         return BasicRouteTypeCode.BUS.code;
     }
 
