@@ -47,7 +47,7 @@ class NetexFlexibleLinesImportRouteBuilderTest extends MardukRouteBuilderIntegra
                 .thenReturn(provider("atb", 1, null));
 
         // create a dummy test file in the blobstore repository
-        internalInMemoryBlobStoreRepository.uploadBlob(TEST_FILE_NAME, dummyData(), false);
+        internalInMemoryBlobStoreRepository.uploadBlob(TEST_FILE_NAME, dummyData());
 
         context.start();
 

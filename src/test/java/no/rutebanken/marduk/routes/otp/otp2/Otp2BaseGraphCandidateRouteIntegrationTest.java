@@ -66,7 +66,7 @@ class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInteg
         remoteBuildNetexGraph.whenAnyExchangeReceived(e -> {
             // create dummy base graph file in the blob store with an arbitrary serialization id
             String graphFileName = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_OBJ_PREFIX + "-XXX.obj";
-            internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData(), false);
+            internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData());
                 }
         );
 

@@ -17,16 +17,16 @@
 package no.rutebanken.marduk.repository;
 
 import no.rutebanken.marduk.domain.BlobStoreFiles;
+import org.rutebanken.helper.gcp.repository.BlobStoreRepository;
 
-import java.io.InputStream;
 import java.util.Collection;
 
 /**
  * Repository interface for managing binary files.
- * The main implementation {@link GcsBlobStoreRepository} targets Google Cloud Storage.
- * A simple implementation {@link LocalDiskBlobStoreRepository} is available for testing in a local environment.
+ * The main implementation {@link GcsMardukBlobStoreRepository} targets Google Cloud Storage.
+ * A simple implementation {@link LocalDiskMardukBlobStoreRepository} is available for testing in a local environment.
  */
-public interface BlobStoreRepository {
+public interface MardukBlobStoreRepository  extends BlobStoreRepository {
 
     BlobStoreFiles listBlobs(Collection<String> prefixes);
 
@@ -46,37 +46,5 @@ public interface BlobStoreRepository {
      */
     BlobStoreFiles listBlobsFlat(String prefix);
 
-    InputStream getBlob(String objectName);
-
-    /**
-     * Upload a blob and returns its generation number
-     * @param objectName the name of the blob in GCS
-     * @param inputStream the blob data
-     * @param makePublic makes the blob publicly accessible
-     * @return the blob generation
-     */
-    long uploadBlob(String objectName, InputStream inputStream, boolean makePublic);
-
-    /**
-     * Upload a blob and returns its generation number
-     * @param objectName the name of the blob in GCS
-     * @param inputStream the blob data
-     * @param makePublic makes the blob publicly accessible
-     * @param contentType the blob content type
-     * @return the blob generation
-     */
-    long uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType);
-
-    void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic);
-
-    void copyVersionedBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic);
-
-    void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic);
-
-    void setContainerName(String containerName);
-
-    boolean delete(String objectName);
-
-    boolean deleteAllFilesInFolder(String folder);
 
 }
