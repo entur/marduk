@@ -34,7 +34,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ_PREFIX;
@@ -188,16 +187,14 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(TARGET_FILE_PARENT, e.getProperty(OTP_GRAPH_VERSION, String.class));
                 })
                 .log(LoggingLevel.INFO, correlation() + "Copying OTP2 graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("true", Boolean.class))
                 .to("direct:copyAllInternalBlobs")
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .log(LoggingLevel.INFO, correlation() + "Done copying OTP2 graph build reports.")
                 .routeId("otp2-remote-graph-build-report-versioned-upload");
 
         from("direct:remoteUpdateCurrentOtp2GraphReportVersion")
                 .log(LoggingLevel.INFO, correlation() + "Uploading OTP graph build reports current version.")
                 .process(e ->
-                        otpReportBlobStoreService.uploadHtmlBlob(Constants.OTP2_GRAPH_REPORT_INDEX_FILE, createRedirectPage(e.getProperty(OTP_GRAPH_VERSION, String.class)), true))
+                        otpReportBlobStoreService.uploadHtmlBlob(Constants.OTP2_GRAPH_REPORT_INDEX_FILE, createRedirectPage(e.getProperty(OTP_GRAPH_VERSION, String.class))))
                 .routeId("otp2-remote-graph-report-update-current");
 
         from("direct:remoteOtp2CleanUp")

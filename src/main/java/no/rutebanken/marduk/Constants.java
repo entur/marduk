@@ -84,8 +84,6 @@ public final class Constants {
     public static final String JOB_ACTION = "RutebankenJobAction";
     public static final String JOB_ERROR_CODE = "RutebankenJobErrorCode";
 
-    public static final String BLOBSTORE_MAKE_BLOB_PUBLIC = "RutebankenBlobstoreMakeBlobPublic";
-
     public static final String FOLDER_NAME = "RutebankenFolderName";
     public static final String SYSTEM_STATUS = "RutebankenSystemStatus";
 

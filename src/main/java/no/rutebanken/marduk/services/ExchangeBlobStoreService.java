@@ -16,14 +16,9 @@
 
 package no.rutebanken.marduk.services;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.repository.BlobStoreRepository;
-import org.apache.camel.Exchange;
-import org.apache.camel.Header;
+import no.rutebanken.marduk.repository.MardukBlobStoreRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.io.InputStream;
 
 /**
  * Operations on blobs in the Marduk exchange bucket.
@@ -32,12 +27,8 @@ import java.io.InputStream;
 @Service
 public class ExchangeBlobStoreService extends AbstractBlobStoreService {
 
-    public ExchangeBlobStoreService(@Value("${blobstore.gcs.exchange.container.name}") String containerName, BlobStoreRepository repository) {
+    public ExchangeBlobStoreService(@Value("${blobstore.gcs.exchange.container.name}") String containerName, MardukBlobStoreRepository repository) {
         super(containerName, repository);
-    }
-
-    public void uploadPrivateBlob(@Header(value = Constants.FILE_HANDLE) String name, InputStream inputStream, Exchange exchange) {
-        super.uploadBlob(name, false, inputStream, exchange);
     }
 
 }

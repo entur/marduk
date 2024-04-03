@@ -60,10 +60,10 @@ class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
             a.weaveByToUri("direct:remoteBuildOtp2NetexGraph").replace().process(exchange -> {
                 // create dummy graph file in the blob store
                 String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_GRAPH_OBJ;
-                internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData(), false);
+                internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData());
                 // create dummy OTP report in the blob store
                 String reportFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/report/report.html";
-                internalInMemoryBlobStoreRepository.uploadBlob(reportFileName, dummyData(), false);
+                internalInMemoryBlobStoreRepository.uploadBlob(reportFileName, dummyData());
 
             });
         });

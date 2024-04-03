@@ -17,11 +17,10 @@
 package no.rutebanken.marduk.routes.blobstore;
 
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.services.MardukBlobStoreService;
+import no.rutebanken.marduk.services.MardukPublicBlobStoreService;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_PREFIX;
@@ -32,10 +31,10 @@ import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 @Component
 public class BlobStoreRoute extends BaseRouteBuilder {
 
-    private final MardukBlobStoreService mardukBlobStoreService;
+    private final MardukPublicBlobStoreService mardukPublicBlobStoreService;
 
-    public BlobStoreRoute(MardukBlobStoreService mardukBlobStoreService) {
-        this.mardukBlobStoreService = mardukBlobStoreService;
+    public BlobStoreRoute(MardukPublicBlobStoreService mardukPublicBlobStoreService) {
+        this.mardukPublicBlobStoreService = mardukPublicBlobStoreService;
     }
 
     @Override
@@ -43,9 +42,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:uploadBlob")
                 .to(logDebugShowAll())
-                // Do not try to make the blob public, the bucket is uniformly public
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
-                .bean(mardukBlobStoreService, "uploadBlob")
+                .bean(mardukPublicBlobStoreService, "uploadBlob")
                 .setBody(simple(""))
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Stored file ${header." + FILE_HANDLE + "} in blob store.")
@@ -53,35 +50,28 @@ public class BlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:copyBlobInBucket")
                 .to(logDebugShowAll())
-                // Do not try to make the blob public, the bucket is uniformly public
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
-                .bean(mardukBlobStoreService, "copyBlobInBucket")
+                .bean(mardukPublicBlobStoreService, "copyBlobInBucket")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} in blob store in Marduk bucket.")
                 .routeId("blobstore-copy-in-bucket");
 
         from("direct:copyBlobToAnotherBucket")
                 .to(logDebugShowAll())
-                .choice()
-                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
-                //defaulting to private access if not specified
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
-                .end()
-                .bean(mardukBlobStoreService, "copyBlobToAnotherBucket")
+                .bean(mardukPublicBlobStoreService, "copyBlobToAnotherBucket")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} from Marduk bucket to bucket ${header." + TARGET_CONTAINER + "}.")
                 .routeId("blobstore-copy-to-another-bucket");
 
         from("direct:getBlob")
                 .to(logDebugShowAll())
-                .bean(mardukBlobStoreService, "getBlob")
+                .bean(mardukPublicBlobStoreService, "getBlob")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.")
                 .routeId("blobstore-download");
 
         from("direct:findBlob")
                 .to(logDebugShowAll())
-                .bean(mardukBlobStoreService, "findBlob")
+                .bean(mardukPublicBlobStoreService, "findBlob")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from looking up file with prefix ${header." + FILE_PREFIX + "} in the blob store.")
                 .routeId("blobstore-find");
@@ -89,7 +79,7 @@ public class BlobStoreRoute extends BaseRouteBuilder {
         from("direct:listBlobs")
                 .to(logDebugShowAll())
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential()))
-                .bean(mardukBlobStoreService, "listBlobs")
+                .bean(mardukPublicBlobStoreService, "listBlobs")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store.")
                 .routeId("blobstore-list");
@@ -97,21 +87,21 @@ public class BlobStoreRoute extends BaseRouteBuilder {
         from("direct:listBlobsFlat")
                 .to(logDebugShowAll())
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential()))
-                .bean(mardukBlobStoreService, "listBlobsFlat")
+                .bean(mardukPublicBlobStoreService, "listBlobsFlat")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching flat file list from blob store.")
                 .routeId("blobstore-list-flat");
 
         from("direct:listBlobsInFolders")
                 .to(logDebugShowAll())
-                .bean(mardukBlobStoreService, "listBlobsInFolders")
+                .bean(mardukPublicBlobStoreService, "listBlobsInFolders")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file list from blob store for multiple folders.")
                 .routeId("blobstore-list-in-folders");
 
         from("direct:deleteAllBlobsInFolder")
                 .to(logDebugShowAll())
-                .bean(mardukBlobStoreService, "deleteAllBlobsInFolder")
+                .bean(mardukPublicBlobStoreService, "deleteAllBlobsInFolder")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from deleting all blobs in folder.")
                 .routeId("blobstore-delete-in-folder");
