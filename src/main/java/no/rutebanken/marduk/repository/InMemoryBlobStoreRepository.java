@@ -50,7 +50,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
 
     /**
      * Autowire a shared map so that each prototype bean can access blobs from other containers.
-     * This is needed for {@link #copyBlob(String, String, String, String, boolean)}
+     * This is needed for {@link BlobStoreRepository#copyBlob(String, String, String, String)}
      */
     @Autowired
     private Map<String, Map<String, byte[]>> blobsInContainers;
@@ -99,12 +99,12 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public long uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType) {
-        return uploadBlob(objectName, inputStream, makePublic);
+    public long uploadBlob(String objectName, InputStream inputStream, String contentType) {
+        return uploadBlob(objectName, inputStream);
     }
 
     @Override
-    public long uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
+    public long uploadBlob(String objectName, InputStream inputStream) {
         try {
             LOGGER.debug("upload blob called in in-memory blob store");
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -119,22 +119,22 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
-        copyVersionedBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName, makePublic);
+    public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName) {
+        copyVersionedBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName);
     }
 
     @Override
-    public void copyVersionedBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic) {
+    public void copyVersionedBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName) {
         byte[] sourceData = getBlobsForContainer(sourceContainerName).get(sourceObjectName);
         getBlobsForContainer(targetContainerName).put(targetObjectName, sourceData);
     }
 
     @Override
-    public void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic) {
+    public void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix) {
         getBlobsForContainer(sourceContainerName).keySet()
                 .stream()
                 .filter(blobName -> blobName.startsWith(prefix))
-                .forEach(blobName -> copyBlob(sourceContainerName, blobName, targetContainerName, blobName.replace(prefix, targetPrefix), makePublic));
+                .forEach(blobName -> copyBlob(sourceContainerName, blobName, targetContainerName, blobName.replace(prefix, targetPrefix)));
     }
 
     @Override

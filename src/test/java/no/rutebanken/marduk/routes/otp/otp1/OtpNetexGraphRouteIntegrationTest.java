@@ -52,7 +52,7 @@ class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
     void testStatusEventReporting() throws Exception {
 
         //populate fake blob repo
-        mardukInMemoryBlobStoreRepository.uploadBlob(  blobStoreSubdirectory+"/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(  blobStoreSubdirectory+"/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()));
 
         AdviceWith.adviceWith(context, "otp-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 

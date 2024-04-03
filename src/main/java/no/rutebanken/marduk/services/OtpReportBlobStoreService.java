@@ -34,8 +34,8 @@ public class OtpReportBlobStoreService extends AbstractBlobStoreService {
         super(containerName, repository);
     }
 
-    public void uploadHtmlBlob(String name, InputStream inputStream, boolean makePublic) {
-            repository.uploadBlob(name, inputStream, makePublic, "text/html");
+    public void uploadHtmlBlob(String name, InputStream inputStream) {
+            repository.uploadBlob(name, inputStream, "text/html");
     }
 
 }
