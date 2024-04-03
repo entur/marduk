@@ -238,7 +238,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         InputStream testFile = getTestNetexArchiveAsStream();
 
         //populate fake blob repo
-        internalInMemoryBlobStoreRepository.uploadBlob(testFileStorePath + testFileName, testFile, false);
+        internalInMemoryBlobStoreRepository.uploadBlob(testFileStorePath + testFileName, testFile);
 
         context.start();
 
@@ -262,7 +262,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
-        internalInMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
+        internalInMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile);
 
         context.start();
 
@@ -288,7 +288,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
         for (String prefix : exportFileStaticPrefixes) {
-            mardukInMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, testFile, false);
+            mardukInMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, testFile);
         }
         context.start();
 
@@ -421,7 +421,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         String filename = "rb_rut-aggregated-netex.zip";
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
-        internalInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + filename, testFile, false);
+        internalInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + filename, testFile);
 
         Map<String, Object> headers = getTestHeaders("GET");
 
