@@ -74,10 +74,10 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
         context.start();
 
         // Create flexible line export in memory blob store
-        internalInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + CURRENT_FLEXIBLE_LINES_NETEX_FILENAME, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex_with_two_files.zip"), false);
+        internalInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + CURRENT_FLEXIBLE_LINES_NETEX_FILENAME, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex_with_two_files.zip"));
 
         // Create chouette netex export in in memory blob store
-        internalInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_NETEX_EXPORT + "rb_rut-aggregated-netex.zip", new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip"), false);
+        internalInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_NETEX_EXPORT + "rb_rut-aggregated-netex.zip", new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip"));
 
 
         startRoute.requestBodyAndHeader(null, Constants.CHOUETTE_REFERENTIAL, TestConstants.CHOUETTE_REFERENTIAL_RB_RUT);

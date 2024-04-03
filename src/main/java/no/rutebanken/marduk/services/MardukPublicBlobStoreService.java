@@ -21,13 +21,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * Operations on blobs in the OTP Graphs bucket.
+ * Operations on blobs in the main (public) Marduk bucket.
  */
-
 @Service
-public class OtpGraphsBlobStoreService extends AbstractBlobStoreService {
+public class MardukPublicBlobStoreService extends AbstractBlobStoreService {
 
-    public OtpGraphsBlobStoreService(@Value("${blobstore.gcs.graphs.container.name:otp-graphs}") String containerName, MardukBlobStoreRepository repository) {
+    public MardukPublicBlobStoreService(@Value("${blobstore.gcs.container.name}") String containerName, MardukBlobStoreRepository repository) {
         super(containerName, repository);
     }
 }

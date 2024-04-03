@@ -16,16 +16,16 @@
 
 package no.rutebanken.marduk.config;
 
+import no.rutebanken.marduk.repository.InMemoryMardukBlobStoreRepository;
+import no.rutebanken.marduk.repository.MardukBlobStoreRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Scope;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Common in-memory map of blobs that simulate different buckets in GCS.
- */
 @Configuration
 @Profile("in-memory-blobstore")
 public class InMemoryBlobStoreRepositoryConfig {
@@ -33,6 +33,12 @@ public class InMemoryBlobStoreRepositoryConfig {
     @Bean
     public Map<String, Map<String, byte[]>> blobsInContainers() {
         return new ConcurrentHashMap<>();
+    }
+
+    @Bean
+    @Scope("prototype")
+    MardukBlobStoreRepository blobStoreRepository(Map<String, Map<String, byte[]>> blobsInContainers) {
+        return new InMemoryMardukBlobStoreRepository(blobsInContainers);
     }
 
 }
