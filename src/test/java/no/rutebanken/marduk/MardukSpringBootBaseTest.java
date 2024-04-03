@@ -3,7 +3,7 @@ package no.rutebanken.marduk;
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
-import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
+import no.rutebanken.marduk.repository.MardukBlobStoreRepository;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
@@ -56,20 +56,20 @@ public abstract class MardukSpringBootBaseTest {
     private ReactorResourceFactory reactorResourceFactory;
 
     @Autowired
-    protected InMemoryBlobStoreRepository mardukInMemoryBlobStoreRepository;
+    protected MardukBlobStoreRepository mardukInMemoryBlobStoreRepository;
 
 
     @Autowired
-    protected InMemoryBlobStoreRepository internalInMemoryBlobStoreRepository;
+    protected MardukBlobStoreRepository internalInMemoryBlobStoreRepository;
 
     @Autowired
-    protected InMemoryBlobStoreRepository exchangeInMemoryBlobStoreRepository;
+    protected MardukBlobStoreRepository exchangeInMemoryBlobStoreRepository;
 
     @Autowired
-    protected InMemoryBlobStoreRepository graphsInMemoryBlobStoreRepository;
+    protected MardukBlobStoreRepository graphsInMemoryBlobStoreRepository;
 
     @Autowired
-    protected InMemoryBlobStoreRepository otpReportInMemoryBlobStoreRepository;
+    protected MardukBlobStoreRepository otpReportInMemoryBlobStoreRepository;
 
     @MockBean
     public CacheProviderRepository providerRepository;

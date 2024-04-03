@@ -16,7 +16,7 @@
 
 package no.rutebanken.marduk.services;
 
-import no.rutebanken.marduk.repository.BlobStoreRepository;
+import no.rutebanken.marduk.repository.MardukBlobStoreRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -29,12 +29,12 @@ import java.io.InputStream;
 @Service
 public class OtpReportBlobStoreService extends AbstractBlobStoreService {
 
-    public OtpReportBlobStoreService(@Value("${blobstore.gcs.otpreport.container.name}") String containerName, BlobStoreRepository repository) {
+    public OtpReportBlobStoreService(@Value("${blobstore.gcs.otpreport.container.name}") String containerName, MardukBlobStoreRepository repository) {
         super(containerName, repository);
     }
 
-    public void uploadHtmlBlob(String name, InputStream inputStream, boolean makePublic) {
-            repository.uploadBlob(name, inputStream, makePublic, "text/html");
+    public void uploadHtmlBlob(String name, InputStream inputStream) {
+        repository.uploadBlob(name, inputStream, "text/html");
     }
 
 }

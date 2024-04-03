@@ -14,19 +14,25 @@
  *
  */
 
-package no.rutebanken.marduk.services;
+package no.rutebanken.marduk.config;
 
-import no.rutebanken.marduk.repository.BlobStoreRepository;
+import no.rutebanken.marduk.repository.LocalDiskMardukBlobStoreRepository;
+import no.rutebanken.marduk.repository.MardukBlobStoreRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Scope;
 
-/**
- * Operations on blobs in the main Marduk bucket.
- */
-@Service
-public class MardukBlobStoreService extends AbstractBlobStoreService {
+@Configuration
+@Profile("local-disk-blobstore")
+public class LocalDiskBlobStoreRepositoryConfig {
 
-    public MardukBlobStoreService(@Value("${blobstore.gcs.container.name}") String containerName, BlobStoreRepository repository) {
-        super(containerName, repository);
+
+    @Bean
+    @Scope("prototype")
+    MardukBlobStoreRepository blobStoreRepository(@Value("${blobstore.local.folder:files/blob}") String baseFolder) {
+        return new LocalDiskMardukBlobStoreRepository(baseFolder);
     }
+
 }

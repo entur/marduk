@@ -35,11 +35,6 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:uploadInternalBlob")
                 .to(logDebugShowAll())
-                .choice()
-                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
-                //defaulting to private access if not specified
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
-                .end()
                 .bean(mardukInternalBlobStoreService, "uploadBlob")
                 .setBody(simple(""))
                 .to(logDebugShowAll())
@@ -48,11 +43,6 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:copyInternalBlobInBucket")
                 .to(logDebugShowAll())
-                .choice()
-                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
-                //defaulting to private access if not specified
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
-                .end()
                 .bean(mardukInternalBlobStoreService, "copyBlobInBucket")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} in blob store in Marduk internal bucket.")
@@ -60,11 +50,6 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:copyInternalBlobToAnotherBucket")
                 .to(logDebugShowAll())
-                .choice()
-                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
-                //defaulting to private access if not specified
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
-                .end()
                 .bean(mardukInternalBlobStoreService, "copyBlobToAnotherBucket")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} from Marduk internal bucket to bucket ${header." + TARGET_CONTAINER + "}.")
@@ -72,11 +57,6 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:copyVersionedInternalBlobToAnotherBucket")
                 .to(logDebugShowAll())
-                .choice()
-                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
-                //defaulting to private access if not specified
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
-                .end()
                 .bean(mardukInternalBlobStoreService, "copyVersionedBlobToAnotherBucket")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} (generation: ${header." + FILE_VERSION + "}) to file ${header." + TARGET_FILE_HANDLE + "} from Marduk internal bucket to bucket ${header." + TARGET_CONTAINER + "}.")
@@ -84,11 +64,6 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:copyAllInternalBlobs")
                 .to(logDebugShowAll())
-                .choice()
-                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
-                //defaulting to private access if not specified
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
-                .end()
                 .bean(mardukInternalBlobStoreService, "copyAllBlobs")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Returning from copying all files in folder ${header." + FILE_HANDLE + "} in blob store.")
