@@ -21,7 +21,6 @@ import no.rutebanken.marduk.services.MardukBlobStoreService;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_MAKE_BLOB_PUBLIC;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_PREFIX;
@@ -43,8 +42,6 @@ public class BlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:uploadBlob")
                 .to(logDebugShowAll())
-                // Do not try to make the blob public, the bucket is uniformly public
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .bean(mardukBlobStoreService, "uploadBlob")
                 .setBody(simple(""))
                 .to(logDebugShowAll())
@@ -53,8 +50,6 @@ public class BlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:copyBlobInBucket")
                 .to(logDebugShowAll())
-                // Do not try to make the blob public, the bucket is uniformly public
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
                 .bean(mardukBlobStoreService, "copyBlobInBucket")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} in blob store in Marduk bucket.")
@@ -62,11 +57,6 @@ public class BlobStoreRoute extends BaseRouteBuilder {
 
         from("direct:copyBlobToAnotherBucket")
                 .to(logDebugShowAll())
-                .choice()
-                .when(header(BLOBSTORE_MAKE_BLOB_PUBLIC).isNull())
-                //defaulting to private access if not specified
-                .setHeader(BLOBSTORE_MAKE_BLOB_PUBLIC, simple("false", Boolean.class))
-                .end()
                 .bean(mardukBlobStoreService, "copyBlobToAnotherBucket")
                 .to(logDebugShowAll())
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} from Marduk bucket to bucket ${header." + TARGET_CONTAINER + "}.")

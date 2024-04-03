@@ -112,7 +112,7 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public long uploadBlob(String objectName, InputStream inputStream, boolean makePublic) {
+    public long uploadBlob(String objectName, InputStream inputStream) {
         LOGGER.debug("Upload blob called in local-disk blob store on {}", objectName);
         try {
             Path localPath = Paths.get(objectName);
@@ -132,12 +132,12 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
-        copyVersionedBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName, makePublic);
+    public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName) {
+        copyVersionedBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName);
     }
 
     @Override
-    public void copyVersionedBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic) {
+    public void copyVersionedBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName) {
         try {
             Path sourcePath = Path.of(baseFolder, sourceContainerName, sourceObjectName);
             Path targetPath = Path.of(baseFolder, targetContainerName, targetObjectName);
@@ -149,13 +149,13 @@ public class LocalDiskBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic) {
+    public void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix) {
         // no-op implementation for local disk blobstore
     }
 
     @Override
-    public long uploadBlob(String objectName, InputStream inputStream, boolean makePublic, String contentType) {
-        return uploadBlob(objectName, inputStream, makePublic);
+    public long uploadBlob(String objectName, InputStream inputStream, String contentType) {
+        return uploadBlob(objectName, inputStream);
     }
 
     @Override
