@@ -34,7 +34,6 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * Blob store repository targeting Google Cloud Storage.
@@ -96,43 +95,38 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
     }
 
     @Override
-    public long uploadBlob(String name, InputStream inputStream, boolean makePublic) {
-        Blob blob = BlobStoreHelper.createOrReplace(storage, containerName, name, inputStream, makePublic);
+    public long uploadBlob(String name, InputStream inputStream) {
+        Blob blob = BlobStoreHelper.createOrReplace(storage, containerName, name, inputStream, false);
         return blob.getGeneration();
     }
 
     @Override
-    public long uploadBlob(String name, InputStream inputStream, boolean makePublic, String contentType) {
-        Blob blob = BlobStoreHelper.createOrReplace(storage, containerName, name, inputStream, makePublic, contentType);
+    public long uploadBlob(String name, InputStream inputStream, String contentType) {
+        Blob blob = BlobStoreHelper.createOrReplace(storage, containerName, name, inputStream, false, contentType);
         return blob.getGeneration();
     }
 
     @Override
-    public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName, boolean makePublic) {
-        copyVersionedBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName, makePublic);
+    public void copyBlob(String sourceContainerName, String sourceObjectName, String targetContainerName, String targetObjectName) {
+        copyVersionedBlob(sourceContainerName, sourceObjectName, null, targetContainerName, targetObjectName);
     }
 
     @Override
-    public void copyVersionedBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName, boolean makePublic) {
+    public void copyVersionedBlob(String sourceContainerName, String sourceObjectName, Long sourceVersion, String targetContainerName, String targetObjectName) {
 
-        List<Storage.BlobTargetOption> blobTargetOptions = makePublic ? List.of(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ))
-                : Collections.emptyList();
         Storage.CopyRequest request =
                 Storage.CopyRequest.newBuilder()
                         .setSource(BlobId.of(sourceContainerName, sourceObjectName, sourceVersion))
-                        .setTarget(BlobId.of(targetContainerName, targetObjectName), blobTargetOptions)
+                        .setTarget(BlobId.of(targetContainerName, targetObjectName))
                         .build();
         storage.copy(request).getResult();
     }
 
     @Override
-    public void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix, boolean makePublic) {
+    public void copyAllBlobs(String sourceContainerName, String prefix, String targetContainerName, String targetPrefix) {
         Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage, sourceContainerName, prefix);
         while (blobIterator.hasNext()) {
             Blob blob = blobIterator.next();
-
-            List<Storage.BlobTargetOption> blobTargetOptions = makePublic ? List.of(Storage.BlobTargetOption.predefinedAcl(Storage.PredefinedAcl.PUBLIC_READ))
-                    : Collections.emptyList();
 
             BlobInfo.Builder targetBlobInfoBuilder = BlobInfo.newBuilder(targetContainerName, blob.getName().replace(prefix, targetPrefix));
             BlobId targetBlobId = targetBlobInfoBuilder.build().getBlobId();
@@ -140,7 +134,7 @@ public class GcsBlobStoreRepository implements BlobStoreRepository {
             Storage.CopyRequest request =
                     Storage.CopyRequest.newBuilder()
                             .setSource(blob.getBlobId())
-                            .setTarget(targetBlobId, blobTargetOptions)
+                            .setTarget(targetBlobId)
                             .build();
             Blob targetBlob = storage.copy(request).getResult();
 
