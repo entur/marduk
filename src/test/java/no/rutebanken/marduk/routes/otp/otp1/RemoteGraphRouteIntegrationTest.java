@@ -65,7 +65,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
     void testRemoteNetexGraphBuildStatusEventReporting() throws Exception {
 
         // create a dummy base graph object in the blobstore repository
-        blobStoreRepository.uploadBlob(blobStoreSubdirectory + "/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+        blobStoreRepository.uploadBlob(blobStoreSubdirectory + "/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()));
 
         AdviceWith.adviceWith(context, "otp-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
@@ -83,7 +83,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
                     .replace()
                     .process(e -> {
                         String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ;
-                        blobStoreRepository.uploadBlob(builtOtpGraphPath, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+                        blobStoreRepository.uploadBlob(builtOtpGraphPath, IOUtils.toInputStream("dummyData", Charset.defaultCharset()));
                     });
         });
 
@@ -129,7 +129,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
                     .replace()
                     .process(e -> {
                         String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ;
-                        blobStoreRepository.uploadBlob(builtOtpGraphPath, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+                        blobStoreRepository.uploadBlob(builtOtpGraphPath, IOUtils.toInputStream("dummyData", Charset.defaultCharset()));
                     });
         });
 

@@ -72,7 +72,7 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
             a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().process(exchange -> {
                 // create a dummy base graph file in the work subdirectory of the internal bucket with an arbitrary serialization id
                 String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_FILE_NAME;
-                internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+                internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()));
             });
         });
 
