@@ -38,7 +38,7 @@ public class ExchangeBlobStoreService extends AbstractBlobStoreService {
     }
 
     public void uploadPrivateBlob(@Header(value = Constants.FILE_HANDLE) String name, InputStream inputStream, Exchange exchange) {
-        super.uploadBlob(name, false, inputStream, exchange);
+        super.uploadBlob(name, inputStream, exchange);
     }
 
 }

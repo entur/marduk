@@ -72,7 +72,7 @@ class OtpBaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTest
                     .replace()
                     .process(e -> {
                         String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ;
-                        internalInMemoryBlobStoreRepository.uploadBlob(builtOtpGraphPath, dummyData(), false);
+                        internalInMemoryBlobStoreRepository.uploadBlob(builtOtpGraphPath, dummyData());
                     });
         });
 

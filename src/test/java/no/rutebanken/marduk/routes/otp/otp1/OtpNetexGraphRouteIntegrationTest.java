@@ -64,7 +64,7 @@ class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
 
         remoteBuildNetexGraph.expectedMessageCount(1);
         remoteBuildNetexGraph.whenAnyExchangeReceived(e ->
-                internalInMemoryBlobStoreRepository.uploadBlob(e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ, dummyData(), false)
+                internalInMemoryBlobStoreRepository.uploadBlob(e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ, dummyData())
         );
 
         updateStatus.expectedMessageCount(6);
