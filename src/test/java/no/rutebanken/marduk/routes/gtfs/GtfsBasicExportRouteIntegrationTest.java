@@ -69,8 +69,8 @@ class GtfsBasicExportRouteIntegrationTest extends MardukRouteBuilderIntegrationT
     void testUploadBasicGtfsMergedFile() throws Exception {
 
         //populate fake blob repo
-        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
-        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_avi-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()), false);
+        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_rut-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()));
+        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "gtfs/rb_avi-aggregated-gtfs.zip", new FileInputStream(getExtendedGtfsTestFile()));
 
         AdviceWith.adviceWith(context, "gtfs-export-merged-report-ok", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
                 .to("mock:updateStatus"));
