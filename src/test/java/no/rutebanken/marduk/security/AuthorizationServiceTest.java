@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.security;
 
 import no.rutebanken.marduk.MardukSpringBootBaseTest;
+import no.rutebanken.marduk.TestConstants;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,7 @@ import java.util.List;
 @ActiveProfiles({"test", "default", "in-memory-blobstore", "google-pubsub-emulator", "google-pubsub-autocreate"})
 class AuthorizationServiceTest extends MardukSpringBootBaseTest {
 
-    private static final Long ORG_ID_RUT = 2L;
+    private static final Long ORG_ID_RUT = TestConstants.PROVIDER_ID_RUT;
     private static final String CODESPACE_RB = "RB";
     private static final String CODESPACE_RUT = "RUT";
 

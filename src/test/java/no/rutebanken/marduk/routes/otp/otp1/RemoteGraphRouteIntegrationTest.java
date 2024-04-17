@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.otp.otp1;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestConstants;
 import no.rutebanken.marduk.repository.BlobStoreRepository;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
@@ -136,7 +137,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
 
         context.start();
 
-        baseGraphProducerTemplate.sendBodyAndHeaders(null, createMessageHeaders(2L, "ref", "corr-id"));
+        baseGraphProducerTemplate.sendBodyAndHeaders(null, createMessageHeaders(TestConstants.PROVIDER_ID_RUT, "ref", "corr-id"));
 
         updateStatus.assertIsSatisfied();
 

@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.security.oauth2;
 
 import no.rutebanken.marduk.MardukSpringBootBaseTest;
+import no.rutebanken.marduk.TestConstants;
 import org.entur.oauth2.RoROAuth2Claims;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ import static no.rutebanken.marduk.security.oauth2.EnturPartnerAuth0RolesClaimAd
 class EnturPartnerAuth0RolesClaimAdapterTest extends MardukSpringBootBaseTest {
 
     private static final Long RUTEBANKEN_ORG_ID = 1L;
-    private static final Long PROVIDER_ORG_ID = 2L;
+    private static final Long PROVIDER_ORG_ID = TestConstants.PROVIDER_ID_RUT;
     private static final Long ORG_NETEX_BLOCKS_VIEWER_ID = 100L;
     private static final Long ORG_DELEGATED_EDITOR_ID = 200L;
 

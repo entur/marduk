@@ -26,9 +26,7 @@ import org.springframework.stereotype.Component;
 
 import jakarta.servlet.http.Part;
 
-import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.FILE_NAME;
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Upload file to blob store and trigger import pipeline.
@@ -65,12 +63,22 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .to("direct:uploadInternalBlob")
                 .log(LoggingLevel.INFO, correlation() + "Finished uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
                 .setBody(constant(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
-                .log(LoggingLevel.INFO, correlation() + "Triggered import pipeline for timetable file: ${header." + FILE_HANDLE + "}")
+                .to("direct:processFileAfterImport")
                 .doCatch(Exception.class)
                 .log(LoggingLevel.WARN, correlation() + "Upload of timetable data to blob store failed for file: ${header." + FILE_HANDLE + "} (${exception.stacktrace})")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.FAILED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
                 .end()
                 .routeId("upload-file-and-start-import");
+
+        from("direct:processFileAfterImport")
+                .choice()
+                .when(e-> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID,Long.class)).getChouetteInfo().isEnableAutoImport())
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
+                .log(LoggingLevel.INFO, correlation() + "Triggered import pipeline for timetable file: ${header." + FILE_HANDLE + "}")
+                .otherwise()
+                .log(LoggingLevel.INFO, "Do not initiate processing of  ${header." + FILE_HANDLE + "} as autoImport is not enabled for provider")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.CANCELLED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
+                .routeId("process-file-after-import");
+
     }
 }
