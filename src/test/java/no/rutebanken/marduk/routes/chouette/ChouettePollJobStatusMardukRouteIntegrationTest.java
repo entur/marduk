@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestConstants;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.*;
@@ -156,7 +157,7 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 		context.start();
 
 		Map<String, String> headers = new HashMap<>();
-		headers.put(Constants.PROVIDER_ID, "2");
+		headers.put(Constants.PROVIDER_ID, TestConstants.PROVIDER_ID_AS_STRING_RUT);
 		headers.put(Constants.FILE_NAME, "file_name");
 		headers.put(Constants.CORRELATION_ID, "corr_id");
 		headers.put(Constants.FILE_HANDLE, "rut/file_name");
@@ -226,7 +227,7 @@ class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilder
 		// Do rest call
 		Map<String, Object> headers = new HashMap<>();
 		headers.put(Exchange.HTTP_METHOD, "GET");
-		headers.put(Constants.PROVIDER_ID, "2");
+		headers.put(Constants.PROVIDER_ID, TestConstants.PROVIDER_ID_AS_STRING_RUT);
 		List<JobResponse> rsp =  (List<JobResponse>) getJobsTemplate.requestBodyAndHeaders(null, headers);
 		// Parse response
 

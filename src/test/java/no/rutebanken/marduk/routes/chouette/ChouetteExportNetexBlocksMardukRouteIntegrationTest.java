@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestConstants;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Expression;
@@ -113,7 +114,7 @@ class ChouetteExportNetexBlocksMardukRouteIntegrationTest extends MardukRouteBui
         updateStatus.expectedMessageCount(3);
 
         Map<String, String> headers = new HashMap<>();
-        headers.put(Constants.PROVIDER_ID, "2");
+        headers.put(Constants.PROVIDER_ID, TestConstants.PROVIDER_ID_AS_STRING_RUT);
         sendBodyAndHeadersToPubSub(importTemplate, "", headers);
 
         chouetteCreateExport.assertIsSatisfied();

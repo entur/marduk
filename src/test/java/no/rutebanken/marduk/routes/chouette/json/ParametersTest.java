@@ -30,6 +30,8 @@ import java.util.Set;
 
 import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
 import static net.javacrumbs.jsonunit.JsonAssert.when;
+import static no.rutebanken.marduk.TestConstants.CHOUETTE_REFERENTIAL_RUT;
+import static no.rutebanken.marduk.TestConstants.PROVIDER_ID_RUT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ParametersTest {
@@ -77,11 +79,11 @@ class ParametersTest {
         ChouetteInfo chouetteInfo = new ChouetteInfo();
         chouetteInfo.setId(3L);
         chouetteInfo.setOrganisation("Ruter");
-        chouetteInfo.setUser("rut");
-        chouetteInfo.setReferential("rut");
+        chouetteInfo.setUser(CHOUETTE_REFERENTIAL_RUT);
+        chouetteInfo.setReferential(CHOUETTE_REFERENTIAL_RUT);
 
         Provider provider = new Provider();
-        provider.setId(2L);
+        provider.setId(PROVIDER_ID_RUT);
         provider.setChouetteInfo(chouetteInfo);
         return provider;
     }

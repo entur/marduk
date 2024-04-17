@@ -1,10 +1,10 @@
 {
     "id": 2,
-    "name": "Oslo og Akershus / Ruter",
+    "name": "RB/Oslo og Akershus / Ruter",
     "chouetteInfo": {
-        "id": 2,
+        "id": 1002,
         "prefix": "RUT",
-        "referential": "rut",
+        "referential": "rb_rut",
         "organisation": "Rutebanken",
         "user": "admin@rutebanken.org",
         "xmlns":"RUT",
