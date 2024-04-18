@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.netex;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestConstants;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -79,7 +80,7 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
         internalInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_NETEX_EXPORT + "rb_rut-aggregated-netex.zip", new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip"), false);
 
 
-        startRoute.requestBodyAndHeader(null, Constants.CHOUETTE_REFERENTIAL, "rb_rut");
+        startRoute.requestBodyAndHeader(null, Constants.CHOUETTE_REFERENTIAL, TestConstants.CHOUETTE_REFERENTIAL_RB_RUT);
 
         updateStatus.assertIsSatisfied();
         otpBuildGraph.assertIsSatisfied();
@@ -87,7 +88,7 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
 
         assertNotNull(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME), "Expected merged netex file to have been uploaded");
         assertFalse(exchangeInMemoryBlobStoreRepository.listBlobs(BLOBSTORE_PATH_OUTBOUND + "dated").getFiles().isEmpty(), "Expected merged netex file to have been uploaded to marduk exchange for DatedServiceJourneyId-generation");
-        assertEquals("rut", netexExportNotificationQueue.getExchanges().get(0).getIn().getBody());
+        assertEquals(TestConstants.CHOUETTE_REFERENTIAL_RUT, netexExportNotificationQueue.getExchanges().get(0).getIn().getBody());
 
     }
 

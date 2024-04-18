@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestConstants;
 import no.rutebanken.marduk.gtfs.GtfsConstants;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -63,7 +64,7 @@ class GtfsExtendedExportRouteIntegrationTest  extends MardukRouteBuilderIntegrat
 
     @BeforeEach
     void prepare() {
-        when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null), provider("rb_rut", 2, null), provider("opp", 3, 4L)));
+        when(providerRepository.getProviders()).thenReturn(Arrays.asList(provider("rb_avi", 1, null), provider(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, 2, null), provider("opp", 3, 4L)));
     }
 
 

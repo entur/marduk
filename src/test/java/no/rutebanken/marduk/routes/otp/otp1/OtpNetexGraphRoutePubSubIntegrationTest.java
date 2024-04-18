@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.otp.otp1;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
+import no.rutebanken.marduk.TestConstants;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -53,7 +54,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
 
         context.start();
 
-        sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(2L, "ref", "corr-id"));
+        sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(TestConstants.PROVIDER_ID_RUT, "ref", "corr-id"));
 
         buildOtpGraph.assertIsSatisfied();
 
@@ -71,7 +72,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
         context.start();
 
         for(int i = 0; i < 5; i++) {
-            sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(2L, "ref", "corr-id"));
+            sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(TestConstants.PROVIDER_ID_RUT, "ref", "corr-id"));
         }
 
         buildOtpGraph.assertIsSatisfied();
@@ -95,7 +96,7 @@ class OtpNetexGraphRoutePubSubIntegrationTest extends MardukRouteBuilderIntegrat
         context.start();
 
         for(int i = 0; i < 5; i++) {
-            sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(2L, "ref", "corr-id"));
+            sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(TestConstants.PROVIDER_ID_RUT, "ref", "corr-id"));
         }
 
         buildOtpGraph.assertIsSatisfied();

@@ -22,6 +22,7 @@ import com.nimbusds.jose.JWSAlgorithm;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
+import no.rutebanken.marduk.TestConstants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.apache.camel.*;
@@ -58,6 +59,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.TestConstants.CHOUETTE_REFERENTIAL_RUT;
+import static no.rutebanken.marduk.TestConstants.PROVIDER_ID_AS_STRING_RUT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.config.Customizer.withDefaults;
@@ -123,34 +126,34 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/import")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/import")
     protected ProducerTemplate importTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/export")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/export")
     protected ProducerTemplate exportTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files")
     protected ProducerTemplate listFilesTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files/netex.zip")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files/netex.zip")
     protected ProducerTemplate getFileTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files")
     protected ProducerTemplate postFileTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/flex/files")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/flex/files")
     protected ProducerTemplate postFlexFileTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/2/files/unknown-file.zip")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files/unknown-file.zip")
     protected ProducerTemplate getUnknownFileTemplate;
 
     @Produce("http:localhost:{{server.port}}/services/timetable_admin/export/files")
     protected ProducerTemplate listExportFilesTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/download_netex_blocks/rut")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/download_netex_blocks/" + CHOUETTE_REFERENTIAL_RUT)
     protected ProducerTemplate downloadNetexBlocksTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/upload/rut")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/upload/" + CHOUETTE_REFERENTIAL_RUT)
     protected ProducerTemplate uploadFileTemplate;
 
     @Value("#{'${timetable.export.blob.prefixes:outbound/gtfs/,outbound/netex/}'.split(',')}")
@@ -159,7 +162,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
     @BeforeEach
     void setUpProvider() {
-        when(providerRepository.getReferential(2L)).thenReturn("rut");
+        when(providerRepository.getReferential(TestConstants.PROVIDER_ID_RUT)).thenReturn(CHOUETTE_REFERENTIAL_RUT);
     }
 
     @Test
@@ -194,9 +197,9 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         List<Exchange> exchanges = importQueue.getExchanges();
         String providerId = (String) exchanges.get(0).getIn().getHeader(PROVIDER_ID);
-        assertEquals("2", providerId);
+        assertEquals(PROVIDER_ID_AS_STRING_RUT, providerId);
         String s3FileHandle = (String) exchanges.get(0).getIn().getHeader(FILE_HANDLE);
-        assertEquals(BLOBSTORE_PATH_INBOUND + "rut/file1", s3FileHandle);
+        assertEquals(BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT +  "/file1", s3FileHandle);
     }
 
     @Test
@@ -223,7 +226,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         List<Exchange> exchanges = exportQueue.getExchanges();
         String providerId = (String) exchanges.get(0).getIn().getHeader(PROVIDER_ID);
-        assertEquals("2", providerId);
+        assertEquals(PROVIDER_ID_AS_STRING_RUT, providerId);
     }
 
     @Test
@@ -231,7 +234,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         // Preparations
         String testFileName = "ruter_fake_data.zip";
-        String testFileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
+        String testFileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
         InputStream testFile = getTestNetexArchiveAsStream();
 
         //populate fake blob repo
@@ -256,7 +259,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     void getFile() throws Exception {
         // Preparations
         String filename = "netex.zip";
-        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
+        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
         InputStream testFile = getTestNetexArchiveAsStream();
         //populate fake blob repo
         internalInMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile, false);
@@ -315,9 +318,9 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     private void postFile(InputStream testFile) throws Exception {
         // Preparations
         String fileName = "netex-test-POST.zip";
-        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
+        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
 
-        AdviceWith.adviceWith(context, "upload-file-and-start-import", a -> {
+        AdviceWith.adviceWith(context, "process-file-after-import", a -> {
             a.interceptSendToEndpoint("direct:updateStatus")
                     .skipSendToOriginalEndpoint()
                     .to("mock:updateStatus");
@@ -345,9 +348,9 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         InputStream testFile = getTestNetexArchiveAsStream();
         // Preparations
         String fileName = "netex-test-flex-POST.zip";
-        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
+        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
 
-        AdviceWith.adviceWith(context, "upload-file-and-start-import", a -> {
+        AdviceWith.adviceWith(context, "process-file-after-import", a -> {
             a.interceptSendToEndpoint("direct:updateStatus")
                     .skipSendToOriginalEndpoint()
                     .to("mock:updateStatus");
@@ -382,10 +385,13 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void uploadNetexDataset() throws Exception {
 
-        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
+        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+
+
+        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
         String fileName = "netex-test-http-upload.zip";
 
-        AdviceWith.adviceWith(context, "upload-file-and-start-import", a -> {
+        AdviceWith.adviceWith(context, "process-file-after-import", a -> {
             a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
             a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue");
         });
@@ -428,6 +434,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     private static Map<String, Object> getTestHeaders(String method) {
         return Map.of(
                 Exchange.HTTP_METHOD, method,
-                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+                HttpHeaders.AUTHORIZATION, "Bearer test-token",
+                CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT);
     }
 }

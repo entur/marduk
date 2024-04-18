@@ -2,6 +2,7 @@ package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestConstants;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -64,7 +65,7 @@ class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegrationTe
         flexibleLinesImportMock.expectedMessageCount(1);
 
         Map<String, Object> headers = new HashMap<>();
-        headers.put(Constants.PROVIDER_ID, "2");
+        headers.put(Constants.PROVIDER_ID, TestConstants.PROVIDER_ID_AS_STRING_RUT);
         headers.put(Constants.CORRELATION_ID, "corr_id");
         headers.put(Constants.IMPORT_TYPE, IMPORT_TYPE_NETEX_FLEX);
         processValidFileTemplate.sendBodyAndHeaders("", headers);
@@ -100,7 +101,7 @@ class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegrationTe
         flexibleLinesImportMock.expectedMessageCount(0);
 
         Map<String, Object> headers = new HashMap<>();
-        headers.put(Constants.PROVIDER_ID, "2");
+        headers.put(Constants.PROVIDER_ID, TestConstants.PROVIDER_ID_AS_STRING_RUT);
         headers.put(Constants.CORRELATION_ID, "corr_id");
         processValidFileTemplate.sendBodyAndHeaders("", headers);
 

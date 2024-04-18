@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestConstants;
 import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
@@ -94,11 +95,11 @@ class ChouetteTransferToDataspaceMardukRouteIntegrationTest extends MardukRouteB
 		
 		
 		Map<String, String> headers = new HashMap<>();
-		headers.put(Constants.PROVIDER_ID, "2");
+		headers.put(Constants.PROVIDER_ID, TestConstants.PROVIDER_ID_AS_STRING_RUT);
 		sendBodyAndHeadersToPubSub(transferTemplate, "", headers);
 
 		Map<String, Object> importJobCompletedHeaders = new HashMap<>();
-		importJobCompletedHeaders.put(Constants.PROVIDER_ID, "2");
+		importJobCompletedHeaders.put(Constants.PROVIDER_ID, TestConstants.PROVIDER_ID_AS_STRING_RUT);
 		importJobCompletedHeaders.put("action_report_result", "OK");
 		importJobCompletedHeaders.put("validation_report_result", "OK");
 		importJobCompletedHeaders.put(Constants.FILE_HANDLE, "None");
