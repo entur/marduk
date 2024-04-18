@@ -2,17 +2,16 @@ package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestConstants;
 import no.rutebanken.marduk.domain.Provider;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
@@ -51,7 +50,7 @@ class FileUploadRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
 
         headers = Map.of(
                 Constants.PROVIDER_ID, 2,
-                Constants.CHOUETTE_REFERENTIAL, "RUT",
+                Constants.CHOUETTE_REFERENTIAL, TestConstants.CHOUETTE_REFERENTIAL_RUT,
                 Constants.CORRELATION_ID, "correlationId");
 
     }
@@ -59,7 +58,7 @@ class FileUploadRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Test
     void testUploadAndStartImport() throws Exception {
-        when(providerRepository.getProvider(2L)).thenReturn(provider(true));
+        when(providerRepository.getProvider(TestConstants.PROVIDER_ID_RUT)).thenReturn(provider(true));
         InputStream testFile = getTestNetexArchiveAsStream();
 
         updateStatus.expectedMessageCount(1);
@@ -76,7 +75,7 @@ class FileUploadRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Test
     void testUploadAndDoNotStartImport() throws Exception {
-        when(providerRepository.getProvider(2L)).thenReturn(provider(false));
+        when(providerRepository.getProvider(TestConstants.PROVIDER_ID_RUT)).thenReturn(provider(false));
         InputStream testFile = getTestNetexArchiveAsStream();
 
         updateStatus.expectedMessageCount(1);
@@ -93,8 +92,7 @@ class FileUploadRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
 
 
     private static Provider provider(boolean enableAutoImport) throws IOException {
-        Provider provider = Provider.create(IOUtils.toString(new FileReader(
-                "src/test/resources/no/rutebanken/marduk/providerRepository/provider2.json")));
+        Provider provider = provider(TestConstants.PROVIDER_ID_RUT);
         provider.getChouetteInfo().setEnableAutoImport(enableAutoImport);
         return provider;
     }

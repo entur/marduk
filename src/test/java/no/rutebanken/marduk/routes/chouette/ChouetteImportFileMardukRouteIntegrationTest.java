@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.TestConstants;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
@@ -212,7 +213,7 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
 
         Map<String, Object> headers = new HashMap<>();
         headers.put(Constants.PROVIDER_ID, "2");
-        headers.put(Constants.CHOUETTE_REFERENTIAL, "rut");
+        headers.put(Constants.CHOUETTE_REFERENTIAL, TestConstants.CHOUETTE_REFERENTIAL_RUT);
         headers.put(Constants.ENABLE_VALIDATION, true);
 
         triggerJobListTemplate.sendBodyAndHeaders(null, headers);

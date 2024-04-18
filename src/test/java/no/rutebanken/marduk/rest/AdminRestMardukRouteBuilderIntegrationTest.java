@@ -22,6 +22,7 @@ import com.nimbusds.jose.JWSAlgorithm;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
+import no.rutebanken.marduk.TestConstants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.apache.camel.*;
@@ -159,7 +160,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
     @BeforeEach
     void setUpProvider() {
-        when(providerRepository.getReferential(2L)).thenReturn("rut");
+        when(providerRepository.getReferential(TestConstants.PROVIDER_ID_RUT)).thenReturn(TestConstants.CHOUETTE_REFERENTIAL_RUT);
     }
 
     @Test
@@ -382,6 +383,9 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void uploadNetexDataset() throws Exception {
 
+        when(providerRepository.getProviderId(TestConstants.CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+
+
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + "rut/";
         String fileName = "netex-test-http-upload.zip";
 
@@ -428,6 +432,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     private static Map<String, Object> getTestHeaders(String method) {
         return Map.of(
                 Exchange.HTTP_METHOD, method,
-                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+                HttpHeaders.AUTHORIZATION, "Bearer test-token",
+                CHOUETTE_REFERENTIAL, TestConstants.CHOUETTE_REFERENTIAL_RUT);
     }
 }

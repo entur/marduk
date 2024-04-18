@@ -56,7 +56,6 @@ public final class Constants {
 
     public static final String FILE_TARGET_MD5 = "RutebankenMd5SumRecordedForTargetFile";
     public static final String ENABLE_VALIDATION = "RutebankenEnableValidation";
-    public static final String ENABLE_BLOCKS_EXPORT = "RutebankenEnableBlockExport";
 
     public static final String FILE_APPLY_DUPLICATES_FILTER = "RutebankenApplyDuplicateFilter";
     public static final String FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY = "RutebankenApplyDuplicateFilterOnNameOnly";
