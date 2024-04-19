@@ -42,6 +42,9 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
     @Value("${otp.graph.blobstore.subdirectory}")
     private String graphSubdirectory;
 
+    @EndpointInject("mock:remoteBuildNetexGraph")
+    protected MockEndpoint remoteBuildNetexGraph;
+
     @EndpointInject("mock:updateStatus")
     private MockEndpoint updateStatus;
 
@@ -53,26 +56,21 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
 
     @Test
     void testBaseGraphBuilding() throws Exception {
-
-
         AdviceWith.adviceWith(context, "otp2-base-graph-build-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
         AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-and-send-status", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-
-
         AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-copy", a -> {
-
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-
             a.weaveByToUri("google-pubsub:(.*):OtpGraphBuildQueue").replace().to("mock:otpGraphBuildQueue");
-
-            a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().process(exchange -> {
-                // create a dummy base graph file in the work subdirectory of the internal bucket with an arbitrary serialization id
-                String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_FILE_NAME;
-                internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData(), false);
-            });
+            a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().to("mock:remoteBuildNetexGraph");
         });
+
+        remoteBuildNetexGraph.expectedMessageCount(1);
+        remoteBuildNetexGraph.whenAnyExchangeReceived(e -> {
+                    // create a dummy base graph file in the work subdirectory of the internal bucket with an arbitrary serialization id
+                    String graphFileName = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_FILE_NAME;
+                    internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData(), false);
+                }
+        );
 
         updateStatus.expectedMessageCount(2);
         updateStatus.setResultWaitTime(20000);
@@ -81,6 +79,7 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
         context.start();
 
         sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(TestConstants.PROVIDER_ID_RUT, "ref", "corr-id"));
+        remoteBuildNetexGraph.assertIsSatisfied();
 
         updateStatus.assertIsSatisfied();
         otpGraphBuildQueue.assertIsSatisfied();
