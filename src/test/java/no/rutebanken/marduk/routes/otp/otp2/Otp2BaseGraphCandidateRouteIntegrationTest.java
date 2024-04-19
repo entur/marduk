@@ -28,6 +28,7 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.nio.charset.Charset;
 import java.util.List;
@@ -37,6 +38,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+
+    private static final String OTP2_BASE_GRAPH_FILE_NAME = OTP2_BASE_GRAPH_OBJ_PREFIX + "-XXX.obj";
+
+
+    @Value("${otp.graph.blobstore.subdirectory}")
+    private String graphSubdirectory;
 
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
@@ -76,8 +83,9 @@ class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInteg
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState())));
 
         // the graph object is present in the main bucket
-        BlobStoreFiles blobsInVersionedSubDirectory = internalInMemoryBlobStoreRepository.listBlobs("");
-        Assertions.assertEquals(1, blobsInVersionedSubDirectory.getFiles().size());
+        BlobStoreFiles blobsInVersionedSubDirectory = internalInMemoryBlobStoreRepository.listBlobs(graphSubdirectory + '/'  + OTP2_STREET_GRAPH_DIR + '/' + OTP2_BASE_GRAPH_FILE_NAME);
+
+        Assertions.assertEquals(1, blobsInVersionedSubDirectory.getFiles().size(), "The candidate base graph object should be present in the main bucket");
 
     }
 }
