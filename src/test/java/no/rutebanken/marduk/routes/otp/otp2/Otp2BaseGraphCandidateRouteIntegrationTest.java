@@ -25,11 +25,10 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 
-import java.nio.charset.Charset;
 import java.util.List;
 
 import static no.rutebanken.marduk.Constants.*;
@@ -37,6 +36,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+
+    private static final String OTP2_BASE_GRAPH_FILE_NAME = OTP2_BASE_GRAPH_OBJ_PREFIX + "-XXX.obj";
+
+
+    @Value("${otp.graph.blobstore.subdirectory}")
+    private String graphSubdirectory;
+
+    @EndpointInject("mock:remoteBuildNetexGraph")
+    protected MockEndpoint remoteBuildNetexGraph;
 
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
@@ -47,19 +55,20 @@ class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInteg
     @Test
     void testBaseGraphCandidateBuilding() throws Exception {
 
-
         AdviceWith.adviceWith(context, "otp2-base-graph-build-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
         AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-and-send-status", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
         AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-copy", a -> {
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-            a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().process(exchange -> {
-                // create dummy base graph file in the blob store with an arbitrary serialization id
-                String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_OBJ_PREFIX + "-XXX.obj";
-                internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
-            });
+            a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().to("mock:remoteBuildNetexGraph");
         });
+
+        remoteBuildNetexGraph.expectedMessageCount(1);
+        remoteBuildNetexGraph.whenAnyExchangeReceived(e -> {
+            // create dummy base graph file in the blob store with an arbitrary serialization id
+            String graphFileName = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_OBJ_PREFIX + "-XXX.obj";
+            internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData(), false);
+                }
+        );
 
         updateStatus.expectedMessageCount(2);
         updateStatus.setResultWaitTime(20000);
@@ -67,7 +76,7 @@ class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(TestConstants.PROVIDER_ID_RUT, "ref", "corr-id"));
-
+        remoteBuildNetexGraph.assertIsSatisfied();
         updateStatus.assertIsSatisfied();
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
@@ -76,8 +85,9 @@ class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInteg
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState())));
 
         // the graph object is present in the main bucket
-        BlobStoreFiles blobsInVersionedSubDirectory = internalInMemoryBlobStoreRepository.listBlobs("");
-        Assertions.assertEquals(1, blobsInVersionedSubDirectory.getFiles().size());
+        BlobStoreFiles blobsInVersionedSubDirectory = internalInMemoryBlobStoreRepository.listBlobs(graphSubdirectory + '/'  + OTP2_STREET_GRAPH_DIR + '/' + OTP2_BASE_GRAPH_FILE_NAME);
+
+        Assertions.assertEquals(1, blobsInVersionedSubDirectory.getFiles().size(), "The candidate base graph object should be present in the main bucket");
 
     }
 }
