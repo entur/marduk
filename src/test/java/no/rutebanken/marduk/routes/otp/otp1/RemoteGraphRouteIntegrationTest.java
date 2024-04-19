@@ -25,11 +25,9 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
@@ -60,7 +58,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
     void testRemoteNetexGraphBuildStatusEventReporting() throws Exception {
 
         // create a dummy base graph object in the blobstore repository
-        internalInMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectory + "/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+        internalInMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectory + "/" + Constants.BASE_GRAPH_OBJ, dummyData(), false);
 
         AdviceWith.adviceWith(context, "otp-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
@@ -78,7 +76,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
                     .replace()
                     .process(e -> {
                         String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ;
-                        internalInMemoryBlobStoreRepository.uploadBlob(builtOtpGraphPath, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+                        internalInMemoryBlobStoreRepository.uploadBlob(builtOtpGraphPath, dummyData(), false);
                     });
         });
 
@@ -124,7 +122,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
                     .replace()
                     .process(e -> {
                         String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ;
-                        internalInMemoryBlobStoreRepository.uploadBlob(builtOtpGraphPath, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+                        internalInMemoryBlobStoreRepository.uploadBlob(builtOtpGraphPath, dummyData(), false);
                     });
         });
 

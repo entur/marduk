@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.routes.otp.otp1;
 
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
@@ -27,7 +26,6 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.io.InputStream;
 import java.util.List;
 
 import static no.rutebanken.marduk.Constants.GRAPH_OBJ;
@@ -55,10 +53,6 @@ class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
     @Test
     void testStatusEventReporting() throws Exception {
 
-        //populate fake blob repo
-        InputStream dummyData = dummyData();
-        mardukInMemoryBlobStoreRepository.uploadBlob(  blobStoreSubdirectory+"/" + Constants.BASE_GRAPH_OBJ, dummyData, false);
-
         AdviceWith.adviceWith(context, "otp-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
         AdviceWith.adviceWith(context, "otp-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
@@ -72,10 +66,9 @@ class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
             a.weaveByToUri("direct:remoteBuildNetexGraph").replace().to("mock:remoteBuildNetexGraph");
         });
 
+        remoteBuildNetexGraph.expectedMessageCount(1);
         remoteBuildNetexGraph.whenAnyExchangeReceived(e -> {
-            InputStream dummyData2 = dummyData();
-            internalInMemoryBlobStoreRepository.uploadBlob(e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ, dummyData2, false);
-
+            internalInMemoryBlobStoreRepository.uploadBlob(e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ, dummyData(), false);
         });
 
         updateStatus.expectedMessageCount(6);
@@ -88,7 +81,7 @@ class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
         for(long refId = 1; refId <= 2; refId++) {
             sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(refId, "ref" + refId, "corr-id-" + refId));
         }
-
+        remoteBuildNetexGraph.assertIsSatisfied();
         updateStatus.assertIsSatisfied();
 
         List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();

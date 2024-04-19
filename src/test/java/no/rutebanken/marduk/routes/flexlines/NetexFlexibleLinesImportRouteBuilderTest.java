@@ -8,10 +8,8 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +47,7 @@ class NetexFlexibleLinesImportRouteBuilderTest extends MardukRouteBuilderIntegra
                 .thenReturn(provider("atb", 1, null));
 
         // create a dummy test file in the blobstore repository
-        internalInMemoryBlobStoreRepository.uploadBlob(TEST_FILE_NAME, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+        internalInMemoryBlobStoreRepository.uploadBlob(TEST_FILE_NAME, dummyData(), false);
 
         context.start();
 
