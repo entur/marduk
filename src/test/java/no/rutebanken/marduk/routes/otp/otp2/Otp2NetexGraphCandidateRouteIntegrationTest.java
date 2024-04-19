@@ -41,6 +41,9 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
+    @EndpointInject("mock:remoteBuildNetexGraph")
+    protected MockEndpoint remoteBuildNetexGraph;
+
     @Produce("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphCandidateBuildQueue")
     protected ProducerTemplate producerTemplate;
 
@@ -59,12 +62,16 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
 
         AdviceWith.adviceWith(context, "otp2-remote-netex-graph-build-and-send-status", a -> {
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-            a.weaveByToUri("direct:remoteBuildOtp2NetexGraph").replace().process(exchange -> {
-                // create dummy graph file in the blob store
-                String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_GRAPH_OBJ;
-                internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData(), false);
-            });
+            a.weaveByToUri("direct:remoteBuildOtp2NetexGraph").replace().to("mock:remoteBuildNetexGraph");
         });
+
+        remoteBuildNetexGraph.expectedMessageCount(1);
+        remoteBuildNetexGraph.whenAnyExchangeReceived(e -> {
+            // create dummy graph file in the blob store
+            String graphFileName = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_GRAPH_OBJ;
+            internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData(), false);
+                }
+        );
 
         updateStatus.expectedMessageCount(6);
         updateStatus.setResultWaitTime(20000);
@@ -74,6 +81,7 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
         for(long refId = 1; refId <= 2; refId++) {
             sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(refId, "ref" + refId, "corr-id-" + refId));
         }
+        remoteBuildNetexGraph.assertIsSatisfied();
 
         updateStatus.assertIsSatisfied();
 
