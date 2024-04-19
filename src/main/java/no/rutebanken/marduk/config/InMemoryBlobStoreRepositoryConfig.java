@@ -20,9 +20,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Common in-memory map of blobs that simulate different buckets in GCS.
@@ -33,7 +32,7 @@ public class InMemoryBlobStoreRepositoryConfig {
 
     @Bean
     public Map<String, Map<String, byte[]>> blobsInContainers() {
-        return Collections.synchronizedMap(new HashMap<>());
+        return new ConcurrentHashMap<>();
     }
 
 }

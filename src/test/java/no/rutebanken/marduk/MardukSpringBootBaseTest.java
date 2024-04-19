@@ -7,6 +7,7 @@ import no.rutebanken.marduk.repository.InMemoryBlobStoreRepository;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +20,8 @@ import org.springframework.test.context.ActiveProfiles;
 import jakarta.annotation.PostConstruct;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.List;
 
@@ -109,6 +112,10 @@ public abstract class MardukSpringBootBaseTest {
     protected static Provider provider(long id) throws IOException {
         return Provider.create(IOUtils.toString(new FileReader(
                 "src/test/resources/no/rutebanken/marduk/providerRepository/provider" + id  + ".json")));
+    }
+
+    protected static @NotNull InputStream dummyData() {
+        return IOUtils.toInputStream("dummyData", Charset.defaultCharset());
     }
 
 }

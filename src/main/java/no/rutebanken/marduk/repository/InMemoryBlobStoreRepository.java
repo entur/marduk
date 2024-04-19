@@ -33,9 +33,9 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Simple memory-based blob store repository for testing purpose.
@@ -62,7 +62,7 @@ public class InMemoryBlobStoreRepository implements BlobStoreRepository {
     }
 
     private Map<String, byte[]> getBlobsForContainer(String aContainer) {
-        return blobsInContainers.computeIfAbsent(aContainer, k -> Collections.synchronizedMap(new HashMap<>()));
+        return blobsInContainers.computeIfAbsent(aContainer, k -> new ConcurrentHashMap<>());
     }
 
     @Override
