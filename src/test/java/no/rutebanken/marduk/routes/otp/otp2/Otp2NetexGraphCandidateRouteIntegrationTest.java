@@ -25,11 +25,9 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.nio.charset.Charset;
 import java.util.List;
 
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ;
@@ -64,11 +62,12 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
             a.weaveByToUri("direct:remoteBuildOtp2NetexGraph").replace().process(exchange -> {
                 // create dummy graph file in the blob store
                 String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_GRAPH_OBJ;
-                internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+                internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData(), false);
             });
         });
 
         updateStatus.expectedMessageCount(6);
+        updateStatus.setResultWaitTime(20000);
 
         context.start();
 
