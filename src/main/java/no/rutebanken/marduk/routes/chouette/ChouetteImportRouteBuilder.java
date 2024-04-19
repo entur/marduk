@@ -25,7 +25,6 @@ import no.rutebanken.marduk.routes.status.JobEvent.State;
 import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.component.http.HttpMethods;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -128,7 +127,6 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(CHOUETTE_REFERENTIAL, provider.getChouetteInfo().getReferential());
-                    e.getIn().setHeader(Constants.ENABLE_VALIDATION, provider.getChouetteInfo().isEnableValidation());
                 })
                 .to(logDebugShowAll())
                 .to("direct:addImportParameters")
@@ -182,10 +180,6 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .to(logDebugShowAll())
                 .setBody(constant(""))
                 .choice()
-                .when(PredicateBuilder.and(constant("false").isEqualTo(header(Constants.ENABLE_VALIDATION)), simple("${header.action_report_result} == 'OK'")))
-                .to("direct:copyOriginalDataset")
-                .to("direct:checkScheduledJobsBeforeTriggeringNextAction")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.IMPORT).state(State.OK).build())
                 .when(simple("${header.action_report_result} == 'OK' && ${header.validation_report_result} == 'OK'"))
                 .to("direct:copyOriginalDataset")
                 .to("direct:checkScheduledJobsBeforeTriggeringNextAction")
@@ -212,23 +206,12 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .toD("${exchangeProperty.job_status_url}")
                 .choice()
                 .when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
-                .log(LoggingLevel.INFO, correlation() + "Import and validation ok, skipping next step as there are more import jobs active")
+                .log(LoggingLevel.INFO, correlation() + "Import ok, skipping next step as there are more import jobs active")
                 .otherwise()
-                .log(LoggingLevel.INFO, correlation() + "Import and validation ok, triggering next step.")
                 .setBody(constant(""))
-                .to(logDebugShowAll())
-                .choice()
-                .when(constant("true").isEqualTo(header(Constants.ENABLE_VALIDATION)))
                 .log(LoggingLevel.INFO, correlation() + "Import ok, triggering validation")
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
-                .when(method(getClass(), "shouldTransferData").isEqualTo(true))
-                .log(LoggingLevel.INFO, correlation() + "Import ok, transfering data to next dataspace")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteTransferExportQueue")
-                .otherwise()
-                .log(LoggingLevel.INFO, correlation() + "Import ok, triggering export")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue")
-                .end()
                 .end()
                 .routeId("chouette-process-job-list-after-import");
 

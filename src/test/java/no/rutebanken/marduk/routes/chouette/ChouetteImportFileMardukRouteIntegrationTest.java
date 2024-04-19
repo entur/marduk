@@ -140,7 +140,7 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
         chouetteCreateImport.assertIsSatisfied();
         pollJobStatus.assertIsSatisfied();
 
-        Exchange exchange = pollJobStatus.getReceivedExchanges().get(0);
+        Exchange exchange = pollJobStatus.getReceivedExchanges().getFirst();
         exchange.getIn().setHeader("action_report_result", "OK");
         exchange.getIn().setHeader("validation_report_result", "OK");
         processImportResultTemplate.send(exchange);
@@ -214,7 +214,6 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
         Map<String, Object> headers = new HashMap<>();
         headers.put(Constants.PROVIDER_ID, TestConstants.PROVIDER_ID_AS_STRING_RUT);
         headers.put(Constants.CHOUETTE_REFERENTIAL, TestConstants.CHOUETTE_REFERENTIAL_RUT);
-        headers.put(Constants.ENABLE_VALIDATION, true);
 
         triggerJobListTemplate.sendBodyAndHeaders(null, headers);
 

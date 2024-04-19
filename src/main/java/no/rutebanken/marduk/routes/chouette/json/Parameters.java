@@ -49,16 +49,16 @@ public class Parameters {
     static String getGtfsImportParameters(String importName, Provider provider) {
         ChouetteInfo chouetteInfo = provider.getChouetteInfo();
         GtfsImportParameters gtfsImportParameters = GtfsImportParameters.create(importName, chouetteInfo.getXmlns(),
-                chouetteInfo.getReferential(), chouetteInfo.getOrganisation(), chouetteInfo.getUser(), chouetteInfo.isEnableCleanImport(),
-                chouetteInfo.isEnableValidation(), chouetteInfo.isAllowCreateMissingStopPlace(), chouetteInfo.isEnableStopPlaceIdMapping(), chouetteInfo.getGenerateMissingServiceLinksForModes());
+                chouetteInfo.getReferential(), chouetteInfo.getOrganisation(), chouetteInfo.getUser(), true,
+                true, chouetteInfo.isAllowCreateMissingStopPlace(), false, chouetteInfo.getGenerateMissingServiceLinksForModes());
         return gtfsImportParameters.toJsonString();
     }
 
     static String getNetexImportParameters(String importName, Provider provider, boolean enablePreValidation, boolean allowUpdatingStopPlace) {
         ChouetteInfo chouetteInfo = provider.getChouetteInfo();
         NetexImportParameters netexImportParameters = NetexImportParameters.create(importName, provider.getName(),
-                chouetteInfo.getOrganisation(), chouetteInfo.getUser(), chouetteInfo.isEnableCleanImport(), chouetteInfo.isEnableValidation(),
-                chouetteInfo.isAllowCreateMissingStopPlace(), chouetteInfo.isEnableStopPlaceIdMapping(), chouetteInfo.getXmlns(), chouetteInfo.getGenerateMissingServiceLinksForModes(), enablePreValidation, enablePreValidation, allowUpdatingStopPlace);
+                chouetteInfo.getOrganisation(), chouetteInfo.getUser(), true, true,
+                chouetteInfo.isAllowCreateMissingStopPlace(), true, chouetteInfo.getXmlns(), chouetteInfo.getGenerateMissingServiceLinksForModes(), enablePreValidation, enablePreValidation, allowUpdatingStopPlace);
         return netexImportParameters.toJsonString();
     }
 
