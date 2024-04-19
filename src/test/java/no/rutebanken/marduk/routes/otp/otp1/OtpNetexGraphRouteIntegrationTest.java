@@ -24,7 +24,6 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 
@@ -34,9 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
-
-    @Value("${otp.graph.blobstore.subdirectory:graphs}")
-    private String blobStoreSubdirectory;
 
     @EndpointInject("mock:sink")
     protected MockEndpoint sink;
@@ -67,16 +63,13 @@ class OtpNetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
         });
 
         remoteBuildNetexGraph.expectedMessageCount(1);
-        remoteBuildNetexGraph.whenAnyExchangeReceived(e -> {
-            internalInMemoryBlobStoreRepository.uploadBlob(e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ, dummyData(), false);
-        });
+        remoteBuildNetexGraph.whenAnyExchangeReceived(e ->
+                internalInMemoryBlobStoreRepository.uploadBlob(e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ, dummyData(), false)
+        );
 
         updateStatus.expectedMessageCount(6);
         updateStatus.setResultWaitTime(20000);
         context.start();
-
-
-
 
         for(long refId = 1; refId <= 2; refId++) {
             sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(refId, "ref" + refId, "corr-id-" + refId));
