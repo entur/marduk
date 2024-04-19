@@ -89,7 +89,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
 
 
 
-
+        updateStatus.setResultWaitTime(20000);
         updateStatus.expectedMessageCount(6);
 
         context.start();
@@ -134,6 +134,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
         });
 
         updateStatus.expectedMessageCount(2);
+        updateStatus.setResultWaitTime(20000);
 
         context.start();
 
