@@ -12,12 +12,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.client.ReactorResourceFactory;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import jakarta.annotation.PostConstruct;
 import java.io.FileReader;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 
 import static no.rutebanken.marduk.TestConstants.*;
@@ -46,6 +48,9 @@ public abstract class MardukSpringBootBaseTest {
 
     @Autowired
     protected PubSubTemplate pubSubTemplate;
+
+    @Autowired
+    private ReactorResourceFactory reactorResourceFactory;
 
     @Autowired
     protected InMemoryBlobStoreRepository mardukInMemoryBlobStoreRepository;
@@ -81,6 +86,10 @@ public abstract class MardukSpringBootBaseTest {
 
     @BeforeEach
     protected void setUp() throws IOException {
+
+        // prevent Netty from waiting 2s (default value) during each Spring Boot context shutdown
+        reactorResourceFactory.setShutdownQuietPeriod(Duration.ofSeconds(0));
+
         Provider provider2 = provider(PROVIDER_ID_RUT);
         Provider provider1002 = provider(PROVIDER_ID_RB_RUT);
 
