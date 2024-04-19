@@ -19,7 +19,6 @@ package no.rutebanken.marduk.routes.otp.otp1;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestConstants;
-import no.rutebanken.marduk.repository.BlobStoreRepository;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
@@ -28,7 +27,6 @@ import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.nio.charset.Charset;
@@ -41,9 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
-
-    @Autowired
-    private BlobStoreRepository blobStoreRepository;
 
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
@@ -65,7 +60,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
     void testRemoteNetexGraphBuildStatusEventReporting() throws Exception {
 
         // create a dummy base graph object in the blobstore repository
-        blobStoreRepository.uploadBlob(blobStoreSubdirectory + "/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+        internalInMemoryBlobStoreRepository.uploadBlob(blobStoreSubdirectory + "/" + Constants.BASE_GRAPH_OBJ, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
 
         AdviceWith.adviceWith(context, "otp-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
@@ -83,7 +78,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
                     .replace()
                     .process(e -> {
                         String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ;
-                        blobStoreRepository.uploadBlob(builtOtpGraphPath, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+                        internalInMemoryBlobStoreRepository.uploadBlob(builtOtpGraphPath, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
                     });
         });
 
@@ -129,7 +124,7 @@ class RemoteGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestB
                     .replace()
                     .process(e -> {
                         String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + GRAPH_OBJ;
-                        blobStoreRepository.uploadBlob(builtOtpGraphPath, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+                        internalInMemoryBlobStoreRepository.uploadBlob(builtOtpGraphPath, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
                     });
         });
 
