@@ -8,8 +8,10 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +21,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 class NetexFlexibleLinesImportRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
+
+    private static final String TEST_FILE_NAME = "test.xml";
 
     @Produce("direct:flexibleLinesImport")
     protected ProducerTemplate startRoute;
@@ -44,12 +48,15 @@ class NetexFlexibleLinesImportRouteBuilderTest extends MardukRouteBuilderIntegra
         when(providerRepository.getProvider(anyLong()))
                 .thenReturn(provider("atb", 1, null));
 
+        // create a dummy test file in the blobstore repository
+        internalInMemoryBlobStoreRepository.uploadBlob(TEST_FILE_NAME, IOUtils.toInputStream("dummyData", Charset.defaultCharset()), false);
+
         context.start();
 
         startRoute.sendBodyAndHeaders(
                 null,
                 Map.of(PROVIDER_ID, 1L,
-                        FILE_HANDLE, "test.xml",
+                        FILE_HANDLE, TEST_FILE_NAME,
                         CORRELATION_ID, "corr-id-" + 1L)
         );
 
@@ -64,7 +71,7 @@ class NetexFlexibleLinesImportRouteBuilderTest extends MardukRouteBuilderIntegra
         assertEquals(VALIDATION_STAGE_FLEX_POSTVALIDATION, message.getIn().getHeader(VALIDATION_STAGE_HEADER));
         assertEquals(VALIDATION_CLIENT_MARDUK, message.getIn().getHeader(VALIDATION_CLIENT_HEADER));
         assertEquals(VALIDATION_PROFILE_IMPORT_TIMETABLE_FLEX, message.getIn().getHeader(VALIDATION_PROFILE_HEADER));
-        assertEquals("test.xml", message.getIn().getHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER));
+        assertEquals(TEST_FILE_NAME, message.getIn().getHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER));
         assertEquals("corr-id-1", message.getIn().getHeader(VALIDATION_CORRELATION_ID_HEADER));
 
         List<Exchange> jobEvents = updateStatus.getExchanges();
