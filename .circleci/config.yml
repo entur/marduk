@@ -59,7 +59,7 @@ aliases:
 jobs:
   build:
     docker:
-      - image:  cimg/openjdk:21.0.2
+      - image: cimg/openjdk:21.0.2
         auth:
           username: $DOCKERHUB_LOGIN
           password: $DOCKERHUB_PASSWORD
@@ -75,11 +75,14 @@ jobs:
             - dep-cache-
       - run:
           name: Download Maven settings
-          command: wget https://raw.githubusercontent.com/entur/circleci-toolbox-image-java11/master/tools/m2/settings.xml -O .circleci/settings.xml
+          command: wget
+            https://raw.githubusercontent.com/entur/circleci-toolbox-image-java11/master/tools/m2/settings.xml
+            -O .circleci/settings.xml
       - run: *jfrog-login
       - run:
           name: Refresh cache
-          command: mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.0:go-offline -s .circleci/settings.xml
+          command: mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.0:go-offline
+            -s .circleci/settings.xml
       - save_cache:
           paths:
             - ~/.m2
@@ -110,6 +113,8 @@ jobs:
             - Dockerfile
             - .circleci
             - ./version
+    # The resource_class feature allows configuring CPU and RAM resources for each job. Different resource classes are available for different executors. https://circleci.com/docs/2.0/configuration-reference/#resourceclass
+    resource_class: large
   deploy-docker:
     <<: *google-sdk-container-config
     steps:
