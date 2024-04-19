@@ -110,6 +110,7 @@ jobs:
             - Dockerfile
             - .circleci
             - ./version
+    resource_class: large
   deploy-docker:
     <<: *google-sdk-container-config
     steps:
