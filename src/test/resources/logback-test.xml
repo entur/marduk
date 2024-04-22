@@ -33,7 +33,7 @@
 
     <logger name="io.grpc.internal.ManagedChannelOrphanWrapper" level="OFF"/>
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="CONSOLE-ASYNC" />
     </root>
 
