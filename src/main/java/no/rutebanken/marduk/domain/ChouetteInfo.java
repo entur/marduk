@@ -30,10 +30,7 @@ public class ChouetteInfo {
     private String organisation;
     private String user;
     private String dataFormat;
-    private boolean enableValidation;
     private boolean allowCreateMissingStopPlace;
-    private boolean enableStopPlaceIdMapping;
-    private boolean enableCleanImport;
     private boolean enableAutoImport;
     private boolean enableAutoValidation;
     private boolean generateDatedServiceJourneyIds;
@@ -56,12 +53,9 @@ public class ChouetteInfo {
                        ", organisation='" + organisation + '\'' +
                        ", user='" + user + '\'' +
                        ", dataFormat='" + dataFormat + '\'' +
-                       ", enableValidation='" + enableValidation + '\'' +
-                       ", allowCreateMissingStopPlace='" + allowCreateMissingStopPlace + '\'' +
-                       ", enableStopPlaceIdMapping='" + enableStopPlaceIdMapping + '\'' +
+                        ", allowCreateMissingStopPlace='" + allowCreateMissingStopPlace + '\'' +
                        ", enableAutoImport='" + enableAutoImport + '\'' +
                        ", enableAutoValidation='" + enableAutoValidation + '\'' +
-                       ", enableCleanImport='" + enableCleanImport + '\'' +
                        ", generateMissingServiceLinksForModes='" + generateMissingServiceLinksForModes + '\'' +
                        ", migrateDataToProvider='" + migrateDataToProvider + '\'' +
                        ", generateDatedServiceJourneyIds='" + generateDatedServiceJourneyIds + '\'' +
@@ -97,20 +91,9 @@ public class ChouetteInfo {
         return dataFormat;
     }
 
-    public boolean isEnableValidation() {
-        return enableValidation;
-    }
 
     public boolean isAllowCreateMissingStopPlace() {
         return allowCreateMissingStopPlace;
-    }
-
-    public boolean isEnableStopPlaceIdMapping() {
-        return enableStopPlaceIdMapping;
-    }
-
-    public boolean isEnableCleanImport() {
-        return enableCleanImport;
     }
 
     public boolean isEnableAutoImport() {
@@ -164,23 +147,8 @@ public class ChouetteInfo {
         return this;
     }
 
-    public ChouetteInfo setEnableValidation(boolean enableValidation) {
-        this.enableValidation = enableValidation;
-        return this;
-    }
-
     public ChouetteInfo setAllowCreateMissingStopPlace(boolean allowCreateMissingStopPlace) {
         this.allowCreateMissingStopPlace = allowCreateMissingStopPlace;
-        return this;
-    }
-
-    public ChouetteInfo setEnableStopPlaceIdMapping(boolean enableStopPlaceIdMapping) {
-        this.enableStopPlaceIdMapping = enableStopPlaceIdMapping;
-        return this;
-    }
-
-    public ChouetteInfo setEnableCleanImport(boolean enableCleanImport) {
-        this.enableCleanImport = enableCleanImport;
         return this;
     }
 

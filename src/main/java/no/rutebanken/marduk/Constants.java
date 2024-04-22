@@ -55,7 +55,6 @@ public final class Constants {
     public static final String OTP2_GRAPH_REPORT_INDEX_FILE = "index_otp2.html";
 
     public static final String FILE_TARGET_MD5 = "RutebankenMd5SumRecordedForTargetFile";
-    public static final String ENABLE_VALIDATION = "RutebankenEnableValidation";
 
     public static final String FILE_APPLY_DUPLICATES_FILTER = "RutebankenApplyDuplicateFilter";
     public static final String FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY = "RutebankenApplyDuplicateFilterOnNameOnly";
