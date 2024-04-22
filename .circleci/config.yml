@@ -79,7 +79,7 @@ jobs:
       - run: *jfrog-login
       - run:
           name: Refresh cache
-          command: mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.0:go-offline -s .circleci/settings.xml
+          command: mvn org.apache.maven.plugins:maven-dependency-plugin:3.6.1:go-offline -s .circleci/settings.xml
       - save_cache:
           paths:
             - ~/.m2
