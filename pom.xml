@@ -271,11 +271,40 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>me.fabriciorby</groupId>
+                        <artifactId>maven-surefire-junit5-tree-reporter</artifactId>
+                        <version>1.2.1</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
-                    <argLine>@{argLine} -Xms700m -Xmx700m -Xss256k</argLine>
+                    <forkCount>3</forkCount>
+                    <argLine>
+                        @{argLine}
+                        -Xms700m
+                        -Xmx700m
+                        -Xss256k
+                        -Dcamel.component.google-pubsub.endpoint=localhost:809${surefire.forkNumber}
+                        -Dspring.cloud.gcp.pubsub.emulatorHost=localhost:809${surefire.forkNumber}
+                        -Dcamel.cluster.file.root=${java.io.tmpdir}/camel-fork-${surefire.forkNumber}</argLine>
                     <systemPropertyVariables combine.children="override">
                         <spring.output.ansi.enabled>ALWAYS</spring.output.ansi.enabled>
                     </systemPropertyVariables>
+                    <reportFormat>plain</reportFormat>
+                    <consoleOutputReporter>
+                        <disable>true</disable>
+                    </consoleOutputReporter>
+                    <statelessTestsetInfoReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5StatelessTestsetInfoTreeReporter">
+                        <printStacktraceOnError>true</printStacktraceOnError>
+                        <printStacktraceOnFailure>true</printStacktraceOnFailure>
+                        <printStdoutOnError>true</printStdoutOnError>
+                        <printStdoutOnFailure>true</printStdoutOnFailure>
+                        <printStdoutOnSuccess>false</printStdoutOnSuccess>
+                        <printStderrOnError>true</printStderrOnError>
+                        <printStderrOnFailure>true</printStderrOnFailure>
+                        <printStderrOnSuccess>false</printStderrOnSuccess>
+                    </statelessTestsetInfoReporter>
                 </configuration>
             </plugin>
 
