@@ -131,7 +131,7 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 		chouetteCreateValidation.assertIsSatisfied();
 		pollJobStatus.assertIsSatisfied();
 		
-		Exchange exchange = pollJobStatus.getReceivedExchanges().get(0);
+		Exchange exchange = pollJobStatus.getReceivedExchanges().getFirst();
 		exchange.getIn().setHeader("action_report_result", "OK");
 		exchange.getIn().setHeader("validation_report_result", "OK");
 		processValidationResultTemplate.send(exchange );

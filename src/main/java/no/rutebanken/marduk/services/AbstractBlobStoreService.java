@@ -47,7 +47,7 @@ public abstract class AbstractBlobStoreService {
         } else if(blobStoreFiles.getFiles().size() > 1) {
             throw new MardukException("Found multiple files matching the prefix " + prefix);
         }
-        return blobStoreFiles.getFiles().get(0);
+        return blobStoreFiles.getFiles().getFirst();
     }
 
     public InputStream getBlob(@Header(value = Constants.FILE_HANDLE) String name, Exchange exchange) {

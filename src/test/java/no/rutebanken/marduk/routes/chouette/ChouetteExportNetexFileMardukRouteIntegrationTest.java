@@ -137,7 +137,7 @@ class ChouetteExportNetexFileMardukRouteIntegrationTest extends MardukRouteBuild
 		chouetteCreateExport.assertIsSatisfied();
 		pollJobStatus.assertIsSatisfied();
 
-		Exchange exchange = pollJobStatus.getReceivedExchanges().get(0);
+		Exchange exchange = pollJobStatus.getReceivedExchanges().getFirst();
 		exchange.getIn().setHeader("action_report_result", "OK");
 		exchange.getIn().setHeader("data_url", chouetteUrl+ "/chouette_iev/referentials/rut/jobs/1/data");
 		processExportResultTemplate.send(exchange );

@@ -175,6 +175,11 @@
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-google-pubsub-starter</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion></exclusions>
         </dependency>
 
         <!-- Other-->

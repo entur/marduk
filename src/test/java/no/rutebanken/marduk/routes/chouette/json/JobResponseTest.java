@@ -47,7 +47,7 @@ class JobResponseTest {
         JobResponseWithLinks jobResponse = objectReader.readValue(reader);
         assertEquals(Status.SCHEDULED, jobResponse.getStatus());
         assertEquals("http://chouette:8080/chouette_iev/referentials/tds/data/130/parameters.json",
-                jobResponse.getLinks().stream().filter(li -> li.getRel().equals("parameters")).toList().get(0).getHref());
+                jobResponse.getLinks().stream().filter(li -> li.getRel().equals("parameters")).toList().getFirst().getHref());
     }
 
 }

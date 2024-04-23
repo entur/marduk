@@ -196,9 +196,9 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         importQueue.assertIsSatisfied();
 
         List<Exchange> exchanges = importQueue.getExchanges();
-        String providerId = (String) exchanges.get(0).getIn().getHeader(PROVIDER_ID);
+        String providerId = (String) exchanges.getFirst().getIn().getHeader(PROVIDER_ID);
         assertEquals(PROVIDER_ID_AS_STRING_RUT, providerId);
-        String s3FileHandle = (String) exchanges.get(0).getIn().getHeader(FILE_HANDLE);
+        String s3FileHandle = (String) exchanges.getFirst().getIn().getHeader(FILE_HANDLE);
         assertEquals(BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT +  "/file1", s3FileHandle);
     }
 
@@ -225,7 +225,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         exportQueue.assertIsSatisfied();
 
         List<Exchange> exchanges = exportQueue.getExchanges();
-        String providerId = (String) exchanges.get(0).getIn().getHeader(PROVIDER_ID);
+        String providerId = (String) exchanges.getFirst().getIn().getHeader(PROVIDER_ID);
         assertEquals(PROVIDER_ID_AS_STRING_RUT, providerId);
     }
 
@@ -252,7 +252,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         ObjectReader objectReader = ObjectMapperFactory.getSharedObjectMapper().readerFor(BlobStoreFiles.class);
         BlobStoreFiles rsp = objectReader.readValue(s);
         assertEquals(1, rsp.getFiles().size(), "The list should contain exactly one file");
-        assertEquals(testFileName, rsp.getFiles().get(0).getName(), "The file name should not be prefixed by the file store path");
+        assertEquals(testFileName, rsp.getFiles().getFirst().getName(), "The file name should not be prefixed by the file store path");
     }
 
     @Test
@@ -373,7 +373,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         List<Exchange> exchanges = processFileQueue.getExchanges();
 
         assertEquals(IMPORT_TYPE_NETEX_FLEX,
-                exchanges.get(0).getIn().getHeader(IMPORT_TYPE),
+                exchanges.getFirst().getIn().getHeader(IMPORT_TYPE),
                 "Flex import should have expected IMPORT_TYPE header");
 
         InputStream receivedFile = internalInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);

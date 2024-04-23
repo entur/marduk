@@ -41,7 +41,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * A spring-boot application that includes a Camel route builder to setup the Camel routes
+ * A spring-boot application that includes a Camel route builder to set up the Camel routes
  */
 @SpringBootApplication(exclude={UserDetailsServiceAutoConfiguration.class})
 @EnableScheduling
