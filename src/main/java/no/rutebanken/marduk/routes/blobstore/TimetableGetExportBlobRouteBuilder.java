@@ -21,11 +21,7 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Component
 public class TimetableGetExportBlobRouteBuilder extends BaseRouteBuilder {

@@ -92,7 +92,7 @@ public class KubernetesJobRunner {
     /**
      * Retrieve a job or create a new one.
      * If a job with the same name is already running (presumably created during a previous attempt that failed due to network
-     * issues), this job is retrieved. Otherwise a new job is created.
+     * issues), this job is retrieved. Otherwise, a new job is created.
      *
      * @param jobName          the Kubernetes job name.
      * @param kubernetesClient the Kubernetes client.

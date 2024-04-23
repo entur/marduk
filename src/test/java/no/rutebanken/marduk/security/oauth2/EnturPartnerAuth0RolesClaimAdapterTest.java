@@ -35,7 +35,7 @@ class EnturPartnerAuth0RolesClaimAdapterTest extends MardukSpringBootBaseTest {
         Assertions.assertNotNull(convertedClaims.get(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS));
         List<String> roles = (List<String>) convertedClaims.get(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS);
         Assertions.assertEquals(1, roles.size());
-        String role = roles.get(0);
+        String role = roles.getFirst();
         Assertions.assertTrue(role.contains(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN), "Entur users should have administrator privileges");
 
         Assertions.assertNotNull(convertedClaims.get(StandardClaimNames.PREFERRED_USERNAME));
@@ -49,7 +49,7 @@ class EnturPartnerAuth0RolesClaimAdapterTest extends MardukSpringBootBaseTest {
         Assertions.assertNotNull(convertedClaims.get(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS));
         List<String> roles = (List<String>) convertedClaims.get(RoROAuth2Claims.OAUTH2_CLAIM_ROLE_ASSIGNMENTS);
         Assertions.assertEquals(1, roles.size());
-        String role = roles.get(0);
+        String role = roles.getFirst();
         Assertions.assertTrue(role.contains(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT), "Providers should have editor privileges");
 
         Assertions.assertNotNull(convertedClaims.get(StandardClaimNames.PREFERRED_USERNAME));

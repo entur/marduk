@@ -13,7 +13,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  * private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getSharedObjectMapper().readerFor(Provider.class);
  * OBJECT_READER.readValue(jsonString)
  * </pre>
- * However ObjectMapper.readTree() does not have an equivalent method in ObjectReader. In that case a copy of the ObjectMapper can be created to reduce contention:
+ * However, ObjectMapper.readTree() does not have an equivalent method in ObjectReader. In that case a copy of the ObjectMapper can be created to reduce contention:
  * <pre>
  * private static final ObjectMapper OBJECT_MAPPER = ObjectMapperFactory.getSharedObjectMapper().copy();
  * OBJECT_MAPPER.readTree(...)

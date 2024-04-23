@@ -129,7 +129,7 @@ public class FetchOsmRouteBuilder extends BaseRouteBuilder {
                 .convertBodyTo(String.class)
                 .process(p -> {
                     String md5 = (String) p.getIn().getBody();
-                    if (md5 == null || md5.length() == 0) {
+                    if (md5 == null || md5.isEmpty()) {
                         md5 = "flag that we need to fetch the data, as the file did not exist";
                     }
                     md5 = md5.split(" ")[0];

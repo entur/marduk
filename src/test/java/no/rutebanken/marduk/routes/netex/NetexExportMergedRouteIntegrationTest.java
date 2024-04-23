@@ -58,10 +58,10 @@ class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegratio
         AdviceWith.adviceWith(context, "netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
 
-        // Create stop file in in memory blob store
+        // Create stop file in memory blob store
         mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"), false);
 
-        // Create provider netex export in in memory blob store
+        // Create provider netex export in memory blob store
         mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-aggregated-netex.zip", new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip"), false);
 
         updateStatus.expectedMessageCount(2);

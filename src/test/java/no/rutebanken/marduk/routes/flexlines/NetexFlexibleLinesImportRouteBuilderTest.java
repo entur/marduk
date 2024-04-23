@@ -63,7 +63,7 @@ class NetexFlexibleLinesImportRouteBuilderTest extends MardukRouteBuilderIntegra
         assertNotNull(messages);
         assertEquals(1, messages.size(), "Expected 1 message in AntuNetexValidationQueue");
 
-        Exchange message = messages.get(0);
+        Exchange message = messages.getFirst();
 
         assertEquals("atb", message.getIn().getHeader(DATASET_REFERENTIAL));
         assertEquals(VALIDATION_STAGE_FLEX_POSTVALIDATION, message.getIn().getHeader(VALIDATION_STAGE_HEADER));
@@ -77,7 +77,7 @@ class NetexFlexibleLinesImportRouteBuilderTest extends MardukRouteBuilderIntegra
         assertNotNull(jobEvents);
         assertEquals(1, jobEvents.size(), "Expected 1 jobEvent");
 
-        String jobEvent = jobEvents.get(0).getIn().getBody(String.class);
+        String jobEvent = jobEvents.getFirst().getIn().getBody(String.class);
 
         assertEquals(JobEvent.State.PENDING, JobEvent.fromString(jobEvent).getState());
         assertEquals(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION.toString(), JobEvent.fromString(jobEvent).getAction());

@@ -71,7 +71,7 @@ public class FileClassifierPredicates {
                 if (eventType == XMLStreamConstants.START_ELEMENT) {
                     return Optional.of(streamReader.getName());
                 } else if (eventType != XMLStreamConstants.COMMENT) {
-                    // If event is neither start of element or a comment, then this is probably not a xml file.
+                    // If event is neither start of element nor a comment, then this is probably not a xml file.
                     break;
                 }
             }

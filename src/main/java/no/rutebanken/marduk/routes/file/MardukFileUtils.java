@@ -44,7 +44,7 @@ public class MardukFileUtils {
 
 
     /**
-     * Open an input stream on a temporary file with the guarantee that the file will be delete when the stream is closed.
+     * Open an input stream on a temporary file with the guarantee that the file will be deleted when the stream is closed.
      *
      * @param tmpFile
      * @return
