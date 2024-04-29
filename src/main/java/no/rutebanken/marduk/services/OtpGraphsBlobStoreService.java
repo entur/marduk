@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.services;
 
 import no.rutebanken.marduk.repository.BlobStoreRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +27,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class OtpGraphsBlobStoreService extends AbstractBlobStoreService {
 
-    public OtpGraphsBlobStoreService(@Value("${blobstore.gcs.graphs.container.name:otp-graphs}") String containerName, @Autowired BlobStoreRepository repository) {
+    public OtpGraphsBlobStoreService(@Value("${blobstore.gcs.graphs.container.name:otp-graphs}") String containerName, BlobStoreRepository repository) {
         super(containerName, repository);
     }
 }

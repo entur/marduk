@@ -45,8 +45,8 @@ public class GtfsFileMerger {
     private final GtfsExport gtfsExport;
     private final boolean includeShapes;
 
-    private final Set<String> stopIds = new HashSet<>(150000);
-    private final Set<List<String>> transfers = new HashSet<>(15000);
+    private final Set<String> stopIds = HashSet.newHashSet(150000);
+    private final Set<List<String>> transfers = HashSet.newHashSet(15000);
 
 
     /**
@@ -190,9 +190,6 @@ public class GtfsFileMerger {
      * Convert default values. null values are inserted as empty string, as well as some default 0 values that are
      * converted into empty string for compatibility with the original merge algorithm.
      *
-     * @param csvRecord
-     * @param header
-     * @return
      */
     private String convertValue(CSVRecord csvRecord, String header) {
         if (!csvRecord.isSet(header)) {

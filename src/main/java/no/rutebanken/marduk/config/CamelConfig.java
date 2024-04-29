@@ -20,7 +20,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import no.rutebanken.marduk.routes.aggregation.IdleRouteAggregationMonitor;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.ThreadPoolBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -32,12 +31,9 @@ public class CamelConfig {
     /**
      * Configure the Camel thread pool for bulk operations on providers.
      *
-     * @param camelContext
-     * @return
-     * @throws Exception
      */
     @Bean
-    public ExecutorService allProvidersExecutorService(@Autowired CamelContext camelContext) throws Exception {
+    public ExecutorService allProvidersExecutorService(CamelContext camelContext) throws Exception {
         ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder(camelContext);
         return poolBuilder
                 .poolSize(20)
@@ -52,12 +48,9 @@ public class CamelConfig {
      * This means that at most one route among GTFS extended and GTFS basic export routes
      * can be running at any given time.
      *
-     * @param camelContext
-     * @return
-     * @throws Exception
      */
     @Bean
-    public ExecutorService gtfsExportExecutorService(@Autowired CamelContext camelContext) throws Exception {
+    public ExecutorService gtfsExportExecutorService(CamelContext camelContext) throws Exception {
         ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder(camelContext);
         return poolBuilder
                 .poolSize(1)
@@ -68,7 +61,6 @@ public class CamelConfig {
 
     /**
      * Register Java Time Module for JSON serialization/deserialization of Java Time objects.
-     * @return
      */
     @Bean("jacksonJavaTimeModule")
     JavaTimeModule jacksonJavaTimeModule() {
@@ -78,11 +70,9 @@ public class CamelConfig {
 
     /**
      * Configure an idle route monitor that triggers Camel aggregators when a monitored route is idle.
-     * @param camelContext
-     * @return
      */
     @Bean("idleRouteAggregationMonitor")
-    IdleRouteAggregationMonitor idleRouteAggregationMonitor(@Autowired CamelContext camelContext) {
+    IdleRouteAggregationMonitor idleRouteAggregationMonitor(CamelContext camelContext) {
         return new IdleRouteAggregationMonitor(camelContext);
     }
 

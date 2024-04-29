@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.services;
 
 import no.rutebanken.marduk.repository.BlobStoreRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +26,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class MardukInternalBlobStoreService extends AbstractBlobStoreService {
 
-    public MardukInternalBlobStoreService(@Value("${blobstore.gcs.internal.container.name}") String containerName, @Autowired BlobStoreRepository repository) {
+    public MardukInternalBlobStoreService(@Value("${blobstore.gcs.internal.container.name}") String containerName, BlobStoreRepository repository) {
         super(containerName, repository);
     }
 }
