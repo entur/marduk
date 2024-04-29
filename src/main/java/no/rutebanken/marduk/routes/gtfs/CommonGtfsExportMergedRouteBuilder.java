@@ -67,7 +67,6 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .setHeader(FILE_PARENT, simple(localWorkingDirectory + "/${header." + JOB_ACTION + "}/${date:now:yyyyMMddHHmmssSSS}"))
                 .doTry()
                 .to("direct:fetchLatestGtfs")
-                .to("direct:transformGtfs")
                 .to("direct:mergeGtfs")
                 .to("direct:uploadMergedGtfs")
 
@@ -119,9 +118,9 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                             String jobAction = exchange.getIn().getHeader(Constants.JOB_ACTION, String.class);
                             boolean includeShapes= true;
                             GtfsExport gtfsExport = null;
-                            if ("EXPORT_GTFS_MERGED".equals(jobAction)) {
+                            if (JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name().equals(jobAction)) {
                                 gtfsExport = GtfsExport.GTFS_EXTENDED;
-                            } else if ("EXPORT_GTFS_BASIC_MERGED".equals(jobAction)) {
+                            } else if (JobEvent.TimetableAction.EXPORT_GTFS_BASIC_MERGED.name().equals(jobAction)) {
                                 includeShapes =  exchange.getIn().getHeader(Constants.INCLUDE_SHAPES, Boolean.class);
                                 gtfsExport = GtfsExport.GTFS_BASIC;
                             }
@@ -129,11 +128,6 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                         }
                 )
                 .routeId("gtfs-export-merge");
-
-        from("direct:transformGtfs")
-                .choice().when(simple("${exchangeProperty." + Constants.TRANSFORMATION_ROUTING_DESTINATION + "} != null"))
-                .toD("${exchangeProperty." + Constants.TRANSFORMATION_ROUTING_DESTINATION + "}")
-                .routeId("gtfs-export-merged-transform");
 
         from("direct:uploadMergedGtfs")
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "gtfs/${header." + FILE_NAME + "}"))
