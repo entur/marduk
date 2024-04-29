@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
@@ -68,7 +69,7 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .setProperty(Constants.PROVIDER_BLACK_LIST, constant(createProviderBlackList()))
                 .setHeader(Constants.FILE_NAME, constant(gtfsBasicMergedFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(includeShapes))
-                .setHeader(Constants.JOB_ACTION, constant("EXPORT_GTFS_BASIC_MERGED"))
+                .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_BASIC_MERGED.name()))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-basic-export-merged");
 

@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
@@ -61,7 +62,7 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
         from("direct:exportGtfsExtendedMerged")
                 .setBody(constant(""))
                 .setHeader(Constants.FILE_NAME, constant(gtfsNorwayMergedFileName))
-                .setHeader(Constants.JOB_ACTION, constant("EXPORT_GTFS_MERGED"))
+                .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-extended-export-merged");
 
