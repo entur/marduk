@@ -28,7 +28,7 @@
         <camel.version>4.4.2</camel.version>
         <entur.helpers.version>2.18</entur.helpers.version>
         <commons-io.version>2.16.1</commons-io.version>
-        <commons-csv.version>1.10.0</commons-csv.version>
+        <commons-csv.version>1.11.0</commons-csv.version>
         <zt-zip.version>1.17</zt-zip.version>
         <json-unit.version>3.2.7</json-unit.version>
 
