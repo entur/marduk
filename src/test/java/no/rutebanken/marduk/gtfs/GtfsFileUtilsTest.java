@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.gtfs;
 
 import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.gtfs.GtfsFileUtils;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -57,9 +56,6 @@ class GtfsFileUtilsTest {
 
         File input1 = new File(GTFS_FILE_1);
         File merged = GtfsFileUtils.mergeGtfsFiles(List.of(input1, input1), GtfsExport.GTFS_EXTENDED, false);
-
-        // Should assert content, but no exceptions must do for now
-        // assertTrue(FileUtils.sizeOf(merged) <= FileUtils.sizeOf(input1));
 
         assertTrue(ZipFileUtils.listFilesInZip(merged).stream().anyMatch(ze -> GtfsFileUtils.FEED_INFO_FILE_NAME.equals(ze.getName())));
     }

@@ -52,6 +52,12 @@ import static no.rutebanken.marduk.Constants.TIMESTAMP;
 @Component
 public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
+    private static final String PROP_MESSAGES = "RutebankenPropMessages";
+
+    private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
+
+    private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
+
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
 
@@ -67,19 +73,11 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
     @Value("${blobstore.gcs.otpreport.container.name}")
     String otpReportContainerName;
 
-
-    private static final String PROP_MESSAGES = "RutebankenPropMessages";
-
-    private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
-
-    private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
-
     @Autowired
     private Otp2NetexGraphBuilder otp2NetexGraphBuilder;
 
     @Autowired
     private OtpReportBlobStoreService otpReportBlobStoreService;
-
 
     @Override
     public void configure() throws Exception {

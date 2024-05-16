@@ -20,14 +20,16 @@ package no.rutebanken.marduk.routes.blobstore;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.services.OtpGraphsBlobStoreService;
 import org.apache.camel.LoggingLevel;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class OtpGraphsBlobStoreRoute extends BaseRouteBuilder {
 
-    @Autowired
-    OtpGraphsBlobStoreService otpGraphsBlobStoreService;
+    final OtpGraphsBlobStoreService otpGraphsBlobStoreService;
+
+    public OtpGraphsBlobStoreRoute(OtpGraphsBlobStoreService otpGraphsBlobStoreService) {
+        this.otpGraphsBlobStoreService = otpGraphsBlobStoreService;
+    }
 
     @Override
     public void configure() {

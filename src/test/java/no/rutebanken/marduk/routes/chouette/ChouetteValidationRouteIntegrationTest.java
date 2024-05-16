@@ -95,7 +95,7 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 					.to("mock:updateStatus");
 		});
 
-		// Mock job polling route - AFTER header validatio (to ensure that we send correct headers in test as well)
+		// Mock job polling route - AFTER header validation (to ensure that we send correct headers in test as well)
 		AdviceWith.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
 				.to("mock:pollJobStatus"));
 
@@ -160,7 +160,6 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 					.skipSendToOriginalEndpoint()
 					.to("mock:chouetteGetJobsForProvider");
 
-			//a.weaveById("to-google-pubsub-ChouetteTransferExportQueue").replace().to("mock:chouetteTransferExportQueue");
 			a.weaveByToUri("google-pubsub:(.*):ChouetteTransferExportQueue").replace().to("mock:chouetteTransferExportQueue");
 
 
