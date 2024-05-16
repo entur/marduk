@@ -27,6 +27,9 @@ resource "google_pubsub_subscription" "DamuExportGtfsDeadLetterQueue" {
   topic = google_pubsub_topic.DamuExportGtfsDeadLetterQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  expiration_policy {
+        ttl = ""
+      }
 }
 
 resource "google_pubsub_topic" "DamuExportGtfsQueue" {
@@ -436,4 +439,7 @@ resource "google_pubsub_subscription" "MardukDeadLetterQueue" {
   topic = google_pubsub_topic.MardukDeadLetterQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  expiration_policy {
+        ttl = ""
+      }
 }

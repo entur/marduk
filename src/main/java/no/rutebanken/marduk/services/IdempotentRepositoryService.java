@@ -19,7 +19,6 @@ package no.rutebanken.marduk.services;
 import org.apache.camel.spi.IdempotentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -27,8 +26,11 @@ public class IdempotentRepositoryService {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
-    IdempotentRepository fileNameAndDigestIdempotentRepository;
+    final IdempotentRepository fileNameAndDigestIdempotentRepository;
+
+    public IdempotentRepositoryService(IdempotentRepository fileNameAndDigestIdempotentRepository) {
+        this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
+    }
 
     public void cleanUniqueFileNameAndDigestRepo() {
         logger.info("Starting cleaning of unique file name and digest idempotent message repository.");

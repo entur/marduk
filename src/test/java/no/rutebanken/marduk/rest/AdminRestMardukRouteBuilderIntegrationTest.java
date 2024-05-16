@@ -108,9 +108,14 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         private Jwt createTestJwtToken() {
             String userId = "test-user";
-            String userName = "JTest User";
-
-            return Jwt.withTokenValue("test-token").header("typ", "JWT").header("alg", JWSAlgorithm.RS256.getName()).claim("iss", "https://test-issuer.entur.org").claim("scope", "openid profile email").subject(userId).audience(Set.of("test-audience")).build();
+            return Jwt.withTokenValue("test-token")
+                    .header("typ", "JWT")
+                    .header("alg", JWSAlgorithm.RS256.getName())
+                    .claim("iss", "https://test-issuer.entur.org")
+                    .claim("scope", "openid profile email")
+                    .subject(userId)
+                    .audience(Set.of("test-audience"))
+                    .build();
         }
     }
 

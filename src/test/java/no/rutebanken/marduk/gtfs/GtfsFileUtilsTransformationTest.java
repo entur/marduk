@@ -88,8 +88,6 @@ public class GtfsFileUtilsTransformationTest {
         assertThat(stopLines.get(1)).as("Line with valid value 701 should be converted to 3").endsWith(",3,");
         assertThat(stopLines.get(2)).as("Line with extended value 1012 should be converted to 4").endsWith(",4,");
         assertThat(stopLines.get(3)).as("Line with extended value 1601 should be converted to 3 (default)").endsWith(",3,");
-        List<String> feedInfoLines = IOUtils.readLines(new ByteArrayInputStream(ZipFileUtils.extractFileFromZipFile(out, GtfsFileUtils.FEED_INFO_FILE_NAME)), StandardCharsets.UTF_8);
-
     }
 
     public static void assertShapesAreRemoved(File out) {
