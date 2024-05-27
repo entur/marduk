@@ -16,31 +16,26 @@
 
 package no.rutebanken.marduk.config;
 
-import com.google.cloud.storage.Storage;
-import org.rutebanken.helper.gcp.BlobStoreHelper;
+import no.rutebanken.marduk.repository.GcsMardukBlobStoreRepository;
+import no.rutebanken.marduk.repository.MardukBlobStoreRepository;
+import no.rutebanken.marduk.repository.ProviderRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Scope;
 
 @Configuration
 @Profile("gcs-blobstore")
-public class GcsStorageConfig {
-
-    @Value("${blobstore.gcs.credential.path:#{null}}")
-    private String credentialPath;
-
-    @Value("${blobstore.gcs.project.id}")
-    private String projectId;
+public class GcsBlobStoreRepositoryConfig {
 
     @Bean
-    public Storage storage() {
-        if (credentialPath == null || credentialPath.isEmpty()) {
-            // Use Default gcp credentials
-            return BlobStoreHelper.getStorage(projectId);
-        } else {
-            return BlobStoreHelper.getStorage(credentialPath, projectId);
-        }
+    @Scope("prototype")
+    MardukBlobStoreRepository blobStoreRepository(
+            @Value("${blobstore.gcs.project.id}") String projectId,
+            @Value("${blobstore.gcs.credential.path:#{null}}") String credentialPath,
+            ProviderRepository providerRepository) {
+        return new GcsMardukBlobStoreRepository(projectId, credentialPath, providerRepository);
     }
 
 }
