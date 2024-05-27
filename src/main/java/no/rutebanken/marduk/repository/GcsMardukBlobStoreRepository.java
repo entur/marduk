@@ -32,8 +32,6 @@ import java.util.Iterator;
  */
 public class GcsMardukBlobStoreRepository extends GcsBlobStoreRepository implements MardukBlobStoreRepository {
 
-    private String containerName;
-
     private final ProviderRepository providerRepository;
 
     public GcsMardukBlobStoreRepository(String projectId, String credentialPath, ProviderRepository providerRepository) {
@@ -42,17 +40,12 @@ public class GcsMardukBlobStoreRepository extends GcsBlobStoreRepository impleme
     }
 
     @Override
-    public void setContainerName(String containerName) {
-        this.containerName = containerName;
-    }
-
-    @Override
     public BlobStoreFiles listBlobs(Collection<String> prefixes) {
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
 
 
         for (String prefix : prefixes) {
-            Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage(), containerName, prefix);
+            Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage(), containerName(), prefix);
             blobIterator.forEachRemaining(blob -> blobStoreFiles.add(toBlobStoreFile(blob, blob.getName())));
         }
 
@@ -67,7 +60,7 @@ public class GcsMardukBlobStoreRepository extends GcsBlobStoreRepository impleme
 
     @Override
     public BlobStoreFiles listBlobsFlat(String prefix) {
-        Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage(), containerName, prefix);
+        Iterator<Blob> blobIterator = BlobStoreHelper.listAllBlobsRecursively(storage(), containerName(), prefix);
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         while (blobIterator.hasNext()) {
             Blob blob = blobIterator.next();
