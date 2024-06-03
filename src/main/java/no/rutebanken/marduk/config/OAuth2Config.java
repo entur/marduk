@@ -16,6 +16,9 @@
 
 package no.rutebanken.marduk.config;
 
+import no.rutebanken.marduk.repository.ProviderRepository;
+import no.rutebanken.marduk.security.AuthorizationService;
+import no.rutebanken.marduk.security.DefaultAuthorizationService;
 import org.entur.oauth2.AuthorizedWebClientBuilder;
 import org.entur.oauth2.JwtRoleAssignmentExtractor;
 import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
@@ -50,6 +53,15 @@ public class OAuth2Config {
     public RoleAssignmentExtractor roleAssignmentExtractor() {
         return new JwtRoleAssignmentExtractor();
     }
+
+
+    @Bean
+    public AuthorizationService authorizationService(ProviderRepository providerRepository,
+                                                     RoleAssignmentExtractor roleAssignmentExtractor,
+                                                     @Value("${authorization.enabled:true}") boolean authorizationEnabled) {
+        return new DefaultAuthorizationService(providerRepository, roleAssignmentExtractor, authorizationEnabled);
+    }
+
 
 }
 

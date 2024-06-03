@@ -8,12 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.RoleAssignment;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 
 
-@ActiveProfiles({"test", "default", "in-memory-blobstore", "google-pubsub-emulator", "google-pubsub-autocreate"})
 class AuthorizationServiceTest extends MardukSpringBootBaseTest {
 
     private static final Long ORG_ID_RUT = TestConstants.PROVIDER_ID_RUT;
@@ -21,7 +19,7 @@ class AuthorizationServiceTest extends MardukSpringBootBaseTest {
     private static final String CODESPACE_RUT = "RUT";
 
     @Autowired
-    private AuthorizationService authorizationService;
+    private DefaultAuthorizationService authorizationService;
 
     @Autowired
     MockedRoleAssignmentExtractor mockedRoleAssignmentExtractor;
