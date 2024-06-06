@@ -16,86 +16,29 @@
 
 package no.rutebanken.marduk.security;
 
-import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.repository.ProviderRepository;
-import org.rutebanken.helper.organisation.AuthorizationConstants;
-import org.rutebanken.helper.organisation.RoleAssignment;
-import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-
-import java.util.List;
+import org.entur.oauth2.authorization.UserContextService;
 
 public class DefaultAuthorizationService implements AuthorizationService {
 
-    private final ProviderRepository providerRepository;
+    private final UserContextService<Long> userContextService;
 
-    private final RoleAssignmentExtractor roleAssignmentExtractor;
-
-    private final boolean authorizationEnabled;
-
-    public DefaultAuthorizationService(ProviderRepository providerRepository,
-                                       RoleAssignmentExtractor roleAssignmentExtractor,
-                                       boolean authorizationEnabled) {
-        this.providerRepository = providerRepository;
-        this.roleAssignmentExtractor = roleAssignmentExtractor;
-        this.authorizationEnabled = authorizationEnabled;
+    public DefaultAuthorizationService(UserContextService<Long> userContextService) {
+        this.userContextService = userContextService;
     }
 
     @Override
     public void verifyAdministratorPrivileges() {
-        verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN));
+        userContextService.validateRouteDataAdmin();
     }
 
     @Override
     public void verifyRouteDataEditorPrivileges(Long providerId) {
-        verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
-                new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT, providerId));
+        userContextService.validateEditRouteData(providerId);
     }
-
 
     @Override
     public void verifyBlockViewerPrivileges(Long providerId) {
-        verifyAtLeastOne(new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN),
-                new AuthorizationClaim(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT, providerId),
-                new AuthorizationClaim(AuthorizationConstants.ROLE_NETEX_BLOCKS_DATA_VIEW, providerId));
-    }
-
-    void verifyAtLeastOne(AuthorizationClaim... claims) {
-        if (!authorizationEnabled) {
-            return;
-        }
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        List<RoleAssignment> roleAssignments = roleAssignmentExtractor.getRoleAssignmentsForUser(authentication);
-
-        boolean authorized = false;
-        for (AuthorizationClaim claim : claims) {
-            if (claim.getProviderId() == null) {
-                authorized |= roleAssignments.stream().anyMatch(ra -> claim.getRequiredRole().equals(ra.getRole()));
-            } else {
-                authorized |= hasRoleForProvider(roleAssignments, claim);
-            }
-        }
-
-        if (!authorized) {
-            throw new AccessDeniedException("Insufficient privileges for operation");
-        }
-
-    }
-
-
-    private boolean hasRoleForProvider(List<RoleAssignment> roleAssignments, AuthorizationClaim claim) {
-
-        Provider provider = providerRepository.getProvider(claim.getProviderId());
-        if (provider == null) {
-            return false;
-        }
-
-        return roleAssignments.stream()
-                .filter(ra -> claim.getRequiredRole().equals(ra.r)).anyMatch(ra -> provider.getChouetteInfo().getReferential().toUpperCase().equals(ra.o));
-
+        userContextService.validateViewBlockData(providerId);
     }
 
 }

@@ -105,6 +105,9 @@ data:
     spring.security.oauth2.client.provider.marduk.token-uri={{ .Values.oauth2.client.url }}
     marduk.oauth2.client.audience={{ .Values.oauth2.client.audience }}
 
+    # Authorization
+    marduk.security.user-context-service=token-based
+
     # Logging
     logging.level.no.rutebanken=INFO
     logging.level.org.apache=INFO
