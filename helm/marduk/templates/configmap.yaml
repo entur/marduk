@@ -9,8 +9,8 @@ data:
     spring.datasource.platform=postgresql
     spring.datasource.driver-class-name=org.postgresql.Driver
     spring.datasource.maxActive=10
-    spring.servlet.multipart.max-file-size=100MB
-    spring.servlet.multipart.max-request-size=100MB
+    spring.servlet.multipart.max-file-size=150MB
+    spring.servlet.multipart.max-request-size=150MB
     server.port={{ .Values.common.service.internalPort }}
     server.compression.enabled=true
 
