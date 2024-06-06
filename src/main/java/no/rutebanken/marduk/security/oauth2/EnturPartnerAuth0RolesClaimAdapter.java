@@ -17,9 +17,9 @@ import java.util.*;
 
 
 /**
- * Insert a "roles" claim in the JWT token based on the organisationID claim, for compatibility with the existing
+ * Insert a "role_assignments" claim in the JWT token based on the organisationID claim, for compatibility with the existing
  * authorization process (@{@link org.entur.oauth2.JwtRoleAssignmentExtractor}).
- * This custom mapping is intended for tokens sent from external partners that do not contain the role_assignments claim.
+ * This custom mapping is intended for tokens sent from external client that do not contain the role_assignments nor the permissions claim.
  */
 @Component
 public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String, Object>, Map<String, Object>> {
