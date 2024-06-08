@@ -16,29 +16,30 @@
 
 package no.rutebanken.marduk.security;
 
-import org.entur.oauth2.authorization.UserContextService;
 
-public class DefaultAuthorizationService implements AuthorizationService {
+import org.rutebanken.helper.organisation.authorization.AuthorizationService;
 
-    private final UserContextService<Long> userContextService;
+public class DefaultMardukAuthorizationService implements MardukAuthorizationService {
 
-    public DefaultAuthorizationService(UserContextService<Long> userContextService) {
-        this.userContextService = userContextService;
+    private final AuthorizationService<Long> authorizationService;
+
+    public DefaultMardukAuthorizationService(AuthorizationService<Long> authorizationService) {
+        this.authorizationService = authorizationService;
     }
 
     @Override
     public void verifyAdministratorPrivileges() {
-        userContextService.validateRouteDataAdmin();
+        authorizationService.validateRouteDataAdmin();
     }
 
     @Override
     public void verifyRouteDataEditorPrivileges(Long providerId) {
-        userContextService.validateEditRouteData(providerId);
+        authorizationService.validateEditRouteData(providerId);
     }
 
     @Override
     public void verifyBlockViewerPrivileges(Long providerId) {
-        userContextService.validateViewBlockData(providerId);
+        authorizationService.validateViewBlockData(providerId);
     }
 
 }

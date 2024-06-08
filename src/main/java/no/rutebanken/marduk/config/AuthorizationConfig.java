@@ -17,11 +17,13 @@
 package no.rutebanken.marduk.config;
 
 import no.rutebanken.marduk.repository.ProviderRepository;
-import no.rutebanken.marduk.security.AuthorizationService;
-import no.rutebanken.marduk.security.DefaultAuthorizationService;
-import org.entur.oauth2.authorization.FullAccessUserContextService;
-import org.entur.oauth2.authorization.OAuth2TokenUserContextService;
-import org.entur.oauth2.authorization.UserContextService;
+import no.rutebanken.marduk.security.DefaultMardukAuthorizationService;
+import no.rutebanken.marduk.security.MardukAuthorizationService;
+import org.entur.oauth2.JwtRoleAssignmentExtractor;
+import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
+import org.rutebanken.helper.organisation.authorization.AuthorizationService;
+import org.rutebanken.helper.organisation.authorization.DefaultAuthorizationService;
+import org.rutebanken.helper.organisation.authorization.FullAccessAuthorizationService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,30 +34,37 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AuthorizationConfig {
 
+    @Bean
+    public RoleAssignmentExtractor roleAssignmentExtractor() {
+        return new JwtRoleAssignmentExtractor();
+    }
+
+
     @ConditionalOnProperty(
-            value = "marduk.security.user-context-service",
+            value = "marduk.security.authorization-service",
             havingValue = "token-based"
     )
-    @Bean("userContextService")
-    public UserContextService<Long> tokenBasedUserContextService(ProviderRepository providerRepository) {
-        return new OAuth2TokenUserContextService<>(
-                providerId -> providerRepository.getProvider(providerId) == null ? null : providerRepository.getProvider(providerId).getChouetteInfo().getXmlns()
+    @Bean("authorizationService")
+    public AuthorizationService<Long> tokenBasedAuthorizationService(ProviderRepository providerRepository, RoleAssignmentExtractor roleAssignmentExtractor) {
+        return new DefaultAuthorizationService<>(
+                providerId -> providerRepository.getProvider(providerId) == null ? null : providerRepository.getProvider(providerId).getChouetteInfo().getXmlns(),
+                roleAssignmentExtractor
         );
     }
 
     @ConditionalOnProperty(
-            value = "marduk.security.user-context-service",
+            value = "marduk.security.authorization-service",
             havingValue = "full-access"
     )
-    @Bean("userContextService")
-    public UserContextService<Long> fullAccessUserContextService() {
-        return new FullAccessUserContextService();
+    @Bean("authorizationService")
+    public AuthorizationService<Long> fullAccessAuthorizationService() {
+        return new FullAccessAuthorizationService();
     }
 
 
     @Bean
-    public AuthorizationService authorizationService(UserContextService<Long> userContextService) {
-        return new DefaultAuthorizationService(userContextService);
+    public MardukAuthorizationService mardukAuthorizationService(AuthorizationService<Long> authorizationService) {
+        return new DefaultMardukAuthorizationService(authorizationService);
     }
 
 }

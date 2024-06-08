@@ -1,6 +1,9 @@
 package no.rutebanken.marduk.security;
 
-public interface AuthorizationService {
+/**
+ *  Service that verifies the privileges of the API clients.
+ */
+public interface MardukAuthorizationService {
 
 
     /**

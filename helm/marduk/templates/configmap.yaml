@@ -106,7 +106,7 @@ data:
     marduk.oauth2.client.audience={{ .Values.oauth2.client.audience }}
 
     # Authorization
-    marduk.security.user-context-service=token-based
+    marduk.security.authorization-service=token-based
 
     # Logging
     logging.level.no.rutebanken=INFO
