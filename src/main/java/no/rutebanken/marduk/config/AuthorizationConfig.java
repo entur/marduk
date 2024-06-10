@@ -40,6 +40,12 @@ public class AuthorizationConfig {
     }
 
 
+    /**
+     * OAuth2 token-based authorization service.
+     * The mapping function matches the Baba provider id to the organization codespace.
+     * The ChouetteInfo.referential property is used instead of the ChouetteInfo.xmlns property for the mapping:
+     * this allows for filtering out the RB referentials (referentials prefixed by RB_).
+     */
     @ConditionalOnProperty(
             value = "marduk.security.authorization-service",
             havingValue = "token-based"
@@ -47,7 +53,7 @@ public class AuthorizationConfig {
     @Bean("authorizationService")
     public AuthorizationService<Long> tokenBasedAuthorizationService(ProviderRepository providerRepository, RoleAssignmentExtractor roleAssignmentExtractor) {
         return new DefaultAuthorizationService<>(
-                providerId -> providerRepository.getProvider(providerId) == null ? null : providerRepository.getProvider(providerId).getChouetteInfo().getXmlns(),
+                providerId -> providerRepository.getProvider(providerId) == null ? null : providerRepository.getProvider(providerId).getChouetteInfo().getReferential().toUpperCase(),
                 roleAssignmentExtractor
         );
     }
