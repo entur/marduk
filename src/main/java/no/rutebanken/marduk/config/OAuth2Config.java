@@ -16,12 +16,7 @@
 
 package no.rutebanken.marduk.config;
 
-import no.rutebanken.marduk.repository.ProviderRepository;
-import no.rutebanken.marduk.security.AuthorizationService;
-import no.rutebanken.marduk.security.DefaultAuthorizationService;
 import org.entur.oauth2.AuthorizedWebClientBuilder;
-import org.entur.oauth2.JwtRoleAssignmentExtractor;
-import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientProperties;
 import org.springframework.context.annotation.Bean;
@@ -48,20 +43,6 @@ public class OAuth2Config {
                 .withClientRegistrationId("marduk")
                 .build();
     }
-
-    @Bean
-    public RoleAssignmentExtractor roleAssignmentExtractor() {
-        return new JwtRoleAssignmentExtractor();
-    }
-
-
-    @Bean
-    public AuthorizationService authorizationService(ProviderRepository providerRepository,
-                                                     RoleAssignmentExtractor roleAssignmentExtractor,
-                                                     @Value("${authorization.enabled:true}") boolean authorizationEnabled) {
-        return new DefaultAuthorizationService(providerRepository, roleAssignmentExtractor, authorizationEnabled);
-    }
-
 
 }
 

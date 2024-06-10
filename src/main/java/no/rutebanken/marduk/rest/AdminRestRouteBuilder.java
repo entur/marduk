@@ -25,7 +25,7 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import no.rutebanken.marduk.security.AuthorizationService;
+import no.rutebanken.marduk.security.MardukAuthorizationService;
 import org.apache.camel.*;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
@@ -46,7 +46,7 @@ import static no.rutebanken.marduk.Constants.*;
 import static org.apache.camel.support.builder.PredicateBuilder.isEqualTo;
 
 /**
- * REST interface for backdoor triggering of messages
+ * API endpoint for managing the transit data import pipeline.
  */
 @Component
 public class AdminRestRouteBuilder extends BaseRouteBuilder {
@@ -65,7 +65,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     private String host;
 
     @Autowired
-    private AuthorizationService authorizationService;
+    private MardukAuthorizationService mardukAuthorizationService;
 
     @Override
     public void configure() throws Exception {
@@ -857,20 +857,20 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         from("direct:authorizeAdminRequest")
                 .doTry()
-                .process(e -> authorizationService.verifyAdministratorPrivileges())
+                .process(e -> mardukAuthorizationService.verifyAdministratorPrivileges())
                 .setHeader(USERNAME, method(Utils.class, "getUsername"))
                 .routeId("admin-authorize-admin-request");
 
         from("direct:authorizeEditorRequest")
                 .doTry()
-                .process(e -> authorizationService.verifyRouteDataEditorPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
+                .process(e -> mardukAuthorizationService.verifyRouteDataEditorPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
                 .setHeader(USERNAME, method(Utils.class, "getUsername"))
                 .routeId("admin-authorize-editor-request");
 
         from("direct:authorizeBlocksDownloadRequest")
                 .doTry()
                 .log(LoggingLevel.INFO, "Authorizing NeTEx blocks download for provider ${header." + CHOUETTE_REFERENTIAL + "} ")
-                .process(e -> authorizationService.verifyBlockViewerPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
+                .process(e -> mardukAuthorizationService.verifyBlockViewerPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
                 .routeId("admin-authorize-blocks-download-request");
 
     }
