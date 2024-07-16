@@ -30,7 +30,7 @@
         <commons-io.version>2.16.1</commons-io.version>
         <commons-csv.version>1.11.0</commons-csv.version>
         <zt-zip.version>1.17</zt-zip.version>
-        <json-unit.version>3.4.0</json-unit.version>
+        <json-unit.version>3.4.1</json-unit.version>
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
         <argLine/>
