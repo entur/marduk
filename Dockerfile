@@ -1,8 +1,8 @@
-FROM bellsoft/liberica-openjdk-alpine:21.0.3-10 AS builder
+FROM bellsoft/liberica-openjdk-alpine:21.0.4-9 AS builder
 COPY target/marduk-*-SNAPSHOT.jar application.jar
 RUN java -Djarmode=layertools -jar application.jar extract
 
-FROM bellsoft/liberica-openjdk-alpine:21.0.3-10
+FROM bellsoft/liberica-openjdk-alpine:21.0.4-9
 RUN apk update && apk upgrade && apk add --no-cache tini
 WORKDIR /deployments
 RUN addgroup appuser && adduser --disabled-password appuser --ingroup appuser
