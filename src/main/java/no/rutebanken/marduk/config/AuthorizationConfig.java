@@ -19,7 +19,9 @@ package no.rutebanken.marduk.config;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.security.DefaultMardukAuthorizationService;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
-import org.entur.oauth2.JwtRoleAssignmentExtractor;
+import no.rutebanken.marduk.security.permissionstore.PermissionStoreClient;
+import no.rutebanken.marduk.security.permissionstore.PermissionStoreRestRoleAssignmentExtractor;
+import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
 import org.rutebanken.helper.organisation.authorization.AuthorizationService;
 import org.rutebanken.helper.organisation.authorization.DefaultAuthorizationService;
@@ -28,6 +30,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Set;
+
 /**
  * Configure authorization.
  */
@@ -35,8 +39,17 @@ import org.springframework.context.annotation.Configuration;
 public class AuthorizationConfig {
 
     @Bean
-    public RoleAssignmentExtractor roleAssignmentExtractor() {
-        return new JwtRoleAssignmentExtractor();
+    public RoleAssignmentExtractor roleAssignmentExtractor(
+            PermissionStoreClient permissionStoreClient
+    ) {
+        return new PermissionStoreRestRoleAssignmentExtractor(
+                permissionStoreClient,
+                "marduk",
+                Set.of(AuthorizationConstants.ROLE_ROUTE_DATA_EDIT,
+                        AuthorizationConstants.ROLE_ROUTE_DATA_ADMIN,
+                        AuthorizationConstants.ROLE_ORGANISATION_EDIT,
+                        AuthorizationConstants.ROLE_NETEX_BLOCKS_DATA_VIEW
+                ));
     }
 
 
