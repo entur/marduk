@@ -52,7 +52,7 @@ osm:
 otp:
   graph:
     build:
-      autoStartup: true
+      autoStartup: false
 auth0:
   partner:
     url: https://partner.entur.org
