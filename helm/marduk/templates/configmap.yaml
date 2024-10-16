@@ -136,6 +136,7 @@ data:
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
     otp.graph.build.remote.kubernetes.timeout=12000
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
+    otp.graph.build.autoStartup={{ .Values.otp.graph.build.autoStartup }}
 
 kind: ConfigMap
 metadata:

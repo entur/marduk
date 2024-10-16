@@ -49,6 +49,10 @@ netex:
 
 osm:
   fetchCronSchedule: 0+11+*+*+*+?
+otp:
+  graph:
+    build:
+      autoStartup: false
 
 auth0:
   partner:

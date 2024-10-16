@@ -49,7 +49,10 @@ netex:
 
 osm:
   fetchCronSchedule: 0+11+*+*+*+?
-
+otp:
+  graph:
+    build:
+      autoStartup: true
 auth0:
   partner:
     url: https://partner.staging.entur.org
