@@ -36,11 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
-    @Produce("direct:exportMergedNetex")
+    @Produce("direct:otp2ExportMergedNetex")
     protected ProducerTemplate startRoute;
-
-    @Value("${netex.export.download.directory:files/netex/merged}")
-    private String localWorkingDirectory;
 
     @Value("${netex.export.stop.place.blob.path:tiamat/Full_latest.zip}")
     private String stopPlaceExportBlobPath;
@@ -54,8 +51,8 @@ class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegratio
     @Test
     void testExportMergedNetex() throws Exception {
 
-        AdviceWith.adviceWith(context, "netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWith.adviceWith(context, "otp2-netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWith.adviceWith(context, "otp2-netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
 
         // Create stop file in memory blob store

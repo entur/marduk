@@ -689,7 +689,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeBlocksDownloadRequest")
                 .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
                         + "rb_" + e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toLowerCase()
-                        + "-aggregated-netex.zip"))
+                        + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .log(LoggingLevel.INFO, correlation() + "Downloading NeTEx dataset with blocks: ${header." + FILE_HANDLE + "}")
                 .process(this::removeAllCamelHttpHeaders)
                 .to("direct:getInternalBlob")

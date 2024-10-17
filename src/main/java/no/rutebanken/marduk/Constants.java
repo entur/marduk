@@ -41,10 +41,6 @@ public final class Constants {
     public static final String CURRENT_FLEXIBLE_LINES_NETEX_FILENAME = "flexible-lines.zip";
 
     public static final String GRAPH_COMPATIBILITY_VERSION = "RutebankenGraphCompatibilityVersion";
-    public static final String GRAPH_OBJ = "Graph.obj";
-    public static final String BASE_GRAPH_OBJ = "baseGraph.obj";
-    public static final String NETEX_GRAPH_DIR = "netex";
-    public static final String GRAPH_REPORT_INDEX_FILE = "index_otp1.html";
 
     public static final String OTP2_GRAPH_OBJ = "Graph-otp2.obj";
     public static final String OTP2_GRAPH_OBJ_PREFIX = "Graph-otp2";
