@@ -54,7 +54,7 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
     @Value("${netex.export.stop.place.blob.path:tiamat/Full_latest.zip}")
     private String stopPlaceExportBlobPath;
 
-    @Value("${otp2.netex.export.file.path:netex/rb_norway-aggregated-netex-otp2.zip}")
+    @Value("${netex.export.file.path:netex/rb_norway-aggregated-netex.zip}")
     private String netexExportMergedFilePath;
 
     @Value("${netex.export.stops.file.prefix:_stops}")
