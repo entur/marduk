@@ -52,7 +52,7 @@ osm:
 otp:
   graph:
     build:
-      autoStartup: false
+      autoStartup: true
 
 auth0:
   partner:
