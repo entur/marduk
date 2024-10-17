@@ -344,16 +344,6 @@ resource "google_pubsub_topic" "OtpBaseGraphBuildQueue" {
   labels = var.labels
 }
 
-resource "google_pubsub_subscription" "OtpBaseGraphBuildQueue" {
-  name = "OtpBaseGraphBuildQueue"
-  topic = google_pubsub_topic.OtpBaseGraphBuildQueue.name
-  project = var.gcp_resources_project
-  labels = var.labels
-  ack_deadline_seconds = 60
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
 
 resource "google_pubsub_subscription" "Otp2BaseGraphBuildQueue" {
   name = "Otp2BaseGraphBuildQueue"
@@ -372,16 +362,6 @@ resource "google_pubsub_topic" "OtpGraphBuildQueue" {
   labels = var.labels
 }
 
-resource "google_pubsub_subscription" "OtpGraphBuildQueue" {
-  name = "OtpGraphBuildQueue"
-  topic = google_pubsub_topic.OtpGraphBuildQueue.name
-  project = var.gcp_resources_project
-  labels = var.labels
-  ack_deadline_seconds = 60
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
 
 resource "google_pubsub_subscription" "Otp2GraphBuildQueue" {
   name = "Otp2GraphBuildQueue"
