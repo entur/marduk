@@ -32,11 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
-import static no.rutebanken.marduk.Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.FOLDER_NAME;
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Route combining netex exports per provider with stop place export for a common netex export for Norway.
@@ -56,6 +52,9 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
 
     @Value("${netex.export.file.path:netex/rb_norway-aggregated-netex.zip}")
     private String netexExportMergedFilePath;
+
+    @Value("${otp2.netex.export.file.path:netex/rb_norway-aggregated-netex-otp2.zip}")
+    private String otp2NetexExportMergedFilePath;
 
     @Value("${netex.export.stops.file.prefix:_stops}")
     private String netexExportStopsFilePrefix;
@@ -137,9 +136,12 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .process(e -> new File( e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUBFOLDER).mkdir())
                 .process(e -> e.getIn().setBody(ZipFileUtils.zipFilesInFolder( e.getProperty(FOLDER_NAME, String.class) + UNPACKED_NETEX_SUBFOLDER,  e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUBFOLDER + "/merged.zip")))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploading new combined Netex for Norway for OTP2")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploading new combined Netex for Norway for OTP1")
                 .to("direct:uploadBlob")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploaded new combined Netex for Norway for OTP2")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Copy new combined Netex for Norway for OTP2")
+                .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + otp2NetexExportMergedFilePath))
+                .to("direct:copyBlobInBucket")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Copied new combined Netex for Norway for OTP2")
                 .routeId("otp2-netex-export-merge-file");
 
     }

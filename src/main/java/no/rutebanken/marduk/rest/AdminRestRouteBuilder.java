@@ -623,7 +623,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "Triggered build of OTP base graph with map data")
                 .process(this::removeAllCamelHttpHeaders)
                 .setBody(simple(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpBaseGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue")
                 .routeId("admin-build-base-graph");
 
         from("direct:adminBuildGraphNetex")
@@ -631,7 +631,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, "OTP build graph from NeTEx")
                 .process(this::removeAllCamelHttpHeaders)
                 .setBody(simple(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue")
                 .routeId("admin-build-graph-netex");
 
         from("direct:adminBuildGraphCandidate")

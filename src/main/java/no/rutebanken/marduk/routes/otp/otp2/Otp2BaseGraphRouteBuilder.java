@@ -105,7 +105,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .when(PredicateBuilder.not(exchangeProperty(OTP_BUILD_CANDIDATE)))
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP2 base graph, triggering full OTP2 graph build")
                 .setBody(constant(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue")
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP2 candidate base graph")
                 .end()
