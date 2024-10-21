@@ -55,7 +55,7 @@ public class PublishMergedNetexRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:OtpGraphBuildQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue")
                 .to("direct:startDamuGtfsExport")
                 .routeId("publish-merged-dataset");
 

@@ -60,7 +60,7 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
         AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-and-send-status", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
         AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-copy", a -> {
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-            a.weaveByToUri("google-pubsub:(.*):OtpGraphBuildQueue").replace().to("mock:otpGraphBuildQueue");
+            a.weaveByToUri("google-pubsub:(.*):Otp2GraphBuildQueue").replace().to("mock:otpGraphBuildQueue");
             a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().to("mock:remoteBuildNetexGraph");
         });
 

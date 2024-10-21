@@ -43,7 +43,7 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
     protected MockEndpoint updateStatus;
 
 
-    @EndpointInject("mock:OtpGraphBuildQueue")
+    @EndpointInject("mock:Otp2GraphBuildQueue")
     protected MockEndpoint otpBuildGraph;
 
     @EndpointInject("mock:NetexExportNotificationQueue")
@@ -56,7 +56,7 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
         // Mock status update
         AdviceWith.adviceWith(context, "publish-merged-dataset", a -> {
 
-            a.weaveByToUri("google-pubsub:(.*):OtpGraphBuildQueue").replace().to("mock:OtpGraphBuildQueue");
+            a.weaveByToUri("google-pubsub:(.*):Otp2GraphBuildQueue").replace().to("mock:Otp2GraphBuildQueue");
 
             a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
                     .to("mock:updateStatus");

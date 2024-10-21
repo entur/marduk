@@ -338,26 +338,16 @@ resource "google_pubsub_subscription" "AntuNetexValidationStatusQueue" {
 }
 
 
-resource "google_pubsub_topic" "OtpBaseGraphBuildQueue" {
-  name = "OtpBaseGraphBuildQueue"
+resource "google_pubsub_topic" "Otp2BaseGraphBuildQueue" {
+  name = "Otp2BaseGraphBuildQueue"
   project = var.gcp_resources_project
   labels = var.labels
 }
 
-resource "google_pubsub_subscription" "OtpBaseGraphBuildQueue" {
-  name = "OtpBaseGraphBuildQueue"
-  topic = google_pubsub_topic.OtpBaseGraphBuildQueue.name
-  project = var.gcp_resources_project
-  labels = var.labels
-  ack_deadline_seconds = 60
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
 
 resource "google_pubsub_subscription" "Otp2BaseGraphBuildQueue" {
   name = "Otp2BaseGraphBuildQueue"
-  topic = google_pubsub_topic.OtpBaseGraphBuildQueue.name
+  topic = google_pubsub_topic.Otp2BaseGraphBuildQueue.name
   project = var.gcp_resources_project
   labels = var.labels
   ack_deadline_seconds = 60
@@ -366,26 +356,16 @@ resource "google_pubsub_subscription" "Otp2BaseGraphBuildQueue" {
   }
 }
 
-resource "google_pubsub_topic" "OtpGraphBuildQueue" {
-  name = "OtpGraphBuildQueue"
+resource "google_pubsub_topic" "Otp2GraphBuildQueue" {
+  name = "Otp2GraphBuildQueue"
   project = var.gcp_resources_project
   labels = var.labels
 }
 
-resource "google_pubsub_subscription" "OtpGraphBuildQueue" {
-  name = "OtpGraphBuildQueue"
-  topic = google_pubsub_topic.OtpGraphBuildQueue.name
-  project = var.gcp_resources_project
-  labels = var.labels
-  ack_deadline_seconds = 60
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
 
 resource "google_pubsub_subscription" "Otp2GraphBuildQueue" {
   name = "Otp2GraphBuildQueue"
-  topic = google_pubsub_topic.OtpGraphBuildQueue.name
+  topic = google_pubsub_topic.Otp2GraphBuildQueue.name
   project = var.gcp_resources_project
   labels = var.labels
   ack_deadline_seconds = 60
