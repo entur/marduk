@@ -127,7 +127,6 @@
         "route_section_stop_area_distance_warning": "20",
         "route_section_stop_area_distance_max": "100"
     },
- 
     "mode_taxi": {
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "500",
@@ -139,7 +138,6 @@
         "route_section_stop_area_distance_warning": "20",
         "route_section_stop_area_distance_max": "100"
     },
- 
     "mode_rail": {
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "1000",
@@ -151,7 +149,6 @@
         "route_section_stop_area_distance_warning": "20",
         "route_section_stop_area_distance_max": "100"
     },
- 
     "mode_tram": {
         "allowed_transport": "1",
         "inter_stop_area_distance_min": "200",
@@ -526,5 +523,8 @@
             "min_size": "",
             "max_size": ""
         }
+    },
+    "samtrafiken": {
+        "check_route_section": "0"
     }
 }
