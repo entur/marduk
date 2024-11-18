@@ -71,10 +71,10 @@ data:
     chouette.remove.old.jobs.keep.days=20
     chouette.remove.old.jobs.keep.jobs=20
     chouette.max.retries=3000
-    chouette.include.stops.codespaces=SAM,VAN,VAS,VTR
+    chouette.include.stops.codespaces=VAN,VAS,VTR
 
     # Antu
-    antu.validation.sweden.codespaces=${chouette.include.stops.codespaces}
+    antu.validation.sweden.codespaces=SAM,VAN,VAS,VTR
 
     # StopPlace Netex export
     netex.export.stop.place.blob.path={{ .Values.netex.export }}
