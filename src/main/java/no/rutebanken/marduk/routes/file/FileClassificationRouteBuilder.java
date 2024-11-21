@@ -40,9 +40,13 @@ import static no.rutebanken.marduk.Constants.*;
 public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
     private final List<String> swedishCodespaces;
+    private final List<String> finnishCodespaces;
 
-    public FileClassificationRouteBuilder(@Value("${antu.validation.sweden.codespaces:}") List<String> swedishCodespaces) {
+    public FileClassificationRouteBuilder(
+            @Value("${antu.validation.sweden.codespaces:}") List<String> swedishCodespaces,
+            @Value("${antu.validation.finland.codespaces:OYM}")List<String> finnishCodespaces) {
         this.swedishCodespaces = swedishCodespaces;
+        this.finnishCodespaces = finnishCodespaces;
     }
 
     @Override
@@ -177,6 +181,9 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .when(e -> isSwedishReferential(e.getIn().getHeader(DATASET_REFERENTIAL, String.class)))
                 .log(LoggingLevel.INFO, correlation() + "Applying validation rules for Timetable data/Sweden")
                 .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE_SWEDEN))
+                .when(e -> isFinishReferential(e.getIn().getHeader(DATASET_REFERENTIAL, String.class)))
+                .log(LoggingLevel.INFO, correlation() + "Applying validation rules for Timetable data/Finland")
+                .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE_FINLAND))
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Applying validation rules for Timetable data/Norway")
                 .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE))
@@ -188,6 +195,11 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
     private boolean isSwedishReferential(String referential) {
         String codespace = referential.replace("rb_", "").toUpperCase(Locale.ROOT);
         return swedishCodespaces.contains(codespace);
+    }
+
+    private boolean isFinishReferential(String referential) {
+        String codespace = referential.replace("rb_", "").toUpperCase(Locale.ROOT);
+        return finnishCodespaces.contains(codespace);
     }
 
 }
