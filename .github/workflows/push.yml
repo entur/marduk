@@ -21,12 +21,10 @@ jobs:
       - name: Copy maven settings
         run: |
           wget https://raw.githubusercontent.com/entur/ror-maven-settings/master/.m2/settings.xml -O .github/workflows/settings.xml
-      - uses: s4u/setup-maven-action@v1.16.0
+      - uses: actions/setup-java@v4
         with:
-          java-version: 21
-          java-distribution: liberica
-          settings-path: .github/workflows/settings.xml
-          maven-version: '3.9.6'
+          java-version: 21.0.5+11
+          distribution: liberica
       - name: Cache Maven dependencies
         uses: actions/cache@v4
         with:
@@ -38,7 +36,7 @@ jobs:
             ${{ runner.os }}-
 
       - name: Run maven build
-        run: mvn verify
+        run: mvn verify -s .github/workflows/settings.xml
       - name: Sonar Scan
         env:
           SONAR_TOKEN: ${{ secrets.ENTUR_SONAR_PASSWORD }}
