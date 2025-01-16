@@ -96,15 +96,13 @@ public class GtfsFileMerger {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
              BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
 
-            CSVParser csvParser = new CSVParser(reader, getCsvFormatWithFirstRecordHasHeaders());
-
             String[] targetHeaders = getTargetHeaders(GtfsConstants.STOPS_TXT);
 
             CSVPrinter csvPrinter = ignoreHeader
                     ? new CSVPrinter(writer, CSVFormat.DEFAULT)
                     : new CSVPrinter(writer, getCsvFormatWithHeaders(targetHeaders));
 
-            for (CSVRecord csvRecord : csvParser) {
+            for (CSVRecord csvRecord : getCsvParserWithFirstRecordHasHeaders(reader)) {
                 String stopId = csvRecord.get("stop_id");
                 if (!stopIds.contains(stopId)) {
                     stopIds.add(stopId);
@@ -133,15 +131,13 @@ public class GtfsFileMerger {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
              BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
 
-            CSVParser csvParser = new CSVParser(reader, getCsvFormatWithFirstRecordHasHeaders());
-
             String[] targetHeaders = getTargetHeaders(GtfsConstants.TRANSFERS_TXT);
 
             CSVPrinter csvPrinter = ignoreHeader
                     ? new CSVPrinter(writer, CSVFormat.DEFAULT)
                     : new CSVPrinter(writer, getCsvFormatWithHeaders(targetHeaders));
 
-            for (CSVRecord csvRecord : csvParser) {
+            for (CSVRecord csvRecord : getCsvParserWithFirstRecordHasHeaders(reader)) {
                 List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).toList();
                 if (!transfers.contains(targetValues)) {
                     transfers.add(targetValues);
@@ -168,15 +164,13 @@ public class GtfsFileMerger {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(entryStream, StandardCharsets.UTF_8));
              BufferedWriter writer = Files.newBufferedWriter(destinationFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
 
-            CSVParser csvParser = new CSVParser(reader, getCsvFormatWithFirstRecordHasHeaders());
-
             String[] targetHeaders = getTargetHeaders(entryName);
 
             CSVPrinter csvPrinter = ignoreHeader
                     ? new CSVPrinter(writer, CSVFormat.DEFAULT)
                     : new CSVPrinter(writer, getCsvFormatWithHeaders(targetHeaders));
 
-            for (CSVRecord csvRecord : csvParser) {
+            for (CSVRecord csvRecord : getCsvParserWithFirstRecordHasHeaders(reader)) {
                 List<String> targetValues = Stream.of(targetHeaders).map(header -> convertValue(csvRecord, header)).toList();
                 csvPrinter.printRecord(targetValues);
             }
@@ -237,16 +231,23 @@ public class GtfsFileMerger {
         return gtfsExport.getHeaders().get(entryName);
     }
 
-    private CSVFormat getCsvFormatWithFirstRecordHasHeaders() {
-        return CSVFormat.DEFAULT.builder()
+
+    private CSVParser getCsvParserWithFirstRecordHasHeaders(BufferedReader reader) throws IOException {
+
+        CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
                 .setHeader()
                 .setSkipHeaderRecord(true)
                 .setIgnoreHeaderCase(true)
                 .setTrim(true)
-                .build();
+                .get();
+
+        return CSVParser.builder()
+                .setFormat(csvFormat)
+                .setReader(reader)
+                .get();
     }
 
     private CSVFormat getCsvFormatWithHeaders(String[] targetHeaders) {
-        return CSVFormat.DEFAULT.builder().setHeader(targetHeaders).build();
+        return CSVFormat.DEFAULT.builder().setHeader(targetHeaders).get();
     }
 }

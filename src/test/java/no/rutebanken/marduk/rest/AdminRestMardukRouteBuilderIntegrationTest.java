@@ -312,47 +312,25 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
     @Test
     void postSmallFile() throws Exception {
-        postFile(getTestNetexArchiveAsStream());
+        postFile(getTestNetexArchiveAsStream(), postFileTemplate);
     }
 
     @Test
     void postLargeFile() throws Exception {
-        postFile(getLargeTestNetexArchiveAsStream());
-    }
-
-    private void postFile(InputStream testFile) throws Exception {
-        // Preparations
-        String fileName = "netex-test-POST.zip";
-        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
-
-        AdviceWith.adviceWith(context, "process-file-after-import", a -> {
-            a.interceptSendToEndpoint("direct:updateStatus")
-                    .skipSendToOriginalEndpoint()
-                    .to("mock:updateStatus");
-            a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue")
-                    .replace()
-                    .to("mock:processFileQueue");
-        });
-
-        context.start();
-
-        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, testFile, ContentType.DEFAULT_BINARY, fileName).build();
-        Map<String, Object> headers = getTestHeaders("POST");
-        postFileTemplate.requestBodyAndHeaders(httpEntity, headers);
-
-        InputStream receivedFile = internalInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
-        assertNotNull(receivedFile);
-        byte[] fileContent = receivedFile.readAllBytes();
-        assertTrue(fileContent.length > 0);
-
+        postFile(getLargeTestNetexArchiveAsStream(), postFileTemplate);
     }
 
     @Test
     void postFlexFile() throws Exception {
+        postFile(getTestNetexArchiveAsStream(), postFlexFileTemplate);
+        List<Exchange> exchanges = processFileQueue.getExchanges();
+        assertEquals(IMPORT_TYPE_NETEX_FLEX,
+                exchanges.getFirst().getIn().getHeader(IMPORT_TYPE),
+                "Flex import should have expected IMPORT_TYPE header");
+    }
 
-        InputStream testFile = getTestNetexArchiveAsStream();
-        // Preparations
-        String fileName = "netex-test-flex-POST.zip";
+    private void postFile(InputStream testFile, ProducerTemplate template) throws Exception {
+        String fileName = "netex-test-POST.zip";
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
 
         AdviceWith.adviceWith(context, "process-file-after-import", a -> {
@@ -368,18 +346,11 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         context.start();
 
-        HttpEntity httpEntity = MultipartEntityBuilder.create()
-                .addBinaryBody(fileName, testFile, ContentType.DEFAULT_BINARY, fileName)
-                .build();
+        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, testFile, ContentType.DEFAULT_BINARY, fileName).build();
         Map<String, Object> headers = getTestHeaders("POST");
-        postFlexFileTemplate.requestBodyAndHeaders(httpEntity, headers);
+        template.requestBodyAndHeaders(httpEntity, headers);
 
         processFileQueue.assertIsSatisfied();
-        List<Exchange> exchanges = processFileQueue.getExchanges();
-
-        assertEquals(IMPORT_TYPE_NETEX_FLEX,
-                exchanges.getFirst().getIn().getHeader(IMPORT_TYPE),
-                "Flex import should have expected IMPORT_TYPE header");
 
         InputStream receivedFile = internalInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
         assertNotNull(receivedFile);

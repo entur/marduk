@@ -20,7 +20,6 @@ package no.rutebanken.marduk.routes.blobstore;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.services.ExchangeBlobStoreService;
 import org.apache.camel.LoggingLevel;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
@@ -30,8 +29,11 @@ import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 @Component
 public class ExternalBlobStoreRoute extends BaseRouteBuilder {
 
-    @Autowired
-    ExchangeBlobStoreService exchangeBlobStoreService;
+    final ExchangeBlobStoreService exchangeBlobStoreService;
+
+    public ExternalBlobStoreRoute(ExchangeBlobStoreService exchangeBlobStoreService) {
+        this.exchangeBlobStoreService = exchangeBlobStoreService;
+    }
 
     @Override
     public void configure() {
