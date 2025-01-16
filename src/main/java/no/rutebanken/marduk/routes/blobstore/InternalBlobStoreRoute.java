@@ -19,7 +19,6 @@ package no.rutebanken.marduk.routes.blobstore;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.LoggingLevel;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.*;
@@ -27,8 +26,11 @@ import static no.rutebanken.marduk.Constants.*;
 @Component
 public class InternalBlobStoreRoute extends BaseRouteBuilder {
 
-    @Autowired
-    MardukInternalBlobStoreService mardukInternalBlobStoreService;
+    final MardukInternalBlobStoreService mardukInternalBlobStoreService;
+
+    public InternalBlobStoreRoute(MardukInternalBlobStoreService mardukInternalBlobStoreService) {
+        this.mardukInternalBlobStoreService = mardukInternalBlobStoreService;
+    }
 
     @Override
     public void configure() {
