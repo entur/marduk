@@ -53,9 +53,6 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
     @Value("${netex.export.file.path:netex/rb_norway-aggregated-netex.zip}")
     private String netexExportMergedFilePath;
 
-    @Value("${otp2.netex.export.file.path:netex/rb_norway-aggregated-netex-otp2.zip}")
-    private String otp2NetexExportMergedFilePath;
-
     @Value("${netex.export.stops.file.prefix:_stops}")
     private String netexExportStopsFilePrefix;
 
@@ -136,12 +133,8 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .process(e -> new File( e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUBFOLDER).mkdir())
                 .process(e -> e.getIn().setBody(ZipFileUtils.zipFilesInFolder( e.getProperty(FOLDER_NAME, String.class) + UNPACKED_NETEX_SUBFOLDER,  e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUBFOLDER + "/merged.zip")))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploading new combined Netex for Norway for OTP1")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploading new combined Netex for Norway for OTP")
                 .to("direct:uploadBlob")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Copy new combined Netex for Norway for OTP2")
-                .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + otp2NetexExportMergedFilePath))
-                .to("direct:copyBlobInBucket")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Copied new combined Netex for Norway for OTP2")
                 .routeId("otp2-netex-export-merge-file");
 
     }
