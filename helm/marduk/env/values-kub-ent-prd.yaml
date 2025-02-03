@@ -38,6 +38,9 @@ chouette:
 baba:
   service: http://baba.prd.entur.internal
 
+nanna:
+  service: http://nanna.prd.entur.internal
+
 duplicateFileFilter:
   webFilter: true
 
