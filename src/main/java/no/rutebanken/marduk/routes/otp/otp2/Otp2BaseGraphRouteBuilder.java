@@ -61,7 +61,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:buildOtp2BaseGraph")
                 .routeId("pubsub-otp2-base-graph-build");
 
-        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue?maxAckExtensionPeriod=14400").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.getAggregateControllerForRoute("otp2-base-graph-build"))
                 .process(this::addSynchronizationForAggregatedExchange)
