@@ -109,7 +109,7 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .otherwise()
                 .log(LoggingLevel.INFO, correlation() + "Copied new OTP2 candidate base graph, triggering candidate NeTEx graph build")
                 .setBody(constant(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2CandidateGraphBuildQueue")
+                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphCandidateBuildQueue")
                 .end()
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_BASE).state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
                 .to("direct:updateStatus")

@@ -22,6 +22,8 @@ import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import no.rutebanken.marduk.kubernetes.KubernetesJobRunnerException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.LoggingLevel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +34,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class MonitorCandidateBaseGraphBuilderVersionRouteBuilder extends BaseRouteBuilder {
 
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MonitorCandidateBaseGraphBuilderVersionRouteBuilder.class);
+
     /**
      * Every 5 minutes by default.
      */
@@ -41,7 +46,7 @@ public class MonitorCandidateBaseGraphBuilderVersionRouteBuilder extends BaseRou
 
     private final String candidateGraphBuilderCronJobName;
 
-    private String currentCreationTimestamp;
+    private String currentResourceVersion;
 
     public MonitorCandidateBaseGraphBuilderVersionRouteBuilder(
             @Value("${otp.graph.build.base.candidate.monitor.cron.schedule:0+/5+*+*+*+?}") String cronSchedule,
@@ -77,9 +82,10 @@ public class MonitorCandidateBaseGraphBuilderVersionRouteBuilder extends BaseRou
             if (matchingCronJob == null) {
                 throw new KubernetesJobRunnerException("Job with name=" + candidateGraphBuilderCronJobName + " not found in namespace " + kubernetesNamespace);
             }
-            String creationTimestamp = matchingCronJob.getMetadata().getCreationTimestamp();
-            if (currentCreationTimestamp == null || !currentCreationTimestamp.equals(creationTimestamp)) {
-                currentCreationTimestamp = creationTimestamp;
+            String resourceVersion = matchingCronJob.getMetadata().getResourceVersion();
+            LOGGER.debug("Current resource version is {}, new resource version is {}", currentResourceVersion, resourceVersion);
+            if (currentResourceVersion == null || !currentResourceVersion.equals(resourceVersion)) {
+                currentResourceVersion = resourceVersion;
                 return true;
             }
 
