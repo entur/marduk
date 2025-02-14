@@ -2,7 +2,6 @@ package no.rutebanken.marduk.graph;
 
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.OtpGraphsInfo;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -30,7 +29,6 @@ class OtpGraphsInfoBuilderTest {
 
     }
 
-    @NotNull
     private static BlobStoreFiles.File createFile(String fileName, Instant creationTime, long fileSize) {
         BlobStoreFiles.File graph1 = new BlobStoreFiles.File();
         graph1.setName(fileName);
