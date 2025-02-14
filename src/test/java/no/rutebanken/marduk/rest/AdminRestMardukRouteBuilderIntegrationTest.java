@@ -33,7 +33,6 @@ import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHeaders;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -406,7 +405,6 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
     }
 
-    @NotNull
     private static Map<String, Object> getTestHeaders(String method) {
         return Map.of(
                 Exchange.HTTP_METHOD, method,

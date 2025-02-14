@@ -7,7 +7,6 @@ import no.rutebanken.marduk.repository.MardukBlobStoreRepository;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -114,7 +113,7 @@ public abstract class MardukSpringBootBaseTest {
                 "src/test/resources/no/rutebanken/marduk/providerRepository/provider" + id  + ".json")));
     }
 
-    protected static @NotNull InputStream dummyData() {
+    protected static  InputStream dummyData() {
         return IOUtils.toInputStream("dummyData", Charset.defaultCharset());
     }
 
