@@ -29,7 +29,6 @@ public class ChouetteInfo {
     private String referential;
     private String organisation;
     private String user;
-    private String dataFormat;
     private boolean allowCreateMissingStopPlace;
     private boolean enableAutoImport;
     private boolean enableAutoValidation;
@@ -52,7 +51,6 @@ public class ChouetteInfo {
                        ", referential='" + referential + '\'' +
                        ", organisation='" + organisation + '\'' +
                        ", user='" + user + '\'' +
-                       ", dataFormat='" + dataFormat + '\'' +
                         ", allowCreateMissingStopPlace='" + allowCreateMissingStopPlace + '\'' +
                        ", enableAutoImport='" + enableAutoImport + '\'' +
                        ", enableAutoValidation='" + enableAutoValidation + '\'' +
@@ -86,11 +84,6 @@ public class ChouetteInfo {
     public String getUser() {
         return user;
     }
-
-    public String getDataFormat() {
-        return dataFormat;
-    }
-
 
     public boolean isAllowCreateMissingStopPlace() {
         return allowCreateMissingStopPlace;
@@ -139,11 +132,6 @@ public class ChouetteInfo {
 
     public ChouetteInfo setUser(String user) {
         this.user = user;
-        return this;
-    }
-
-    public ChouetteInfo setDataFormat(String dataFormat) {
-        this.dataFormat = dataFormat;
         return this;
     }
 
