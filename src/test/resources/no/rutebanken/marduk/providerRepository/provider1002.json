@@ -12,7 +12,6 @@
         "regtoppVersion": null,
         "regtoppCoordinateProjection": "EPSG:32632",
         "regtoppCalendarStrategy": null,
-        "dataFormat": "netex",
         "enableValidation": true,
         "enableAutoImport": true,
         "migrateDataToProvider": 2,
