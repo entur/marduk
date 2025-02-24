@@ -134,8 +134,6 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .to("direct:uploadBlob")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploaded new merged GTFS file: ${header." + FILE_NAME + "}")
                 .routeId("gtfs-export-upload-merged");
-
-
     }
 
     private List<String> getAggregatedGtfsFiles(Collection<String> providerBlackList, Collection<String> providerWhiteList) {

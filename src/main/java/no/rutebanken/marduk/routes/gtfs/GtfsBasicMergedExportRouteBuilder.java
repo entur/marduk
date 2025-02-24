@@ -61,8 +61,22 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS Basics export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .to("direct:exportGtfsBasicMerged")
+                .choice()
+                    .when(simple("${env:DAMU_GTFS_AGGREGATION} == 'true'"))
+                        .to("direct:exportGtfsBasicMergedNext")
+                    .otherwise()
+                        .to("direct:exportGtfsBasicMerged")
+                .end()
                 .routeId("gtfs-basic-export-merged-route");
+
+        from("direct:exportGtfsBasicMergedNext")
+                .setBody(constant(""))
+                .setProperty(Constants.PROVIDER_BLACK_LIST, constant(createProviderBlackList()))
+                .setHeader(Constants.FILE_NAME, constant(gtfsBasicMergedFileName))
+                .setHeader(Constants.INCLUDE_SHAPES, constant(includeShapes))
+                .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_BASIC_MERGED.name()))
+                .to("direct:exportMergedGtfsNext")
+                .routeId("gtfs-basic-export-merged-next");
 
         from("direct:exportGtfsBasicMerged")
                 .setBody(constant(""))
@@ -72,9 +86,7 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_BASIC_MERGED.name()))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-basic-export-merged");
-
     }
-
 
     /**
      * Make sure blacklisted agencies start with "rb_" prefix.
