@@ -27,18 +27,20 @@ public class NextGtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action(e.getIn().getHeader(JOB_ACTION, String.class)).state(JobEvent.State.STARTED).newCorrelationId().build())
                 .to(ExchangePattern.InOnly, "direct:updateStatus")
                 .to("direct:createListOfGtfsFiles")
+                .convertBodyTo(String.class, "UTF-8")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering merging and aggregation of GTFS files ${body} in damu")
                 .to("google-pubsub:{{damu.pubsub.project.id}}:DamuAggregateGtfsQueue")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering merging and aggregation of GTFS file ${header." + FILE_NAME + "} in damu")
-                .routeId("gtfs-export-merged-route");
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done sending message on pubsub")
+                .routeId("gtfs-export-merged-route-next");
 
         from("direct:reportExportMergedGtfsOKNext")
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.OK).build())
                 .to(ExchangePattern.InOnly, "direct:updateStatus")
-                .routeId("gtfs-export-merged-report-ok");
+                .routeId("gtfs-export-merged-report-ok-next");
 
         from("direct:createListOfGtfsFiles")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Creating list of gtfs files for aggregation")
-                .process(e -> e.getIn().setBody(getAggregatedGtfsFiles(getProviderBlackList(e), getProviderWhiteList(e))))
+                .process(e -> e.getIn().setBody(String.join("DELIMITER", getAggregatedGtfsFiles(getProviderBlackList(e), getProviderWhiteList(e)))))
                 .routeId("gtfs-export-list-files-route");
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:MardukAggregateGtfsStatusQueue")
@@ -48,7 +50,7 @@ public class NextGtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .otherwise()
                 .to(ExchangePattern.InOnly, "direct:updateStatus")
                 .end()
-                .routeId("gtfs-export-merged-report-ok");
+                .routeId("gtfs-aggregate-status-route");
     }
 
     private List<String> getAggregatedGtfsFiles(Collection<String> providerBlackList, Collection<String> providerWhiteList) {

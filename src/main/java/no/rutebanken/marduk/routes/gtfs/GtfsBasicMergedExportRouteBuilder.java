@@ -66,7 +66,7 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                         .to("direct:exportGtfsBasicMergedNext")
                     .otherwise()
                         .to("direct:exportGtfsBasicMerged")
-                .end()
+                .endChoice()
                 .routeId("gtfs-basic-export-merged-route");
 
         from("direct:exportGtfsBasicMergedNext")
