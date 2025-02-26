@@ -40,7 +40,7 @@ public class NextGtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:createListOfGtfsFiles")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Creating list of gtfs files for aggregation")
-                .process(e -> e.getIn().setBody(String.join("DELIMITER", getAggregatedGtfsFiles(getProviderBlackList(e), getProviderWhiteList(e)))))
+                .process(e -> e.getIn().setBody(String.join(",", getAggregatedGtfsFiles(getProviderBlackList(e), getProviderWhiteList(e)))))
                 .routeId("gtfs-export-list-files-route");
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:MardukAggregateGtfsStatusQueue")
