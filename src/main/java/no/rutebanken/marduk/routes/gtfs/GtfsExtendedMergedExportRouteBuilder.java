@@ -54,10 +54,22 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() +  "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .to("direct:exportGtfsExtendedMerged")
+                .choice()
+                    .when(simple("${env:DAMU_GTFS_AGGREGATION} == 'true'"))
+                        .to("direct:exportGtfsExtendedMergedNext")
+                    .otherwise()
+                        .to("direct:exportGtfsExtendedMerged")
+                .end()
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue")
                 .routeId("gtfs-extended-export-merged-route");
 
+        from("direct:exportGtfsExtendedMergedNext")
+                .log(LoggingLevel.INFO, "Preparing GTFS extended export message from marduk to damu")
+                .setBody(constant(""))
+                .setHeader(Constants.FILE_NAME, constant(gtfsNorwayMergedFileName))
+                .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()))
+                .to("direct:exportMergedGtfsNext")
+                .routeId("gtfs-extended-export-merged-next");
 
         from("direct:exportGtfsExtendedMerged")
                 .setBody(constant(""))
@@ -65,6 +77,5 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-extended-export-merged");
-
     }
 }
