@@ -17,6 +17,9 @@ import static no.rutebanken.marduk.Constants.FILE_NAME;
 public class NextGtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
 
     private static final String STATUS_MERGE_OK = "ok";
+    private static final String STATUS_MERGE_STARTED = "started";
+    private static final String STATUS_MERGE_FAILED = "failed";
+    private static final String STATUS_HEADER = "status";
 
     @Override
     public void configure() throws Exception {
@@ -24,8 +27,6 @@ public class NextGtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:exportMergedGtfsNext")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Start export of merged GTFS file: ${header." + FILE_NAME + "}")
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action(e.getIn().getHeader(JOB_ACTION, String.class)).state(JobEvent.State.STARTED).newCorrelationId().build())
-                .to(ExchangePattern.InOnly, "direct:updateStatus")
                 .to("direct:createListOfGtfsFiles")
                 .convertBodyTo(String.class, "UTF-8")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering merging and aggregation of GTFS files ${body} in damu")
@@ -44,11 +45,27 @@ public class NextGtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .routeId("gtfs-export-list-files-route");
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:MardukAggregateGtfsStatusQueue")
+                .process(e -> {
+                    Map<String, String> camelAttributes = e.getIn().getHeader("CamelGooglePubsubAttributes", Map.class);
+                    log.info(correlation() + "Got aggregation status from damu:" + e.getIn().getHeader(STATUS_HEADER));
+                    e.getIn().setBody(constant(""));
+                    for (String key : camelAttributes.keySet()) {
+                        e.getIn().setHeader(key, camelAttributes.get(key));
+                    }
+                })
                 .choice()
-                .when(body().isEqualTo(STATUS_MERGE_OK))
-                .to("direct:reportExportMergedGtfsOKNext")
-                .otherwise()
-                .to(ExchangePattern.InOnly, "direct:updateStatus")
+                    .when(header(STATUS_HEADER).isEqualTo(STATUS_MERGE_OK))
+                        .log(LoggingLevel.INFO, correlation() + "Received status OK from damu aggregation")
+                        .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).state(JobEvent.State.OK).correlationId(e.getIn().getHeader(CORRELATION_ID, String.class)).action(e.getIn().getHeader(JOB_ACTION, String.class)).build())
+                        .to(ExchangePattern.InOnly, "direct:updateStatus")
+                    .when(header(STATUS_HEADER).isEqualTo(STATUS_MERGE_STARTED))
+                        .log(LoggingLevel.INFO, correlation() + "Received status STARTED from damu aggregation")
+                        .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action(e.getIn().getHeader(JOB_ACTION, String.class)).state(JobEvent.State.STARTED).newCorrelationId().build())
+                        .to(ExchangePattern.InOnly, "direct:updateStatus")
+                    .when(header(STATUS_HEADER).isEqualTo(STATUS_MERGE_FAILED))
+                        .log(LoggingLevel.INFO, correlation() + "Received status FAILED from damu aggregation")
+                        .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.FAILED).correlationId(e.getIn().getHeader(CORRELATION_ID, String.class)).build())
+                        .to(ExchangePattern.InOnly, "direct:updateStatus")
                 .end()
                 .routeId("gtfs-aggregate-status-route");
     }
