@@ -42,20 +42,26 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
     @Value("${gtfs.export.aggregation.timeout:300000}")
     private int gtfsExportAggregationTimeout;
 
+    @Value("${aggregation.completionSize:100}")
+    private int aggregationCompletionSize;
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue").autoStartup("{{gtfs.export.autoStartup:true}}")
+                .log(LoggingLevel.INFO, "Starting GtfsExportMergedExportRouteBuilder")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
+                .aggregate(simple("true", Boolean.class))
+                .aggregationStrategy(new GroupedMessageAggregationStrategy())
+                .completionSize(aggregationCompletionSize)
+                .completionTimeout(gtfsExportAggregationTimeout)
                 .executorService("gtfsExportExecutorService")
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() +  "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .choice()
-                    .when(simple("${env:DAMU_GTFS_AGGREGATION} == 'true'"))
+                    .when(simple("${properties:DAMU_GTFS_AGGREGATION} == 'true'"))
                         .to("direct:exportGtfsExtendedMergedNext")
                     .otherwise()
                         .to("direct:exportGtfsExtendedMerged")
