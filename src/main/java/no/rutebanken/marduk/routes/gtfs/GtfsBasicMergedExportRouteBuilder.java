@@ -54,9 +54,13 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue").autoStartup("{{gtfs.export.basic.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue")
+                .autoStartup("{{gtfs.export.basic.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
+                .aggregate(simple("true", Boolean.class))
+                .aggregationStrategy(new GroupedMessageAggregationStrategy())
+                .completionSize(100)
+                .completionTimeout(gtfsExportAggregationTimeout)
                 .executorService("gtfsExportExecutorService")
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
