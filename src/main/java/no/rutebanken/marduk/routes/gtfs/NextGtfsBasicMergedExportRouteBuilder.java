@@ -65,7 +65,7 @@ public class NextGtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                         .to(ExchangePattern.InOnly, "direct:updateStatus")
                     .when(header(STATUS_HEADER).isEqualTo(STATUS_MERGE_FAILED))
                         .log(LoggingLevel.INFO, correlation() + "Received status FAILED from damu aggregation")
-                        .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.FAILED).correlationId(e.getIn().getHeader(CORRELATION_ID, String.class)).build())
+                        .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).state(JobEvent.State.FAILED).action(e.getIn().getHeader(JOB_ACTION, String.class)).correlationId(e.getIn().getHeader(CORRELATION_ID, String.class)).build())
                         .to(ExchangePattern.InOnly, "direct:updateStatus")
                 .end()
                 .routeId("gtfs-aggregate-status-route");
