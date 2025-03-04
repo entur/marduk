@@ -30,7 +30,7 @@ public class NextGtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .to("direct:createListOfGtfsFiles")
                 .convertBodyTo(String.class, "UTF-8")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering merging and aggregation of GTFS files ${body} in damu")
-                .to("google-pubsub:{{damu.pubsub.project.id}}:DamuAggregateGtfsQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:DamuAggregateGtfsQueue")
                 .id("damuAggregateGtfsNext")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done sending message on pubsub")
                 .routeId("gtfs-export-merged-route-next");
