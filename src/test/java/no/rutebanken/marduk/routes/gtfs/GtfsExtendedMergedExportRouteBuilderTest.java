@@ -2,7 +2,6 @@ package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -11,8 +10,6 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
-
-import static org.apache.camel.builder.Builder.constant;
 
 public class GtfsExtendedMergedExportRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
     @Produce("google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue")
@@ -48,9 +45,9 @@ public class GtfsExtendedMergedExportRouteBuilderTest extends MardukRouteBuilder
                             .to("mock:exportGtfsExtendedMergedNext")
             );
 
+        nextMergedRouteMock.expectedMessageCount(1);
         context.start();
         sendBodyAndHeadersToPubSub(gtfsExportMergedQueueProducerTemplate, "test", new HashMap<>());
-        nextMergedRouteMock.expectedMessageCount(1);
         nextMergedRouteMock.assertIsSatisfied();
     }
 
@@ -66,9 +63,9 @@ public class GtfsExtendedMergedExportRouteBuilderTest extends MardukRouteBuilder
                                 .to("mock:exportGtfsExtendedMerged")
                 );
 
+        oldMergedRouteMock.expectedMessageCount(1);
         context.start();
         sendBodyAndHeadersToPubSub(gtfsExportMergedQueueProducerTemplate, "test", new HashMap<>());
-        oldMergedRouteMock.expectedMessageCount(1);
         oldMergedRouteMock.assertIsSatisfied();
     }
 
@@ -82,11 +79,11 @@ public class GtfsExtendedMergedExportRouteBuilderTest extends MardukRouteBuilder
                                 .replace()
                                 .to("mock:exportMergedGtfsNext")
                 );
+        exportMergedGtfsNextRouteMock.expectedHeaderReceived(Constants.FILE_NAME, "rb_norway-aggregated-gtfs.zip");
+        exportMergedGtfsNextRouteMock.expectedHeaderReceived(Constants.JOB_ACTION, "EXPORT_GTFS_MERGED");
+        exportMergedGtfsNextRouteMock.expectedMessageCount(1);
         context.start();
         sendBodyAndHeadersToPubSub(exportGtfsExtendedMergedNextProducerTemplate, "test", new HashMap<>());
-        exportMergedGtfsNextRouteMock.expectedMessageCount(1);
-        exportMergedGtfsRouteMock.expectedHeaderReceived(Constants.FILE_NAME, "rb_norway-aggregated-gtfs. zip");
-        exportMergedGtfsRouteMock.expectedHeaderReceived(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()));
         exportMergedGtfsNextRouteMock.assertIsSatisfied();
     }
 
@@ -100,11 +97,11 @@ public class GtfsExtendedMergedExportRouteBuilderTest extends MardukRouteBuilder
                                 .replace()
                                 .to("mock:exportMergedGtfs")
                 );
+        exportMergedGtfsRouteMock.expectedMessageCount(1);
+        exportMergedGtfsRouteMock.expectedHeaderReceived(Constants.FILE_NAME, "rb_norway-aggregated-gtfs.zip");
+        exportMergedGtfsRouteMock.expectedHeaderReceived(Constants.JOB_ACTION, "EXPORT_GTFS_MERGED");
         context.start();
         sendBodyAndHeadersToPubSub(exportGtfsExtendedMergedProducerTemplate, "test", new HashMap<>());
-        exportMergedGtfsRouteMock.expectedMessageCount(1);
-        exportMergedGtfsRouteMock.expectedHeaderReceived(Constants.FILE_NAME, "rb_norway-aggregated-gtfs. zip");
-        exportMergedGtfsRouteMock.expectedHeaderReceived(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()));
         exportMergedGtfsRouteMock.assertIsSatisfied();
     }
 }
