@@ -61,7 +61,7 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() +  "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .choice()
-                    .when(simple("${properties:DAMU_GTFS_AGGREGATION} == 'true'"))
+                    .when(simple("${properties:marduk.gtfs-aggregation-next.enabled} == 'true'"))
                         .to("direct:exportGtfsExtendedMergedNext")
                     .otherwise()
                         .to("direct:exportGtfsExtendedMerged")

@@ -35,7 +35,7 @@ public class GtfsExtendedMergedExportRouteBuilderTest extends MardukRouteBuilder
 
     @Test
     public void testDamuGtfsAggregationTrigger() throws Exception {
-        System.setProperty("DAMU_GTFS_AGGREGATION", "true");
+        System.setProperty("marduk.gtfs-aggregation-next.enabled", "true");
         AdviceWith
             .adviceWith(context,
                     "gtfs-extended-export-merged-route",
@@ -53,7 +53,7 @@ public class GtfsExtendedMergedExportRouteBuilderTest extends MardukRouteBuilder
 
     @Test
     public void testOldGtfsAggregationTrigger() throws Exception {
-        System.setProperty("DAMU_GTFS_AGGREGATION", "false");
+        System.setProperty("marduk.gtfs-aggregation-next.enabled", "false");
         AdviceWith
                 .adviceWith(context,
                         "gtfs-extended-export-merged-route",
