@@ -21,6 +21,16 @@ resource "google_storage_bucket" "storage_bucket" {
         type = "Delete"
       }
     }
+  lifecycle_rule {
+      condition {
+        matches_prefix = ["graphs/street"]
+        days_since_noncurrent_time = 30
+        with_state = "ARCHIVED"
+      }
+      action {
+        type = "Delete"
+      }
+    }
   logging {
     log_bucket           = var.log_bucket
     log_object_prefix = "${var.bucket_instance_prefix}-${var.bucket_instance_suffix}"
