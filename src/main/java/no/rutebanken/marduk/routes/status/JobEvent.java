@@ -400,7 +400,7 @@ public class JobEvent {
             jobEvent.name = exchange.getIn().getHeader(Constants.FILE_NAME, String.class);
             String providerId = exchange.getIn().getHeader(PROVIDER_ID, String.class);
             String originalProviderId = exchange.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID, providerId, String.class);
-            if(originalProviderId == null) {
+            if (originalProviderId == null) {
                 throw new IllegalStateException("Neither the provider id nor the original provider id are defined in the current exchange");
             }
             jobEvent.providerId = Long.valueOf(originalProviderId);

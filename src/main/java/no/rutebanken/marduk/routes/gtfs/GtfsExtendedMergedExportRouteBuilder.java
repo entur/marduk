@@ -25,6 +25,8 @@ import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
  * Route creating a merged GTFS extended file for all providers and uploading it to GCS.
  * <p>
@@ -41,6 +43,9 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
 
     @Value("${gtfs.export.aggregation.timeout:300000}")
     private int gtfsExportAggregationTimeout;
+
+    @Value("${gtfs.basic.norway.includes.shapes:false}")
+    private boolean includeShapes;
 
     @Value("${aggregation.completionSize:100}")
     private int aggregationCompletionSize;
@@ -66,14 +71,17 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
                     .otherwise()
                         .to("direct:exportGtfsExtendedMerged")
                 .end()
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue")
+//                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue")
                 .routeId("gtfs-extended-export-merged-route");
 
         from("direct:exportGtfsExtendedMergedNext")
                 .log(LoggingLevel.INFO, "Preparing GTFS extended export message from marduk to damu")
                 .setBody(constant(""))
                 .setHeader(Constants.FILE_NAME, constant(gtfsNorwayMergedFileName))
-                .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()))
+                .setHeader(Constants.INCLUDE_SHAPES, constant(includeShapes))
+                .setHeader(Constants.JOB_ACTION, constant(
+                        JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()
+                    + "," + JobEvent.TimetableAction.EXPORT_GTFS_BASIC_MERGED.name()))
                 .to("direct:exportMergedGtfsNext")
                 .routeId("gtfs-extended-export-merged-next");
 
