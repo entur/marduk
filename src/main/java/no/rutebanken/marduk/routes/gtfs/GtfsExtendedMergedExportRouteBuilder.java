@@ -79,9 +79,7 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(""))
                 .setHeader(Constants.FILE_NAME, constant(gtfsNorwayMergedFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(includeShapes))
-                .setHeader(Constants.JOB_ACTION, constant(
-                        JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()
-                    + "," + JobEvent.TimetableAction.EXPORT_GTFS_BASIC_MERGED.name()))
+                .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()))
                 .to("direct:exportMergedGtfsNext")
                 .routeId("gtfs-extended-export-merged-next");
 
