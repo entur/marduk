@@ -23,9 +23,7 @@ import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Publish dated merged NeTEx dataset and notify downstream consumers (GTFS export, OTP Graph builder, Kafka topic)
@@ -74,7 +72,8 @@ public class PublishMergedNetexRouteBuilder extends BaseRouteBuilder {
                 .removeHeader(DATASET_REFERENTIAL)
                 .setBody(header(CHOUETTE_REFERENTIAL))
                 .process(this::removeAllCamelHeaders)
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:DamuExportGtfsQueue")
+                .setHeader(GTFS_ROUTE_DISPATCHER_HEADER, simple(GTFS_ROUTE_DISPATCHER_EXPORT_HEADER))
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:GtfsRouteDispatcherTopic")
                 .routeId("start-damu-gtfs-export");
 
 
