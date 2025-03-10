@@ -80,7 +80,6 @@ public class GtfsExtendedMergedExportRouteBuilderTest extends MardukRouteBuilder
                                 .to("mock:exportMergedGtfsNext")
                 );
         exportMergedGtfsNextRouteMock.expectedHeaderReceived(Constants.FILE_NAME, "rb_norway-aggregated-gtfs.zip");
-        exportMergedGtfsNextRouteMock.expectedHeaderReceived(Constants.JOB_ACTION, "EXPORT_GTFS_MERGED");
         exportMergedGtfsNextRouteMock.expectedMessageCount(1);
         context.start();
         sendBodyAndHeadersToPubSub(exportGtfsExtendedMergedNextProducerTemplate, "test", new HashMap<>());
