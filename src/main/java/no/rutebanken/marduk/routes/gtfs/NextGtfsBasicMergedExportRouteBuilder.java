@@ -46,14 +46,6 @@ public class NextGtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .routeId("gtfs-export-list-files-route");
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:MardukAggregateGtfsStatusQueue")
-                .process(e -> {
-                    Map<String, String> camelAttributes = e.getIn().getHeader("CamelGooglePubsubAttributes", Map.class);
-                    log.info(correlation() + "Got aggregation status from damu:" + e.getIn().getHeader(STATUS_HEADER));
-                    e.getIn().setBody(constant(""));
-                    for (String key : camelAttributes.keySet()) {
-                        e.getIn().setHeader(key, camelAttributes.get(key));
-                    }
-                })
                 .choice()
                     .when(header(STATUS_HEADER).isEqualTo(STATUS_MERGE_OK))
                         .log(LoggingLevel.INFO, correlation() + "Received status OK from damu aggregation")
