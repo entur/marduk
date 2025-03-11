@@ -19,13 +19,16 @@ package no.rutebanken.marduk.routes.gtfs;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import java.util.*;
+
+import static no.rutebanken.marduk.Constants.PROVIDER_BLACK_LIST;
 
 /**
  * Route creating a merged GTFS extended file for all providers and uploading it to GCS.
@@ -37,6 +40,8 @@ import java.util.List;
 @Component
 public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
 
+    @Value("#{'${gtfs.basic.export.agency.prefix.blacklist:AVI}'.split(',')}")
+    private Set<String> agencyBlackList;
 
     @Value("${gtfs.norway.merged.file.name:rb_norway-aggregated-gtfs.zip}")
     private String gtfsNorwayMergedFileName;
@@ -76,7 +81,7 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:exportGtfsExtendedMergedNext")
                 .log(LoggingLevel.INFO, "Preparing GTFS extended export message from marduk to damu")
-                .setBody(constant(""))
+                .setBody(constant("")).setProperty(Constants.PROVIDER_BLACK_LIST, constant(createProviderBlackList()))
                 .setHeader(Constants.FILE_NAME, constant(gtfsNorwayMergedFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(includeShapes))
                 .to("direct:exportMergedGtfsNext")
@@ -88,5 +93,16 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-extended-export-merged");
+    }
+
+    /**
+     * Make sure blacklisted agencies start with "rb_" prefix.
+     */
+    private List<String> createProviderBlackList() {
+        if (agencyBlackList == null) {
+            return Collections.emptyList();
+        }
+
+        return agencyBlackList.stream().map(agency -> agency.startsWith("rb_") ? agency : "rb_" + agency).toList();
     }
 }
