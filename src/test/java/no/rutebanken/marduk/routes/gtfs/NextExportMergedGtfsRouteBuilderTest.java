@@ -19,7 +19,7 @@ import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.JOB_ACTION;
 
-public class NextGtfsBasicMergedExportRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
+public class NextExportMergedGtfsRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
 
     @Produce("direct:exportMergedGtfsNext")
     protected ProducerTemplate exportMergedGtfsNextRoute;

@@ -75,7 +75,6 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:exportGtfsBasicMergedNext")
                 .setBody(constant(""))
-                .setProperty(Constants.PROVIDER_BLACK_LIST, constant(createProviderBlackList()))
                 .setHeader(Constants.FILE_NAME, constant(gtfsBasicMergedFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(includeShapes))
                 .to("direct:exportMergedGtfsNext")

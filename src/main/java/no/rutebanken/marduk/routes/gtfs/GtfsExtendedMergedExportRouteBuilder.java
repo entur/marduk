@@ -40,9 +40,6 @@ import static no.rutebanken.marduk.Constants.PROVIDER_BLACK_LIST;
 @Component
 public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
 
-    @Value("#{'${gtfs.basic.export.agency.prefix.blacklist:AVI}'.split(',')}")
-    private Set<String> agencyBlackList;
-
     @Value("${gtfs.norway.merged.file.name:rb_norway-aggregated-gtfs.zip}")
     private String gtfsNorwayMergedFileName;
 
@@ -76,12 +73,10 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
                     .otherwise()
                         .to("direct:exportGtfsExtendedMerged")
                 .end()
-//                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue")
                 .routeId("gtfs-extended-export-merged-route");
 
         from("direct:exportGtfsExtendedMergedNext")
                 .log(LoggingLevel.INFO, "Preparing GTFS extended export message from marduk to damu")
-                .setBody(constant("")).setProperty(Constants.PROVIDER_BLACK_LIST, constant(createProviderBlackList()))
                 .setHeader(Constants.FILE_NAME, constant(gtfsNorwayMergedFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(includeShapes))
                 .to("direct:exportMergedGtfsNext")
@@ -93,16 +88,5 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-extended-export-merged");
-    }
-
-    /**
-     * Make sure blacklisted agencies start with "rb_" prefix.
-     */
-    private List<String> createProviderBlackList() {
-        if (agencyBlackList == null) {
-            return Collections.emptyList();
-        }
-
-        return agencyBlackList.stream().map(agency -> agency.startsWith("rb_") ? agency : "rb_" + agency).toList();
     }
 }

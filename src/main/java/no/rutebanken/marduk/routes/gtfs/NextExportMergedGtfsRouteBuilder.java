@@ -1,9 +1,7 @@
 package no.rutebanken.marduk.routes.gtfs;
 
-import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
@@ -14,7 +12,7 @@ import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
 
 @Component
-public class NextGtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
+public class NextExportMergedGtfsRouteBuilder extends BaseRouteBuilder {
 
     private static final String STATUS_MERGE_OK = "ok";
     private static final String STATUS_MERGE_STARTED = "started";
@@ -43,7 +41,7 @@ public class NextGtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:createListOfGtfsFiles")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Creating list of gtfs files for aggregation")
-                .process(e -> e.getIn().setBody(String.join(",", getAggregatedGtfsFiles(getProviderBlackList(e), getProviderWhiteList(e)))))
+                .process(e -> e.getIn().setBody(String.join(",", getAggregatedGtfsFiles())))
                 .routeId("gtfs-export-list-files-route");
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:MardukAggregateGtfsStatusQueue")
@@ -64,26 +62,10 @@ public class NextGtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .routeId("gtfs-aggregate-status-route");
     }
 
-    private List<String> getAggregatedGtfsFiles(Collection<String> providerBlackList, Collection<String> providerWhiteList) {
+    private List<String> getAggregatedGtfsFiles() {
         return getProviderRepository().getProviders().stream()
                 .filter(p -> p.getChouetteInfo().getMigrateDataToProvider() == null)
-                .filter(p -> isMatch(p, providerBlackList, providerWhiteList))
                 .map(p -> p.getChouetteInfo().getReferential() + "-" + CURRENT_AGGREGATED_GTFS_FILENAME)
                 .toList();
-    }
-
-    private boolean isMatch(Provider p, Collection<String> providerBlackList, Collection<String> providerWhiteList) {
-        if (providerWhiteList == null) {
-            return providerBlackList.stream().noneMatch(blacklisted -> blacklisted.equalsIgnoreCase(p.getChouetteInfo().getReferential()));
-        }
-        return providerWhiteList.stream().anyMatch(whiteListed -> whiteListed.equalsIgnoreCase(p.getChouetteInfo().getReferential()));
-    }
-
-    private Collection<String> getProviderBlackList(Exchange e) {
-        return Optional.ofNullable(e.getProperty(PROVIDER_BLACK_LIST, Collection.class)).orElse(Collections.emptyList());
-    }
-
-    private Collection<String> getProviderWhiteList(Exchange e) {
-        return e.getProperty(PROVIDER_WHITE_LIST, Collection.class);
     }
 }
