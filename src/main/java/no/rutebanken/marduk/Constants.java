@@ -105,9 +105,9 @@ public final class Constants {
      */
     public static final String DATASET_REFERENTIAL = "EnturDatasetReferential";
 
-    public static final String GTFS_ROUTE_DISPATCHER_HEADER = "Action";
-    public static final String GTFS_ROUTE_DISPATCHER_AGGREGATE_HEADER = "Aggregation";
-    public static final String GTFS_ROUTE_DISPATCHER_EXPORT_HEADER = "Export";
+    public static final String GTFS_ROUTE_DISPATCHER_HEADER_NAME = "Action";
+    public static final String GTFS_ROUTE_DISPATCHER_AGGREGATION_HEADER_VALUE = "Aggregation";
+    public static final String GTFS_ROUTE_DISPATCHER_EXPORT_HEADER_VALUE = "Export";
 
     public static final String VALIDATION_DATASET_FILE_HANDLE_HEADER = "EnturValidationDatasetFileHandle";
     public static final String VALIDATION_CORRELATION_ID_HEADER  = "EnturValidationCorrelationId";
