@@ -424,15 +424,15 @@ resource "google_pubsub_subscription" "MardukDeadLetterQueue" {
       }
 }
 
-resource "google_pubsub_topic" "DamuAggregateGtfsQueue" {
-  name = "DamuAggregateGtfsQueue"
+resource "google_pubsub_topic" "GtfsRouteDispatcherTopic" {
+  name = "GtfsRouteDispatcherTopic"
   project = var.gcp_resources_project
   labels = var.labels
 }
 
-resource "google_pubsub_subscription" "DamuAggregateGtfsQueue" {
-  name = "DamuAggregateGtfsQueue"
-  topic = google_pubsub_topic.DamuAggregateGtfsQueue.name
+resource "google_pubsub_subscription" "GtfsRouteDispatcherTopic" {
+  name = "GtfsRouteDispatcherTopic"
+  topic = google_pubsub_topic.GtfsRouteDispatcherTopic.name
   project = var.gcp_resources_project
   labels = var.labels
 }
