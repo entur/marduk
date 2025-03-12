@@ -19,11 +19,16 @@ package no.rutebanken.marduk.routes.gtfs;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.util.*;
+
+import static no.rutebanken.marduk.Constants.PROVIDER_BLACK_LIST;
 
 /**
  * Route creating a merged GTFS extended file for all providers and uploading it to GCS.
@@ -35,29 +40,47 @@ import org.springframework.stereotype.Component;
 @Component
 public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
 
-
     @Value("${gtfs.norway.merged.file.name:rb_norway-aggregated-gtfs.zip}")
     private String gtfsNorwayMergedFileName;
 
     @Value("${gtfs.export.aggregation.timeout:300000}")
     private int gtfsExportAggregationTimeout;
 
+    @Value("${gtfs.basic.norway.includes.shapes:false}")
+    private boolean includeShapes;
+
+    @Value("${aggregation.completionSize:100}")
+    private int aggregationCompletionSize;
 
     @Override
     public void configure() throws Exception {
         super.configure();
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue").autoStartup("{{gtfs.export.autoStartup:true}}")
+                .log(LoggingLevel.INFO, "Starting GtfsExportMergedExportRouteBuilder")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
+                .aggregate(simple("true", Boolean.class))
+                .aggregationStrategy(new GroupedMessageAggregationStrategy())
+                .completionSize(aggregationCompletionSize)
+                .completionTimeout(gtfsExportAggregationTimeout)
                 .executorService("gtfsExportExecutorService")
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() +  "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .to("direct:exportGtfsExtendedMerged")
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue")
+                .choice()
+                    .when(simple("${properties:marduk.gtfs-aggregation-next.enabled} == 'true'"))
+                        .to("direct:exportGtfsExtendedMergedNext")
+                    .otherwise()
+                        .to("direct:exportGtfsExtendedMerged")
+                .end()
                 .routeId("gtfs-extended-export-merged-route");
 
+        from("direct:exportGtfsExtendedMergedNext")
+                .log(LoggingLevel.INFO, "Preparing GTFS extended export message from marduk to damu")
+                .setHeader(Constants.FILE_NAME, constant(gtfsNorwayMergedFileName))
+                .setHeader(Constants.INCLUDE_SHAPES, constant(includeShapes))
+                .to("direct:exportMergedGtfsNext")
+                .routeId("gtfs-extended-export-merged-next");
 
         from("direct:exportGtfsExtendedMerged")
                 .setBody(constant(""))
@@ -65,6 +88,5 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-extended-export-merged");
-
     }
 }

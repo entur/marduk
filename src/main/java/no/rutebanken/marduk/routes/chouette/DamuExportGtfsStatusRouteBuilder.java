@@ -70,9 +70,5 @@ public class DamuExportGtfsStatusRouteBuilder extends AbstractChouetteRouteBuild
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT).state(JobEvent.State.FAILED).build())
                 .to("direct:updateStatus")
                 .routeId("damu-failed-export-gtfs");
-
-
     }
-
-
 }

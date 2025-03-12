@@ -423,3 +423,29 @@ resource "google_pubsub_subscription" "MardukDeadLetterQueue" {
         ttl = ""
       }
 }
+
+resource "google_pubsub_topic" "GtfsRouteDispatcherTopic" {
+  name = "GtfsRouteDispatcherTopic"
+  project = var.gcp_resources_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "GtfsRouteDispatcherTopic" {
+  name = "GtfsRouteDispatcherTopic"
+  topic = google_pubsub_topic.GtfsRouteDispatcherTopic.name
+  project = var.gcp_resources_project
+  labels = var.labels
+}
+
+resource "google_pubsub_topic" "MardukAggregateGtfsStatusQueue" {
+  name = "MardukAggregateGtfsStatusQueue"
+  project = var.gcp_resources_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "MardukAggregateGtfsStatusQueue" {
+  name = "MardukAggregateGtfsStatusQueue"
+  topic = google_pubsub_topic.MardukAggregateGtfsStatusQueue.name
+  project = var.gcp_resources_project
+  labels = var.labels
+}

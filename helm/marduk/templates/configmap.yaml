@@ -138,6 +138,7 @@ data:
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
     otp.graph.build.autoStartup={{ .Values.otp.graph.build.autoStartup }}
 
+    marduk.gtfs-aggregation-next.enabled={{ .Values.gtfsAggregationNext.enabled }}
 kind: ConfigMap
 metadata:
   name: marduk-application

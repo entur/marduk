@@ -54,15 +54,31 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue").autoStartup("{{gtfs.export.basic.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue")
+                .autoStartup("{{gtfs.export.basic.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(simple("true", Boolean.class)).aggregationStrategy(new GroupedMessageAggregationStrategy()).completionSize(100).completionTimeout(gtfsExportAggregationTimeout)
+                .aggregate(simple("true", Boolean.class))
+                .aggregationStrategy(new GroupedMessageAggregationStrategy())
+                .completionSize(100)
+                .completionTimeout(gtfsExportAggregationTimeout)
                 .executorService("gtfsExportExecutorService")
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS Basics export requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .to("direct:exportGtfsBasicMerged")
+                .choice()
+                    .when(simple("${properties:marduk.gtfs-aggregation-next.enabled} == 'true'"))
+                        .to("direct:exportGtfsBasicMergedNext")
+                    .otherwise()
+                        .to("direct:exportGtfsBasicMerged")
+                .endChoice()
                 .routeId("gtfs-basic-export-merged-route");
+
+        from("direct:exportGtfsBasicMergedNext")
+                .setBody(constant(""))
+                .setHeader(Constants.FILE_NAME, constant(gtfsBasicMergedFileName))
+                .setHeader(Constants.INCLUDE_SHAPES, constant(includeShapes))
+                .to("direct:exportMergedGtfsNext")
+                .routeId("gtfs-basic-export-merged-next");
 
         from("direct:exportGtfsBasicMerged")
                 .setBody(constant(""))
@@ -72,9 +88,7 @@ public class GtfsBasicMergedExportRouteBuilder extends BaseRouteBuilder {
                 .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_BASIC_MERGED.name()))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-basic-export-merged");
-
     }
-
 
     /**
      * Make sure blacklisted agencies start with "rb_" prefix.
