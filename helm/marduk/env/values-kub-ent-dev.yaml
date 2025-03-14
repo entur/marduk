@@ -73,4 +73,4 @@ oauth2:
     audience: https://ror.api.dev.entur.io
 
 gtfsAggregationNext:
-  enabled: true
+  enabled: false
