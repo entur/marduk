@@ -424,6 +424,22 @@ resource "google_pubsub_subscription" "MardukDeadLetterQueue" {
       }
 }
 
+resource "google_pubsub_topic" "GtfsRouteDispatcherDeadLetterQueue" {
+  name = "GtfsRouteDispatcherDeadLetterQueue"
+  project = var.gcp_resources_project
+  labels = var.labels
+}
+
+resource "google_pubsub_subscription" "GtfsRouteDispatcherDeadLetterQueue" {
+  name = "GtfsRouteDispatcherDeadLetterQueue"
+  topic = google_pubsub_topic.GtfsRouteDispatcherDeadLetterQueue.name
+  project = var.gcp_resources_project
+  labels = var.labels
+  expiration_policy {
+        ttl = ""
+      }
+}
+
 resource "google_pubsub_topic" "GtfsRouteDispatcherTopic" {
   name = "GtfsRouteDispatcherTopic"
   project = var.gcp_resources_project
@@ -435,6 +451,14 @@ resource "google_pubsub_subscription" "GtfsRouteDispatcherTopic" {
   topic = google_pubsub_topic.GtfsRouteDispatcherTopic.name
   project = var.gcp_resources_project
   labels = var.labels
+  dead_letter_policy {
+    max_delivery_attempts = 5
+    dead_letter_topic = google_pubsub_topic.GtfsRouteDispatcherDeadLetterQueue.id
+  }
+  ack_deadline_seconds = 600
+  retry_policy {
+    minimum_backoff = "10s"
+  }
 }
 
 resource "google_pubsub_topic" "MardukAggregateGtfsStatusQueue" {
