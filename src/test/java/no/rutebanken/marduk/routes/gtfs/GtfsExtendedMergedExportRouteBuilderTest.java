@@ -18,76 +18,31 @@ public class GtfsExtendedMergedExportRouteBuilderTest extends MardukRouteBuilder
     @Produce("direct:exportGtfsExtendedMerged")
     private ProducerTemplate exportGtfsExtendedMergedProducerTemplate;
 
-    @Produce("direct:exportGtfsExtendedMergedNext")
-    private ProducerTemplate exportGtfsExtendedMergedNextProducerTemplate;
-
-    @EndpointInject("mock:exportGtfsExtendedMergedNext")
-    protected MockEndpoint nextMergedRouteMock;
-
     @EndpointInject("mock:exportGtfsExtendedMerged")
-    protected MockEndpoint oldMergedRouteMock;
-
-    @EndpointInject("mock:exportMergedGtfsNext")
-    protected MockEndpoint exportMergedGtfsNextRouteMock;
+    protected MockEndpoint mergedRouteMock;
 
     @EndpointInject("mock:exportMergedGtfs")
     protected MockEndpoint exportMergedGtfsRouteMock;
 
     @Test
     public void testDamuGtfsAggregationTrigger() throws Exception {
-        System.setProperty("marduk.gtfs-aggregation-next.enabled", "true");
         AdviceWith
             .adviceWith(context,
                     "gtfs-extended-export-merged-route",
                     a -> a
-                            .weaveByToUri("direct:exportGtfsExtendedMergedNext")
+                            .weaveByToUri("direct:exportGtfsExtendedMerged")
                             .replace()
-                            .to("mock:exportGtfsExtendedMergedNext")
+                            .to("mock:exportGtfsExtendedMerged")
             );
 
-        nextMergedRouteMock.expectedMessageCount(1);
+        mergedRouteMock.expectedMessageCount(1);
         context.start();
         sendBodyAndHeadersToPubSub(gtfsExportMergedQueueProducerTemplate, "test", new HashMap<>());
-        nextMergedRouteMock.assertIsSatisfied();
+        mergedRouteMock.assertIsSatisfied();
     }
 
     @Test
-    public void testOldGtfsAggregationTrigger() throws Exception {
-        System.setProperty("marduk.gtfs-aggregation-next.enabled", "false");
-        AdviceWith
-                .adviceWith(context,
-                        "gtfs-extended-export-merged-route",
-                        a -> a
-                                .weaveByToUri("direct:exportGtfsExtendedMerged")
-                                .replace()
-                                .to("mock:exportGtfsExtendedMerged")
-                );
-
-        oldMergedRouteMock.expectedMessageCount(1);
-        context.start();
-        sendBodyAndHeadersToPubSub(gtfsExportMergedQueueProducerTemplate, "test", new HashMap<>());
-        oldMergedRouteMock.assertIsSatisfied();
-    }
-
-    @Test
-    public void testExportGtfsExtendedMergedNextRoute() throws Exception {
-        AdviceWith
-                .adviceWith(context,
-                        "gtfs-extended-export-merged-next",
-                        a -> a
-                                .weaveByToUri("direct:exportMergedGtfsNext")
-                                .replace()
-                                .to("mock:exportMergedGtfsNext")
-                );
-        exportMergedGtfsNextRouteMock.expectedHeaderReceived(Constants.FILE_NAME, "rb_norway-aggregated-gtfs.zip");
-        exportMergedGtfsNextRouteMock.expectedMessageCount(1);
-        context.start();
-        sendBodyAndHeadersToPubSub(exportGtfsExtendedMergedNextProducerTemplate, "test", new HashMap<>());
-        exportMergedGtfsNextRouteMock.assertIsSatisfied();
-    }
-
-    @Test
-    public void testOldExportGtfsExtendedMergedRoute() throws Exception {
+    public void testExportGtfsExtendedMergedRoute() throws Exception {
         AdviceWith
                 .adviceWith(context,
                         "gtfs-extended-export-merged",
@@ -96,9 +51,8 @@ public class GtfsExtendedMergedExportRouteBuilderTest extends MardukRouteBuilder
                                 .replace()
                                 .to("mock:exportMergedGtfs")
                 );
-        exportMergedGtfsRouteMock.expectedMessageCount(1);
         exportMergedGtfsRouteMock.expectedHeaderReceived(Constants.FILE_NAME, "rb_norway-aggregated-gtfs.zip");
-        exportMergedGtfsRouteMock.expectedHeaderReceived(Constants.JOB_ACTION, "EXPORT_GTFS_MERGED");
+        exportMergedGtfsRouteMock.expectedMessageCount(1);
         context.start();
         sendBodyAndHeadersToPubSub(exportGtfsExtendedMergedProducerTemplate, "test", new HashMap<>());
         exportMergedGtfsRouteMock.assertIsSatisfied();

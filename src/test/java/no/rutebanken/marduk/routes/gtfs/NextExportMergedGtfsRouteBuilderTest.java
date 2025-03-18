@@ -21,8 +21,8 @@ import static no.rutebanken.marduk.Constants.JOB_ACTION;
 
 public class NextExportMergedGtfsRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
 
-    @Produce("direct:exportMergedGtfsNext")
-    protected ProducerTemplate exportMergedGtfsNextRoute;
+    @Produce("direct:exportMergedGtfs")
+    protected ProducerTemplate exportMergedGtfsRoute;
 
     @EndpointInject("mock:damuAggregateGtfsQueue")
     protected MockEndpoint damuAggregateGtfsMockEndpoint;
@@ -37,7 +37,7 @@ public class NextExportMergedGtfsRouteBuilderTest extends MardukRouteBuilderInte
     public void testExportMergedGtfsNextRoute() throws Exception {
         AdviceWith
                 .adviceWith(context,
-            "gtfs-export-merged-route-next",
+            "gtfs-export-merged-route",
             a -> a
                     .weaveById("damuAggregateGtfsNext")
                     .replace()
@@ -52,7 +52,7 @@ public class NextExportMergedGtfsRouteBuilderTest extends MardukRouteBuilderInte
         damuAggregateGtfsMockEndpoint.expectedHeaderReceived("CamelGooglePubsubAttributes", headers);
 
         context.start();
-        sendBodyAndHeadersToPubSub(exportMergedGtfsNextRoute, "", headers);
+        sendBodyAndHeadersToPubSub(exportMergedGtfsRoute, "", headers);
         damuAggregateGtfsMockEndpoint.assertIsSatisfied();
     }
 

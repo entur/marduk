@@ -18,17 +18,10 @@ package no.rutebanken.marduk.routes.gtfs;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.Exchange;
-import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-
-import static no.rutebanken.marduk.Constants.PROVIDER_BLACK_LIST;
 
 /**
  * Route creating a merged GTFS extended file for all providers and uploading it to GCS.
@@ -67,25 +60,13 @@ public class GtfsExtendedMergedExportRouteBuilder extends BaseRouteBuilder {
                 .process(this::addSynchronizationForAggregatedExchange)
                 .process(this::setNewCorrelationId)
                 .log(LoggingLevel.INFO, correlation() +  "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .choice()
-                    .when(simple("${properties:marduk.gtfs-aggregation-next.enabled} == 'true'"))
-                        .to("direct:exportGtfsExtendedMergedNext")
-                    .otherwise()
-                        .to("direct:exportGtfsExtendedMerged")
-                .end()
+                .to("direct:exportGtfsExtendedMerged")
                 .routeId("gtfs-extended-export-merged-route");
 
-        from("direct:exportGtfsExtendedMergedNext")
+        from("direct:exportGtfsExtendedMerged")
                 .log(LoggingLevel.INFO, "Preparing GTFS extended export message from marduk to damu")
                 .setHeader(Constants.FILE_NAME, constant(gtfsNorwayMergedFileName))
                 .setHeader(Constants.INCLUDE_SHAPES, constant(includeShapes))
-                .to("direct:exportMergedGtfsNext")
-                .routeId("gtfs-extended-export-merged-next");
-
-        from("direct:exportGtfsExtendedMerged")
-                .setBody(constant(""))
-                .setHeader(Constants.FILE_NAME, constant(gtfsNorwayMergedFileName))
-                .setHeader(Constants.JOB_ACTION, constant(JobEvent.TimetableAction.EXPORT_GTFS_MERGED.name()))
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-extended-export-merged");
     }
