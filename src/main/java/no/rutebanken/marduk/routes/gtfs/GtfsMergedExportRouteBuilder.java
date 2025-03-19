@@ -20,6 +20,8 @@ import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -28,19 +30,41 @@ import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 
 /**
- * Common routes for building GTFS exports.
+ * Route triggering a merge of GTFS files and upload of the resulting files to GCS.
+ * <p>
  */
 @Component
-public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
+public class GtfsMergedExportRouteBuilder extends BaseRouteBuilder {
 
     private static final String STATUS_MERGE_OK = "ok";
     private static final String STATUS_MERGE_STARTED = "started";
     private static final String STATUS_MERGE_FAILED = "failed";
     private static final String STATUS_HEADER = "status";
 
+    @Value("${gtfs.export.aggregation.timeout:300000}")
+    private int gtfsExportAggregationTimeout;
+
+    @Value("${aggregation.completionSize:100}")
+    private int aggregationCompletionSize;
+
     @Override
     public void configure() throws Exception {
         super.configure();
+
+        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue").autoStartup("{{gtfs.export.autoStartup:true}}")
+                .log(LoggingLevel.INFO, "Starting GtfsExportMergedExportRouteBuilder")
+                .process(this::removeSynchronizationForAggregatedExchange)
+                .aggregate(simple("true", Boolean.class))
+                .aggregationStrategy(new GroupedMessageAggregationStrategy())
+                .completionSize(aggregationCompletionSize)
+                .completionTimeout(gtfsExportAggregationTimeout)
+                .executorService("gtfsExportExecutorService")
+                .process(this::addSynchronizationForAggregatedExchange)
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.INFO, correlation() +  "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .log(LoggingLevel.INFO, correlation() + "Preparing GTFS export message from marduk to damu")
+                .to("direct:exportMergedGtfs")
+                .routeId("gtfs-extended-export-merged-route");
 
         from("direct:exportMergedGtfs")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Start export of merged GTFS file: ${header." + FILE_NAME + "}")
@@ -83,4 +107,3 @@ public class CommonGtfsExportMergedRouteBuilder extends BaseRouteBuilder {
                 .toList();
     }
 }
-
