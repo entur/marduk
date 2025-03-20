@@ -31,7 +31,6 @@ class FileClassificationRouteBuilderTest extends MardukRouteBuilderIntegrationTe
     @EndpointInject("mock:flexibleLinesImport")
     protected MockEndpoint flexibleLinesImportMock;
 
-    @Override
     @BeforeEach
     protected void setUp() throws IOException {
         super.setUp();

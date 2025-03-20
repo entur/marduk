@@ -68,8 +68,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
     public void configure() throws Exception {
         super.configure();
 
-        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue")
-                .streamCache("true")
+        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting Chouette Netex export")

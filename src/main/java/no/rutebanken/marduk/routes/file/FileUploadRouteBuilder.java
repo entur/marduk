@@ -53,8 +53,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .routeId("upload-files-and-start-import");
 
 
-        from("direct:uploadFileAndStartImport")
-                .streamCache("true")
+        from("direct:uploadFileAndStartImport").streamCaching()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
                 .doTry()
                 .log(LoggingLevel.INFO, correlation() + "Uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")

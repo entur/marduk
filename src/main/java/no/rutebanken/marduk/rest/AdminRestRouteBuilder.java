@@ -661,7 +661,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-chouette-graph-list");
 
         from("direct:adminUploadFile")
-                .streamCache("true")
+                .streamCaching()
                 .process(this::setNewCorrelationId)
                 .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
                 .log(LoggingLevel.INFO, correlation() + "Received file from provider ${header.codespace} through the HTTP endpoint")
@@ -743,7 +743,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:adminDatasetUploadFile");
 
         from("direct:adminDatasetUploadFile")
-                .streamCache("true")
+                .streamCaching()
                 .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeEditorRequest")
