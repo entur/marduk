@@ -16,11 +16,12 @@
 
 package no.rutebanken.marduk.routes.gtfs;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.aggregation.HeaderPreservingGroupedMessageAggregationStrategy;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -52,16 +53,25 @@ public class GtfsMergedExportRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue").autoStartup("{{gtfs.export.autoStartup:true}}")
-                .log(LoggingLevel.INFO, "Starting GtfsExportMergedExportRouteBuilder")
+                .log(LoggingLevel.INFO, correlation() + "Starting GtfsExportMergedExportRouteBuilder")
                 .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(simple("true", Boolean.class))
-                .aggregationStrategy(new GroupedMessageAggregationStrategy())
+                .aggregationStrategy(
+                        new HeaderPreservingGroupedMessageAggregationStrategy(
+                                List.of(
+                                    Constants.DATASET_REFERENTIAL,
+                                    Constants.CORRELATION_ID,
+                                    Constants.PROVIDER_ID,
+                                    Constants.CHOUETTE_REFERENTIAL,
+                                    Constants.ET_CLIENT_NAME_HEADER
+                                )
+                        )
+                )
                 .completionSize(aggregationCompletionSize)
                 .completionTimeout(gtfsExportAggregationTimeout)
                 .executorService("gtfsExportExecutorService")
                 .process(this::addSynchronizationForAggregatedExchange)
-                .process(this::setNewCorrelationId)
-                .log(LoggingLevel.INFO, correlation() +  "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
+                .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .log(LoggingLevel.INFO, correlation() + "Preparing GTFS export message from marduk to damu")
                 .to("direct:exportMergedGtfs")
                 .routeId("gtfs-extended-export-merged-route");
