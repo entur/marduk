@@ -70,6 +70,3 @@ oauth2:
     id: k1NXIZccSXMOg3r9adJphfGgESS2PaZ5
     url: https://internal.entur.org/oauth/token
     audience: https://ror.api.entur.io
-
-gtfsAggregationNext:
-  enabled: true
