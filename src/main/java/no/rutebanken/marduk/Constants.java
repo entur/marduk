@@ -87,9 +87,6 @@ public final class Constants {
 
     public static final String ET_CLIENT_NAME_HEADER = "ET-Client-Name";
 
-    public static final String PROVIDER_BLACK_LIST = "RutebankenProviderBlackList";
-    public static final String PROVIDER_WHITE_LIST = "RutebankenProviderWhiteList";
-
     public static final String OTP_REMOTE_WORK_DIR = "RutebankenOtpRemoteWorkDir";
     public static final String OTP_GRAPH_VERSION = "RutebankenGraphVersion";
     public static final String OTP_BUILD_CANDIDATE = "RutebankenOtpBuildCandidate";

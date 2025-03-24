@@ -72,13 +72,8 @@ public class PublishMergedNetexRouteBuilder extends BaseRouteBuilder {
                 .removeHeader(DATASET_REFERENTIAL)
                 .setBody(header(CHOUETTE_REFERENTIAL))
                 .process(this::removeAllCamelHeaders)
-                .choice()
-                    .when(simple("${properties:marduk.gtfs-aggregation-next.enabled} == 'true'"))
-                        .setHeader(GTFS_ROUTE_DISPATCHER_HEADER_NAME, simple(GTFS_ROUTE_DISPATCHER_EXPORT_HEADER_VALUE))
-                        .to("google-pubsub:{{marduk.pubsub.project.id}}:GtfsRouteDispatcherTopic")
-                    .otherwise()
-                        .to("google-pubsub:{{marduk.pubsub.project.id}}:DamuExportGtfsQueue")
-                .end()
+                .setHeader(GTFS_ROUTE_DISPATCHER_HEADER_NAME, simple(GTFS_ROUTE_DISPATCHER_EXPORT_HEADER_VALUE))
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:GtfsRouteDispatcherTopic")
                 .routeId("start-damu-gtfs-export");
     }
 }

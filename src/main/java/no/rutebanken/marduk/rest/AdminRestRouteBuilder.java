@@ -244,21 +244,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .to("direct:adminChouetteTimetableFilesGet")
 
-                .post("/export/gtfs/extended")
-                .description("Prepare and upload GTFS extened export")
+                .post("/export/gtfs/merged")
+                .description("Prepare and upload merged GTFS export")
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminTimetableGtfsExtendedExport")
-
-                .post("/export/gtfs/basic")
-                .description("Prepare and upload GTFS basic export")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminTimetableGtfsBasicExport")
+                .to("direct:adminTimetableGtfsExport")
 
                 .post("/export/netex/merged")
                 .description("Prepare and upload a merged Netex file for Norway")
@@ -597,19 +589,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
                 .routeId("admin-chouette-file-download");
 
-        from("direct:adminTimetableGtfsExtendedExport")
+        from("direct:adminTimetableGtfsExport")
                 .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "Triggered GTFS extended export")
+                .log(LoggingLevel.INFO, "Triggered merged GTFS export")
                 .process(this::removeAllCamelHttpHeaders)
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue")
-                .routeId("admin-timetable-gtfs-extended-export");
-
-        from("direct:adminTimetableGtfsBasicExport")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "Triggered GTFS basic export")
-                .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsBasicExportMergedQueue")
-                .routeId("admin-timetable-gtfs-basic-export");
+                .routeId("admin-timetable-merged-gtfs-export");
 
         from("direct:adminTimetableNetexMergedExport")
                 .to("direct:authorizeAdminRequest")
