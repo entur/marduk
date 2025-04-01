@@ -78,7 +78,6 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
     @Value("${chouette.url}")
     private String chouetteUrl;
 
-    @Override
     @BeforeEach
     protected void setUp() throws IOException {
         super.setUp();

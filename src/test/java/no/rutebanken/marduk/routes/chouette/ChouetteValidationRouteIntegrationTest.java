@@ -72,7 +72,6 @@ class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrati
 	@Value("${chouette.url}")
 	private String chouetteUrl;
 
-	@Override
 	@BeforeEach
 	protected void setUp() throws IOException {
 		super.setUp();

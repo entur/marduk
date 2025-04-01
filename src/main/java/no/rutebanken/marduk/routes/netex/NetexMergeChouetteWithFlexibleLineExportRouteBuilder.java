@@ -77,8 +77,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .to("direct:mergeChouetteExportWithFlexibleLinesExport")
                 .routeId("netex-export-merge-chouette-with-flexible-lines-queue");
 
-        from("direct:mergeChouetteExportWithFlexibleLinesExport")
-                .streamCache("true")
+        from("direct:mergeChouetteExportWithFlexibleLinesExport").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Merging chouette NeTEx export with FlexibleLines")
                 .validate(header(Constants.CHOUETTE_REFERENTIAL).isNotNull())
@@ -111,8 +110,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .routeId("netex-export-merge-chouette-with-flexible-lines");
 
 
-        from("direct:uploadMergedFileToOutboundBucket")
-                .streamCache("true")
+        from("direct:uploadMergedFileToOutboundBucket").streamCaching()
                 .process(e -> new File(e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUB_FOLDER).mkdir())
                 .process(e -> e.getIn().setBody(
                         ZipFileUtils.zipFilesInFolder(
