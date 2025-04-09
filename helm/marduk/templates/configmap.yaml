@@ -107,8 +107,11 @@ data:
 
     # Authorization
     marduk.security.authorization-service=token-based
+    marduk.security.role.assignment.extractor=baba
+    user.permission.rest.service.url={{ .Values.baba.service }}/services/organisations/users
 
-    # Logging
+
+  # Logging
     logging.level.no.rutebanken=INFO
     logging.level.org.apache=INFO
     logging.config=classpath:logback.xml
