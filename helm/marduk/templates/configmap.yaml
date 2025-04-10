@@ -107,7 +107,7 @@ data:
 
     # Authorization
     marduk.security.authorization-service=token-based
-    marduk.security.role.assignment.extractor=baba
+    marduk.security.role.assignment.extractor={{ .Values.roleAssignmentExtractor }}
     user.permission.rest.service.url={{ .Values.baba.service }}/services/organisations/users
 
 
