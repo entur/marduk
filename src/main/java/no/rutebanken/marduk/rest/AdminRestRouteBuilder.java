@@ -661,6 +661,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .autoStartup("{{netex.import.http.autoStartup:true}}");
 
         from("direct:adminChouetteNetexBlocksDownload")
+                .process(this::setNewCorrelationId)
                 .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
                 .log(LoggingLevel.INFO, correlation() + "Received Blocks download request for provider ${header." + CHOUETTE_REFERENTIAL + "} through the HTTP endpoint")
                 .to("direct:validateReferential")
