@@ -100,7 +100,7 @@ public class AdminExternalRestRouteBuilder extends BaseRouteBuilder {
                 .to("language:simple:resource:classpath:openapi/timetable-management/openapi.json");
 
         from("direct:adminExternalUploadFile")
-                .streamCaching()
+                .streamCache("true")
                 .process(this::setNewCorrelationId)
                 .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
                 .log(LoggingLevel.INFO, correlation() + "Received file from provider ${header.codespace} through the HTTP endpoint")
