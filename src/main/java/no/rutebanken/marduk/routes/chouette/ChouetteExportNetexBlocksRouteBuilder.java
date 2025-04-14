@@ -69,7 +69,8 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
     public void configure() throws Exception {
         super.configure();
 
-        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue").streamCaching()
+        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue")
+                .streamCache("true")
                 .process(this::setCorrelationIdIfMissing)
                 .removeHeader(Constants.CHOUETTE_JOB_ID)
                 .process(e -> e.setProperty(PROP_EXPORT_BLOCKS, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().isEnableBlocksExport()))
