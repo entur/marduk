@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.entur.ror</groupId>
         <artifactId>superpom</artifactId>
-        <version>4.9.0</version>
+        <version>5.3.0</version>
     </parent>
 
     <groupId>no.rutebanken.marduk</groupId>
@@ -24,7 +24,7 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <camel.version>4.4.5</camel.version>
+        <camel.version>4.14.2</camel.version>
         <entur.helpers.version>5.50.0</entur.helpers.version>
         <commons-io.version>2.21.0</commons-io.version>
         <commons-csv.version>1.14.1</commons-csv.version>
@@ -171,11 +171,15 @@
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
-            <artifactId>camel-kubernetes-starter</artifactId>
+            <artifactId>camel-kubernetes-cluster-service-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-file-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-file-cluster-service-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>

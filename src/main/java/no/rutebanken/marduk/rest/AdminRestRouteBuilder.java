@@ -692,7 +692,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:adminDatasetUploadFile");
 
         from("direct:adminDatasetUploadFile")
-                .streamCaching()
+                .streamCache("true")
                 .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeEditorRequest")
