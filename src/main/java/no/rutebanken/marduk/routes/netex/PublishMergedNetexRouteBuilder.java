@@ -34,6 +34,9 @@ public class PublishMergedNetexRouteBuilder extends BaseRouteBuilder {
     @Value("${gtfs.export.chouette:true}")
     private boolean useChouetteGtfsExport;
 
+    @Value("${line.statistics.calculation.enabled:false}")
+    private boolean lineStatisticsCalculationEnabled;
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -55,6 +58,9 @@ public class PublishMergedNetexRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue")
                 .to("direct:startDamuGtfsExport")
+                .filter(constant(lineStatisticsCalculationEnabled))
+                    .to("google-pubsub:{{marduk.pubsub.project.id}}:LineStatisticsCalculationQueue")
+                .end()
                 .routeId("publish-merged-dataset");
 
         from("direct:notifyExportNetexWithFlexibleLines")
