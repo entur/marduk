@@ -140,6 +140,7 @@ data:
     otp.graph.build.remote.kubernetes.timeout=12000
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
     otp.graph.build.autoStartup={{ .Values.otp.graph.build.autoStartup }}
+    line.statistics.calculation.enabled={{ .Values.line.statistics.calculation.enabled }}
 kind: ConfigMap
 metadata:
   name: marduk-application
