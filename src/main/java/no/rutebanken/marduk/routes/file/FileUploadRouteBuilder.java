@@ -22,6 +22,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.commons.io.input.CloseShieldInputStream;
+import org.apache.tomcat.util.http.fileupload.impl.InvalidContentTypeException;
 import org.springframework.stereotype.Component;
 
 import jakarta.servlet.http.Part;
@@ -35,10 +36,17 @@ import static no.rutebanken.marduk.Constants.*;
 public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
 
     private static final String FILE_CONTENT_HEADER = "RutebankenFileContent";
+    private static final String CONTENT_TYPE_HEADER = "Content-Type";
 
     @Override
     public void configure() {
         super.configure();
+
+        onException(InvalidContentTypeException.class)
+                .handled(true)
+                .log(LoggingLevel.ERROR, correlation() + "Detected invalid content type: ${header." + CONTENT_TYPE_HEADER + "}")
+                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(415))
+                .transform(exceptionMessage());
 
         from("direct:uploadFilesAndStartImport")
                 .setBody(simple("${exchange.getIn().getRequest().getParts()}"))
