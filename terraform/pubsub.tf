@@ -473,3 +473,9 @@ resource "google_pubsub_subscription" "MardukAggregateGtfsStatusQueue" {
   project = var.gcp_resources_project
   labels = var.labels
 }
+
+resource "google_pubsub_topic" "LineStatisticsCalculationQueue" {
+  name = "LineStatisticsCalculationQueue"
+  project = var.gcp_resources_project
+  labels = var.labels
+}
