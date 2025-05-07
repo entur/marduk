@@ -65,7 +65,7 @@ auth0:
     url: https://auth2.entur.org
     audience: https://ror.api.entur.io
 
-roleAssignmentExtractor: jwt
+roleAssignmentExtractor: baba
 
 oauth2:
   client:
