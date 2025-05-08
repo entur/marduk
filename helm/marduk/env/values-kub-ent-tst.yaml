@@ -77,3 +77,8 @@ line:
   statistics:
     calculation:
       enabled: true
+
+line:
+  statistics:
+    calculation:
+      enabled: true
