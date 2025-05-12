@@ -29,7 +29,6 @@ gcp:
 chouette:
   service: http://chouette.dev.entur.internal
   validateLevel1CronSchedule: 0+55+23+?+*+MON-FRI
-  refreshStatsCacheCronSchedule: 0+0/10+2-22+*+*+?
   removeOldJobsCronSchedule: 0+15+23+?+*+MON-FRI
   gtfsExport: false
   enablePreValidation: false
