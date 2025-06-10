@@ -1,21 +1,4 @@
 # Create pubsub topics and subscriptions
-resource "google_pubsub_topic" "ChouetteExportGtfsQueue" {
-  name = "ChouetteExportGtfsQueue"
-  project = var.gcp_resources_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "ChouetteExportGtfsQueue" {
-  name = "ChouetteExportGtfsQueue"
-  topic = google_pubsub_topic.ChouetteExportGtfsQueue.name
-  project = var.gcp_resources_project
-  labels = var.labels
-  ack_deadline_seconds = 60
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
 resource "google_pubsub_topic" "DamuExportGtfsDeadLetterQueue" {
   name = "DamuExportGtfsDeadLetterQueue"
   project = var.gcp_resources_project
@@ -30,27 +13,6 @@ resource "google_pubsub_subscription" "DamuExportGtfsDeadLetterQueue" {
   expiration_policy {
         ttl = ""
       }
-}
-
-resource "google_pubsub_topic" "DamuExportGtfsQueue" {
-  name = "DamuExportGtfsQueue"
-  project = var.gcp_resources_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "DamuExportGtfsQueue" {
-  name = "DamuExportGtfsQueue"
-  topic = google_pubsub_topic.DamuExportGtfsQueue.name
-  project = var.gcp_resources_project
-  labels = var.labels
-  dead_letter_policy {
-    max_delivery_attempts = 5
-    dead_letter_topic = google_pubsub_topic.DamuExportGtfsDeadLetterQueue.id
-  }
-  ack_deadline_seconds = 600
-  retry_policy {
-    minimum_backoff = "10s"
-  }
 }
 
 resource "google_pubsub_topic" "DamuExportGtfsStatusQueue" {
@@ -222,23 +184,6 @@ resource "google_pubsub_subscription" "ChouetteValidationQueue" {
   }
 }
 
-resource "google_pubsub_topic" "GtfsBasicExportMergedQueue" {
-  name = "GtfsBasicExportMergedQueue"
-  project = var.gcp_resources_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "GtfsBasicExportMergedQueue" {
-  name = "GtfsBasicExportMergedQueue"
-  topic = google_pubsub_topic.GtfsBasicExportMergedQueue.name
-  project = var.gcp_resources_project
-  labels = var.labels
-  ack_deadline_seconds = 60
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
 resource "google_pubsub_topic" "GtfsExportMergedQueue" {
   name = "GtfsExportMergedQueue"
   project = var.gcp_resources_project
@@ -265,23 +210,6 @@ resource "google_pubsub_topic" "MardukInboundQueue" {
 resource "google_pubsub_subscription" "MardukInboundQueue" {
   name = "MardukInboundQueue"
   topic = google_pubsub_topic.MardukInboundQueue.name
-  project = var.gcp_resources_project
-  labels = var.labels
-  ack_deadline_seconds = 60
-  retry_policy {
-    minimum_backoff = "10s"
-  }
-}
-
-resource "google_pubsub_topic" "NetexExportMergedQueue" {
-  name = "NetexExportMergedQueue"
-  project = var.gcp_resources_project
-  labels = var.labels
-}
-
-resource "google_pubsub_subscription" "NetexExportMergedQueue" {
-  name = "NetexExportMergedQueue"
-  topic = google_pubsub_topic.NetexExportMergedQueue.name
   project = var.gcp_resources_project
   labels = var.labels
   ack_deadline_seconds = 60
