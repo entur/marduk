@@ -252,14 +252,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .to("direct:adminTimetableGtfsExport")
 
-                .post("/export/netex/merged")
-                .description("Prepare and upload a merged Netex file for Norway")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminTimetableNetexMergedExport")
-
                 .post("routing_graph/build_base")
                 .description("Triggers building of the OTP base graph using map data (osm + height)")
                 .consumes(PLAIN)
@@ -595,13 +587,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::removeAllCamelHttpHeaders)
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue")
                 .routeId("admin-timetable-merged-gtfs-export");
-
-        from("direct:adminTimetableNetexMergedExport")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "Triggered Netex export of merged file for Norway")
-                .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:NetexExportMergedQueue")
-                .routeId("admin-timetable-netex-merged-export");
 
         from("direct:adminBuildBaseGraph")
                 .to("direct:authorizeAdminRequest")
