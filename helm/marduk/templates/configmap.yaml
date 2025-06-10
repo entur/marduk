@@ -111,6 +111,7 @@ data:
     logging.level.org.apache=INFO
     logging.config=classpath:logback.xml
     logging.level.org.apache.camel.component.http.HttpComponent=WARN
+    logging.level.no.rutebanken.marduk.security.oauth2.EnturPartnerAuth0RolesClaimAdapter=DEBUG
 
     # NeTeX import
     netex.import.http.autoStartup={{ .Values.netex.import.http.autoStartup }}
