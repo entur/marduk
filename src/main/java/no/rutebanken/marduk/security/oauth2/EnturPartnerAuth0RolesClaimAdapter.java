@@ -7,6 +7,8 @@ import org.entur.oauth2.RoROAuth2Claims;
 import org.entur.oauth2.RorAuth0RolesClaimAdapter;
 import org.rutebanken.helper.organisation.AuthorizationConstants;
 import org.rutebanken.helper.organisation.RoleAssignment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.oauth2.core.oidc.StandardClaimNames;
@@ -27,6 +29,9 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
     static final String ORG_RUTEBANKEN = "RB";
     static final String OPENID_AUDIENCE_CLAIM = "aud";
     static final String ORGANISATION_ID_CLAIM = "https://entur.io/organisationID";
+
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(EnturPartnerAuth0RolesClaimAdapter.class);
 
     private static final ObjectWriter ROLE_ASSIGNMENT_OBJECT_WRITER = ObjectMapperFactory.getSharedObjectMapper().writerFor(RoleAssignment.class);
 
@@ -60,6 +65,9 @@ public class EnturPartnerAuth0RolesClaimAdapter implements Converter<Map<String,
 
     @Override
     public Map<String, Object> convert(Map<String, Object> claims) {
+
+        Object sub = claims.get("sub");
+        LOGGER.debug("Converting claim for subject {}", sub);
 
         // delegate to the default RoR claim converter
         Map<String, Object> convertedClaims = this.delegate.convert(claims);
