@@ -11,12 +11,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.client.ReactorResourceFactory;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import jakarta.annotation.PostConstruct;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -70,7 +71,7 @@ public abstract class MardukSpringBootBaseTest {
     @Autowired
     protected MardukBlobStoreRepository otpReportInMemoryBlobStoreRepository;
 
-    @MockBean
+    @MockitoBean
     public CacheProviderRepository providerRepository;
 
 
