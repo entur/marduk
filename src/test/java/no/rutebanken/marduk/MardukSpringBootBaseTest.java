@@ -7,6 +7,10 @@ import no.rutebanken.marduk.repository.MardukBlobStoreRepository;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
+import org.entur.pubsub.base.EnturGooglePubSubAdmin;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +20,11 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import jakarta.annotation.PostConstruct;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.testcontainers.containers.PubSubEmulatorContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -29,10 +37,15 @@ import static no.rutebanken.marduk.TestConstants.*;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,classes = TestApp.class)
-@ActiveProfiles({"test", "default", "in-memory-blobstore", "google-pubsub-emulator", "google-pubsub-autocreate"})
+@ActiveProfiles({"test", "default", "in-memory-blobstore", "google-pubsub-autocreate"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public abstract class MardukSpringBootBaseTest {
 
+
+    private static PubSubEmulatorContainer pubsubEmulator;
+
+    @Autowired
+    private EnturGooglePubSubAdmin enturGooglePubSubAdmin;
 
     @Value("${blobstore.gcs.container.name}")
     private String mardukContainerName;
@@ -87,6 +100,22 @@ public abstract class MardukSpringBootBaseTest {
         otpReportInMemoryBlobStoreRepository.setContainerName(otpReportContainerName);
     }
 
+    @BeforeAll
+    public static void init() {
+        pubsubEmulator =
+                new PubSubEmulatorContainer(
+                        DockerImageName.parse(
+                                "gcr.io/google.com/cloudsdktool/cloud-sdk:emulators"
+                        )
+                );
+        pubsubEmulator.start();
+    }
+
+    @AfterAll
+    public static void tearDown() {
+        pubsubEmulator.stop();
+    }
+
     @BeforeEach
     protected void setUp() throws IOException {
 
@@ -108,6 +137,25 @@ public abstract class MardukSpringBootBaseTest {
         otpReportInMemoryBlobStoreRepository.deleteAllFilesInFolder("");
 
     }
+
+    @AfterEach
+    public void teardown() {
+        enturGooglePubSubAdmin.deleteAllSubscriptions();
+    }
+
+    @DynamicPropertySource
+    static void emulatorProperties(DynamicPropertyRegistry registry) {
+        registry.add(
+                "spring.cloud.gcp.pubsub.emulator-host",
+                pubsubEmulator::getEmulatorEndpoint
+        );
+        registry.add(
+                "camel.component.google-pubsub.endpoint",
+                pubsubEmulator::getEmulatorEndpoint
+        );
+    }
+
+
 
     protected static Provider provider(long id) throws IOException {
         return Provider.create(IOUtils.toString(new FileReader(
