@@ -1,7 +1,6 @@
 package no.rutebanken.marduk.security.oauth2;
 
 import org.entur.oauth2.AudienceValidator;
-import org.entur.oauth2.JwtRoleAssignmentExtractor;
 import org.entur.oauth2.multiissuer.MultiIssuerAuthenticationManagerResolver;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,7 +21,6 @@ import java.util.List;
 public class MardukMultiIssuerAuthenticationManagerResolver
         extends MultiIssuerAuthenticationManagerResolver {
 
-    private final EnturPartnerAuth0RolesClaimAdapter enturPartnerAuth0RolesClaimAdapter;
     private final String enturPartnerAuth0Issuer;
     private final String enturPartnerAuth0Audience;
     private final String rorAuth0Audience;
@@ -32,10 +30,8 @@ public class MardukMultiIssuerAuthenticationManagerResolver
             @Value("${marduk.oauth2.resourceserver.auth0.partner.jwt.issuer-uri}") String enturPartnerAuth0Issuer,
             @Value("${marduk.oauth2.resourceserver.auth0.ror.jwt.audience}") String rorAuth0Audience,
             @Value("${marduk.oauth2.resourceserver.auth0.ror.jwt.issuer-uri}") String rorAuth0Issuer,
-            @Value("${marduk.oauth2.resourceserver.auth0.ror.claim.namespace}") String rorAuth0ClaimNamespace,
-            EnturPartnerAuth0RolesClaimAdapter enturPartnerAuth0RolesClaimAdapter) {
+            @Value("${marduk.oauth2.resourceserver.auth0.ror.claim.namespace}") String rorAuth0ClaimNamespace) {
         super(null, null, enturPartnerAuth0Audience, enturPartnerAuth0Issuer, rorAuth0Audience, rorAuth0Issuer, rorAuth0ClaimNamespace);
-        this.enturPartnerAuth0RolesClaimAdapter = enturPartnerAuth0RolesClaimAdapter;
         this.enturPartnerAuth0Issuer = enturPartnerAuth0Issuer;
         this.enturPartnerAuth0Audience = enturPartnerAuth0Audience;
         this.rorAuth0Audience = rorAuth0Audience;
@@ -43,8 +39,6 @@ public class MardukMultiIssuerAuthenticationManagerResolver
 
     /**
      * Build a @{@link JwtDecoder} for Entur Partner Auth0 tenant.
-     * To ensure compatibility with the existing authorization process ({@link JwtRoleAssignmentExtractor}), a "roles"
-     * claim is inserted in the token thanks to @{@link EnturPartnerAuth0RolesClaimAdapter}
      *
      * @return a @{@link JwtDecoder} for Auth0.
      */
@@ -56,7 +50,6 @@ public class MardukMultiIssuerAuthenticationManagerResolver
         OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(enturPartnerAuth0Issuer);
         OAuth2TokenValidator<Jwt> withAudience = new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
         jwtDecoder.setJwtValidator(withAudience);
-        jwtDecoder.setClaimSetConverter(enturPartnerAuth0RolesClaimAdapter);
         return jwtDecoder;
     }
 

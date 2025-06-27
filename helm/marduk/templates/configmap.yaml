@@ -87,8 +87,6 @@ data:
     # OAuth2 Resource Server
     marduk.oauth2.resourceserver.auth0.partner.jwt.issuer-uri={{ .Values.auth0.partner.url }}/
     marduk.oauth2.resourceserver.auth0.partner.jwt.audience={{ .Values.auth0.partner.audience }}
-    marduk.oauth2.resourceserver.auth0.partner.admin.activated={{ .Values.auth0.partner.administratorAccessEnabled }}
-    marduk.oauth2.resourceserver.auth0.partner.organisations={1:'RB', 14:'MOR', 20:'NSB', 22:'RUT', 35:'GOA', 41:'SJN', 56:'FLI', 23:'HUR', 58:'VYX', 59:'VYB', 68:'FAR', 29:'TRO', 74:'CON', 79:'DGR', 60:'HAV', 273:'HAC', 8:'FLT'}
 
     marduk.oauth2.resourceserver.auth0.ror.jwt.issuer-uri={{ .Values.auth0.ror.url }}/
     marduk.oauth2.resourceserver.auth0.ror.jwt.audience={{ .Values.auth0.ror.audience }}
@@ -115,10 +113,8 @@ data:
 
     # NeTeX import
     netex.import.http.autoStartup={{ .Values.netex.import.http.autoStartup }}
-    netex.import.delegation.authorization={CON:'AKT', HAC: 'FLT'}
 
     # NeTeX export
-    netex.export.block.authorization={FAR:'OST,ATB,INN',CON:'TRO,BRA', DGR:'FIN'}
     netex.export.merge.flexible.lines.enabled=true
     netex.export.download.directory=/tmp/marduk/files/netex/merged
     otp2.netex.export.download.directory=/tmp/marduk/files/netex/merged-otp2
