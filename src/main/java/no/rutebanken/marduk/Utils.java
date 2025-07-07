@@ -16,10 +16,6 @@
 
 package no.rutebanken.marduk;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-
 public class Utils {
 
     private  Utils() {
@@ -30,14 +26,5 @@ public class Utils {
             throw new IllegalArgumentException("Url is null");
         }
         return Long.valueOf(url.substring(url.lastIndexOf('/') + 1));
-    }
-
-    public static String getUsername() {
-        String user = null;
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() != null && auth.getPrincipal() instanceof Jwt jwt) {
-            user = jwt.getClaimAsString("preferred_username");
-        }
-        return (user == null) ? "unknown" : user;
     }
 }

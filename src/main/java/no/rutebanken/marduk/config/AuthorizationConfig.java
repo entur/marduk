@@ -20,11 +20,14 @@ import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.security.DefaultMardukAuthorizationService;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
 import org.entur.oauth2.JwtRoleAssignmentExtractor;
+import org.entur.oauth2.user.JwtUserInfoExtractor;
 import org.entur.ror.permission.RemoteBabaRoleAssignmentExtractor;
+import org.entur.ror.permission.RemoteBabaUserInfoExtractor;
 import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
 import org.rutebanken.helper.organisation.authorization.AuthorizationService;
 import org.rutebanken.helper.organisation.authorization.DefaultAuthorizationService;
 import org.rutebanken.helper.organisation.authorization.FullAccessAuthorizationService;
+import org.rutebanken.helper.organisation.user.UserInfoExtractor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -36,6 +39,30 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 @Configuration
 public class AuthorizationConfig {
+
+
+    @ConditionalOnProperty(
+            value = "marduk.security.role.assignment.extractor",
+            havingValue = "jwt",
+            matchIfMissing = true
+    )
+    @Bean
+    public UserInfoExtractor jwtUserInfoExtractor() {
+        return new JwtUserInfoExtractor();
+    }
+
+    @ConditionalOnProperty(
+            value = "marduk.security.role.assignment.extractor",
+            havingValue = "baba"
+    )
+    @Bean
+    public UserInfoExtractor babaUserInfoExtractor(
+            WebClient webClient,
+            @Value("${user.permission.rest.service.url}") String url
+    ) {
+        return new RemoteBabaUserInfoExtractor(webClient, url);
+    }
+
 
     @ConditionalOnProperty(
             value = "marduk.security.role.assignment.extractor",
