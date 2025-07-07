@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.apache.camel.Exchange;
@@ -441,11 +440,6 @@ public class JobEvent {
             }
 
             JobEvent jobEvent = super.build();
-
-            if (jobEvent.username == null) {
-                jobEvent.username = Utils.getUsername();
-                exchange.getIn().setHeader(USERNAME, jobEvent.username);
-            }
 
             exchange.getIn().setHeader(SYSTEM_STATUS, jobEvent.toString());
             exchange.getMessage().setBody(jobEvent.toString());

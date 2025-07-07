@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.rest;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.Utils;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
 import no.rutebanken.marduk.domain.OtpGraphsInfo;
@@ -30,7 +29,7 @@ import org.apache.camel.*;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.rutebanken.helper.organisation.user.UserInfoExtractor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
@@ -40,6 +39,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static no.rutebanken.marduk.Constants.*;
@@ -58,14 +58,21 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     private static final String OPENAPI_DATA_TYPE_STRING = "string";
     private static final String OPENAPI_DATA_TYPE_INTEGER = "integer";
 
-    @Value("${server.port:8080}")
-    private String port;
+    private final String port;
+    private final String host;
+    private final MardukAuthorizationService mardukAuthorizationService;
+    private final UserInfoExtractor userInfoExtractor;
 
-    @Value("${server.host:0.0.0.0}")
-    private String host;
-
-    @Autowired
-    private MardukAuthorizationService mardukAuthorizationService;
+    public AdminRestRouteBuilder(
+            @Value("${server.port:8080}") String port,
+            @Value("${server.host:0.0.0.0}")
+            String host,
+            MardukAuthorizationService mardukAuthorizationService, UserInfoExtractor userInfoExtractor) {
+        this.port = port;
+        this.host = host;
+        this.mardukAuthorizationService = mardukAuthorizationService;
+        this.userInfoExtractor = userInfoExtractor;
+    }
 
     @Override
     public void configure() throws Exception {
@@ -823,20 +830,34 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:authorizeAdminRequest")
                 .doTry()
                 .process(e -> mardukAuthorizationService.verifyAdministratorPrivileges())
-                .setHeader(USERNAME, method(Utils.class, "getUsername"))
+                .to("direct:setUsername")
                 .routeId("admin-authorize-admin-request");
 
         from("direct:authorizeEditorRequest")
                 .doTry()
                 .process(e -> mardukAuthorizationService.verifyRouteDataEditorPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
-                .setHeader(USERNAME, method(Utils.class, "getUsername"))
+                .to("direct:setUsername")
                 .routeId("admin-authorize-editor-request");
 
         from("direct:authorizeBlocksDownloadRequest")
                 .doTry()
                 .log(LoggingLevel.INFO, "Authorizing NeTEx blocks download for provider ${header." + CHOUETTE_REFERENTIAL + "} ")
                 .process(e -> mardukAuthorizationService.verifyBlockViewerPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
+                .to("direct:setUsername")
                 .routeId("admin-authorize-blocks-download-request");
+
+        from("direct:setUsername")
+                .doTry()
+                .process(e ->  {
+                    String preferredUsername = userInfoExtractor.getPreferredUsername();
+                    if(preferredUsername == null) {
+                        preferredUsername = "unknown";
+                    }
+                    e.getIn().setHeader(USERNAME, preferredUsername);
+                })
+                .routeId("admin-set-username");
+
+
 
     }
 

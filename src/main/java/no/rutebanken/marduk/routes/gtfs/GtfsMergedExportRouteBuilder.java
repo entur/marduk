@@ -28,7 +28,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 import static no.rutebanken.marduk.Constants.*;
-import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 
 /**
  * Route triggering a merge of GTFS files and upload of the resulting files to GCS.
