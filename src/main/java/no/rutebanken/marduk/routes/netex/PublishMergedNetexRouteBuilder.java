@@ -53,7 +53,7 @@ public class PublishMergedNetexRouteBuilder extends BaseRouteBuilder {
 
                 .wireTap("direct:notifyExportNetexWithFlexibleLines")
                 .setBody(constant(""))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.BUILD_GRAPH).state(JobEvent.State.PENDING).build())
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue")
