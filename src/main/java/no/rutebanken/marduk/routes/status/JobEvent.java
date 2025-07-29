@@ -215,8 +215,6 @@ public class JobEvent {
         VALIDATION_LEVEL_2,
         CLEAN,
         DATASPACE_TRANSFER,
-        BUILD_GRAPH,
-        BUILD_BASE,
         OTP2_BUILD_GRAPH,
         OTP2_BUILD_BASE,
         EXPORT_NETEX,
