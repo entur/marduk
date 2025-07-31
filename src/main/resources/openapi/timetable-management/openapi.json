@@ -1,0 +1,110 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Timetable Management API",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.entur.io/timetable/v1/timetable-management",
+      "description": "Production"
+    },
+    {
+      "url": "https://api.staging.entur.io/timetable/v1/timetable-management",
+      "description": "Staging"
+    },
+    {
+      "url": "https://api.dev.entur.io/timetable/v1/timetable-management",
+      "description": "Development"
+    }
+  ],
+  "security": [
+    {
+      "jwt": []
+    }
+  ],
+  "paths": {
+    "/datasets/{codespace}": {
+      "post": {
+        "summary": "Upload a NeTEx dataset",
+        "operationId": "upload",
+        "parameters": [
+          {
+            "name": "codespace",
+            "in": "path",
+            "description": "Provider Codespace",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown codespace"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/datasets/{codespace}/filtered": {
+      "get": {
+        "summary": "Download NeTEx dataset with private data. Old data and unsupported NeTEx entities are filtered out",
+        "operationId": "download",
+        "parameters": [
+          {
+            "name": "codespace",
+            "in": "path",
+            "description": "Codespace of the NeTEx dataset",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success"
+          },
+          "404": {
+            "description": "Unknown codespace"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "jwt": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "UploadResult": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
