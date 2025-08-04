@@ -39,14 +39,15 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static no.rutebanken.marduk.Constants.*;
 import static org.apache.camel.support.builder.PredicateBuilder.isEqualTo;
 
 /**
- * API endpoint for managing the transit data import pipeline.
+ * API endpoints for managing the transit data import pipeline.
+ * These endpoints are intended to be used to interact with front-ends (Ninkasi, Bel).
+ * See {@link AdminExternalRestRouteBuilder} for the external API used by machine-to-machine clients.
  */
 @Component
 public class AdminRestRouteBuilder extends BaseRouteBuilder {
@@ -103,7 +104,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .bindingMode(RestBindingMode.json)
                 .endpointProperty("matchOnUriPrefix", "true")
                 .apiContextPath("/openapi.json")
-                .apiProperty("api.title", "Marduk Admin API").apiProperty("api.version", "1.0");
+                .apiProperty("api.title", "Timetable Admin API").apiProperty("api.version", "1.0");
 
         rest("")
                 .apiDocs(false)
@@ -291,22 +292,24 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("/upload/{codespace}")
                 .description("Upload NeTEx file")
+                .deprecated()
                 .param().name("codespace").type(RestParamType.path).description("Provider Codespace").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
                 .consumes(MULTIPART_FORM_DATA)
                 .produces(PLAIN)
                 .bindingMode(RestBindingMode.off)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal server error").endResponseMessage()
-                .to("direct:adminUploadFile")
+                .to("direct:adminExternalUploadFile")
 
                 .get("/download_netex_blocks/{codespace}")
                 .description("Download NeTEx dataset with blocks")
+                .deprecated()
                 .param().name("codespace").type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
                 .consumes(PLAIN)
                 .produces(X_OCTET_STREAM)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
-                .to("direct:adminChouetteNetexBlocksDownload")
+                .to("direct:adminExternalDownloadPrivateDataset")
 
                 .get("/openapi.json")
                 .apiDocs(false)
@@ -637,37 +640,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:listGraphs")
                 .routeId("admin-chouette-graph-list");
 
-        from("direct:adminUploadFile")
-                .streamCaching()
-                .process(this::setNewCorrelationId)
-                .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
-                .log(LoggingLevel.INFO, correlation() + "Received file from provider ${header.codespace} through the HTTP endpoint")
-                .to("direct:validateReferential")
-                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
-                .to("direct:authorizeEditorRequest")
-                .log(LoggingLevel.INFO, correlation() + "Authorization OK for HTTP endpoint, uploading files and starting import pipeline")
-                .process(this::removeAllCamelHttpHeaders)
-                .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.rest:true}", Boolean.class))
-                .to("direct:uploadFilesAndStartImport")
-                .routeId("admin-upload-file")
-                .autoStartup("{{netex.import.http.autoStartup:true}}");
-
-        from("direct:adminChouetteNetexBlocksDownload")
-                .process(this::setNewCorrelationId)
-                .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
-                .log(LoggingLevel.INFO, correlation() + "Received Blocks download request for provider ${header." + CHOUETTE_REFERENTIAL + "} through the HTTP endpoint")
-                .to("direct:validateReferential")
-                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
-                .to("direct:authorizeBlocksDownloadRequest")
-                .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
-                        + "rb_" + e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toLowerCase()
-                        + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
-                .log(LoggingLevel.INFO, correlation() + "Downloading NeTEx dataset with blocks: ${header." + FILE_HANDLE + "}")
-                .process(this::removeAllCamelHttpHeaders)
-                .to("direct:getInternalBlob")
-                .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
-                .routeId("admin-chouette-netex-blocks-download");
-
         from("direct:adminDatasetImport")
                 .process(this::removeAllCamelHttpHeaders)
                 .setHeader(PROVIDER_ID, header("providerId"))
@@ -820,12 +792,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .predicateExceptionFactory((exchange, predicate, nodeId) -> new NotFoundException("Unknown provider id"))
                 .id("validate-provider")
                 .routeId("admin-validate-provider");
-
-        from("direct:validateReferential")
-                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null)
-                .predicateExceptionFactory((exchange, predicate, nodeId) -> new NotFoundException("Unknown chouette referential"))
-                .id("validate-referential")
-                .routeId("admin-validate-referential");
 
         from("direct:authorizeAdminRequest")
                 .doTry()
