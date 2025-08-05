@@ -56,6 +56,12 @@ jobs:
       - uses: actions/upload-artifact@v4.6.2
         with:
           path: target
+  Openapi-lint:
+    needs: [ maven-verify ]
+    uses: entur/gha-api/.github/workflows/lint.yml@v4
+    secrets: inherit
+    with:
+      spec: 'src/main/resources/openapi/timetable-management/openapi.json'
   docker-build:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [maven-verify]
