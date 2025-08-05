@@ -2,6 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "Timetable Management API",
+    "description": "Upload and download NeTEx datasets",
     "version": "1.0"
   },
   "servers": [
@@ -26,7 +27,7 @@
   "paths": {
     "/datasets/{codespace}": {
       "post": {
-        "summary": "Upload a NeTEx dataset",
+        "description": "Upload a NeTEx dataset",
         "operationId": "upload",
         "parameters": [
           {
@@ -61,7 +62,7 @@
     },
     "/datasets/{codespace}/filtered": {
       "get": {
-        "summary": "Download NeTEx dataset with private data. Old data and unsupported NeTEx entities are filtered out",
+        "description": "Download NeTEx dataset with private data. Old data and unsupported NeTEx entities are filtered out",
         "operationId": "download",
         "parameters": [
           {
