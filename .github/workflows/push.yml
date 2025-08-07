@@ -62,6 +62,7 @@ jobs:
     secrets: inherit
     with:
       spec: 'src/main/resources/openapi/timetable-management/openapi.json'
+      upload_to_bucket: ${{ github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
   docker-build:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [maven-verify]
