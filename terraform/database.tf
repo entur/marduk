@@ -1,6 +1,6 @@
 resource "google_sql_database_instance" "db_instance" {
   name             = "marduk-db-pg13"
-  database_version = "POSTGRES_15"
+  database_version = "POSTGRES_17"
   project          = var.gcp_resources_project
   region           = var.db_region
 
@@ -23,7 +23,7 @@ resource "google_sql_database_instance" "db_instance" {
       hour = 2
     }
     ip_configuration {
-      require_ssl = true
+      ssl_mode = "TRUSTED_CLIENT_CERTIFICATE_REQUIRED"
     }
   }
 }
