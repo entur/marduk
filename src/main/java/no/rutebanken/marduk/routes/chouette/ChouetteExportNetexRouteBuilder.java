@@ -169,7 +169,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
         // The Netex data is passed through the filtering process of Ashur, but the XML semantics should not modified in any way when using AsIsImportFilter.
         from("direct:ashurNetexFilterFromChouetteExport")
                 .log(LoggingLevel.INFO, correlation() + "Copying Netex file from chouette to filtering bucket")
-                .to("direct:copyInternalBlobToFilteringBucket")
+                .to(Constants.COPY_INTERNAL_BLOB_TO_BUCKET_ROUTE_NAME)
                 .log(LoggingLevel.INFO, correlation() + "Done copying Netex file to filtering bucket. Sending to Ashur for filtering...")
                 .setHeader("FilterProfile", constant("AsIsImportFilter"))
                 .setHeader("NetexSource", constant("chouette"))

@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.blobstore;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.LoggingLevel;
@@ -121,7 +122,7 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
                 .to("direct:copyInternalBlobToAnotherBucket")
                 .routeId("copy-internal-to-validation-folder");
 
-        from("direct:copyInternalBlobToFilteringBucket")
+        from(Constants.COPY_INTERNAL_BLOB_TO_BUCKET_ROUTE_NAME)
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.ashur.exchange.container.name}"))
                 .setHeader(TARGET_FILE_HANDLE, header(FILE_HANDLE))
                 .to("direct:copyInternalBlobToAnotherBucket")

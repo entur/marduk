@@ -173,7 +173,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
         // It copies the Netex file from the Chouette export to the filtering bucket, and then sends it to Ashur for filtering.
         from("direct:ashurNetexFilterBeforePreValidation")
                 .log(LoggingLevel.INFO, correlation() + "Copying Netex file from marduk to filtering bucket")
-                .to("direct:copyInternalBlobToFilteringBucket")
+                .to(COPY_INTERNAL_BLOB_TO_BUCKET_ROUTE_NAME)
                 .log(LoggingLevel.INFO, correlation() + "Done copying Netex file to filtering bucket. Sending to Ashur for filtering...")
                 .setHeader("FilterProfile", constant("StandardImportFilter"))
                 .setHeader("NetexSource", constant("marduk"))
