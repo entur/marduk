@@ -138,6 +138,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .end()
                 // end choice
                 .end()
+                .to("direct:ashurNetexFilterFromChouetteExport")
                 .to("direct:antuNetexPostValidation")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.OK).build())
                 .routeId("process-successful-export");
@@ -156,6 +157,18 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .log(LoggingLevel.WARN, correlation() + "Netex export failed with error code ${header." + Constants.JOB_ERROR_CODE + "}")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.FAILED).build())
                 .routeId("process-failed-export");
+
+        // This route is only temporary for simplifying comparison between filtering from Chouette and filtering from ashur.
+        // It copies the Netex file from the Chouette export to the filtering bucket, and then sends it to Ashur for filtering.
+        // The Netex data is passed through the filtering process of Ashur, but the XML semantics should not modified in any way when using AsIsImportFilter.
+        from("direct:ashurNetexFilterFromChouetteExport")
+                .log(LoggingLevel.INFO, correlation() + "Copying Netex file from chouette to filtering bucket")
+                .to("direct:copyInternalBlobToFilteringBucket")
+                .log(LoggingLevel.INFO, correlation() + "Done copying Netex file to filtering bucket. Sending to Ashur for filtering...")
+                .setHeader("FilterProfile", constant("AsIsImportFilter"))
+                .setHeader("NetexSource", constant("chouette"))
+                .to("google-pubsub:{{ashur.pubsub.project.id}}:FilterNetexFileQueue")
+                .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering");
 
         from("direct:antuNetexPostValidation")
                 .to("direct:copyInternalBlobToValidationBucket")

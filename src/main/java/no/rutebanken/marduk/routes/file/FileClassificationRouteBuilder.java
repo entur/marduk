@@ -151,6 +151,11 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .when(header(IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX))
                 .to("direct:flexibleLinesImport")
                 .otherwise()
+                .process(e -> {
+                    Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
+                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
+                })
+                .to("direct:ashurNetexFilterBeforePreValidation")
                 .to("direct:antuNetexPreValidation")
                 // launch the import process if this is a GTFS file or if the pre-validation is activated in chouette
                 .filter(PredicateBuilder.or(simple("{{chouette.enablePreValidation:true}}"), header(FILE_TYPE).isEqualTo(FileType.GTFS)))
@@ -158,13 +163,20 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
                 .routeId("process-valid-file");
 
+        // This route is only temporary for simplifying comparison between filtering from Chouette and filtering from ashur.
+        // It copies the Netex file from the Chouette export to the filtering bucket, and then sends it to Ashur for filtering.
+        from("direct:ashurNetexFilterBeforePreValidation")
+                .log(LoggingLevel.INFO, correlation() + "Copying Netex file from marduk to filtering bucket")
+                .to("direct:copyInternalBlobToFilteringBucket")
+                .log(LoggingLevel.INFO, correlation() + "Done copying Netex file to filtering bucket. Sending to Ashur for filtering...")
+                .setHeader("FilterProfile", constant("StandardImportFilter"))
+                .setHeader("NetexSource", constant("marduk"))
+                .to("google-pubsub:{{ashur.pubsub.project.id}}:FilterNetexFileQueue")
+                .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering");
+
         from("direct:antuNetexPreValidation")
                 .filter(header(FILE_TYPE).isEqualTo(FileType.NETEXPROFILE))
                 .to("direct:copyInternalBlobToValidationBucket")
-                .process(e -> {
-                    Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
-                })
                 .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
                 .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
