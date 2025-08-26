@@ -17,6 +17,7 @@ gcp:
   mardukPubsubProjectId: ent-marduk-tst
   antuPubsubProjectId: ent-antu-tst
   nabuPubsubProjectId: ent-nabu-tst
+  ashurPubsubProjectId: ent-ashur-tst
   bucketName: marduk-test
   internalBucketName: ror-marduk-internal-test
   exchangeBucketName: marduk-exchange-test
@@ -24,6 +25,7 @@ gcp:
   otpGraphBucketName: ror-otp-graphs-gcp2-test
   nisabaExchangeBucketName: ror-nisaba-exchange-test
   antuExchangeBucketName: ror-antu-exchange-gcp2-test
+  ashurExchangeBucketName: ror-ashur-exchange-gcp-production
   osmSubDirectory: osm
 
 chouette:
@@ -33,6 +35,9 @@ chouette:
   gtfsExport: false
   enablePreValidation: false
   enablePostValidation: false
+
+ashur:
+  enableFiltering: false
 
 baba:
   service: http://baba.tst.entur.internal

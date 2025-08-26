@@ -41,12 +41,15 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
     private final List<String> swedishCodespaces;
     private final List<String> finnishCodespaces;
+    private final boolean ashurFilteringEnabled;
 
     public FileClassificationRouteBuilder(
             @Value("${antu.validation.sweden.codespaces:}") List<String> swedishCodespaces,
-            @Value("${antu.validation.finland.codespaces:OYM}")List<String> finnishCodespaces) {
+            @Value("${antu.validation.finland.codespaces:OYM}")List<String> finnishCodespaces,
+            @Value("${ashur.filteringEnabled:false}") boolean ashurFilteringEnabled) {
         this.swedishCodespaces = swedishCodespaces;
         this.finnishCodespaces = finnishCodespaces;
+        this.ashurFilteringEnabled = ashurFilteringEnabled;
     }
 
     @Override
@@ -155,7 +158,10 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
                 })
-                .to("direct:ashurNetexFilterBeforePreValidation")
+                .filter(exchange -> ashurFilteringEnabled)
+                    .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, sending Netex files to ashur for filtering before triggering validation")
+                    .to("direct:ashurNetexFilterBeforePreValidation")
+                .end()
                 .to("direct:antuNetexPreValidation")
                 // launch the import process if this is a GTFS file or if the pre-validation is activated in chouette
                 .filter(PredicateBuilder.or(simple("{{chouette.enablePreValidation:true}}"), header(FILE_TYPE).isEqualTo(FileType.GTFS)))

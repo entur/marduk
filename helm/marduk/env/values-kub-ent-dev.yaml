@@ -17,6 +17,7 @@ gcp:
   mardukPubsubProjectId: ent-marduk-dev
   antuPubsubProjectId: ent-antu-dev
   nabuPubsubProjectId: ent-nabu-dev
+  ashurPubsubProjectId: ent-ashur-dev
   bucketName: marduk-dev
   internalBucketName: ror-marduk-internal-dev
   exchangeBucketName: marduk-exchange-dev
@@ -24,6 +25,7 @@ gcp:
   otpGraphBucketName: ror-otp-graphs-gcp2-dev
   nisabaExchangeBucketName: ror-nisaba-exchange-dev
   antuExchangeBucketName: ror-antu-exchange-gcp2-dev
+  ashurExchangeBucketName: ror-ashur-exchange-gcp-production
   osmSubDirectory: osm
 
 chouette:
@@ -33,6 +35,9 @@ chouette:
   gtfsExport: false
   enablePreValidation: false
   enablePostValidation: false
+
+ashur:
+  enableFiltering: true
 
 baba:
   service: http://baba.dev.entur.internal

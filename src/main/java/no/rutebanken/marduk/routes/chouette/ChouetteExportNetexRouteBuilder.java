@@ -54,14 +54,17 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
     private final String chouetteUrl;
     private final boolean enablePostValidation;
     private final List<String> allowedCodespacesForStopExport;
+    private final boolean ashurFilteringEnabled;
 
     public ChouetteExportNetexRouteBuilder(
             @Value("${chouette.url}") String chouetteUrl,
             @Value("${chouette.enablePostValidation:true}") boolean enablePostValidation,
-            @Value("${chouette.include.stops.codespaces:}") List<String> allowedCodespacesForStopExport) {
+            @Value("${chouette.include.stops.codespaces:}") List<String> allowedCodespacesForStopExport,
+            @Value("${ashur.filteringEnabled:false}") boolean ashurFilteringEnabled) {
         this.chouetteUrl = chouetteUrl;
         this.enablePostValidation = enablePostValidation;
         this.allowedCodespacesForStopExport = allowedCodespacesForStopExport;
+        this.ashurFilteringEnabled = ashurFilteringEnabled;
     }
 
     @Override
@@ -138,7 +141,10 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .end()
                 // end choice
                 .end()
-                .to("direct:ashurNetexFilterFromChouetteExport")
+                .filter(exchange -> ashurFilteringEnabled)
+                    .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, sending Netex files to ashur for filtering before triggering validation")
+                    .to("direct:ashurNetexFilterFromChouetteExport")
+                .end()
                 .to("direct:antuNetexPostValidation")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.OK).build())
                 .routeId("process-successful-export");
