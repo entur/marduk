@@ -51,7 +51,7 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} in blob store in Marduk internal bucket.")
                 .routeId("blobstore-internal-copy-in-bucket");
 
-        from("direct:copyInternalBlobToAnotherBucket")
+        from(COPY_INTERNAL_BLOB_TO_ANOTHER_BUCKET_ROUTE_NAME)
                 .to(logDebugShowAll())
                 .bean(mardukInternalBlobStoreService, "copyBlobToAnotherBucket")
                 .to(logDebugShowAll())
@@ -119,13 +119,13 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
         from("direct:copyInternalBlobToValidationBucket")
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.antu.exchange.container.name}"))
                 .setHeader(TARGET_FILE_HANDLE, header(FILE_HANDLE))
-                .to("direct:copyInternalBlobToAnotherBucket")
+                .to(COPY_INTERNAL_BLOB_TO_ANOTHER_BUCKET_ROUTE_NAME)
                 .routeId("copy-internal-to-validation-folder");
 
         from(Constants.COPY_INTERNAL_BLOB_TO_BUCKET_ROUTE_NAME)
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.ashur.exchange.container.name}"))
                 .setHeader(TARGET_FILE_HANDLE, header(FILE_HANDLE))
-                .to("direct:copyInternalBlobToAnotherBucket")
+                .to(COPY_INTERNAL_BLOB_TO_ANOTHER_BUCKET_ROUTE_NAME)
                 .routeId("copy-internal-to-filtering-folder");
 
     }

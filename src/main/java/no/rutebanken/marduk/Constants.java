@@ -138,6 +138,7 @@ public final class Constants {
     public static final String IMPORT_TYPE_UTTU_EXPORT = "ImportType_uttu_export";
 
     public static final String COPY_INTERNAL_BLOB_TO_BUCKET_ROUTE_NAME = "direct:copyInternalBlobToFilteringBucket";
+    public static final String COPY_INTERNAL_BLOB_TO_ANOTHER_BUCKET_ROUTE_NAME = "direct:copyInternalBlobToAnotherBucket";
 
     private Constants() {
     }

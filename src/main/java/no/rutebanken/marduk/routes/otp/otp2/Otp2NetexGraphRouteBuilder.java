@@ -44,6 +44,8 @@ import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_PARENT;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
+import static no.rutebanken.marduk.Constants.COPY_INTERNAL_BLOB_TO_ANOTHER_BUCKET_ROUTE_NAME;
+
 
 /**
  * Build remotely a full OTP graph (containing OSM data, elevation data and NeTEx data).
@@ -149,7 +151,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
                 // copy the new graph from the OTP remote work directory to the graphs directory in GCS
                 .process(new Otp2NetexGraphPublishingProcessor(otpGraphsBucketName))
-                .to("direct:copyInternalBlobToAnotherBucket")
+                .to(COPY_INTERNAL_BLOB_TO_ANOTHER_BUCKET_ROUTE_NAME)
                 .log(LoggingLevel.INFO, correlation() + "Done copying new OTP2 graph: ${header." + FILE_HANDLE + "}")
 
                 .setProperty(GRAPH_PATH_PROPERTY, header(FILE_HANDLE))
