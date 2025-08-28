@@ -142,7 +142,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 // end choice
                 .end()
                 .filter(exchange -> ashurFilteringEnabled)
-                    .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, sending Netex files to ashur for filtering before triggering validation")
+                    .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, triggering filtering process...")
                     .to("direct:ashurNetexFilterFromChouetteExport")
                 .end()
                 .to("direct:antuNetexPostValidation")
@@ -168,9 +168,6 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
         // It copies the Netex file from the Chouette export to the filtering bucket, and then sends it to Ashur for filtering.
         // The Netex data is passed through the filtering process of Ashur, but the XML semantics should not modified in any way when using AsIsImportFilter.
         from("direct:ashurNetexFilterFromChouetteExport")
-                .log(LoggingLevel.INFO, correlation() + "Copying Netex file from chouette to filtering bucket")
-                .to(Constants.COPY_INTERNAL_BLOB_TO_BUCKET_ROUTE_NAME)
-                .log(LoggingLevel.INFO, correlation() + "Done copying Netex file to filtering bucket. Sending to Ashur for filtering...")
                 .setHeader("FilterProfile", constant("AsIsImportFilter"))
                 .setHeader("NetexSource", constant("chouette"))
                 .to("google-pubsub:{{ashur.pubsub.project.id}}:FilterNetexFileQueue")

@@ -159,7 +159,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
                 })
                 .filter(exchange -> ashurFilteringEnabled)
-                    .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, sending Netex files to ashur for filtering before triggering validation")
+                    .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, triggering filtering process...")
                     .to("direct:ashurNetexFilterBeforePreValidation")
                 .end()
                 .to("direct:antuNetexPreValidation")
@@ -172,9 +172,6 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
         // This route is only temporary for simplifying comparison between filtering from Chouette and filtering from ashur.
         // It copies the Netex file from the Chouette export to the filtering bucket, and then sends it to Ashur for filtering.
         from("direct:ashurNetexFilterBeforePreValidation")
-                .log(LoggingLevel.INFO, correlation() + "Copying Netex file from marduk to filtering bucket")
-                .to(COPY_INTERNAL_BLOB_TO_BUCKET_ROUTE_NAME)
-                .log(LoggingLevel.INFO, correlation() + "Done copying Netex file to filtering bucket. Sending to Ashur for filtering...")
                 .setHeader("FilterProfile", constant("StandardImportFilter"))
                 .setHeader("NetexSource", constant("marduk"))
                 .to("google-pubsub:{{ashur.pubsub.project.id}}:FilterNetexFileQueue")
