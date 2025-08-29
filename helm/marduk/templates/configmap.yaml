@@ -44,7 +44,6 @@ data:
     blobstore.gcs.graphs.container.name={{ .Values.gcp.otpGraphBucketName }}
     blobstore.gcs.nisaba.exchange.container.name={{ .Values.gcp.nisabaExchangeBucketName }}
     blobstore.gcs.antu.exchange.container.name={{ .Values.gcp.antuExchangeBucketName }}
-    blobstore.gcs.ashur.exchange.container.name={{ .Values.gcp.ashurExchangeBucketName }}
 
     osm.pbf.blobstore.subdirectory={{ .Values.gcp.osmSubDirectory }}
     blobstore.delete.external.blobs=false

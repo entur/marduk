@@ -136,7 +136,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 // the internal bucket and must be copied to the exchange bucket
                 .when(header(VALIDATION_IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX))
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
-                .to(COPY_INTERNAL_BLOB_TO_ANOTHER_BUCKET_ROUTE_NAME)
+                .to("direct:copyInternalBlobToAnotherBucket")
                 // otherwise the original file comes from uttu and was stored in the inbound folder of the exchange bucket
                 // and must be copied to the outbound folder in the exchange bucket
                 .otherwise()
@@ -153,7 +153,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .end()
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.container.name}"))
-                .to(COPY_INTERNAL_BLOB_TO_ANOTHER_BUCKET_ROUTE_NAME)
+                .to("direct:copyInternalBlobToAnotherBucket")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:PublishMergedNetexQueue")
                 .endChoice()
 
