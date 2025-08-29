@@ -54,14 +54,17 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
     private final String chouetteUrl;
     private final boolean enablePostValidation;
     private final List<String> allowedCodespacesForStopExport;
+    private final boolean ashurFilteringEnabled;
 
     public ChouetteExportNetexRouteBuilder(
             @Value("${chouette.url}") String chouetteUrl,
             @Value("${chouette.enablePostValidation:true}") boolean enablePostValidation,
-            @Value("${chouette.include.stops.codespaces:}") List<String> allowedCodespacesForStopExport) {
+            @Value("${chouette.include.stops.codespaces:}") List<String> allowedCodespacesForStopExport,
+            @Value("${ashur.filteringEnabled:false}") boolean ashurFilteringEnabled) {
         this.chouetteUrl = chouetteUrl;
         this.enablePostValidation = enablePostValidation;
         this.allowedCodespacesForStopExport = allowedCodespacesForStopExport;
+        this.ashurFilteringEnabled = ashurFilteringEnabled;
     }
 
     @Override
@@ -138,6 +141,10 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .end()
                 // end choice
                 .end()
+                .filter(exchange -> ashurFilteringEnabled)
+                    .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, triggering filtering process...")
+                    .to("direct:ashurNetexFilterFromChouetteExport")
+                .end()
                 .to("direct:antuNetexPostValidation")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.OK).build())
                 .routeId("process-successful-export");
@@ -156,6 +163,13 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .log(LoggingLevel.WARN, correlation() + "Netex export failed with error code ${header." + Constants.JOB_ERROR_CODE + "}")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.FAILED).build())
                 .routeId("process-failed-export");
+
+        // This route is only temporary for simplifying comparison between filtering from Chouette and filtering from ashur.
+        from("direct:ashurNetexFilterFromChouetteExport")
+                .setHeader("FilterProfile", constant("AsIsImportFilter"))
+                .setHeader("NetexSource", constant("chouette"))
+                .to("google-pubsub:{{ashur.pubsub.project.id}}:FilterNetexFileQueue")
+                .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering");
 
         from("direct:antuNetexPostValidation")
                 .to("direct:copyInternalBlobToValidationBucket")

@@ -407,3 +407,15 @@ resource "google_pubsub_topic" "LineStatisticsCalculationQueue" {
   project = var.gcp_resources_project
   labels = var.labels
 }
+
+resource "google_pubsub_topic" "FilterNetexFileQueue" {
+  name    = "FilterNetexFileQueue"
+  project = var.gcp_resources_project
+  labels  = var.labels
+}
+
+resource "google_pubsub_topic" "FilterNetexFileStatusQueue" {
+  name    = "FilterNetexFileStatusQueue"
+  project = var.gcp_resources_project
+  labels  = var.labels
+}
