@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.routes.blobstore;
 
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.LoggingLevel;

@@ -170,7 +170,6 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .routeId("process-valid-file");
 
         // This route is only temporary for simplifying comparison between filtering from Chouette and filtering from ashur.
-        // It copies the Netex file from the Chouette export to the filtering bucket, and then sends it to Ashur for filtering.
         from("direct:ashurNetexFilterBeforePreValidation")
                 .setHeader("FilterProfile", constant("StandardImportFilter"))
                 .setHeader("NetexSource", constant("marduk"))

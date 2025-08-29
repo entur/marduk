@@ -45,7 +45,6 @@ import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TARGET_FILE_PARENT;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 
-
 /**
  * Build remotely a full OTP graph (containing OSM data, elevation data and NeTEx data).
  */

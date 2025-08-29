@@ -165,8 +165,6 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .routeId("process-failed-export");
 
         // This route is only temporary for simplifying comparison between filtering from Chouette and filtering from ashur.
-        // It copies the Netex file from the Chouette export to the filtering bucket, and then sends it to Ashur for filtering.
-        // The Netex data is passed through the filtering process of Ashur, but the XML semantics should not modified in any way when using AsIsImportFilter.
         from("direct:ashurNetexFilterFromChouetteExport")
                 .setHeader("FilterProfile", constant("AsIsImportFilter"))
                 .setHeader("NetexSource", constant("chouette"))
