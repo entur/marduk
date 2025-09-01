@@ -158,21 +158,20 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
                 })
+                .to("direct:antuNetexPreValidation")
                 .filter(exchange -> ashurFilteringEnabled)
                     .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, triggering filtering process...")
-                    .to("direct:ashurNetexFilterBeforePreValidation")
+                    .to("direct:ashurNetexFilterAfterPreValidation")
                 .end()
-                .to("direct:antuNetexPreValidation")
                 // launch the import process if this is a GTFS file or if the pre-validation is activated in chouette
                 .filter(PredicateBuilder.or(simple("{{chouette.enablePreValidation:true}}"), header(FILE_TYPE).isEqualTo(FileType.GTFS)))
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
                 .routeId("process-valid-file");
 
-        // This route is only temporary for simplifying comparison between filtering from Chouette and filtering from ashur.
-        from("direct:ashurNetexFilterBeforePreValidation")
-                .setHeader("FilterProfile", constant("StandardImportFilter"))
-                .setHeader("NetexSource", constant("marduk"))
+        from("direct:ashurNetexFilterAfterPreValidation")
+                .setHeader(FILTERING_PROFILE_HEADER, constant(FILTERING_PROFILE_STANDARD_IMPORT))
+                .setHeader(FILTERING_NETEX_SOURCE_HEADER, constant(FILTERING_NETEX_SOURCE_MARDUK))
                 .to("google-pubsub:{{ashur.pubsub.project.id}}:FilterNetexFileQueue")
                 .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering");
 

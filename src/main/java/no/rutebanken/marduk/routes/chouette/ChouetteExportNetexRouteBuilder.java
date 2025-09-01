@@ -36,6 +36,10 @@ import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILTERING_NETEX_SOURCE_CHOUETTE;
+import static no.rutebanken.marduk.Constants.FILTERING_NETEX_SOURCE_HEADER;
+import static no.rutebanken.marduk.Constants.FILTERING_PROFILE_AS_IS;
+import static no.rutebanken.marduk.Constants.FILTERING_PROFILE_HEADER;
 import static no.rutebanken.marduk.Constants.JSON_PART;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
@@ -141,6 +145,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .end()
                 // end choice
                 .end()
+                .to("direct:prepareCommonMetadataHeadersForFilteringAndValidation")
                 .filter(exchange -> ashurFilteringEnabled)
                     .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, triggering filtering process...")
                     .to("direct:ashurNetexFilterFromChouetteExport")
@@ -148,6 +153,13 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
                 .to("direct:antuNetexPostValidation")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.OK).build())
                 .routeId("process-successful-export");
+
+        from("direct:prepareCommonMetadataHeadersForFilteringAndValidation")
+            .process(e -> {
+                Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
+                e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
+            })
+            .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID));
 
         from("direct:processFailedExport")
         .process(e -> {
@@ -166,22 +178,17 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
 
         // This route is only temporary for simplifying comparison between filtering from Chouette and filtering from ashur.
         from("direct:ashurNetexFilterFromChouetteExport")
-                .setHeader("FilterProfile", constant("AsIsImportFilter"))
-                .setHeader("NetexSource", constant("chouette"))
+                .setHeader(FILTERING_PROFILE_HEADER, constant(FILTERING_PROFILE_AS_IS))
+                .setHeader(FILTERING_NETEX_SOURCE_HEADER, constant(FILTERING_NETEX_SOURCE_CHOUETTE))
                 .to("google-pubsub:{{ashur.pubsub.project.id}}:FilterNetexFileQueue")
                 .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering");
 
         from("direct:antuNetexPostValidation")
                 .to("direct:copyInternalBlobToValidationBucket")
-                .process(e -> {
-                    Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
-                })
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
                 .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE))
                 .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
-                .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
                 .to("direct:setNetexValidationProfile")
                 .to("google-pubsub:{{antu.pubsub.project.id}}:AntuNetexValidationQueue")
                 .process(e -> JobEvent.providerJobBuilder(e)
@@ -196,6 +203,4 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
     private boolean isAllowedCodespacesForStopExport(String codespace) {
         return allowedCodespacesForStopExport.contains(codespace);
     }
-
-
 }
