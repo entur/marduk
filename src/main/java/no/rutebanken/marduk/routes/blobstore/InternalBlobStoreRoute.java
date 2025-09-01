@@ -116,12 +116,9 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
                 .routeId("blobstore-internal-delete-in-folder");
 
         from("direct:copyInternalBlobToValidationBucket")
-
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.antu.exchange.container.name}"))
                 .setHeader(TARGET_FILE_HANDLE, header(FILE_HANDLE))
                 .to("direct:copyInternalBlobToAnotherBucket")
                 .routeId("copy-internal-to-validation-folder");
-
-
     }
 }

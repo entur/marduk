@@ -17,6 +17,7 @@ gcp:
   mardukPubsubProjectId: ent-marduk-dev
   antuPubsubProjectId: ent-antu-dev
   nabuPubsubProjectId: ent-nabu-dev
+  ashurPubsubProjectId: ent-ashur-dev
   bucketName: marduk-dev
   internalBucketName: ror-marduk-internal-dev
   exchangeBucketName: marduk-exchange-dev
@@ -33,6 +34,9 @@ chouette:
   gtfsExport: false
   enablePreValidation: false
   enablePostValidation: false
+
+ashur:
+  enableFiltering: true
 
 baba:
   service: http://baba.dev.entur.internal

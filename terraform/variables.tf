@@ -77,5 +77,15 @@ variable "log_bucket" {
   default     = "false"
 }
 
+variable "service_account_bucket_role" {
+  description = "Role of the Service Account - more about roles https://cloud.google.com/storage/docs/access-control/iam-roles"
+  default     = "roles/storage.objectViewer"
+}
 
+variable "ashur_service_account" {
+  description = "The service account of the ashur application"
+}
 
+variable "marduk_exchange_storage_bucket" {
+  description = "The bucket used to exchange files with Marduk"
+}

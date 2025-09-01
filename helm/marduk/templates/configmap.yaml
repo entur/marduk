@@ -33,7 +33,7 @@ data:
     marduk.pubsub.project.id={{ .Values.gcp.mardukPubsubProjectId }}
     antu.pubsub.project.id={{ .Values.gcp.antuPubsubProjectId }}
     nabu.pubsub.project.id={{ .Values.gcp.nabuPubsubProjectId }}
-
+    ashur.pubsub.project.id={{ .Values.gcp.ashurPubsubProjectId }}
 
     # Blobstore
     blobstore.gcs.project.id={{ .Values.gcp.blobstoreProjectId }}

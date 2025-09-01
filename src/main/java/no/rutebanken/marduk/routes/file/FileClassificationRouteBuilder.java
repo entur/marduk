@@ -41,12 +41,15 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
     private final List<String> swedishCodespaces;
     private final List<String> finnishCodespaces;
+    private final boolean ashurFilteringEnabled;
 
     public FileClassificationRouteBuilder(
             @Value("${antu.validation.sweden.codespaces:}") List<String> swedishCodespaces,
-            @Value("${antu.validation.finland.codespaces:OYM}")List<String> finnishCodespaces) {
+            @Value("${antu.validation.finland.codespaces:OYM}")List<String> finnishCodespaces,
+            @Value("${ashur.filteringEnabled:false}") boolean ashurFilteringEnabled) {
         this.swedishCodespaces = swedishCodespaces;
         this.finnishCodespaces = finnishCodespaces;
+        this.ashurFilteringEnabled = ashurFilteringEnabled;
     }
 
     @Override
@@ -151,20 +154,30 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .when(header(IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX))
                 .to("direct:flexibleLinesImport")
                 .otherwise()
+                .process(e -> {
+                    Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
+                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
+                })
                 .to("direct:antuNetexPreValidation")
+                .filter(exchange -> ashurFilteringEnabled)
+                    .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, triggering filtering process...")
+                    .to("direct:ashurNetexFilterAfterPreValidation")
+                .end()
                 // launch the import process if this is a GTFS file or if the pre-validation is activated in chouette
                 .filter(PredicateBuilder.or(simple("{{chouette.enablePreValidation:true}}"), header(FILE_TYPE).isEqualTo(FileType.GTFS)))
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
                 .routeId("process-valid-file");
 
+        from("direct:ashurNetexFilterAfterPreValidation")
+                .setHeader(FILTERING_PROFILE_HEADER, constant(FILTERING_PROFILE_STANDARD_IMPORT))
+                .setHeader(FILTERING_NETEX_SOURCE_HEADER, constant(FILTERING_NETEX_SOURCE_MARDUK))
+                .to("google-pubsub:{{ashur.pubsub.project.id}}:FilterNetexFileQueue")
+                .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering");
+
         from("direct:antuNetexPreValidation")
                 .filter(header(FILE_TYPE).isEqualTo(FileType.NETEXPROFILE))
                 .to("direct:copyInternalBlobToValidationBucket")
-                .process(e -> {
-                    Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
-                })
                 .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
                 .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))

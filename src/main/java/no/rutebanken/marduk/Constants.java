@@ -131,6 +131,14 @@ public final class Constants {
     public static final String VALIDATION_PROFILE_TIMETABLE_SWEDEN = "TimetableSweden";
     public static final String VALIDATION_PROFILE_TIMETABLE_FINLAND = "TimetableFinland";
 
+    public static final String FILTERING_PROFILE_HEADER = "EnturFilteringProfile";
+    public static final String FILTERING_PROFILE_AS_IS = "AsIsImportFilter";
+    public static final String FILTERING_PROFILE_STANDARD_IMPORT = "StandardImportFilter";
+
+    public static final String FILTERING_NETEX_SOURCE_HEADER = "NetexSource";
+    public static final String FILTERING_NETEX_SOURCE_CHOUETTE = "chouette";
+    public static final String FILTERING_NETEX_SOURCE_MARDUK = "marduk";
+
     public static final String IMPORT_TYPE = "ImportType";
 
     public static final String IMPORT_TYPE_NETEX_FLEX = "ImportType_netex_flex";

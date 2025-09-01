@@ -17,6 +17,7 @@ gcp:
   mardukPubsubProjectId: ent-marduk-prd
   antuPubsubProjectId: ent-antu-prd
   nabuPubsubProjectId: ent-nabu-prd
+  ashurPubsubProjectId: ent-ashur-prd
   bucketName: marduk-production
   internalBucketName: ror-marduk-internal-production
   exchangeBucketName: marduk-exchange-production
@@ -33,6 +34,9 @@ chouette:
   gtfsExport: false
   enablePreValidation: false
   enablePostValidation: false
+
+ashur:
+  enableFiltering: false
 
 baba:
   service: http://baba.prd.entur.internal
