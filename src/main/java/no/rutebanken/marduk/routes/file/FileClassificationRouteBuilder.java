@@ -172,7 +172,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
         from("direct:ashurNetexFilterAfterPreValidation")
                 .setHeader(FILTERING_PROFILE_HEADER, constant(FILTERING_PROFILE_STANDARD_IMPORT))
                 .setHeader(FILTERING_NETEX_SOURCE_HEADER, constant(FILTERING_NETEX_SOURCE_MARDUK))
-                .to("google-pubsub:{{ashur.pubsub.project.id}}:FilterNetexFileQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:FilterNetexFileQueue")
                 .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering");
 
         from("direct:antuNetexPreValidation")

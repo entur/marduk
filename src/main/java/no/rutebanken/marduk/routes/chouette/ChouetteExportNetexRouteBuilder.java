@@ -180,7 +180,7 @@ public class ChouetteExportNetexRouteBuilder extends AbstractChouetteRouteBuilde
         from("direct:ashurNetexFilterFromChouetteExport")
                 .setHeader(FILTERING_PROFILE_HEADER, constant(FILTERING_PROFILE_AS_IS))
                 .setHeader(FILTERING_NETEX_SOURCE_HEADER, constant(FILTERING_NETEX_SOURCE_CHOUETTE))
-                .to("google-pubsub:{{ashur.pubsub.project.id}}:FilterNetexFileQueue")
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:FilterNetexFileQueue")
                 .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering");
 
         from("direct:antuNetexPostValidation")
