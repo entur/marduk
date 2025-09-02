@@ -21,6 +21,7 @@ import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import static no.rutebanken.marduk.Constants.*;
@@ -31,6 +32,14 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
     protected static final String STATUS_VALIDATION_STARTED = "started";
     protected static final String STATUS_VALIDATION_OK = "ok";
     protected static final String STATUS_VALIDATION_FAILED = "failed";
+
+    private final boolean ashurFilteringEnabled;
+
+    public AntuNetexValidationStatusRouteBuilder(
+        @Value("${ashur.filteringEnabled:false}") boolean ashurFilteringEnabled
+    ) {
+        this.ashurFilteringEnabled = ashurFilteringEnabled;
+    }
 
     @Override
     public void configure() throws Exception {
@@ -98,12 +107,36 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .to("direct:updateStatus")
                 .routeId("antu-netex-validation-started");
 
+        from("direct:ashurNetexFilterAfterPreValidation")
+                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + DATASET_REFERENTIAL + "}/${header." + DATASET_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
+                .to("direct:copyInternalBlobToAnotherBucket")
+                .setHeader(FILTERING_PROFILE_HEADER, constant(FILTERING_PROFILE_STANDARD_IMPORT))
+                .setHeader(FILTERING_NETEX_SOURCE_HEADER, constant(FILTERING_NETEX_SOURCE_MARDUK))
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:FilterNetexFileQueue")
+                .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering");
+
+        from("direct:ashurNetexFilterAfterPostValidation")
+                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
+                .to("direct:copyInternalBlobToAnotherBucket")
+                .setHeader(FILTERING_PROFILE_HEADER, constant(FILTERING_PROFILE_AS_IS))
+                .setHeader(FILTERING_NETEX_SOURCE_HEADER, constant(FILTERING_NETEX_SOURCE_CHOUETTE))
+                .to("google-pubsub:{{marduk.pubsub.project.id}}:FilterNetexFileQueue")
+                .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering");
+
         from("direct:antuNetexValidationComplete")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation complete for referential ${header." + DATASET_REFERENTIAL + "}")
                 .choice()
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
+
+                .filter(exchange -> ashurFilteringEnabled)
+                    .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, triggering filtering process after pre-validation...")
+                    .to("direct:ashurNetexFilterAfterPreValidation")
+                .end()
+
                 .filter(PredicateBuilder.not(simple("{{chouette.enablePreValidation:true}}")))
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
@@ -111,6 +144,12 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
+
+                .filter(exchange -> ashurFilteringEnabled)
+                    .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, triggering filtering process after post-validation...")
+                    .to("direct:ashurNetexFilterAfterPostValidation")
+                .end()
+
                 .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
                 .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_NETEX_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:copyInternalBlobInBucket")
