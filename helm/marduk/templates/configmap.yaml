@@ -129,6 +129,7 @@ data:
     ashur.filteringEnabled={{ .Values.ashur.enableFiltering }}
     providers.api.url={{ .Values.nanna.service }}/services/providers/
     fetch.osm.cron.schedule={{ .Values.osm.fetchCronSchedule }}
+    fetch.osm.map.url=https://storage.googleapis.com/ror-osmdata-prd/osm-data/norway-latest.osm.pbf
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
     otp.graph.build.remote.kubernetes.timeout=12000
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
