@@ -176,6 +176,17 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("direct:updateStatus")
                 .routeId("antu-netex-pre-validation");
 
+        from("direct:antuNetexNightlyValidation")
+                .to("direct:copyInternalBlobToValidationBucket")
+                .to("direct:setNetexValidationProfile")
+                .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_NIGHTLY_VALIDATION))
+                .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
+                .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
+                .to("google-pubsub:{{antu.pubsub.project.id}}:AntuNetexValidationQueue")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.NIGHTLY_VALIDATION).state(JobEvent.State.PENDING).build())
+                .to("direct:updateStatus")
+                .routeId("antu-netex-nightly-validation");
+
         from("direct:setNetexValidationProfile")
                 .choice()
                 .when(e -> isSwedishReferential(e.getIn().getHeader(DATASET_REFERENTIAL, String.class)))
