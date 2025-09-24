@@ -99,7 +99,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                         .build())
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e)
-                        .timetableAction(JobEvent.TimetableAction.NIGHTLY_VALIDATION)
+                        .timetableAction(JobEvent.TimetableAction.PREVALIDATION)
                         .state(JobEvent.State.STARTED)
                         .jobId(null)
                         .build())
@@ -204,7 +204,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
                 .choice()
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.NIGHTLY_VALIDATION).state(JobEvent.State.OK).build())
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
                 .setHeader(PROVIDER_ID, simple("${header." + CHOUETTE_REFERENTIAL + "}"))
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
@@ -235,7 +235,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION).state(JobEvent.State.FAILED).build())
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.NIGHTLY_VALIDATION).state(JobEvent.State.FAILED).build())
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.FAILED).build())
                 .otherwise()
                 .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
                 //end otherwise

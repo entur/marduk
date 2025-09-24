@@ -183,7 +183,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
                 .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
                 .to("google-pubsub:{{antu.pubsub.project.id}}:AntuNetexValidationQueue")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.NIGHTLY_VALIDATION).state(JobEvent.State.PENDING).build())
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .routeId("antu-netex-nightly-validation");
 
