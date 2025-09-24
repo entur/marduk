@@ -143,6 +143,9 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     .to("direct:ashurNetexFilterAfterPreValidation")
                 .end()
 
+                .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + CHOUETTE_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
+                .to("direct:copyInternalBlobInBucket")
+
                 .filter(PredicateBuilder.not(simple("{{chouette.enablePreValidation:true}}")))
                 .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
@@ -202,11 +205,9 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:PublishMergedNetexQueue")
                 .endChoice()
 
-                .choice()
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
-                .setHeader(PROVIDER_ID, simple("${header." + CHOUETTE_REFERENTIAL + "}"))
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
                 .endChoice()
 

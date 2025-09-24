@@ -36,11 +36,15 @@ import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
  */
 @Component
 public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder {
+    @Value("${antu.validate.cron.schedule:0+23+16+?+*+MON-FRI}")
+    private String antuValidateCronSchedule;
+
     @Value("${chouette.validate.level1.cron.schedule:0+30+23+?+*+MON-FRI}")
     private String level1CronSchedule;
 
     @Value("${chouette.validate.level2.cron.schedule:0+30+21+?+*+MON-FRI}")
     private String level2CronSchedule;
+
     @Value("${chouette.url}")
     private String chouetteUrl;
 
@@ -48,10 +52,9 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
     public void configure() throws Exception {
         super.configure();
 
-
-        singletonFrom("quartz://marduk/nightlyValidation?cron=" + level1CronSchedule + "&trigger.timeZone=Europe/Oslo")
+        singletonFrom("quartz://marduk/nightlyValidation?cron=" + antuValidateCronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{chouette.validate.level1.autoStartup:true}}")
-                .filter(e -> shouldQuartzRouteTrigger(e, level1CronSchedule))
+                .filter(e -> shouldQuartzRouteTrigger(e, antuValidateCronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers validation in antu for all providers in Chouette.")
                 .to(ExchangePattern.InOnly, "direct:triggerAntuValidationForAllProviders")
                 .routeId("chouette-validate-level1-quartz");
@@ -68,11 +71,14 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .split().body().parallelProcessing().executorService("allProvidersExecutorService")
                 .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} && ${body.chouetteInfo.referential}"))
                 .process(this::setNewCorrelationId)
-                .setHeader(DATASET_REFERENTIAL, simple("${body.id}"))
+                .setHeader(PROVIDER_ID, simple("${body.id}"))
+                .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
+                .setHeader(DATASET_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 // TODO: Should be set to the blobstore path of the netex file to validate:
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_NETEX_EXPORT_BEFORE_VALIDATION + "${header." + DATASET_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + DATASET_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
+                .setBody(constant(""))
                 .to("direct:antuNetexNightlyValidation")
-                .routeId("chouette-validate-level1-all-providers");
+                .routeId("trigger-antu-validation-for-all-providers");
 
         // Trigger validation level1 for all level1 providers (ie migrateDateToProvider and referential set)
         from("direct:chouetteValidateLevel1ForAllProviders")

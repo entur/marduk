@@ -177,6 +177,9 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .routeId("antu-netex-pre-validation");
 
         from("direct:antuNetexNightlyValidation")
+                .to("direct:blobExistsInInternalBucket")
+                .choice()
+                .when(header("BlobExists").isEqualTo(true))
                 .to("direct:copyInternalBlobToValidationBucket")
                 .to("direct:setNetexValidationProfile")
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_NIGHTLY_VALIDATION))
@@ -185,6 +188,9 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("google-pubsub:{{antu.pubsub.project.id}}:AntuNetexValidationQueue")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
+                .otherwise()
+                .log(LoggingLevel.INFO, correlation() + "File with file handle ${header." + FILE_HANDLE + "} not found in blob store, skipping nightly validation for provider.")
+                .end()
                 .routeId("antu-netex-nightly-validation");
 
         from("direct:setNetexValidationProfile")
