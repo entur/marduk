@@ -36,7 +36,7 @@ import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
  */
 @Component
 public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder {
-    @Value("${antu.validate.cron.schedule:0+23+16+?+*+MON-FRI}")
+    @Value("${antu.validate.cron.schedule:0+30+23+?+*+MON-FRI}")
     private String antuValidateCronSchedule;
 
     @Value("${chouette.validate.level1.cron.schedule:0+30+23+?+*+MON-FRI}")
@@ -74,7 +74,6 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(DATASET_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
-                // TODO: Should be set to the blobstore path of the netex file to validate:
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + DATASET_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
                 .setBody(constant(""))
                 .to("direct:antuNetexNightlyValidation")

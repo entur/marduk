@@ -127,6 +127,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .to("direct:adminApplicationCleanUniqueFilenameAndDigestIdempotentRepos")
 
+                .post("/validate/prevalidation")
+                .description("Triggers the prevalidation process for all providers in Chouette")
+                .consumes(PLAIN)
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Command accepted").endResponseMessage()
+                .to("direct:adminTriggerPrevalidationForAllProviders")
+
                 .post("/validate/level1")
                 .description("Triggers the validate->transfer process for all level1 providers in Chouette")
                 .consumes(PLAIN)
@@ -493,6 +500,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:cleanIdempotentFileStore")
                 .setBody(constant(""))
                 .routeId("admin-application-clean-unique-filename-and-digest-idempotent-repos");
+
+        from("direct:adminTriggerPrevalidationForAllProviders")
+                .to("direct:authorizeAdminRequest")
+                .log(LoggingLevel.INFO, correlation() + "Triggering prevalidation for all providers")
+                .process(this::removeAllCamelHttpHeaders)
+                .to(ExchangePattern.InOnly, "direct:triggerAntuValidationForAllProviders")
+                .setBody(constant(""))
+                .routeId("admin-trigger-prevalidation-for-all-providers");
 
         from("direct:adminChouetteValidateLevel1AllProviders")
                 .to("direct:authorizeAdminRequest")
