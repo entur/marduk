@@ -32,7 +32,6 @@ antu:
 
 chouette:
   service: http://chouette.dev.entur.internal
-  validateLevel1CronSchedule: 0+55+23+?+*+MON-FRI
   removeOldJobsCronSchedule: 0+15+23+?+*+MON-FRI
   gtfsExport: false
   enablePreValidation: false

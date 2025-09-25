@@ -39,9 +39,6 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
     @Value("${antu.validate.cron.schedule:0+30+23+?+*+MON-FRI}")
     private String antuValidateCronSchedule;
 
-    @Value("${chouette.validate.level1.cron.schedule:0+30+23+?+*+MON-FRI}")
-    private String level1CronSchedule;
-
     @Value("${chouette.validate.level2.cron.schedule:0+30+21+?+*+MON-FRI}")
     private String level2CronSchedule;
 
@@ -57,7 +54,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .filter(e -> shouldQuartzRouteTrigger(e, antuValidateCronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers validation in antu for all providers in Chouette.")
                 .to(ExchangePattern.InOnly, "direct:triggerAntuValidationForAllProviders")
-                .routeId("chouette-validate-level1-quartz");
+                .routeId("antu-nightly-validation-quartz");
 
         singletonFrom("quartz://marduk/chouetteValidateLevel2?cron=" + level2CronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{chouette.validate.level2.autoStartup:false}}")

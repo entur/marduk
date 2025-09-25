@@ -134,13 +134,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminTriggerPrevalidationForAllProviders")
 
-                .post("/validate/level1")
-                .description("Triggers the validate->transfer process for all level1 providers in Chouette")
-                .consumes(PLAIN)
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminChouetteValidateLevel1AllProviders")
-
                 .post("/validate/level2")
                 .description("Triggers the validate->export process for all level2 providers in Chouette")
                 .consumes(PLAIN)
@@ -508,14 +501,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to(ExchangePattern.InOnly, "direct:triggerAntuValidationForAllProviders")
                 .setBody(constant(""))
                 .routeId("admin-trigger-prevalidation-for-all-providers");
-
-        from("direct:adminChouetteValidateLevel1AllProviders")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, correlation() + "Chouette start validation level1 for all providers")
-                .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel1ForAllProviders")
-                .setBody(constant(""))
-                .routeId("admin-chouette-validate-level1-all-providers");
 
         from("direct:adminChouetteValidateLevel2AllProviders")
                 .to("direct:authorizeAdminRequest")
