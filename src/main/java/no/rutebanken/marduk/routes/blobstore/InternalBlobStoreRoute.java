@@ -43,17 +43,6 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Stored file ${header." + FILE_HANDLE + "} in blob store.")
                 .routeId("blobstore-internal-upload");
 
-        from("direct:blobExistsInInternalBucket")
-                .to(logDebugShowAll())
-                .process(exchange -> {
-                    String fileHandle = exchange.getIn().getHeader(FILE_HANDLE, String.class);
-                    boolean exists = mardukInternalBlobStoreService.blobExists(fileHandle);
-                    exchange.getIn().setHeader("BlobExists", exists);
-                })
-                .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Returning from checking existence of file ${header." + FILE_HANDLE + "} in blob store.")
-                .routeId("blobstore-internal-exists");
-
         from("direct:copyInternalBlobInBucket")
                 .to(logDebugShowAll())
                 .bean(mardukInternalBlobStoreService, "copyBlobInBucket")

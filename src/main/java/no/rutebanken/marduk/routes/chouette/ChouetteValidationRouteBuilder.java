@@ -72,16 +72,11 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(DATASET_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + DATASET_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
-                .setBody(constant(""))
                 .to("direct:antuNetexNightlyValidation")
                 .routeId("trigger-antu-validation-for-all-providers");
 
-        // Trigger validation level1 for all level1 providers (ie migrateDateToProvider and referential set)
-        from("direct:chouetteValidateLevel1ForAllProviders")
-                .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
-                .split().body().parallelProcessing().executorService("allProvidersExecutorService")
-                .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} && ${body.chouetteInfo.referential}"))
-                .process(this::setNewCorrelationId)
+        // Trigger validation level1 for provider in body of the camel exchange
+        from("direct:triggerChouetteValidationLevel1ForProvider")
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
@@ -89,7 +84,6 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setBody(constant(""))
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
                 .routeId("chouette-validate-level1-all-providers");
-
 
         // Trigger validation level2 for all level2 providers (ie no migrateDateToProvider and referential set)
         from("direct:chouetteValidateLevel2ForAllProviders")
@@ -104,7 +98,6 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setBody(constant(""))
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
                 .routeId("chouette-validate-level2-all-providers");
-
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue").streamCaching()
                 .process(this::setCorrelationIdIfMissing)
