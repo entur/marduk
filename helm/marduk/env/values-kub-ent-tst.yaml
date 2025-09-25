@@ -27,6 +27,9 @@ gcp:
   antuExchangeBucketName: ror-antu-exchange-gcp2-test
   osmSubDirectory: osm
 
+antu:
+  prevalidationCronSchedule: 0+30+4+?+*+*
+
 chouette:
   service: http://chouette.tst.entur.internal
   validateLevel1CronSchedule: 0+30+4+?+*+*
