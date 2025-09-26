@@ -39,6 +39,7 @@ public final class Constants {
     public static final String CURRENT_AGGREGATED_GTFS_FILENAME = "aggregated-gtfs.zip";
     public static final String CURRENT_AGGREGATED_NETEX_FILENAME = "aggregated-netex.zip";
     public static final String CURRENT_FLEXIBLE_LINES_NETEX_FILENAME = "flexible-lines.zip";
+    public static final String CURRENT_PREVALIDATED_NETEX_FILENAME = "netex.zip";
 
     public static final String GRAPH_COMPATIBILITY_VERSION = "RutebankenGraphCompatibilityVersion";
 
@@ -63,6 +64,8 @@ public final class Constants {
 
     public static final String BLOBSTORE_PATH_NETEX_EXPORT_BEFORE_VALIDATION = BLOBSTORE_PATH_CHOUETTE + "netex-before-validation/";
     public static final String BLOBSTORE_PATH_NETEX_EXPORT = BLOBSTORE_PATH_CHOUETTE + "netex/";
+
+    public static final String BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES = "last-prevalidated-files/";
 
     public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks/";
     public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_BEFORE_VALIDATION = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks-before-validation/";
@@ -114,6 +117,7 @@ public final class Constants {
     public static final String VALIDATION_STAGE_PREVALIDATION = "EnturValidationStagePreValidation";
     public static final String VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION = "EnturValidationStageExportNetexPostValidation";
     public static final String VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION = "EnturValidationStageExportNetexBlocksPostValidation";
+    public static final String VALIDATION_STAGE_NIGHTLY_VALIDATION = "EnturValidationStageNightlyValidation";
 
     public static final String VALIDATION_STAGE_FLEX_POSTVALIDATION = "EnturValidationStageFlexPostValidation";
 

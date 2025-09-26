@@ -36,11 +36,12 @@ import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
  */
 @Component
 public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder {
-    @Value("${chouette.validate.level1.cron.schedule:0+30+23+?+*+MON-FRI}")
-    private String level1CronSchedule;
+    @Value("${antu.validate.cron.schedule:0+30+23+?+*+MON-FRI}")
+    private String antuValidateCronSchedule;
 
     @Value("${chouette.validate.level2.cron.schedule:0+30+21+?+*+MON-FRI}")
     private String level2CronSchedule;
+
     @Value("${chouette.url}")
     private String chouetteUrl;
 
@@ -48,29 +49,34 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
     public void configure() throws Exception {
         super.configure();
 
-
-        singletonFrom("quartz://marduk/chouetteValidateLevel1?cron=" + level1CronSchedule + "&trigger.timeZone=Europe/Oslo")
-                .autoStartup("{{chouette.validate.level1.autoStartup:true}}")
-
-                .filter(e -> shouldQuartzRouteTrigger(e, level1CronSchedule))
-                .log(LoggingLevel.INFO, "Quartz triggers validation of Level1 for all providers in Chouette.")
-                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel1ForAllProviders")
-                .routeId("chouette-validate-level1-quartz");
+        singletonFrom("quartz://marduk/nightlyValidation?cron=" + antuValidateCronSchedule + "&trigger.timeZone=Europe/Oslo")
+                .autoStartup("{{antu.validate.autoStartup:true}}")
+                .filter(e -> shouldQuartzRouteTrigger(e, antuValidateCronSchedule))
+                .log(LoggingLevel.INFO, "Quartz triggers validation in antu for all providers in Chouette.")
+                .to(ExchangePattern.InOnly, "direct:triggerAntuValidationForAllProviders")
+                .routeId("antu-nightly-validation-quartz");
 
         singletonFrom("quartz://marduk/chouetteValidateLevel2?cron=" + level2CronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{chouette.validate.level2.autoStartup:false}}")
-
                 .filter(e -> shouldQuartzRouteTrigger(e, level2CronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers validation of Level2 for all providers in Chouette.")
                 .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel2ForAllProviders")
                 .routeId("chouette-validate-level2-quartz");
 
-        // Trigger validation level1 for all level1 providers (ie migrateDateToProvider and referential set)
-        from("direct:chouetteValidateLevel1ForAllProviders")
+        from("direct:triggerAntuValidationForAllProviders")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorService("allProvidersExecutorService")
                 .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} && ${body.chouetteInfo.referential}"))
                 .process(this::setNewCorrelationId)
+                .setHeader(PROVIDER_ID, simple("${body.id}"))
+                .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
+                .setHeader(DATASET_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
+                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + DATASET_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
+                .to("direct:antuNetexNightlyValidation")
+                .routeId("trigger-antu-validation-for-all-providers");
+
+        // Trigger validation level1 for provider in body of the camel exchange
+        from("direct:triggerChouetteValidationLevel1ForProvider")
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
@@ -78,7 +84,6 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setBody(constant(""))
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
                 .routeId("chouette-validate-level1-all-providers");
-
 
         // Trigger validation level2 for all level2 providers (ie no migrateDateToProvider and referential set)
         from("direct:chouetteValidateLevel2ForAllProviders")
@@ -93,7 +98,6 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setBody(constant(""))
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
                 .routeId("chouette-validate-level2-all-providers");
-
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue").streamCaching()
                 .process(this::setCorrelationIdIfMissing)

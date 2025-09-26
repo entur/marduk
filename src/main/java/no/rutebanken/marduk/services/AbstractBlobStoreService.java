@@ -54,6 +54,10 @@ public abstract class AbstractBlobStoreService {
         return repository.getBlob(name);
     }
 
+    public Boolean blobExists(@Header(value = FILE_HANDLE) String name) {
+        return repository.exist(name);
+    }
+
     public void uploadBlob(@Header(value = Constants.FILE_HANDLE) String name,
                            InputStream inputStream, Exchange exchange) {
         long generation = repository.uploadBlob(name, inputStream);
