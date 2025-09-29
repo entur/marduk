@@ -3,6 +3,6 @@
     "github>entur/ror-renovate-config"
   ],
   "timezone": "Europe/Oslo",
-  "automergeSchedule": "after 10pm every weekday",
+  "automergeSchedule": "after 10pm on Tuesday,Wednesday,Thursday,Friday",
   "separateMinorPatch": true
 }
