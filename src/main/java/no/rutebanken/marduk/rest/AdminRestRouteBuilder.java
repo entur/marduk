@@ -499,6 +499,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Triggering prevalidation for all providers")
                 .process(this::removeAllCamelHttpHeaders)
                 .to(ExchangePattern.InOnly, "direct:triggerAntuValidationForAllProviders")
+                .setBody(constant(""))
                 .routeId("admin-trigger-prevalidation-for-all-providers");
 
         from("direct:adminChouetteValidateLevel2AllProviders")
