@@ -46,8 +46,10 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
         super.configure();
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:AntuNetexValidationStatusQueue")
+                .log(LoggingLevel.INFO, correlation() + "Received Antu NeTEx validation status update for referential ${header." + DATASET_REFERENTIAL + "}, status ${body}")
                 .validate(header(Constants.VALIDATION_DATASET_FILE_HANDLE_HEADER).isNotNull())
                 .validate(header(Constants.VALIDATION_CORRELATION_ID_HEADER).isNotNull())
+                .log(LoggingLevel.INFO, correlation() + "Processing Antu NeTEx validation status update for referential ${header." + DATASET_REFERENTIAL + "}, status ${body}")
                 .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(DATASET_REFERENTIAL, String.class))))
                 .setHeader(CORRELATION_ID, header(VALIDATION_CORRELATION_ID_HEADER))
                 .setHeader(FILE_HANDLE, header(VALIDATION_DATASET_FILE_HANDLE_HEADER))
