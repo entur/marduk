@@ -22,6 +22,7 @@ import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.ValidationException;
 import org.apache.camel.builder.PredicateBuilder;
@@ -42,11 +43,16 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
     private final List<String> swedishCodespaces;
     private final List<String> finnishCodespaces;
 
+    private final MardukInternalBlobStoreService mardukInternalBlobStoreService;
+
     public FileClassificationRouteBuilder(
-            @Value("${antu.validation.sweden.codespaces:}") List<String> swedishCodespaces,
-            @Value("${antu.validation.finland.codespaces:OYM}")List<String> finnishCodespaces) {
+        @Value("${antu.validation.sweden.codespaces:}") List<String> swedishCodespaces,
+        @Value("${antu.validation.finland.codespaces:OYM}")List<String> finnishCodespaces,
+        MardukInternalBlobStoreService mardukInternalBlobStoreService
+    ) {
         this.swedishCodespaces = swedishCodespaces;
         this.finnishCodespaces = finnishCodespaces;
+        this.mardukInternalBlobStoreService = mardukInternalBlobStoreService;
     }
 
     @Override
@@ -175,6 +181,25 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .routeId("antu-netex-pre-validation");
+
+        from("direct:antuNetexNightlyValidation")
+                .choice()
+                .when(e -> mardukInternalBlobStoreService.blobExists(e.getIn().getHeader(FILE_HANDLE, String.class)))
+                .log(LoggingLevel.INFO, correlation() + "File with file handle ${header." + FILE_HANDLE + "} found in blob store. Triggering nightly prevalidation.")
+                .to("direct:copyInternalBlobToValidationBucket")
+                .to("direct:setNetexValidationProfile")
+                .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_NIGHTLY_VALIDATION))
+                .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
+                .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
+                .setBody(constant(""))
+                .to("google-pubsub:{{antu.pubsub.project.id}}:AntuNetexValidationQueue")
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.PENDING).build())
+                .to("direct:updateStatus")
+                .otherwise()
+                .log(LoggingLevel.INFO, correlation() + "File with file handle ${header." + FILE_HANDLE + "} not found in blob store. Skipping prevalidation and triggering validation level 1 in Chouette instead.")
+                .to("direct:triggerChouetteValidationLevel1ForProvider")
+                .end()
+                .routeId("antu-netex-nightly-validation");
 
         from("direct:setNetexValidationProfile")
                 .choice()

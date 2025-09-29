@@ -127,12 +127,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .to("direct:adminApplicationCleanUniqueFilenameAndDigestIdempotentRepos")
 
-                .post("/validate/level1")
-                .description("Triggers the validate->transfer process for all level1 providers in Chouette")
+                .post("/validate/prevalidation")
+                .description("Triggers the prevalidation process for all providers in Chouette")
                 .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminChouetteValidateLevel1AllProviders")
+                .to("direct:adminTriggerPrevalidationForAllProviders")
 
                 .post("/validate/level2")
                 .description("Triggers the validate->export process for all level2 providers in Chouette")
@@ -494,13 +494,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(""))
                 .routeId("admin-application-clean-unique-filename-and-digest-idempotent-repos");
 
-        from("direct:adminChouetteValidateLevel1AllProviders")
+        from("direct:adminTriggerPrevalidationForAllProviders")
                 .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, correlation() + "Chouette start validation level1 for all providers")
+                .log(LoggingLevel.INFO, correlation() + "Triggering prevalidation for all providers")
                 .process(this::removeAllCamelHttpHeaders)
-                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel1ForAllProviders")
+                .to(ExchangePattern.InOnly, "direct:triggerAntuValidationForAllProviders")
                 .setBody(constant(""))
-                .routeId("admin-chouette-validate-level1-all-providers");
+                .routeId("admin-trigger-prevalidation-for-all-providers");
 
         from("direct:adminChouetteValidateLevel2AllProviders")
                 .to("direct:authorizeAdminRequest")

@@ -54,11 +54,13 @@ data:
     duplicate.filter.web={{ .Values.duplicateFileFilter.webFilter }}
     duplicate.filter.rest=true
 
+    # Prevalidation in Antu
+    antu.validate.cron.schedule={{ .Values.antu.prevalidationCronSchedule }}
+    antu.validate.autoStartup=true
+
     # Chouette
     chouette.enablePreValidation={{ .Values.chouette.enablePreValidation }}
     chouette.enablePostValidation={{ .Values.chouette.enablePostValidation }}
-    chouette.validate.level1.autoStartup=true
-    chouette.validate.level1.cron.schedule={{ .Values.chouette.validateLevel1CronSchedule }}
     chouette.validate.level2.autoStartup=false
     chouette.retry.delay=30000
     chouette.url={{ .Values.chouette.service }}
