@@ -1,5 +1,5 @@
 
-# Marduk [![CircleCI](https://circleci.com/gh/entur/marduk/tree/master.svg?style=svg)](https://circleci.com/gh/entur/marduk/tree/master)
+# Marduk
 
 Marduk orchestrates the timetable data import pipeline.
 
