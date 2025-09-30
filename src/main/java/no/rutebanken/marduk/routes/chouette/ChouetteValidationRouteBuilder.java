@@ -54,7 +54,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .filter(e -> shouldQuartzRouteTrigger(e, antuValidateCronSchedule))
                 .log(LoggingLevel.INFO, "Quartz triggers validation in antu for all providers in Chouette.")
                 .to(ExchangePattern.InOnly, "direct:triggerAntuValidationForAllProviders")
-                .routeId("antu-nightly-validation-quartz");
+                .routeId("antu-nightly-prevalidation-quartz");
 
         singletonFrom("quartz://marduk/chouetteValidateLevel2?cron=" + level2CronSchedule + "&trigger.timeZone=Europe/Oslo")
                 .autoStartup("{{chouette.validate.level2.autoStartup:false}}")
