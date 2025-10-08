@@ -70,6 +70,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
+                .setHeader(USERNAME, constant("System"))
                 .setHeader(DATASET_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + DATASET_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
                 .to("direct:antuNetexNightlyValidation")
