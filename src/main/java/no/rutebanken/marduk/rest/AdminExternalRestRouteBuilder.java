@@ -82,6 +82,19 @@ public class AdminExternalRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("rest-admin-external-upload-file")
                 .to("direct:adminExternalUploadFile")
 
+                .post("/flex-datasets/{codespace}")
+                .description("Upload a NeTEx dataset containing flexible transport data")
+                .param().name("codespace").type(RestParamType.path).description("Codespace of the NeTEx flex dataset").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
+                .consumes(MULTIPART_FORM_DATA)
+                .produces(JSON)
+                .outType(UploadResult.class)
+                .bindingMode(RestBindingMode.off)
+                .responseMessage().code(200).endResponseMessage()
+                .responseMessage().code(404).message("Unknown codespace").endResponseMessage()
+                .responseMessage().code(500).message("Internal server error").endResponseMessage()
+                .routeId("rest-admin-external-upload-flex-file")
+                .to("direct:adminExternalUploadFlexFile")
+
                 .get("/datasets/{codespace}/filtered")
                 .description("Download a NeTEx dataset with private data. Expired data and unsupported NeTEx entities are filtered out")
                 .param().name("codespace").type(RestParamType.path).description("Codespace of the NeTEx dataset").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
@@ -116,6 +129,26 @@ public class AdminExternalRestRouteBuilder extends BaseRouteBuilder {
                 )
                 .marshal().json()
                 .routeId("admin-external-upload-file")
+                .autoStartup("{{netex.import.http.autoStartup:true}}");
+
+        from("direct:adminExternalUploadFlexFile")
+                .streamCaching()
+                .process(this::setNewCorrelationId)
+                .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
+                .log(LoggingLevel.INFO, correlation() + "Received flex file from provider ${header.codespace} through the HTTP endpoint")
+                .to("direct:validateReferential")
+                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
+                .to("direct:authorizeEditorRequest")
+                .log(LoggingLevel.INFO, correlation() + "Authorization OK for HTTP endpoint, uploading flex files and starting import pipeline")
+                .process(this::removeAllCamelHttpHeaders)
+                .setHeader(IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
+                .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.rest:true}", Boolean.class))
+                .to("direct:uploadFilesAndStartImport")
+                .process(e -> e.getIn().setBody(new UploadResult(
+                        e.getIn().getHeader(Constants.CORRELATION_ID, String.class)))
+                )
+                .marshal().json()
+                .routeId("admin-external-upload-flex-file")
                 .autoStartup("{{netex.import.http.autoStartup:true}}");
 
         from("direct:adminExternalDownloadPrivateDataset")
