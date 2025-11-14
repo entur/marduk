@@ -103,7 +103,7 @@ class FileNameAndDigestIdempotentRepositoryTest extends MardukSpringBootBaseTest
     @Test
     void testCreatedAtWithResults() {
         FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
-        Instant instant = Instant.now();
+        Instant instant = Instant.now().truncatedTo(ChronoUnit.MICROS);
         LocalDateTime instantAsLocalDateTime = Timestamp.from(instant).toLocalDateTime();
         idempotentRepository.insert(fileNameAndDigest.toString(), instant);
 
