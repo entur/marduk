@@ -71,7 +71,7 @@ data:
     chouette.include.stops.codespaces=VAN,VAS,VTR
 
     # Antu
-    antu.validation.sweden.codespaces=SAM,VAN,VAS,VTR
+    antu.validation.sweden.codespaces={{ .Values.codespaces.sweden }}
 
     # StopPlace Netex export
     netex.export.stop.place.blob.path={{ .Values.netex.export }}

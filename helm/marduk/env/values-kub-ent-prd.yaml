@@ -82,3 +82,6 @@ line:
   statistics:
     calculation:
       enabled: true
+
+codespaces:
+  sweden: SAM,VAN,VAS,VTR

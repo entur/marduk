@@ -83,3 +83,6 @@ line:
   statistics:
     calculation:
       enabled: true
+
+codespaces:
+  sweden: VAN,VAS,VTR
