@@ -19,11 +19,14 @@ package no.rutebanken.marduk.repository;
 
 import no.rutebanken.marduk.MardukSpringBootBaseTest;
 import no.rutebanken.marduk.domain.FileNameAndDigest;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -97,4 +100,21 @@ class FileNameAndDigestIdempotentRepositoryTest extends MardukSpringBootBaseTest
         assertTrue(idempotentRepository.contains(fileNameAndDigest.toString()));
     }
 
+    @Test
+    void testCreatedAtWithResults() {
+        FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
+        Instant instant = Instant.now();
+        LocalDateTime instantAsLocalDateTime = Timestamp.from(instant).toLocalDateTime();
+        idempotentRepository.insert(fileNameAndDigest.toString(), instant);
+
+        LocalDateTime createdAt = idempotentRepository.getCreatedAt(fileNameAndDigest.getFileName());
+        Assertions.assertEquals(instantAsLocalDateTime.toString(), createdAt.toString());
+    }
+
+    @Test
+    void testCreatedAtWithoutResults() {
+        FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
+        LocalDateTime createdAt = idempotentRepository.getCreatedAt(fileNameAndDigest.getFileName());
+        Assertions.assertNull(createdAt);
+    }
 }
