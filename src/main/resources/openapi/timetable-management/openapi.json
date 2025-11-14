@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "Timetable Management API",
+    "title": "Timetable Management",
     "description": "Upload and download NeTEx datasets",
-    "version": "1.0"
+    "version": "1.0.0"
   },
   "servers": [
     {
@@ -24,11 +24,23 @@
       "jwt": []
     }
   ],
+  "tags": [
+    {
+      "name": "Datasets",
+      "description": "Standard timetable dataset operations"
+    },
+    {
+      "name": "Flexible Transport",
+      "description": "Flexible transport dataset operations"
+    }
+  ],
   "paths": {
     "/datasets/{codespace}": {
       "post": {
+        "summary": "Upload NeTEx dataset",
         "description": "Upload a NeTEx dataset",
         "operationId": "upload",
+        "tags": ["Datasets"],
         "parameters": [
           {
             "name": "codespace",
@@ -52,6 +64,15 @@
                     "description": "NeTEx dataset file (ZIP archive)"
                   }
                 }
+              },
+              "examples": {
+                "dataset-upload": {
+                  "summary": "Upload timetable dataset",
+                  "description": "Example of uploading a NeTEx dataset ZIP file for provider RUT",
+                  "value": {
+                    "file": "netex-dataset-rut-2024-01-15.zip"
+                  }
+                }
               }
             }
           },
@@ -64,23 +85,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UploadResult"
+                },
+                "examples": {
+                  "upload-success": {
+                    "summary": "Successful upload",
+                    "description": "Dataset upload initiated successfully",
+                    "value": {
+                      "correlationId": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
                 }
               }
             }
           },
           "404": {
-            "description": "Unknown codespace"
+            "description": "Unknown codespace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "unknown-codespace": {
+                    "summary": "Codespace not found",
+                    "value": {
+                      "errorCode": "CODESPACE_NOT_FOUND",
+                      "message": "The specified codespace 'XYZ' is not registered in the system"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
-            "description": "Internal server error"
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "internal-error": {
+                    "summary": "Server error",
+                    "value": {
+                      "errorCode": "INTERNAL_ERROR",
+                      "message": "An unexpected error occurred while processing the upload"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/flex-datasets/{codespace}": {
       "post": {
+        "summary": "Upload flexible transport dataset",
         "description": "Upload a NeTEx dataset containing flexible transport data",
         "operationId": "uploadFlexDataset",
+        "tags": ["Flexible Transport"],
         "parameters": [
           {
             "name": "codespace",
@@ -104,6 +168,15 @@
                     "description": "NeTEx flex dataset file (ZIP archive)"
                   }
                 }
+              },
+              "examples": {
+                "flex-dataset-upload": {
+                  "summary": "Upload flexible transport dataset",
+                  "description": "Example of uploading a NeTEx flexible transport dataset ZIP file for provider FLX",
+                  "value": {
+                    "file": "netex-flex-dataset-flx-2024-01-15.zip"
+                  }
+                }
               }
             }
           },
@@ -116,23 +189,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UploadResult"
+                },
+                "examples": {
+                  "flex-upload-success": {
+                    "summary": "Successful flex upload",
+                    "description": "Flexible transport dataset upload initiated successfully",
+                    "value": {
+                      "correlationId": "660f9511-f30c-52e5-b827-557766551111"
+                    }
+                  }
                 }
               }
             }
           },
           "404": {
-            "description": "Unknown codespace"
+            "description": "Unknown codespace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "unknown-codespace": {
+                    "summary": "Codespace not found",
+                    "value": {
+                      "errorCode": "CODESPACE_NOT_FOUND",
+                      "message": "The specified codespace 'ABC' is not registered in the system"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
-            "description": "Internal server error"
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "internal-error": {
+                    "summary": "Server error",
+                    "value": {
+                      "errorCode": "INTERNAL_ERROR",
+                      "message": "An unexpected error occurred while processing the flex dataset upload"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/datasets/{codespace}/filtered": {
       "get": {
+        "summary": "Download filtered NeTEx dataset",
         "description": "Download NeTEx dataset with private data. Old data and unsupported NeTEx entities are filtered out",
         "operationId": "download",
+        "tags": ["Datasets"],
         "parameters": [
           {
             "name": "codespace",
@@ -146,13 +262,53 @@
         ],
         "responses": {
           "200": {
-            "description": "success"
+            "description": "success",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
           },
           "404": {
-            "description": "Unknown codespace"
+            "description": "Unknown codespace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "unknown-codespace": {
+                    "summary": "Codespace not found",
+                    "value": {
+                      "errorCode": "CODESPACE_NOT_FOUND",
+                      "message": "No dataset found for codespace 'DEF'"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
-            "description": "Internal server error"
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "internal-error": {
+                    "summary": "Server error",
+                    "value": {
+                      "errorCode": "INTERNAL_ERROR",
+                      "message": "An unexpected error occurred while preparing the download"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -174,6 +330,20 @@
             "type": "string"
           }
         }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "errorCode": {
+            "type": "string",
+            "description": "Error code identifying the type of error"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          }
+        },
+        "required": ["errorCode", "message"]
       }
     }
   }
