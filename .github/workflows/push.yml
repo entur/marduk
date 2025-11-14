@@ -56,13 +56,22 @@ jobs:
       - uses: actions/upload-artifact@v5.0.0
         with:
           path: target
-  Openapi-lint:
+  openapi-lint:
     needs: [ maven-verify ]
     uses: entur/gha-api/.github/workflows/lint.yml@v4
     secrets: inherit
     with:
       spec: 'src/main/resources/openapi/timetable-management/openapi.json'
       upload_to_bucket: ${{ github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+  openapi-publish:
+    if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: [ openapi-lint ]
+    uses: entur/gha-api/.github/workflows/publish.yml@v4
+    secrets: inherit
+    with:
+      visibility: 'partner'
+      spec: 'src/main/resources/openapi/timetable-management/openapi.json'
+
   docker-build:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [maven-verify]
