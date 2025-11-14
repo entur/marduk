@@ -69,7 +69,6 @@ public class FileNameAndDigestIdempotentRepository extends AbstractJdbcMessageId
             LOGGER.warn("No createdAt timestamp found for file {}", fileName);
             return null;
         } catch (Exception e) {
-            LOGGER.error("An unexpected error occured while getting createdAt timestamp for file {}", fileName, e);
             throw new MardukException("An unexpected error occured while getting createdAt timestamp for file " + fileName, e);
         }
     }
