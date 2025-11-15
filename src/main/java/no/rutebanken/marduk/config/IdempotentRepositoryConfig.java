@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.config;
 
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
-import org.apache.camel.spi.IdempotentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -34,9 +33,7 @@ public class IdempotentRepositoryConfig {
 	private int maxTransactionSeconds;
 
 	@Bean
-	public IdempotentRepository fileNameAndDigestIdempotentRepository() {
+	public FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository() {
 		return new FileNameAndDigestIdempotentRepository(datasource, "nameAndDigest", maxTransactionSeconds);
 	}
-
-
 }

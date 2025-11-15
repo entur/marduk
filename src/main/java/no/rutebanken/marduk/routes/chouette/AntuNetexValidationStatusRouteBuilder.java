@@ -17,7 +17,9 @@
 package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
 import no.rutebanken.marduk.routes.file.FileType;
+import no.rutebanken.marduk.routes.processors.FileCreatedTimestampProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
@@ -35,10 +37,14 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
     private final boolean ashurFilteringEnabled;
 
+    FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
+
     public AntuNetexValidationStatusRouteBuilder(
-        @Value("${ashur.filteringEnabled:false}") boolean ashurFilteringEnabled
+        @Value("${ashur.filteringEnabled:false}") boolean ashurFilteringEnabled,
+        FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository
     ) {
         this.ashurFilteringEnabled = ashurFilteringEnabled;
+        this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
     }
 
     @Override
@@ -116,13 +122,20 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .routeId("antu-netex-validation-started");
 
         from("direct:ashurNetexFilterAfterPreValidation")
-                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + DATASET_REFERENTIAL + "}/${header." + DATASET_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
-                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
-                .to("direct:copyInternalBlobToAnotherBucket")
-                .setHeader(FILTERING_PROFILE_HEADER, constant(FILTERING_PROFILE_STANDARD_IMPORT))
-                .setHeader(FILTERING_NETEX_SOURCE_HEADER, constant(FILTERING_NETEX_SOURCE_MARDUK))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:FilterNetexFileQueue")
-                .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering");
+                .process(new FileCreatedTimestampProcessor(fileNameAndDigestIdempotentRepository))
+                .choice()
+                    .when(header(FILTERING_FILE_CREATED_TIMESTAMP).isNotNull())
+                        .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + DATASET_REFERENTIAL + "}/${header." + DATASET_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                        .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
+                        .to("direct:copyInternalBlobToAnotherBucket")
+                        .setHeader(FILTERING_PROFILE_HEADER, constant(FILTERING_PROFILE_STANDARD_IMPORT))
+                        .setHeader(FILTERING_NETEX_SOURCE_HEADER, constant(FILTERING_NETEX_SOURCE_MARDUK))
+                        .to("google-pubsub:{{marduk.pubsub.project.id}}:FilterNetexFileQueue")
+                        .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering")
+                    .otherwise()
+                        .log(LoggingLevel.ERROR, correlation() + "Cancelled triggering of filtering because no created timestamp was found for file name: " + header(FILE_NAME))
+                .end()
+                .routeId("ashur-netex-filter-after-pre-validation");
 
         from("direct:ashurNetexFilterAfterPostValidation")
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))

@@ -19,15 +19,26 @@ package no.rutebanken.marduk.repository;
 
 import no.rutebanken.marduk.MardukSpringBootBaseTest;
 import no.rutebanken.marduk.domain.FileNameAndDigest;
+import no.rutebanken.marduk.exceptions.MardukException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 
 class FileNameAndDigestIdempotentRepositoryTest extends MardukSpringBootBaseTest {
@@ -97,4 +108,44 @@ class FileNameAndDigestIdempotentRepositoryTest extends MardukSpringBootBaseTest
         assertTrue(idempotentRepository.contains(fileNameAndDigest.toString()));
     }
 
+    @Test
+    void testCreatedAtWithResults() {
+        FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
+        Instant instant = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        LocalDateTime instantAsLocalDateTime = Timestamp.from(instant).toLocalDateTime();
+        idempotentRepository.insert(fileNameAndDigest.toString(), instant);
+
+        LocalDateTime createdAt = idempotentRepository.getCreatedAt(fileNameAndDigest.getFileName());
+        Assertions.assertEquals(instantAsLocalDateTime.toString(), createdAt.toString());
+    }
+
+    @Test
+    void testCreatedAtWithoutResults() {
+        FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("fileName", "digestOne");
+        LocalDateTime createdAt = idempotentRepository.getCreatedAt(fileNameAndDigest.getFileName());
+        Assertions.assertNull(createdAt);
+    }
+
+    private FileNameAndDigestIdempotentRepository idempotentRepositoryWithMockedJdbcTemplate() throws SQLException {
+        JdbcTemplate mockJdbcTemplate = mock(JdbcTemplate.class);
+        DataSource mockDataSource = mock(DataSource.class);
+        Connection mockConnection = mock(Connection.class);
+        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        return new FileNameAndDigestIdempotentRepository(mockDataSource, "test") {
+            @Override
+            public JdbcTemplate getJdbcTemplate() {
+                return mockJdbcTemplate;
+            }
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void testCreatedAtThrowsExceptionOnUnexpectedDbError() throws SQLException {
+        FileNameAndDigestIdempotentRepository repository = idempotentRepositoryWithMockedJdbcTemplate();
+        JdbcTemplate mockedJdbcTemplate = repository.getJdbcTemplate();
+        when(mockedJdbcTemplate.queryForObject(any(), any(Class.class))).thenThrow(new DataAccessException("Simulated DB error") {});
+        Exception exception = assertThrows(MardukException.class, () -> repository.getCreatedAt("123"));
+        assertTrue(exception.getMessage().contains("An unexpected error occured while getting createdAt timestamp for file 123"));
+    }
 }
