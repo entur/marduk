@@ -138,6 +138,7 @@ public final class Constants {
     public static final String FILTERING_PROFILE_HEADER = "EnturFilteringProfile";
     public static final String FILTERING_PROFILE_AS_IS = "AsIsImportFilter";
     public static final String FILTERING_PROFILE_STANDARD_IMPORT = "StandardImportFilter";
+    public static final String FILTERING_FILE_CREATED_TIMESTAMP = "FileCreatedTimestamp";
 
     public static final String FILTERING_NETEX_SOURCE_HEADER = "NetexSource";
     public static final String FILTERING_NETEX_SOURCE_CHOUETTE = "chouette";
