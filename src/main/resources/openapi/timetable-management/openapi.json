@@ -38,14 +38,14 @@
     "/datasets/{codespace}": {
       "post": {
         "summary": "Upload NeTEx dataset",
-        "description": "Upload a NeTEx dataset",
+        "description": "This endpoint allows for uploading a NeTEx dataset into Entur import and validation pipeline. It provides the same feature as a manual upload from the Operator Portal application.",
         "operationId": "upload",
         "tags": ["Datasets"],
         "parameters": [
           {
             "name": "codespace",
             "in": "path",
-            "description": "Provider Codespace",
+            "description": "Lowercase codespace attributed to the data provider. Examples: rut, sky, vyg, …",
             "required": true,
             "schema": {
               "type": "string"
@@ -80,7 +80,7 @@
         },
         "responses": {
           "200": {
-            "description": "success",
+            "description": "OK - the dataset has been received successfully (this is only a technical acknowledgement, before applying any validation rule. The dataset may be rejected further down in the validation pipeline)",
             "content": {
               "application/json": {
                 "schema": {
@@ -89,7 +89,7 @@
                 "examples": {
                   "upload-success": {
                     "summary": "Successful upload",
-                    "description": "Dataset upload initiated successfully",
+                    "description": "Dataset upload initiated successfully, correlationId can be used to track progress",
                     "value": {
                       "correlationId": "550e8400-e29b-41d4-a716-446655440000"
                     }
@@ -98,41 +98,35 @@
               }
             }
           },
-          "404": {
-            "description": "Unknown codespace",
+          "401": {
+           "description": "Unauthorized - the authorization token is missing or has expired.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "examples": {
-                  "unknown-codespace": {
-                    "summary": "Codespace not found",
-                    "value": {
-                      "errorCode": "CODESPACE_NOT_FOUND",
-                      "message": "The specified codespace 'XYZ' is not registered in the system"
-                    }
-                  }
-                }
+              "text/plain": {
+                "example": "User is not authenticated"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - the authorization token is present, but it does not provide sufficient privileges to perform the operation.",
+            "content": {
+              "text/plain": {
+                "example": "Access denied for codespace 'rut'"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - most likely a typo in the request URL.",
+            "content": {
+              "text/plain": {
+                "example": "Unknown codespace"
               }
             }
           },
           "500": {
-            "description": "Internal server error",
+            "description": "Internal Server Error - a processing error on Entur's side.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "examples": {
-                  "internal-error": {
-                    "summary": "Server error",
-                    "value": {
-                      "errorCode": "INTERNAL_ERROR",
-                      "message": "An unexpected error occurred while processing the upload"
-                    }
-                  }
-                }
+              "text/plain": {
+                "example": "Internal server error"
               }
             }
           }
@@ -184,7 +178,7 @@
         },
         "responses": {
           "200": {
-            "description": "success",
+            "description": "OK - the dataset has been received successfully (this is only a technical acknowledgement, before applying any validation rule. The dataset may be rejected further down in the validation pipeline)",
             "content": {
               "application/json": {
                 "schema": {
@@ -193,7 +187,7 @@
                 "examples": {
                   "flex-upload-success": {
                     "summary": "Successful flex upload",
-                    "description": "Flexible transport dataset upload initiated successfully",
+                    "description": "Flexible transport dataset upload initiated successfully, correlationId can be used to track progress",
                     "value": {
                       "correlationId": "660f9511-f30c-52e5-b827-557766551111"
                     }
@@ -202,41 +196,35 @@
               }
             }
           },
-          "404": {
-            "description": "Unknown codespace",
+          "401": {
+            "description": "Unauthorized - the authorization token is missing or has expired.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "examples": {
-                  "unknown-codespace": {
-                    "summary": "Codespace not found",
-                    "value": {
-                      "errorCode": "CODESPACE_NOT_FOUND",
-                      "message": "The specified codespace 'ABC' is not registered in the system"
-                    }
-                  }
-                }
+              "text/plain": {
+                "example": "User is not authenticated"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - the authorization token is present, but it does not provide sufficient privileges to perform the operation.",
+            "content": {
+              "text/plain": {
+                "example": "Access denied"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - most likely a typo in the request URL.",
+            "content": {
+              "text/plain": {
+                "example": "Not found"
               }
             }
           },
           "500": {
-            "description": "Internal server error",
+            "description": "Internal Server Error - a processing error on Entur's side.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "examples": {
-                  "internal-error": {
-                    "summary": "Server error",
-                    "value": {
-                      "errorCode": "INTERNAL_ERROR",
-                      "message": "An unexpected error occurred while processing the flex dataset upload"
-                    }
-                  }
-                }
+              "text/plain": {
+                "example": "Internal server error"
               }
             }
           }
@@ -262,9 +250,9 @@
         ],
         "responses": {
           "200": {
-            "description": "success",
+            "description": "NeTEx dataset ZIP archive with private data. Expired data and unsupported NeTEx entities are filtered out.",
             "content": {
-              "application/zip": {
+              "application/x-octet-stream": {
                 "schema": {
                   "type": "string",
                   "format": "binary"
@@ -272,41 +260,35 @@
               }
             }
           },
-          "404": {
-            "description": "Unknown codespace",
+          "401": {
+            "description": "Unauthorized - the authorization token is missing or has expired.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "examples": {
-                  "unknown-codespace": {
-                    "summary": "Codespace not found",
-                    "value": {
-                      "errorCode": "CODESPACE_NOT_FOUND",
-                      "message": "No dataset found for codespace 'DEF'"
-                    }
-                  }
-                }
+              "text/plain": {
+                "example": "User is not authenticated"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - the authorization token is present, but it does not provide sufficient privileges to perform the operation.",
+            "content": {
+              "text/plain": {
+                "example": "Access denied"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - most likely a typo in the request URL.",
+            "content": {
+              "text/plain": {
+                "example": "Not found"
               }
             }
           },
           "500": {
-            "description": "Internal server error",
+            "description": "Internal Server Error - a processing error on Entur's side.",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "examples": {
-                  "internal-error": {
-                    "summary": "Server error",
-                    "value": {
-                      "errorCode": "INTERNAL_ERROR",
-                      "message": "An unexpected error occurred while preparing the download"
-                    }
-                  }
-                }
+              "text/plain": {
+                "example": "Internal server error"
               }
             }
           }
