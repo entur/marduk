@@ -106,11 +106,11 @@ public class AdminExternalRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("rest-admin-external-download-file")
                 .to("direct:adminExternalDownloadPrivateDataset")
 
-                .get("/openapi.json")
+                .get("/openapi.yaml")
                 .produces(JSON)
                 .apiDocs(false)
                 .bindingMode(RestBindingMode.off)
-                .to("language:simple:resource:classpath:openapi/timetable-management/openapi.json");
+                .to("language:simple:resource:classpath:openapi/timetable-management/openapi.yaml");
 
         from("direct:adminExternalUploadFile")
                 .streamCaching()

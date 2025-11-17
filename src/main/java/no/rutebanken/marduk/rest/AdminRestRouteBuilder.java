@@ -103,7 +103,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .contextPath("/services")
                 .bindingMode(RestBindingMode.json)
                 .endpointProperty("matchOnUriPrefix", "true")
-                .apiContextPath("/openapi.json")
+                .apiContextPath("/openapi.yaml")
                 .apiProperty("api.title", "Timetable Admin API").apiProperty("api.version", "1.0");
 
         rest("")
@@ -118,7 +118,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .delete()
                 .to("direct:adminRouteAuthorizeDelete");
 
-        String commonApiDocEndpoint = "http:" + host + ":" + port + "/services/openapi.json?bridgeEndpoint=true";
+        String commonApiDocEndpoint = "http:" + host + ":" + port + "/services/openapi.yaml?bridgeEndpoint=true";
 
         rest("/timetable_admin")
                 .post("/idempotentfilter/clean")
@@ -311,7 +311,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
                 .to("direct:adminExternalDownloadPrivateDataset")
 
-                .get("/openapi.json")
+                .get("/openapi.yaml")
                 .apiDocs(false)
                 .bindingMode(RestBindingMode.off)
                 .to(commonApiDocEndpoint);

@@ -1,0 +1,230 @@
+openapi: 3.0.1
+info:
+  title: Timetable Management
+  description: Upload and download NeTEx datasets
+  version: 1.0.0
+servers:
+- url: https://api.entur.io/timetable/v1/timetable-management
+  description: Production
+- url: https://api.staging.entur.io/timetable/v1/timetable-management
+  description: Staging
+- url: https://api.dev.entur.io/timetable/v1/timetable-management
+  description: Development
+security:
+- jwt: []
+tags:
+- name: Datasets
+  description: Standard timetable dataset operations
+- name: Flexible Transport
+  description: Flexible transport dataset operations
+paths:
+  /datasets/{codespace}:
+    post:
+      summary: Upload NeTEx dataset
+      description: This endpoint allows for uploading a NeTEx dataset into Entur import
+        and validation pipeline. It provides the same feature as a manual upload from
+        the Operator Portal application.
+      operationId: upload
+      tags:
+      - Datasets
+      parameters:
+      - name: codespace
+        in: path
+        description: 'Lowercase codespace attributed to the data provider. Examples:
+          rut, sky, vyg, …'
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: NeTEx dataset file (ZIP archive)
+            examples:
+              dataset-upload:
+                summary: Upload timetable dataset
+                description: Example of uploading a NeTEx dataset ZIP file for provider
+                  RUT
+                value:
+                  file: netex-dataset-rut-2024-01-15.zip
+        required: true
+      responses:
+        '200':
+          description: OK - the dataset has been received successfully (this is only
+            a technical acknowledgement, before applying any validation rule. The
+            dataset may be rejected further down in the validation pipeline)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResult'
+              examples:
+                upload-success:
+                  summary: Successful upload
+                  description: Dataset upload initiated successfully, correlationId
+                    can be used to track progress
+                  value:
+                    correlationId: 550e8400-e29b-41d4-a716-446655440000
+        '401':
+          description: Unauthorized - the authorization token is missing or has expired.
+          content:
+            text/plain:
+              example: User is not authenticated
+        '403':
+          description: Forbidden - the authorization token is present, but it does
+            not provide sufficient privileges to perform the operation.
+          content:
+            text/plain:
+              example: Access denied for codespace 'rut'
+        '404':
+          description: Not Found - most likely a typo in the request URL.
+          content:
+            text/plain:
+              example: Unknown codespace
+        '500':
+          description: Internal Server Error - a processing error on Entur's side.
+          content:
+            text/plain:
+              example: Internal server error
+  /flex-datasets/{codespace}:
+    post:
+      summary: Upload flexible transport dataset
+      description: Upload a NeTEx dataset containing flexible transport data
+      operationId: uploadFlexDataset
+      tags:
+      - Flexible Transport
+      parameters:
+      - name: codespace
+        in: path
+        description: Provider Codespace
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: NeTEx flex dataset file (ZIP archive)
+            examples:
+              flex-dataset-upload:
+                summary: Upload flexible transport dataset
+                description: Example of uploading a NeTEx flexible transport dataset
+                  ZIP file for provider FLX
+                value:
+                  file: netex-flex-dataset-flx-2024-01-15.zip
+        required: true
+      responses:
+        '200':
+          description: OK - the dataset has been received successfully (this is only
+            a technical acknowledgement, before applying any validation rule. The
+            dataset may be rejected further down in the validation pipeline)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResult'
+              examples:
+                flex-upload-success:
+                  summary: Successful flex upload
+                  description: Flexible transport dataset upload initiated successfully,
+                    correlationId can be used to track progress
+                  value:
+                    correlationId: 660f9511-f30c-52e5-b827-557766551111
+        '401':
+          description: Unauthorized - the authorization token is missing or has expired.
+          content:
+            text/plain:
+              example: User is not authenticated
+        '403':
+          description: Forbidden - the authorization token is present, but it does
+            not provide sufficient privileges to perform the operation.
+          content:
+            text/plain:
+              example: Access denied
+        '404':
+          description: Not Found - most likely a typo in the request URL.
+          content:
+            text/plain:
+              example: Not found
+        '500':
+          description: Internal Server Error - a processing error on Entur's side.
+          content:
+            text/plain:
+              example: Internal server error
+  /datasets/{codespace}/filtered:
+    get:
+      summary: Download filtered NeTEx dataset
+      description: Download NeTEx dataset with private data. Old data and unsupported
+        NeTEx entities are filtered out
+      operationId: download
+      tags:
+      - Datasets
+      parameters:
+      - name: codespace
+        in: path
+        description: Codespace of the NeTEx dataset
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: NeTEx dataset ZIP archive with private data. Expired data and
+            unsupported NeTEx entities are filtered out.
+          content:
+            application/x-octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized - the authorization token is missing or has expired.
+          content:
+            text/plain:
+              example: User is not authenticated
+        '403':
+          description: Forbidden - the authorization token is present, but it does
+            not provide sufficient privileges to perform the operation.
+          content:
+            text/plain:
+              example: Access denied
+        '404':
+          description: Not Found - most likely a typo in the request URL.
+          content:
+            text/plain:
+              example: Not found
+        '500':
+          description: Internal Server Error - a processing error on Entur's side.
+          content:
+            text/plain:
+              example: Internal server error
+components:
+  securitySchemes:
+    jwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    UploadResult:
+      type: object
+      properties:
+        correlationId:
+          type: string
+    Error:
+      type: object
+      properties:
+        errorCode:
+          type: string
+          description: Error code identifying the type of error
+        message:
+          type: string
+          description: Human-readable error message
+      required:
+      - errorCode
+      - message
