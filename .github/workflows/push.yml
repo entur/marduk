@@ -61,7 +61,7 @@ jobs:
     uses: entur/gha-api/.github/workflows/lint.yml@v4
     secrets: inherit
     with:
-      spec: 'src/main/resources/openapi/timetable-management/openapi.json'
+      spec: 'src/main/resources/openapi/timetable-management/openapi.yaml'
       upload_to_bucket: ${{ github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
   openapi-publish:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -70,7 +70,7 @@ jobs:
     secrets: inherit
     with:
       visibility: 'partner'
-      spec: 'src/main/resources/openapi/timetable-management/openapi.json'
+      spec: 'src/main/resources/openapi/timetable-management/openapi.yaml'
 
   docker-build:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'

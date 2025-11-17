@@ -87,8 +87,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         @ConditionalOnWebApplication
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             http.cors(withDefaults()).csrf(AbstractHttpConfigurer::disable)
-                    .authorizeHttpRequests(authz -> authz.requestMatchers(AntPathRequestMatcher.antMatcher("/services/openapi.json")).permitAll()
-                            .requestMatchers(AntPathRequestMatcher.antMatcher("/services/timetable_admin/openapi.json")).permitAll()
+                    .authorizeHttpRequests(authz -> authz.requestMatchers(AntPathRequestMatcher.antMatcher("/services/openapi.yaml")).permitAll()
+                            .requestMatchers(AntPathRequestMatcher.antMatcher("/services/timetable_admin/openapi.yaml")).permitAll()
                     .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/prometheus")).permitAll()
                             .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health")).permitAll()
                             .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health/liveness")).permitAll()
