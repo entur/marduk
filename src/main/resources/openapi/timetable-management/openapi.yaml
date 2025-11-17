@@ -1,7 +1,25 @@
 openapi: 3.0.1
 info:
   title: Timetable Management
-  description: Upload and download NeTEx datasets
+  description: |
+    Entur provides an API for uploading and downloading NeTEx timetable datasets. 
+    These endpoints have restricted access and require a service account (OAuth2) provided by Entur.
+    
+    ## Getting access to the API
+    To get access to the Timetable Management API, please contact Entur at kollektivdata@entur.org
+    You will be granted dedicated OAuth2 credentials ("client-id" and "client-secret") that will allow you to access the service.
+    
+    ## Entur authentication and authorization service
+    
+    The endpoints are protected by an OAuth2 authorization layer. Once you receive OAuth2 credentials, 
+    you will be able to request access tokens from Entur authorization server using the following parameters:
+    
+    | Env     | OAuth2 token URI                              | OAuth2 audience / Base URI   |
+    | ------- | --------------------------------------------- | ---------------------------- |
+    | Dev     | https://partner.dev.entur.org/oauth/token     | https://api.dev.entur.io     |
+    | Staging | https://partner.staging.entur.org/oauth/token | https://api.staging.entur.io |
+    | Prod    | https://partner.entur.org/oauth/token         | https://api.entur.io         |
+
   version: 1.0.0
 servers:
 - url: https://api.entur.io/timetable/v1/timetable-management
@@ -162,8 +180,18 @@ paths:
   /datasets/{codespace}/filtered:
     get:
       summary: Download filtered NeTEx dataset
-      description: Download NeTEx dataset with private data. Old data and unsupported
-        NeTEx entities are filtered out
+      description: |
+        This endpoint gives access to private NeTEx datasets not available on Entur open data portal.
+        These datasets include, in addition to the data available on the open data portal, the following private data:
+        - NeTEx Block data
+        - DeadRuns
+        - Lines and Service Journeys with restricted publication
+        
+        This dataset is time-filtered (past trips are removed) and content-filtered (unknown NeTEx entities are filtered out).
+        Datasets that failed validation are not published on this endpoint.
+        To access the original NeTEx dataset sent by the data provider, without any alteration, 
+        use instead [Latest original dataset download endpoint](https://api.entur.io/timetable/v1/timetable-data).
+
       operationId: download
       tags:
       - Datasets
