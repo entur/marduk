@@ -405,6 +405,37 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
     }
 
+    @Test
+    void exportShouldNotLeakAuthorizationHeaderInResponse() throws Exception {
+        AdviceWith.adviceWith(context, "admin-chouette-export",
+                a -> a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue")
+                        .replace()
+                        .to("mock:chouetteExportNetexQueue")
+        );
+
+        exportQueue.expectedMessageCount(1);
+
+        context.start();
+
+        String authorizationToken = "Bearer sensitive-secret-token";
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, authorizationToken,
+                CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT);
+
+        exportTemplate.sendBodyAndHeaders(null, headers);
+
+        exportQueue.assertIsSatisfied();
+
+        // Check the exchange that went to the mock endpoint - it should not contain the Authorization header
+        List<Exchange> exchanges = exportQueue.getExchanges();
+        Exchange receivedExchange = exchanges.getFirst();
+        Map<String, Object> receivedHeaders = receivedExchange.getIn().getHeaders();
+
+        assertFalse(receivedHeaders.containsKey(HttpHeaders.AUTHORIZATION),
+                "Authorization header should not be forwarded to internal routes");
+    }
+
     private static Map<String, Object> getTestHeaders(String method) {
         return Map.of(
                 Exchange.HTTP_METHOD, method,
