@@ -28,12 +28,24 @@ import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.HttpHeaders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +71,12 @@ class AdminExternalRestMardukRouteBuilderIntegrationTest extends MardukRouteBuil
     @Produce("http:localhost:{{server.port}}/services/timetable-management/flex-datasets/" + CHOUETTE_REFERENTIAL_RUT)
     protected ProducerTemplate uploadFlexFileExternalTemplate;
 
+    @Value("${server.port}")
+    private int serverPort;
+
+    @Autowired
+    private RestTemplateBuilder restTemplateBuilder;
+
     @BeforeEach
     void setUpProvider() {
         when(providerRepository.getReferential(TestConstants.PROVIDER_ID_RUT)).thenReturn(CHOUETTE_REFERENTIAL_RUT);
@@ -80,7 +98,7 @@ class AdminExternalRestMardukRouteBuilderIntegrationTest extends MardukRouteBuil
         updateStatus.expectedMessageCount(1);
         processFileQueue.expectedMessageCount(1);
 
-        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName).build();
+        org.apache.hc.core5.http.HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName).build();
         Map<String, Object> headers = getTestHeaders("POST");
 
         context.start();
@@ -100,6 +118,50 @@ class AdminExternalRestMardukRouteBuilderIntegrationTest extends MardukRouteBuil
         assertEquals(1, exchanges.size());
         String importType = exchanges.getFirst().getIn().getHeader(IMPORT_TYPE, String.class);
         assertEquals(IMPORT_TYPE_NETEX_FLEX, importType, "IMPORT_TYPE should be set to IMPORT_TYPE_NETEX_FLEX for flex dataset uploads");
+    }
+
+    @Test
+    void authorizationHeaderIsReturnedToCaller() throws Exception {
+        AdviceWith.adviceWith(context, "admin-external-upload-flex-file", a ->
+                a.weaveByToUri("direct:uploadFilesAndStartImport").replace().to("mock:sink"));
+
+        byte[] filePayload;
+        try (InputStream inputStream = getTestNetexArchiveAsStream()) {
+            filePayload = inputStream.readAllBytes();
+        }
+
+        ByteArrayResource fileResource = new ByteArrayResource(filePayload) {
+            @Override
+            public String getFilename() {
+                return "netex-flex-test-http-upload.zip";
+            }
+        };
+
+        HttpHeaders partHeaders = new HttpHeaders();
+        partHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        HttpEntity<ByteArrayResource> filePart = new HttpEntity<>(fileResource, partHeaders);
+
+        MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
+        multipartBody.add(fileResource.getFilename(), filePart);
+
+        Map<String, Object> headers = getTestHeaders("POST");
+        HttpHeaders requestHeaders = new HttpHeaders();
+        requestHeaders.setContentType(MediaType.MULTIPART_FORM_DATA);
+        requestHeaders.set(HttpHeaders.AUTHORIZATION, headers.get(HttpHeaders.AUTHORIZATION).toString());
+        requestHeaders.set(CHOUETTE_REFERENTIAL, headers.get(CHOUETTE_REFERENTIAL).toString());
+
+        RestTemplate restTemplate = restTemplateBuilder.requestFactory(SimpleClientHttpRequestFactory::new).build();
+
+        context.start();
+        ResponseEntity<String> response = restTemplate.exchange(
+                URI.create("http://localhost:" + serverPort + "/services/timetable-management/flex-datasets/" + CHOUETTE_REFERENTIAL_RUT),
+                HttpMethod.POST,
+                new HttpEntity<>(multipartBody, requestHeaders),
+                String.class);
+
+        List<String> authorizationHeader = response.getHeaders().get(HttpHeaders.AUTHORIZATION);
+        assertTrue(authorizationHeader == null || authorizationHeader.isEmpty(),
+                "Authorization header should not be returned to caller but was " + authorizationHeader);
     }
 
     private static Map<String, Object> getTestHeaders(String method) {
