@@ -121,7 +121,7 @@ public class AdminExternalRestRouteBuilder extends BaseRouteBuilder {
                 .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, correlation() + "Authorization OK for HTTP endpoint, uploading files and starting import pipeline")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.rest:true}", Boolean.class))
                 .to("direct:uploadFilesAndStartImport")
                 .process(e -> e.getIn().setBody(new UploadResult(
@@ -140,7 +140,7 @@ public class AdminExternalRestRouteBuilder extends BaseRouteBuilder {
                 .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
                 .to("direct:authorizeEditorRequest")
                 .log(LoggingLevel.INFO, correlation() + "Authorization OK for HTTP endpoint, uploading flex files and starting import pipeline")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .setHeader(IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
                 .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.rest:true}", Boolean.class))
                 .to("direct:uploadFilesAndStartImport")
@@ -162,7 +162,7 @@ public class AdminExternalRestRouteBuilder extends BaseRouteBuilder {
                         + "rb_" + e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toLowerCase()
                         + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .log(LoggingLevel.INFO, correlation() + "Downloading NeTEx dataset with blocks: ${header." + FILE_HANDLE + "}")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:getInternalBlob")
                 .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
                 .routeId("admin-external-download-private_dataset");

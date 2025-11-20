@@ -150,8 +150,16 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
     }
 
-    protected void removeAllCamelHttpHeaders(Exchange e) {
-        e.getIn().removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS, GooglePubsubConstants.ACK_ID);
+    /**
+     * Remove unnecessary message headers related to the HTTP exchange.
+     * This includes internal Camel headers (prefixed by 'CamelHttp') and the HTTP authorization
+     * header that was automatically copied from the incoming HTTP request.
+     */
+    protected void removeHttpHeaders(Exchange e) {
+        // Remove Camel internal HTTP headers
+        e.getIn().removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS);
+        // Remove authorization HTTP header
+        e.getIn().removeHeader(org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION);
     }
 
     /**

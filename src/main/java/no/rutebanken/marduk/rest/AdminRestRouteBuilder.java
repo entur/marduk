@@ -497,7 +497,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:adminTriggerPrevalidationForAllProviders")
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Triggering prevalidation for all providers")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to(ExchangePattern.InOnly, "direct:triggerAntuValidationForAllProviders")
                 .setBody(constant(""))
                 .routeId("admin-trigger-prevalidation-for-all-providers");
@@ -505,7 +505,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:adminChouetteValidateLevel2AllProviders")
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation level2 for all providers")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel2ForAllProviders")
                 .setBody(constant(""))
                 .routeId("admin-chouette-validate-level2-all-providers");
@@ -513,7 +513,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:adminChouetteListJobsAll")
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.DEBUG, correlation() + "Get chouette active jobs all providers")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .process(e -> e.getIn().setHeader("status", e.getIn().getHeader("status") != null ? e.getIn().getHeader("status") : Arrays.asList("STARTED", "SCHEDULED")))
                 .to("direct:chouetteGetJobsAll")
                 .routeId("admin-chouette-list-jobs-all");
@@ -521,7 +521,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:adminChouetteCancelAllJobsAll")
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Cancel all chouette jobs for all providers")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:chouetteCancelAllJobsForAllProviders")
                 .setBody(constant(""))
                 .routeId("admin-chouette-cancel-all-jobs-all");
@@ -529,7 +529,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:adminChouetteRemoveOldJobs")
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Removing old chouette jobs for all providers")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:chouetteRemoveOldJobs")
                 .setBody(constant(""))
                 .routeId("admin-chouette-remove-old-jobs");
@@ -537,7 +537,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:adminChouetteCleanAll")
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean all dataspaces")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:chouetteCleanAllReferentials")
                 .setBody(constant(""))
                 .routeId("admin-chouette-clean-all");
@@ -545,7 +545,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:adminChouetteCleanStopPlaces")
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean all stop places")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:chouetteCleanStopPlaces")
                 .setBody(constant(""))
                 .routeId("admin-chouette-clean-stop-places");
@@ -553,7 +553,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         from("direct:adminChouetteStatsMultipleProviders")
                 .to("direct:authorizeAdminRequest")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .choice()
                 .when(simple("${header.providerIds}"))
                 .process(e -> e.getIn().setHeader(PROVIDER_IDS, e.getIn().getHeader("providerIds", "", String.class).split(",")))
@@ -565,7 +565,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:adminChouetteStatsRefreshCache")
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "refresh stats cache")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:chouetteRefreshStatsCache")
                 .routeId("admin-chouette-stats-refresh-cache");
 
@@ -573,7 +573,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::setNewCorrelationId)
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "List time table and graph files")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:listTimetableExportAndGraphBlobs")
                 .routeId("admin-chouette-timetable-files-get");
 
@@ -586,7 +586,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                         + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
                         + "/" + e.getIn().getHeader("fileName", String.class)))
                 .log(LoggingLevel.INFO, correlation() + "blob store download file by name")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:getInternalBlob")
                 .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
                 .routeId("admin-chouette-file-download");
@@ -594,14 +594,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:adminTimetableGtfsExport")
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "Triggered merged GTFS export")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue")
                 .routeId("admin-timetable-merged-gtfs-export");
 
         from("direct:adminBuildBaseGraph")
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "Triggered build of OTP base graph with map data")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .setBody(simple(""))
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue")
                 .routeId("admin-build-base-graph");
@@ -609,14 +609,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:adminBuildGraphNetex")
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "OTP build graph from NeTEx")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .setBody(simple(""))
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue")
                 .routeId("admin-build-graph-netex");
 
         from("direct:adminBuildGraphCandidate")
                 .to("direct:authorizeAdminRequest")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .setBody(simple(""))
                 .choice()
                 .when(isEqualTo(header("graphType"), constant("otp2_base")))
@@ -636,12 +636,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::setNewCorrelationId)
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "List graphs status")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:listGraphs")
                 .routeId("admin-chouette-graph-list");
 
         from("direct:adminDatasetImport")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeAdminRequest")
                 .to("direct:validateProvider")
@@ -673,7 +673,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Get line statistics for provider ${header.providerId}")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:chouetteGetStatsSingleProvider")
                 .routeId("admin-chouette-stats");
 
@@ -683,7 +683,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeAdminRequest")
                 .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "List files in blob store")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:listInternalBlobsFlat")
                 .routeId("admin-chouette-import-list");
 
@@ -700,7 +700,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:validateProvider")
                 .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))))
                 .log(LoggingLevel.INFO, correlation() + "Upload files and start import pipeline")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.web:true}", Boolean.class))
                 .setHeader(FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY, constant(true))
                 .to("direct:uploadFilesAndStartImport")
@@ -712,7 +712,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeAdminRequest")
                 .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Get chouette jobs status=${header.status} action=${header.action}")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:chouetteGetJobsForProvider")
                 .routeId("admin-chouette-list-jobs");
 
@@ -721,7 +721,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeAdminRequest")
                 .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Cancel all chouette jobs")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:chouetteCancelAllJobsForProvider")
                 .routeId("admin-chouette-cancel-all-jobs");
 
@@ -731,7 +731,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:validateProvider")
                 .setHeader(Constants.CHOUETTE_JOB_ID, header("jobId"))
                 .log(LoggingLevel.INFO, correlation() + "Cancel chouette job")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:chouetteCancelJob")
                 .routeId("admin-chouette-cancel-job");
 
@@ -740,7 +740,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeAdminRequest")
                 .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Chouette start export")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue")
                 .routeId("admin-chouette-export");
 
@@ -749,7 +749,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:authorizeEditorRequest")
                 .to("direct:validateProvider")
                 .log(LoggingLevel.INFO, correlation() + "Chouette start validation")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
 
                 .choice().when(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getMigrateDataToProvider() == null)
                 .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
@@ -763,7 +763,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::setNewCorrelationId)
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, "OSM update map data")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:considerToFetchOsmMapOverNorway")
                 .routeId("admin-fetch-osm");
 
@@ -772,14 +772,14 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:validateProvider")
                 .to("direct:authorizeAdminRequest")
                 .log(LoggingLevel.INFO, correlation() + "Chouette clean dataspace")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .to("direct:chouetteCleanReferential")
                 .routeId("admin-chouette-clean");
 
         from("direct:adminChouetteTransfer")
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .log(LoggingLevel.INFO, correlation() + "Chouette transfer dataspace")
-                .process(this::removeAllCamelHttpHeaders)
+                .process(this::removeHttpHeaders)
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:validateProvider")
                 .to("direct:authorizeAdminRequest")
