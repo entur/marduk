@@ -189,7 +189,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         // Do rest call
 
-        Map<String, Object> headers = getTestHeaders("POST");
+        Map<String, Object> headers = getTestHeaders("POST", "application/json");
 
         importTemplate.sendBodyAndHeaders(importJson, headers);
 
@@ -219,8 +219,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         // Do rest call
-        Map<String, Object> headers = getTestHeaders("POST");
-        exportTemplate.sendBodyAndHeaders(null, headers);
+        Map<String, Object> headers = getTestHeaders("POST", "text/plain");
+        exportTemplate.sendBodyAndHeaders("", headers);
 
         // setup expectations on the mocks
         exportQueue.expectedMessageCount(1);
@@ -247,7 +247,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         // Do rest call
-        Map<String, Object> headers = getTestHeaders("GET");
+        Map<String, Object> headers = getTestHeaders("GET", "application/json");
         InputStream response = (InputStream) listFilesTemplate.requestBodyAndHeaders(null, headers);
         // Parse response
 
@@ -270,7 +270,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         context.start();
 
-        Map<String, Object> headers = getTestHeaders("GET");
+        Map<String, Object> headers = getTestHeaders("GET", "application/octet-stream");
         InputStream response = (InputStream) getFileTemplate.requestBodyAndHeaders(null, headers);
 
         assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
@@ -281,7 +281,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         context.start();
 
-        Map<String, Object> headers = getTestHeaders("GET");
+        Map<String, Object> headers = getTestHeaders("GET", "application/octet-stream");
 
         assertThrows(CamelExecutionException.class, () -> getUnknownFileTemplate.requestBodyAndHeaders(null, headers));
     }
@@ -297,7 +297,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         // Do rest call
-        Map<String, Object> headers = getTestHeaders("GET");
+        Map<String, Object> headers = getTestHeaders("GET", "application/json");
         InputStream response = (InputStream) listExportFilesTemplate.requestBodyAndHeaders(null, headers);
         // Parse response
 
@@ -346,7 +346,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, testFile, ContentType.DEFAULT_BINARY, fileName).build();
-        Map<String, Object> headers = getTestHeaders("POST");
+        Map<String, Object> headers = getTestHeaders("POST", "multipart/form-data");
         template.requestBodyAndHeaders(httpEntity, headers);
 
         processFileQueue.assertIsSatisfied();
@@ -375,7 +375,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         processFileQueue.expectedMessageCount(1);
 
         HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName).build();
-        Map<String, Object> headers = getTestHeaders("POST");
+        Map<String, Object> headers = getTestHeaders("POST", "multipart/form-data");
 
         context.start();
         uploadFileTemplate.requestBodyAndHeaders(httpEntity, headers);
@@ -398,7 +398,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         //populate fake blob repo
         internalInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + filename, testFile);
 
-        Map<String, Object> headers = getTestHeaders("GET");
+        Map<String, Object> headers = getTestHeaders("GET", "application/octet-stream");
 
         context.start();
         InputStream response = (InputStream) downloadNetexBlocksTemplate.requestBodyAndHeaders(null, headers);
@@ -417,13 +417,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         context.start();
 
-        String authorizationToken = "Bearer sensitive-secret-token";
-        Map<String, Object> headers = Map.of(
-                Exchange.HTTP_METHOD, "POST",
-                HttpHeaders.AUTHORIZATION, authorizationToken,
-                CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT);
-
-        exportTemplate.sendBodyAndHeaders(null, headers);
+        Map<String, Object> headers = getTestHeaders("POST", "text/plain");
+        exportTemplate.sendBodyAndHeaders("", headers);
 
         exportQueue.assertIsSatisfied();
 
@@ -436,10 +431,11 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
                 "Authorization header should not be forwarded to internal routes");
     }
 
-    private static Map<String, Object> getTestHeaders(String method) {
+    private static Map<String, Object> getTestHeaders(String method, String contentType) {
         return Map.of(
                 Exchange.HTTP_METHOD, method,
                 HttpHeaders.AUTHORIZATION, "Bearer test-token",
+                Exchange.CONTENT_TYPE, contentType,
                 CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT);
     }
 }
