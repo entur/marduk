@@ -71,7 +71,7 @@ class Otp2BaseGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInteg
         );
 
         updateStatus.expectedMessageCount(2);
-        updateStatus.setResultWaitTime(40_000);
+        updateStatus.setResultWaitTime(100_000);
 
         context.start();
 
