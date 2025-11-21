@@ -99,10 +99,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 
         restConfiguration()
-                .component("servlet")
+                .component("platform-http")
                 .contextPath("/services")
                 .bindingMode(RestBindingMode.json)
-                .endpointProperty("matchOnUriPrefix", "true")
                 .apiContextPath("/openapi.yaml")
                 .apiProperty("api.title", "Timetable Admin API").apiProperty("api.version", "1.0");
 
