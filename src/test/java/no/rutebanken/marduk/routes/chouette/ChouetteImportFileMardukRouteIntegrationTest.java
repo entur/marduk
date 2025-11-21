@@ -162,6 +162,10 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
                 && JobEvent.State.OK.equals(je.getState())));
 
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain())
+                && JobEvent.TimetableAction.PREVALIDATION.name().equals(je.getAction())
+                && JobEvent.State.PENDING.equals(je.getState())));
+
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain())
                 && JobEvent.TimetableAction.IMPORT.name().equals(je.getAction())
                 && JobEvent.State.PENDING.equals(je.getState())));
 
