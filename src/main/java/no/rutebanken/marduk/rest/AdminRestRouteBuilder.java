@@ -640,9 +640,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-chouette-graph-list");
 
         from("direct:adminDatasetImport")
-                .process(this::removeHttpHeaders)
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeAdminRequest")
+                .process(this::removeHttpHeaders)
                 .to("direct:validateProvider")
                 .split(method(ImportFilesSplitter.class, "splitFiles"))
 
@@ -778,10 +778,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:adminChouetteTransfer")
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .log(LoggingLevel.INFO, correlation() + "Chouette transfer dataspace")
-                .process(this::removeHttpHeaders)
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:validateProvider")
                 .to("direct:authorizeAdminRequest")
+                .process(this::removeHttpHeaders)
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteTransferExportQueue")
                 .routeId("admin-chouette-transfer");
 
@@ -794,20 +794,20 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         from("direct:authorizeAdminRequest")
                 .doTry()
-                .process(e -> mardukAuthorizationService.verifyAdministratorPrivileges())
+                .process(mardukAuthorizationService::verifyAdministratorPrivileges)
                 .to("direct:setUsername")
                 .routeId("admin-authorize-admin-request");
 
         from("direct:authorizeEditorRequest")
                 .doTry()
-                .process(e -> mardukAuthorizationService.verifyRouteDataEditorPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
+                .process(e -> mardukAuthorizationService.verifyRouteDataEditorPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class), e))
                 .to("direct:setUsername")
                 .routeId("admin-authorize-editor-request");
 
         from("direct:authorizeBlocksDownloadRequest")
                 .doTry()
                 .log(LoggingLevel.INFO, "Authorizing NeTEx blocks download for provider ${header." + CHOUETTE_REFERENTIAL + "} ")
-                .process(e -> mardukAuthorizationService.verifyBlockViewerPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
+                .process(e -> mardukAuthorizationService.verifyBlockViewerPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class), e))
                 .to("direct:setUsername")
                 .routeId("admin-authorize-blocks-download-request");
 
