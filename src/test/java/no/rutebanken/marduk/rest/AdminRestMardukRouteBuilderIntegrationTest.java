@@ -35,6 +35,7 @@ import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.rutebanken.helper.organisation.authorization.AuthorizationService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -116,6 +117,12 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
                     .audience(Set.of("test-audience"))
                     .build();
         }
+
+        @Bean
+        public AuthorizationService<Long> testAuthorizationService() {
+            return new TestAuthorizationService();
+        }
+
     }
 
     @EndpointInject("mock:chouetteImportQueue")
@@ -442,4 +449,5 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
                 HttpHeaders.AUTHORIZATION, "Bearer test-token",
                 CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT);
     }
+
 }
