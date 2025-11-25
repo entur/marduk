@@ -23,9 +23,8 @@ import static org.springframework.security.config.Customizer.withDefaults;
 /**
  * Authentication and authorization configuration for Marduk.
  * All requests must be authenticated except for the OpenAPI endpoint.
- * The OAuth2 ID-provider (Entur Partner Auth0 or RoR Auth0) is identified using
+ * The OAuth2 ID-provider (Entur Partner Auth0) is identified using
  * {@link MultiIssuerAuthenticationManagerResolver} with multi-audience support.
- * The Entur Partner Auth0 decoder accepts both partner and RoR audiences.
  */
 @Profile("!test")
 @EnableWebSecurity
@@ -45,18 +44,12 @@ public class MardukWebSecurityConfiguration {
 
     @Bean
     public MultiIssuerAuthenticationManagerResolver multiIssuerResolver(
-            @Value("${marduk.oauth2.resourceserver.auth0.partner.jwt.audience}") String enturPartnerAuth0Audience,
-            @Value("${marduk.oauth2.resourceserver.auth0.partner.jwt.issuer-uri}") String enturPartnerAuth0Issuer,
-            @Value("${marduk.oauth2.resourceserver.auth0.ror.jwt.audience}") String rorAuth0Audience,
-            @Value("${marduk.oauth2.resourceserver.auth0.ror.jwt.issuer-uri}") String rorAuth0Issuer,
-            @Value("${marduk.oauth2.resourceserver.auth0.ror.claim.namespace}") String rorAuth0ClaimNamespace) {
+            @Value("${marduk.oauth2.resourceserver.auth0.partner.jwt.audience}") String enturPartnerAuth0Audiences,
+            @Value("${marduk.oauth2.resourceserver.auth0.partner.jwt.issuer-uri}") String enturPartnerAuth0Issuer) {
 
         return new MultiIssuerAuthenticationManagerResolverBuilder()
-                .withEnturPartnerAuth0Audiences(List.of(enturPartnerAuth0Audience, rorAuth0Audience))
+                .withEnturPartnerAuth0Audiences(Arrays.asList(enturPartnerAuth0Audiences.split(",")))
                 .withEnturPartnerAuth0Issuer(enturPartnerAuth0Issuer)
-                .withRorAuth0Audience(rorAuth0Audience)
-                .withRorAuth0Issuer(rorAuth0Issuer)
-                .withRorAuth0ClaimNamespace(rorAuth0ClaimNamespace)
                 .build();
     }
 
