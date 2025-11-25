@@ -24,7 +24,7 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <camel.version>4.4.5</camel.version>
+        <camel.version>4.10.7</camel.version>
         <entur.helpers.version>5.50.0</entur.helpers.version>
         <commons-io.version>2.21.0</commons-io.version>
         <commons-csv.version>1.14.1</commons-csv.version>
@@ -171,11 +171,15 @@
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
-            <artifactId>camel-kubernetes-starter</artifactId>
+            <artifactId>camel-kubernetes-cluster-service-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-file-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-file-cluster-service-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>

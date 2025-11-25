@@ -74,8 +74,11 @@ public class NextExportMergedGtfsRouteBuilderTest extends MardukRouteBuilderInte
         ObjectMapper mapper = new ObjectMapper();
 
         updateStatusMockEndpoint.setExpectedMessageCount(1);
-        updateStatusMockEndpoint.expectedHeaderReceived("CamelGooglePubsubAttributes", headers);
         updateStatusMockEndpoint.whenAnyExchangeReceived(exchange -> {
+            Map<String, String> attributes = exchange.getIn().getHeader("CamelGooglePubsubAttributes", Map.class);
+            Assertions.assertEquals("started", attributes.get("status"));
+            Assertions.assertEquals("action", attributes.get(JOB_ACTION));
+            
             String systemStatusValue = exchange.getIn().getHeader("RutebankenSystemStatus", String.class);
             Map<String, Object> statusValues = mapper.readValue(systemStatusValue, Map.class);
             Assertions.assertNotNull(statusValues.get("correlationId"));
@@ -111,8 +114,12 @@ public class NextExportMergedGtfsRouteBuilderTest extends MardukRouteBuilderInte
         ObjectMapper mapper = new ObjectMapper();
 
         updateStatusMockEndpoint.setExpectedMessageCount(1);
-        updateStatusMockEndpoint.expectedHeaderReceived("CamelGooglePubsubAttributes", headers);
         updateStatusMockEndpoint.whenAnyExchangeReceived(exchange -> {
+            Map<String, String> attributes = exchange.getIn().getHeader("CamelGooglePubsubAttributes", Map.class);
+            Assertions.assertEquals("ok", attributes.get("status"));
+            Assertions.assertEquals("action", attributes.get(JOB_ACTION));
+            Assertions.assertEquals(correlationId, attributes.get(Constants.CORRELATION_ID));
+            
             String systemStatusValue = exchange.getIn().getHeader("RutebankenSystemStatus", String.class);
             Map<String, Object> statusValues = mapper.readValue(systemStatusValue, Map.class);
             Assertions.assertEquals(statusValues.get("correlationId"), correlationId);
@@ -148,8 +155,12 @@ public class NextExportMergedGtfsRouteBuilderTest extends MardukRouteBuilderInte
         ObjectMapper mapper = new ObjectMapper();
 
         updateStatusMockEndpoint.setExpectedMessageCount(1);
-        updateStatusMockEndpoint.expectedHeaderReceived("CamelGooglePubsubAttributes", headers);
         updateStatusMockEndpoint.whenAnyExchangeReceived(exchange -> {
+            Map<String, String> attributes = exchange.getIn().getHeader("CamelGooglePubsubAttributes", Map.class);
+            Assertions.assertEquals("failed", attributes.get("status"));
+            Assertions.assertEquals("action", attributes.get(JOB_ACTION));
+            Assertions.assertEquals(correlationId, attributes.get(Constants.CORRELATION_ID));
+            
             String systemStatusValue = exchange.getIn().getHeader("RutebankenSystemStatus", String.class);
             Map<String, Object> statusValues = mapper.readValue(systemStatusValue, Map.class);
             Assertions.assertEquals(statusValues.get("correlationId"), correlationId);

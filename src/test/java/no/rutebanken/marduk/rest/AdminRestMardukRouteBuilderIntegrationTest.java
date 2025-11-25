@@ -19,6 +19,7 @@ package no.rutebanken.marduk.rest;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.nimbusds.jose.JWSAlgorithm;
+import jakarta.servlet.http.HttpServletRequest;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
@@ -41,11 +42,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationManagerResolver;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
@@ -100,6 +104,10 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
             return http.build();
         }
 
+        @Bean
+        public AuthenticationManagerResolver<HttpServletRequest> resolver() {
+            return context -> (AuthenticationManager) authentication -> new BearerTokenAuthenticationToken(createTestJwtToken().getTokenValue());
+        }
 
         @Bean
         public JwtDecoder jwtdecoder() {
@@ -196,7 +204,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         // Do rest call
 
-        Map<String, Object> headers = getTestHeaders("POST");
+        Map<String, Object> headers = getTestHeaders("POST", "application/json");
 
         importTemplate.sendBodyAndHeaders(importJson, headers);
 
@@ -226,8 +234,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         // Do rest call
-        Map<String, Object> headers = getTestHeaders("POST");
-        exportTemplate.sendBodyAndHeaders(null, headers);
+        Map<String, Object> headers = getTestHeaders("POST", "text/plain");
+        exportTemplate.sendBodyAndHeaders("", headers);
 
         // setup expectations on the mocks
         exportQueue.expectedMessageCount(1);
@@ -254,7 +262,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         // Do rest call
-        Map<String, Object> headers = getTestHeaders("GET");
+        Map<String, Object> headers = getTestHeaders("GET", "application/json");
         InputStream response = (InputStream) listFilesTemplate.requestBodyAndHeaders(null, headers);
         // Parse response
 
@@ -277,7 +285,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         context.start();
 
-        Map<String, Object> headers = getTestHeaders("GET");
+        Map<String, Object> headers = getTestHeaders("GET", "application/octet-stream");
         InputStream response = (InputStream) getFileTemplate.requestBodyAndHeaders(null, headers);
 
         assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
@@ -288,7 +296,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         context.start();
 
-        Map<String, Object> headers = getTestHeaders("GET");
+        Map<String, Object> headers = getTestHeaders("GET", "application/octet-stream");
 
         assertThrows(CamelExecutionException.class, () -> getUnknownFileTemplate.requestBodyAndHeaders(null, headers));
     }
@@ -304,7 +312,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         // Do rest call
-        Map<String, Object> headers = getTestHeaders("GET");
+        Map<String, Object> headers = getTestHeaders("GET", "application/json");
         InputStream response = (InputStream) listExportFilesTemplate.requestBodyAndHeaders(null, headers);
         // Parse response
 
@@ -353,7 +361,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, testFile, ContentType.DEFAULT_BINARY, fileName).build();
-        Map<String, Object> headers = getTestHeaders("POST");
+        Map<String, Object> headers = getTestHeaders("POST", "multipart/form-data");
         template.requestBodyAndHeaders(httpEntity, headers);
 
         processFileQueue.assertIsSatisfied();
@@ -382,7 +390,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         processFileQueue.expectedMessageCount(1);
 
         HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName).build();
-        Map<String, Object> headers = getTestHeaders("POST");
+        Map<String, Object> headers = getTestHeaders("POST", "multipart/form-data");
 
         context.start();
         uploadFileTemplate.requestBodyAndHeaders(httpEntity, headers);
@@ -405,7 +413,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         //populate fake blob repo
         internalInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + filename, testFile);
 
-        Map<String, Object> headers = getTestHeaders("GET");
+        Map<String, Object> headers = getTestHeaders("GET", "application/octet-stream");
 
         context.start();
         InputStream response = (InputStream) downloadNetexBlocksTemplate.requestBodyAndHeaders(null, headers);
@@ -424,13 +432,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         context.start();
 
-        String authorizationToken = "Bearer sensitive-secret-token";
-        Map<String, Object> headers = Map.of(
-                Exchange.HTTP_METHOD, "POST",
-                HttpHeaders.AUTHORIZATION, authorizationToken,
-                CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT);
-
-        exportTemplate.sendBodyAndHeaders(null, headers);
+        Map<String, Object> headers = getTestHeaders("POST", "text/plain");
+        exportTemplate.sendBodyAndHeaders("", headers);
 
         exportQueue.assertIsSatisfied();
 
@@ -443,10 +446,11 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
                 "Authorization header should not be forwarded to internal routes");
     }
 
-    private static Map<String, Object> getTestHeaders(String method) {
+    private static Map<String, Object> getTestHeaders(String method, String contentType) {
         return Map.of(
                 Exchange.HTTP_METHOD, method,
                 HttpHeaders.AUTHORIZATION, "Bearer test-token",
+                Exchange.CONTENT_TYPE, contentType,
                 CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT);
     }
 
