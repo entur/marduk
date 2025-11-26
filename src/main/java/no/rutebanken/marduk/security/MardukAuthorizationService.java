@@ -1,7 +1,5 @@
 package no.rutebanken.marduk.security;
 
-import org.apache.camel.Exchange;
-
 /**
  *  Service that verifies the privileges of the API clients.
  */
@@ -11,14 +9,14 @@ public interface MardukAuthorizationService {
     /**
      * Verify that the user has full administrator privileges.
      */
-    void verifyAdministratorPrivileges(Exchange e);
+    void verifyAdministratorPrivileges();
 
     /**
      * Verify that the user can edit route data for a given provider.
      * Users can edit route data if they have administrator privileges,
      * or if it has editor privileges for this provider.
      */
-    void verifyRouteDataEditorPrivileges(Long providerId, Exchange e);
+    void verifyRouteDataEditorPrivileges(Long providerId);
 
     /**
      * Verify that the user can read block data for a given provider.
@@ -26,6 +24,5 @@ public interface MardukAuthorizationService {
      * or if they have editor privileges for this provider
      * or if they have NeTEx blocks viewer privileges for this provider.
      */
-    void verifyBlockViewerPrivileges(Long providerId, Exchange e);
-
+    void verifyBlockViewerPrivileges(Long providerId);
 }

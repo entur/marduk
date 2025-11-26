@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.config;
 
-import jakarta.servlet.http.HttpServletRequest;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.security.DefaultMardukAuthorizationService;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
@@ -33,7 +32,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManagerResolver;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
@@ -115,8 +113,8 @@ public class AuthorizationConfig {
 
 
     @Bean
-    public MardukAuthorizationService mardukAuthorizationService(AuthorizationService<Long> authorizationService, AuthenticationManagerResolver<HttpServletRequest> resolver) {
-        return new DefaultMardukAuthorizationService(authorizationService, resolver);
+    public MardukAuthorizationService mardukAuthorizationService(AuthorizationService<Long> authorizationService) {
+        return new DefaultMardukAuthorizationService(authorizationService);
     }
 
 }

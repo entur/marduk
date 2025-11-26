@@ -113,7 +113,7 @@ public class AdminExternalRestRouteBuilder extends BaseRouteBuilder {
                 .to("language:simple:resource:classpath:openapi/timetable-management/openapi.yaml");
 
         from("direct:adminExternalUploadFile")
-                .streamCache("true")
+                .streamCaching()
                 .process(this::setNewCorrelationId)
                 .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
                 .log(LoggingLevel.INFO, correlation() + "Received file from provider ${header.codespace} through the HTTP endpoint")
@@ -132,7 +132,7 @@ public class AdminExternalRestRouteBuilder extends BaseRouteBuilder {
                 .autoStartup("{{netex.import.http.autoStartup:true}}");
 
         from("direct:adminExternalUploadFlexFile")
-                .streamCache("true")
+                .streamCaching()
                 .process(this::setNewCorrelationId)
                 .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
                 .log(LoggingLevel.INFO, correlation() + "Received flex file from provider ${header.codespace} through the HTTP endpoint")

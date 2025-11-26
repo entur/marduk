@@ -58,14 +58,10 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .setHeader(FILE_HANDLE, simple("inbound/received/${header." + CHOUETTE_REFERENTIAL + "}/${header." + FILE_NAME + "}"))
                 .process(e -> e.getIn().setHeader(FILE_CONTENT_HEADER, CloseShieldInputStream.wrap(e.getIn().getBody(Part.class).getInputStream())))
                 .to("direct:uploadFileAndStartImport")
-                //end split
-                .end()
-                .setBody(constant(""))
                 .routeId("upload-files-and-start-import");
 
 
-        from("direct:uploadFileAndStartImport")
-                .streamCache("true")
+        from("direct:uploadFileAndStartImport").streamCaching()
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
                 .doTry()
                 .log(LoggingLevel.INFO, correlation() + "Uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")

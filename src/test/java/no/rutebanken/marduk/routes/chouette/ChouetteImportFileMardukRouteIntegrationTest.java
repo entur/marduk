@@ -78,7 +78,6 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
     @Value("${chouette.url}")
     private String chouetteUrl;
 
-    @Override
     @BeforeEach
     protected void setUp() throws IOException {
         super.setUp();
@@ -122,7 +121,6 @@ class ChouetteImportFileMardukRouteIntegrationTest extends MardukRouteBuilderInt
 
         pollJobStatus.expectedMessageCount(1);
         updateStatus.expectedMessageCount(6);
-        updateStatus.setResultWaitTime(100_000);
         checkScheduledJobsBeforeTriggeringNextAction.expectedMessageCount(1);
         // 1 initial import call
         chouetteCreateImport.expectedMessageCount(1);
