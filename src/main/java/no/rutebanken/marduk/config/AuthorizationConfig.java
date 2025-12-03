@@ -20,7 +20,7 @@ import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.security.DefaultMardukAuthorizationService;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
 import org.entur.oauth2.JwtRoleAssignmentExtractor;
-import org.entur.oauth2.user.JwtUserInfoExtractor;
+import org.entur.oauth2.user.DefaultJwtUserInfoExtractor;
 import org.entur.ror.permission.RemoteBabaRoleAssignmentExtractor;
 import org.entur.ror.permission.RemoteBabaUserInfoExtractor;
 import org.rutebanken.helper.organisation.RoleAssignmentExtractor;
@@ -48,7 +48,7 @@ public class AuthorizationConfig {
     )
     @Bean
     public UserInfoExtractor jwtUserInfoExtractor() {
-        return new JwtUserInfoExtractor();
+        return new DefaultJwtUserInfoExtractor();
     }
 
     @ConditionalOnProperty(
