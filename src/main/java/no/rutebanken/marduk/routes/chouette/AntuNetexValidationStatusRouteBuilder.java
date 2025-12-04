@@ -18,7 +18,7 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
-import no.rutebanken.marduk.routes.experimental.ExperimentalImportFilter;
+import no.rutebanken.marduk.routes.experimental.ExperimentalImportHelpers;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.processors.FileCreatedTimestampProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -35,15 +35,15 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
     protected static final String STATUS_VALIDATION_OK = "ok";
     protected static final String STATUS_VALIDATION_FAILED = "failed";
 
-    private final ExperimentalImportFilter experimentalImportFilter;
+    private final ExperimentalImportHelpers experimentalImportHelpers;
 
     FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
 
     public AntuNetexValidationStatusRouteBuilder(
-            ExperimentalImportFilter experimentalImportFilter,
+            ExperimentalImportHelpers experimentalImportHelpers,
         FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository
     ) {
-        this.experimentalImportFilter = experimentalImportFilter;
+        this.experimentalImportHelpers = experimentalImportHelpers;
         this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
     }
 
@@ -141,13 +141,13 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation complete for referential ${header." + DATASET_REFERENTIAL + "}")
                 .choice()
 
-                .when(PredicateBuilder.and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), experimentalImportFilter::shouldRunExperimentalImport))
+                .when(PredicateBuilder.and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                     .log(LoggingLevel.INFO, correlation() + "Detected ashur filtering is enabled, triggering filtering process after pre-validation...")
                     .to("direct:ashurNetexFilterAfterPreValidation")
                 .endChoice()
 
-                .when(PredicateBuilder.and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), exchange -> !experimentalImportFilter.shouldRunExperimentalImport(exchange)))
+                .when(PredicateBuilder.and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), exchange -> !experimentalImportHelpers.shouldRunExperimentalImport(exchange)))
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                     .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + CHOUETTE_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
                     .to("direct:copyInternalBlobInBucket")
@@ -156,16 +156,19 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
                 .endChoice()
 
-                .when(PredicateBuilder.and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION), experimentalImportFilter::shouldRunExperimentalImport))
+                .when(PredicateBuilder.and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
-                    .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_NETEX_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                    .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexFileProducedByAshur")
+                    .to("direct:copyInternalBlobInBucket")
+                    .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
                     .log(LoggingLevel.INFO, correlation() + "Experimental import TODO")
                 .endChoice()
 
-                .when(PredicateBuilder.and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION), exchange -> !experimentalImportFilter.shouldRunExperimentalImport(exchange)))
+                .when(PredicateBuilder.and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION), exchange -> !experimentalImportHelpers.shouldRunExperimentalImport(exchange)))
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
                     .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
-                    .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_NETEX_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                    .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexFileExportedFromChouette")
+                    .to("direct:copyInternalBlobInBucket")
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue")
                 .endChoice()

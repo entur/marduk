@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-class ExperimentalImportFilterTest {
+class ExperimentalImportHelpersTest {
 
     private Exchange exchange() {
         CamelContext ctx = new DefaultCamelContext();
@@ -21,7 +21,7 @@ class ExperimentalImportFilterTest {
     void testShouldRunExperimentalImportIfEnabledForCurrentCodespace() {
         Exchange exchange = exchange();
         exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, "TST");
-        ExperimentalImportFilter filter = new ExperimentalImportFilter(true, List.of("TST"));
+        ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, List.of("TST"));
         Assertions.assertTrue(filter.shouldRunExperimentalImport(exchange));
     }
 
@@ -29,19 +29,19 @@ class ExperimentalImportFilterTest {
     void testShouldNotRunExperimentalImportIfNotEnabledForCurrentCodespace() {
         Exchange exchange = exchange();
         exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, "TST");
-        ExperimentalImportFilter filter = new ExperimentalImportFilter(true, List.of("NOMATCH"));
+        ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, List.of("NOMATCH"));
         Assertions.assertFalse(filter.shouldRunExperimentalImport(exchange));
     }
 
     @Test
     void testShouldNotRunExperimentalImportIfEnabledForNoCodespaces() {
-        ExperimentalImportFilter filter = new ExperimentalImportFilter(true, List.of());
+        ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, List.of());
         Assertions.assertFalse(filter.shouldRunExperimentalImport(exchange()));
     }
 
     @Test
     void testShouldNotRunExperimentalImportIfDisabled() {
-        ExperimentalImportFilter filter = new ExperimentalImportFilter(false, List.of());
+        ExperimentalImportHelpers filter = new ExperimentalImportHelpers(false, List.of());
         Assertions.assertFalse(filter.shouldRunExperimentalImport(exchange()));
     }
 }
