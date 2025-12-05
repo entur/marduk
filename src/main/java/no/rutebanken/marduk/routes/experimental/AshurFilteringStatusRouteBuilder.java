@@ -30,14 +30,16 @@ public class AshurFilteringStatusRouteBuilder extends BaseRouteBuilder {
                 .to("direct:copyInternalBlobToValidationBucket")
                 .log(LoggingLevel.INFO, correlation() + " Triggering post-validation of filtered dataset in Antu.")
                 .to("direct:triggerAntuPostValidation")
-                .end();
+                .end()
+                .routeId("antu-post-validation-preparation-route");
 
         from("direct:copyFilteredDatasetToInternalBucket")
                 .setHeader(FILE_HANDLE, header(Constants.FILTERED_NETEX_FILE_PATH_HEADER))
                 .setHeader(TARGET_FILE_HANDLE, header(Constants.FILTERED_NETEX_FILE_PATH_HEADER))
                 .setHeader(SOURCE_CONTAINER, simple("${properties:blobstore.gcs.ashur.exchange.container.name}"))
                 .to("direct:copyBlobFromAnotherBucketToInternalBucket")
-                .end();
+                .end()
+                .routeId("copy-filtered-dataset-to-internal-bucket-route");
 
         from("direct:triggerAntuPostValidation")
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
@@ -52,7 +54,8 @@ public class AshurFilteringStatusRouteBuilder extends BaseRouteBuilder {
                         .state(JobEvent.State.PENDING)
                         .jobId(null)
                         .build())
-                .to("direct:updateStatus");
+                .to("direct:updateStatus")
+                .routeId("trigger-antu-post-validation-after-filtering-route");
 
     }
 }
