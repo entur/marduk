@@ -15,7 +15,6 @@ public class ExperimentalImportHelpers {
     private final boolean experimentalImportEnabled;
     private final List<String> experimentalCodespaces;
 
-    private static final String EXPORT_FILE_NAME = "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     private static final String UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER = "/unpacked-with-flexible-lines";
     private static final String MERGED_NETEX_SUB_FOLDER = "/result";
 
@@ -37,8 +36,8 @@ public class ExperimentalImportHelpers {
         return false;
     }
 
-    public String pathToNetexFileExportedFromChouette() {
-        return BLOBSTORE_PATH_CHOUETTE + EXPORT_FILE_NAME;
+    public String pathToNetexFileExportedFromChouette(Exchange exchange) {
+        return BLOBSTORE_PATH_CHOUETTE + "netex/" + chouetteReferentialFor(exchange) + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     }
 
     public String pathToNetexFileProducedByAshur(Exchange exchange) {
@@ -49,7 +48,7 @@ public class ExperimentalImportHelpers {
         if (shouldRunExperimentalImport(exchange)) {
             return pathToNetexFileProducedByAshur(exchange);
         }
-        return pathToNetexFileExportedFromChouette();
+        return pathToNetexFileExportedFromChouette(exchange);
     }
 
     public String flexibleDataWorkingDirectory(Exchange exchange) {
