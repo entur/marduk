@@ -10,6 +10,13 @@ import java.util.List;
 import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 
+/**
+ * Note:
+ * When using experimental imports, all paths must include correlation ID to ensure isolation between parallel imports.
+ * This is essential when using experimental imports, to ensure consistency when merging and validating timetable data with flexible lines.
+ * This is not needed for Chouette imports, because of Chouette lock mechanism based on referential name.
+ * TODO: Consider lock mechanism for experimental imports for better predictability with parallel imports for the same codespace.
+ * */
 @Component
 public class ExperimentalImportHelpers {
     private final boolean experimentalImportEnabled;
