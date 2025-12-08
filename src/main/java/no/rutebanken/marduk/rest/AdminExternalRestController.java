@@ -16,13 +16,12 @@
 
 package no.rutebanken.marduk.rest;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.Part;
 import jakarta.ws.rs.NotFoundException;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.UploadResult;
 import no.rutebanken.marduk.repository.ProviderRepository;
+import no.rutebanken.marduk.rest.openapi.api.DatasetsApi;
+import no.rutebanken.marduk.rest.openapi.api.FlexDatasetsApi;
+import no.rutebanken.marduk.rest.openapi.model.UploadResult;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.CamelContext;
@@ -32,15 +31,16 @@ import org.apache.camel.support.DefaultExchange;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.*;
@@ -52,7 +52,7 @@ import static no.rutebanken.marduk.Constants.*;
  */
 @RestController
 @RequestMapping("/services/timetable-management")
-public class AdminExternalRestController {
+public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi {
 
     private static final Logger LOG = LoggerFactory.getLogger(AdminExternalRestController.class);
 
@@ -75,11 +75,8 @@ public class AdminExternalRestController {
         this.camelContext = camelContext;
     }
 
-    @PostMapping(value = "/datasets/{codespace}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UploadResult> uploadDataset(
-            @PathVariable String codespace,
-            HttpServletRequest request) {
-
+    @Override
+    public ResponseEntity<UploadResult> upload(String codespace, MultipartFile file) {
         String correlationId = UUID.randomUUID().toString();
         LOG.info("[{}] Received file from provider {} through the Spring HTTP endpoint", correlationId, codespace);
 
@@ -88,16 +85,13 @@ public class AdminExternalRestController {
 
         LOG.info("[{}] Authorization OK for Spring HTTP endpoint, uploading files and starting import pipeline", correlationId);
 
-        triggerFileUpload(request, codespace, providerId, correlationId, null);
+        triggerFileUpload(file, codespace, providerId, correlationId, null);
 
-        return ResponseEntity.ok(new UploadResult(correlationId));
+        return ResponseEntity.ok(new UploadResult().correlationId(correlationId));
     }
 
-    @PostMapping(value = "/flex-datasets/{codespace}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UploadResult> uploadFlexDataset(
-            @PathVariable String codespace,
-            HttpServletRequest request) {
-
+    @Override
+    public ResponseEntity<UploadResult> uploadFlexDataset(String codespace, MultipartFile file) {
         String correlationId = UUID.randomUUID().toString();
         LOG.info("[{}] Received flex file from provider {} through the Spring HTTP endpoint", correlationId, codespace);
 
@@ -106,14 +100,13 @@ public class AdminExternalRestController {
 
         LOG.info("[{}] Authorization OK for Spring HTTP endpoint, uploading flex files and starting import pipeline", correlationId);
 
-        triggerFileUpload(request, codespace, providerId, correlationId, IMPORT_TYPE_NETEX_FLEX);
+        triggerFileUpload(file, codespace, providerId, correlationId, IMPORT_TYPE_NETEX_FLEX);
 
-        return ResponseEntity.ok(new UploadResult(correlationId));
+        return ResponseEntity.ok(new UploadResult().correlationId(correlationId));
     }
 
-    @GetMapping(value = "/datasets/{codespace}/filtered", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<byte[]> downloadFilteredDataset(@PathVariable String codespace) {
-
+    @Override
+    public ResponseEntity<Resource> download(String codespace) {
         String correlationId = UUID.randomUUID().toString();
         LOG.info("[{}] Received Blocks download request for provider {} through the Spring HTTP endpoint", correlationId, codespace);
 
@@ -132,8 +125,9 @@ public class AdminExternalRestController {
         }
 
         try {
-            return ResponseEntity.ok(blob.readAllBytes());
-        } catch (Exception e) {
+            byte[] content = blob.readAllBytes();
+            return ResponseEntity.ok(new ByteArrayResource(content));
+        } catch (IOException e) {
             LOG.error("[{}] Failed to read blob: {}", correlationId, fileHandle, e);
             return ResponseEntity.internalServerError().build();
         }
@@ -147,40 +141,35 @@ public class AdminExternalRestController {
         return providerId;
     }
 
-    private void triggerFileUpload(HttpServletRequest request, String codespace, Long providerId, String correlationId, String importType) {
+    private void triggerFileUpload(MultipartFile file, String codespace, Long providerId, String correlationId, String importType) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("No file provided");
+        }
+
         try {
-            Collection<Part> parts = request.getParts();
-            LOG.debug("[{}] Received multipart request containing {} parts", correlationId, parts.size());
+            String fileName = file.getOriginalFilename();
+            LOG.debug("[{}] Processing file: name={}, size={}, contentType={}",
+                    correlationId, fileName, file.getSize(), file.getContentType());
 
-            for (Part part : parts) {
-                String fileName = part.getSubmittedFileName();
-                if (fileName == null || fileName.isEmpty()) {
-                    continue; // Skip non-file parts
-                }
+            Exchange exchange = new DefaultExchange(camelContext);
+            exchange.getIn().setHeader(CHOUETTE_REFERENTIAL, codespace);
+            exchange.getIn().setHeader(PROVIDER_ID, providerId);
+            exchange.getIn().setHeader(CORRELATION_ID, correlationId);
+            exchange.getIn().setHeader(FILE_APPLY_DUPLICATES_FILTER, true);
+            exchange.getIn().setHeader(FILE_NAME, fileName);
+            exchange.getIn().setHeader(FILE_HANDLE, "inbound/received/" + codespace + "/" + fileName);
+            exchange.getIn().setHeader("RutebankenFileContent", file.getInputStream());
 
-                LOG.debug("[{}] Processing part: name={}, submittedFileName={}, size={}, contentType={}",
-                        correlationId, part.getName(), fileName, part.getSize(), part.getContentType());
-
-                Exchange exchange = new DefaultExchange(camelContext);
-                exchange.getIn().setHeader(CHOUETTE_REFERENTIAL, codespace);
-                exchange.getIn().setHeader(PROVIDER_ID, providerId);
-                exchange.getIn().setHeader(CORRELATION_ID, correlationId);
-                exchange.getIn().setHeader(FILE_APPLY_DUPLICATES_FILTER, true);
-                exchange.getIn().setHeader(FILE_NAME, fileName);
-                exchange.getIn().setHeader(FILE_HANDLE, "inbound/received/" + codespace + "/" + fileName);
-                exchange.getIn().setHeader("RutebankenFileContent", part.getInputStream());
-
-                if (importType != null) {
-                    exchange.getIn().setHeader(IMPORT_TYPE, importType);
-                }
-
-                // Set the Part as body (expected by the route)
-                exchange.getIn().setBody(part);
-
-                producerTemplate.send("direct:uploadFileAndStartImport", exchange);
+            if (importType != null) {
+                exchange.getIn().setHeader(IMPORT_TYPE, importType);
             }
-        } catch (IOException | ServletException e) {
-            throw new RuntimeException("Failed to process multipart request", e);
+
+            // Set the file input stream as body (expected by the route)
+            exchange.getIn().setBody(file.getInputStream());
+
+            producerTemplate.send("direct:uploadFileAndStartImport", exchange);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to process multipart file", e);
         }
     }
 

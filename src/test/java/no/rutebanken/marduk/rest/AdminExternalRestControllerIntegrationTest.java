@@ -93,7 +93,7 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
         processFileQueue.expectedMessageCount(1);
 
         HttpEntity httpEntity = MultipartEntityBuilder.create()
-                .addBinaryBody(fileName, getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
+                .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
                 .build();
         Map<String, Object> headers = getTestHeaders("POST");
 
@@ -132,7 +132,7 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
         processFileQueue.expectedMessageCount(1);
 
         HttpEntity httpEntity = MultipartEntityBuilder.create()
-                .addBinaryBody(fileName, getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
+                .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
                 .build();
         Map<String, Object> headers = getTestHeaders("POST");
 
@@ -204,7 +204,7 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
         String fileName = "netex-test-unknown-codespace.zip";
 
         HttpEntity httpEntity = MultipartEntityBuilder.create()
-                .addBinaryBody(fileName, getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
+                .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
                 .build();
         Map<String, Object> headers = Map.of(
                 Exchange.HTTP_METHOD, "POST",

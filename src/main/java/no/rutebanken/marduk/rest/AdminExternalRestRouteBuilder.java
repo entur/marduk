@@ -18,7 +18,7 @@ package no.rutebanken.marduk.rest;
 
 import jakarta.ws.rs.NotFoundException;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.UploadResult;
+import no.rutebanken.marduk.rest.openapi.model.UploadResult;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -50,8 +50,8 @@ public class AdminExternalRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::removeHttpHeaders)
                 .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.rest:true}", Boolean.class))
                 .to("direct:uploadFilesAndStartImport")
-                .process(e -> e.getIn().setBody(new UploadResult(
-                        e.getIn().getHeader(Constants.CORRELATION_ID, String.class)))
+                .process(e -> e.getIn().setBody(new UploadResult()
+                        .correlationId(e.getIn().getHeader(Constants.CORRELATION_ID, String.class)))
                 )
                 .marshal().json()
                 .routeId("admin-external-upload-file")
@@ -70,8 +70,8 @@ public class AdminExternalRestRouteBuilder extends BaseRouteBuilder {
                 .setHeader(IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
                 .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.rest:true}", Boolean.class))
                 .to("direct:uploadFilesAndStartImport")
-                .process(e -> e.getIn().setBody(new UploadResult(
-                        e.getIn().getHeader(Constants.CORRELATION_ID, String.class)))
+                .process(e -> e.getIn().setBody(new UploadResult()
+                        .correlationId(e.getIn().getHeader(Constants.CORRELATION_ID, String.class)))
                 )
                 .marshal().json()
                 .routeId("admin-external-upload-flex-file")
