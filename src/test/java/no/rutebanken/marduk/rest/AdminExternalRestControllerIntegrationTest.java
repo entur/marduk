@@ -156,7 +156,7 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
     }
 
     @Test
-    void downloadFilteredDatasetViaSpringApi() throws Exception {
+    void downloadFilteredDatasetViaSpringApi() {
         when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
 
         // Set up a blob in the store for download
@@ -179,7 +179,7 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
     }
 
     @Test
-    void downloadFilteredDatasetNotFound() throws Exception {
+    void downloadFilteredDatasetNotFound() {
         when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
 
         // Don't set up any blob - should return 404
@@ -198,7 +198,7 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
     }
 
     @Test
-    void uploadDatasetUnknownCodespace() throws Exception {
+    void uploadDatasetUnknownCodespace() {
         when(providerRepository.getProviderId("unknown_codespace")).thenReturn(null);
 
         String fileName = "netex-test-unknown-codespace.zip";

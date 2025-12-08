@@ -18,6 +18,7 @@ package no.rutebanken.marduk.rest;
 
 import jakarta.ws.rs.NotFoundException;
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.rest.openapi.api.DatasetsApi;
 import no.rutebanken.marduk.rest.openapi.api.FlexDatasetsApi;
@@ -48,7 +49,6 @@ import static no.rutebanken.marduk.Constants.*;
 /**
  * Spring REST API endpoints for managing the transit data import pipeline.
  * These endpoints are intended to be used by machine-to-machine clients.
- * This is the Spring MVC equivalent of {@link AdminExternalRestRouteBuilder}.
  */
 @RestController
 @RequestMapping("/services/timetable-management")
@@ -169,7 +169,7 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
 
             producerTemplate.send("direct:uploadFileAndStartImport", exchange);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to process multipart file", e);
+            throw new MardukException("Failed to process multipart file", e);
         }
     }
 
