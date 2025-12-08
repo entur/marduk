@@ -28,7 +28,6 @@ import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.support.DefaultExchange;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,21 +150,21 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
             LOG.debug("[{}] Processing file: name={}, size={}, contentType={}",
                     correlationId, fileName, file.getSize(), file.getContentType());
 
-            Exchange exchange = new DefaultExchange(camelContext);
-            exchange.getIn().setHeader(CHOUETTE_REFERENTIAL, codespace);
-            exchange.getIn().setHeader(PROVIDER_ID, providerId);
-            exchange.getIn().setHeader(CORRELATION_ID, correlationId);
-            exchange.getIn().setHeader(FILE_APPLY_DUPLICATES_FILTER, true);
-            exchange.getIn().setHeader(FILE_NAME, fileName);
-            exchange.getIn().setHeader(FILE_HANDLE, "inbound/received/" + codespace + "/" + fileName);
-            exchange.getIn().setHeader("RutebankenFileContent", file.getInputStream());
+            ExchangeBuilder builder = ExchangeBuilder.create(camelContext)
+                    .withHeader(CHOUETTE_REFERENTIAL, codespace)
+                    .withHeader(PROVIDER_ID, providerId)
+                    .withHeader(CORRELATION_ID, correlationId)
+                    .withHeader(FILE_APPLY_DUPLICATES_FILTER, true)
+                    .withHeader(FILE_NAME, fileName)
+                    .withHeader(FILE_HANDLE, "inbound/received/" + codespace + "/" + fileName)
+                    .withHeader("RutebankenFileContent", file.getInputStream());
 
             if (importType != null) {
-                exchange.getIn().setHeader(IMPORT_TYPE, importType);
+                builder.withHeader(IMPORT_TYPE, importType);
             }
 
             // Set the file input stream as body (expected by the route)
-            exchange.getIn().setBody(file.getInputStream());
+            Exchange exchange = builder.withBody(file.getInputStream()).build();
 
             producerTemplate.send("direct:uploadFileAndStartImport", exchange);
         } catch (IOException e) {
