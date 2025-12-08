@@ -22,95 +22,21 @@ import no.rutebanken.marduk.domain.UploadResult;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.model.rest.RestBindingMode;
-import org.apache.camel.model.rest.RestParamType;
-import org.rutebanken.helper.organisation.NotAuthenticatedException;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
-import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 import static no.rutebanken.marduk.Constants.*;
 
 /**
- * API endpoints for managing the transit data import pipeline.
- * These endpoints are intended to be used by machine-to-machine clients.
- * See {@link AdminRestRouteBuilder} for the internal API used to interact with front-ends.
+ * Camel routes for managing the transit data import pipeline.
+ * These routes are used by deprecated endpoints in {@link AdminRestRouteBuilder}.
+ * The REST API is now served by {@link AdminExternalRestController}.
  */
 @Component
 public class AdminExternalRestRouteBuilder extends BaseRouteBuilder {
 
-
-    private static final String JSON = "application/json";
-    private static final String X_OCTET_STREAM = "application/x-octet-stream";
-    private static final String PLAIN = "text/plain";
-    private static final String OPENAPI_DATA_TYPE_STRING = "string";
-
     @Override
     public void configure() throws Exception {
         super.configure();
-
-        onException(AccessDeniedException.class)
-                .handled(true)
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(403))
-                .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
-                .transform(exceptionMessage());
-
-        onException(NotAuthenticatedException.class)
-                .handled(true)
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(401))
-                .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
-                .transform(exceptionMessage());
-
-        onException(NotFoundException.class)
-                .handled(true)
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404))
-                .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
-                .transform(exceptionMessage());
-
-        rest("/timetable-management")
-
-                .post("/datasets/{codespace}")
-                .description("Upload a NeTEx dataset")
-                .param().name("codespace").type(RestParamType.path).description("Codespace of the NeTEx dataset").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
-                .consumes(MULTIPART_FORM_DATA)
-                .produces(JSON)
-                .outType(UploadResult.class)
-                .bindingMode(RestBindingMode.off)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(404).message("Unknown codespace").endResponseMessage()
-                .responseMessage().code(500).message("Internal server error").endResponseMessage()
-                .routeId("rest-admin-external-upload-file")
-                .to("direct:adminExternalUploadFile")
-
-                .post("/flex-datasets/{codespace}")
-                .description("Upload a NeTEx dataset containing flexible transport data")
-                .param().name("codespace").type(RestParamType.path).description("Codespace of the NeTEx flex dataset").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
-                .consumes(MULTIPART_FORM_DATA)
-                .produces(JSON)
-                .outType(UploadResult.class)
-                .bindingMode(RestBindingMode.off)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(404).message("Unknown codespace").endResponseMessage()
-                .responseMessage().code(500).message("Internal server error").endResponseMessage()
-                .routeId("rest-admin-external-upload-flex-file")
-                .to("direct:adminExternalUploadFlexFile")
-
-                .get("/datasets/{codespace}/filtered")
-                .description("Download a NeTEx dataset with private data. Expired data and unsupported NeTEx entities are filtered out")
-                .param().name("codespace").type(RestParamType.path).description("Codespace of the NeTEx dataset").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
-                .consumes(PLAIN)
-                .produces(X_OCTET_STREAM)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(404).message("Unknown codespace").endResponseMessage()
-                .responseMessage().code(500).message("Internal server error").endResponseMessage()
-                .routeId("rest-admin-external-download-file")
-                .to("direct:adminExternalDownloadPrivateDataset")
-
-                .get("/openapi.yaml")
-                .produces(JSON)
-                .apiDocs(false)
-                .bindingMode(RestBindingMode.off)
-                .to("language:simple:resource:classpath:openapi/timetable-management/openapi.yaml");
 
         from("direct:adminExternalUploadFile")
                 .streamCaching()

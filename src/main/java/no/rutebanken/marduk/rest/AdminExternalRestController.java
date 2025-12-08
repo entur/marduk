@@ -51,7 +51,7 @@ import static no.rutebanken.marduk.Constants.*;
  * This is the Spring MVC equivalent of {@link AdminExternalRestRouteBuilder}.
  */
 @RestController
-@RequestMapping("/services/timetable-management_new")
+@RequestMapping("/services/timetable-management")
 public class AdminExternalRestController {
 
     private static final Logger LOG = LoggerFactory.getLogger(AdminExternalRestController.class);

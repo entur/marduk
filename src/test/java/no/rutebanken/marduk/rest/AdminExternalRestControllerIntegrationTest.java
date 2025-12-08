@@ -1,4 +1,4 @@
-create/*
+/*
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
  * the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -57,19 +57,19 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable-management_new/datasets/" + CHOUETTE_REFERENTIAL_RUT)
+    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT)
     protected ProducerTemplate uploadFileTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable-management_new/flex-datasets/" + CHOUETTE_REFERENTIAL_RUT)
+    @Produce("http:localhost:{{server.port}}/services/timetable-management/flex-datasets/" + CHOUETTE_REFERENTIAL_RUT)
     protected ProducerTemplate uploadFlexFileTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable-management_new/datasets/" + CHOUETTE_REFERENTIAL_RUT + "/filtered")
+    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT + "/filtered")
     protected ProducerTemplate downloadFilteredDatasetTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable-management_new/datasets/" + CHOUETTE_REFERENTIAL_RUT + "/filtered?throwExceptionOnFailure=false")
+    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT + "/filtered?throwExceptionOnFailure=false")
     protected ProducerTemplate downloadFilteredDatasetNotFoundTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable-management_new/datasets/unknown_codespace?throwExceptionOnFailure=false")
+    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/unknown_codespace?throwExceptionOnFailure=false")
     protected ProducerTemplate uploadFileUnknownCodespaceTemplate;
 
     @BeforeEach
