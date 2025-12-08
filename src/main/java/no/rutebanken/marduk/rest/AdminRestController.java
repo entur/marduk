@@ -19,6 +19,7 @@ package no.rutebanken.marduk.rest;
 import jakarta.ws.rs.NotFoundException;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
+import no.rutebanken.marduk.domain.OtpGraphsInfo;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
 import org.apache.camel.CamelContext;
@@ -268,6 +269,186 @@ public class AdminRestController {
                 .build();
 
         producerTemplate.send("direct:uploadFilesAndStartImport", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    // Second batch of endpoints
+
+    /**
+     * Cancel all Chouette jobs for all providers.
+     */
+    @DeleteMapping("/timetable_admin_new/jobs")
+    public ResponseEntity<Void> cancelAllJobs() {
+        LOG.info("Cancelling all Chouette jobs via Spring endpoint");
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+
+        Exchange exchange = ExchangeBuilder.create(camelContext).build();
+        producerTemplate.send("direct:chouetteCancelAllJobsForAllProviders", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Trigger prevalidation for all providers.
+     */
+    @PostMapping("/timetable_admin_new/validate/prevalidation")
+    public ResponseEntity<Void> triggerPrevalidation() {
+        LOG.info("Triggering prevalidation for all providers via Spring endpoint");
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withPattern(ExchangePattern.InOnly)
+                .build();
+        producerTemplate.send("direct:triggerAntuValidationForAllProviders", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Trigger level2 validation for all providers.
+     */
+    @PostMapping("/timetable_admin_new/validate/level2")
+    public ResponseEntity<Void> triggerLevel2Validation() {
+        LOG.info("Triggering level2 validation for all providers via Spring endpoint");
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withPattern(ExchangePattern.InOnly)
+                .build();
+        producerTemplate.send("direct:chouetteValidateLevel2ForAllProviders", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Clean all stop places in Chouette.
+     */
+    @PostMapping("/timetable_admin_new/stop_places/clean")
+    public ResponseEntity<Void> cleanStopPlaces() {
+        LOG.info("Cleaning stop places via Spring endpoint");
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+
+        Exchange exchange = ExchangeBuilder.create(camelContext).build();
+        producerTemplate.send("direct:chouetteCleanStopPlaces", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Refresh line statistics cache.
+     */
+    @PostMapping("/timetable_admin_new/line_statistics/refresh")
+    public ResponseEntity<Void> refreshLineStatistics() {
+        LOG.info("Refreshing line statistics cache via Spring endpoint");
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+
+        Exchange exchange = ExchangeBuilder.create(camelContext).build();
+        producerTemplate.send("direct:chouetteRefreshStatsCache", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Trigger OTP base graph build.
+     */
+    @PostMapping("/timetable_admin_new/routing_graph/build_base")
+    public ResponseEntity<Void> buildBaseGraph() {
+        LOG.info("Triggering OTP base graph build via Spring endpoint");
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withPattern(ExchangePattern.InOnly)
+                .build();
+        producerTemplate.send("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Trigger candidate graph build.
+     */
+    @PostMapping("/timetable_admin_new/routing_graph/build_candidate/{graphType}")
+    public ResponseEntity<String> buildCandidateGraph(@PathVariable String graphType) {
+        LOG.info("Triggering OTP candidate graph build for type {} via Spring endpoint", graphType);
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+
+        String destination;
+        if ("otp2_base".equals(graphType)) {
+            destination = "google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue";
+        } else if ("otp2_netex".equals(graphType)) {
+            destination = "google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphCandidateBuildQueue";
+        } else {
+            return ResponseEntity.badRequest().body("Unknown Graph Type");
+        }
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withPattern(ExchangePattern.InOnly)
+                .build();
+        producerTemplate.send(destination, exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * List OTP2 graphs.
+     */
+    @GetMapping("/timetable_admin_new/routing_graph/graphs")
+    public ResponseEntity<OtpGraphsInfo[]> listGraphs() {
+        LOG.info("Listing OTP graphs via Spring endpoint");
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+
+        Exchange exchange = ExchangeBuilder.create(camelContext).build();
+        Exchange result = producerTemplate.send("direct:listGraphs", exchange);
+        OtpGraphsInfo[] graphs = result.getMessage().getBody(OtpGraphsInfo[].class);
+
+        return ResponseEntity.ok(graphs);
+    }
+
+    /**
+     * Cancel all Chouette jobs for a specific provider.
+     */
+    @DeleteMapping("/timetable_admin_new/{providerId}/jobs")
+    public ResponseEntity<Void> cancelAllProviderJobs(@PathVariable Long providerId) {
+        LOG.info("Cancelling all jobs for provider {} via Spring endpoint", providerId);
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+        validateProvider(providerId);
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withHeader(PROVIDER_ID, providerId)
+                .build();
+        producerTemplate.send("direct:chouetteCancelAllJobsForProvider", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Triggers flex data import process for files in blob store.
+     */
+    @PostMapping("/timetable_admin_new/{providerId}/flex/import")
+    public ResponseEntity<Void> importFlexFiles(
+            @PathVariable Long providerId,
+            @RequestBody BlobStoreFiles files) {
+        LOG.info("Importing flex files for provider {} via Spring endpoint", providerId);
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+        validateProvider(providerId);
+
+        String referential = providerRepository.getReferential(providerId);
+
+        for (BlobStoreFiles.File file : files.getFiles()) {
+            String correlationId = UUID.randomUUID().toString();
+            Exchange exchange = ExchangeBuilder.create(camelContext)
+                    .withHeader(PROVIDER_ID, providerId)
+                    .withHeader(CHOUETTE_REFERENTIAL, referential)
+                    .withHeader(CORRELATION_ID, correlationId)
+                    .withHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND + referential + "/" + file.getName())
+                    .withHeader(Constants.FILE_NAME, "reimport-" + file.getName())
+                    .withHeader(IMPORT_TYPE, IMPORT_TYPE_NETEX_FLEX)
+                    .withPattern(ExchangePattern.InOnly)
+                    .build();
+
+            producerTemplate.send("google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue", exchange);
+        }
 
         return ResponseEntity.ok().build();
     }

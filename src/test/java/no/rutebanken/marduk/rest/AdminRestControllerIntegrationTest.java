@@ -74,6 +74,43 @@ class AdminRestControllerIntegrationTest extends MardukRouteBuilderIntegrationTe
     @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/999/files?throwExceptionOnFailure=false")
     protected ProducerTemplate listProviderFilesUnknownProviderTemplate;
 
+    // New endpoints - second batch
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/jobs")
+    protected ProducerTemplate cancelAllJobsTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/validate/prevalidation")
+    protected ProducerTemplate triggerPrevalidationTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/validate/level2")
+    protected ProducerTemplate triggerLevel2ValidationTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/stop_places/clean")
+    protected ProducerTemplate cleanStopPlacesTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/line_statistics/refresh")
+    protected ProducerTemplate refreshLineStatisticsTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/routing_graph/build_base")
+    protected ProducerTemplate buildBaseGraphTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/routing_graph/build_candidate/otp2_base")
+    protected ProducerTemplate buildCandidateBaseGraphTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/routing_graph/build_candidate/otp2_netex")
+    protected ProducerTemplate buildCandidateNetexGraphTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/routing_graph/build_candidate/invalid?throwExceptionOnFailure=false")
+    protected ProducerTemplate buildCandidateInvalidTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/routing_graph/graphs")
+    protected ProducerTemplate listGraphsTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/jobs")
+    protected ProducerTemplate cancelAllProviderJobsTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/flex/import")
+    protected ProducerTemplate importFlexFilesTemplate;
+
     @BeforeEach
     void setUpProvider() {
         when(providerRepository.getReferential(TestConstants.PROVIDER_ID_RUT)).thenReturn(CHOUETTE_REFERENTIAL_RUT);
@@ -247,6 +284,194 @@ class AdminRestControllerIntegrationTest extends MardukRouteBuilderIntegrationTe
                 listProviderFilesTemplate.getDefaultEndpoint(),
                 exchange -> {
                     exchange.getIn().setBody(httpEntity);
+                    exchange.getIn().setHeaders(headers);
+                });
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    // Tests for second batch of endpoints
+
+    @Test
+    void cancelAllJobs() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "DELETE",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = cancelAllJobsTemplate.request(
+                cancelAllJobsTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void triggerPrevalidation() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = triggerPrevalidationTemplate.request(
+                triggerPrevalidationTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void triggerLevel2Validation() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = triggerLevel2ValidationTemplate.request(
+                triggerLevel2ValidationTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void cleanStopPlaces() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = cleanStopPlacesTemplate.request(
+                cleanStopPlacesTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void refreshLineStatistics() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = refreshLineStatisticsTemplate.request(
+                refreshLineStatisticsTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void buildBaseGraph() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = buildBaseGraphTemplate.request(
+                buildBaseGraphTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void buildCandidateBaseGraph() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = buildCandidateBaseGraphTemplate.request(
+                buildCandidateBaseGraphTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void buildCandidateNetexGraph() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = buildCandidateNetexGraphTemplate.request(
+                buildCandidateNetexGraphTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void buildCandidateInvalidGraphType() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = buildCandidateInvalidTemplate.request(
+                buildCandidateInvalidTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(400, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void listGraphs() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "GET",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = listGraphsTemplate.request(
+                listGraphsTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void cancelAllProviderJobs() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "DELETE",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = cancelAllProviderJobsTemplate.request(
+                cancelAllProviderJobsTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void importFlexFiles() {
+        context.start();
+
+        String jsonBody = "{\"files\":[{\"name\":\"test-flex.zip\"}]}";
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                Exchange.CONTENT_TYPE, "application/json",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = importFlexFilesTemplate.request(
+                importFlexFilesTemplate.getDefaultEndpoint(),
+                exchange -> {
+                    exchange.getIn().setBody(jsonBody);
                     exchange.getIn().setHeaders(headers);
                 });
 
