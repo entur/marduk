@@ -149,10 +149,26 @@ class AdminRestControllerIntegrationTest extends MardukRouteBuilderIntegrationTe
     @Produce("http:localhost:{{server.port}}/services/map_admin_new/download")
     protected ProducerTemplate downloadOsmDataTemplate;
 
+    // Deprecated codespace-based endpoints
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/upload/" + TestConstants.CHOUETTE_REFERENTIAL_RUT)
+    protected ProducerTemplate uploadFileByCodespaceTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/upload/INVALID_CODESPACE?throwExceptionOnFailure=false")
+    protected ProducerTemplate uploadFileByInvalidCodespaceTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/download_netex_blocks/" + TestConstants.CHOUETTE_REFERENTIAL_RUT + "?throwExceptionOnFailure=false")
+    protected ProducerTemplate downloadNetexBlocksTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/download_netex_blocks/INVALID_CODESPACE?throwExceptionOnFailure=false")
+    protected ProducerTemplate downloadNetexBlocksInvalidCodespaceTemplate;
+
     @BeforeEach
     void setUpProvider() {
         when(providerRepository.getReferential(TestConstants.PROVIDER_ID_RUT)).thenReturn(CHOUETTE_REFERENTIAL_RUT);
         when(providerRepository.getProvider(TestConstants.PROVIDER_ID_RUT)).thenReturn(provider(CHOUETTE_REFERENTIAL_RUT, TestConstants.PROVIDER_ID_RUT, null));
+        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+        // Explicitly return null for unknown codespaces
+        when(providerRepository.getProviderId("INVALID_CODESPACE")).thenReturn(null);
     }
 
     @Test
@@ -707,6 +723,89 @@ class AdminRestControllerIntegrationTest extends MardukRouteBuilderIntegrationTe
                 exchange -> exchange.getIn().setHeaders(headers));
 
         assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    // Tests for deprecated codespace-based endpoints
+
+    @Test
+    void uploadFileByCodespace() {
+        context.start();
+
+        String fileName = "netex-codespace-upload.zip";
+        HttpEntity httpEntity = MultipartEntityBuilder.create()
+                .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
+                .build();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = uploadFileByCodespaceTemplate.request(
+                uploadFileByCodespaceTemplate.getDefaultEndpoint(),
+                exchange -> {
+                    exchange.getIn().setBody(httpEntity);
+                    exchange.getIn().setHeaders(headers);
+                });
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+        // Verify response body contains correlationId
+        String responseBody = response.getMessage().getBody(String.class);
+        assertNotNull(responseBody);
+        assertTrue(responseBody.contains("correlationId"));
+    }
+
+    @Test
+    void uploadFileByInvalidCodespace() {
+        context.start();
+
+        String fileName = "netex-codespace-upload.zip";
+        HttpEntity httpEntity = MultipartEntityBuilder.create()
+                .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
+                .build();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = uploadFileByInvalidCodespaceTemplate.request(
+                uploadFileByInvalidCodespaceTemplate.getDefaultEndpoint(),
+                exchange -> {
+                    exchange.getIn().setBody(httpEntity);
+                    exchange.getIn().setHeaders(headers);
+                });
+
+        assertEquals(404, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void downloadNetexBlocks() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "GET",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = downloadNetexBlocksTemplate.request(
+                downloadNetexBlocksTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        // File doesn't exist, so expect 404
+        assertEquals(404, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void downloadNetexBlocksInvalidCodespace() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "GET",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = downloadNetexBlocksInvalidCodespaceTemplate.request(
+                downloadNetexBlocksInvalidCodespaceTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(404, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
     }
 
     private static Map<String, Object> getTestHeaders(String method) {

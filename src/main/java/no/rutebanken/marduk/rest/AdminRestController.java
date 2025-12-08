@@ -20,6 +20,7 @@ import jakarta.ws.rs.NotFoundException;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.OtpGraphsInfo;
+import no.rutebanken.marduk.rest.openapi.model.UploadResult;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -700,10 +701,79 @@ public class AdminRestController {
         return ResponseEntity.ok().build();
     }
 
+    // Deprecated codespace-based endpoints
+
+    /**
+     * Upload NeTEx file by codespace.
+     * @deprecated Use {@link #uploadFile(Long, MultipartFile)} with providerId instead.
+     */
+    @Deprecated
+    @PostMapping("/timetable_admin_new/upload/{codespace}")
+    public ResponseEntity<UploadResult> uploadFileByCodespace(
+            @PathVariable String codespace,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        String correlationId = UUID.randomUUID().toString();
+        LOG.info("[{}] Uploading file for codespace {} via Spring endpoint", correlationId, codespace);
+
+        Long providerId = validateCodespace(codespace);
+        mardukAuthorizationService.verifyRouteDataEditorPrivileges(providerId);
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withHeader(CHOUETTE_REFERENTIAL, codespace)
+                .withHeader(PROVIDER_ID, providerId)
+                .withHeader(CORRELATION_ID, correlationId)
+                .withHeader(FILE_APPLY_DUPLICATES_FILTER, true)
+                .withHeader(FILE_NAME, file.getOriginalFilename())
+                .withBody(file.getInputStream())
+                .build();
+
+        producerTemplate.send("direct:uploadFilesAndStartImport", exchange);
+
+        UploadResult result = new UploadResult().correlationId(correlationId);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Download NeTEx dataset with blocks by codespace.
+     * @deprecated Use provider-specific endpoints instead.
+     */
+    @Deprecated
+    @GetMapping("/timetable_admin_new/download_netex_blocks/{codespace}")
+    public ResponseEntity<byte[]> downloadNetexBlocks(@PathVariable String codespace) {
+        String correlationId = UUID.randomUUID().toString();
+        LOG.info("[{}] Downloading NeTEx blocks for codespace {} via Spring endpoint", correlationId, codespace);
+
+        Long providerId = validateCodespace(codespace);
+        mardukAuthorizationService.verifyBlockViewerPrivileges(providerId);
+
+        String fileHandle = Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
+                + "rb_" + codespace.toLowerCase()
+                + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withHeader(FILE_HANDLE, fileHandle)
+                .build();
+        Exchange result = producerTemplate.send("direct:getInternalBlob", exchange);
+
+        byte[] content = result.getMessage().getBody(byte[].class);
+        if (content == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(content);
+    }
+
     private void validateProvider(Long providerId) {
         if (providerRepository.getProvider(providerId) == null) {
             throw new NotFoundException("Unknown provider id: " + providerId);
         }
+    }
+
+    private Long validateCodespace(String codespace) {
+        Long providerId = providerRepository.getProviderId(codespace);
+        if (providerId == null) {
+            throw new NotFoundException("Unknown chouette referential: " + codespace);
+        }
+        return providerId;
     }
 
     @ExceptionHandler(AccessDeniedException.class)
