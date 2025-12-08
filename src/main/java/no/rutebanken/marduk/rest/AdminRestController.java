@@ -21,6 +21,8 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.OtpGraphsInfo;
 import no.rutebanken.marduk.repository.ProviderRepository;
+import no.rutebanken.marduk.routes.chouette.json.JobResponse;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
@@ -36,6 +38,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -449,6 +453,249 @@ public class AdminRestController {
 
             producerTemplate.send("google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue", exchange);
         }
+
+        return ResponseEntity.ok().build();
+    }
+
+    // Third batch of endpoints
+
+    /**
+     * Get line statistics for multiple providers.
+     */
+    @GetMapping("/timetable_admin_new/line_statistics/{filter}")
+    public ResponseEntity<String> getLineStatistics(
+            @PathVariable String filter,
+            @RequestParam(required = false) String providerIds) {
+        LOG.info("Getting line statistics with filter {} via Spring endpoint", filter);
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+
+        if (!List.of("all", "level1", "level2").contains(filter)) {
+            return ResponseEntity.badRequest().body("Invalid filter");
+        }
+
+        ExchangeBuilder builder = ExchangeBuilder.create(camelContext)
+                .withHeader("filter", filter);
+        if (providerIds != null) {
+            builder.withHeader(PROVIDER_IDS, providerIds.split(","));
+        }
+
+        Exchange result = producerTemplate.send("direct:chouetteGetStats", builder.build());
+        String stats = result.getMessage().getBody(String.class);
+
+        return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * Trigger merged GTFS export.
+     */
+    @PostMapping("/timetable_admin_new/export/gtfs/merged")
+    public ResponseEntity<Void> triggerMergedGtfsExport() {
+        LOG.info("Triggering merged GTFS export via Spring endpoint");
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withPattern(ExchangePattern.InOnly)
+                .build();
+        producerTemplate.send("google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Download file for reimport for a specific provider.
+     */
+    @GetMapping("/timetable_admin_new/{providerId}/files/{fileName}")
+    public ResponseEntity<byte[]> downloadProviderFile(
+            @PathVariable Long providerId,
+            @PathVariable String fileName) {
+        LOG.info("Downloading file {} for provider {} via Spring endpoint", fileName, providerId);
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+        validateProvider(providerId);
+
+        String decodedFileName = URLDecoder.decode(fileName, StandardCharsets.UTF_8);
+        String referential = providerRepository.getReferential(providerId);
+        String fileHandle = Constants.BLOBSTORE_PATH_INBOUND + referential + "/" + decodedFileName;
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withHeader(FILE_HANDLE, fileHandle)
+                .build();
+        Exchange result = producerTemplate.send("direct:getInternalBlob", exchange);
+
+        byte[] content = result.getMessage().getBody(byte[].class);
+        if (content == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(content);
+    }
+
+    /**
+     * Get line statistics for a specific provider.
+     */
+    @GetMapping("/timetable_admin_new/{providerId}/line_statistics")
+    public ResponseEntity<String> getProviderLineStatistics(@PathVariable Long providerId) {
+        LOG.info("Getting line statistics for provider {} via Spring endpoint", providerId);
+        mardukAuthorizationService.verifyRouteDataEditorPrivileges(providerId);
+        validateProvider(providerId);
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withHeader(PROVIDER_ID, providerId)
+                .build();
+        Exchange result = producerTemplate.send("direct:chouetteGetStatsSingleProvider", exchange);
+        String stats = result.getMessage().getBody(String.class);
+
+        return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * List jobs for a specific provider.
+     */
+    @GetMapping("/timetable_admin_new/{providerId}/jobs")
+    public ResponseEntity<JobResponse[]> listProviderJobs(
+            @PathVariable Long providerId,
+            @RequestParam(required = false) List<String> status,
+            @RequestParam(required = false) String action) {
+        LOG.info("Listing jobs for provider {} via Spring endpoint", providerId);
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+        validateProvider(providerId);
+
+        ExchangeBuilder builder = ExchangeBuilder.create(camelContext)
+                .withHeader(PROVIDER_ID, providerId);
+        if (status != null) {
+            builder.withHeader("status", status);
+        }
+        if (action != null) {
+            builder.withHeader("action", action);
+        }
+
+        Exchange result = producerTemplate.send("direct:chouetteGetJobsForProvider", builder.build());
+        JobResponse[] jobs = result.getMessage().getBody(JobResponse[].class);
+
+        return ResponseEntity.ok(jobs);
+    }
+
+    /**
+     * Trigger export for a specific provider.
+     */
+    @PostMapping("/timetable_admin_new/{providerId}/export")
+    public ResponseEntity<Void> triggerProviderExport(@PathVariable Long providerId) {
+        LOG.info("Triggering export for provider {} via Spring endpoint", providerId);
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+        validateProvider(providerId);
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withHeader(PROVIDER_ID, providerId)
+                .withPattern(ExchangePattern.InOnly)
+                .build();
+        producerTemplate.send("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Trigger validation for a specific provider.
+     */
+    @PostMapping("/timetable_admin_new/{providerId}/validate")
+    public ResponseEntity<Void> triggerProviderValidation(@PathVariable Long providerId) {
+        LOG.info("Triggering validation for provider {} via Spring endpoint", providerId);
+        mardukAuthorizationService.verifyRouteDataEditorPrivileges(providerId);
+        validateProvider(providerId);
+
+        // Determine validation level based on provider configuration
+        String validationLevel;
+        if (providerRepository.getProvider(providerId).getChouetteInfo().getMigrateDataToProvider() == null) {
+            validationLevel = JobEvent.TimetableAction.VALIDATION_LEVEL_2.name();
+        } else {
+            validationLevel = JobEvent.TimetableAction.VALIDATION_LEVEL_1.name();
+        }
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withHeader(PROVIDER_ID, providerId)
+                .withHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, validationLevel)
+                .withPattern(ExchangePattern.InOnly)
+                .build();
+        producerTemplate.send("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Clean dataspace for a specific provider.
+     */
+    @PostMapping("/timetable_admin_new/{providerId}/clean")
+    public ResponseEntity<Void> cleanProviderDataspace(@PathVariable Long providerId) {
+        LOG.info("Cleaning dataspace for provider {} via Spring endpoint", providerId);
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+        validateProvider(providerId);
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withHeader(PROVIDER_ID, providerId)
+                .build();
+        producerTemplate.send("direct:chouetteCleanReferential", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Transfer data for a specific provider.
+     */
+    @PostMapping("/timetable_admin_new/{providerId}/transfer")
+    public ResponseEntity<Void> transferProviderData(@PathVariable Long providerId) {
+        LOG.info("Triggering data transfer for provider {} via Spring endpoint", providerId);
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+        validateProvider(providerId);
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withHeader(PROVIDER_ID, providerId)
+                .withPattern(ExchangePattern.InOnly)
+                .build();
+        producerTemplate.send("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteTransferExportQueue", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Upload flexible line file for import.
+     */
+    @PostMapping("/timetable_admin_new/{providerId}/flex/files")
+    public ResponseEntity<Void> uploadFlexFile(
+            @PathVariable Long providerId,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        String correlationId = UUID.randomUUID().toString();
+        LOG.info("[{}] Uploading flex file for provider {} via Spring endpoint", correlationId, providerId);
+        mardukAuthorizationService.verifyRouteDataEditorPrivileges(providerId);
+        validateProvider(providerId);
+
+        String referential = providerRepository.getReferential(providerId);
+        String fileName = file.getOriginalFilename();
+
+        Exchange exchange = ExchangeBuilder.create(camelContext)
+                .withHeader(CHOUETTE_REFERENTIAL, referential)
+                .withHeader(PROVIDER_ID, providerId)
+                .withHeader(CORRELATION_ID, correlationId)
+                .withHeader(FILE_APPLY_DUPLICATES_FILTER, true)
+                .withHeader(FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY, true)
+                .withHeader(FILE_NAME, fileName)
+                .withHeader(IMPORT_TYPE, IMPORT_TYPE_NETEX_FLEX)
+                .withBody(file.getInputStream())
+                .build();
+
+        producerTemplate.send("direct:uploadFilesAndStartImport", exchange);
+
+        return ResponseEntity.ok().build();
+    }
+
+    // Map admin endpoints
+
+    /**
+     * Triggers downloading of the latest OSM data.
+     */
+    @PostMapping("/map_admin_new/download")
+    public ResponseEntity<Void> downloadOsmData() {
+        LOG.info("Triggering OSM data download via Spring endpoint");
+        mardukAuthorizationService.verifyAdministratorPrivileges();
+
+        Exchange exchange = ExchangeBuilder.create(camelContext).build();
+        producerTemplate.send("direct:considerToFetchOsmMapOverNorway", exchange);
 
         return ResponseEntity.ok().build();
     }

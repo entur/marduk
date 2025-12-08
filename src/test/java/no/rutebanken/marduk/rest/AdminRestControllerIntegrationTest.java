@@ -111,6 +111,44 @@ class AdminRestControllerIntegrationTest extends MardukRouteBuilderIntegrationTe
     @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/flex/import")
     protected ProducerTemplate importFlexFilesTemplate;
 
+    // Third batch of endpoints
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/line_statistics/all")
+    protected ProducerTemplate getLineStatisticsTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/line_statistics/invalid?throwExceptionOnFailure=false")
+    protected ProducerTemplate getLineStatisticsInvalidTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/export/gtfs/merged")
+    protected ProducerTemplate triggerMergedGtfsExportTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/files/test.zip?throwExceptionOnFailure=false")
+    protected ProducerTemplate downloadProviderFileTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/line_statistics")
+    protected ProducerTemplate getProviderLineStatisticsTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/jobs")
+    protected ProducerTemplate listProviderJobsTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/export")
+    protected ProducerTemplate triggerProviderExportTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/validate")
+    protected ProducerTemplate triggerProviderValidationTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/clean")
+    protected ProducerTemplate cleanProviderDataspaceTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/transfer")
+    protected ProducerTemplate transferProviderDataTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/flex/files")
+    protected ProducerTemplate uploadFlexFileTemplate;
+
+    // Map admin endpoints
+    @Produce("http:localhost:{{server.port}}/services/map_admin_new/download")
+    protected ProducerTemplate downloadOsmDataTemplate;
+
     @BeforeEach
     void setUpProvider() {
         when(providerRepository.getReferential(TestConstants.PROVIDER_ID_RUT)).thenReturn(CHOUETTE_REFERENTIAL_RUT);
@@ -474,6 +512,199 @@ class AdminRestControllerIntegrationTest extends MardukRouteBuilderIntegrationTe
                     exchange.getIn().setBody(jsonBody);
                     exchange.getIn().setHeaders(headers);
                 });
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    // Tests for third batch of endpoints
+
+    @Test
+    void getLineStatistics() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "GET",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = getLineStatisticsTemplate.request(
+                getLineStatisticsTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void getLineStatisticsInvalidFilter() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "GET",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = getLineStatisticsInvalidTemplate.request(
+                getLineStatisticsInvalidTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(400, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void triggerMergedGtfsExport() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = triggerMergedGtfsExportTemplate.request(
+                triggerMergedGtfsExportTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void downloadProviderFile() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "GET",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = downloadProviderFileTemplate.request(
+                downloadProviderFileTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        // File doesn't exist, so expect 404
+        assertEquals(404, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void getProviderLineStatistics() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "GET",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = getProviderLineStatisticsTemplate.request(
+                getProviderLineStatisticsTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void listProviderJobs() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "GET",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = listProviderJobsTemplate.request(
+                listProviderJobsTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void triggerProviderExport() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = triggerProviderExportTemplate.request(
+                triggerProviderExportTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void triggerProviderValidation() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = triggerProviderValidationTemplate.request(
+                triggerProviderValidationTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void cleanProviderDataspace() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = cleanProviderDataspaceTemplate.request(
+                cleanProviderDataspaceTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void transferProviderData() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = transferProviderDataTemplate.request(
+                transferProviderDataTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void uploadFlexFile() {
+        context.start();
+
+        String fileName = "netex-flex-test.zip";
+        HttpEntity httpEntity = MultipartEntityBuilder.create()
+                .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
+                .build();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = uploadFlexFileTemplate.request(
+                uploadFlexFileTemplate.getDefaultEndpoint(),
+                exchange -> {
+                    exchange.getIn().setBody(httpEntity);
+                    exchange.getIn().setHeaders(headers);
+                });
+
+        assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    // Tests for map admin endpoints
+
+    @Test
+    void downloadOsmData() {
+        context.start();
+
+        Map<String, Object> headers = Map.of(
+                Exchange.HTTP_METHOD, "POST",
+                HttpHeaders.AUTHORIZATION, "Bearer test-token");
+
+        Exchange response = downloadOsmDataTemplate.request(
+                downloadOsmDataTemplate.getDefaultEndpoint(),
+                exchange -> exchange.getIn().setHeaders(headers));
 
         assertEquals(200, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
     }
