@@ -25,7 +25,7 @@ class NisabaHeadersProcessorTest {
 
         Assertions.assertEquals(testContainerName, exchange.getIn().getHeader(TARGET_CONTAINER));
         String fileHandle = exchange.getIn().getHeader(TARGET_FILE_HANDLE, String.class);
-        Assertions.assertTrue(fileHandle.startsWith("tst_"));
+        Assertions.assertTrue(fileHandle.startsWith("imported/tst/tst_"));
         Assertions.assertTrue(fileHandle.endsWith(".zip"));
     }
 }
