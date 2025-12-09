@@ -15,7 +15,7 @@ import static no.rutebanken.marduk.Constants.*;
 @Component
 public class AshurFilteringStatusRouteBuilder extends BaseRouteBuilder {
 
-    final private ExperimentalImportHelpers experimentalImportHelpers;
+    private final ExperimentalImportHelpers experimentalImportHelpers;
 
     public AshurFilteringStatusRouteBuilder(ExperimentalImportHelpers experimentalImportHelpers) {
         this.experimentalImportHelpers = experimentalImportHelpers;

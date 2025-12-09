@@ -30,6 +30,7 @@ class AshurFilteringStatusRouteBuilderTest extends MardukRouteBuilderIntegration
     protected  MockEndpoint copyBlobFromAnotherBucketToInternalEndpoint;
 
     @BeforeEach
+    @Override
     protected void setUp() throws IOException {
         super.setUp();
         antuNetexValidationQueueEndpoint.reset();

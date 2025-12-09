@@ -27,8 +27,8 @@ public class NisabaHeadersProcessor implements Processor {
                 .appendFraction(ChronoField.NANO_OF_SECOND, 0, 3, true)
                 .toFormatter();
         String timestamp = LocalDateTime.now().format(fmt).replace(":", "_");
-        String targetFileName = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class) + "_" + timestamp + ".zip";
-        String pathToTargetFile = "imported/" + exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class) + "/" + targetFileName;
+        String targetFileName = "/" + exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class) + "_" + timestamp + ".zip";
+        String pathToTargetFile = "imported/" + exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class) + targetFileName;
         exchange.getIn().setHeader(TARGET_FILE_HANDLE, pathToTargetFile);
         exchange.getIn().setHeader(TARGET_CONTAINER, containerName);
     }
