@@ -134,7 +134,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
 
         from("direct:unpackChouetteExportToWorkingFolder")
-                .setHeader(FILE_HANDLE).method(experimentalImportHelpers, "pathToExportedNetexFile")
+                .setHeader(FILE_HANDLE).method(experimentalImportHelpers, "pathToExportedNetexFileToMergeWithFlex")
                 .to("direct:getInternalBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))

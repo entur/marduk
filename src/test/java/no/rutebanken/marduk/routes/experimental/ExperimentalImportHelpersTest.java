@@ -46,23 +46,23 @@ class ExperimentalImportHelpersTest {
     }
 
     @Test
-    void testPathToExportedNetexFileForExperimentalImport() {
+    void testPathToExportedNetexFileToMergeWithFlexForExperimentalImport() {
         Exchange exchange = exchange();
         exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, "TST");
         exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, "TST");
         exchange.getIn().setHeader(Constants.CORRELATION_ID, "correlation");
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, List.of("TST"));
-        String expectedPath = Constants.BLOBSTORE_PATH_CHOUETTE + "correlation/netex/TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
-        Assertions.assertEquals(expectedPath, helpers.pathToExportedNetexFile(exchange));
+        String expectedPath = "filtered-netex/TST/netex-before-merging/correlation/TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+        Assertions.assertEquals(expectedPath, helpers.pathToExportedNetexFileToMergeWithFlex(exchange));
     }
 
     @Test
-    void testPathToExportedNetexFileForNormalImport() {
+    void testPathToExportedNetexFileToMergeWithFlexForNormalImport() {
         Exchange exchange = exchange();
         exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, "TST");
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, List.of());
         String expectedPath = Constants.BLOBSTORE_PATH_CHOUETTE + "netex/TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
-        Assertions.assertEquals(expectedPath, helpers.pathToExportedNetexFile(exchange));
+        Assertions.assertEquals(expectedPath, helpers.pathToExportedNetexFileToMergeWithFlex(exchange));
     }
 
     @Test

@@ -13,7 +13,7 @@ import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 /**
  * Note:
  * When using experimental imports, all paths must include correlation ID to ensure isolation between parallel imports.
- * This is essential when using experimental imports, to ensure consistency when merging and validating timetable data with flexible lines.
+ * This is essential when using experimental imports to ensure consistency when merging and validating timetable data with flexible lines.
  * This is not needed for Chouette imports, because of Chouette lock mechanism based on referential name.
  * TODO: Consider lock mechanism for experimental imports for better predictability with parallel imports for the same codespace.
  * */
@@ -43,19 +43,25 @@ public class ExperimentalImportHelpers {
         return false;
     }
 
-    public String pathToNetexFileExportedFromChouette(Exchange exchange) {
+    public String pathToNetexExportFromChouetteToMergeWithFlex(Exchange exchange) {
         return BLOBSTORE_PATH_CHOUETTE + "netex/" + chouetteReferentialFor(exchange) + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     }
 
-    public String pathToNetexFileProducedByAshur(Exchange exchange) {
-        return BLOBSTORE_PATH_CHOUETTE + correlationIdFor(exchange) + "/netex/" + chouetteReferentialFor(exchange) + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+    public String pathToNetexFromAshurToMergeWithFlex(Exchange exchange) {
+        String referential = chouetteReferentialFor(exchange);
+        return "filtered-netex/" + referential + "/netex-before-merging/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     }
 
-    public String pathToExportedNetexFile(Exchange exchange) {
+    public String pathToNetexWithoutBlocksProducedByAshur(Exchange exchange) {
+        String referential = chouetteReferentialFor(exchange);
+        return "filtered-netex/" + referential + "/netex-without-blocks/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+    }
+
+    public String pathToExportedNetexFileToMergeWithFlex(Exchange exchange) {
         if (shouldRunExperimentalImport(exchange)) {
-            return pathToNetexFileProducedByAshur(exchange);
+            return pathToNetexFromAshurToMergeWithFlex(exchange);
         }
-        return pathToNetexFileExportedFromChouette(exchange);
+        return pathToNetexExportFromChouetteToMergeWithFlex(exchange);
     }
 
     public String flexibleDataWorkingDirectory(Exchange exchange) {
