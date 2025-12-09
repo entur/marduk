@@ -49,6 +49,12 @@ class AshurFilteringStatusRouteBuilderTest extends MardukRouteBuilderIntegration
                     .to("mock:copyBlobFromAnotherBucketToInternalBucket");
         });
 
+        AdviceWith.adviceWith(context, "copy-filtered-dataset-to-validation-bucket-route", a -> {
+            a.interceptSendToEndpoint("direct:copyInternalBlobToValidationBucket")
+                    .skipSendToOriginalEndpoint()
+                    .to("mock:copyInternalBlobToValidationBucket");
+        });
+
         AdviceWith.adviceWith(context, "trigger-antu-post-validation-after-filtering-route", a -> {
             a.interceptSendToEndpoint("direct:updateStatus")
                     .skipSendToOriginalEndpoint()
