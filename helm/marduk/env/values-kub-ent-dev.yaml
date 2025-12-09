@@ -74,7 +74,7 @@ oauth2:
   client:
     id: AGlUqV7eXeRUPrXQejItcJZglPHoxSiH
     url: https://internal.dev.entur.org/oauth/token
-    audience: https://ror.api.dev.entur.io
+    audience: https://api.dev.entur.io
 
 line:
   statistics:
