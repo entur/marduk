@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.rest;
 
+import com.nimbusds.jose.JWSAlgorithm;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.TestConstants;
@@ -28,9 +29,27 @@ import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.rutebanken.helper.organisation.authorization.AuthorizationService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.TestConstants.CHOUETTE_REFERENTIAL_RUT;
@@ -39,127 +58,180 @@ import static org.mockito.Mockito.when;
 
 /**
  * Integration tests for AdminRestController - Spring REST API endpoints.
- * These endpoints mirror the Camel-based AdminRestRouteBuilder with "_new" suffix.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = TestApp.class)
 class AdminRestControllerIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/idempotentfilter/clean")
+    @TestConfiguration
+    @EnableWebSecurity
+    static class AdminRestControllerTestContextConfiguration {
+
+        @Bean
+        CorsConfigurationSource corsConfigurationSource() {
+            CorsConfiguration configuration = new CorsConfiguration();
+            configuration.setAllowedHeaders(Arrays.asList("Origin", "Accept", "X-Requested-With", "Content-Type", "Access-Control-Request-Method", "Access-Control-Request-Headers", "Authorization", "x-correlation-id"));
+            configuration.addAllowedOrigin("*");
+            configuration.setAllowedMethods(Arrays.asList("GET", "PUT", "POST", "DELETE"));
+            UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+            source.registerCorsConfiguration("/**", configuration);
+            return source;
+        }
+
+        @Bean
+        @ConditionalOnWebApplication
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+            http.cors(withDefaults()).csrf(AbstractHttpConfigurer::disable)
+                    .authorizeHttpRequests(authz -> authz.requestMatchers(AntPathRequestMatcher.antMatcher("/services/openapi.yaml")).permitAll()
+                            .requestMatchers(AntPathRequestMatcher.antMatcher("/services/timetable_admin/openapi.yaml")).permitAll()
+                            .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/prometheus")).permitAll()
+                            .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health")).permitAll()
+                            .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health/liveness")).permitAll()
+                            .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health/readiness")).permitAll()
+                            .anyRequest().authenticated())
+                    .oauth2ResourceServer(configurer -> configurer.jwt(withDefaults()))
+                    .oauth2Client(withDefaults());
+            return http.build();
+        }
+
+        @Bean
+        public JwtDecoder jwtdecoder() {
+            return token -> createTestJwtToken();
+        }
+
+        private Jwt createTestJwtToken() {
+            String userId = "test-user";
+            return Jwt.withTokenValue("test-token")
+                    .header("typ", "JWT")
+                    .header("alg", JWSAlgorithm.RS256.getName())
+                    .claim("iss", "https://test-issuer.entur.org")
+                    .claim("scope", "openid profile email")
+                    .subject(userId)
+                    .audience(Set.of("test-audience"))
+                    .build();
+        }
+
+        @Bean
+        public AuthorizationService<Long> testAuthorizationService() {
+            return new TestAuthorizationService();
+        }
+    }
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/idempotentfilter/clean")
     protected ProducerTemplate cleanIdempotentFilterTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/routing_graph/build")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/routing_graph/build")
     protected ProducerTemplate buildGraphTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/clean/all")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/clean/all")
     protected ProducerTemplate cleanDataspacesTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/clean/invalid?throwExceptionOnFailure=false")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/clean/invalid?throwExceptionOnFailure=false")
     protected ProducerTemplate cleanDataspacesInvalidTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/jobs")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/jobs")
     protected ProducerTemplate listJobsTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/export/files")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/export/files")
     protected ProducerTemplate listExportFilesTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/completed_jobs")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/completed_jobs")
     protected ProducerTemplate removeCompletedJobsTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/files")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + TestConstants.PROVIDER_ID_RUT + "/files")
     protected ProducerTemplate listProviderFilesTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/jobs/123")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + TestConstants.PROVIDER_ID_RUT + "/jobs/123")
     protected ProducerTemplate cancelJobTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/999/files?throwExceptionOnFailure=false")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/999/files?throwExceptionOnFailure=false")
     protected ProducerTemplate listProviderFilesUnknownProviderTemplate;
 
     // New endpoints - second batch
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/jobs")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/jobs")
     protected ProducerTemplate cancelAllJobsTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/validate/prevalidation")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/validate/prevalidation")
     protected ProducerTemplate triggerPrevalidationTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/validate/level2")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/validate/level2")
     protected ProducerTemplate triggerLevel2ValidationTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/stop_places/clean")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/stop_places/clean")
     protected ProducerTemplate cleanStopPlacesTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/line_statistics/refresh")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/line_statistics/refresh")
     protected ProducerTemplate refreshLineStatisticsTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/routing_graph/build_base")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/routing_graph/build_base")
     protected ProducerTemplate buildBaseGraphTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/routing_graph/build_candidate/otp2_base")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/routing_graph/build_candidate/otp2_base")
     protected ProducerTemplate buildCandidateBaseGraphTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/routing_graph/build_candidate/otp2_netex")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/routing_graph/build_candidate/otp2_netex")
     protected ProducerTemplate buildCandidateNetexGraphTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/routing_graph/build_candidate/invalid?throwExceptionOnFailure=false")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/routing_graph/build_candidate/invalid?throwExceptionOnFailure=false")
     protected ProducerTemplate buildCandidateInvalidTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/routing_graph/graphs")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/routing_graph/graphs")
     protected ProducerTemplate listGraphsTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/jobs")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + TestConstants.PROVIDER_ID_RUT + "/jobs")
     protected ProducerTemplate cancelAllProviderJobsTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/flex/import")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + TestConstants.PROVIDER_ID_RUT + "/flex/import")
     protected ProducerTemplate importFlexFilesTemplate;
 
     // Third batch of endpoints
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/line_statistics/all")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/line_statistics/all")
     protected ProducerTemplate getLineStatisticsTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/line_statistics/invalid?throwExceptionOnFailure=false")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/line_statistics/invalid?throwExceptionOnFailure=false")
     protected ProducerTemplate getLineStatisticsInvalidTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/export/gtfs/merged")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/export/gtfs/merged")
     protected ProducerTemplate triggerMergedGtfsExportTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/files/test.zip?throwExceptionOnFailure=false")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + TestConstants.PROVIDER_ID_RUT + "/files/test.zip?throwExceptionOnFailure=false")
     protected ProducerTemplate downloadProviderFileTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/line_statistics")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + TestConstants.PROVIDER_ID_RUT + "/line_statistics")
     protected ProducerTemplate getProviderLineStatisticsTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/jobs")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + TestConstants.PROVIDER_ID_RUT + "/jobs")
     protected ProducerTemplate listProviderJobsTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/export")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + TestConstants.PROVIDER_ID_RUT + "/export")
     protected ProducerTemplate triggerProviderExportTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/validate")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + TestConstants.PROVIDER_ID_RUT + "/validate")
     protected ProducerTemplate triggerProviderValidationTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/clean")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + TestConstants.PROVIDER_ID_RUT + "/clean")
     protected ProducerTemplate cleanProviderDataspaceTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/transfer")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + TestConstants.PROVIDER_ID_RUT + "/transfer")
     protected ProducerTemplate transferProviderDataTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/" + TestConstants.PROVIDER_ID_RUT + "/flex/files")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + TestConstants.PROVIDER_ID_RUT + "/flex/files")
     protected ProducerTemplate uploadFlexFileTemplate;
 
     // Map admin endpoints
-    @Produce("http:localhost:{{server.port}}/services/map_admin_new/download")
+    @Produce("http:localhost:{{server.port}}/services/map_admin/download")
     protected ProducerTemplate downloadOsmDataTemplate;
 
     // Deprecated codespace-based endpoints
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/upload/" + TestConstants.CHOUETTE_REFERENTIAL_RUT)
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/upload/" + TestConstants.CHOUETTE_REFERENTIAL_RUT)
     protected ProducerTemplate uploadFileByCodespaceTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/upload/INVALID_CODESPACE?throwExceptionOnFailure=false")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/upload/INVALID_CODESPACE?throwExceptionOnFailure=false")
     protected ProducerTemplate uploadFileByInvalidCodespaceTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/download_netex_blocks/" + TestConstants.CHOUETTE_REFERENTIAL_RUT + "?throwExceptionOnFailure=false")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/download_netex_blocks/" + TestConstants.CHOUETTE_REFERENTIAL_RUT + "?throwExceptionOnFailure=false")
     protected ProducerTemplate downloadNetexBlocksTemplate;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin_new/download_netex_blocks/INVALID_CODESPACE?throwExceptionOnFailure=false")
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/download_netex_blocks/INVALID_CODESPACE?throwExceptionOnFailure=false")
     protected ProducerTemplate downloadNetexBlocksInvalidCodespaceTemplate;
 
     @BeforeEach

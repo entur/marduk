@@ -48,8 +48,8 @@ import java.util.UUID;
 import static no.rutebanken.marduk.Constants.*;
 
 /**
- * Spring REST API endpoints mirroring AdminRestRouteBuilder.
- * Paths are postfixed with "_new" to distinguish from the Camel-based routes.
+ * Spring REST API endpoints for managing the transit data import pipeline.
+ * These endpoints are intended to be used to interact with front-ends (Ninkasi, Bel).
  */
 @RestController
 @RequestMapping("/services")
@@ -76,7 +76,7 @@ public class AdminRestController {
     /**
      * Clean unique filename and digest Idempotent Stores.
      */
-    @PostMapping("/timetable_admin_new/idempotentfilter/clean")
+    @PostMapping("/timetable_admin/idempotentfilter/clean")
     public ResponseEntity<Void> cleanIdempotentFilter() {
         LOG.info("Cleaning idempotent file store via Spring endpoint");
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -90,7 +90,7 @@ public class AdminRestController {
     /**
      * Triggers building of the OTP graph using existing NeTEx and a pre-prepared base graph with map data.
      */
-    @PostMapping("/timetable_admin_new/routing_graph/build")
+    @PostMapping("/timetable_admin/routing_graph/build")
     public ResponseEntity<Void> buildGraph() {
         LOG.info("Triggering OTP graph build via Spring endpoint");
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -104,7 +104,7 @@ public class AdminRestController {
     /**
      * Triggers the clean ALL dataspace process in Chouette.
      */
-    @PostMapping("/timetable_admin_new/clean/{filter}")
+    @PostMapping("/timetable_admin/clean/{filter}")
     public ResponseEntity<Void> cleanDataspaces(@PathVariable String filter) {
         LOG.info("Cleaning dataspaces with filter {} via Spring endpoint", filter);
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -124,7 +124,7 @@ public class AdminRestController {
     /**
      * List Chouette jobs for all providers.
      */
-    @GetMapping("/timetable_admin_new/jobs")
+    @GetMapping("/timetable_admin/jobs")
     public ResponseEntity<ProviderAndJobs[]> listJobs(
             @RequestParam(required = false) List<String> status,
             @RequestParam(required = false) String action) {
@@ -146,7 +146,7 @@ public class AdminRestController {
     /**
      * List files containing exported timetable data and graphs.
      */
-    @GetMapping("/timetable_admin_new/export/files")
+    @GetMapping("/timetable_admin/export/files")
     public ResponseEntity<BlobStoreFiles> listExportFiles() {
         LOG.info("Listing export files via Spring endpoint");
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -161,7 +161,7 @@ public class AdminRestController {
     /**
      * Remove completed Chouette jobs for all providers.
      */
-    @DeleteMapping("/timetable_admin_new/completed_jobs")
+    @DeleteMapping("/timetable_admin/completed_jobs")
     public ResponseEntity<Void> removeCompletedJobs(
             @RequestParam(required = false) Integer keepJobs,
             @RequestParam(required = false) Integer keepDays) {
@@ -183,7 +183,7 @@ public class AdminRestController {
     /**
      * List files available for reimport for a specific provider.
      */
-    @GetMapping("/timetable_admin_new/{providerId}/files")
+    @GetMapping("/timetable_admin/{providerId}/files")
     public ResponseEntity<BlobStoreFiles> listProviderFiles(@PathVariable Long providerId) {
         LOG.info("Listing files for provider {} via Spring endpoint", providerId);
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -201,7 +201,7 @@ public class AdminRestController {
     /**
      * Triggers import process for files in blob store.
      */
-    @PostMapping("/timetable_admin_new/{providerId}/import")
+    @PostMapping("/timetable_admin/{providerId}/import")
     public ResponseEntity<Void> importFiles(
             @PathVariable Long providerId,
             @RequestBody BlobStoreFiles files) {
@@ -231,7 +231,7 @@ public class AdminRestController {
     /**
      * Cancel a specific Chouette job for a provider.
      */
-    @DeleteMapping("/timetable_admin_new/{providerId}/jobs/{jobId}")
+    @DeleteMapping("/timetable_admin/{providerId}/jobs/{jobId}")
     public ResponseEntity<Void> cancelJob(
             @PathVariable Long providerId,
             @PathVariable Long jobId) {
@@ -251,7 +251,7 @@ public class AdminRestController {
     /**
      * Upload file for import into Chouette.
      */
-    @PostMapping("/timetable_admin_new/{providerId}/files")
+    @PostMapping("/timetable_admin/{providerId}/files")
     public ResponseEntity<Void> uploadFile(
             @PathVariable Long providerId,
             @RequestParam("file") MultipartFile file) throws IOException {
@@ -283,7 +283,7 @@ public class AdminRestController {
     /**
      * Cancel all Chouette jobs for all providers.
      */
-    @DeleteMapping("/timetable_admin_new/jobs")
+    @DeleteMapping("/timetable_admin/jobs")
     public ResponseEntity<Void> cancelAllJobs() {
         LOG.info("Cancelling all Chouette jobs via Spring endpoint");
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -297,7 +297,7 @@ public class AdminRestController {
     /**
      * Trigger prevalidation for all providers.
      */
-    @PostMapping("/timetable_admin_new/validate/prevalidation")
+    @PostMapping("/timetable_admin/validate/prevalidation")
     public ResponseEntity<Void> triggerPrevalidation() {
         LOG.info("Triggering prevalidation for all providers via Spring endpoint");
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -313,7 +313,7 @@ public class AdminRestController {
     /**
      * Trigger level2 validation for all providers.
      */
-    @PostMapping("/timetable_admin_new/validate/level2")
+    @PostMapping("/timetable_admin/validate/level2")
     public ResponseEntity<Void> triggerLevel2Validation() {
         LOG.info("Triggering level2 validation for all providers via Spring endpoint");
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -329,7 +329,7 @@ public class AdminRestController {
     /**
      * Clean all stop places in Chouette.
      */
-    @PostMapping("/timetable_admin_new/stop_places/clean")
+    @PostMapping("/timetable_admin/stop_places/clean")
     public ResponseEntity<Void> cleanStopPlaces() {
         LOG.info("Cleaning stop places via Spring endpoint");
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -343,7 +343,7 @@ public class AdminRestController {
     /**
      * Refresh line statistics cache.
      */
-    @PostMapping("/timetable_admin_new/line_statistics/refresh")
+    @PostMapping("/timetable_admin/line_statistics/refresh")
     public ResponseEntity<Void> refreshLineStatistics() {
         LOG.info("Refreshing line statistics cache via Spring endpoint");
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -357,7 +357,7 @@ public class AdminRestController {
     /**
      * Trigger OTP base graph build.
      */
-    @PostMapping("/timetable_admin_new/routing_graph/build_base")
+    @PostMapping("/timetable_admin/routing_graph/build_base")
     public ResponseEntity<Void> buildBaseGraph() {
         LOG.info("Triggering OTP base graph build via Spring endpoint");
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -373,7 +373,7 @@ public class AdminRestController {
     /**
      * Trigger candidate graph build.
      */
-    @PostMapping("/timetable_admin_new/routing_graph/build_candidate/{graphType}")
+    @PostMapping("/timetable_admin/routing_graph/build_candidate/{graphType}")
     public ResponseEntity<String> buildCandidateGraph(@PathVariable String graphType) {
         LOG.info("Triggering OTP candidate graph build for type {} via Spring endpoint", graphType);
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -398,7 +398,7 @@ public class AdminRestController {
     /**
      * List OTP2 graphs.
      */
-    @GetMapping("/timetable_admin_new/routing_graph/graphs")
+    @GetMapping("/timetable_admin/routing_graph/graphs")
     public ResponseEntity<OtpGraphsInfo[]> listGraphs() {
         LOG.info("Listing OTP graphs via Spring endpoint");
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -413,7 +413,7 @@ public class AdminRestController {
     /**
      * Cancel all Chouette jobs for a specific provider.
      */
-    @DeleteMapping("/timetable_admin_new/{providerId}/jobs")
+    @DeleteMapping("/timetable_admin/{providerId}/jobs")
     public ResponseEntity<Void> cancelAllProviderJobs(@PathVariable Long providerId) {
         LOG.info("Cancelling all jobs for provider {} via Spring endpoint", providerId);
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -430,7 +430,7 @@ public class AdminRestController {
     /**
      * Triggers flex data import process for files in blob store.
      */
-    @PostMapping("/timetable_admin_new/{providerId}/flex/import")
+    @PostMapping("/timetable_admin/{providerId}/flex/import")
     public ResponseEntity<Void> importFlexFiles(
             @PathVariable Long providerId,
             @RequestBody BlobStoreFiles files) {
@@ -463,7 +463,7 @@ public class AdminRestController {
     /**
      * Get line statistics for multiple providers.
      */
-    @GetMapping("/timetable_admin_new/line_statistics/{filter}")
+    @GetMapping("/timetable_admin/line_statistics/{filter}")
     public ResponseEntity<String> getLineStatistics(
             @PathVariable String filter,
             @RequestParam(required = false) String providerIds) {
@@ -489,7 +489,7 @@ public class AdminRestController {
     /**
      * Trigger merged GTFS export.
      */
-    @PostMapping("/timetable_admin_new/export/gtfs/merged")
+    @PostMapping("/timetable_admin/export/gtfs/merged")
     public ResponseEntity<Void> triggerMergedGtfsExport() {
         LOG.info("Triggering merged GTFS export via Spring endpoint");
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -505,7 +505,7 @@ public class AdminRestController {
     /**
      * Download file for reimport for a specific provider.
      */
-    @GetMapping("/timetable_admin_new/{providerId}/files/{fileName}")
+    @GetMapping("/timetable_admin/{providerId}/files/{fileName}")
     public ResponseEntity<byte[]> downloadProviderFile(
             @PathVariable Long providerId,
             @PathVariable String fileName) {
@@ -532,7 +532,7 @@ public class AdminRestController {
     /**
      * Get line statistics for a specific provider.
      */
-    @GetMapping("/timetable_admin_new/{providerId}/line_statistics")
+    @GetMapping("/timetable_admin/{providerId}/line_statistics")
     public ResponseEntity<String> getProviderLineStatistics(@PathVariable Long providerId) {
         LOG.info("Getting line statistics for provider {} via Spring endpoint", providerId);
         mardukAuthorizationService.verifyRouteDataEditorPrivileges(providerId);
@@ -550,7 +550,7 @@ public class AdminRestController {
     /**
      * List jobs for a specific provider.
      */
-    @GetMapping("/timetable_admin_new/{providerId}/jobs")
+    @GetMapping("/timetable_admin/{providerId}/jobs")
     public ResponseEntity<JobResponse[]> listProviderJobs(
             @PathVariable Long providerId,
             @RequestParam(required = false) List<String> status,
@@ -577,7 +577,7 @@ public class AdminRestController {
     /**
      * Trigger export for a specific provider.
      */
-    @PostMapping("/timetable_admin_new/{providerId}/export")
+    @PostMapping("/timetable_admin/{providerId}/export")
     public ResponseEntity<Void> triggerProviderExport(@PathVariable Long providerId) {
         LOG.info("Triggering export for provider {} via Spring endpoint", providerId);
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -595,7 +595,7 @@ public class AdminRestController {
     /**
      * Trigger validation for a specific provider.
      */
-    @PostMapping("/timetable_admin_new/{providerId}/validate")
+    @PostMapping("/timetable_admin/{providerId}/validate")
     public ResponseEntity<Void> triggerProviderValidation(@PathVariable Long providerId) {
         LOG.info("Triggering validation for provider {} via Spring endpoint", providerId);
         mardukAuthorizationService.verifyRouteDataEditorPrivileges(providerId);
@@ -622,7 +622,7 @@ public class AdminRestController {
     /**
      * Clean dataspace for a specific provider.
      */
-    @PostMapping("/timetable_admin_new/{providerId}/clean")
+    @PostMapping("/timetable_admin/{providerId}/clean")
     public ResponseEntity<Void> cleanProviderDataspace(@PathVariable Long providerId) {
         LOG.info("Cleaning dataspace for provider {} via Spring endpoint", providerId);
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -639,7 +639,7 @@ public class AdminRestController {
     /**
      * Transfer data for a specific provider.
      */
-    @PostMapping("/timetable_admin_new/{providerId}/transfer")
+    @PostMapping("/timetable_admin/{providerId}/transfer")
     public ResponseEntity<Void> transferProviderData(@PathVariable Long providerId) {
         LOG.info("Triggering data transfer for provider {} via Spring endpoint", providerId);
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -657,7 +657,7 @@ public class AdminRestController {
     /**
      * Upload flexible line file for import.
      */
-    @PostMapping("/timetable_admin_new/{providerId}/flex/files")
+    @PostMapping("/timetable_admin/{providerId}/flex/files")
     public ResponseEntity<Void> uploadFlexFile(
             @PathVariable Long providerId,
             @RequestParam("file") MultipartFile file) throws IOException {
@@ -690,7 +690,7 @@ public class AdminRestController {
     /**
      * Triggers downloading of the latest OSM data.
      */
-    @PostMapping("/map_admin_new/download")
+    @PostMapping("/map_admin/download")
     public ResponseEntity<Void> downloadOsmData() {
         LOG.info("Triggering OSM data download via Spring endpoint");
         mardukAuthorizationService.verifyAdministratorPrivileges();
@@ -708,7 +708,7 @@ public class AdminRestController {
      * @deprecated Use {@link #uploadFile(Long, MultipartFile)} with providerId instead.
      */
     @Deprecated
-    @PostMapping("/timetable_admin_new/upload/{codespace}")
+    @PostMapping("/timetable_admin/upload/{codespace}")
     public ResponseEntity<UploadResult> uploadFileByCodespace(
             @PathVariable String codespace,
             @RequestParam("file") MultipartFile file) throws IOException {
@@ -738,7 +738,7 @@ public class AdminRestController {
      * @deprecated Use provider-specific endpoints instead.
      */
     @Deprecated
-    @GetMapping("/timetable_admin_new/download_netex_blocks/{codespace}")
+    @GetMapping("/timetable_admin/download_netex_blocks/{codespace}")
     public ResponseEntity<byte[]> downloadNetexBlocks(@PathVariable String codespace) {
         String correlationId = UUID.randomUUID().toString();
         LOG.info("[{}] Downloading NeTEx blocks for codespace {} via Spring endpoint", correlationId, codespace);
