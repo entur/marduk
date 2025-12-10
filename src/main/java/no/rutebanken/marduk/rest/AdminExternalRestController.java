@@ -32,6 +32,7 @@ import org.rutebanken.helper.organisation.NotAuthenticatedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -170,6 +171,18 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
         } catch (IOException e) {
             throw new MardukException("Failed to process multipart file", e);
         }
+    }
+
+    @GetMapping(
+            value = "/openapi.yaml",
+            produces = "application/x-yaml"
+    )
+    public ResponseEntity<Resource> getOpenApiSpec() {
+        ClassPathResource resource = new ClassPathResource("openapi/timetable-management/openapi.yaml");
+        if (!resource.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(resource);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
