@@ -1,11 +1,16 @@
 package no.rutebanken.marduk;
 
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
+import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
 import no.rutebanken.marduk.repository.MardukBlobStoreRepository;
+import org.apache.camel.CamelContext;
 import org.apache.camel.EndpointInject;
+import org.apache.camel.Exchange;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.support.DefaultExchange;
 import org.apache.commons.io.IOUtils;
 import org.entur.pubsub.base.EnturGooglePubSubAdmin;
 import org.junit.jupiter.api.AfterAll;
@@ -41,6 +46,11 @@ import static org.mockito.Mockito.when;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public abstract class MardukSpringBootBaseTest {
 
+    protected final Long testProviderId = 0L;
+    protected final String testDatasetReferential = "TST";
+
+    protected final Long testRbProviderId = 1L;
+    protected final String testDatasetChouetteReferential = "rb_TST";
 
     private static PubSubEmulatorContainer pubsubEmulator;
 
@@ -166,4 +176,43 @@ public abstract class MardukSpringBootBaseTest {
         return IOUtils.toInputStream("dummyData", Charset.defaultCharset());
     }
 
+    protected Provider testProvider(Boolean experimentalImportEnabled) {
+        Provider provider = new Provider();
+        provider.setId(testProviderId);
+        ChouetteInfo chouetteInfo = new ChouetteInfo();
+        chouetteInfo.setEnableExperimentalImport(experimentalImportEnabled);
+        chouetteInfo.setReferential(testDatasetReferential);
+        provider.setChouetteInfo(chouetteInfo);
+        return provider;
+    }
+
+    protected Provider providerWithExperimentalImport() {
+        return testProvider(true);
+    }
+
+    protected Provider providerWithoutExperimentalImport() {
+        return testProvider(false);
+    }
+
+    protected Provider chouetteProvider() {
+        Provider provider = testProvider(false);
+        provider.setId(testRbProviderId);
+        ChouetteInfo chouetteInfo = new ChouetteInfo();
+        chouetteInfo.setId(testRbProviderId);
+        chouetteInfo.setEnableExperimentalImport(false);
+        chouetteInfo.setReferential(testDatasetChouetteReferential);
+        provider.setChouetteInfo(chouetteInfo);
+        return provider;
+    }
+
+    protected Exchange exchange() {
+        CamelContext ctx = new DefaultCamelContext();
+        Exchange exchange = new DefaultExchange(ctx);
+        exchange.getIn().setHeader(Constants.PROVIDER_ID, testProviderId);
+        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, testDatasetReferential);
+        exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, testDatasetReferential);
+        exchange.getIn().setHeader(Constants.CORRELATION_ID, "correlation");
+        exchange.setProperty(Constants.FOLDER_NAME, "/base/folder");
+        return exchange;
+    }
 }
