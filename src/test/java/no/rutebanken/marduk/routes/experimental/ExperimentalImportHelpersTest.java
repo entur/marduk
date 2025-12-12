@@ -1,108 +1,89 @@
 package no.rutebanken.marduk.routes.experimental;
 
 import no.rutebanken.marduk.Constants;
-import org.apache.camel.CamelContext;
+import no.rutebanken.marduk.MardukSpringBootBaseTest;
 import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.support.DefaultExchange;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import static org.mockito.Mockito.when;
 
-class ExperimentalImportHelpersTest {
-
-    private Exchange exchange() {
-        CamelContext ctx = new DefaultCamelContext();
-        return new DefaultExchange(ctx);
-    }
-
+class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
     @Test
-    void testShouldRunExperimentalImportIfEnabledForCurrentCodespace() {
+    void testShouldRunExperimentalImportIfEnabledForCodespace() {
+        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithExperimentalImport());
         Exchange exchange = exchange();
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, "TST");
-        ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, List.of("TST"));
+        ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, providerRepository);
         Assertions.assertTrue(filter.shouldRunExperimentalImport(exchange));
     }
 
     @Test
     void testShouldNotRunExperimentalImportIfNotEnabledForCurrentCodespace() {
+        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithoutExperimentalImport());
         Exchange exchange = exchange();
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, "TST");
-        ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, List.of("NOMATCH"));
+        ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, providerRepository);
         Assertions.assertFalse(filter.shouldRunExperimentalImport(exchange));
     }
 
     @Test
-    void testShouldNotRunExperimentalImportIfEnabledForNoCodespaces() {
-        ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, List.of());
+    void testShouldNotRunExperimentalImportIfDisabledForAllCodespaces() {
+        ExperimentalImportHelpers filter = new ExperimentalImportHelpers(false, providerRepository);
+        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithExperimentalImport());
         Assertions.assertFalse(filter.shouldRunExperimentalImport(exchange()));
-    }
-
-    @Test
-    void testShouldNotRunExperimentalImportIfDisabled() {
-        ExperimentalImportHelpers filter = new ExperimentalImportHelpers(false, List.of());
+        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithoutExperimentalImport());
         Assertions.assertFalse(filter.shouldRunExperimentalImport(exchange()));
     }
 
     @Test
     void testPathToExportedNetexFileToMergeWithFlexForExperimentalImport() {
+        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithExperimentalImport());
         Exchange exchange = exchange();
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, "TST");
-        exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, "TST");
-        exchange.getIn().setHeader(Constants.CORRELATION_ID, "correlation");
-        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, List.of("TST"));
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
         String expectedPath = "filtered-netex/TST/netex-before-merging/correlation/TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
         Assertions.assertEquals(expectedPath, helpers.pathToExportedNetexFileToMergeWithFlex(exchange));
     }
 
     @Test
     void testPathToExportedNetexFileToMergeWithFlexForNormalImport() {
+        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithoutExperimentalImport());
         Exchange exchange = exchange();
-        exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, "TST");
-        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, List.of());
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, providerRepository);
         String expectedPath = Constants.BLOBSTORE_PATH_CHOUETTE + "netex/TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
         Assertions.assertEquals(expectedPath, helpers.pathToExportedNetexFileToMergeWithFlex(exchange));
     }
 
     @Test
     void testFlexibleDataWorkingDirectoryForExperimentalImport() {
+        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithExperimentalImport());
         Exchange exchange = exchange();
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, "TST");
-        exchange.getIn().setHeader(Constants.CORRELATION_ID, "correlation");
-        exchange.setProperty(Constants.FOLDER_NAME, "/base/folder");
-        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, List.of("TST"));
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
         String expectedPath = "/base/folder/correlation/unpacked-with-flexible-lines";
         Assertions.assertEquals(expectedPath, helpers.flexibleDataWorkingDirectory(exchange));
     }
 
     @Test
     void testFlexibleDataWorkingDirectoryForNormalImport() {
+        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithoutExperimentalImport());
         Exchange exchange = exchange();
-        exchange.setProperty(Constants.FOLDER_NAME, "/base/folder");
-        exchange.getIn().setHeader(Constants.CORRELATION_ID, "correlation");
-        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, List.of());
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, providerRepository);
         String expectedPath = "/base/folder/unpacked-with-flexible-lines";
         Assertions.assertEquals(expectedPath, helpers.flexibleDataWorkingDirectory(exchange));
     }
 
     @Test
     void testDirectoryForMergedNetexForExperimentalImport() {
+        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithExperimentalImport());
         Exchange exchange = exchange();
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, "TST");
-        exchange.getIn().setHeader(Constants.CORRELATION_ID, "correlation");
-        exchange.setProperty(Constants.FOLDER_NAME, "/base/folder");
-        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, List.of("TST"));
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
         String expectedPath = "/base/folder/correlation/result";
         Assertions.assertEquals(expectedPath, helpers.directoryForMergedNetex(exchange));
     }
 
     @Test
     void testDirectoryForMergedNetexForNormalImport() {
+        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithoutExperimentalImport());
         Exchange exchange = exchange();
-        exchange.setProperty(Constants.FOLDER_NAME, "/base/folder");
-        exchange.getIn().setHeader(Constants.CORRELATION_ID, "correlation");
-        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, List.of());
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, providerRepository);
         String expectedPath = "/base/folder/result";
         Assertions.assertEquals(expectedPath, helpers.directoryForMergedNetex(exchange));
     }

@@ -33,7 +33,7 @@ public class AshurFilteringStatusRouteBuilder extends BaseRouteBuilder {
                     .to("direct:postValidateFilteredDataset")
                 .endChoice()
                 .when(header(Constants.FILTER_NETEX_FILE_STATUS_HEADER).isEqualTo(Constants.FILTER_NETEX_FILE_STATUS_FAILED))
-                    .log(LoggingLevel.INFO, correlation() + " Recieved notification that Ashur filtering has failed.")
+                    .log(LoggingLevel.INFO, correlation() + " Received notification that Ashur filtering has failed.")
                 .end();
 
         from("direct:postValidateFilteredDataset")

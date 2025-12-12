@@ -1,11 +1,12 @@
 package no.rutebanken.marduk.routes.experimental;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.repository.ProviderRepository;
 import org.apache.camel.Exchange;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.Constants.FOLDER_NAME;
@@ -19,25 +20,23 @@ import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 @Component
 public class ExperimentalImportHelpers {
     private final boolean experimentalImportEnabled;
-    private final List<String> experimentalCodespaces;
+    private final ProviderRepository providerRepository;
 
     private static final String UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER = "/unpacked-with-flexible-lines";
     private static final String MERGED_NETEX_SUB_FOLDER = "/result";
 
     public ExperimentalImportHelpers(
         @Value("${marduk.experimental-import.enabled:false}") boolean experimentalImportEnabled,
-        @Value("${marduk.experimental-import.codespaces:}") List<String> experimentalCodespaces
+        @Autowired ProviderRepository providerRepository
     ) {
         this.experimentalImportEnabled = experimentalImportEnabled;
-        this.experimentalCodespaces = experimentalCodespaces;
+        this.providerRepository = providerRepository;
     }
 
     public boolean shouldRunExperimentalImport(Exchange exchange) {
         if (experimentalImportEnabled) {
-            String referential = exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class);
-            if (referential != null) {
-                return experimentalCodespaces.contains(referential);
-            }
+            Provider provider = providerRepository.getProvider(exchange.getIn().getHeader(PROVIDER_ID, Long.class));
+            return provider.getChouetteInfo().hasEnabledExperimentalImport();
         }
         return false;
     }

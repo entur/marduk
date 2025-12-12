@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.netex;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.experimental.ExperimentalImportHelpers;
+import no.rutebanken.marduk.routes.experimental.SetProviderIdBeforeFlexMergeProcessor;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
@@ -35,7 +36,6 @@ import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FOLDER_NAME;
-import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
 import static no.rutebanken.marduk.Constants.VALIDATION_CORRELATION_ID_HEADER;
@@ -59,9 +59,14 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     private static final String EXPORT_MERGED_FOR_VALIDATION = BLOBSTORE_PATH_UTTU +   "netex/${header." + CHOUETTE_REFERENTIAL + "}" + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
 
     private final ExperimentalImportHelpers experimentalImportHelpers;
+    private final SetProviderIdBeforeFlexMergeProcessor setProviderIdBeforeFlexMergeProcessor;
 
-    public NetexMergeChouetteWithFlexibleLineExportRouteBuilder(ExperimentalImportHelpers experimentalImportHelpers) {
+    public NetexMergeChouetteWithFlexibleLineExportRouteBuilder(
+            ExperimentalImportHelpers experimentalImportHelpers,
+            SetProviderIdBeforeFlexMergeProcessor setProviderIdBeforeFlexMergeProcessor
+    ) {
         this.experimentalImportHelpers = experimentalImportHelpers;
+        this.setProviderIdBeforeFlexMergeProcessor = setProviderIdBeforeFlexMergeProcessor;
     }
 
     @Value("${netex.export.download.directory:files/netex/merged}")
@@ -83,9 +88,8 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Merging chouette NeTEx export with FlexibleLines")
                 .validate(header(Constants.CHOUETTE_REFERENTIAL).isNotNull())
 
-                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
+                .process(setProviderIdBeforeFlexMergeProcessor)
                 .validate(header(Constants.PROVIDER_ID).isNotNull())
-
 
                 .setProperty(FOLDER_NAME, simple(localWorkingDirectory + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}"))
                 .doTry()
