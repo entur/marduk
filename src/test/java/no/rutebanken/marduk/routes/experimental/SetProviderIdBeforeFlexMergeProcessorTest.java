@@ -21,26 +21,26 @@ class SetProviderIdBeforeFlexMergeProcessorTest extends MardukSpringBootBaseTest
 
     @Test
     void testProcessorDoesNotChangeProviderIdForExperimentalImports() throws Exception {
-        when(providerRepository.getProviderId(TEST_DATASET_REFERENTIAL)).thenReturn(TEST_PROVIDER_ID);
-        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithExperimentalImport());
+        when(providerRepository.getProviderId(testDatasetReferential)).thenReturn(testProviderId);
+        when(providerRepository.getProvider(testProviderId)).thenReturn(providerWithExperimentalImport());
 
         var exchange = exchange();
         SetProviderIdBeforeFlexMergeProcessor processor = initializeProcessor(true);
         processor.process(exchange);
 
         Long actualProviderId = exchange.getIn().getHeader(PROVIDER_ID, Long.class);
-        Assertions.assertEquals(TEST_PROVIDER_ID, actualProviderId);
+        Assertions.assertEquals(testProviderId, actualProviderId);
     }
 
     @Test
     void testProcessorUpdatesProviderIdForChouetteImports() throws Exception {
-        when(providerRepository.getProviderId(TEST_DATASET_REFERENTIAL)).thenReturn(TEST_RB_PROVIDER_ID);
+        when(providerRepository.getProviderId(testDatasetReferential)).thenReturn(testRbProviderId);
 
         var exchange = exchange();
         SetProviderIdBeforeFlexMergeProcessor processor = initializeProcessor(false);
         processor.process(exchange);
 
         Long actualProviderId = exchange.getIn().getHeader(PROVIDER_ID, Long.class);
-        Assertions.assertEquals(TEST_RB_PROVIDER_ID, actualProviderId);
+        Assertions.assertEquals(testRbProviderId, actualProviderId);
     }
 }

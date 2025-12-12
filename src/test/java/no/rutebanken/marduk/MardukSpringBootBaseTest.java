@@ -46,11 +46,11 @@ import static org.mockito.Mockito.when;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public abstract class MardukSpringBootBaseTest {
 
-    protected final Long TEST_PROVIDER_ID = 0L;
-    protected final String TEST_DATASET_REFERENTIAL = "TST";
+    protected final Long testProviderId = 0L;
+    protected final String testDatasetReferential = "TST";
 
-    protected final Long TEST_RB_PROVIDER_ID = 1L;
-    protected final String TEST_DATASET_CHOUETTE_REFERENTIAL = "rb_TST";
+    protected final Long testRbProviderId = 1L;
+    protected final String testDatasetChouetteReferential = "rb_TST";
 
     private static PubSubEmulatorContainer pubsubEmulator;
 
@@ -178,10 +178,10 @@ public abstract class MardukSpringBootBaseTest {
 
     protected Provider testProvider(Boolean experimentalImportEnabled) {
         Provider provider = new Provider();
-        provider.setId(TEST_PROVIDER_ID);
+        provider.setId(testProviderId);
         ChouetteInfo chouetteInfo = new ChouetteInfo();
         chouetteInfo.setEnableExperimentalImport(experimentalImportEnabled);
-        chouetteInfo.setReferential(TEST_DATASET_REFERENTIAL);
+        chouetteInfo.setReferential(testDatasetReferential);
         provider.setChouetteInfo(chouetteInfo);
         return provider;
     }
@@ -196,11 +196,11 @@ public abstract class MardukSpringBootBaseTest {
 
     protected Provider chouetteProvider() {
         Provider provider = testProvider(false);
-        provider.setId(TEST_RB_PROVIDER_ID);
+        provider.setId(testRbProviderId);
         ChouetteInfo chouetteInfo = new ChouetteInfo();
-        chouetteInfo.setId(TEST_RB_PROVIDER_ID);
+        chouetteInfo.setId(testRbProviderId);
         chouetteInfo.setEnableExperimentalImport(false);
-        chouetteInfo.setReferential(TEST_DATASET_CHOUETTE_REFERENTIAL);
+        chouetteInfo.setReferential(testDatasetChouetteReferential);
         provider.setChouetteInfo(chouetteInfo);
         return provider;
     }
@@ -208,9 +208,9 @@ public abstract class MardukSpringBootBaseTest {
     protected Exchange exchange() {
         CamelContext ctx = new DefaultCamelContext();
         Exchange exchange = new DefaultExchange(ctx);
-        exchange.getIn().setHeader(Constants.PROVIDER_ID, TEST_PROVIDER_ID);
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, TEST_DATASET_REFERENTIAL);
-        exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, TEST_DATASET_REFERENTIAL);
+        exchange.getIn().setHeader(Constants.PROVIDER_ID, testProviderId);
+        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, testDatasetReferential);
+        exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, testDatasetReferential);
         exchange.getIn().setHeader(Constants.CORRELATION_ID, "correlation");
         exchange.setProperty(Constants.FOLDER_NAME, "/base/folder");
         return exchange;

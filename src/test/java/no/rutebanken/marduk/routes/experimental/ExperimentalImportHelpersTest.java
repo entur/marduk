@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
     @Test
     void testShouldRunExperimentalImportIfEnabledForCodespace() {
-        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithExperimentalImport());
+        when(providerRepository.getProvider(testProviderId)).thenReturn(providerWithExperimentalImport());
         Exchange exchange = exchange();
         ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, providerRepository);
         Assertions.assertTrue(filter.shouldRunExperimentalImport(exchange));
@@ -19,7 +19,7 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
 
     @Test
     void testShouldNotRunExperimentalImportIfNotEnabledForCurrentCodespace() {
-        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithoutExperimentalImport());
+        when(providerRepository.getProvider(testProviderId)).thenReturn(providerWithoutExperimentalImport());
         Exchange exchange = exchange();
         ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, providerRepository);
         Assertions.assertFalse(filter.shouldRunExperimentalImport(exchange));
@@ -28,15 +28,15 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
     @Test
     void testShouldNotRunExperimentalImportIfDisabledForAllCodespaces() {
         ExperimentalImportHelpers filter = new ExperimentalImportHelpers(false, providerRepository);
-        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithExperimentalImport());
+        when(providerRepository.getProvider(testProviderId)).thenReturn(providerWithExperimentalImport());
         Assertions.assertFalse(filter.shouldRunExperimentalImport(exchange()));
-        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithoutExperimentalImport());
+        when(providerRepository.getProvider(testProviderId)).thenReturn(providerWithoutExperimentalImport());
         Assertions.assertFalse(filter.shouldRunExperimentalImport(exchange()));
     }
 
     @Test
     void testPathToExportedNetexFileToMergeWithFlexForExperimentalImport() {
-        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithExperimentalImport());
+        when(providerRepository.getProvider(testProviderId)).thenReturn(providerWithExperimentalImport());
         Exchange exchange = exchange();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
         String expectedPath = "filtered-netex/TST/netex-before-merging/correlation/TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
@@ -45,7 +45,7 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
 
     @Test
     void testPathToExportedNetexFileToMergeWithFlexForNormalImport() {
-        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithoutExperimentalImport());
+        when(providerRepository.getProvider(testProviderId)).thenReturn(providerWithoutExperimentalImport());
         Exchange exchange = exchange();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, providerRepository);
         String expectedPath = Constants.BLOBSTORE_PATH_CHOUETTE + "netex/TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
@@ -54,7 +54,7 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
 
     @Test
     void testFlexibleDataWorkingDirectoryForExperimentalImport() {
-        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithExperimentalImport());
+        when(providerRepository.getProvider(testProviderId)).thenReturn(providerWithExperimentalImport());
         Exchange exchange = exchange();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
         String expectedPath = "/base/folder/correlation/unpacked-with-flexible-lines";
@@ -63,7 +63,7 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
 
     @Test
     void testFlexibleDataWorkingDirectoryForNormalImport() {
-        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithoutExperimentalImport());
+        when(providerRepository.getProvider(testProviderId)).thenReturn(providerWithoutExperimentalImport());
         Exchange exchange = exchange();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, providerRepository);
         String expectedPath = "/base/folder/unpacked-with-flexible-lines";
@@ -72,7 +72,7 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
 
     @Test
     void testDirectoryForMergedNetexForExperimentalImport() {
-        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithExperimentalImport());
+        when(providerRepository.getProvider(testProviderId)).thenReturn(providerWithExperimentalImport());
         Exchange exchange = exchange();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
         String expectedPath = "/base/folder/correlation/result";
@@ -81,7 +81,7 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
 
     @Test
     void testDirectoryForMergedNetexForNormalImport() {
-        when(providerRepository.getProvider(TEST_PROVIDER_ID)).thenReturn(providerWithoutExperimentalImport());
+        when(providerRepository.getProvider(testProviderId)).thenReturn(providerWithoutExperimentalImport());
         Exchange exchange = exchange();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, providerRepository);
         String expectedPath = "/base/folder/result";
