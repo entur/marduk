@@ -33,9 +33,17 @@ public class ExperimentalImportHelpers {
         this.providerRepository = providerRepository;
     }
 
+    private Provider getProvider(String referential) {
+        return providerRepository
+                .getProviders()
+                .stream()
+                .filter(provider -> referential.equalsIgnoreCase((provider.getChouetteInfo().getReferential()))).findFirst().orElse(null);
+    }
+
     public boolean shouldRunExperimentalImport(Exchange exchange) {
         if (experimentalImportEnabled) {
-            Provider provider = providerRepository.getProvider(exchange.getIn().getHeader(PROVIDER_ID, Long.class));
+            String referential = datasetReferentialFor(exchange);
+            Provider provider = getProvider(referential);
             return provider.getChouetteInfo().hasEnabledExperimentalImport();
         }
         return false;
@@ -78,6 +86,10 @@ public class ExperimentalImportHelpers {
 
     private String correlationIdFor(Exchange exchange) {
         return exchange.getIn().getHeader(Constants.CORRELATION_ID, String.class);
+    }
+
+    private String datasetReferentialFor(Exchange exchange) {
+        return exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class);
     }
 
     private String chouetteReferentialFor(Exchange exchange) {
