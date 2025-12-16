@@ -142,6 +142,8 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                         .setHeader(FILTERING_PROFILE_HEADER, constant(FILTERING_PROFILE_STANDARD_IMPORT))
                         .setHeader(FILTERING_NETEX_SOURCE_HEADER, constant(FILTERING_NETEX_SOURCE_MARDUK))
                         .to("google-pubsub:{{marduk.pubsub.project.id}}:FilterNetexFileQueue")
+                        .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILTERING).state(JobEvent.State.PENDING).build())
+                        .to("direct:updateStatus")
                         .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering")
                     .otherwise()
                         .log(LoggingLevel.ERROR, correlation() + "Cancelled triggering of filtering because no created timestamp was found for file name: " + header(FILE_NAME))

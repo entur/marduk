@@ -28,13 +28,26 @@ public class AshurFilteringStatusRouteBuilder extends BaseRouteBuilder {
         from("google-pubsub:{{marduk.pubsub.project.id}}:" + Constants.FILTER_NETEX_FILE_STATUS_TOPIC)
                 .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
                 .choice()
+                .when(header(Constants.FILTER_NETEX_FILE_STATUS_HEADER).isEqualTo(FILTER_NETEX_FILE_STATUS_STARTED))
+                    .log(LoggingLevel.INFO, correlation() + " Received notification that Ashur filtering has started.")
+                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILTERING).state(JobEvent.State.STARTED).build())
+                .endChoice()
                 .when(header(Constants.FILTER_NETEX_FILE_STATUS_HEADER).isEqualTo(Constants.FILTER_NETEX_FILE_STATUS_SUCCEEDED))
                     .log(LoggingLevel.INFO, correlation() + " Received notification that Ashur filtering has succeeded. File location: ${header." + Constants.FILTERED_NETEX_FILE_PATH_HEADER + "}")
                     .to("direct:postValidateFilteredDataset")
+                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILTERING).state(JobEvent.State.OK).build())
                 .endChoice()
                 .when(header(Constants.FILTER_NETEX_FILE_STATUS_HEADER).isEqualTo(Constants.FILTER_NETEX_FILE_STATUS_FAILED))
                     .log(LoggingLevel.INFO, correlation() + " Received notification that Ashur filtering has failed.")
-                .end();
+                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILTERING).state(JobEvent.State.FAILED).build())
+                .endChoice()
+                .otherwise()
+                    .log(LoggingLevel.ERROR, correlation() + " Received notification with unknown Ashur filtering status: ${header." + Constants.FILTER_NETEX_FILE_STATUS_HEADER + "}")
+                    .stop()
+                .end() // end otherwise
+                .end() // end choice
+                .to("direct:updateStatus")
+                .routeId("ashur-filtering-status-route");
 
         from("direct:postValidateFilteredDataset")
                 .to("direct:copyFilteredDatasetToInternalBucket")
