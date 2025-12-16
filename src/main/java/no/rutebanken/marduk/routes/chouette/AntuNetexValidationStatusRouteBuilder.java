@@ -22,7 +22,9 @@ import no.rutebanken.marduk.routes.experimental.ExperimentalImportHelpers;
 import no.rutebanken.marduk.routes.experimental.NisabaHeadersProcessor;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.processors.FileCreatedTimestampProcessor;
+import no.rutebanken.marduk.routes.processors.PrevalidatedFileMetadataProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,16 +43,19 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
     private final ExperimentalImportHelpers experimentalImportHelpers;
     private final String nisabaExchangeContainerName;
+    private final MardukInternalBlobStoreService mardukInternalBlobStoreService;
 
     FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
 
     public AntuNetexValidationStatusRouteBuilder(
         ExperimentalImportHelpers experimentalImportHelpers,
         FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository,
+        MardukInternalBlobStoreService mardukInternalBlobStoreService,
         @Value("${blobstore.gcs.nisaba.exchange.container.name}") String nisabaExchangeContainerName
     ) {
         this.experimentalImportHelpers = experimentalImportHelpers;
         this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
+        this.mardukInternalBlobStoreService = mardukInternalBlobStoreService;
         this.nisabaExchangeContainerName = nisabaExchangeContainerName;
     }
 
@@ -129,7 +134,6 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .routeId("antu-netex-validation-started");
 
         from("direct:ashurNetexFilterAfterPreValidation")
-                .process(new FileCreatedTimestampProcessor(fileNameAndDigestIdempotentRepository))
                 .choice()
                     .when(header(FILTERING_FILE_CREATED_TIMESTAMP).isNotNull())
                         .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + DATASET_REFERENTIAL + "}/${header." + DATASET_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
@@ -159,19 +163,35 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .choice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                     .to("direct:uploadOriginalDatasetToNisaba")
+                    // Store original FILE_HANDLE before writing metadata
+                    .setProperty("originalFileHandle", header(FILE_HANDLE))
+                    // Writes metadata file and sets createdAt timestamp header
+                    .process(new PrevalidatedFileMetadataProcessor(fileNameAndDigestIdempotentRepository))
+                    .to("direct:uploadInternalBlob")
+                    // Restore FILE_HANDLE and copy the NeTEx file to subfolder structure
+                    .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
+                    .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + CHOUETTE_REFERENTIAL + "}/" + CURRENT_PREVALIDATED_NETEX_FILENAME))
+                    .to("direct:copyInternalBlobInBucket")
                     .log(LoggingLevel.INFO, correlation() + "Experimental import is enabled for codespace, triggering filtering in Ashur after pre-validation")
                     .to("direct:ashurNetexFilterAfterPreValidation")
+                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                 .endChoice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), exchange -> !experimentalImportHelpers.shouldRunExperimentalImport(exchange)))
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
-                    .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + CHOUETTE_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
+                    // Store original FILE_HANDLE before writing metadata
+                    .setProperty("originalFileHandle", header(FILE_HANDLE))
+                    // Write metadata file first (contains createdAt timestamp for nightly validation)
+                    .process(new PrevalidatedFileMetadataProcessor(fileNameAndDigestIdempotentRepository))
+                    .to("direct:uploadInternalBlob")
+                    // Restore FILE_HANDLE and copy the NeTEx file to subfolder structure
+                    .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
+                    .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + CHOUETTE_REFERENTIAL + "}/" + CURRENT_PREVALIDATED_NETEX_FILENAME))
                     .to("direct:copyInternalBlobInBucket")
                     .filter(PredicateBuilder.not(simple("{{chouette.enablePreValidation:true}}")))
                     .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
+                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                 .endChoice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
@@ -233,7 +253,13 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
-                    .log(LoggingLevel.INFO, correlation() + "Nightly reimport: Experimental import is enabled for codespace, triggering filtering in Ashur after pre-validation")
+                    .log(LoggingLevel.INFO, correlation() + "Nightly validation: Experimental import is enabled for codespace, triggering filtering in Ashur after pre-validation")
+
+                    // when running nightly validation with experimental import, we must read the created timestamp from
+                    // the metadata file for the most recently prevalidated file for this codespace.
+                    // for normal experimental imports, the created timestamp is already available in the header and
+                    // should not be overwritten
+                    .process(new FileCreatedTimestampProcessor(mardukInternalBlobStoreService))
                     .to("direct:ashurNetexFilterAfterPreValidation")
                 .endChoice()
 

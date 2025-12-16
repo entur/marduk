@@ -4,6 +4,8 @@ import no.rutebanken.marduk.MardukSpringBootBaseTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static no.rutebanken.marduk.Constants.*;
 import static org.mockito.Mockito.when;
 
@@ -22,7 +24,7 @@ class SetProviderIdBeforeFlexMergeProcessorTest extends MardukSpringBootBaseTest
     @Test
     void testProcessorDoesNotChangeProviderIdForExperimentalImports() throws Exception {
         when(providerRepository.getProviderId(testDatasetReferential)).thenReturn(testProviderId);
-        when(providerRepository.getProvider(testProviderId)).thenReturn(providerWithExperimentalImport());
+        when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
 
         var exchange = exchange();
         SetProviderIdBeforeFlexMergeProcessor processor = initializeProcessor(true);

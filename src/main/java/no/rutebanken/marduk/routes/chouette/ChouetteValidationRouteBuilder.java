@@ -36,7 +36,7 @@ import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
  */
 @Component
 public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder {
-    @Value("${antu.validate.cron.schedule:0+26+10+?+*+MON-FRI}")
+    @Value("${antu.validate.cron.schedule:0+30+23+?+*+MON-FRI}")
     private String antuValidateCronSchedule;
 
     @Value("${chouette.validate.level2.cron.schedule:0+30+21+?+*+MON-FRI}")
@@ -66,13 +66,13 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
         from("direct:triggerAntuValidationForAllProviders")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorService("allProvidersExecutorService")
-                .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} && ${body.chouetteInfo.referential}  && ${body.chouetteInfo.referential} == 'hav'"))
+                .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} && ${body.chouetteInfo.referential}"))
                 .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(USERNAME, constant("System"))
                 .setHeader(DATASET_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + DATASET_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
+                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + DATASET_REFERENTIAL + "}/" + CURRENT_PREVALIDATED_NETEX_FILENAME))
                 .to("direct:antuNetexNightlyValidation")
                 .routeId("trigger-antu-validation-for-all-providers");
 
