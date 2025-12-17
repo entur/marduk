@@ -73,7 +73,7 @@ oauth2:
   client:
     id: 5wxWPHwd5Tvly9IVWN5m1iyHIDLVJTBH
     url: https://internal.staging.entur.org/oauth/token
-    audience: https://ror.api.staging.entur.io
+    audience: https://api.staging.entur.io
 
 line:
   statistics:
