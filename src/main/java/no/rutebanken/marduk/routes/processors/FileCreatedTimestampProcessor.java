@@ -28,17 +28,24 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_INBOUND;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES;
 import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILTERING_FILE_CREATED_TIMESTAMP;
 import static no.rutebanken.marduk.Constants.PREVALIDATED_NETEX_METADATA_FILENAME;
 
 /**
- * Processor that retrieves the createdAt timestamp for a file and sets it as a header.
+ * Processor that retrieves metadata for the last prevalidated file for a codespace.
  * <p>
- * The timestamp is read from a metadata JSON file stored in blob storage alongside
- * the prevalidated NeTEx file. This provides a single source of truth for both
- * normal imports and nightly validation runs.
+ * This processor reads a metadata JSON file from blob storage and:
+ * <ul>
+ *   <li>Sets the FILTERING_FILE_CREATED_TIMESTAMP header with the original upload timestamp</li>
+ *   <li>Sets the FILE_HANDLE header to point to the original file in the inbound directory,
+ *       if the file still exists</li>
+ * </ul>
+ * <p>
+ * This is used for nightly validation to validate the last prevalidated file
  */
 public class FileCreatedTimestampProcessor implements Processor {
 
@@ -56,7 +63,7 @@ public class FileCreatedTimestampProcessor implements Processor {
         String referential = exchange.getIn().getHeader(DATASET_REFERENTIAL, String.class);
         String metadataFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + referential + "/" + PREVALIDATED_NETEX_METADATA_FILENAME;
 
-        LOGGER.info("Reading createdAt timestamp from metadata file: {}", metadataFilePath);
+        LOGGER.info("Reading metadata from file: {}", metadataFilePath);
 
         try (InputStream inputStream = mardukInternalBlobStoreService.getBlob(metadataFilePath)) {
             if (inputStream == null) {
@@ -66,12 +73,23 @@ public class FileCreatedTimestampProcessor implements Processor {
 
             PrevalidatedFileMetadata metadata = OBJECT_READER.readValue(inputStream);
             LocalDateTime createdAt = metadata.getCreatedAt();
+            String originalFileName = metadata.getOriginalFileName();
 
             LOGGER.info("Read metadata from file. Original filename: {}, createdAt: {}",
-                    metadata.getOriginalFileName(), createdAt);
+                    originalFileName, createdAt);
 
             if (createdAt != null) {
                 exchange.getIn().setHeader(FILTERING_FILE_CREATED_TIMESTAMP, createdAt.toString());
+            }
+
+            if (originalFileName != null) {
+                String originalFilePath = BLOBSTORE_PATH_INBOUND + referential + "/" + originalFileName;
+                if (mardukInternalBlobStoreService.blobExists(originalFilePath)) {
+                    exchange.getIn().setHeader(FILE_HANDLE, originalFilePath);
+                    LOGGER.info("Set FILE_HANDLE to original file path: {}", originalFilePath);
+                } else {
+                    LOGGER.warn("Original file not found at path: {}. FILE_HANDLE not set.", originalFilePath);
+                }
             }
         } catch (Exception e) {
             LOGGER.error("Failed to read metadata file: {}", metadataFilePath, e);
