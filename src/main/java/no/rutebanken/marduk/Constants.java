@@ -25,6 +25,7 @@ public final class Constants {
     public static final String TARGET_FILE_PARENT = "RutebankenTargetFileParent";
     public static final String TARGET_CONTAINER = "RutebankenTargetContainer";
 
+    public static final String SOURCE_CONTAINER = "RutebankenSourceContainer";
 
     public static final String FILE_PARENT_COLLECTION = "RutebankenFileParentCollection";
     public static final String PROVIDER_ID = "RutebankenProviderId";
@@ -40,6 +41,7 @@ public final class Constants {
     public static final String CURRENT_AGGREGATED_NETEX_FILENAME = "aggregated-netex.zip";
     public static final String CURRENT_FLEXIBLE_LINES_NETEX_FILENAME = "flexible-lines.zip";
     public static final String CURRENT_PREVALIDATED_NETEX_FILENAME = "netex.zip";
+    public static final String PREVALIDATED_NETEX_METADATA_FILENAME = "netex.metadata.json";
 
     public static final String GRAPH_COMPATIBILITY_VERSION = "RutebankenGraphCompatibilityVersion";
 
@@ -143,6 +145,17 @@ public final class Constants {
     public static final String FILTERING_NETEX_SOURCE_HEADER = "NetexSource";
     public static final String FILTERING_NETEX_SOURCE_CHOUETTE = "chouette";
     public static final String FILTERING_NETEX_SOURCE_MARDUK = "marduk";
+
+    public static final String FILTER_NETEX_FILE_SUBSCRIPTION = "FilterNetexFileQueue";
+    public static final String FILTER_NETEX_FILE_STATUS_TOPIC = "FilterNetexFileStatusQueue";
+
+    public static final String FILTER_NETEX_FILE_STATUS_HEADER = "Status";
+
+    public static final String FILTER_NETEX_FILE_STATUS_STARTED = "STARTED";
+    public static final String FILTER_NETEX_FILE_STATUS_SUCCEEDED = "SUCCESS";
+    public static final String FILTER_NETEX_FILE_STATUS_FAILED = "FAILED";
+
+    public static final String FILTERED_NETEX_FILE_PATH_HEADER = "FilteredNetexFilePath";
 
     public static final String IMPORT_TYPE = "ImportType";
 
