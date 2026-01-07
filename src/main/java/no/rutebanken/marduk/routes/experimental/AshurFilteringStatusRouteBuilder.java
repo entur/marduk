@@ -25,7 +25,7 @@ public class AshurFilteringStatusRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        from("google-pubsub:{{ashur.pubsub.project.id}}:" + Constants.FILTER_NETEX_FILE_STATUS_TOPIC)
+        from("google-pubsub:{{marduk.pubsub.project.id}}:" + Constants.FILTER_NETEX_FILE_STATUS_TOPIC)
                 .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
                 .choice()
                 .when(header(Constants.FILTER_NETEX_FILE_STATUS_HEADER).isEqualTo(FILTER_NETEX_FILE_STATUS_STARTED))
