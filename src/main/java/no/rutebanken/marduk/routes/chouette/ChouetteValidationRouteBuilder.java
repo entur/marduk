@@ -18,11 +18,9 @@ package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
-import no.rutebanken.marduk.routes.processors.FileCreatedTimestampProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEvent.State;
 import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
-import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
@@ -38,9 +36,6 @@ import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
  */
 @Component
 public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder {
-
-    private final MardukInternalBlobStoreService mardukInternalBlobStoreService;
-
     @Value("${antu.validate.cron.schedule:0+30+23+?+*+MON-FRI}")
     private String antuValidateCronSchedule;
 
@@ -49,10 +44,6 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 
     @Value("${chouette.url}")
     private String chouetteUrl;
-
-    public ChouetteValidationRouteBuilder(MardukInternalBlobStoreService mardukInternalBlobStoreService) {
-        this.mardukInternalBlobStoreService = mardukInternalBlobStoreService;
-    }
 
     @Override
     public void configure() throws Exception {
@@ -81,7 +72,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
                 .setHeader(USERNAME, constant("System"))
                 .setHeader(DATASET_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
-                .process(new FileCreatedTimestampProcessor(mardukInternalBlobStoreService))
+                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + DATASET_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
                 .to("direct:antuNetexNightlyValidation")
                 .routeId("trigger-antu-validation-for-all-providers");
 

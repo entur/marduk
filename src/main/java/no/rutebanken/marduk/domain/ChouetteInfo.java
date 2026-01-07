@@ -35,7 +35,6 @@ public class ChouetteInfo {
     private boolean generateDatedServiceJourneyIds;
     private Set<String> generateMissingServiceLinksForModes;
     private boolean enableBlocksExport;
-    private boolean enableExperimentalImport;
 
     private Long migrateDataToProvider; // Which dataspace to transfer data to when provider dataspace is valid
 
@@ -59,7 +58,6 @@ public class ChouetteInfo {
                        ", migrateDataToProvider='" + migrateDataToProvider + '\'' +
                        ", generateDatedServiceJourneyIds='" + generateDatedServiceJourneyIds + '\'' +
                        ", enableBlocksExport='" + enableBlocksExport + '\'' +
-                       ", enableExperimentalPipeline='" + enableExperimentalImport + '\'' +
                        '}';
     }
 
@@ -174,13 +172,5 @@ public class ChouetteInfo {
     public ChouetteInfo setMigrateDataToProvider(Long migrateDataToProvider) {
         this.migrateDataToProvider = migrateDataToProvider;
         return this;
-    }
-
-    public boolean hasEnabledExperimentalImport() {
-        return enableExperimentalImport;
-    }
-
-    public void setEnableExperimentalImport(boolean enableExperimentalImport) {
-        this.enableExperimentalImport = enableExperimentalImport;
     }
 }
