@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.Map;
 
 class AshurFilteringStatusRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
-    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:" + Constants.FILTER_NETEX_FILE_STATUS_TOPIC)
+    @Produce("google-pubsub:{{ashur.pubsub.project.id}}:" + Constants.FILTER_NETEX_FILE_STATUS_TOPIC)
     protected ProducerTemplate importTemplate;
 
     @EndpointInject("mock:antuNetexValidationQueue")
