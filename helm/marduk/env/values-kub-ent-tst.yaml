@@ -64,7 +64,7 @@ otp:
 auth0:
   partner:
     url: https://partner.staging.entur.org
-    audience: https://api.staging.entur.io,https://ror.api.staging.entur.io
+    audience: https://api.staging.entur.io
     administratorAccessEnabled: false
 
 roleAssignmentExtractor: baba

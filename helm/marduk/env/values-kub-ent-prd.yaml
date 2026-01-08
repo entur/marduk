@@ -64,7 +64,7 @@ otp:
 auth0:
   partner:
     url: https://partner.entur.org
-    audience: https://api.entur.io,https://ror.api.entur.io
+    audience: https://api.entur.io
     administratorAccessEnabled: false
 
 roleAssignmentExtractor: baba
