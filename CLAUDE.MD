@@ -62,8 +62,8 @@ src/main/java/no/rutebanken/marduk/
 │   ├── admin/                          # Admin operations
 │   └── status/                         # Job status tracking
 ├── rest/                       # REST API endpoints
-│   ├── AdminRestRouteBuilder.java
-│   └── AdminExternalRestRouteBuilder.java
+│   ├── AdminRestController.java         # Spring REST API for admin operations
+│   └── AdminExternalRestController.java # Spring REST API for external integrations
 ├── services/                   # Business logic services
 │   ├── *BlobStoreService.java  # Storage abstractions
 │   └── IdempotentRepositoryService.java
@@ -309,7 +309,7 @@ mvn test
 
 - OpenAPI specs in `src/main/resources/openapi/`
 - REST endpoints accessible at `/services/*`
-- Admin endpoints in `AdminRestRouteBuilder` and `AdminExternalRestRouteBuilder`
+- Admin endpoints in `AdminRestController` and `AdminExternalRestController`
 
 ## Related Projects (Entur Ecosystem)
 
