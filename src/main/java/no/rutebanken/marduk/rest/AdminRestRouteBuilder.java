@@ -26,11 +26,11 @@ import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
+import no.rutebanken.marduk.security.UsernameService;
 import org.apache.camel.*;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
-import org.rutebanken.helper.organisation.user.UserInfoExtractor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
@@ -63,17 +63,17 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     private final String port;
     private final String host;
     private final MardukAuthorizationService mardukAuthorizationService;
-    private final UserInfoExtractor userInfoExtractor;
+    private final UsernameService usernameService;
 
     public AdminRestRouteBuilder(
             @Value("${server.port:8080}") String port,
             @Value("${server.host:0.0.0.0}")
             String host,
-            MardukAuthorizationService mardukAuthorizationService, UserInfoExtractor userInfoExtractor) {
+            MardukAuthorizationService mardukAuthorizationService, UsernameService usernameService) {
         this.port = port;
         this.host = host;
         this.mardukAuthorizationService = mardukAuthorizationService;
-        this.userInfoExtractor = userInfoExtractor;
+        this.usernameService = usernameService;
     }
 
     @Override
@@ -814,13 +814,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         from("direct:setUsername")
                 .doTry()
-                .process(e ->  {
-                    String preferredUsername = userInfoExtractor.getPreferredUsername();
-                    if(preferredUsername == null) {
-                        preferredUsername = "unknown";
-                    }
-                    e.getIn().setHeader(USERNAME, preferredUsername);
-                })
+                .process(e -> e.getIn().setHeader(USERNAME, usernameService.getPreferredUsername()))
                 .routeId("admin-set-username");
 
 

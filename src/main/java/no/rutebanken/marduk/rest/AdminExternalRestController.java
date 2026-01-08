@@ -24,6 +24,7 @@ import no.rutebanken.marduk.rest.openapi.api.DatasetsApi;
 import no.rutebanken.marduk.rest.openapi.api.FlexDatasetsApi;
 import no.rutebanken.marduk.rest.openapi.model.UploadResult;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
+import no.rutebanken.marduk.security.UsernameService;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
@@ -61,18 +62,21 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
     private final MardukInternalBlobStoreService blobStoreService;
     private final ProducerTemplate producerTemplate;
     private final CamelContext camelContext;
+    private final UsernameService usernameService;
 
     public AdminExternalRestController(
             MardukAuthorizationService mardukAuthorizationService,
             ProviderRepository providerRepository,
             MardukInternalBlobStoreService blobStoreService,
             ProducerTemplate producerTemplate,
-            CamelContext camelContext) {
+            CamelContext camelContext,
+            UsernameService usernameService) {
         this.mardukAuthorizationService = mardukAuthorizationService;
         this.providerRepository = providerRepository;
         this.blobStoreService = blobStoreService;
         this.producerTemplate = producerTemplate;
         this.camelContext = camelContext;
+        this.usernameService = usernameService;
     }
 
     @Override
@@ -159,6 +163,7 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
             exchange.getIn().setHeader(FILE_NAME, fileName);
             exchange.getIn().setHeader(FILE_HANDLE, "inbound/received/" + codespace + "/" + fileName);
             exchange.getIn().setHeader("RutebankenFileContent", file.getInputStream());
+            exchange.getIn().setHeader(USERNAME, usernameService.getPreferredUsername());
 
             if (importType != null) {
                 exchange.getIn().setHeader(IMPORT_TYPE, importType);
