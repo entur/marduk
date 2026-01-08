@@ -184,7 +184,10 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
         from("direct:antuNetexNightlyValidation")
                 .choice()
-                .when(e -> mardukInternalBlobStoreService.blobExists(e.getIn().getHeader(FILE_HANDLE, String.class)))
+                .when(e -> {
+                    String fileHandle = e.getIn().getHeader(FILE_HANDLE, String.class);
+                    return fileHandle != null && mardukInternalBlobStoreService.blobExists(fileHandle);
+                })
                 .log(LoggingLevel.INFO, correlation() + "File with file handle ${header." + FILE_HANDLE + "} found in blob store. Triggering nightly prevalidation.")
                 .to("direct:copyInternalBlobToValidationBucket")
                 .to("direct:setNetexValidationProfile")
