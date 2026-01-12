@@ -25,6 +25,7 @@ gcp:
   otpGraphBucketName: ror-otp-graphs-gcp2-test
   nisabaExchangeBucketName: ror-nisaba-exchange-test
   antuExchangeBucketName: ror-antu-exchange-gcp2-test
+  ashurExchangeBucketName: ror-ashur-exchange-gcp-tst
   osmSubDirectory: osm
 
 antu:
