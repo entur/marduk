@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_INBOUND;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES;
 import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
@@ -81,7 +80,7 @@ public class FileCreatedTimestampProcessor implements Processor {
             }
 
             String prevalidatedFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + referential + "/" + referential + "-netex.zip";
-            if (mardukInternalBlobStoreService.blobExists(prevalidatedFilePath)) {
+            if (Boolean.TRUE.equals(mardukInternalBlobStoreService.blobExists(prevalidatedFilePath))) {
                 exchange.getIn().setHeader(FILE_HANDLE, prevalidatedFilePath);
                 LOGGER.info("Set FILE_HANDLE to prevalidated file path: {}", prevalidatedFilePath);
             } else {
