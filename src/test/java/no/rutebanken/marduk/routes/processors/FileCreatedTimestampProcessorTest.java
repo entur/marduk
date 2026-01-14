@@ -20,7 +20,6 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_INBOUND;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.PREVALIDATED_NETEX_METADATA_FILENAME;
@@ -44,8 +43,7 @@ class FileCreatedTimestampProcessorTest extends MardukSpringBootBaseTest {
     void processWhenBothMetadataAndOriginalFileExist() throws Exception {
         // Create metadata file
         PrevalidatedFileMetadata metadata = new PrevalidatedFileMetadata(
-                LocalDateTime.of(2024, 1, 15, 10, 30, 0),
-                "original-file.zip"
+                LocalDateTime.of(2024, 1, 15, 10, 30, 0)
         );
         String json = OBJECT_WRITER.writeValueAsString(metadata);
         String metadataPath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "testReferential/" + PREVALIDATED_NETEX_METADATA_FILENAME;
@@ -54,10 +52,10 @@ class FileCreatedTimestampProcessorTest extends MardukSpringBootBaseTest {
                 new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8))
         );
 
-        // Upload original file to inbound directory
-        String originalFilePath = BLOBSTORE_PATH_INBOUND + "testReferential/original-file.zip";
+        // Upload prevalidated file to last-prevalidated-files directory
+        String prevalidatedFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "testReferential/testReferential-netex.zip";
         internalInMemoryBlobStoreRepository.uploadBlob(
-                originalFilePath,
+                prevalidatedFilePath,
                 new ByteArrayInputStream("test content".getBytes(StandardCharsets.UTF_8))
         );
 
@@ -68,15 +66,14 @@ class FileCreatedTimestampProcessorTest extends MardukSpringBootBaseTest {
 
         Assertions.assertNotNull(exchange.getIn().getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
         Assertions.assertEquals("2024-01-15T10:30", exchange.getIn().getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
-        Assertions.assertEquals(originalFilePath, exchange.getIn().getHeader(FILE_HANDLE));
+        Assertions.assertEquals(prevalidatedFilePath, exchange.getIn().getHeader(FILE_HANDLE));
     }
 
     @Test
     void processWhenMetadataExistsButOriginalFileDoesNot() throws Exception {
-        // Create metadata for a referential where no original file exists
+        // Create metadata for a referential where no prevalidated file exists
         PrevalidatedFileMetadata metadata = new PrevalidatedFileMetadata(
-                LocalDateTime.of(2024, 2, 20, 14, 0, 0),
-                "missing-file.zip"
+                LocalDateTime.of(2024, 2, 20, 14, 0, 0)
         );
         String json = OBJECT_WRITER.writeValueAsString(metadata);
         String metadataPath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "refWithMissingFile/" + PREVALIDATED_NETEX_METADATA_FILENAME;
@@ -93,7 +90,7 @@ class FileCreatedTimestampProcessorTest extends MardukSpringBootBaseTest {
         // Timestamp should still be set from metadata
         Assertions.assertNotNull(exchange.getIn().getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
         Assertions.assertEquals("2024-02-20T14:00", exchange.getIn().getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
-        // FILE_HANDLE should NOT be set because original file doesn't exist
+        // FILE_HANDLE should NOT be set because prevalidated file doesn't exist
         Assertions.assertNull(exchange.getIn().getHeader(FILE_HANDLE));
     }
 

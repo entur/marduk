@@ -36,11 +36,15 @@ import static no.rutebanken.marduk.Constants.*;
  * <p>
  * This processor:
  * 1. Looks up the createdAt timestamp from the idempotent repository using the original filename
- * 2. Creates a PrevalidatedFileMetadata object with the timestamp and original filename
+ * 2. Creates a PrevalidatedFileMetadata object with the timestamp
  * 3. Serializes it to JSON and sets it as the exchange body (as InputStream)
  * 4. Sets FILE_HANDLE to the metadata file path in last-prevalidated-files/{referential}/
+ * 5. Stores the original file handle and target netex file path as exchange properties
  * <p>
- * After this processor runs, the route can call direct:uploadInternalBlob to write the metadata file.
+ * After this processor runs, the route should:
+ * 1. Call direct:uploadInternalBlob to write the metadata file
+ * 2. Restore the original FILE_HANDLE from the exchange property
+ * 3. Copy the original file to the target netex file path stored in the exchange property
  */
 public class PrevalidatedFileMetadataProcessor implements Processor {
 
@@ -57,6 +61,7 @@ public class PrevalidatedFileMetadataProcessor implements Processor {
     public void process(Exchange exchange) throws Exception {
         String originalFileName = exchange.getIn().getHeader(FILE_NAME, String.class);
         String referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);
+        String originalFileHandle = exchange.getIn().getHeader(FILE_HANDLE, String.class);
 
         LocalDateTime createdAt = fileNameAndDigestIdempotentRepository.getCreatedAt(originalFileName);
 
@@ -65,16 +70,21 @@ public class PrevalidatedFileMetadataProcessor implements Processor {
             createdAt = LocalDateTime.now();
         }
 
-        PrevalidatedFileMetadata metadata = new PrevalidatedFileMetadata(createdAt, originalFileName);
+        PrevalidatedFileMetadata metadata = new PrevalidatedFileMetadata(createdAt);
         String json = OBJECT_WRITER.writeValueAsString(metadata);
 
         exchange.getIn().setBody(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
 
         String metadataFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + referential + "/" + PREVALIDATED_NETEX_METADATA_FILENAME;
+        String targetNetexFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + referential + "/" + referential + "-netex.zip";
+
         exchange.getIn().setHeader(FILE_HANDLE, metadataFilePath);
         exchange.getIn().setHeader(FILTERING_FILE_CREATED_TIMESTAMP, createdAt.toString());
 
-        LOGGER.info("Prepared metadata for prevalidated file. Original filename: {}, createdAt: {}, metadata path: {}",
-                originalFileName, createdAt, metadataFilePath);
+        exchange.setProperty("prevalidatedOriginalFileHandle", originalFileHandle);
+        exchange.setProperty("prevalidatedTargetNetexFilePath", targetNetexFilePath);
+
+        LOGGER.info("Prepared metadata for prevalidated file. Original file: {}, createdAt: {}, metadata path: {}, target netex path: {}",
+                originalFileHandle, createdAt, metadataFilePath, targetNetexFilePath);
     }
 }

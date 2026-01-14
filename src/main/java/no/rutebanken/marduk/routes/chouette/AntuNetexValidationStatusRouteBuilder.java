@@ -166,26 +166,30 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
                     .to("direct:uploadOriginalDatasetToNisaba")
-                    // Store original FILE_HANDLE before writing metadata
-                    .setProperty("originalFileHandle", header(FILE_HANDLE))
-                    // Writes metadata file and sets createdAt timestamp header
+                    // Create metadata file with timestamp and copy netex file to last-prevalidated-files
                     .process(new PrevalidatedFileMetadataProcessor(fileNameAndDigestIdempotentRepository))
                     .to("direct:uploadInternalBlob")
-                    // Restore FILE_HANDLE (nightly validation uses original file via metadata)
-                    .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
+                    // Copy the actual netex file to last-prevalidated-files/{referential}/{referential}-netex.zip
+                    .setHeader(FILE_HANDLE, exchangeProperty("prevalidatedOriginalFileHandle"))
+                    .setHeader(TARGET_FILE_HANDLE, exchangeProperty("prevalidatedTargetNetexFilePath"))
+                    .to("direct:copyInternalBlobInBucket")
+                    // Restore FILE_HANDLE for subsequent processing
+                    .setHeader(FILE_HANDLE, exchangeProperty("prevalidatedOriginalFileHandle"))
                     .log(LoggingLevel.INFO, correlation() + "Experimental import is enabled for codespace, triggering filtering in Ashur after pre-validation")
                     .to("direct:ashurNetexFilterAfterPreValidation")
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                 .endChoice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), exchange -> !experimentalImportHelpers.shouldRunExperimentalImport(exchange)))
-                    // Store original FILE_HANDLE before writing metadata
-                    .setProperty("originalFileHandle", header(FILE_HANDLE))
-                    // Write metadata file (contains createdAt timestamp and original filename for nightly validation)
+                    // Create metadata file with timestamp and copy netex file to last-prevalidated-files
                     .process(new PrevalidatedFileMetadataProcessor(fileNameAndDigestIdempotentRepository))
                     .to("direct:uploadInternalBlob")
-                    // Restore FILE_HANDLE (nightly validation uses original file via metadata)
-                    .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
+                    // Copy the actual netex file to last-prevalidated-files/{referential}/{referential}-netex.zip
+                    .setHeader(FILE_HANDLE, exchangeProperty("prevalidatedOriginalFileHandle"))
+                    .setHeader(TARGET_FILE_HANDLE, exchangeProperty("prevalidatedTargetNetexFilePath"))
+                    .to("direct:copyInternalBlobInBucket")
+                    // Restore FILE_HANDLE for subsequent processing
+                    .setHeader(FILE_HANDLE, exchangeProperty("prevalidatedOriginalFileHandle"))
                     .filter(PredicateBuilder.not(simple("{{chouette.enablePreValidation:true}}")))
                     .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
