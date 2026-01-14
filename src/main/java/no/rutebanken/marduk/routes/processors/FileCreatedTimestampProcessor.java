@@ -41,8 +41,8 @@ import static no.rutebanken.marduk.Constants.PREVALIDATED_NETEX_METADATA_FILENAM
  * This processor reads a metadata JSON file from blob storage and:
  * <ul>
  *   <li>Sets the FILTERING_FILE_CREATED_TIMESTAMP header with the original upload timestamp</li>
- *   <li>Sets the FILE_HANDLE header to point to the original file in the inbound directory,
- *       if the file still exists</li>
+ *   <li>Sets the FILE_HANDLE header to point to the prevalidated file in
+ *       last-prevalidated-files/{referential}/{referential}-netex.zip, if the file exists</li>
  * </ul>
  * <p>
  * This is used for nightly validation to validate the last prevalidated file
@@ -73,23 +73,19 @@ public class FileCreatedTimestampProcessor implements Processor {
 
             PrevalidatedFileMetadata metadata = OBJECT_READER.readValue(inputStream);
             LocalDateTime createdAt = metadata.getCreatedAt();
-            String originalFileName = metadata.getOriginalFileName();
 
-            LOGGER.info("Read metadata from file. Original filename: {}, createdAt: {}",
-                    originalFileName, createdAt);
+            LOGGER.info("Read metadata from file. createdAt: {}", createdAt);
 
             if (createdAt != null) {
                 exchange.getIn().setHeader(FILTERING_FILE_CREATED_TIMESTAMP, createdAt.toString());
             }
 
-            if (originalFileName != null) {
-                String originalFilePath = BLOBSTORE_PATH_INBOUND + referential + "/" + originalFileName;
-                if (mardukInternalBlobStoreService.blobExists(originalFilePath)) {
-                    exchange.getIn().setHeader(FILE_HANDLE, originalFilePath);
-                    LOGGER.info("Set FILE_HANDLE to original file path: {}", originalFilePath);
-                } else {
-                    LOGGER.warn("Original file not found at path: {}. FILE_HANDLE not set.", originalFilePath);
-                }
+            String prevalidatedFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + referential + "/" + referential + "-netex.zip";
+            if (mardukInternalBlobStoreService.blobExists(prevalidatedFilePath)) {
+                exchange.getIn().setHeader(FILE_HANDLE, prevalidatedFilePath);
+                LOGGER.info("Set FILE_HANDLE to prevalidated file path: {}", prevalidatedFilePath);
+            } else {
+                LOGGER.warn("Prevalidated file not found at path: {}. FILE_HANDLE not set.", prevalidatedFilePath);
             }
         } catch (Exception e) {
             LOGGER.error("Failed to read metadata file: {}", metadataFilePath, e);

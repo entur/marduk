@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 
 /**
- * Metadata for prevalidated NeTEx files stored in last-prevalidated-files/.
+ * Metadata for prevalidated NeTEx files stored in last-prevalidated-files/{codespace}/.
  * This metadata is stored alongside the NeTEx file to track the original upload timestamp
  * for use during nightly validation runs.
  */
@@ -30,15 +30,11 @@ public class PrevalidatedFileMetadata {
     @JsonProperty("createdAt")
     private LocalDateTime createdAt;
 
-    @JsonProperty("originalFileName")
-    private String originalFileName;
-
     public PrevalidatedFileMetadata() {
     }
 
-    public PrevalidatedFileMetadata(LocalDateTime createdAt, String originalFileName) {
+    public PrevalidatedFileMetadata(LocalDateTime createdAt) {
         this.createdAt = createdAt;
-        this.originalFileName = originalFileName;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -47,13 +43,5 @@ public class PrevalidatedFileMetadata {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public String getOriginalFileName() {
-        return originalFileName;
-    }
-
-    public void setOriginalFileName(String originalFileName) {
-        this.originalFileName = originalFileName;
     }
 }
