@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.routes.experimental;
 
+import com.google.api.Logging;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -26,7 +27,6 @@ public class AshurFilteringStatusRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
         from("google-pubsub:{{ashur.pubsub.project.id}}:" + Constants.FILTER_NETEX_FILE_STATUS_TOPIC)
-                .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
                 .choice()
                 .when(header(Constants.FILTER_NETEX_FILE_STATUS_HEADER).isEqualTo(FILTER_NETEX_FILE_STATUS_STARTED))
                     .log(LoggingLevel.INFO, correlation() + " Received notification that Ashur filtering has started.")
@@ -71,6 +71,12 @@ public class AshurFilteringStatusRouteBuilder extends BaseRouteBuilder {
                 .routeId("copy-filtered-dataset-to-validation-bucket-route");
 
         from("direct:triggerAntuPostValidation")
+//                .log(LoggingLevel.INFO, "Value of dataset referential header: ${header." + DATASET_REFERENTIAL + "}")
+//                .log(LoggingLevel.INFO, "Value of chouette referential header: ${header." + CHOUETTE_REFERENTIAL + "}")
+//                .setHeader(DATASET_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
+//                .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + CHOUETTE_REFERENTIAL + "}"))
+//                .log(LoggingLevel.INFO, "Updated value of dataset referential header: ${header." + DATASET_REFERENTIAL + "}")
+//                .log(LoggingLevel.INFO, "Updated value of chouette referential header: ${header." + CHOUETTE_REFERENTIAL + "}")
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
                 .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
                 .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE))

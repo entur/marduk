@@ -136,6 +136,12 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
         from("direct:ashurNetexFilterAfterPreValidation")
                 .choice()
                     .when(header(FILTERING_FILE_CREATED_TIMESTAMP).isNotNull())
+                        .log(LoggingLevel.INFO, "Value of dataset referential header: ${header." + DATASET_REFERENTIAL + "}")
+                        .log(LoggingLevel.INFO, "Value of chouette referential header: ${header." + CHOUETTE_REFERENTIAL + "}")
+                        .setHeader(DATASET_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
+                        .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + CHOUETTE_REFERENTIAL + "}"))
+                        .log(LoggingLevel.INFO, "Updated value of dataset referential header: ${header." + DATASET_REFERENTIAL + "}")
+                        .log(LoggingLevel.INFO, "Updated value of chouette referential header: ${header." + CHOUETTE_REFERENTIAL + "}")
                         .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + DATASET_REFERENTIAL + "}/${header." + DATASET_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                         .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
                         .to("direct:copyInternalBlobToAnotherBucket")
@@ -174,8 +180,13 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     // Restore FILE_HANDLE (nightly validation uses original file via metadata)
                     .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
                     .log(LoggingLevel.INFO, correlation() + "Experimental import is enabled for codespace, triggering filtering in Ashur after pre-validation")
-                    .to("direct:ashurNetexFilterAfterPreValidation")
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
+                    .to("direct:updateStatus")
+                    .to("direct:ashurNetexFilterAfterPreValidation")
+                    // NOTE: Special case: we stop processing the route here because setting referentials with rb_ prefix
+                    // must be done after sending the prevalidation completed status to nabu. This is essential to ensure
+                    // that links to the prevalidation reports in Antu work correctly.
+                    .stop()
                 .endChoice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), exchange -> !experimentalImportHelpers.shouldRunExperimentalImport(exchange)))
@@ -193,7 +204,6 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .endChoice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
-                    .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
                     .setHeader(FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexWithoutBlocksProducedByAshur")
                     .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexFromAshurToMergeWithFlex")
@@ -219,9 +229,6 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_FLEX_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
-                .filter(header(VALIDATION_IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX))
-                    .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
-                .end()
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME))
                 .choice()
                 // when importing a dataset uploaded from the operator portal, the original file was stored in
@@ -239,10 +246,6 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION).state(JobEvent.State.OK).build())
-                .choice()
-                .when(or(header(VALIDATION_IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX), experimentalImportHelpers::shouldRunExperimentalImport))
-                    .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
-                .end()
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.container.name}"))
                 .to("direct:copyInternalBlobToAnotherBucket")
@@ -254,6 +257,12 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     .process(new FileCreatedTimestampProcessor(mardukInternalBlobStoreService))
                     .to("direct:ashurNetexFilterAfterPreValidation")
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
+                    .to("direct:updateStatus")
+                    .to("direct:ashurNetexFilterAfterPreValidation")
+                    // NOTE: Special case: we stop processing the route here because setting referentials with rb_ prefix
+                    // must be done after sending the prevalidation completed status to nabu. This is essential to ensure
+                    // that links to the prevalidation reports in Antu work correctly.
+                    .stop()
                 .endChoice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION), exchange -> !experimentalImportHelpers.shouldRunExperimentalImport(exchange)))

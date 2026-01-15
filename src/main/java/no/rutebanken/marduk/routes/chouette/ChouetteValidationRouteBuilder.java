@@ -41,7 +41,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
 
     private final MardukInternalBlobStoreService mardukInternalBlobStoreService;
 
-    @Value("${antu.validate.cron.schedule:0+30+23+?+*+MON-FRI}")
+    @Value("${antu.validate.cron.schedule:0+12+14+?+*+MON-FRI}")
     private String antuValidateCronSchedule;
 
     @Value("${chouette.validate.level2.cron.schedule:0+30+21+?+*+MON-FRI}")
@@ -75,7 +75,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
         from("direct:triggerAntuValidationForAllProviders")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorService("allProvidersExecutorService")
-                .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} && ${body.chouetteInfo.referential}"))
+                .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} && ${body.chouetteInfo.referential} && ${body.chouetteInfo.referential} == 'hav'"))
                 .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
