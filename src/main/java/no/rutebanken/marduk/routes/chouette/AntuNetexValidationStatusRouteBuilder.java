@@ -255,7 +255,6 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
                     .log(LoggingLevel.INFO, correlation() + "Nightly validation: Experimental import is enabled for codespace, triggering filtering in Ashur after pre-validation")
                     .process(new FileCreatedTimestampProcessor(mardukInternalBlobStoreService))
-                    .to("direct:ashurNetexFilterAfterPreValidation")
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                     .to("direct:updateStatus")
                     .to("direct:ashurNetexFilterAfterPreValidation")
