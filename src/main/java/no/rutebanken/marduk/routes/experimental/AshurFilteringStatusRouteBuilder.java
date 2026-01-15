@@ -1,6 +1,5 @@
 package no.rutebanken.marduk.routes.experimental;
 
-import com.google.api.Logging;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
