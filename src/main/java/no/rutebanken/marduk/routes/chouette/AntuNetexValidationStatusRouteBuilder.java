@@ -136,8 +136,6 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
         from("direct:ashurNetexFilterAfterPreValidation")
                 .choice()
                     .when(header(FILTERING_FILE_CREATED_TIMESTAMP).isNotNull())
-                        .log(LoggingLevel.INFO, "Value of dataset referential header: ${header." + DATASET_REFERENTIAL + "}")
-                        .log(LoggingLevel.INFO, "Value of chouette referential header: ${header." + CHOUETTE_REFERENTIAL + "}")
                         .setHeader(DATASET_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
                         .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + CHOUETTE_REFERENTIAL + "}"))
                         .log(LoggingLevel.INFO, "Updated value of dataset referential header: ${header." + DATASET_REFERENTIAL + "}")
@@ -229,6 +227,9 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_FLEX_POSTVALIDATION))
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
+                .filter(header(VALIDATION_IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX))
+                    .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
+                .end()
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME))
                 .choice()
                 // when importing a dataset uploaded from the operator portal, the original file was stored in

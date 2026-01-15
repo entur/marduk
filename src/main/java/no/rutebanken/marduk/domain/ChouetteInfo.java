@@ -176,7 +176,7 @@ public class ChouetteInfo {
         return this;
     }
 
-    public Boolean hasEnabledExperimentalImport() {
+    public boolean hasEnabledExperimentalImport() {
         return enableExperimentalImport;
     }
 
