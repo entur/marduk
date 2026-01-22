@@ -157,7 +157,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploading original dataset to Nisaba for referential ${header." + DATASET_REFERENTIAL + "}")
                 .process(new NisabaHeadersProcessor(nisabaExchangeContainerName))
-                .to("direct:copyInternalBlobToAnotherBucket")
+                .to("direct:copyVersionedInternalBlobToAnotherBucket")
                 .routeId("upload-original-dataset-to-nisaba");
 
         from("direct:antuNetexValidationComplete")
