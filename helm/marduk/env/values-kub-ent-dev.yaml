@@ -40,8 +40,6 @@ chouette:
 ashur:
   enableFiltering: false
 
-experimentalImportEnabled: true
-
 baba:
   service: http://baba.dev.entur.internal
 

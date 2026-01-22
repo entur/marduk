@@ -69,8 +69,6 @@ auth0:
 
 roleAssignmentExtractor: baba
 
-experimentalImportEnabled: false
-
 oauth2:
   client:
     id: 5wxWPHwd5Tvly9IVWN5m1iyHIDLVJTBH
