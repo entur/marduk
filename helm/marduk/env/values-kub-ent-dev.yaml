@@ -25,7 +25,6 @@ gcp:
   otpGraphBucketName: ror-otp-graphs-gcp2-dev
   nisabaExchangeBucketName: ror-nisaba-exchange-dev
   antuExchangeBucketName: ror-antu-exchange-gcp2-dev
-  ashurExchangeBucketName: ror-ashur-exchange-gcp-dev
   osmSubDirectory: osm
 
 antu:
@@ -40,8 +39,6 @@ chouette:
 
 ashur:
   enableFiltering: false
-
-experimentalImportEnabled: true
 
 baba:
   service: http://baba.dev.entur.internal

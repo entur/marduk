@@ -57,13 +57,6 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} from Marduk internal bucket to bucket ${header." + TARGET_CONTAINER + "}.")
                 .routeId("blobstore-internal-copy-to-another-bucket");
 
-        from("direct:copyBlobFromAnotherBucketToInternalBucket")
-                .to(logDebugShowAll())
-                .bean(mardukInternalBlobStoreService, "copyBlobFromAnotherBucket")
-                .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} from bucket ${header." + SOURCE_CONTAINER + "} to file ${header." + TARGET_FILE_HANDLE + "} in Marduk internal bucket")
-                .routeId("blobstore-internal-copy-from-another-bucket");
-
         from("direct:copyVersionedInternalBlobToAnotherBucket")
                 .to(logDebugShowAll())
                 .bean(mardukInternalBlobStoreService, "copyVersionedBlobToAnotherBucket")
