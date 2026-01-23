@@ -40,6 +40,7 @@ public final class Constants {
     public static final String CURRENT_AGGREGATED_NETEX_FILENAME = "aggregated-netex.zip";
     public static final String CURRENT_FLEXIBLE_LINES_NETEX_FILENAME = "flexible-lines.zip";
     public static final String CURRENT_PREVALIDATED_NETEX_FILENAME = "netex.zip";
+    public static final String PREVALIDATED_NETEX_METADATA_FILENAME = "netex.metadata.json";
 
     public static final String GRAPH_COMPATIBILITY_VERSION = "RutebankenGraphCompatibilityVersion";
 
