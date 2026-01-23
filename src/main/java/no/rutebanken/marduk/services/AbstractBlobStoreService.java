@@ -64,6 +64,11 @@ public abstract class AbstractBlobStoreService {
         exchange.getIn().setHeader(Constants.FILE_VERSION, generation);
     }
 
+    public void uploadBlobWithoutVersionHeader(@Header(value = Constants.FILE_HANDLE) String name,
+                                                InputStream inputStream) {
+        repository.uploadBlob(name, inputStream);
+    }
+
     public void copyBlobInBucket(@Header(value = Constants.FILE_HANDLE) String sourceName, @Header(value = Constants.TARGET_FILE_HANDLE) String targetName) {
         repository.copyBlob(containerName, sourceName, containerName, targetName);
     }
