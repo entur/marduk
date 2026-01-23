@@ -43,6 +43,14 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Stored file ${header." + FILE_HANDLE + "} in blob store.")
                 .routeId("blobstore-internal-upload");
 
+        from("direct:uploadInternalBlobWithoutVersionHeader")
+                .to(logDebugShowAll())
+                .bean(mardukInternalBlobStoreService, "uploadBlobWithoutVersionHeader")
+                .setBody(simple(""))
+                .to(logDebugShowAll())
+                .log(LoggingLevel.INFO, correlation() + "Stored file ${header." + FILE_HANDLE + "} in blob store without setting version header.")
+                .routeId("blobstore-internal-upload-without-version-header");
+
         from("direct:copyInternalBlobInBucket")
                 .to(logDebugShowAll())
                 .bean(mardukInternalBlobStoreService, "copyBlobInBucket")
