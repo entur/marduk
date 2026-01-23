@@ -143,13 +143,15 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .choice()
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION))
-                    // Store original FILE_HANDLE before writing metadata
+                    // Store original FILE_HANDLE and FILE_VERSION before writing metadata
                     .setProperty("originalFileHandle", header(FILE_HANDLE))
+                    .setProperty("originalFileVersion", header(FILE_VERSION))
                     // Writes metadata file and sets createdAt timestamp header
                     .process(new PrevalidatedFileMetadataProcessor(fileNameAndDigestIdempotentRepository))
                     .to("direct:uploadInternalBlob")
-                    // Restore FILE_HANDLE (nightly validation uses original file via metadata)
+                    // Restore FILE_HANDLE and FILE_VERSION (nightly validation uses original file via metadata)
                     .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
+                    .setHeader(FILE_VERSION, exchangeProperty("originalFileVersion"))
 
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                     .filter(exchange -> ashurFilteringEnabled)
