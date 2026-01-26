@@ -65,51 +65,74 @@ public class NightlyValidationFileProcessor implements Processor {
     @Override
     public void process(Exchange exchange) throws Exception {
         String referential = exchange.getIn().getHeader(DATASET_REFERENTIAL, String.class);
-        String metadataFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + referential + "/" + PREVALIDATED_NETEX_METADATA_FILENAME;
 
+        if (tryUseOriginalFileFromMetadata(exchange, referential)) {
+            return;
+        }
+
+        useLegacyPrevalidatedFile(exchange, referential);
+    }
+
+    private boolean tryUseOriginalFileFromMetadata(Exchange exchange, String referential) {
+        PrevalidatedFileMetadata metadata = readMetadata(referential);
+        if (metadata == null) {
+            return false;
+        }
+
+        String originalFileName = metadata.getOriginalFileName();
+        if (originalFileName == null) {
+            LOGGER.warn("Metadata exists but originalFileName is null for referential: {}", referential);
+            return false;
+        }
+
+        String originalFilePath = BLOBSTORE_PATH_INBOUND + referential + "/" + originalFileName;
+        if (!mardukInternalBlobStoreService.blobExists(originalFilePath)) {
+            LOGGER.warn("Original file not found at path: {}. Falling back to legacy file.", originalFilePath);
+            return false;
+        }
+
+        setOriginalFileHeaders(exchange, originalFilePath, metadata.getCreatedAt());
+        LOGGER.info("Set FILE_HANDLE to original file path: {}", originalFilePath);
+        return true;
+    }
+
+    private PrevalidatedFileMetadata readMetadata(String referential) {
+        String metadataFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + referential + "/" + PREVALIDATED_NETEX_METADATA_FILENAME;
         LOGGER.info("Reading metadata from file: {}", metadataFilePath);
 
-        boolean metadataProcessed = false;
-
         try (InputStream inputStream = mardukInternalBlobStoreService.getBlob(metadataFilePath)) {
-            if (inputStream != null) {
-                PrevalidatedFileMetadata metadata = OBJECT_READER.readValue(inputStream);
-                LocalDateTime createdAt = metadata.getCreatedAt();
-                String originalFileName = metadata.getOriginalFileName();
-
-                LOGGER.info("Read metadata from file. Original filename: {}, createdAt: {}",
-                        originalFileName, createdAt);
-
-                if (originalFileName != null) {
-                    String originalFilePath = BLOBSTORE_PATH_INBOUND + referential + "/" + originalFileName;
-                    if (mardukInternalBlobStoreService.blobExists(originalFilePath)) {
-                        exchange.getIn().setHeader(FILE_HANDLE, originalFilePath);
-                        if (createdAt != null) {
-                            exchange.getIn().setHeader(FILTERING_FILE_CREATED_TIMESTAMP, createdAt.toString());
-                        }
-                        LOGGER.info("Set FILE_HANDLE to original file path: {}", originalFilePath);
-                        metadataProcessed = true;
-                    } else {
-                        LOGGER.warn("Original file not found at path: {}. Falling back to legacy file.", originalFilePath);
-                    }
-                }
-            } else {
-                LOGGER.warn("Metadata file not found: {}. Falling back to legacy file.", metadataFilePath);
+            if (inputStream == null) {
+                LOGGER.info("Metadata file not found: {}. Falling back to legacy file.", metadataFilePath);
+                return null;
             }
+
+            PrevalidatedFileMetadata metadata = OBJECT_READER.readValue(inputStream);
+            LOGGER.info("Read metadata from file. Original filename: {}, createdAt: {}",
+                    metadata.getOriginalFileName(), metadata.getCreatedAt());
+            return metadata;
         } catch (Exception e) {
             LOGGER.error("Failed to read metadata file: {}. Falling back to legacy file.", metadataFilePath, e);
+            return null;
+        }
+    }
+
+    private void setOriginalFileHeaders(Exchange exchange, String filePath, LocalDateTime createdAt) {
+        exchange.getIn().setHeader(FILE_HANDLE, filePath);
+        if (createdAt != null) {
+            exchange.getIn().setHeader(FILTERING_FILE_CREATED_TIMESTAMP, createdAt.toString());
+        }
+    }
+
+    private void useLegacyPrevalidatedFile(Exchange exchange, String referential) {
+        String legacyFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + referential + "-" + CURRENT_PREVALIDATED_NETEX_FILENAME;
+
+        if (!mardukInternalBlobStoreService.blobExists(legacyFilePath)) {
+            LOGGER.warn("Neither metadata-based file nor legacy file found for referential: {}", referential);
+            return;
         }
 
-        // Fallback to legacy file if metadata processing failed or file not found
-        if (!metadataProcessed) {
-            String legacyFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + referential + "-" + CURRENT_PREVALIDATED_NETEX_FILENAME;
-            if (mardukInternalBlobStoreService.blobExists(legacyFilePath)) {
-                exchange.getIn().setHeader(FILE_HANDLE, legacyFilePath);
-                exchange.getIn().setHeader(FILTERING_FILE_CREATED_TIMESTAMP, LocalDateTime.now().toString());
-                LOGGER.info("Using legacy prevalidated file: {}", legacyFilePath);
-            } else {
-                LOGGER.error("Neither metadata-based file nor legacy file found for referential: {}", referential);
-            }
-        }
+        exchange.getIn().setHeader(FILE_HANDLE, legacyFilePath);
+        exchange.getIn().setHeader(FILTERING_FILE_CREATED_TIMESTAMP, LocalDateTime.now().toString());
+        LOGGER.info("Using legacy prevalidated file: {}", legacyFilePath);
     }
 }
