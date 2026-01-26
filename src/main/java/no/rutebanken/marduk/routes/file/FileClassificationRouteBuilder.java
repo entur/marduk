@@ -184,7 +184,13 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
 
         from("direct:antuNetexNightlyValidation")
                 .choice()
-                .when(e -> mardukInternalBlobStoreService.blobExists(e.getIn().getHeader(FILE_HANDLE, String.class)))
+                .when(e -> {
+                    String fileHandle = e.getIn().getHeader(FILE_HANDLE, String.class);
+                    if (fileHandle == null) {
+                        return false;
+                    }
+                    return mardukInternalBlobStoreService.blobExists(fileHandle);
+                })
                 .log(LoggingLevel.INFO, correlation() + "File with file handle ${header." + FILE_HANDLE + "} found in blob store. Triggering nightly prevalidation.")
                 .to("direct:copyInternalBlobToValidationBucket")
                 .to("direct:setNetexValidationProfile")
@@ -197,7 +203,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.PENDING).build())
                 .to("direct:updateStatus")
                 .otherwise()
-                .log(LoggingLevel.INFO, correlation() + "File with file handle ${header." + FILE_HANDLE + "} not found in blob store. Skipping prevalidation and triggering validation level 1 in Chouette instead.")
+                .log(LoggingLevel.INFO, correlation() + "No file found for nightly validation in last-prevalidated-files. Triggering validation level 1 in Chouette instead.")
                 .to("direct:triggerChouetteValidationLevel1ForProvider")
                 .end()
                 .routeId("antu-netex-nightly-validation");
