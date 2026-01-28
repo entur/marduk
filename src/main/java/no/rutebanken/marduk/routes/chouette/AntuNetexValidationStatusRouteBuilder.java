@@ -21,6 +21,7 @@ import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
 import no.rutebanken.marduk.routes.experimental.ExperimentalImportHelpers;
 import no.rutebanken.marduk.routes.experimental.NisabaHeadersProcessor;
 import no.rutebanken.marduk.routes.file.FileType;
+import no.rutebanken.marduk.routes.processors.FileCreatedTimestampProcessor;
 import no.rutebanken.marduk.routes.processors.PrevalidatedFileMetadataProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
@@ -132,8 +133,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .routeId("antu-netex-validation-started");
 
         from("direct:ashurNetexFilterAfterPreValidation")
-                // TODO: Investigate if this is being set elsewhere?
-//                .process(new FileCreatedTimestampProcessor(fileNameAndDigestIdempotentRepository))
+                .process(new FileCreatedTimestampProcessor(fileNameAndDigestIdempotentRepository))
                 .choice()
                     .when(header(FILTERING_FILE_CREATED_TIMESTAMP).isNotNull())
                         .setHeader(DATASET_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
@@ -150,6 +150,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                         .to("direct:updateStatus")
                         .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering")
                     .otherwise()
+                        .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILTERING).state(JobEvent.State.CANCELLED).build())
                         .log(LoggingLevel.ERROR, correlation() + "Cancelled triggering of filtering because no created timestamp was found for file name: " + header(FILE_NAME))
                 .end()
                 .routeId("ashur-netex-filter-after-pre-validation");
@@ -177,6 +178,8 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     .to("direct:uploadInternalBlobWithoutVersionHeader")
                     // Restore FILE_HANDLE (nightly validation uses original file via metadata)
                     .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
+                    .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + CHOUETTE_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
+                    .to("direct:copyInternalBlobInBucket")
                     .log(LoggingLevel.INFO, correlation() + "Experimental import is enabled for codespace, triggering filtering in Ashur after pre-validation")
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                     .to("direct:updateStatus")
@@ -192,9 +195,12 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     .setProperty("originalFileHandle", header(FILE_HANDLE))
                     // Write metadata file (contains createdAt timestamp and original filename for nightly validation)
                     .process(new PrevalidatedFileMetadataProcessor(fileNameAndDigestIdempotentRepository))
-                    .to("direct:uploadInternalBlob")
+                    .to("direct:uploadInternalBlobWithoutVersionHeader")
                     // Restore FILE_HANDLE (nightly validation uses original file via metadata)
                     .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
+                    .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + CHOUETTE_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
+                    // Copies the prevalidated file to the last successfully prevalidated folder
+                    .to("direct:copyInternalBlobInBucket")
                     .filter(PredicateBuilder.not(simple("{{chouette.enablePreValidation:true}}")))
                     .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
