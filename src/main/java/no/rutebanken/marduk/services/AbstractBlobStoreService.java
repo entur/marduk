@@ -79,6 +79,12 @@ public abstract class AbstractBlobStoreService {
         repository.copyBlob(containerName, sourceName, targetContainerName, targetName);
     }
 
+    public void copyBlobFromAnotherBucket(@Header(value = Constants.SOURCE_CONTAINER) String sourceContainerName,
+                                          @Header(value = FILE_HANDLE) String sourceName,
+                                          @Header(value = Constants.TARGET_FILE_HANDLE) String targetName) {
+        repository.copyBlob(sourceContainerName, sourceName, containerName, targetName);
+    }
+
     public void copyVersionedBlobToAnotherBucket(@Header(value = Constants.FILE_HANDLE) String sourceName,
                                         @Header(value = Constants.FILE_VERSION) Long sourceVersion,
                                         @Header(value = Constants.TARGET_CONTAINER) String targetContainerName,

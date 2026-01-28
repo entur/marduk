@@ -18,6 +18,8 @@ package no.rutebanken.marduk.routes.netex;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.experimental.ExperimentalImportHelpers;
+import no.rutebanken.marduk.routes.experimental.SetProviderIdBeforeFlexMergeProcessor;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
@@ -51,9 +53,6 @@ import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
 @Component
 public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRouteBuilder {
 
-    private static final String UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER = "/unpacked-with-flexible-lines";
-    private static final String MERGED_NETEX_SUB_FOLDER = "/result";
-
     private static final String BLOBSTORE_PATH_UTTU = "uttu/";
     private static final String PROP_HAS_CHOUETTE_DATA = "PROP_HAS_CHOUETTE_DATA";
     private static final String PROP_AS_FLEXIBLE_DATA = "PROP_HAS_FLEXIBLE_DATA";
@@ -61,13 +60,22 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     private static final String EXPORT_FILE_NAME = "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     private static final String EXPORT_MERGED_FOR_VALIDATION = BLOBSTORE_PATH_UTTU +   "netex/${header." + CHOUETTE_REFERENTIAL + "}" + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
 
+    private final ExperimentalImportHelpers experimentalImportHelpers;
+    private final SetProviderIdBeforeFlexMergeProcessor setProviderIdBeforeFlexMergeProcessor;
+
+    public NetexMergeChouetteWithFlexibleLineExportRouteBuilder(
+            ExperimentalImportHelpers experimentalImportHelpers,
+            SetProviderIdBeforeFlexMergeProcessor setProviderIdBeforeFlexMergeProcessor
+    ) {
+        this.experimentalImportHelpers = experimentalImportHelpers;
+        this.setProviderIdBeforeFlexMergeProcessor = setProviderIdBeforeFlexMergeProcessor;
+    }
 
     @Value("${netex.export.download.directory:files/netex/merged}")
     private String localWorkingDirectory;
 
     @Value("${netex.export.merge.flexible.lines.enabled:false}")
     private String mergeFlexibleLinesEnabled;
-
 
     @Override
     public void configure() throws Exception {
@@ -82,9 +90,8 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Merging chouette NeTEx export with FlexibleLines")
                 .validate(header(Constants.CHOUETTE_REFERENTIAL).isNotNull())
 
-                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
+                .process(setProviderIdBeforeFlexMergeProcessor)
                 .validate(header(Constants.PROVIDER_ID).isNotNull())
-
 
                 .setProperty(FOLDER_NAME, simple(localWorkingDirectory + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}"))
                 .doTry()
@@ -111,33 +118,33 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
 
 
         from("direct:uploadMergedFileToOutboundBucket").streamCaching()
-                .process(e -> new File(e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUB_FOLDER).mkdir())
+                .process(e -> new File(experimentalImportHelpers.directoryForMergedNetex(e)).mkdir())
                 .process(e -> e.getIn().setBody(
                         ZipFileUtils.zipFilesInFolder(
-                                e.getProperty(FOLDER_NAME, String.class) + UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER,
-                                e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUB_FOLDER + "/merged.zip")))
+                                experimentalImportHelpers.flexibleDataWorkingDirectory(e),
+                                experimentalImportHelpers.directoryForMergedNetex(e) + "/merged.zip")))
                 .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + EXPORT_FILE_NAME))
                 .to("direct:uploadBlob")
                 .routeId("netex-upload-merged-netex-to-outbound-bucket");
 
 
         from("direct:uploadMergedFileToValidationFolder")
-                .process(e -> new File(e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUB_FOLDER).mkdir())
+                .process(e -> new File(experimentalImportHelpers.directoryForMergedNetex(e)).mkdir())
                 .process(e -> e.getIn().setBody(
                         ZipFileUtils.zipFilesInFolder(
-                                e.getProperty(FOLDER_NAME, String.class) + UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER,
-                                e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUB_FOLDER + "/merged.zip")))
+                                experimentalImportHelpers.flexibleDataWorkingDirectory(e),
+                                experimentalImportHelpers.directoryForMergedNetex(e) + "/merged.zip")))
                 .setHeader(FILE_HANDLE, simple(EXPORT_MERGED_FOR_VALIDATION))
                 .to("direct:uploadInternalBlob")
                 .routeId("netex-merged-upload-to-validation-folder");
 
 
         from("direct:unpackChouetteExportToWorkingFolder")
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_CHOUETTE + EXPORT_FILE_NAME))
+                .setHeader(FILE_HANDLE).method(experimentalImportHelpers, "pathToExportedNetexFileToMergeWithFlex")
                 .to("direct:getInternalBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class) + UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER))
+                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), experimentalImportHelpers.flexibleDataWorkingDirectory(e)))
                 .setProperty(PROP_HAS_CHOUETTE_DATA, constant("true"))
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
@@ -157,7 +164,7 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .to("direct:fetchExternalBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
-                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class) + UNPACKED_WITH_FLEXIBLE_LINES_SUB_FOLDER))
+                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), experimentalImportHelpers.flexibleDataWorkingDirectory(e)))
                 .setProperty(PROP_AS_FLEXIBLE_DATA, constant("true"))
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "No flexible line data found: ${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")

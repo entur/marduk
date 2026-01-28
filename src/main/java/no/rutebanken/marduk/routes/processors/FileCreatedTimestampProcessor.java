@@ -1,3 +1,19 @@
+/*
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
+ * the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *   https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and
+ * limitations under the Licence.
+ *
+ */
+
 package no.rutebanken.marduk.routes.processors;
 
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
@@ -21,11 +37,6 @@ public class FileCreatedTimestampProcessor implements Processor {
         String fileName = exchange.getIn().getHeader(FILE_NAME, String.class);
         LocalDateTime createdAt = fileNameAndDigestIdempotentRepository.getCreatedAt(fileName);
         if (createdAt != null) {
-            // This header should only be set when triggering ashur filtering after pre-validation, and should
-            // remain unset for filtering triggered after post-validation because:
-            // 1. Filtering after post-validation is a temporary need, and its output will not be used.
-            // 2. File names produced by Chouette exports are not unique, and do not exist in marduk's db.
-            // 3. A created timestamp should already be set on CompositeFrames produced by Chouette.
             exchange.getIn().setHeader(FILTERING_FILE_CREATED_TIMESTAMP, createdAt.toString());
         }
     }
