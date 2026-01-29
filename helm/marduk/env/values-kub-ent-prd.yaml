@@ -25,6 +25,7 @@ gcp:
   otpGraphBucketName: ror-otp-graphs-gcp2-production
   nisabaExchangeBucketName: ror-nisaba-exchange-production
   antuExchangeBucketName: ror-antu-exchange-gcp2-production
+  ashurExchangeBucketName: ror-ashur-exchange-gcp-prd
   osmSubDirectory: osm
 
 antu:
@@ -68,6 +69,8 @@ auth0:
     administratorAccessEnabled: false
 
 roleAssignmentExtractor: baba
+
+experimentalImportEnabled: false
 
 oauth2:
   client:
