@@ -24,7 +24,6 @@ import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.processors.FileCreatedTimestampProcessor;
 import no.rutebanken.marduk.routes.processors.PrevalidatedFileMetadataProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,19 +41,16 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
     private final ExperimentalImportHelpers experimentalImportHelpers;
     private final String nisabaExchangeContainerName;
-    private final MardukInternalBlobStoreService mardukInternalBlobStoreService;
 
     FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
 
     public AntuNetexValidationStatusRouteBuilder(
         ExperimentalImportHelpers experimentalImportHelpers,
         FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository,
-        MardukInternalBlobStoreService mardukInternalBlobStoreService,
         @Value("${blobstore.gcs.nisaba.exchange.container.name}") String nisabaExchangeContainerName
     ) {
         this.experimentalImportHelpers = experimentalImportHelpers;
         this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
-        this.mardukInternalBlobStoreService = mardukInternalBlobStoreService;
         this.nisabaExchangeContainerName = nisabaExchangeContainerName;
     }
 
