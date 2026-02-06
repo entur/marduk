@@ -43,6 +43,9 @@ public class ExperimentalImportHelpers {
     public boolean shouldRunExperimentalImport(Exchange exchange) {
         if (experimentalImportEnabled) {
             String referential = datasetReferentialFor(exchange);
+            if (referential.startsWith("rb_")) {
+                referential = referential.replace("rb_", "");
+            }
             Provider provider = getProvider(referential);
             return provider.getChouetteInfo().hasEnabledExperimentalImport();
         }
