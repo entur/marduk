@@ -55,6 +55,12 @@ class AshurFilteringStatusRouteBuilderTest extends MardukRouteBuilderIntegration
                     .to("mock:copyInternalBlobToValidationBucket");
         });
 
+        AdviceWith.adviceWith(context, "ashur-filtering-status-route", a -> {
+            a.interceptSendToEndpoint("direct:updateStatus")
+                    .skipSendToOriginalEndpoint()
+                    .to("mock:updateStatus");
+        });
+
         AdviceWith.adviceWith(context, "trigger-antu-post-validation-after-filtering-route", a -> {
             a.interceptSendToEndpoint("direct:updateStatus")
                     .skipSendToOriginalEndpoint()
@@ -71,7 +77,7 @@ class AshurFilteringStatusRouteBuilderTest extends MardukRouteBuilderIntegration
 
         context.start();
 
-        updateStatusEndpoint.expectedMessageCount(1);
+        updateStatusEndpoint.expectedMessageCount(2);
         copyInternalBlobToValidationBucketEndpoint.expectedMessageCount(1);
         copyBlobFromAnotherBucketToInternalEndpoint.expectedMessageCount(1);
         antuNetexValidationQueueEndpoint.expectedMessageCount(1);
@@ -88,6 +94,19 @@ class AshurFilteringStatusRouteBuilderTest extends MardukRouteBuilderIntegration
         copyInternalBlobToValidationBucketEndpoint.assertIsSatisfied();
         copyBlobFromAnotherBucketToInternalEndpoint.assertIsSatisfied();
         antuNetexValidationQueueEndpoint.assertIsSatisfied();
+
+        // Verify we received both expected status updates
+        var receivedMessages = updateStatusEndpoint.getReceivedExchanges().stream()
+            .map(exchange -> exchange.getIn().getBody(String.class))
+            .toList();
+
+        boolean foundFilteringOkStatus = receivedMessages.stream()
+            .anyMatch(body -> body.contains("\"action\":\"FILTERING\"") && body.contains("\"state\":\"OK\""));
+        boolean foundValidationPendingStatus = receivedMessages.stream()
+            .anyMatch(body -> body.contains("\"action\":\"EXPORT_NETEX_POSTVALIDATION\"") && body.contains("\"state\":\"PENDING\""));
+
+        assert foundFilteringOkStatus : "Expected status update with action=FILTERING and state=OK";
+        assert foundValidationPendingStatus : "Expected status update with action=EXPORT_NETEX_POSTVALIDATION and state=PENDING";
     }
 
     @Test
