@@ -156,6 +156,7 @@ public final class Constants {
     public static final String FILTER_NETEX_FILE_STATUS_FAILED = "FAILED";
 
     public static final String FILTERED_NETEX_FILE_PATH_HEADER = "FilteredNetexFilePath";
+    public static final String FILTERING_ERROR_CODE_HEADER = "FilteringErrorCode";
 
     public static final String IMPORT_TYPE = "ImportType";
 

@@ -38,7 +38,7 @@ public class AshurFilteringStatusRouteBuilder extends BaseRouteBuilder {
                 .endChoice()
                 .when(header(Constants.FILTER_NETEX_FILE_STATUS_HEADER).isEqualTo(Constants.FILTER_NETEX_FILE_STATUS_FAILED))
                     .log(LoggingLevel.INFO, correlation() + " Received notification that Ashur filtering has failed.")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILTERING).state(JobEvent.State.FAILED).build())
+                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILTERING).state(JobEvent.State.FAILED).errorCode(e.getIn().getHeader(FILTERING_ERROR_CODE_HEADER, String.class)).build())
                 .endChoice()
                 .otherwise()
                     .log(LoggingLevel.ERROR, correlation() + " Received notification with unknown Ashur filtering status: ${header." + Constants.FILTER_NETEX_FILE_STATUS_HEADER + "}")
