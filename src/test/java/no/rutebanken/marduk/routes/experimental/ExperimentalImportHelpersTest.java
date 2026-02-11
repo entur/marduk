@@ -89,4 +89,13 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
         String expectedPath = "/base/folder/result";
         Assertions.assertEquals(expectedPath, helpers.directoryForMergedNetex(exchange));
     }
+
+    @Test
+    void testShouldRunExperimentalImportWithRbPrefixedReferential() {
+        when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
+        Exchange exchange = exchange();
+        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, "rb_TST");
+        ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, providerRepository);
+        Assertions.assertTrue(filter.shouldRunExperimentalImport(exchange));
+    }
 }
