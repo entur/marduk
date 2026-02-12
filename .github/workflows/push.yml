@@ -58,7 +58,7 @@ jobs:
           path: target
   openapi-lint:
     needs: [ maven-verify ]
-    uses: entur/gha-api/.github/workflows/lint.yml@v4
+    uses: entur/gha-api/.github/workflows/lint.yml@v5
     secrets: inherit
     with:
       spec: 'src/main/resources/openapi/timetable-management/openapi.yaml'
@@ -66,7 +66,7 @@ jobs:
   openapi-publish:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [ openapi-lint ]
-    uses: entur/gha-api/.github/workflows/publish.yml@v4
+    uses: entur/gha-api/.github/workflows/publish.yml@v5
     secrets: inherit
     with:
       visibility: 'partner'
