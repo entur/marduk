@@ -48,6 +48,10 @@ Marduk merges the NeTEx datasets containing flexible timetables generated in NPl
 [OpenTripPlanner](https://github.com/opentripplanner) relies on OpenStreetMap data to calculate the first/last leg of a journey (walk from start point or to destination point).
 Marduk schedules a nightly download of OpenStreetMap data that in turn is used by OpenTripPlanner to build an updated street graph.
 
+# Deployment
+
+EnTur deploys Marduk using [Harness](https://app.harness.io/ng/account/8VwWgE0WRK67_PWDpkooNA/all/cd/orgs/entur/projects/ror/services/marduk)
+
 # Local environment configuration
 
 A minimal local setup requires a database, a Google PubSub emulator and access to a providers repository service ([Baba](https://github.com/entur/baba))
@@ -102,8 +106,6 @@ Access to the providers database is configured in the Spring Boot application.pr
 providers.api.url=http://localhost:11101/services/providers/
 ```
 
-
-
 ## Spring boot configuration file
 The application.properties file used in unit tests src/test/resources/application.properties can be used as a template.  
 The Kubernetes configmap helm/marduk/templates/configmap.yaml can also be used as a template.
@@ -112,5 +114,3 @@ The Kubernetes configmap helm/marduk/templates/configmap.yaml can also be used a
 - Run `mvn package` to generate the Spring Boot jar.
 - The application can be started with the following command line:  
   ```java -Xmx500m -Dspring.config.location=/path/to/application.properties -Dfile.encoding=UTF-8 -jar target/marduk-0.0.1-SNAPSHOT.jar```
-
-
