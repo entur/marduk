@@ -408,6 +408,18 @@ resource "google_pubsub_topic" "LineStatisticsCalculationQueue" {
   labels = var.labels
 }
 
+resource "google_pubsub_topic" "ServicelinkerInboundQueue" {
+  name    = "ServicelinkerInboundQueue"
+  project = var.gcp_resources_project
+  labels  = var.labels
+}
+
+resource "google_pubsub_topic" "ServicelinkerStatusQueue" {
+  name    = "ServicelinkerStatusQueue"
+  project = var.gcp_resources_project
+  labels  = var.labels
+}
+
 resource "google_pubsub_topic" "FilterNetexFileQueue" {
   name    = "FilterNetexFileQueue"
   project = var.gcp_resources_project

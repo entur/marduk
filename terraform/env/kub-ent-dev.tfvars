@@ -3,3 +3,4 @@ antu_netex_validation_status_queue_topic = "projects/ent-antu-dev/topics/AntuNet
 bucket_instance_suffix="dev"
 ashur_service_account="serviceAccount:application@ent-ashur-dev.iam.gserviceaccount.com"
 marduk_exchange_storage_bucket="marduk-exchange-dev"
+servicelinker_service_account="serviceAccount:application@ent-servicelnk-dev.iam.gserviceaccount.com"
