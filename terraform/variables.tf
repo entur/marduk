@@ -86,6 +86,10 @@ variable "ashur_service_account" {
   description = "The service account of the ashur application"
 }
 
+variable "servicelinker_service_account" {
+  description = "The service account of the servicelinker application"
+}
+
 variable "marduk_exchange_storage_bucket" {
   description = "The bucket used to exchange files with Marduk"
 }
