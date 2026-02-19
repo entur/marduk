@@ -5,6 +5,7 @@ bucket_instance_suffix="production"
 ashur_service_account="serviceAccount:application@ent-ashur-prd.iam.gserviceaccount.com"
 marduk_exchange_storage_bucket="marduk-exchange-production"
 servicelinker_service_account="serviceAccount:application@ent-servicelnk-prd.iam.gserviceaccount.com"
+servicelinker_terraform_service_account="serviceAccount:gh-servicelinker-5cdd-prd@ent-github-shr.iam.gserviceaccount.com"
 
 labels = {
   manager     = "terraform"

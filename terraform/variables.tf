@@ -90,6 +90,10 @@ variable "servicelinker_service_account" {
   description = "The service account of the servicelinker application"
 }
 
+variable "servicelinker_terraform_service_account" {
+  description = "The GitHub Actions Terraform SA for servicelinker (via Workload Identity Federation), needs roles/pubsub.subscriber on Servicelinker topics to create cross-project subscriptions"
+}
+
 variable "marduk_exchange_storage_bucket" {
   description = "The bucket used to exchange files with Marduk"
 }
