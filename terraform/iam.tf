@@ -24,19 +24,19 @@ resource "google_pubsub_topic_iam_member" "ServicelinkerStatusQueuePublisherRole
   member  = var.servicelinker_service_account
 }
 
-# Servicelinker's Terraform SA needs roles/pubsub.subscriber (which includes
-# pubsub.topics.attachSubscription) on these topics so it can create
-# cross-project subscriptions from ent-servicelnk-* to ent-marduk-*.
+# Servicelinker's GitHub Actions Terraform SA (via Workload Identity Federation)
+# needs roles/pubsub.subscriber (which includes pubsub.topics.attachSubscription)
+# on these topics to create cross-project subscriptions from ent-servicelnk-* to ent-marduk-*.
 resource "google_pubsub_topic_iam_member" "ServicelinkerInboundQueueSubscriberRole" {
   project = var.gcp_resources_project
   topic   = google_pubsub_topic.ServicelinkerInboundQueue.name
   role    = "roles/pubsub.subscriber"
-  member  = var.servicelinker_service_account
+  member  = var.servicelinker_terraform_service_account
 }
 
 resource "google_pubsub_topic_iam_member" "ServicelinkerStatusQueueSubscriberRole" {
   project = var.gcp_resources_project
   topic   = google_pubsub_topic.ServicelinkerStatusQueue.name
   role    = "roles/pubsub.subscriber"
-  member  = var.servicelinker_service_account
+  member  = var.servicelinker_terraform_service_account
 }
