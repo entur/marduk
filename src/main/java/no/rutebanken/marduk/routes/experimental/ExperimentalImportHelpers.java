@@ -52,6 +52,11 @@ public class ExperimentalImportHelpers {
         return false;
     }
 
+    public String pathToNetexForServicelinker(Exchange exchange) {
+        String referential = datasetReferentialFor(exchange);
+        return "servicelinker/" + referential + "/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+    }
+
     public String pathToNetexExportFromChouetteToMergeWithFlex(Exchange exchange) {
         return BLOBSTORE_PATH_CHOUETTE + "netex/" + chouetteReferentialFor(exchange) + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     }

@@ -158,6 +158,15 @@ public final class Constants {
     public static final String FILTERED_NETEX_FILE_PATH_HEADER = "FilteredNetexFilePath";
     public static final String FILTERING_ERROR_CODE_HEADER = "FilteringErrorCode";
 
+    public static final String SERVICELINKER_STATUS_TOPIC = "ServicelinkerStatusQueue";
+
+    public static final String LINKING_NETEX_FILE_STATUS_HEADER = "Status";
+    public static final String LINKING_NETEX_FILE_STATUS_SUCCEEDED = "SUCCESS";
+    public static final String LINKING_NETEX_FILE_STATUS_FAILED = "FAILED";
+
+    public static final String LINKED_NETEX_FILE_PATH_HEADER = "LinkedNetexFilePath";
+    public static final String LINKING_ERROR_CODE_HEADER = "LinkingFailureReason";
+
     public static final String IMPORT_TYPE = "ImportType";
 
     public static final String IMPORT_TYPE_NETEX_FLEX = "ImportType_netex_flex";

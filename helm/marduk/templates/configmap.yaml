@@ -33,6 +33,7 @@ data:
     antu.pubsub.project.id={{ .Values.gcp.antuPubsubProjectId }}
     nabu.pubsub.project.id={{ .Values.gcp.nabuPubsubProjectId }}
     ashur.pubsub.project.id={{ .Values.gcp.ashurPubsubProjectId }}
+    servicelinker.pubsub.project.id={{ .Values.gcp.servicelinkerPubsubProjectId }}
 
     # Blobstore
     blobstore.gcs.project.id={{ .Values.gcp.blobstoreProjectId }}
@@ -44,6 +45,7 @@ data:
     blobstore.gcs.nisaba.exchange.container.name={{ .Values.gcp.nisabaExchangeBucketName }}
     blobstore.gcs.antu.exchange.container.name={{ .Values.gcp.antuExchangeBucketName }}
     blobstore.gcs.ashur.exchange.container.name={{ .Values.gcp.ashurExchangeBucketName }}
+    blobstore.gcs.servicelinker.exchange.container.name={{ .Values.gcp.servicelinkerExchangeBucketName }}
     osm.pbf.blobstore.subdirectory={{ .Values.gcp.osmSubDirectory }}
     blobstore.delete.external.blobs=false
 
@@ -124,6 +126,7 @@ data:
     # Other
     # the Camel shutdown timeout must be shorter than the Kubernetes terminationGracePeriod
     marduk.shutdown.timeout=25
+    servicelinker.linkingEnabled={{ .Values.servicelinker.enableLinking }}
     ashur.filteringEnabled={{ .Values.ashur.enableFiltering }}
     marduk.experimental-import.enabled={{ .Values.experimentalImportEnabled }}
 

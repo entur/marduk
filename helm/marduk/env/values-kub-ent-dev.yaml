@@ -26,6 +26,8 @@ gcp:
   nisabaExchangeBucketName: ror-nisaba-exchange-dev
   antuExchangeBucketName: ror-antu-exchange-gcp2-dev
   ashurExchangeBucketName: ror-ashur-exchange-gcp-dev
+  servicelinkerPubsubProjectId: ent-servicelnk-dev
+  servicelinkerExchangeBucketName: ror-servicelinker-exchange-gcp-dev
   osmSubDirectory: osm
 
 antu:
@@ -37,6 +39,9 @@ chouette:
   gtfsExport: false
   enablePreValidation: false
   enablePostValidation: false
+
+servicelinker:
+  enableLinking: true
 
 ashur:
   enableFiltering: false
