@@ -209,6 +209,7 @@ public class JobEvent {
         FILE_TRANSFER,
         FILE_CLASSIFICATION,
         PREVALIDATION,
+        LINKING,
         FILTERING,
         IMPORT,
         EXPORT,
