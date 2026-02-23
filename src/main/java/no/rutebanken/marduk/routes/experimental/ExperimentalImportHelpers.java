@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+
 import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 
@@ -50,6 +52,24 @@ public class ExperimentalImportHelpers {
             return provider.getChouetteInfo().hasEnabledExperimentalImport();
         }
         return false;
+    }
+
+    /**
+     * Sets the ServiceLinkModes header on the exchange based on the provider's configured transport modes.
+     * If generateMissingServiceLinksForModes is null, the header is not set and servicelinker will generate
+     * links for all modes (backward-compatible behaviour). If it is set (even to an empty set), the header
+     * is serialised as a comma-separated string and servicelinker will restrict generation accordingly.
+     */
+    public void setServiceLinkModesHeader(Exchange exchange) {
+        String referential = datasetReferentialFor(exchange);
+        if (referential.startsWith("rb_")) {
+            referential = referential.replace("rb_", "");
+        }
+        Provider provider = getProvider(referential);
+        Set<String> modes = provider.getChouetteInfo().getGenerateMissingServiceLinksForModes();
+        if (modes != null) {
+            exchange.getIn().setHeader(Constants.SERVICE_LINK_MODES_HEADER, String.join(",", modes));
+        }
     }
 
     public String pathToNetexForServicelinker(Exchange exchange) {

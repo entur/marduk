@@ -49,6 +49,7 @@ public class ServicelinkerEnrichmentStatusRouteBuilder extends BaseRouteBuilder 
                         .log(LoggingLevel.INFO, correlation() + "Triggering Servicelinker enrichment for referential ${header." + DATASET_REFERENTIAL + "}")
                         .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexForServicelinker")
                         .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
+                        .process(e -> experimentalImportHelpers.setServiceLinkModesHeader(e))
                         .to("direct:copyInternalBlobToAnotherBucket")
                         .to("google-pubsub:{{marduk.pubsub.project.id}}:ServicelinkerInboundQueue")
                         .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.LINKING).state(JobEvent.State.PENDING).build())

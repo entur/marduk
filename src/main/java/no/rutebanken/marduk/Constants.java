@@ -166,6 +166,7 @@ public final class Constants {
 
     public static final String LINKED_NETEX_FILE_PATH_HEADER = "LinkedNetexFilePath";
     public static final String LINKING_ERROR_CODE_HEADER = "LinkingFailureReason";
+    public static final String SERVICE_LINK_MODES_HEADER = "ServiceLinkModes";
 
     public static final String IMPORT_TYPE = "ImportType";
 
