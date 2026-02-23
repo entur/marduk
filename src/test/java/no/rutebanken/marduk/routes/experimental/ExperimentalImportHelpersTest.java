@@ -155,6 +155,30 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
         );
     }
 
+    @Test
+    void testShouldSkipServicelinkerWhenModesIsEmptySet() {
+        when(providerRepository.getProviders()).thenReturn(List.of(providerWithServiceLinkModes(Set.of())));
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+        Assertions.assertTrue(helpers.shouldSkipServicelinker(exchange()),
+            "Empty modes set should signal that servicelinker should be skipped");
+    }
+
+    @Test
+    void testShouldNotSkipServicelinkerWhenModesIsNull() {
+        when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+        Assertions.assertFalse(helpers.shouldSkipServicelinker(exchange()),
+            "Null modes (unconfigured) should not skip servicelinker");
+    }
+
+    @Test
+    void testShouldNotSkipServicelinkerWhenModesIsNonEmpty() {
+        when(providerRepository.getProviders()).thenReturn(List.of(providerWithServiceLinkModes(Set.of("BUS"))));
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+        Assertions.assertFalse(helpers.shouldSkipServicelinker(exchange()),
+            "Non-empty modes should not skip servicelinker");
+    }
+
     private Provider providerWithServiceLinkModes(Set<String> modes) {
         Provider provider = new Provider();
         provider.setId(testProviderId);

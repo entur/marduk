@@ -55,6 +55,22 @@ public class ExperimentalImportHelpers {
     }
 
     /**
+     * Returns true when the provider has explicitly configured an empty set of service link modes,
+     * meaning no service links should be generated and the servicelinker step can be skipped entirely.
+     * Returns false when modes is null (not yet configured — servicelinker runs for all modes)
+     * or when one or more modes are present.
+     */
+    public boolean shouldSkipServicelinker(Exchange exchange) {
+        String referential = datasetReferentialFor(exchange);
+        if (referential.startsWith("rb_")) {
+            referential = referential.replace("rb_", "");
+        }
+        Provider provider = getProvider(referential);
+        Set<String> modes = provider.getChouetteInfo().getGenerateMissingServiceLinksForModes();
+        return modes != null && modes.isEmpty();
+    }
+
+    /**
      * Sets the ServiceLinkModes header on the exchange based on the provider's configured transport modes.
      * If generateMissingServiceLinksForModes is null, the header is not set and servicelinker will generate
      * links for all modes (backward-compatible behaviour). If it is set (even to an empty set), the header
