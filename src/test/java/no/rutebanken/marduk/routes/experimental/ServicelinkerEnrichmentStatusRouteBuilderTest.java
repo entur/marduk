@@ -84,6 +84,17 @@ class ServicelinkerEnrichmentStatusRouteBuilderTest extends MardukRouteBuilderIn
             .anyMatch(body -> body.contains("\"action\":\"LINKING\"") && body.contains("\"state\":\"OK\""));
 
         assert foundLinkingOkStatus : "Expected status update with action=LINKING and state=OK";
+
+        // The enriched file must be written to the dedicated servicelinker path, not the original FILE_HANDLE
+        var copyExchange = copyBlobFromAnotherBucketToInternalEndpoint.getReceivedExchanges().getFirst();
+        String enrichedPath = "servicelinker/tst/some-uuid/tst-aggregated-netex.zip";
+        assert enrichedPath.equals(copyExchange.getIn().getHeader(Constants.TARGET_FILE_HANDLE, String.class))
+            : "Expected TARGET_FILE_HANDLE to be enriched path, not original";
+
+        // Ashur must receive the enriched path as FILE_HANDLE, not the original
+        var ashurExchange = ashurFilterEndpoint.getReceivedExchanges().getFirst();
+        assert enrichedPath.equals(ashurExchange.getIn().getHeader(Constants.FILE_HANDLE, String.class))
+            : "Expected FILE_HANDLE forwarded to Ashur to be enriched path, not original";
     }
 
     @Test

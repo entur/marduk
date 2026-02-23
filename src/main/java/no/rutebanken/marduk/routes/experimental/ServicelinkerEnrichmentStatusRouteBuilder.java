@@ -16,7 +16,7 @@ import static no.rutebanken.marduk.Constants.*;
  * 1. Copies the pre-validated NeTEx ZIP to the exchange bucket for Servicelinker to read
  * 2. Publishes a message to ServicelinkerInboundQueue
  * 3. Waits for the async callback on ServicelinkerStatusQueue
- * 4. On success: copies the enriched file back to the internal bucket (overwriting the original)
+ * 4. On success: copies the enriched file to a dedicated path in the internal bucket (the original is left untouched)
  * 5. Continues to Ashur filtering (which reads from the internal bucket)
  *
  * On failure, the original file remains in the internal bucket and the pipeline continues
@@ -80,16 +80,11 @@ public class ServicelinkerEnrichmentStatusRouteBuilder extends BaseRouteBuilder 
                 .routeId("servicelinker-enrichment-status-route");
 
         from("direct:copyEnrichedDatasetToInternalBucket")
-                // Save the original internal path (passed through from the original exchange)
-                .setProperty("originalInternalPath", header(FILE_HANDLE))
-                // Set FILE_HANDLE to the source path in the Servicelinker exchange bucket
+                // Store the enriched file at a dedicated path in the internal bucket, leaving the original untouched
                 .setHeader(FILE_HANDLE, header(Constants.LINKED_NETEX_FILE_PATH_HEADER))
-                // Destination in internal bucket: overwrite original with enriched version
-                .setHeader(TARGET_FILE_HANDLE, exchangeProperty("originalInternalPath"))
+                .setHeader(TARGET_FILE_HANDLE, header(Constants.LINKED_NETEX_FILE_PATH_HEADER))
                 .setHeader(SOURCE_CONTAINER, simple("${properties:blobstore.gcs.servicelinker.exchange.container.name}"))
                 .to("direct:copyBlobFromAnotherBucketToInternalBucket")
-                // Restore FILE_HANDLE to the internal path for downstream routes
-                .setHeader(FILE_HANDLE, exchangeProperty("originalInternalPath"))
                 .end()
                 .routeId("copy-enriched-dataset-to-internal-bucket-route");
 
