@@ -2,11 +2,14 @@ package no.rutebanken.marduk.routes.experimental;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukSpringBootBaseTest;
+import no.rutebanken.marduk.domain.ChouetteInfo;
+import no.rutebanken.marduk.domain.Provider;
 import org.apache.camel.Exchange;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.mockito.Mockito.when;
 
@@ -88,6 +91,103 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, providerRepository);
         String expectedPath = "/base/folder/result";
         Assertions.assertEquals(expectedPath, helpers.directoryForMergedNetex(exchange));
+    }
+
+    // --- setServiceLinkModesHeader tests ---
+
+    @Test
+    void testSetServiceLinkModesHeaderNotSetWhenModesIsNull() {
+        // providerWithExperimentalImport() leaves generateMissingServiceLinksForModes null
+        when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
+        Exchange exchange = exchange();
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+
+        helpers.setServiceLinkModesHeader(exchange);
+
+        Assertions.assertNull(
+            exchange.getIn().getHeader(Constants.SERVICE_LINK_MODES_HEADER),
+            "Header should not be set when generateMissingServiceLinksForModes is null"
+        );
+    }
+
+    @Test
+    void testSetServiceLinkModesHeaderIsEmptyStringWhenModesIsEmptySet() {
+        when(providerRepository.getProviders()).thenReturn(List.of(providerWithServiceLinkModes(Set.of())));
+        Exchange exchange = exchange();
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+
+        helpers.setServiceLinkModesHeader(exchange);
+
+        Assertions.assertEquals(
+            "",
+            exchange.getIn().getHeader(Constants.SERVICE_LINK_MODES_HEADER, String.class),
+            "Empty mode set should produce an empty header value (signals: generate for no modes)"
+        );
+    }
+
+    @Test
+    void testSetServiceLinkModesHeaderContainsAllConfiguredModes() {
+        when(providerRepository.getProviders()).thenReturn(List.of(providerWithServiceLinkModes(Set.of("BUS", "RAIL"))));
+        Exchange exchange = exchange();
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+
+        helpers.setServiceLinkModesHeader(exchange);
+
+        String header = exchange.getIn().getHeader(Constants.SERVICE_LINK_MODES_HEADER, String.class);
+        Assertions.assertNotNull(header, "Header should be set when modes are configured");
+        Assertions.assertEquals(Set.of("BUS", "RAIL"), Set.of(header.split(",")),
+            "Header should contain exactly the configured modes (order-independent)");
+    }
+
+    @Test
+    void testSetServiceLinkModesHeaderStripsRbPrefix() {
+        when(providerRepository.getProviders()).thenReturn(List.of(providerWithServiceLinkModes(Set.of("FERRY"))));
+        Exchange exchange = exchange();
+        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, "rb_TST");
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+
+        helpers.setServiceLinkModesHeader(exchange);
+
+        Assertions.assertEquals(
+            "FERRY",
+            exchange.getIn().getHeader(Constants.SERVICE_LINK_MODES_HEADER, String.class),
+            "rb_ prefix should be stripped when looking up the provider"
+        );
+    }
+
+    @Test
+    void testShouldSkipServicelinkerWhenModesIsEmptySet() {
+        when(providerRepository.getProviders()).thenReturn(List.of(providerWithServiceLinkModes(Set.of())));
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+        Assertions.assertTrue(helpers.shouldSkipServicelinker(exchange()),
+            "Empty modes set should signal that servicelinker should be skipped");
+    }
+
+    @Test
+    void testShouldNotSkipServicelinkerWhenModesIsNull() {
+        when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+        Assertions.assertFalse(helpers.shouldSkipServicelinker(exchange()),
+            "Null modes (unconfigured) should not skip servicelinker");
+    }
+
+    @Test
+    void testShouldNotSkipServicelinkerWhenModesIsNonEmpty() {
+        when(providerRepository.getProviders()).thenReturn(List.of(providerWithServiceLinkModes(Set.of("BUS"))));
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+        Assertions.assertFalse(helpers.shouldSkipServicelinker(exchange()),
+            "Non-empty modes should not skip servicelinker");
+    }
+
+    private Provider providerWithServiceLinkModes(Set<String> modes) {
+        Provider provider = new Provider();
+        provider.setId(testProviderId);
+        ChouetteInfo chouetteInfo = new ChouetteInfo();
+        chouetteInfo.setEnableExperimentalImport(true);
+        chouetteInfo.setReferential(testDatasetReferential);
+        chouetteInfo.setGenerateMissingServiceLinksForModes(modes);
+        provider.setChouetteInfo(chouetteInfo);
+        return provider;
     }
 
     @Test

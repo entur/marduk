@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+
 import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 
@@ -52,6 +54,49 @@ public class ExperimentalImportHelpers {
         return false;
     }
 
+    /**
+     * Returns true when the provider has explicitly configured an empty set of service link modes,
+     * meaning no service links should be generated and the servicelinker step can be skipped entirely.
+     * Returns false when modes is null (not yet configured — servicelinker runs for all modes)
+     * or when one or more modes are present.
+     */
+    public boolean shouldSkipServicelinker(Exchange exchange) {
+        String referential = datasetReferentialFor(exchange);
+        if (referential.startsWith("rb_")) {
+            referential = referential.replace("rb_", "");
+        }
+        Provider provider = getProvider(referential);
+        Set<String> modes = provider.getChouetteInfo().getGenerateMissingServiceLinksForModes();
+        return modes != null && modes.isEmpty();
+    }
+
+    /**
+     * Sets the ServiceLinkModes header on the exchange based on the provider's configured transport modes.
+     * If generateMissingServiceLinksForModes is null (not yet configured), the header is not set and
+     * servicelinker will generate links for all modes (backward-compatible behaviour).
+     * If one or more modes are present, the header is serialised as a comma-separated string and
+     * servicelinker will restrict generation to those modes.
+     * Note: the empty-set case (no service links at all) is handled upstream by shouldSkipServicelinker(),
+     * so this method is only called when modes is null or non-empty.
+     */
+    public void setServiceLinkModesHeader(Exchange exchange) {
+        String referential = datasetReferentialFor(exchange);
+        if (referential.startsWith("rb_")) {
+            referential = referential.replace("rb_", "");
+        }
+        Provider provider = getProvider(referential);
+        Set<String> modes = provider.getChouetteInfo().getGenerateMissingServiceLinksForModes();
+        if (modes != null) {
+            exchange.getIn().setHeader(Constants.SERVICE_LINK_MODES_HEADER, String.join(",", modes));
+        }
+    }
+
+    @SuppressWarnings("unused") // Used by ServicelinkerEnrichmentStatusRouteBuilder
+    public String pathToNetexForServicelinker(Exchange exchange) {
+        String referential = datasetReferentialFor(exchange);
+        return "servicelinker/" + referential + "/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+    }
+
     public String pathToNetexExportFromChouetteToMergeWithFlex(Exchange exchange) {
         return BLOBSTORE_PATH_CHOUETTE + "netex/" + chouetteReferentialFor(exchange) + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     }
@@ -61,6 +106,7 @@ public class ExperimentalImportHelpers {
         return "filtered-netex/" + referential + "/netex-before-merging/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     }
 
+    @SuppressWarnings("unused") // Used by AntuNetexValidationStatusRouteBuilder and AshurFilteringStatusRouteBuilder
     public String pathToNetexWithoutBlocksProducedByAshur(Exchange exchange) {
         String referential = chouetteReferentialFor(exchange);
         return "filtered-netex/" + referential + "/netex-without-blocks/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;

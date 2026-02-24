@@ -176,10 +176,10 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
                     .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + CHOUETTE_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
                     .to("direct:copyInternalBlobInBucket")
-                    .log(LoggingLevel.INFO, correlation() + "Experimental import is enabled for codespace, triggering filtering in Ashur after pre-validation")
+                    .log(LoggingLevel.INFO, correlation() + "Experimental import is enabled for codespace, triggering enrichment and filtering after pre-validation")
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                     .to("direct:updateStatus")
-                    .to("direct:ashurNetexFilterAfterPreValidation")
+                    .to("direct:servicelinkerEnrichAfterPreValidation")
                     // NOTE: Special case: we stop processing the route here because setting referentials with rb_ prefix
                     // must be done after sending the prevalidation completed status to nabu. This is essential to ensure
                     // that links to the prevalidation reports in Antu work correctly.
@@ -260,10 +260,10 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .endChoice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
-                    .log(LoggingLevel.INFO, correlation() + "Nightly validation: Experimental import is enabled for codespace, triggering filtering in Ashur after pre-validation")
+                    .log(LoggingLevel.INFO, correlation() + "Nightly validation: Experimental import is enabled for codespace, triggering enrichment and filtering after pre-validation")
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
                     .to("direct:updateStatus")
-                    .to("direct:ashurNetexFilterAfterPreValidation")
+                    .to("direct:servicelinkerEnrichAfterPreValidation")
                     // NOTE: Special case: we stop processing the route here because setting referentials with rb_ prefix
                     // must be done after sending the prevalidation completed status to nabu. This is essential to ensure
                     // that links to the prevalidation reports in Antu work correctly.
