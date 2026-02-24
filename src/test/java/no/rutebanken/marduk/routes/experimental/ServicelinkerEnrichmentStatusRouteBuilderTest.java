@@ -14,6 +14,9 @@ import org.springframework.test.context.TestPropertySource;
 import java.io.IOException;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @TestPropertySource(properties = {"servicelinker.linkingEnabled=true"})
 class ServicelinkerEnrichmentStatusRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
 
@@ -80,21 +83,21 @@ class ServicelinkerEnrichmentStatusRouteBuilderTest extends MardukRouteBuilderIn
             .map(exchange -> exchange.getIn().getBody(String.class))
             .toList();
 
-        boolean foundLinkingOkStatus = receivedMessages.stream()
-            .anyMatch(body -> body.contains("\"action\":\"LINKING\"") && body.contains("\"state\":\"OK\""));
-
-        assert foundLinkingOkStatus : "Expected status update with action=LINKING and state=OK";
+        assertTrue(
+            receivedMessages.stream().anyMatch(body -> body.contains("\"action\":\"LINKING\"") && body.contains("\"state\":\"OK\"")),
+            "Expected status update with action=LINKING and state=OK"
+        );
 
         // The enriched file must be written to the dedicated servicelinker path, not the original FILE_HANDLE
         var copyExchange = copyBlobFromAnotherBucketToInternalEndpoint.getReceivedExchanges().getFirst();
         String enrichedPath = "servicelinker/tst/some-uuid/tst-aggregated-netex.zip";
-        assert enrichedPath.equals(copyExchange.getIn().getHeader(Constants.TARGET_FILE_HANDLE, String.class))
-            : "Expected TARGET_FILE_HANDLE to be enriched path, not original";
+        assertEquals(enrichedPath, copyExchange.getIn().getHeader(Constants.TARGET_FILE_HANDLE, String.class),
+            "Expected TARGET_FILE_HANDLE to be enriched path, not original");
 
         // Ashur must receive the enriched path as FILE_HANDLE, not the original
         var ashurExchange = ashurFilterEndpoint.getReceivedExchanges().getFirst();
-        assert enrichedPath.equals(ashurExchange.getIn().getHeader(Constants.FILE_HANDLE, String.class))
-            : "Expected FILE_HANDLE forwarded to Ashur to be enriched path, not original";
+        assertEquals(enrichedPath, ashurExchange.getIn().getHeader(Constants.FILE_HANDLE, String.class),
+            "Expected FILE_HANDLE forwarded to Ashur to be enriched path, not original");
     }
 
     @Test
@@ -125,9 +128,9 @@ class ServicelinkerEnrichmentStatusRouteBuilderTest extends MardukRouteBuilderIn
             .map(exchange -> exchange.getIn().getBody(String.class))
             .toList();
 
-        boolean foundLinkingFailedStatus = receivedMessages.stream()
-            .anyMatch(body -> body.contains("\"action\":\"LINKING\"") && body.contains("\"state\":\"FAILED\""));
-
-        assert foundLinkingFailedStatus : "Expected status update with action=LINKING and state=FAILED";
+        assertTrue(
+            receivedMessages.stream().anyMatch(body -> body.contains("\"action\":\"LINKING\"") && body.contains("\"state\":\"FAILED\"")),
+            "Expected status update with action=LINKING and state=FAILED"
+        );
     }
 }

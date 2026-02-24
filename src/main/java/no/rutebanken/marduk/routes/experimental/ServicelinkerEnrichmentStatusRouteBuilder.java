@@ -11,14 +11,14 @@ import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Routes for integrating Servicelinker into the NeTEx processing pipeline.
- *
+ * <p>
  * When linking is enabled, this route intercepts the flow between Antu pre-validation and Ashur filtering:
  * 1. Copies the pre-validated NeTEx ZIP to the exchange bucket for Servicelinker to read
  * 2. Publishes a message to ServicelinkerInboundQueue
  * 3. Waits for the async callback on ServicelinkerStatusQueue
- * 4. On success: copies the enriched file to a dedicated path in the internal bucket (the original is left untouched)
- * 5. Continues to Ashur filtering (which reads from the internal bucket)
- *
+ * 4. On success: copies the enriched file from Servicelinker's exchange bucket to a dedicated path in the internal bucket (the original is left untouched)
+ * 5. Continues to Ashur filtering: Marduk copies the enriched file from the internal bucket to the exchange bucket, which Ashur then reads
+ * <p>
  * On failure, the original file remains in the internal bucket and the pipeline continues
  * to Ashur without ServiceLink enrichment (graceful degradation).
  */
@@ -46,13 +46,13 @@ public class ServicelinkerEnrichmentStatusRouteBuilder extends BaseRouteBuilder 
                         .log(LoggingLevel.INFO, correlation() + "Servicelinker linking is disabled, skipping enrichment")
                         .to("direct:ashurNetexFilterAfterPreValidation")
                     .when(experimentalImportHelpers::shouldSkipServicelinker)
-                        .log(LoggingLevel.INFO, correlation() + "No service link modes configured for referential ${header." + DATASET_REFERENTIAL + "}, skipping servicelinker")
+                        .log(LoggingLevel.INFO, correlation() + "Service link modes explicitly set to empty for referential ${header." + DATASET_REFERENTIAL + "}, skipping servicelinker")
                         .to("direct:ashurNetexFilterAfterPreValidation")
                     .otherwise()
                         .log(LoggingLevel.INFO, correlation() + "Triggering Servicelinker enrichment for referential ${header." + DATASET_REFERENTIAL + "}")
                         .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexForServicelinker")
                         .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
-                        .process(e -> experimentalImportHelpers.setServiceLinkModesHeader(e))
+                        .process(experimentalImportHelpers::setServiceLinkModesHeader)
                         .to("direct:copyInternalBlobToAnotherBucket")
                         .to("google-pubsub:{{marduk.pubsub.project.id}}:ServicelinkerInboundQueue")
                         .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.LINKING).state(JobEvent.State.PENDING).build())

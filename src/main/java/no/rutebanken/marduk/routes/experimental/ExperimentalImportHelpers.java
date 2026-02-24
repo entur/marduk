@@ -72,9 +72,12 @@ public class ExperimentalImportHelpers {
 
     /**
      * Sets the ServiceLinkModes header on the exchange based on the provider's configured transport modes.
-     * If generateMissingServiceLinksForModes is null, the header is not set and servicelinker will generate
-     * links for all modes (backward-compatible behaviour). If it is set (even to an empty set), the header
-     * is serialised as a comma-separated string and servicelinker will restrict generation accordingly.
+     * If generateMissingServiceLinksForModes is null (not yet configured), the header is not set and
+     * servicelinker will generate links for all modes (backward-compatible behaviour).
+     * If one or more modes are present, the header is serialised as a comma-separated string and
+     * servicelinker will restrict generation to those modes.
+     * Note: the empty-set case (no service links at all) is handled upstream by shouldSkipServicelinker(),
+     * so this method is only called when modes is null or non-empty.
      */
     public void setServiceLinkModesHeader(Exchange exchange) {
         String referential = datasetReferentialFor(exchange);
@@ -88,6 +91,7 @@ public class ExperimentalImportHelpers {
         }
     }
 
+    @SuppressWarnings("unused") // Used by ServicelinkerEnrichmentStatusRouteBuilder
     public String pathToNetexForServicelinker(Exchange exchange) {
         String referential = datasetReferentialFor(exchange);
         return "servicelinker/" + referential + "/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
@@ -102,6 +106,7 @@ public class ExperimentalImportHelpers {
         return "filtered-netex/" + referential + "/netex-before-merging/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     }
 
+    @SuppressWarnings("unused") // Used by AntuNetexValidationStatusRouteBuilder and AshurFilteringStatusRouteBuilder
     public String pathToNetexWithoutBlocksProducedByAshur(Exchange exchange) {
         String referential = chouetteReferentialFor(exchange);
         return "filtered-netex/" + referential + "/netex-without-blocks/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
