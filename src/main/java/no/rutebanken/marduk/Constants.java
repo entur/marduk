@@ -160,7 +160,7 @@ public final class Constants {
 
     public static final String SERVICELINKER_STATUS_TOPIC = "ServicelinkerStatusQueue";
 
-    public static final String LINKING_NETEX_FILE_STATUS_HEADER = "Status";
+    public static final String LINKING_NETEX_FILE_STATUS_HEADER = "LinkingStatus";
     public static final String LINKING_NETEX_FILE_STATUS_SUCCEEDED = "SUCCESS";
     public static final String LINKING_NETEX_FILE_STATUS_FAILED = "FAILED";
 
