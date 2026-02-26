@@ -1,4 +1,4 @@
-#Enviroment variables
+# Enviroment variables
 variable "gcp_resources_project" {
   description = "The GCP project hosting the project resources"
 }
