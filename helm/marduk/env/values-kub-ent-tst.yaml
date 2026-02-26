@@ -41,7 +41,7 @@ chouette:
   enablePostValidation: false
 
 servicelinker:
-  enableLinking: false
+  enableLinking: true
 
 ashur:
   enableFiltering: false
