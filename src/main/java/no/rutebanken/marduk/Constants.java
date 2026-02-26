@@ -162,6 +162,7 @@ public final class Constants {
 
     // Matches constants in PubSubMessageHandler.kt in servicelinker
     public static final String LINKING_NETEX_FILE_STATUS_HEADER = "LinkingStatus";
+    public static final String LINKING_NETEX_FILE_STATUS_STARTED = "STARTED";
     public static final String LINKING_NETEX_FILE_STATUS_SUCCEEDED = "SUCCESS";
     public static final String LINKING_NETEX_FILE_STATUS_FAILED = "FAILED";
     public static final String LINKED_NETEX_FILE_PATH_HEADER = "LinkedNetexFilePath";
