@@ -16,16 +16,19 @@
 
 package no.rutebanken.marduk.routes.processors;
 
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import no.rutebanken.marduk.domain.PrevalidatedFileMetadata;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 
@@ -46,11 +49,16 @@ public class PrevalidatedFileMetadataProcessor implements Processor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PrevalidatedFileMetadataProcessor.class);
     private static final ObjectWriter OBJECT_WRITER = ObjectMapperFactory.getSharedObjectMapper().writerFor(PrevalidatedFileMetadata.class);
+    private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getSharedObjectMapper().readerFor(PrevalidatedFileMetadata.class);
 
     private final FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
+    private final MardukInternalBlobStoreService mardukInternalBlobStoreService;
 
-    public PrevalidatedFileMetadataProcessor(FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository) {
+    public PrevalidatedFileMetadataProcessor(
+            FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository,
+            MardukInternalBlobStoreService mardukInternalBlobStoreService) {
         this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
+        this.mardukInternalBlobStoreService = mardukInternalBlobStoreService;
     }
 
     @Override
@@ -59,6 +67,10 @@ public class PrevalidatedFileMetadataProcessor implements Processor {
         String referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);
 
         LocalDateTime createdAt = fileNameAndDigestIdempotentRepository.getCreatedAt(originalFileName);
+
+        if (createdAt == null) {
+            createdAt = readCreatedAtFromExistingMetadata(referential, originalFileName);
+        }
 
         if (createdAt == null) {
             LOGGER.warn("No createdAt timestamp found for file {}, using current time", originalFileName);
@@ -76,5 +88,33 @@ public class PrevalidatedFileMetadataProcessor implements Processor {
 
         LOGGER.info("Prepared metadata for prevalidated file. Original filename: {}, createdAt: {}, metadata path: {}",
                 originalFileName, createdAt, metadataFilePath);
+    }
+
+    private LocalDateTime readCreatedAtFromExistingMetadata(String referential, String fileName) {
+        if (referential == null) {
+            return null;
+        }
+        String metadataFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES
+                + referential + "/" + PREVALIDATED_NETEX_METADATA_FILENAME;
+
+        try (InputStream inputStream = mardukInternalBlobStoreService.getBlob(metadataFilePath)) {
+            if (inputStream == null) {
+                LOGGER.info("Existing metadata file not found: {}", metadataFilePath);
+                return null;
+            }
+            PrevalidatedFileMetadata metadata = OBJECT_READER.readValue(inputStream);
+
+            if (!fileName.equals(metadata.getOriginalFileName())) {
+                LOGGER.info("Filename mismatch in existing metadata: expected {}, found {}",
+                        fileName, metadata.getOriginalFileName());
+                return null;
+            }
+
+            LOGGER.info("Read createdAt from existing metadata file: {}", metadata.getCreatedAt());
+            return metadata.getCreatedAt();
+        } catch (Exception e) {
+            LOGGER.warn("Failed to read existing metadata file: {}", metadataFilePath, e);
+            return null;
+        }
     }
 }

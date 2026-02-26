@@ -24,6 +24,7 @@ import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.processors.FileCreatedTimestampProcessor;
 import no.rutebanken.marduk.routes.processors.PrevalidatedFileMetadataProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,16 +42,19 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
     private final ExperimentalImportHelpers experimentalImportHelpers;
     private final String nisabaExchangeContainerName;
+    private final MardukInternalBlobStoreService mardukInternalBlobStoreService;
 
     FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
 
     public AntuNetexValidationStatusRouteBuilder(
         ExperimentalImportHelpers experimentalImportHelpers,
         FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository,
+        MardukInternalBlobStoreService mardukInternalBlobStoreService,
         @Value("${blobstore.gcs.nisaba.exchange.container.name}") String nisabaExchangeContainerName
     ) {
         this.experimentalImportHelpers = experimentalImportHelpers;
         this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
+        this.mardukInternalBlobStoreService = mardukInternalBlobStoreService;
         this.nisabaExchangeContainerName = nisabaExchangeContainerName;
     }
 
@@ -129,7 +133,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .routeId("antu-netex-validation-started");
 
         from("direct:ashurNetexFilterAfterPreValidation")
-                .process(new FileCreatedTimestampProcessor(fileNameAndDigestIdempotentRepository))
+                .process(new FileCreatedTimestampProcessor(fileNameAndDigestIdempotentRepository, mardukInternalBlobStoreService))
                 .choice()
                     .when(header(FILTERING_FILE_CREATED_TIMESTAMP).isNotNull())
                         .setHeader(DATASET_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
@@ -170,7 +174,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     // Store original FILE_HANDLE before writing metadata
                     .setProperty("originalFileHandle", header(FILE_HANDLE))
                     // Writes metadata file and sets createdAt timestamp header
-                    .process(new PrevalidatedFileMetadataProcessor(fileNameAndDigestIdempotentRepository))
+                    .process(new PrevalidatedFileMetadataProcessor(fileNameAndDigestIdempotentRepository, mardukInternalBlobStoreService))
                     .to("direct:uploadInternalBlobWithoutVersionHeader")
                     // Restore FILE_HANDLE (nightly validation uses original file via metadata)
                     .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
@@ -190,7 +194,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     // Store original FILE_HANDLE before writing metadata
                     .setProperty("originalFileHandle", header(FILE_HANDLE))
                     // Write metadata file (contains createdAt timestamp and original filename for nightly validation)
-                    .process(new PrevalidatedFileMetadataProcessor(fileNameAndDigestIdempotentRepository))
+                    .process(new PrevalidatedFileMetadataProcessor(fileNameAndDigestIdempotentRepository, mardukInternalBlobStoreService))
                     .to("direct:uploadInternalBlobWithoutVersionHeader")
                     // Restore FILE_HANDLE (nightly validation uses original file via metadata)
                     .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
