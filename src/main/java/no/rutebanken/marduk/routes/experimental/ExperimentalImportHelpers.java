@@ -49,6 +49,9 @@ public class ExperimentalImportHelpers {
                 referential = referential.replace("rb_", "");
             }
             Provider provider = getProvider(referential);
+            if (provider == null) {
+                return false;
+            }
             return provider.getChouetteInfo().hasEnabledExperimentalImport();
         }
         return false;
