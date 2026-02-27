@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import no.rutebanken.marduk.domain.PrevalidatedFileMetadata;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.slf4j.Logger;
@@ -48,9 +49,13 @@ public class PrevalidatedFileMetadataProcessor implements Processor {
     private static final ObjectWriter OBJECT_WRITER = ObjectMapperFactory.getSharedObjectMapper().writerFor(PrevalidatedFileMetadata.class);
 
     private final FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
+    private final PrevalidatedFileMetadataReader metadataReader;
 
-    public PrevalidatedFileMetadataProcessor(FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository) {
+    public PrevalidatedFileMetadataProcessor(
+            FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository,
+            MardukInternalBlobStoreService mardukInternalBlobStoreService) {
         this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
+        this.metadataReader = new PrevalidatedFileMetadataReader(mardukInternalBlobStoreService);
     }
 
     @Override
@@ -59,6 +64,10 @@ public class PrevalidatedFileMetadataProcessor implements Processor {
         String referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);
 
         LocalDateTime createdAt = fileNameAndDigestIdempotentRepository.getCreatedAt(originalFileName);
+
+        if (createdAt == null) {
+            createdAt = metadataReader.readCreatedAt(referential, originalFileName);
+        }
 
         if (createdAt == null) {
             LOGGER.warn("No createdAt timestamp found for file {}, using current time", originalFileName);

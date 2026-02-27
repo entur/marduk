@@ -17,25 +17,38 @@
 package no.rutebanken.marduk.routes.processors;
 
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 
 import java.time.LocalDateTime;
 
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILTERING_FILE_CREATED_TIMESTAMP;
 
 public class FileCreatedTimestampProcessor implements Processor {
-    FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
 
-    public FileCreatedTimestampProcessor(FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository) {
+    private final FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
+    private final PrevalidatedFileMetadataReader metadataReader;
+
+    public FileCreatedTimestampProcessor(
+            FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository,
+            MardukInternalBlobStoreService mardukInternalBlobStoreService) {
         this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
+        this.metadataReader = new PrevalidatedFileMetadataReader(mardukInternalBlobStoreService);
     }
 
     @Override
     public void process(Exchange exchange) throws Exception {
         String fileName = exchange.getIn().getHeader(FILE_NAME, String.class);
         LocalDateTime createdAt = fileNameAndDigestIdempotentRepository.getCreatedAt(fileName);
+
+        if (createdAt == null) {
+            String referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);
+            createdAt = metadataReader.readCreatedAt(referential, fileName);
+        }
+
         if (createdAt != null) {
             exchange.getIn().setHeader(FILTERING_FILE_CREATED_TIMESTAMP, createdAt.toString());
         }
