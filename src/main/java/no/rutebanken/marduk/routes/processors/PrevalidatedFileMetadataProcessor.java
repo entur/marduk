@@ -16,7 +16,6 @@
 
 package no.rutebanken.marduk.routes.processors;
 
-import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import no.rutebanken.marduk.domain.PrevalidatedFileMetadata;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
@@ -28,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 
@@ -49,16 +47,15 @@ public class PrevalidatedFileMetadataProcessor implements Processor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PrevalidatedFileMetadataProcessor.class);
     private static final ObjectWriter OBJECT_WRITER = ObjectMapperFactory.getSharedObjectMapper().writerFor(PrevalidatedFileMetadata.class);
-    private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getSharedObjectMapper().readerFor(PrevalidatedFileMetadata.class);
 
     private final FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
-    private final MardukInternalBlobStoreService mardukInternalBlobStoreService;
+    private final PrevalidatedFileMetadataReader metadataReader;
 
     public PrevalidatedFileMetadataProcessor(
             FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository,
             MardukInternalBlobStoreService mardukInternalBlobStoreService) {
         this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
-        this.mardukInternalBlobStoreService = mardukInternalBlobStoreService;
+        this.metadataReader = new PrevalidatedFileMetadataReader(mardukInternalBlobStoreService);
     }
 
     @Override
@@ -69,7 +66,7 @@ public class PrevalidatedFileMetadataProcessor implements Processor {
         LocalDateTime createdAt = fileNameAndDigestIdempotentRepository.getCreatedAt(originalFileName);
 
         if (createdAt == null) {
-            createdAt = readCreatedAtFromExistingMetadata(referential, originalFileName);
+            createdAt = metadataReader.readCreatedAt(referential, originalFileName);
         }
 
         if (createdAt == null) {
@@ -88,33 +85,5 @@ public class PrevalidatedFileMetadataProcessor implements Processor {
 
         LOGGER.info("Prepared metadata for prevalidated file. Original filename: {}, createdAt: {}, metadata path: {}",
                 originalFileName, createdAt, metadataFilePath);
-    }
-
-    private LocalDateTime readCreatedAtFromExistingMetadata(String referential, String fileName) {
-        if (referential == null) {
-            return null;
-        }
-        String metadataFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES
-                + referential + "/" + PREVALIDATED_NETEX_METADATA_FILENAME;
-
-        try (InputStream inputStream = mardukInternalBlobStoreService.getBlob(metadataFilePath)) {
-            if (inputStream == null) {
-                LOGGER.info("Existing metadata file not found: {}", metadataFilePath);
-                return null;
-            }
-            PrevalidatedFileMetadata metadata = OBJECT_READER.readValue(inputStream);
-
-            if (!fileName.equals(metadata.getOriginalFileName())) {
-                LOGGER.info("Filename mismatch in existing metadata: expected {}, found {}",
-                        fileName, metadata.getOriginalFileName());
-                return null;
-            }
-
-            LOGGER.info("Read createdAt from existing metadata file: {}", metadata.getCreatedAt());
-            return metadata.getCreatedAt();
-        } catch (Exception e) {
-            LOGGER.warn("Failed to read existing metadata file: {}", metadataFilePath, e);
-            return null;
-        }
     }
 }
