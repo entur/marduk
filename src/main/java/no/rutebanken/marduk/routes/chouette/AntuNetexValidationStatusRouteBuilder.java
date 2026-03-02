@@ -21,7 +21,6 @@ import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
 import no.rutebanken.marduk.routes.experimental.ExperimentalImportHelpers;
 import no.rutebanken.marduk.routes.experimental.NisabaHeadersProcessor;
 import no.rutebanken.marduk.routes.file.FileType;
-import no.rutebanken.marduk.routes.processors.FileCreatedTimestampProcessor;
 import no.rutebanken.marduk.routes.processors.PrevalidatedFileMetadataProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.LoggingLevel;
@@ -129,7 +128,6 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .routeId("antu-netex-validation-started");
 
         from("direct:ashurNetexFilterAfterPreValidation")
-                .process(new FileCreatedTimestampProcessor(fileNameAndDigestIdempotentRepository))
                 .choice()
                     .when(header(FILTERING_FILE_CREATED_TIMESTAMP).isNotNull())
                         .setHeader(DATASET_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
