@@ -198,4 +198,21 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
         ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, providerRepository);
         Assertions.assertTrue(filter.shouldRunExperimentalImport(exchange));
     }
+
+    @Test
+    void testPathToNetexForAshurFilteringIncludesCorrelationId() {
+        Exchange exchange = exchange();
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+        String expectedPath = Constants.BLOBSTORE_PATH_OUTBOUND + "netex/TST/correlation/TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+        Assertions.assertEquals(expectedPath, helpers.pathToNetexForAshurFiltering(exchange));
+    }
+
+    @Test
+    void testPathToNetexForAshurFilteringWithRbPrefix() {
+        Exchange exchange = exchange();
+        exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, "rb_TST");
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+        String expectedPath = Constants.BLOBSTORE_PATH_OUTBOUND + "netex/rb_TST/correlation/rb_TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+        Assertions.assertEquals(expectedPath, helpers.pathToNetexForAshurFiltering(exchange));
+    }
 }
