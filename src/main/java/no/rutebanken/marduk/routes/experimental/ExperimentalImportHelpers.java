@@ -100,6 +100,16 @@ public class ExperimentalImportHelpers {
         return "servicelinker/" + referential + "/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     }
 
+    /**
+     * Returns the path to the NeTEx file in the exchange bucket for Ashur filtering.
+     * The path includes correlation ID to ensure isolation between parallel imports of the same codespace.
+     */
+    @SuppressWarnings("unused") // Used by AntuNetexValidationStatusRouteBuilder
+    public String pathToNetexForAshurFiltering(Exchange exchange) {
+        String referential = chouetteReferentialFor(exchange);
+        return BLOBSTORE_PATH_OUTBOUND + "netex/" + referential + "/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+    }
+
     public String pathToNetexExportFromChouetteToMergeWithFlex(Exchange exchange) {
         return BLOBSTORE_PATH_CHOUETTE + "netex/" + chouetteReferentialFor(exchange) + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     }

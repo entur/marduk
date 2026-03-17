@@ -134,7 +134,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                         .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + CHOUETTE_REFERENTIAL + "}"))
                         .log(LoggingLevel.INFO, "Updated value of dataset referential header: ${header." + DATASET_REFERENTIAL + "}")
                         .log(LoggingLevel.INFO, "Updated value of chouette referential header: ${header." + CHOUETTE_REFERENTIAL + "}")
-                        .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + DATASET_REFERENTIAL + "}/${header." + DATASET_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                        .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexForAshurFiltering")
                         .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
                         .to("direct:copyInternalBlobToAnotherBucket")
                         .setHeader(FILTERING_PROFILE_HEADER, constant(FILTERING_PROFILE_STANDARD_IMPORT))
