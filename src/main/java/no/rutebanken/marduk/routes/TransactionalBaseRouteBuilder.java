@@ -16,6 +16,8 @@
 
 package no.rutebanken.marduk.routes;
 
+import no.rutebanken.marduk.Constants;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 
 
@@ -37,6 +39,11 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
     private int backOffMultiplier;
 
 
+    // TODO: Consider calling super.configure() to inherit the PubSub header
+    //  interceptors (interceptFrom/interceptSendToEndpoint) from BaseRouteBuilder.
+    //  Currently FileUploadRouteBuilder is the only subclass, and it publishes to
+    //  ProcessFileQueue without the standard header propagation interceptors.
+    //  This was not done now to avoid a behaviour change beyond adding MDC logging.
     @Override
     public void configure() {
         errorHandler(springTransactionErrorHandler()
@@ -47,6 +54,23 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
                 .backOffMultiplier(backOffMultiplier)
                 .logExhausted(true)
                 .logRetryStackTrace(true));
+
+        // Copy correlation ID and codespace headers to SLF4J MDC for structured logging.
+        interceptFrom(".*google-pubsub:.*").process(exchange -> {
+            String correlationId = exchange.getIn().getHeader(Constants.CORRELATION_ID, String.class);
+            if (correlationId != null) {
+                MDC.put("correlationId", correlationId);
+            }
+            String codespace = exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class);
+            if (codespace != null) {
+                MDC.put("codespace", codespace);
+            }
+        });
+
+        onCompletion().process(exchange -> {
+            MDC.remove("correlationId");
+            MDC.remove("codespace");
+        });
 
     }
 }

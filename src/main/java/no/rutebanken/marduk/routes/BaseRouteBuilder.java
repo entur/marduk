@@ -34,6 +34,7 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.quartz.CronExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.MDC;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.IOException;
@@ -110,6 +111,24 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                     exchange.getIn().setHeader(GooglePubsubConstants.ATTRIBUTES, pubSubAttributes);
 
                 });
+
+        // Copy correlation ID and codespace headers to SLF4J MDC for structured logging.
+        interceptFrom(".*google-pubsub:.*").process(exchange -> {
+            String correlationId = exchange.getIn().getHeader(Constants.CORRELATION_ID, String.class);
+            if (correlationId != null) {
+                MDC.put("correlationId", correlationId);
+            }
+            String codespace = exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class);
+            if (codespace != null) {
+                MDC.put("codespace", codespace);
+            }
+        });
+
+        // Clean up MDC when exchange completes to prevent thread leakage.
+        onCompletion().process(exchange -> {
+            MDC.remove("correlationId");
+            MDC.remove("codespace");
+        });
 
     }
 
