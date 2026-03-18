@@ -86,7 +86,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                 .logExhausted(true)
                 .logRetryStackTrace(true));
 
-        // Copy all PubSub headers except the internal Camel PubSub headers from the PubSub message into the Camel message headers.
+        // Copy PubSub attributes into Camel headers and set MDC for structured logging.
         interceptFrom(".*google-pubsub:.*")
                 .process(exchange ->
                 {
@@ -98,6 +98,15 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                             .stream()
                             .filter(entry -> !entry.getKey().startsWith("CamelGooglePubsub"))
                             .forEach(entry -> exchange.getIn().setHeader(entry.getKey(), entry.getValue()));
+
+                    String correlationId = exchange.getIn().getHeader(Constants.CORRELATION_ID, String.class);
+                    if (correlationId != null) {
+                        MDC.put("correlationId", correlationId);
+                    }
+                    String codespace = exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class);
+                    if (codespace != null) {
+                        MDC.put("codespace", codespace);
+                    }
                 });
 
         // Copy all PubSub headers except the internal Camel PubSub headers from the Camel message into the PubSub message.
@@ -116,27 +125,8 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
     }
 
-    /**
-     * Register MDC interceptors for structured logging of correlationId and codespace.
-     * Called from both BaseRouteBuilder and TransactionalBaseRouteBuilder since the latter
-     * does not call super.configure().
-     * <p>
-     * NOTE: These custom MDC keys are NOT propagated by Camel's setUseMDCLogging across
-     * thread boundaries. If routes use .threads(), .wireTap(), or async processing, these
-     * keys will be lost on new threads. All current PubSub routes are synchronous.
-     */
+    /** Clean up MDC when the exchange completes. */
     protected void configureMdcLogging() {
-        interceptFrom(".*google-pubsub:.*").process(exchange -> {
-            String correlationId = exchange.getIn().getHeader(Constants.CORRELATION_ID, String.class);
-            if (correlationId != null) {
-                MDC.put("correlationId", correlationId);
-            }
-            String codespace = exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class);
-            if (codespace != null) {
-                MDC.put("codespace", codespace);
-            }
-        });
-
         onCompletion().process(exchange -> {
             MDC.remove("correlationId");
             MDC.remove("codespace");

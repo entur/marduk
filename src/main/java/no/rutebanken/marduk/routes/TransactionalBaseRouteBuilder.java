@@ -16,7 +16,12 @@
 
 package no.rutebanken.marduk.routes;
 
+import no.rutebanken.marduk.Constants;
+import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
+
+import java.util.Map;
 
 
 /**
@@ -37,17 +42,6 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
     private int backOffMultiplier;
 
 
-    // TODO: Consider calling super.configure() to inherit the PubSub header
-    //  interceptors (interceptFrom/interceptSendToEndpoint) from BaseRouteBuilder.
-    //  Currently FileUploadRouteBuilder is the only subclass, and it publishes to
-    //  ProcessFileQueue without the standard header propagation interceptors.
-    //  This was not done now to avoid a behaviour change beyond adding MDC logging.
-    //  If super.configure() is added, the duplicated MDC interceptor below can be removed.
-    //
-    // NOTE: The custom MDC keys (correlationId, codespace) are NOT propagated by
-    //  Camel's built-in MDC logging (setUseMDCLogging) across thread boundaries.
-    //  If routes introduce .threads(), .wireTap(), or async processing, these keys
-    //  will be lost on the new threads. All current PubSub routes are synchronous.
     @Override
     public void configure() {
         errorHandler(springTransactionErrorHandler()
@@ -58,6 +52,21 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
                 .backOffMultiplier(backOffMultiplier)
                 .logExhausted(true)
                 .logRetryStackTrace(true));
+
+        // Set MDC from PubSub attributes for structured logging.
+        interceptFrom(".*google-pubsub:.*").process(exchange -> {
+            Map<String, String> pubSubAttributes = exchange.getIn().getHeader(GooglePubsubConstants.ATTRIBUTES, java.util.Map.class);
+            if (pubSubAttributes != null) {
+                String correlationId = pubSubAttributes.get(Constants.CORRELATION_ID);
+                if (correlationId != null) {
+                    MDC.put("correlationId", correlationId);
+                }
+                String codespace = pubSubAttributes.get(Constants.DATASET_REFERENTIAL);
+                if (codespace != null) {
+                    MDC.put("codespace", codespace);
+                }
+            }
+        });
 
         configureMdcLogging();
 
