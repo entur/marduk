@@ -37,6 +37,17 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
     private int backOffMultiplier;
 
 
+    // TODO: Consider calling super.configure() to inherit the PubSub header
+    //  interceptors (interceptFrom/interceptSendToEndpoint) from BaseRouteBuilder.
+    //  Currently FileUploadRouteBuilder is the only subclass, and it publishes to
+    //  ProcessFileQueue without the standard header propagation interceptors.
+    //  This was not done now to avoid a behaviour change beyond adding MDC logging.
+    //  If super.configure() is added, the duplicated MDC interceptor below can be removed.
+    //
+    // NOTE: The custom MDC keys (correlationId, codespace) are NOT propagated by
+    //  Camel's built-in MDC logging (setUseMDCLogging) across thread boundaries.
+    //  If routes introduce .threads(), .wireTap(), or async processing, these keys
+    //  will be lost on the new threads. All current PubSub routes are synchronous.
     @Override
     public void configure() {
         errorHandler(springTransactionErrorHandler()
@@ -47,6 +58,8 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
                 .backOffMultiplier(backOffMultiplier)
                 .logExhausted(true)
                 .logRetryStackTrace(true));
+
+        configureMdcLogging();
 
     }
 }

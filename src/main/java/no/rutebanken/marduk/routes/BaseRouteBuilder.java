@@ -34,6 +34,7 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.quartz.CronExpression;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.MDC;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.IOException;
@@ -111,6 +112,35 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
                 });
 
+        configureMdcLogging();
+
+    }
+
+    /**
+     * Register MDC interceptors for structured logging of correlationId and codespace.
+     * Called from both BaseRouteBuilder and TransactionalBaseRouteBuilder since the latter
+     * does not call super.configure().
+     * <p>
+     * NOTE: These custom MDC keys are NOT propagated by Camel's setUseMDCLogging across
+     * thread boundaries. If routes use .threads(), .wireTap(), or async processing, these
+     * keys will be lost on new threads. All current PubSub routes are synchronous.
+     */
+    protected void configureMdcLogging() {
+        interceptFrom(".*google-pubsub:.*").process(exchange -> {
+            String correlationId = exchange.getIn().getHeader(Constants.CORRELATION_ID, String.class);
+            if (correlationId != null) {
+                MDC.put("correlationId", correlationId);
+            }
+            String codespace = exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class);
+            if (codespace != null) {
+                MDC.put("codespace", codespace);
+            }
+        });
+
+        onCompletion().process(exchange -> {
+            MDC.remove("correlationId");
+            MDC.remove("codespace");
+        });
     }
 
     protected void logRedelivery(Exchange exchange) {
