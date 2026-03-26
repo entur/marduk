@@ -22,6 +22,7 @@ import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.slf4j.MDC;
 import org.apache.camel.ValidationException;
 import org.springframework.stereotype.Component;
 
@@ -53,7 +54,13 @@ public class InboundQueueRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Received notification about file '${header." + Constants.FILE_NAME + "}' on inbound queue. Fetching file ...")
                 .log(LoggingLevel.INFO, correlation() + "Fetching blob ${header." + FILE_HANDLE + "}")
                 .to("direct:fetchExternalBlob")
-                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential()))
+                .process(e -> {
+                    String referential = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential();
+                    e.getIn().setHeader(CHOUETTE_REFERENTIAL, referential);
+                    if (MDC.get("codespace") == null) {
+                        MDC.put("codespace", referential);
+                    }
+                })
                 .convertBodyTo(byte[].class)
                 .validate().method(FileTypeClassifierBean.class, "validateFile")
                 .log(LoggingLevel.INFO, correlation() + "File handle is: ${header." + FILE_HANDLE + "}")
