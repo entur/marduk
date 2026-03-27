@@ -67,14 +67,14 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
         // Copy correlation ID and codespace into SLF4J MDC for structured logging.
         interceptFrom(".*").process(exchange -> {
             String correlationId = exchange.getIn().getHeader(Constants.CORRELATION_ID, String.class);
-            if (correlationId != null) {
+            if (correlationId != null && !correlationId.isEmpty()) {
                 MDC.put("correlationId", correlationId);
             }
             String codespace = exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class);
-            if (codespace == null) {
+            if (codespace == null || codespace.isEmpty()) {
                 codespace = exchange.getIn().getHeader(Constants.CHOUETTE_REFERENTIAL, String.class);
             }
-            if (codespace != null) {
+            if (codespace != null && !codespace.isEmpty()) {
                 MDC.put("codespace", codespace);
             }
         });
