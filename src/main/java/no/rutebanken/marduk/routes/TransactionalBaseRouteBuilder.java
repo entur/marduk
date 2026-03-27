@@ -53,18 +53,29 @@ public abstract class TransactionalBaseRouteBuilder extends BaseRouteBuilder {
                 .logExhausted(true)
                 .logRetryStackTrace(true));
 
-        // Set MDC from PubSub attributes for structured logging.
+        // Copy PubSub attributes into Camel headers.
         interceptFrom(".*google-pubsub:.*").process(exchange -> {
             Map<String, String> pubSubAttributes = exchange.getIn().getHeader(GooglePubsubConstants.ATTRIBUTES, java.util.Map.class);
             if (pubSubAttributes != null) {
-                String correlationId = pubSubAttributes.get(Constants.CORRELATION_ID);
-                if (correlationId != null) {
-                    MDC.put("correlationId", correlationId);
-                }
-                String codespace = pubSubAttributes.get(Constants.DATASET_REFERENTIAL);
-                if (codespace != null) {
-                    MDC.put("codespace", codespace);
-                }
+                pubSubAttributes.entrySet()
+                        .stream()
+                        .filter(entry -> !entry.getKey().startsWith("CamelGooglePubsub"))
+                        .forEach(entry -> exchange.getIn().setHeader(entry.getKey(), entry.getValue()));
+            }
+        });
+
+        // Copy correlation ID and codespace into SLF4J MDC for structured logging.
+        interceptFrom(".*").process(exchange -> {
+            String correlationId = exchange.getIn().getHeader(Constants.CORRELATION_ID, String.class);
+            if (correlationId != null) {
+                MDC.put("correlationId", correlationId);
+            }
+            String codespace = exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class);
+            if (codespace == null) {
+                codespace = exchange.getIn().getHeader(Constants.CHOUETTE_REFERENTIAL, String.class);
+            }
+            if (codespace != null) {
+                MDC.put("codespace", codespace);
             }
         });
 

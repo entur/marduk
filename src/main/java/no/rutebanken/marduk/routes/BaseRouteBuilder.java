@@ -86,7 +86,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                 .logExhausted(true)
                 .logRetryStackTrace(true));
 
-        // Copy PubSub attributes into Camel headers and set MDC for structured logging.
+        // Copy PubSub attributes into Camel headers.
         interceptFrom(".*google-pubsub:.*")
                 .process(exchange ->
                 {
@@ -98,12 +98,20 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                             .stream()
                             .filter(entry -> !entry.getKey().startsWith("CamelGooglePubsub"))
                             .forEach(entry -> exchange.getIn().setHeader(entry.getKey(), entry.getValue()));
+                });
 
+        // Copy correlation ID and codespace into SLF4J MDC for structured logging.
+        interceptFrom(".*")
+                .process(exchange ->
+                {
                     String correlationId = exchange.getIn().getHeader(Constants.CORRELATION_ID, String.class);
                     if (correlationId != null) {
                         MDC.put("correlationId", correlationId);
                     }
                     String codespace = exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class);
+                    if (codespace == null) {
+                        codespace = exchange.getIn().getHeader(Constants.CHOUETTE_REFERENTIAL, String.class);
+                    }
                     if (codespace != null) {
                         MDC.put("codespace", codespace);
                     }
