@@ -24,7 +24,9 @@ import org.springframework.stereotype.Component;
 public class StatusRouteBuilder extends BaseRouteBuilder {
 
     @Override
-    public void configure() {
+    public void configure() throws Exception {
+        super.configure();
+
         from("direct:updateStatus")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Sending off job status event: ${body}")
                 .to("google-pubsub:{{nabu.pubsub.project.id}}:JobEventQueue")

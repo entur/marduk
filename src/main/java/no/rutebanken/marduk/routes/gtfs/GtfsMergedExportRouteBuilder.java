@@ -70,6 +70,7 @@ public class GtfsMergedExportRouteBuilder extends BaseRouteBuilder {
                 .completionTimeout(gtfsExportAggregationTimeout)
                 .executorService("gtfsExportExecutorService")
                 .process(this::addSynchronizationForAggregatedExchange)
+                .process(this::updateMdcFromHeaders)
                 .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
                 .log(LoggingLevel.INFO, correlation() + "Preparing GTFS export message from marduk to damu")
                 .to("direct:exportMergedGtfs")
@@ -92,6 +93,7 @@ public class GtfsMergedExportRouteBuilder extends BaseRouteBuilder {
                 .routeId("gtfs-export-list-files-route");
 
         from("google-pubsub:{{marduk.pubsub.project.id}}:MardukAggregateGtfsStatusQueue")
+                .process(this::updateMdcFromHeaders)
                 .choice()
                 .when(header(STATUS_HEADER).isEqualTo(STATUS_MERGE_OK))
                 .log(LoggingLevel.INFO, correlation() + "Received status OK from damu aggregation")

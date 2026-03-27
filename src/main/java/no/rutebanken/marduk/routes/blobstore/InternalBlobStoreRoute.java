@@ -33,7 +33,8 @@ public class InternalBlobStoreRoute extends BaseRouteBuilder {
     }
 
     @Override
-    public void configure() {
+    public void configure() throws Exception {
+        super.configure();
 
         from("direct:uploadInternalBlob")
                 .to(logDebugShowAll())
