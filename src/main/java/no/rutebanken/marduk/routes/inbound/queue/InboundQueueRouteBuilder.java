@@ -22,7 +22,6 @@ import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.slf4j.MDC;
 import org.apache.camel.ValidationException;
 import org.springframework.stereotype.Component;
 
@@ -57,9 +56,7 @@ public class InboundQueueRouteBuilder extends BaseRouteBuilder {
                 .process(e -> {
                     String referential = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential();
                     e.getIn().setHeader(CHOUETTE_REFERENTIAL, referential);
-                    if (MDC.get("codespace") == null) {
-                        MDC.put("codespace", referential);
-                    }
+                    setMdcCodespaceIfMissing(referential);
                 })
                 .convertBodyTo(byte[].class)
                 .validate().method(FileTypeClassifierBean.class, "validateFile")

@@ -66,13 +66,13 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     private int lenientFireTimeMs;
 
     @Value("${marduk.camel.redelivery.max:3}")
-    private int maxRedelivery;
+    protected int maxRedelivery;
 
     @Value("${marduk.camel.redelivery.delay:5000}")
-    private int redeliveryDelay;
+    protected int redeliveryDelay;
 
     @Value("${marduk.camel.redelivery.backoff.multiplier:3}")
-    private int backOffMultiplier;
+    protected int backOffMultiplier;
 
 
     @Override
@@ -86,51 +86,65 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                 .logExhausted(true)
                 .logRetryStackTrace(true));
 
-        // Copy PubSub attributes into Camel headers.
+        configurePubSubInterceptor();
+        configureMdcInterceptor();
+        configureOutboundPubSubInterceptor();
+        configureMdcLogging();
+
+    }
+
+    /** Copy PubSub attributes into Camel headers. */
+    protected void configurePubSubInterceptor() {
         interceptFrom(".*google-pubsub:.*")
                 .process(exchange ->
                 {
                     Map<String, String> pubSubAttributes = exchange.getIn().getHeader(GooglePubsubConstants.ATTRIBUTES, Map.class);
                     if (pubSubAttributes == null) {
-                        throw new IllegalStateException("Missing PubSub attribute maps in Exchange");
+                        log.warn("Missing PubSub attribute map in Exchange, skipping header copy");
+                        return;
                     }
                     pubSubAttributes.entrySet()
                             .stream()
                             .filter(entry -> !entry.getKey().startsWith("CamelGooglePubsub"))
                             .forEach(entry -> exchange.getIn().setHeader(entry.getKey(), entry.getValue()));
                 });
+    }
 
-        // Copy correlation ID and codespace into SLF4J MDC for structured logging.
+    /** Copy correlation ID and codespace into SLF4J MDC for structured logging. */
+    protected void configureMdcInterceptor() {
         interceptFrom(".*")
                 .process(exchange ->
                 {
+                    MDC.remove("correlationId");
+                    MDC.remove("codespace");
+
                     String correlationId = exchange.getIn().getHeader(Constants.CORRELATION_ID, String.class);
                     if (correlationId != null && !correlationId.isEmpty()) {
                         MDC.put("correlationId", correlationId);
                     }
-                    String codespace = exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class);
-                    if (codespace == null || codespace.isEmpty()) {
-                        codespace = exchange.getIn().getHeader(Constants.CHOUETTE_REFERENTIAL, String.class);
-                    }
-                    if (codespace != null && !codespace.isEmpty()) {
-                        MDC.put("codespace", codespace);
-                    }
+                    setMdcCodespaceIfMissing(exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class));
+                    setMdcCodespaceIfMissing(exchange.getIn().getHeader(Constants.CHOUETTE_REFERENTIAL, String.class));
                 });
+    }
 
-        // Copy all PubSub headers except the internal Camel PubSub headers from the Camel message into the PubSub message.
+    /** Copy Camel headers into outbound PubSub message attributes. */
+    protected void configureOutboundPubSubInterceptor() {
         interceptSendToEndpoint("google-pubsub:*").process(
                 exchange -> {
                     Map<String, String> pubSubAttributes = new HashMap<>();
                     exchange.getIn().getHeaders().entrySet().stream()
-                            .filter(entry -> !entry.getKey().startsWith("CamelGooglePubsub"))
+                            .filter(entry -> !entry.getKey().startsWith("Camel"))
                             .filter(entry -> Objects.toString(entry.getValue()).length() <= 1024)
                             .forEach(entry -> pubSubAttributes.put(entry.getKey(), Objects.toString(entry.getValue(), "")));
                     exchange.getIn().setHeader(GooglePubsubConstants.ATTRIBUTES, pubSubAttributes);
-
                 });
+    }
 
-        configureMdcLogging();
-
+    /** Set MDC codespace from referential if not already set by the interceptor. */
+    protected static void setMdcCodespaceIfMissing(String referential) {
+        if (referential != null && !referential.isEmpty() && (MDC.get("codespace") == null || MDC.get("codespace").isEmpty())) {
+            MDC.put("codespace", referential);
+        }
     }
 
     /** Clean up MDC when the exchange completes. */

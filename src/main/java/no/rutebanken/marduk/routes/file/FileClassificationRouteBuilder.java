@@ -24,7 +24,6 @@ import no.rutebanken.marduk.routes.file.beans.FileTypeClassifierBean;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.LoggingLevel;
-import org.slf4j.MDC;
 import org.apache.camel.ValidationException;
 import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -171,9 +170,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .process(e -> {
                     Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
-                    if (MDC.get("codespace") == null) {
-                        MDC.put("codespace", provider.getChouetteInfo().getReferential());
-                    }
+                    setMdcCodespaceIfMissing(provider.getChouetteInfo().getReferential());
                 })
                 .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
                 .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
