@@ -112,19 +112,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
     /** Copy correlation ID and codespace into SLF4J MDC for structured logging. */
     protected void configureMdcInterceptor() {
-        interceptFrom(".*")
-                .process(exchange ->
-                {
-                    MDC.remove("correlationId");
-                    MDC.remove("codespace");
-
-                    String correlationId = exchange.getIn().getHeader(Constants.CORRELATION_ID, String.class);
-                    if (correlationId != null && !correlationId.isEmpty()) {
-                        MDC.put("correlationId", correlationId);
-                    }
-                    setMdcCodespaceIfMissing(exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class));
-                    setMdcCodespaceIfMissing(exchange.getIn().getHeader(Constants.CHOUETTE_REFERENTIAL, String.class));
-                });
+        interceptFrom(".*").process(this::updateMdcFromHeaders);
     }
 
     /** Copy Camel headers into outbound PubSub message attributes. */
@@ -140,7 +128,24 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                 });
     }
 
-    /** Set MDC codespace from referential if not already set by the interceptor. */
+    /**
+     * Update MDC from current exchange headers.
+     * Called automatically by the MDC interceptor at route entry, and can be called
+     * explicitly via {@code .process(this::updateMdcFromHeaders)} after setting headers mid-route.
+     */
+    protected void updateMdcFromHeaders(Exchange exchange) {
+        MDC.remove("correlationId");
+        MDC.remove("codespace");
+
+        String correlationId = exchange.getIn().getHeader(Constants.CORRELATION_ID, String.class);
+        if (correlationId != null && !correlationId.isEmpty()) {
+            MDC.put("correlationId", correlationId);
+        }
+        setMdcCodespaceIfMissing(exchange.getIn().getHeader(Constants.DATASET_REFERENTIAL, String.class));
+        setMdcCodespaceIfMissing(exchange.getIn().getHeader(Constants.CHOUETTE_REFERENTIAL, String.class));
+    }
+
+    /** Set MDC codespace from referential if not already set. */
     protected static void setMdcCodespaceIfMissing(String referential) {
         if (referential != null && !referential.isEmpty() && (MDC.get("codespace") == null || MDC.get("codespace").isEmpty())) {
             MDC.put("codespace", referential);

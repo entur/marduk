@@ -653,6 +653,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(CHOUETTE_REFERENTIAL, referential);
                 })
                 .process(this::setNewCorrelationId)
+                .process(this::updateMdcFromHeaders)
                 .log(LoggingLevel.INFO, correlation() + "Chouette start import fileHandle=${body}")
 
                 .process(e -> {

@@ -64,6 +64,7 @@ public class ServicelinkerEnrichmentStatusRouteBuilder extends BaseRouteBuilder 
         from("google-pubsub:{{servicelinker.pubsub.project.id}}:" + Constants.SERVICELINKER_STATUS_TOPIC)
                 .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(DATASET_REFERENTIAL, String.class))))
                 .setHeader(CHOUETTE_REFERENTIAL, header(DATASET_REFERENTIAL))
+                .process(this::updateMdcFromHeaders)
                 .choice()
                 .when(header(Constants.LINKING_NETEX_FILE_STATUS_HEADER).isEqualTo(Constants.LINKING_NETEX_FILE_STATUS_SUCCEEDED))
                     .log(LoggingLevel.INFO, correlation() + "Received notification that Servicelinker enrichment has succeeded. File location: ${header." + Constants.LINKED_NETEX_FILE_PATH_HEADER + "}")

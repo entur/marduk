@@ -67,6 +67,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .setHeader(FILE_HANDLE, header(VALIDATION_DATASET_FILE_HANDLE_HEADER))
                 .setHeader(FILE_TYPE, constant(FileType.NETEXPROFILE))
                 .setHeader(CHOUETTE_REFERENTIAL, header(DATASET_REFERENTIAL))
+                .process(this::updateMdcFromHeaders)
                 .process(e -> e.getIn().setHeader(FILE_NAME, getFileName(e.getIn().getHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, String.class))))
                 .choice()
                 .when(body().isEqualTo(constant(STATUS_VALIDATION_STARTED)))
