@@ -39,6 +39,7 @@ public final class Constants {
 
     public static final String CURRENT_AGGREGATED_GTFS_FILENAME = "aggregated-gtfs.zip";
     public static final String CURRENT_AGGREGATED_NETEX_FILENAME = "aggregated-netex.zip";
+    public static final String CURRENT_NETEX_WITH_BLOCKS_FILENAME = "netex-with-blocks.zip";
     public static final String CURRENT_FLEXIBLE_LINES_NETEX_FILENAME = "flexible-lines.zip";
     public static final String CURRENT_PREVALIDATED_NETEX_FILENAME = "netex.zip";
     public static final String PREVALIDATED_NETEX_METADATA_FILENAME = "netex.metadata.json";
@@ -140,6 +141,7 @@ public final class Constants {
     public static final String FILTERING_PROFILE_HEADER = "EnturFilteringProfile";
     public static final String FILTERING_PROFILE_AS_IS = "AsIsImportFilter";
     public static final String FILTERING_PROFILE_STANDARD_IMPORT = "StandardImportFilter";
+    public static final String FILTERING_PROFILE_INCLUDE_BLOCKS_AND_RESTRICTED_JOURNEYS = "IncludeBlocksAndRestrictedJourneysFilter";
     public static final String FILTERING_FILE_CREATED_TIMESTAMP = "FileCreatedTimestamp";
 
     public static final String FILTERING_NETEX_SOURCE_HEADER = "NetexSource";
@@ -174,6 +176,8 @@ public final class Constants {
     public static final String IMPORT_TYPE_NETEX_FLEX = "ImportType_netex_flex";
 
     public static final String IMPORT_TYPE_UTTU_EXPORT = "ImportType_uttu_export";
+
+    public static final String SECURITY_ERROR_CODE_FILTERING_PROFILE_MISMATCH = "FILTERING_PROFILE_MISMATCH";
 
     private Constants() {
     }

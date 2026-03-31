@@ -167,4 +167,46 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
                 && JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION.name().equals(je.getAction())
                 && JobEvent.State.FAILED.equals(je.getState())));
     }
+
+    @Test
+    void testPublicationSucceedsWithPublishNetexOkEvent() throws Exception {
+        // Mock the antu-netex-validation-complete route for EXPORT_MERGED_POSTVALIDATION
+        AdviceWith.adviceWith(context, "antu-netex-validation-complete", a -> {
+            a.interceptSendToEndpoint("direct:updateStatus")
+                    .skipSendToOriginalEndpoint()
+                    .to("mock:updateStatus");
+            a.interceptSendToEndpoint("direct:copyInternalBlobToAnotherBucket")
+                    .skipSendToOriginalEndpoint()
+                    .to("mock:copyInternalBlobToAnotherBucket");
+            a.weaveByToUri("google-pubsub:(.*):PublishMergedNetexQueue")
+                    .replace()
+                    .to("mock:publishMergedNetexQueue");
+        });
+
+        context.start();
+
+        // Successful publication: 1 status update (validation OK, sent after the choice block)
+        // Copy and publish should happen
+        updateStatus.expectedMessageCount(1);
+        copyInternalBlobToAnotherBucket.expectedMessageCount(1);
+        publishMergedNetexQueueMock.expectedMessageCount(1);
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put(VALIDATION_STAGE_HEADER, VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION);
+        headers.put(VALIDATION_DATASET_FILE_HANDLE_HEADER, "/some-path/regular-netex/aggregated.zip");
+        headers.put(VALIDATION_CORRELATION_ID_HEADER, "testCorrelationId");
+        sendBodyAndHeadersToPubSub(importTemplate, STATUS_VALIDATION_OK, headers);
+
+        updateStatus.assertIsSatisfied();
+        copyInternalBlobToAnotherBucket.assertIsSatisfied();
+        publishMergedNetexQueueMock.assertIsSatisfied();
+
+        // Verify validation OK status
+        List<JobEvent> events = updateStatus.getExchanges().stream()
+            .map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
+
+        assertTrue(events.stream().anyMatch(je ->
+            JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION.name().equals(je.getAction())
+            && JobEvent.State.OK.equals(je.getState())));
+    }
 }
