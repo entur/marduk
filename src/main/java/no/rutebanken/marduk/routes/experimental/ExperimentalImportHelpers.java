@@ -122,7 +122,34 @@ public class ExperimentalImportHelpers {
     @SuppressWarnings("unused") // Used by AntuNetexValidationStatusRouteBuilder and AshurFilteringStatusRouteBuilder
     public String pathToNetexWithoutBlocksProducedByAshur(Exchange exchange) {
         String referential = chouetteReferentialFor(exchange);
-        return "filtered-netex/" + referential + "/netex-without-blocks/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+        return "filtered-netex/" + referential + "/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+    }
+
+    public String pathToNetexWithBlocksProducedByAshur(Exchange exchange) {
+        String referential = chouetteReferentialFor(exchange);
+        return "filtered-netex/" + referential + "/blocks/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+    }
+
+    /**
+     * Returns the path to the pre-filtering NeTEx file saved for block export.
+     * This is the file that was used as input to Ashur standard filtering — either the servicelinker output
+     * (if servicelinker ran) or the original file. It is saved at a deterministic internal path so that
+     * the block export can reference it later, after the standard filtering and post-validation hops.
+     */
+    @SuppressWarnings("unused") // Used by AntuNetexValidationStatusRouteBuilder and ExportNetexBlocksQueueRouteBuilder
+    public String pathToPreFilteringNetexForBlockExport(Exchange exchange) {
+        String referential = chouetteReferentialFor(exchange);
+        return "filtered-netex/" + referential + "/block-export-input/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+    }
+
+    /**
+     * Returns the path to the NeTEx file with blocks in the exchange bucket for Ashur filtering.
+     * The path includes correlation ID to ensure isolation between parallel imports of the same codespace.
+     */
+    @SuppressWarnings("unused") // Used by ExportNetexBlocksQueueRouteBuilder
+    public String pathToNetexWithBlocksForAshurFiltering(Exchange exchange) {
+        String referential = chouetteReferentialFor(exchange);
+        return BLOBSTORE_PATH_OUTBOUND + "netex/" + referential + "/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_NETEX_WITH_BLOCKS_FILENAME;
     }
 
     public String pathToExportedNetexFileToMergeWithFlex(Exchange exchange) {

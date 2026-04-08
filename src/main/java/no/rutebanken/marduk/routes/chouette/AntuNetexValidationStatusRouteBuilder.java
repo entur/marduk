@@ -134,6 +134,9 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                         .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + CHOUETTE_REFERENTIAL + "}"))
                         .log(LoggingLevel.INFO, "Updated value of dataset referential header: ${header." + DATASET_REFERENTIAL + "}")
                         .log(LoggingLevel.INFO, "Updated value of chouette referential header: ${header." + CHOUETTE_REFERENTIAL + "}")
+                        // Save the pre-filtering file (servicelinker output or original) for later block export
+                        .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToPreFilteringNetexForBlockExport")
+                        .to("direct:copyInternalBlobInBucket")
                         .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexForAshurFiltering")
                         .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
                         .to("direct:copyInternalBlobToAnotherBucket")
@@ -207,6 +210,13 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexFromAshurToMergeWithFlex")
                     .to("direct:copyInternalBlobInBucket")
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
+                    .process(e -> e.setProperty("exportBlocks", getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().isEnableBlocksExport()))
+                    .choice()
+                    .when(exchangeProperty("exportBlocks").isEqualTo(true))
+                        .log(LoggingLevel.INFO, correlation() + "Starting block export with experimental import")
+                        .to("google-pubsub:{{marduk.pubsub.project.id}}:ExportNetexBlocksQueue")
+                    .otherwise()
+                        .log(LoggingLevel.INFO, correlation() + "Skipping export of NetEx blocks to Ashur after post-validation because provider has blocks export disabled")
                 .endChoice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION), exchange -> !experimentalImportHelpers.shouldRunExperimentalImport(exchange)))
