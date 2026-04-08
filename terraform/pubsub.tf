@@ -389,6 +389,23 @@ resource "google_pubsub_subscription" "GtfsRouteDispatcherTopic" {
   }
 }
 
+resource "google_pubsub_topic" "ExportNetexBlocksQueue" {
+  name    = "ExportNetexBlocksQueue"
+  project = var.gcp_resources_project
+  labels  = var.labels
+}
+
+resource "google_pubsub_subscription" "ExportNetexBlocksQueue" {
+  name                 = "ExportNetexBlocksQueue"
+  topic                = google_pubsub_topic.ExportNetexBlocksQueue.name
+  project              = var.gcp_resources_project
+  labels               = var.labels
+  ack_deadline_seconds = 600
+  retry_policy {
+    minimum_backoff = "10s"
+  }
+}
+
 resource "google_pubsub_topic" "MardukAggregateGtfsStatusQueue" {
   name = "MardukAggregateGtfsStatusQueue"
   project = var.gcp_resources_project
