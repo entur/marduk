@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.chouette;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
 import no.rutebanken.marduk.routes.experimental.ExperimentalImportHelpers;
+import no.rutebanken.marduk.routes.experimental.FilteringTimestampProcessor;
 import no.rutebanken.marduk.routes.experimental.NisabaHeadersProcessor;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.processors.PrevalidatedFileMetadataProcessor;
@@ -167,6 +168,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .choice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
+                    .process(new FilteringTimestampProcessor(fileNameAndDigestIdempotentRepository))
                     .to("direct:uploadOriginalDatasetToNisaba")
                     // Store original FILE_HANDLE before writing metadata
                     .setProperty("originalFileHandle", header(FILE_HANDLE))
