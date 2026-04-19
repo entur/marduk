@@ -15,18 +15,18 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
       - name: Copy maven settings
         run: |
           wget https://raw.githubusercontent.com/entur/ror-maven-settings/master/.m2/settings.xml -O .github/workflows/settings.xml
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.2.0
         with:
           java-version: 21.0.5+11
           distribution: liberica
       - name: Cache Maven dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v4.3.0
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -58,7 +58,7 @@ jobs:
           path: target
   openapi-lint:
     needs: [ maven-verify ]
-    uses: entur/gha-api/.github/workflows/lint.yml@v4
+    uses: entur/gha-api/.github/workflows/lint.yml@v4.2.1
     secrets: inherit
     with:
       spec: 'src/main/resources/openapi/timetable-management/openapi.yaml'
@@ -66,7 +66,7 @@ jobs:
   openapi-publish:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [ openapi-lint ]
-    uses: entur/gha-api/.github/workflows/publish.yml@v4
+    uses: entur/gha-api/.github/workflows/publish.yml@v4.2.1
     secrets: inherit
     with:
       visibility: 'partner'
@@ -75,10 +75,10 @@ jobs:
   docker-build:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [maven-verify]
-    uses: entur/gha-docker/.github/workflows/build.yml@v1
+    uses: entur/gha-docker/.github/workflows/build.yml@v1.10.2
     with:
       build_artifact_name: artifact
       build_artifact_path: target
   docker-push:
     needs: [docker-build]
-    uses: entur/gha-docker/.github/workflows/push.yml@v1
+    uses: entur/gha-docker/.github/workflows/push.yml@v1.10.2
