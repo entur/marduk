@@ -39,6 +39,11 @@ public class GcsMardukBlobStoreRepository extends GcsBlobStoreRepository impleme
         this.providerRepository = providerRepository;
     }
 
+    public GcsMardukBlobStoreRepository(com.google.cloud.storage.Storage storage, ProviderRepository providerRepository) {
+        super(storage);
+        this.providerRepository = providerRepository;
+    }
+
     @Override
     public BlobStoreFiles listBlobs(Collection<String> prefixes) {
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
