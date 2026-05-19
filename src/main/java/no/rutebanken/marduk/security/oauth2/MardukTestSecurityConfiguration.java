@@ -14,10 +14,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * Permissive security configuration for local development (test profile).
- * Allows all requests without authentication and adds CORS headers.
+ * Permissive security configuration for local development (marduk-pipeline docker-compose).
+ * Active only when both "gcs-blobstore" and "test" profiles are present, so unit tests
+ * (which run with "in-memory-blobstore,test" and supply their own security beans) are
+ * unaffected.
  */
-@Profile("test")
+@Profile("gcs-blobstore & test")
 @EnableWebSecurity
 @Configuration
 public class MardukTestSecurityConfiguration {
