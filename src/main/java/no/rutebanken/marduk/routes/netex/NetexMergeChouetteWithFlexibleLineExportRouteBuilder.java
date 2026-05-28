@@ -147,8 +147,29 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                 .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), experimentalImportHelpers.flexibleDataWorkingDirectory(e)))
                 .setProperty(PROP_HAS_CHOUETTE_DATA, constant("true"))
                 .otherwise()
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
+                .to("direct:tryFallbackToLatestAshurOutput")
                 .routeId("netex-export-merge-chouette-with-flexible-lines-unpack-chouette-export");
+
+        // Fallback in a sub-route to avoid nested choice() (same pattern as direct:unpackFlexibleLinesExportToWorkingFolder).
+        // Only used for experimental codespaces, where the merge can be triggered from a different correlation
+        // (e.g. FLEX post-validation) and the correlation-keyed path therefore points to no file.
+        from("direct:tryFallbackToLatestAshurOutput")
+                .choice().when(experimentalImportHelpers::shouldRunExperimentalImport)
+                .to("direct:doFallbackToLatestAshurOutput")
+                .otherwise()
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
+                .routeId("netex-export-merge-chouette-with-flexible-lines-try-fallback-to-latest-ashur-output");
+
+        from("direct:doFallbackToLatestAshurOutput")
+                .setHeader(FILE_HANDLE).method(experimentalImportHelpers, "pathToLatestNetexWithoutBlocksFromAshur")
+                .to("direct:getInternalBlob")
+                .choice()
+                .when(body().isNotEqualTo(null))
+                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), experimentalImportHelpers.flexibleDataWorkingDirectory(e)))
+                .setProperty(PROP_HAS_CHOUETTE_DATA, constant("true"))
+                .otherwise()
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${header." + FILE_HANDLE + "} fallback was empty when trying to fetch latest Ashur output from blobstore.")
+                .routeId("netex-export-merge-chouette-with-flexible-lines-do-fallback-to-latest-ashur-output");
 
 
         from("direct:unpackFlexibleLinesExportToWorkingFolder")
