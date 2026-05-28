@@ -211,6 +211,11 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     .setHeader(FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexWithoutBlocksProducedByAshur")
                     .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexFromAshurToMergeWithFlex")
                     .to("direct:copyInternalBlobInBucket")
+                    // Also publish the without-blocks Ashur output at a stable per-referential path so a
+                    // later cross-flow merge (e.g. after FLEX post-validation, which carries the FLEX
+                    // import's correlation id) can locate the latest ordinary NeTEx for this codespace.
+                    .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToLatestNetexWithoutBlocksFromAshur")
+                    .to("direct:copyInternalBlobInBucket")
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
                     .process(e -> e.setProperty("exportBlocks", getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().isEnableBlocksExport()))
                     .choice()

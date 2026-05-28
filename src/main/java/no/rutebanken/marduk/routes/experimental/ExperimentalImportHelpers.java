@@ -119,6 +119,19 @@ public class ExperimentalImportHelpers {
         return "filtered-netex/" + referential + "/netex-before-merging/" + correlationIdFor(exchange) + "/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     }
 
+    /**
+     * Stable per-referential path holding the most recent Ashur StandardImportFilter output
+     * (i.e. the without-blocks ordinary NeTEx) for the codespace.
+     * Used as a fallback when the merge route is triggered from a different correlation (e.g. after a
+     * FLEX post-validation) and the correlation-keyed path from {@link #pathToNetexFromAshurToMergeWithFlex}
+     * does not contain a matching file. Must NOT receive the with-blocks output.
+     */
+    @SuppressWarnings("unused") // Used by AntuNetexValidationStatusRouteBuilder and NetexMergeChouetteWithFlexibleLineExportRouteBuilder
+    public String pathToLatestNetexWithoutBlocksFromAshur(Exchange exchange) {
+        String referential = chouetteReferentialFor(exchange);
+        return "filtered-netex/" + referential + "/latest-without-blocks/" + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+    }
+
     @SuppressWarnings("unused") // Used by AntuNetexValidationStatusRouteBuilder and AshurFilteringStatusRouteBuilder
     public String pathToNetexWithoutBlocksProducedByAshur(Exchange exchange) {
         String referential = chouetteReferentialFor(exchange);
