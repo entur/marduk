@@ -231,6 +231,12 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
                     .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexExportFromChouetteToMergeWithFlex")
                     .to("direct:copyInternalBlobInBucket")
+                    // Mirror to the shared per-referential fallback path so the experimental merge route
+                    // (which consults this path when its correlation-keyed Ashur primary read is empty) can
+                    // find a recent ordinary export even on a codespace where the experimental pipeline has
+                    // not yet produced one.
+                    .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToLatestNetexWithoutBlocksFromAshur")
+                    .to("direct:copyInternalBlobInBucket")
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue")
                 .endChoice()
