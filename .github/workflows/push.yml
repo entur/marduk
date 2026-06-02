@@ -62,9 +62,15 @@ jobs:
     secrets: inherit
     with:
       path: 'src/main/resources/openapi/timetable-management/openapi.yaml'
+  openapi-validate:
+    needs: [ maven-verify ]
+    uses: entur/gha-api/.github/workflows/validate.yml@v6
+    secrets: inherit
+    with:
+      path: 'src/main/resources/openapi/timetable-management/openapi.yaml'
   openapi-publish:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [ openapi-lint ]
+    needs: [ openapi-lint, openapi-validate ]
     uses: entur/gha-api/.github/workflows/publish.yml@v6
     secrets: inherit
     with:
