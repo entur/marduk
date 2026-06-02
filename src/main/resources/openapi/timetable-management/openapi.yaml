@@ -1,6 +1,10 @@
 openapi: 3.0.1
 info:
   title: Timetable Management
+  x-entur-metadata:
+    id: timetable-management
+    owner: team-ror
+    audience: partner
   description: |
     Entur provides an API for uploading and downloading NeTEx timetable datasets. 
     These endpoints have restricted access and require a service account (OAuth2) provided by Entur.

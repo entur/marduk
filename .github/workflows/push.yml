@@ -58,19 +58,23 @@ jobs:
           path: target
   openapi-lint:
     needs: [ maven-verify ]
-    uses: entur/gha-api/.github/workflows/lint.yml@v4
+    uses: entur/gha-api/.github/workflows/lint.yml@v6
     secrets: inherit
     with:
-      spec: 'src/main/resources/openapi/timetable-management/openapi.yaml'
-      upload_to_bucket: ${{ github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      path: 'src/main/resources/openapi/timetable-management/openapi.yaml'
+  openapi-validate:
+    needs: [ maven-verify ]
+    uses: entur/gha-api/.github/workflows/validate.yml@v6
+    secrets: inherit
+    with:
+      path: 'src/main/resources/openapi/timetable-management/openapi.yaml'
   openapi-publish:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [ openapi-lint ]
-    uses: entur/gha-api/.github/workflows/publish.yml@v4
+    needs: [ openapi-lint, openapi-validate ]
+    uses: entur/gha-api/.github/workflows/publish.yml@v6
     secrets: inherit
     with:
-      visibility: 'partner'
-      spec: 'src/main/resources/openapi/timetable-management/openapi.yaml'
+      path: 'src/main/resources/openapi/timetable-management/openapi.yaml'
 
   docker-build:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
