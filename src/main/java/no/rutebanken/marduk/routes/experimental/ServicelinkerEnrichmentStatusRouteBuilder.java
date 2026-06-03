@@ -3,9 +3,15 @@ package no.rutebanken.marduk.routes.experimental;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 
 import static no.rutebanken.marduk.Constants.*;
 
@@ -24,6 +30,8 @@ import static no.rutebanken.marduk.Constants.*;
  */
 @Component
 public class ServicelinkerEnrichmentStatusRouteBuilder extends BaseRouteBuilder {
+
+    private static final Logger logger = LoggerFactory.getLogger(ServicelinkerEnrichmentStatusRouteBuilder.class);
 
     private final ExperimentalImportHelpers experimentalImportHelpers;
     private final boolean linkingEnabled;
@@ -69,17 +77,17 @@ public class ServicelinkerEnrichmentStatusRouteBuilder extends BaseRouteBuilder 
                 .when(header(Constants.LINKING_NETEX_FILE_STATUS_HEADER).isEqualTo(Constants.LINKING_NETEX_FILE_STATUS_SUCCEEDED))
                     .log(LoggingLevel.INFO, correlation() + "Received notification that Servicelinker enrichment has succeeded. File location: ${header." + Constants.LINKED_NETEX_FILE_PATH_HEADER + "}")
                     .to("direct:copyEnrichedDatasetToInternalBucket")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.LINKING).state(JobEvent.State.OK).build())
+                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.LINKING).state(JobEvent.State.OK).eventTime(linkingStatusEventTime(e)).build())
                 .endChoice()
                 .when(header(Constants.LINKING_NETEX_FILE_STATUS_HEADER).isEqualTo(Constants.LINKING_NETEX_FILE_STATUS_STARTED))
                     .log(LoggingLevel.INFO, correlation() + "Received notification that Servicelinker enrichment has started.")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.LINKING).state(JobEvent.State.STARTED).build())
+                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.LINKING).state(JobEvent.State.STARTED).eventTime(linkingStatusEventTime(e)).build())
                     .to("direct:updateStatus")
                     .stop()
                 .endChoice()
                 .when(header(Constants.LINKING_NETEX_FILE_STATUS_HEADER).isEqualTo(Constants.LINKING_NETEX_FILE_STATUS_FAILED))
                     .log(LoggingLevel.WARN, correlation() + "Received notification that Servicelinker enrichment has failed. Continuing with original file.")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.LINKING).state(JobEvent.State.FAILED).errorCode(e.getIn().getHeader(LINKING_ERROR_CODE_HEADER, String.class)).build())
+                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.LINKING).state(JobEvent.State.FAILED).errorCode(e.getIn().getHeader(LINKING_ERROR_CODE_HEADER, String.class)).eventTime(linkingStatusEventTime(e)).build())
                 .endChoice()
                 .otherwise()
                     .log(LoggingLevel.ERROR, correlation() + "Received notification with unknown Servicelinker linking status: ${header." + Constants.LINKING_NETEX_FILE_STATUS_HEADER + "}")
@@ -99,5 +107,24 @@ public class ServicelinkerEnrichmentStatusRouteBuilder extends BaseRouteBuilder 
                 .end()
                 .routeId("copy-enriched-dataset-to-internal-bucket-route");
 
+    }
+
+    /**
+     * Servicelinker stamps each status message with the instant it emitted the status.
+     * Using that as the JobEvent event time keeps STARTED ordered before SUCCESS even when
+     * Pub/Sub delivers the two messages out of order. Falls back to null (i.e. now()) when the
+     * header is missing or unparseable, e.g. messages from an older servicelinker.
+     */
+    private static Instant linkingStatusEventTime(Exchange exchange) {
+        String value = exchange.getIn().getHeader(LINKING_STATUS_EVENT_TIME_HEADER, String.class);
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Instant.parse(value);
+        } catch (DateTimeParseException e) {
+            logger.warn("Could not parse {} header value '{}', falling back to receive time", LINKING_STATUS_EVENT_TIME_HEADER, value);
+            return null;
+        }
     }
 }

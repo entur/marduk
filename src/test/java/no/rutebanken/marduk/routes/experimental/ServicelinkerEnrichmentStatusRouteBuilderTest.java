@@ -2,6 +2,7 @@ package no.rutebanken.marduk.routes.experimental;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.context.TestPropertySource;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -132,5 +134,108 @@ class ServicelinkerEnrichmentStatusRouteBuilderTest extends MardukRouteBuilderIn
             receivedMessages.stream().anyMatch(body -> body.contains("\"action\":\"LINKING\"") && body.contains("\"state\":\"FAILED\"")),
             "Expected status update with action=LINKING and state=FAILED"
         );
+    }
+
+    @Test
+    void testStartedStatusStopsAndPropagatesEmitTime() throws Exception {
+        interceptRoutes();
+
+        context.start();
+
+        // STARTED branch updates status then stops — it must not copy the file or continue to Ashur
+        updateStatusEndpoint.expectedMessageCount(1);
+        copyBlobFromAnotherBucketToInternalEndpoint.expectedMessageCount(0);
+        ashurFilterEndpoint.expectedMessageCount(0);
+
+        Instant emitTime = Instant.parse("2026-06-03T10:15:30Z");
+
+        sendBodyAndHeadersToPubSub(statusTemplate, null, Map.of(
+            Constants.LINKING_NETEX_FILE_STATUS_HEADER, Constants.LINKING_NETEX_FILE_STATUS_STARTED,
+            Constants.LINKING_STATUS_EVENT_TIME_HEADER, emitTime.toString(),
+            Constants.DATASET_REFERENTIAL, "tst",
+            Constants.PROVIDER_ID, "0",
+            Constants.CORRELATION_ID, "someCorrelationId"
+        ));
+
+        updateStatusEndpoint.assertIsSatisfied();
+        copyBlobFromAnotherBucketToInternalEndpoint.assertIsSatisfied();
+        ashurFilterEndpoint.assertIsSatisfied();
+
+        JobEvent event = relayedJobEvent();
+        assertEquals("LINKING", event.getAction());
+        assertEquals(JobEvent.State.STARTED, event.getState());
+        assertEquals(emitTime, event.getEventTime(), "Servicelinker emit time must be propagated to the JobEvent");
+    }
+
+    @Test
+    void testEmitTimePropagatedOnSuccess() throws Exception {
+        interceptRoutes();
+
+        context.start();
+
+        updateStatusEndpoint.expectedMessageCount(1);
+
+        Instant emitTime = Instant.parse("2026-06-03T10:20:45Z");
+
+        sendBodyAndHeadersToPubSub(statusTemplate, null, Map.of(
+            Constants.LINKING_NETEX_FILE_STATUS_HEADER, Constants.LINKING_NETEX_FILE_STATUS_SUCCEEDED,
+            Constants.LINKED_NETEX_FILE_PATH_HEADER, "servicelinker/tst/some-uuid/tst-aggregated-netex.zip",
+            Constants.LINKING_STATUS_EVENT_TIME_HEADER, emitTime.toString(),
+            Constants.FILE_HANDLE, "chouette/netex-before-validation/tst-export.zip",
+            Constants.DATASET_REFERENTIAL, "tst",
+            Constants.PROVIDER_ID, "0",
+            Constants.CORRELATION_ID, "someCorrelationId"
+        ));
+
+        updateStatusEndpoint.assertIsSatisfied();
+
+        JobEvent event = relayedJobEvent();
+        assertEquals(JobEvent.State.OK, event.getState());
+        assertEquals(emitTime, event.getEventTime(), "Servicelinker emit time must be propagated to the JobEvent");
+    }
+
+    @Test
+    void testMissingEmitTimeFallsBackToProcessingTime() throws Exception {
+        assertFallbackToProcessingTime(null);
+    }
+
+    @Test
+    void testUnparseableEmitTimeFallsBackToProcessingTime() throws Exception {
+        assertFallbackToProcessingTime("not-a-timestamp");
+    }
+
+    private void assertFallbackToProcessingTime(String emitTimeHeader) throws Exception {
+        interceptRoutes();
+
+        context.start();
+
+        updateStatusEndpoint.expectedMessageCount(1);
+
+        java.util.Map<String, String> headers = new java.util.HashMap<>(Map.of(
+            Constants.LINKING_NETEX_FILE_STATUS_HEADER, Constants.LINKING_NETEX_FILE_STATUS_SUCCEEDED,
+            Constants.LINKED_NETEX_FILE_PATH_HEADER, "servicelinker/tst/some-uuid/tst-aggregated-netex.zip",
+            Constants.FILE_HANDLE, "chouette/netex-before-validation/tst-export.zip",
+            Constants.DATASET_REFERENTIAL, "tst",
+            Constants.PROVIDER_ID, "0",
+            Constants.CORRELATION_ID, "someCorrelationId"
+        ));
+        if (emitTimeHeader != null) {
+            headers.put(Constants.LINKING_STATUS_EVENT_TIME_HEADER, emitTimeHeader);
+        }
+
+        Instant before = Instant.now();
+        sendBodyAndHeadersToPubSub(statusTemplate, null, headers);
+        updateStatusEndpoint.assertIsSatisfied();
+        Instant after = Instant.now();
+
+        JobEvent event = relayedJobEvent();
+        assertEquals(JobEvent.State.OK, event.getState());
+        assertTrue(!event.getEventTime().isBefore(before) && !event.getEventTime().isAfter(after),
+            "Expected event time to fall back to processing time (~now), but was " + event.getEventTime());
+    }
+
+    private JobEvent relayedJobEvent() {
+        String body = updateStatusEndpoint.getReceivedExchanges().getFirst().getIn().getBody(String.class);
+        return JobEvent.fromString(body);
     }
 }

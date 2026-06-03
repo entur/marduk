@@ -169,6 +169,9 @@ public final class Constants {
     public static final String LINKING_NETEX_FILE_STATUS_FAILED = "FAILED";
     public static final String LINKED_NETEX_FILE_PATH_HEADER = "LinkedNetexFilePath";
     public static final String LINKING_ERROR_CODE_HEADER = "LinkingFailureReason";
+    // ISO-8601 instant stamped by servicelinker when it emitted the status, so the JobEvent
+    // event time reflects emit order even if Pub/Sub delivers STARTED/SUCCESS out of order.
+    public static final String LINKING_STATUS_EVENT_TIME_HEADER = "LinkingStatusEventTime";
     public static final String SERVICE_LINK_MODES_HEADER = "ServiceLinkModes";
 
     public static final String IMPORT_TYPE = "ImportType";

@@ -294,7 +294,20 @@ public class JobEvent {
 
         protected final JobEvent jobEvent = new JobEvent();
 
+        private Instant eventTime;
+
         private Builder() {
+        }
+
+        /**
+         * Override the event time. When set, build() uses this instead of Instant.now().
+         * Used for events relayed from another service (e.g. servicelinker), so the event
+         * time reflects when the source emitted the status rather than when this service
+         * happened to process the (possibly reordered) message.
+         */
+        public Builder eventTime(Instant eventTime) {
+            this.eventTime = eventTime;
+            return this;
         }
 
         public Builder jobDomain(JobDomain jobDomain) {
@@ -381,7 +394,7 @@ public class JobEvent {
             if (jobEvent.domain == null) {
                 throw new IllegalArgumentException("No job domain");
             }
-            jobEvent.eventTime = Instant.now();
+            jobEvent.eventTime = eventTime != null ? eventTime : Instant.now();
             return jobEvent;
         }
     }
