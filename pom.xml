@@ -24,7 +24,7 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <camel.version>4.4.5</camel.version>
+        <camel.version>4.18.2</camel.version>
         <entur.helpers.version>5.50.0</entur.helpers.version>
         <commons-io.version>2.21.0</commons-io.version>
         <commons-csv.version>1.14.1</commons-csv.version>
@@ -173,9 +173,20 @@
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-kubernetes-starter</artifactId>
         </dependency>
+        <!-- Cluster services back the master: endpoint used by BaseRouteBuilder.singletonFrom()
+             (kubernetes leader election in prod, file-lock locally). Camel 4.18 no longer pulls
+             these in transitively; without them every pod runs singleton routes. -->
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-kubernetes-cluster-service-starter</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-file-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-file-cluster-service-starter</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
@@ -275,6 +286,7 @@
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-test-spring-junit5</artifactId>
+            <version>${camel.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

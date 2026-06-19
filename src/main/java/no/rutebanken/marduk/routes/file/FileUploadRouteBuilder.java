@@ -58,6 +58,10 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .setHeader(FILE_HANDLE, simple("inbound/received/${header." + CHOUETTE_REFERENTIAL + "}/${header." + FILE_NAME + "}"))
                 .process(e -> e.getIn().setHeader(FILE_CONTENT_HEADER, CloseShieldInputStream.wrap(e.getIn().getBody(Part.class).getInputStream())))
                 .to("direct:uploadFileAndStartImport")
+                .end()
+                // Replace the multipart parts list left as the body by the splitter with an empty
+                // response body that platform-http can write back to the client.
+                .setBody(constant(""))
                 .routeId("upload-files-and-start-import");
 
 

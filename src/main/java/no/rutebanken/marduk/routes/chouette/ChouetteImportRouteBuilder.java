@@ -197,6 +197,9 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .log(LoggingLevel.ERROR, correlation() + "Something went wrong on import")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(TimetableAction.IMPORT).state(State.FAILED).build())
                 .end()
+                // Close the outer choice so the status update is sent for every branch (Camel 4.x no
+                // longer lets the trailing endChoice/end fall through to the parent choice automatically).
+                .end()
                 .to("direct:updateStatus")
                 .routeId("chouette-process-import-status");
 

@@ -17,14 +17,29 @@
 package no.rutebanken.marduk.security;
 
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.apache.camel.Exchange;
+import org.apache.camel.component.platform.http.springboot.PlatformHttpMessage;
 import org.rutebanken.helper.organisation.authorization.AuthorizationService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.AuthenticationManagerResolver;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DefaultMardukAuthorizationService implements MardukAuthorizationService {
 
-    private final AuthorizationService<Long> authorizationService;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMardukAuthorizationService.class);
 
-    public DefaultMardukAuthorizationService(AuthorizationService<Long> authorizationService) {
+    private final AuthorizationService<Long> authorizationService;
+    private final AuthenticationManagerResolver<HttpServletRequest> resolver;
+
+    public DefaultMardukAuthorizationService(AuthorizationService<Long> authorizationService,
+                                             AuthenticationManagerResolver<HttpServletRequest> resolver) {
         this.authorizationService = authorizationService;
+        this.resolver = resolver;
     }
 
     @Override
@@ -33,13 +48,72 @@ public class DefaultMardukAuthorizationService implements MardukAuthorizationSer
     }
 
     @Override
+    public void verifyAdministratorPrivileges(Exchange exchange) {
+        executeWithSecurityContext(exchange, this::verifyAdministratorPrivileges);
+    }
+
+    @Override
     public void verifyRouteDataEditorPrivileges(Long providerId) {
         authorizationService.validateEditRouteData(providerId);
     }
 
     @Override
+    public void verifyRouteDataEditorPrivileges(Long providerId, Exchange exchange) {
+        executeWithSecurityContext(exchange, () -> verifyRouteDataEditorPrivileges(providerId));
+    }
+
+    @Override
     public void verifyBlockViewerPrivileges(Long providerId) {
         authorizationService.validateViewBlockData(providerId);
+    }
+
+    @Override
+    public void verifyBlockViewerPrivileges(Long providerId, Exchange exchange) {
+        executeWithSecurityContext(exchange, () -> verifyBlockViewerPrivileges(providerId));
+    }
+
+    private void executeWithSecurityContext(Exchange exchange, Runnable authorizationCheck) {
+        boolean contextSet = setSecurityContext(exchange);
+        try {
+            authorizationCheck.run();
+        } finally {
+            if (contextSet) {
+                SecurityContextHolder.clearContext();
+            }
+        }
+    }
+
+    /**
+     * The Camel platform-http component processes requests on an asynchronous worker thread that does
+     * not carry the Spring Security context held in the request thread's {@link SecurityContextHolder}.
+     * When entering a REST route the security context must therefore be rebuilt from the Authorization
+     * header.
+     *
+     * @return true if the security context was set by this method, false otherwise
+     */
+    private boolean setSecurityContext(Exchange exchange) {
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            return false;
+        }
+        if (!(exchange.getIn() instanceof PlatformHttpMessage platformHttpMessage)) {
+            return false;
+        }
+        String encodedToken = exchange.getIn()
+                .getHeader(HttpHeaders.AUTHORIZATION, "", String.class)
+                .replace("Bearer ", "");
+        if (encodedToken.isEmpty()) {
+            return false;
+        }
+        if (resolver == null) {
+            // Expected in unit tests not exercising REST; a real platform-http request reaching here
+            // without a resolver means the bean is misconfigured and authorization runs without a principal.
+            LOGGER.warn("No AuthenticationManagerResolver configured: cannot rebuild the Spring Security context for a platform-http request");
+            return false;
+        }
+        BearerTokenAuthenticationToken bearer = new BearerTokenAuthenticationToken(encodedToken);
+        Authentication authentication = resolver.resolve(platformHttpMessage.getRequest()).authenticate(bearer);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        return true;
     }
 
 }

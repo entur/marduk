@@ -44,9 +44,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationManagerResolver;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -55,6 +59,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -121,6 +126,12 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         @Bean
         public AuthorizationService<Long> testAuthorizationService() {
             return new TestAuthorizationService();
+        }
+
+        @Bean
+        public AuthenticationManagerResolver<HttpServletRequest> resolver() {
+            return context -> (AuthenticationManager) authentication ->
+                    new BearerTokenAuthenticationToken(createTestJwtToken().getTokenValue());
         }
 
     }
@@ -196,7 +207,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         // Do rest call
 
-        Map<String, Object> headers = getTestHeaders("POST");
+        Map<String, Object> headers = getTestHeaders("POST", "application/json");
 
         importTemplate.sendBodyAndHeaders(importJson, headers);
 
@@ -225,9 +236,10 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         // we must manually start when we are done with all the advice with
         context.start();
 
-        // Do rest call
-        Map<String, Object> headers = getTestHeaders("POST");
-        exportTemplate.sendBodyAndHeaders(null, headers);
+        // Do rest call. ninkasi (via getApiConfig) sends application/json on every call, so the
+        // export trigger must accept it; this guards against re-adding a restrictive consumes().
+        Map<String, Object> headers = getTestHeaders("POST", "application/json");
+        exportTemplate.sendBodyAndHeaders("", headers);
 
         // setup expectations on the mocks
         exportQueue.expectedMessageCount(1);
@@ -425,12 +437,13 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
 
         String authorizationToken = "Bearer sensitive-secret-token";
-        Map<String, Object> headers = Map.of(
+        Map<String, Object> headers = new HashMap<>(Map.of(
                 Exchange.HTTP_METHOD, "POST",
                 HttpHeaders.AUTHORIZATION, authorizationToken,
-                CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT);
+                CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT));
+        headers.put(HttpHeaders.CONTENT_TYPE, "application/json");
 
-        exportTemplate.sendBodyAndHeaders(null, headers);
+        exportTemplate.sendBodyAndHeaders("", headers);
 
         exportQueue.assertIsSatisfied();
 
@@ -448,6 +461,14 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
                 Exchange.HTTP_METHOD, method,
                 HttpHeaders.AUTHORIZATION, "Bearer test-token",
                 CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT);
+    }
+
+    // Camel 4 strictly matches the request Content-Type against the route's consumes(), so a POST
+    // must send a Content-Type the endpoint declares or platform-http rejects it with 415.
+    private static Map<String, Object> getTestHeaders(String method, String contentType) {
+        Map<String, Object> headers = new HashMap<>(getTestHeaders(method));
+        headers.put(HttpHeaders.CONTENT_TYPE, contentType);
+        return headers;
     }
 
 }

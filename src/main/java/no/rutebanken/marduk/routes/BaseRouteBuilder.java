@@ -122,6 +122,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                     Map<String, String> pubSubAttributes = new HashMap<>();
                     exchange.getIn().getHeaders().entrySet().stream()
                             .filter(entry -> !entry.getKey().startsWith("Camel"))
+                            .filter(entry -> !entry.getKey().equals(Exchange.BREADCRUMB_ID))
                             .filter(entry -> Objects.toString(entry.getValue()).length() <= 1024)
                             .forEach(entry -> pubSubAttributes.put(entry.getKey(), Objects.toString(entry.getValue(), "")));
                     exchange.getIn().setHeader(GooglePubsubConstants.ATTRIBUTES, pubSubAttributes);
