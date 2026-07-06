@@ -36,14 +36,14 @@ jobs:
             ${{ runner.os }}-
 
       - name: Run maven build
-        run: mvn verify -s .github/workflows/settings.xml
+        run: ./mvnw verify -s .github/workflows/settings.xml
       - name: Sonar Scan
         env:
           SONAR_TOKEN: ${{ secrets.ENTUR_SONAR_PASSWORD }}
           SONAR_PROJECT_NAME: ${{ github.event.repository.name }}
           SONAR_PROJECT_KEY: entur_${{ github.event.repository.name }}
         run: |
-          mvn -s .github/workflows/settings.xml \
+          ./mvnw -s .github/workflows/settings.xml \
                   org.jacoco:jacoco-maven-plugin:prepare-agent verify \
                   org.jacoco:jacoco-maven-plugin:report sonar:sonar \
                   -Dmaven.main.skip \

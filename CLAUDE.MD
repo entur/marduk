@@ -293,7 +293,7 @@ public class MyNewRouteBuilder extends BaseRouteBuilder {
 
 ```bash
 # Build
-mvn clean package
+./mvnw clean package
 
 # Run locally
 java -Xmx500m \
@@ -302,7 +302,7 @@ java -Xmx500m \
   -jar target/marduk-0.0.1-SNAPSHOT.jar
 
 # Run tests
-mvn test
+./mvnw test
 ```
 
 ## API Documentation

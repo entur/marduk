@@ -111,6 +111,6 @@ The application.properties file used in unit tests src/test/resources/applicatio
 The Kubernetes configmap helm/marduk/templates/configmap.yaml can also be used as a template.
 
 ## Starting the application locally
-- Run `mvn package` to generate the Spring Boot jar.
+- Run `./mvnw package` to generate the Spring Boot jar.
 - The application can be started with the following command line:  
   ```java -Xmx500m -Dspring.config.location=/path/to/application.properties -Dfile.encoding=UTF-8 -jar target/marduk-0.0.1-SNAPSHOT.jar```
