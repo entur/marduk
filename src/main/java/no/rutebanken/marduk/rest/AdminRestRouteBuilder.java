@@ -786,7 +786,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         from("direct:authorizeAdminRequest")
                 .doTry()
-                .process(e -> mardukAuthorizationService.verifyAdministratorPrivileges(e))
+                .process(mardukAuthorizationService::verifyAdministratorPrivileges)
                 .to("direct:setUsername")
                 .routeId("admin-authorize-admin-request");
 
