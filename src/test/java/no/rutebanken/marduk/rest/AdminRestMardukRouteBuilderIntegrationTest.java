@@ -48,6 +48,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationManagerResolver;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -117,6 +118,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
                     .header("alg", JWSAlgorithm.RS256.getName())
                     .claim("iss", "https://test-issuer.entur.org")
                     .claim("scope", "openid profile email")
+                    .claim("preferred_username", userId)
                     .subject(userId)
                     .audience(Set.of("test-audience"))
                     .build();
@@ -129,7 +131,10 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         @Bean
         public AuthenticationManagerResolver<HttpServletRequest> resolver() {
-            return request -> (AuthenticationManager) authentication -> authentication;
+            // Mirror the production resolver: authenticate the bearer token into a JwtAuthenticationToken
+            // whose principal is the decoded JWT, so UserInfoExtractor can read preferred_username from the
+            // rebuilt security context in direct:setUsername.
+            return request -> (AuthenticationManager) authentication -> new JwtAuthenticationToken(createTestJwtToken());
         }
 
     }
@@ -452,6 +457,29 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         assertFalse(receivedHeaders.containsKey(HttpHeaders.AUTHORIZATION),
                 "Authorization header should not be forwarded to internal routes");
+    }
+
+    @Test
+    void adminRequestPopulatesUsernameFromRebuiltSecurityContext() throws Exception {
+        // Regression guard: the security context rebuilt on the platform-http worker thread must survive
+        // the authorize step so direct:setUsername can read the principal. When the context was cleared
+        // immediately after the privilege check, USERNAME silently resolved to "unknown".
+        AdviceWith.adviceWith(context, "admin-chouette-export",
+                a -> a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue")
+                        .replace()
+                        .to("mock:chouetteExportNetexQueue")
+        );
+        context.start();
+
+        Map<String, Object> headers = getTestHeaders("POST", "application/json");
+        exportTemplate.sendBodyAndHeaders("", headers);
+
+        exportQueue.expectedMessageCount(1);
+        exportQueue.assertIsSatisfied();
+
+        String username = (String) exportQueue.getExchanges().getFirst().getIn().getHeader(USERNAME);
+        assertEquals("test-user", username,
+                "USERNAME must be resolved from the rebuilt security context (was 'unknown' when the context was cleared before direct:setUsername)");
     }
 
     private static Map<String, Object> getTestHeaders(String method) {

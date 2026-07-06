@@ -20,6 +20,7 @@ package no.rutebanken.marduk.security;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.platform.http.springboot.PlatformHttpMessage;
+import org.apache.camel.support.SynchronizationAdapter;
 import org.rutebanken.helper.organisation.authorization.AuthorizationService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManagerResolver;
@@ -69,14 +70,25 @@ public class DefaultMardukAuthorizationService implements MardukAuthorizationSer
     }
 
     private void executeWithSecurityContext(Exchange exchange, Runnable authorizationCheck) {
-        boolean contextSet = setSecurityContext(exchange);
-        try {
-            authorizationCheck.run();
-        } finally {
-            if (contextSet) {
-                SecurityContextHolder.clearContext();
-            }
+        if (setSecurityContext(exchange)) {
+            // Clear the rebuilt context when the exchange completes, not immediately after the check:
+            // downstream synchronous steps on this worker thread (e.g. direct:setUsername, which reads
+            // the principal via UsernameService) must still see it. The context is still torn down before
+            // the pooled worker thread serves the next request. allowHandover() is false so the clear
+            // stays pinned to this thread even if the exchange is later handed to another one.
+            exchange.getUnitOfWork().addSynchronization(new SynchronizationAdapter() {
+                @Override
+                public void onDone(Exchange e) {
+                    SecurityContextHolder.clearContext();
+                }
+
+                @Override
+                public boolean allowHandover() {
+                    return false;
+                }
+            });
         }
+        authorizationCheck.run();
     }
 
     /**
