@@ -71,6 +71,9 @@ class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTes
                     internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData());
                 }
         );
+        // The build queue is consumed by a master: singleton route, so allow time for this instance to win
+        // leader election and start consuming before asserting, rather than racing consumer startup.
+        remoteBuildNetexGraph.setResultWaitTime(20000);
 
         updateStatus.expectedMessageCount(2);
         updateStatus.setResultWaitTime(20000);
