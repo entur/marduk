@@ -48,7 +48,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationManagerResolver;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -130,8 +129,7 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         @Bean
         public AuthenticationManagerResolver<HttpServletRequest> resolver() {
-            return context -> (AuthenticationManager) authentication ->
-                    new BearerTokenAuthenticationToken(createTestJwtToken().getTokenValue());
+            return request -> (AuthenticationManager) authentication -> authentication;
         }
 
     }

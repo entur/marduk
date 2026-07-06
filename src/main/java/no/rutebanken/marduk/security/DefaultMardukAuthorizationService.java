@@ -26,12 +26,8 @@ import org.springframework.security.authentication.AuthenticationManagerResolver
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DefaultMardukAuthorizationService implements MardukAuthorizationService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMardukAuthorizationService.class);
 
     private final AuthorizationService<Long> authorizationService;
     private final AuthenticationManagerResolver<HttpServletRequest> resolver;
@@ -105,10 +101,11 @@ public class DefaultMardukAuthorizationService implements MardukAuthorizationSer
             return false;
         }
         if (resolver == null) {
-            // Expected in unit tests not exercising REST; a real platform-http request reaching here
-            // without a resolver means the bean is misconfigured and authorization runs without a principal.
-            LOGGER.warn("No AuthenticationManagerResolver configured: cannot rebuild the Spring Security context for a platform-http request");
-            return false;
+            // Only reachable for a real platform-http request that carries a bearer token: the earlier
+            // guards already returned for non-platform-http exchanges and missing tokens. A null resolver
+            // here means the bean is misconfigured, so fail loudly instead of running the authorization
+            // check without a principal.
+            throw new IllegalStateException("No AuthenticationManagerResolver configured: cannot rebuild the Spring Security context for a platform-http request");
         }
         BearerTokenAuthenticationToken bearer = new BearerTokenAuthenticationToken(encodedToken);
         Authentication authentication = resolver.resolve(platformHttpMessage.getRequest()).authenticate(bearer);

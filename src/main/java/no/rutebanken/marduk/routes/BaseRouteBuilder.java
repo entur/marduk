@@ -48,6 +48,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
+
 
 /**
  * Defines common route behavior.
@@ -123,6 +125,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
                     exchange.getIn().getHeaders().entrySet().stream()
                             .filter(entry -> !entry.getKey().startsWith("Camel"))
                             .filter(entry -> !entry.getKey().equals(Exchange.BREADCRUMB_ID))
+                            .filter(entry -> !entry.getKey().equalsIgnoreCase(AUTHORIZATION))
                             .filter(entry -> Objects.toString(entry.getValue()).length() <= 1024)
                             .forEach(entry -> pubSubAttributes.put(entry.getKey(), Objects.toString(entry.getValue(), "")));
                     exchange.getIn().setHeader(GooglePubsubConstants.ATTRIBUTES, pubSubAttributes);
@@ -207,7 +210,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
         // Remove Camel internal HTTP headers
         e.getIn().removeHeaders(Constants.CAMEL_ALL_HTTP_HEADERS);
         // Remove authorization HTTP header
-        e.getIn().removeHeader(org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION);
+        e.getIn().removeHeader(AUTHORIZATION);
     }
 
     /**
