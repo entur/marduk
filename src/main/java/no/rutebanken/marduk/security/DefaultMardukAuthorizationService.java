@@ -30,6 +30,8 @@ import org.springframework.security.oauth2.server.resource.authentication.Bearer
 
 public class DefaultMardukAuthorizationService implements MardukAuthorizationService {
 
+    private static final String BEARER_PREFIX = "Bearer ";
+
     private final AuthorizationService<Long> authorizationService;
     private final AuthenticationManagerResolver<HttpServletRequest> resolver;
 
@@ -106,9 +108,12 @@ public class DefaultMardukAuthorizationService implements MardukAuthorizationSer
         if (!(exchange.getIn() instanceof PlatformHttpMessage platformHttpMessage)) {
             return false;
         }
-        String encodedToken = exchange.getIn()
-                .getHeader(HttpHeaders.AUTHORIZATION, "", String.class)
-                .replace("Bearer ", "");
+        String authorizationHeader = platformHttpMessage.getHeader(HttpHeaders.AUTHORIZATION, "", String.class);
+        // Strip only the "Bearer " scheme prefix; a plain replace would also drop the substring
+        // mid-token. A header without the prefix is passed through and rejected downstream.
+        String encodedToken = authorizationHeader.startsWith(BEARER_PREFIX)
+                ? authorizationHeader.substring(BEARER_PREFIX.length())
+                : authorizationHeader;
         if (encodedToken.isEmpty()) {
             return false;
         }

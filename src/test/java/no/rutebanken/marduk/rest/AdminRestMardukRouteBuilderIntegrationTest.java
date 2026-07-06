@@ -27,6 +27,7 @@ import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.apache.camel.*;
 import org.apache.camel.builder.AdviceWith;
+import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
@@ -439,12 +440,8 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
         context.start();
 
-        String authorizationToken = "Bearer sensitive-secret-token";
-        Map<String, Object> headers = new HashMap<>(Map.of(
-                Exchange.HTTP_METHOD, "POST",
-                HttpHeaders.AUTHORIZATION, authorizationToken,
-                CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT));
-        headers.put(HttpHeaders.CONTENT_TYPE, "application/json");
+        Map<String, Object> headers = getTestHeaders("POST", "application/json");
+        headers.put(HttpHeaders.AUTHORIZATION, "Bearer sensitive-secret-token");
 
         exportTemplate.sendBodyAndHeaders("", headers);
 
@@ -480,6 +477,42 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         String username = (String) exportQueue.getExchanges().getFirst().getIn().getHeader(USERNAME);
         assertEquals("test-user", username,
                 "USERNAME must be resolved from the rebuilt security context (was 'unknown' when the context was cleared before direct:setUsername)");
+    }
+
+    @Test
+    void outboundPubSubInterceptorExcludesSensitiveHeadersFromAttributes() throws Exception {
+        // The outbound google-pubsub interceptor (BaseRouteBuilder) builds the published ATTRIBUTES map.
+        // Inject a breadcrumbId and an Authorization header immediately before the send, then capture the
+        // exchange right after it: the interceptor sets ATTRIBUTES on that same message, so we can assert
+        // neither sensitive header leaked. Weaving around the send (rather than replacing it) keeps the
+        // google-pubsub endpoint so the interceptor actually runs.
+        AdviceWith.adviceWith(context, "admin-chouette-export", a -> {
+            a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue")
+                    .before()
+                    .process(e -> {
+                        e.getIn().setHeader(Exchange.BREADCRUMB_ID, "test-breadcrumb");
+                        e.getIn().setHeader(HttpHeaders.AUTHORIZATION, "Bearer must-not-leak");
+                    });
+            a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue")
+                    .after()
+                    .to("mock:chouetteExportNetexQueue");
+        });
+        context.start();
+
+        exportTemplate.sendBodyAndHeaders("", getTestHeaders("POST", "application/json"));
+
+        exportQueue.expectedMessageCount(1);
+        exportQueue.assertIsSatisfied();
+
+        Map<String, String> attributes = exportQueue.getExchanges().getFirst().getIn()
+                .getHeader(GooglePubsubConstants.ATTRIBUTES, Map.class);
+        assertNotNull(attributes, "Outbound interceptor should have built the ATTRIBUTES map");
+        assertTrue(attributes.containsKey(PROVIDER_ID),
+                "Non-sensitive headers should still be published as attributes");
+        assertFalse(attributes.containsKey(Exchange.BREADCRUMB_ID),
+                "breadcrumbId must not leak into published PubSub attributes");
+        assertFalse(attributes.containsKey(HttpHeaders.AUTHORIZATION),
+                "Authorization must not leak into published PubSub attributes");
     }
 
     private static Map<String, Object> getTestHeaders(String method) {

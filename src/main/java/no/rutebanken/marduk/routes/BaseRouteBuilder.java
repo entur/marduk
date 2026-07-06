@@ -122,6 +122,11 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
         interceptSendToEndpoint("google-pubsub:*").process(
                 exchange -> {
                     Map<String, String> pubSubAttributes = new HashMap<>();
+                    // SECURITY: this curated map is published verbatim by the PubSub producer and does
+                    // NOT pass through OutboundFilteringHeaderFilterStrategy (that strategy only gates the
+                    // producer's separate "inherit remaining headers" pass). These breadcrumbId/Authorization
+                    // exclusions are therefore the sole guard keeping those values out of published
+                    // attributes - do not remove them.
                     exchange.getIn().getHeaders().entrySet().stream()
                             .filter(entry -> !entry.getKey().startsWith("Camel"))
                             .filter(entry -> !entry.getKey().equals(Exchange.BREADCRUMB_ID))

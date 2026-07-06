@@ -82,12 +82,18 @@ public class CamelConfig {
 
     /**
      * Restricts outbound Google PubSub message attributes to the explicit attribute map built by
-     * {@link no.rutebanken.marduk.routes.BaseRouteBuilder}.
+     * {@link no.rutebanken.marduk.routes.BaseRouteBuilder#configureOutboundPubSubInterceptor()}.
      *
-     * <p>Since Camel 4.x the PubSub producer also copies every non-filtered Camel header into the
-     * published message attributes, which would leak internal headers such as {@code breadcrumbId}.
-     * This strategy filters out all Camel headers when producing, so only the curated attribute map
-     * is published. Inbound filtering keeps the component default behaviour.
+     * <p>As of Camel 4.18 (the previous 4.4.5 baseline did not do this) the PubSub producer, in
+     * addition to publishing the curated {@code ATTRIBUTES} map, copies every non-filtered Camel
+     * header into the published message attributes, which would leak internal headers such as
+     * {@code breadcrumbId}. This strategy suppresses that second pass by filtering out all Camel
+     * headers when producing, so only the curated map is published.
+     *
+     * <p>Note the curated {@code ATTRIBUTES} map itself is published verbatim and does NOT pass
+     * through this strategy. The exclusions that keep {@code Authorization}/{@code breadcrumbId} out
+     * of that map live in {@code configureOutboundPubSubInterceptor}, not here. Inbound filtering
+     * keeps the component default behaviour.
      */
     @Bean
     ComponentCustomizer googlePubsubHeaderFilterCustomizer() {
