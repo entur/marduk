@@ -102,6 +102,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         restConfiguration()
                 .component("platform-http")
                 .contextPath("/services")
+                // Keep direct: target routes standalone so several REST routes can share the same
+                // direct endpoint (e.g. /files and /flex/files both reach direct:adminDatasetUploadFile).
+                // Inlining (the Camel default) would absorb the consumer into one REST route.
+                .inlineRoutes(false)
                 .bindingMode(RestBindingMode.json)
                 .apiContextPath("/openapi.yaml")
                 .apiProperty("api.title", "Timetable Admin API").apiProperty("api.version", "1.0");
@@ -129,14 +133,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("/validate/prevalidation")
                 .description("Triggers the prevalidation process for all providers in Chouette")
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminTriggerPrevalidationForAllProviders")
 
                 .post("/validate/level2")
                 .description("Triggers the validate->export process for all level2 providers in Chouette")
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminChouetteValidateLevel2AllProviders")
@@ -158,7 +160,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .allowableValues("importer", "exporter", "validator")
                 .endParam()
                 .outType(ProviderAndJobs[].class)
-                .consumes(PLAIN)
                 .produces(JSON)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -199,7 +200,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .description("Optional filter to clean only level 1, level 2 or all spaces (no parameter value)")
                 .allowableValues("all", "level1", "level2")
                 .endParam()
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .responseMessage().code(500).message("Internal error - check filter").endResponseMessage()
@@ -207,7 +207,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("/stop_places/clean")
                 .description("Triggers the cleaning of ALL stop places in Chouette")
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .responseMessage().code(500).message("Internal error - check filter").endResponseMessage()
@@ -228,7 +227,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .allowableValues("all", "level1", "level2")
                 .endParam()
                 .bindingMode(RestBindingMode.off)
-                .consumes(PLAIN)
                 .produces(JSON)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -237,7 +235,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .post("/line_statistics/refresh")
                 .description("Recalculate stats about data in chouette for all providers")
                 .bindingMode(RestBindingMode.off)
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -246,7 +243,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .get("/export/files")
                 .description("List files containing exported time table data and graphs")
                 .outType(BlobStoreFiles.class)
-                .consumes(PLAIN)
                 .produces(JSON)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -254,7 +250,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("/export/gtfs/merged")
                 .description("Prepare and upload merged GTFS export")
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -262,14 +257,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
                 .post("routing_graph/build_base")
                 .description("Triggers building of the OTP base graph using map data (osm + height)")
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminBuildBaseGraph")
 
                 .post("routing_graph/build")
                 .description("Triggers building of the OTP graph using existing NeTEx and and a pre-prepared base graph with map data")
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminBuildGraphNetex")
@@ -277,7 +270,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .post("routing_graph/build_candidate/{graphType}")
                 .description("Triggers graph building for a candidate OTP version")
                 .param().name("graphType").type(RestParamType.path).description("Type of graph").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminBuildGraphCandidate")
@@ -285,7 +277,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .get("routing_graph/graphs")
                 .description("List latest generated OTP2 graphs")
                 .outType(OtpGraphsInfo[].class)
-                .consumes(PLAIN)
                 .produces(JSON)
                 .responseMessage().code(200).endResponseMessage()
                 .to("direct:adminListGraphs")
@@ -305,7 +296,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .description("Download NeTEx dataset with blocks")
                 .deprecated()
                 .param().name("codespace").type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
-                .consumes(PLAIN)
                 .produces(X_OCTET_STREAM)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
@@ -343,7 +333,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .description("List files available for reimport")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .outType(BlobStoreFiles.class)
-                .consumes(PLAIN)
                 .produces(JSON)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
@@ -373,7 +362,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .description("Download file for reimport")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .param().name("fileName").type(RestParamType.path).description("Name of file to fetch").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
-                .consumes(PLAIN)
                 .produces(X_OCTET_STREAM)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid fileName").endResponseMessage()
@@ -383,7 +371,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .description("List stats about data in chouette for a given provider")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .bindingMode(RestBindingMode.off)
-                .consumes(PLAIN)
                 .produces(JSON)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
@@ -407,7 +394,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .allowableValues("importer", "exporter", "validator")
                 .endParam()
                 .outType(JobResponse[].class)
-                .consumes(PLAIN)
                 .produces(JSON)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
@@ -416,7 +402,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .delete("/jobs")
                 .description("Cancel all Chouette jobs for a given provider")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Job deleted").endResponseMessage()
                 .responseMessage().code(500).message("Invalid jobId").endResponseMessage()
@@ -426,7 +411,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .description("Cancel a Chouette job for a given provider")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .param().name("jobId").type(RestParamType.path).description("Job id as returned in any of the /jobs GET calls").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Job deleted").endResponseMessage()
                 .responseMessage().code(500).message("Invalid jobId").endResponseMessage()
@@ -435,7 +419,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .post("/export")
                 .description("Triggers the export process in Chouette. Note that NO validation is performed before export, and that the data must be guaranteed to be error free")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminChouetteExport")
@@ -443,7 +426,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .post("/validate")
                 .description("Triggers the validate->export process in Chouette")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminChouetteValidate")
@@ -451,7 +433,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .post("/clean")
                 .description("Triggers the clean dataspace process in Chouette. Only timetable data are deleted, not job data (imports, exports, validations)")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminChouetteClean")
@@ -459,7 +440,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .post("/transfer")
                 .description("Triggers transfer of data from one dataspace to the next")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminChouetteTransfer");
@@ -467,7 +447,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         rest("/map_admin")
                 .post("/download")
                 .description("Triggers downloading of the latest OSM data")
-                .consumes(PLAIN)
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminFetchOsm");
@@ -641,10 +620,12 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-chouette-graph-list");
 
         from("direct:adminDatasetImport")
-                .process(this::removeHttpHeaders)
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeAdminRequest")
                 .to("direct:validateProvider")
+                // Strip HTTP headers only after authorization so the platform-http worker thread can
+                // rebuild the Spring Security context from the Authorization header (Camel 4.x async).
+                .process(this::removeHttpHeaders)
                 .split(method(ImportFilesSplitter.class, "splitFiles"))
 
                 .process(e -> {
@@ -663,6 +644,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(""))
 
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
+                .end()
+                // Replace the split input list left as the body by the splitter with an empty
+                // response body that platform-http can write back to the client.
+                .setBody(constant(""))
                 .routeId("admin-chouette-import");
 
         from("direct:adminFlexImport")
@@ -791,27 +776,30 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
 
         from("direct:validateProvider")
-                .validate(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) != null)
-                .predicateExceptionFactory((exchange, predicate, nodeId) -> new NotFoundException("Unknown provider id"))
+                .process(e -> {
+                    if (getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) == null) {
+                        throw new NotFoundException("Unknown provider id");
+                    }
+                })
                 .id("validate-provider")
                 .routeId("admin-validate-provider");
 
         from("direct:authorizeAdminRequest")
                 .doTry()
-                .process(e -> mardukAuthorizationService.verifyAdministratorPrivileges())
+                .process(mardukAuthorizationService::verifyAdministratorPrivileges)
                 .to("direct:setUsername")
                 .routeId("admin-authorize-admin-request");
 
         from("direct:authorizeEditorRequest")
                 .doTry()
-                .process(e -> mardukAuthorizationService.verifyRouteDataEditorPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
+                .process(e -> mardukAuthorizationService.verifyRouteDataEditorPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class), e))
                 .to("direct:setUsername")
                 .routeId("admin-authorize-editor-request");
 
         from("direct:authorizeBlocksDownloadRequest")
                 .doTry()
                 .log(LoggingLevel.INFO, "Authorizing NeTEx blocks download for provider ${header." + CHOUETTE_REFERENTIAL + "} ")
-                .process(e -> mardukAuthorizationService.verifyBlockViewerPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class)))
+                .process(e -> mardukAuthorizationService.verifyBlockViewerPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class), e))
                 .to("direct:setUsername")
                 .routeId("admin-authorize-blocks-download-request");
 
@@ -877,8 +865,11 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .routeId("admin-external-download-private_dataset");
 
         from("direct:validateReferential")
-                .validate(e -> getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) != null)
-                .predicateExceptionFactory((exchange, predicate, nodeId) -> new NotFoundException("Unknown chouette referential"))
+                .process(e -> {
+                    if (getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) == null) {
+                        throw new NotFoundException("Unknown chouette referential");
+                    }
+                })
                 .id("validate-referential")
                 .routeId("admin-validate-referential");
 

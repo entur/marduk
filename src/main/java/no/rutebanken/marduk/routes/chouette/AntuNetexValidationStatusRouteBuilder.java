@@ -165,6 +165,9 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
 
         from("direct:antuNetexValidationComplete")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation complete for referential ${header." + DATASET_REFERENTIAL + "}")
+                // NOTE: every nested choice()/filter() inside a when() below is closed with .end() before
+                // .endChoice(). In Camel 4.x endChoice() pops only one level, so a missing .end() silently
+                // reattaches the following whens/otherwise to the inner block. Do not remove these .end() calls.
                 .choice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
@@ -204,6 +207,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
+                    .end()
                 .endChoice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
@@ -224,6 +228,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                         .to("google-pubsub:{{marduk.pubsub.project.id}}:ExportNetexBlocksQueue")
                     .otherwise()
                         .log(LoggingLevel.INFO, correlation() + "Skipping export of NetEx blocks to Ashur after post-validation because provider has blocks export disabled")
+                    .end()
                 .endChoice()
 
                 .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION), exchange -> !experimentalImportHelpers.shouldRunExperimentalImport(exchange)))
@@ -239,6 +244,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                     .to("direct:copyInternalBlobInBucket")
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
                     .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue")
+                    .end()
                 .endChoice()
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION))
@@ -246,6 +252,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:copyInternalBlobInBucket")
+                .end()
                 .endChoice()
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_FLEX_POSTVALIDATION))

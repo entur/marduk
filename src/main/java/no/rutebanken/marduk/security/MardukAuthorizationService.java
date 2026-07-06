@@ -1,5 +1,7 @@
 package no.rutebanken.marduk.security;
 
+import org.apache.camel.Exchange;
+
 /**
  *  Service that verifies the privileges of the API clients.
  */
@@ -12,11 +14,23 @@ public interface MardukAuthorizationService {
     void verifyAdministratorPrivileges();
 
     /**
+     * Verify that the user has full administrator privileges, rebuilding the Spring Security context
+     * from the given Camel exchange when invoked from an asynchronous platform-http worker thread.
+     */
+    void verifyAdministratorPrivileges(Exchange exchange);
+
+    /**
      * Verify that the user can edit route data for a given provider.
      * Users can edit route data if they have administrator privileges,
      * or if it has editor privileges for this provider.
      */
     void verifyRouteDataEditorPrivileges(Long providerId);
+
+    /**
+     * Verify that the user can edit route data for a given provider, rebuilding the Spring Security
+     * context from the given Camel exchange when invoked from an asynchronous platform-http worker thread.
+     */
+    void verifyRouteDataEditorPrivileges(Long providerId, Exchange exchange);
 
     /**
      * Verify that the user can read block data for a given provider.
@@ -25,4 +39,10 @@ public interface MardukAuthorizationService {
      * or if they have NeTEx blocks viewer privileges for this provider.
      */
     void verifyBlockViewerPrivileges(Long providerId);
+
+    /**
+     * Verify that the user can read block data for a given provider, rebuilding the Spring Security
+     * context from the given Camel exchange when invoked from an asynchronous platform-http worker thread.
+     */
+    void verifyBlockViewerPrivileges(Long providerId, Exchange exchange);
 }

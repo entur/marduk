@@ -19,7 +19,11 @@ package no.rutebanken.marduk.config;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import no.rutebanken.marduk.routes.aggregation.IdleRouteAggregationMonitor;
 import org.apache.camel.CamelContext;
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.ThreadPoolBuilder;
+import org.apache.camel.component.google.pubsub.GooglePubsubComponent;
+import org.apache.camel.component.google.pubsub.GooglePubsubHeaderFilterStrategy;
+import org.apache.camel.spi.ComponentCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -76,5 +80,28 @@ public class CamelConfig {
         return new IdleRouteAggregationMonitor(camelContext);
     }
 
+    /**
+     * Restricts outbound Google PubSub message attributes to the explicit attribute map built by
+     * {@link no.rutebanken.marduk.routes.BaseRouteBuilder}.
+     *
+     * <p>Since Camel 4.x the PubSub producer also copies every non-filtered Camel header into the
+     * published message attributes, which would leak internal headers such as {@code breadcrumbId}.
+     * This strategy filters out all Camel headers when producing, so only the curated attribute map
+     * is published. Inbound filtering keeps the component default behaviour.
+     */
+    @Bean
+    ComponentCustomizer googlePubsubHeaderFilterCustomizer() {
+        return ComponentCustomizer
+                .builder(GooglePubsubComponent.class)
+                .build(component -> component.setHeaderFilterStrategy(new OutboundFilteringHeaderFilterStrategy()));
+    }
+
+    static class OutboundFilteringHeaderFilterStrategy extends GooglePubsubHeaderFilterStrategy {
+
+        @Override
+        public boolean applyFilterToCamelHeaders(String headerName, Object headerValue, Exchange exchange) {
+            return true;
+        }
+    }
 
 }
