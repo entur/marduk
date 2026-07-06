@@ -22,9 +22,10 @@ data:
     camel.cluster.kubernetes.enabled=true
     camel.cluster.kubernetes.cluster-labels[app]=marduk
     camel.cluster.kubernetes.config-map-name=marduk-leaders
-    # camel-file-cluster-service-starter (added in the Camel 4.18 upgrade) enables a FileLockClusterService
-    # by default. In k8s we use kubernetes leader election, so disable the file one: two CamelClusterService
-    # beans make the master: component ambiguous and every singletonFrom() route fails to start.
+    # Both camel cluster starters register a CamelClusterService by default (matchIfMissing=true), but the
+    # master: component (used by singletonFrom()) needs exactly one. In k8s we keep kubernetes leader
+    # election (enabled above) and turn the file lock off; two beans make master: ambiguous and every
+    # singletonFrom() route fails to start. The test profile does the reverse (kubernetes off, file on).
     camel.cluster.file.enabled=false
     camel.component.http.follow-redirects=true
     camel.metrics.enable-route-event-notifier=false
