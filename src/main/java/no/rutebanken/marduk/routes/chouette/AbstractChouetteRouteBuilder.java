@@ -43,8 +43,8 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 
 	    exchange.getMessage().setBody(entityBuilder.build());
 	    exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
-	    exchange.getMessage().setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"));
-		exchange.getMessage().setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.POST));
+	    exchange.getMessage().setHeader(Exchange.CONTENT_TYPE, "multipart/form-data");
+		exchange.getMessage().setHeader(Exchange.HTTP_METHOD, HttpMethods.POST);
 	}
 
 	protected void toImportMultipart(Exchange exchange) {
@@ -69,7 +69,7 @@ public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
 
 	    exchange.getMessage().setBody(entityBuilder.build());
 	    exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
-	    exchange.getMessage().setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"));
+	    exchange.getMessage().setHeader(Exchange.CONTENT_TYPE, "multipart/form-data");
 	}
 
 
