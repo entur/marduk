@@ -21,11 +21,14 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
-import org.apache.commons.io.input.CloseShieldInputStream;
+import org.apache.camel.converter.stream.CachedOutputStream;
 import org.apache.tomcat.util.http.fileupload.impl.InvalidContentTypeException;
 import org.springframework.stereotype.Component;
 
 import jakarta.servlet.http.Part;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 import static no.rutebanken.marduk.Constants.*;
 
@@ -35,7 +38,7 @@ import static no.rutebanken.marduk.Constants.*;
 @Component
 public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
 
-    private static final String FILE_CONTENT_HEADER = "RutebankenFileContent";
+    static final String FILE_CONTENT_HEADER = "RutebankenFileContent";
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
 
     @Override
@@ -56,7 +59,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .process(this::setCorrelationIdIfMissing)
                 .setHeader(FILE_NAME, simple("${body.submittedFileName}"))
                 .setHeader(FILE_HANDLE, simple("inbound/received/${header." + CHOUETTE_REFERENTIAL + "}/${header." + FILE_NAME + "}"))
-                .process(e -> e.getIn().setHeader(FILE_CONTENT_HEADER, CloseShieldInputStream.wrap(e.getIn().getBody(Part.class).getInputStream())))
+                .process(FileUploadRouteBuilder::cachePartContent)
                 .to("direct:uploadFileAndStartImport")
                 .end()
                 // Replace the multipart parts list left as the body by the splitter with an empty
@@ -70,6 +73,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .doTry()
                 .log(LoggingLevel.INFO, correlation() + "Uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
                 .setBody(header(FILE_CONTENT_HEADER))
+                .removeHeader(FILE_CONTENT_HEADER)
                 .setHeader(Exchange.FILE_NAME, header(FILE_NAME))
                 .to("direct:filterDuplicateFile")
                 .to("direct:uploadInternalBlob")
@@ -92,5 +96,17 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.CANCELLED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
                 .routeId("process-file-after-import");
 
+    }
+
+    // Drain the Part eagerly: on Camel 4.18 platform-http the servlet Part stream is no longer readable
+    // when the downstream upload runs (0-byte blobs). The stream cache spools to disk above the configured
+    // threshold, keeping large uploads off the heap. The JVM test harness does not reproduce the drained
+    // stream; the end-to-end guard is scripts/smoke-upload.sh in the marduk-pipeline superproject.
+    static void cachePartContent(Exchange e) throws IOException {
+        try (InputStream partStream = e.getIn().getBody(Part.class).getInputStream();
+             CachedOutputStream cachedContent = new CachedOutputStream(e)) {
+            partStream.transferTo(cachedContent);
+            e.getIn().setHeader(FILE_CONTENT_HEADER, cachedContent.newStreamCache());
+        }
     }
 }

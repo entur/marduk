@@ -19,11 +19,15 @@ package no.rutebanken.marduk.config;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import no.rutebanken.marduk.routes.aggregation.IdleRouteAggregationMonitor;
 import org.apache.camel.CamelContext;
+import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.ThreadPoolBuilder;
 import org.apache.camel.component.google.pubsub.GooglePubsubComponent;
+import org.apache.camel.component.google.pubsub.GooglePubsubEndpoint;
 import org.apache.camel.component.google.pubsub.GooglePubsubHeaderFilterStrategy;
 import org.apache.camel.spi.ComponentCustomizer;
+import org.apache.camel.spi.InterceptSendToEndpoint;
+import org.apache.camel.spring.boot.CamelContextConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -100,6 +104,36 @@ public class CamelConfig {
         return ComponentCustomizer
                 .builder(GooglePubsubComponent.class)
                 .build(component -> component.setHeaderFilterStrategy(new OutboundFilteringHeaderFilterStrategy()));
+    }
+
+    // Camel 4.18 pubsub consumers fetch maxDeliveryAttempts via the Subscriber Admin API (marduk's SA
+    // lacks that permission). Setting it explicitly skips the call; 0 = no client-side enforcement.
+    @Bean
+    CamelContextConfiguration pubsubMaxDeliveryAttemptsDefault() {
+        return new CamelContextConfiguration() {
+            @Override
+            public void beforeApplicationStart(CamelContext camelContext) {
+                camelContext.getCamelContextExtension()
+                        .registerEndpointCallback(CamelConfig::defaultPubsubMaxDeliveryAttempts);
+            }
+
+            @Override
+            public void afterApplicationStart(CamelContext camelContext) {
+                // nothing to do after application start
+            }
+        };
+    }
+
+    static Endpoint defaultPubsubMaxDeliveryAttempts(String uri, Endpoint endpoint) {
+        // interceptSendToEndpoint (BaseRouteBuilder) registers competing endpoint strategies applied in
+        // nondeterministic order, so the endpoint may arrive here already wrapped.
+        Endpoint target = endpoint instanceof InterceptSendToEndpoint intercepted
+                ? intercepted.getOriginalEndpoint()
+                : endpoint;
+        if (target instanceof GooglePubsubEndpoint pubsub && !pubsub.isMaxDeliveryAttemptsExplicitlySet()) {
+            pubsub.setMaxDeliveryAttempts(0);
+        }
+        return endpoint;
     }
 
     static class OutboundFilteringHeaderFilterStrategy extends GooglePubsubHeaderFilterStrategy {
