@@ -25,10 +25,12 @@ import no.rutebanken.marduk.rest.openapi.api.FlexDatasetsApi;
 import no.rutebanken.marduk.rest.openapi.model.UploadResult;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
 import no.rutebanken.marduk.security.UsernameService;
+import no.rutebanken.marduk.routes.file.MardukFileUtils;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.spi.Synchronization;
 import org.apache.camel.support.DefaultExchange;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
 import org.slf4j.Logger;
@@ -43,6 +45,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.*;
@@ -150,32 +153,54 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
             throw new IllegalArgumentException("No file provided");
         }
 
-        try {
-            String fileName = file.getOriginalFilename();
-            LOG.debug("[{}] Processing file: name={}, size={}, contentType={}",
-                    correlationId, fileName, file.getSize(), file.getContentType());
+        String fileName = file.getOriginalFilename();
+        LOG.debug("[{}] Processing file: name={}, size={}, contentType={}",
+                correlationId, fileName, file.getSize(), file.getContentType());
 
-            Exchange exchange = new DefaultExchange(camelContext);
+        Exchange exchange = new DefaultExchange(camelContext);
+        try {
             exchange.getIn().setHeader(CHOUETTE_REFERENTIAL, codespace);
             exchange.getIn().setHeader(PROVIDER_ID, providerId);
             exchange.getIn().setHeader(CORRELATION_ID, correlationId);
             exchange.getIn().setHeader(FILE_APPLY_DUPLICATES_FILTER, true);
             exchange.getIn().setHeader(FILE_NAME, fileName);
             exchange.getIn().setHeader(FILE_HANDLE, "inbound/received/" + codespace + "/" + fileName);
-            exchange.getIn().setHeader("RutebankenFileContent", file.getInputStream());
             exchange.getIn().setHeader(USERNAME, usernameService.getPreferredUsername());
 
             if (importType != null) {
                 exchange.getIn().setHeader(IMPORT_TYPE, importType);
             }
 
-            // Set the file input stream as body (expected by the route)
-            exchange.getIn().setBody(file.getInputStream());
+            // Drain the multipart stream once while the request is live; a lazy servlet stream is
+            // destroyed before the route reads it on Camel 4.18.
+            try (InputStream fileStream = file.getInputStream()) {
+                exchange.getIn().setHeader(FILE_CONTENT, MardukFileUtils.drainToStreamCache(exchange, fileStream));
+            }
 
             producerTemplate.send("direct:uploadFileAndStartImport", exchange);
+
+            if (exchange.getException() != null) {
+                throw new MardukException("Upload failed for " + fileName, exchange.getException());
+            }
+            if (Boolean.TRUE.equals(exchange.getProperty(FILE_UPLOAD_FAILED))) {
+                throw new MardukException("Upload failed for " + fileName + ", see job status for correlationId " + correlationId);
+            }
         } catch (IOException e) {
             throw new MardukException("Failed to process multipart file", e);
+        } finally {
+            // If the exchange never reached the route (drain or send failure), its parked completions
+            // never ran and the spooled cache file would leak; run them here (no-op after success).
+            List<Synchronization> completions = exchange.getExchangeExtension().handoverCompletions();
+            if (completions != null) {
+                completions.forEach(completion -> completion.onFailure(exchange));
+            }
         }
+    }
+
+    @ExceptionHandler(MardukException.class)
+    public ResponseEntity<String> handleUploadFailure(MardukException e) {
+        LOG.error("Upload processing failed", e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
     }
 
     @ExceptionHandler(AccessDeniedException.class)

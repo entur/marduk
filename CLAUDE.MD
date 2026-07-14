@@ -12,7 +12,7 @@ Marduk is a Spring Boot application that orchestrates the timetable data import 
 ## Technology Stack
 
 - **Language**: Java 21
-- **Framework**: Spring Boot 3.x with Apache Camel 4.4.5
+- **Framework**: Spring Boot 3.x with Apache Camel 4.18.x
 - **Build Tool**: Maven
 - **Database**: PostgreSQL (with Flyway migrations)
 - **Messaging**: Google Cloud PubSub
@@ -284,7 +284,7 @@ public class MyNewRouteBuilder extends BaseRouteBuilder {
 
 ### Debug Tips
 
-- Enable route tracing: `camel.springboot.tracing=true`
+- Enable route tracing: `camel.main.tracing=true`
 - Check PubSub dead letter queue for failed messages
 - Review job status in status tracking system
 - Check blob storage for intermediate files

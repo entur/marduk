@@ -20,6 +20,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.TestConstants;
+import no.rutebanken.marduk.exceptions.MardukException;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
@@ -54,9 +55,6 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
     @EndpointInject("mock:processFileQueue")
     protected MockEndpoint processFileQueue;
 
-    @EndpointInject("mock:updateStatus")
-    protected MockEndpoint updateStatus;
-
     @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT)
     protected ProducerTemplate uploadFileTemplate;
 
@@ -72,6 +70,9 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
     @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/unknown_codespace?throwExceptionOnFailure=false")
     protected ProducerTemplate uploadFileUnknownCodespaceTemplate;
 
+    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT + "?throwExceptionOnFailure=false")
+    protected ProducerTemplate uploadFileNoThrowTemplate;
+
     @BeforeEach
     void setUpProvider() {
         when(providerRepository.getReferential(TestConstants.PROVIDER_ID_RUT)).thenReturn(CHOUETTE_REFERENTIAL_RUT);
@@ -84,12 +85,11 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
         String fileName = "netex-test-spring-http-upload.zip";
 
-        AdviceWith.adviceWith(context, "process-file-after-import", a -> {
-            a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
-            a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue");
-        });
+        // updateStatus deliberately not mocked: its real pubsub publish stringifies every header and
+        // destroyed live upload streams on Camel 4.18; mocking it hid exactly the bug this test pins.
+        AdviceWith.adviceWith(context, "process-file-after-import", a ->
+                a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue"));
 
-        updateStatus.expectedMessageCount(1);
         processFileQueue.expectedMessageCount(1);
 
         HttpEntity httpEntity = MultipartEntityBuilder.create()
@@ -100,7 +100,6 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
         context.start();
         uploadFileTemplate.requestBodyAndHeaders(httpEntity, headers);
 
-        updateStatus.assertIsSatisfied();
         processFileQueue.assertIsSatisfied();
 
         // Verify file was uploaded to blob store
@@ -123,12 +122,10 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
         String fileName = "netex-flex-test-spring-http-upload.zip";
 
-        AdviceWith.adviceWith(context, "process-file-after-import", a -> {
-            a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
-            a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue");
-        });
+        // updateStatus deliberately not mocked, see uploadNetexDatasetViaSpringApi
+        AdviceWith.adviceWith(context, "process-file-after-import", a ->
+                a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue"));
 
-        updateStatus.expectedMessageCount(1);
         processFileQueue.expectedMessageCount(1);
 
         HttpEntity httpEntity = MultipartEntityBuilder.create()
@@ -139,7 +136,6 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
         context.start();
         uploadFlexFileTemplate.requestBodyAndHeaders(httpEntity, headers);
 
-        updateStatus.assertIsSatisfied();
         processFileQueue.assertIsSatisfied();
 
         // Verify file was uploaded to blob store
@@ -195,6 +191,67 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
                 });
 
         assertEquals(404, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    // The upload route swallows failures in its doCatch and flags the exchange instead; the
+    // controller must turn that flag into the documented 500 instead of a false-positive 200.
+    @Test
+    void uploadReturns500WhenBlobStoreFails() throws Exception {
+        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+
+        AdviceWith.adviceWith(context, "upload-file-and-start-import", a ->
+                a.weaveByToUri("direct:uploadInternalBlob").replace().process(e -> {
+                    throw new MardukException("simulated blob store failure");
+                }));
+
+        context.start();
+
+        Exchange response = uploadFileNoThrowTemplate.request(uploadFileNoThrowTemplate.getDefaultEndpoint(), e -> {
+            e.getIn().setBody(MultipartEntityBuilder.create()
+                    .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, "netex-blobstore-failure.zip")
+                    .build());
+            e.getIn().setHeaders(getTestHeaders("POST"));
+        });
+
+        assertEquals(500, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    // Failures outside the route's doCatch surface as an exchange exception; same 500 contract.
+    @Test
+    void uploadReturns500WhenRouteFailsBeforeUpload() throws Exception {
+        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+
+        AdviceWith.adviceWith(context, "upload-file-and-start-import", a ->
+                a.weaveAddFirst().process(e -> {
+                    throw new MardukException("simulated failure at route entry");
+                }));
+
+        context.start();
+
+        Exchange response = uploadFileNoThrowTemplate.request(uploadFileNoThrowTemplate.getDefaultEndpoint(), e -> {
+            e.getIn().setBody(MultipartEntityBuilder.create()
+                    .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, "netex-route-entry-failure.zip")
+                    .build());
+            e.getIn().setHeaders(getTestHeaders("POST"));
+        });
+
+        assertEquals(500, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+    }
+
+    @Test
+    void uploadWithoutFilePartFails() {
+        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+
+        context.start();
+
+        Exchange response = uploadFileNoThrowTemplate.request(uploadFileNoThrowTemplate.getDefaultEndpoint(), e -> {
+            e.getIn().setBody(MultipartEntityBuilder.create()
+                    .addBinaryBody("not-the-file-part", "irrelevant".getBytes(), ContentType.DEFAULT_BINARY, "ignored.zip")
+                    .build());
+            e.getIn().setHeaders(getTestHeaders("POST"));
+        });
+
+        assertEquals(500, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
     }
 
     @Test

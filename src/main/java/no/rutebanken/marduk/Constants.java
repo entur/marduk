@@ -36,6 +36,9 @@ public final class Constants {
     public static final String CHOUETTE_REFERENTIAL = "RutebankenChouetteReferential";
     public static final String JSON_PART = "RutebankenJsonPart";
     public static final String FILE_NAME = "RutebankenFileName";
+    public static final String FILE_CONTENT = "RutebankenFileContent";
+    // exchange property set by the upload route's doCatch so HTTP entry points can report failure
+    public static final String FILE_UPLOAD_FAILED = "RutebankenFileUploadFailed";
 
     public static final String CURRENT_AGGREGATED_GTFS_FILENAME = "aggregated-gtfs.zip";
     public static final String CURRENT_AGGREGATED_NETEX_FILENAME = "aggregated-netex.zip";

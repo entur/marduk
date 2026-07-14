@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.file;
 
+import no.rutebanken.marduk.Constants;
 import org.apache.camel.Exchange;
 import org.apache.camel.StreamCache;
 import org.apache.camel.builder.RouteBuilder;
@@ -95,7 +96,7 @@ class FileUploadContentCacheTest {
 
         FileUploadRouteBuilder.cachePartContent(exchange);
 
-        return exchange.getIn().getHeader(FileUploadRouteBuilder.FILE_CONTENT_HEADER, StreamCache.class);
+        return exchange.getIn().getHeader(Constants.FILE_CONTENT, StreamCache.class);
     }
 
     private static byte[] readFully(StreamCache cache) throws IOException {
