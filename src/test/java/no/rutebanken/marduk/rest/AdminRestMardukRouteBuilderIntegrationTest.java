@@ -149,9 +149,6 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @EndpointInject("mock:processFileQueue")
     protected MockEndpoint processFileQueue;
 
-    @EndpointInject("mock:updateStatus")
-    protected MockEndpoint updateStatus;
-
     @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/import")
     protected ProducerTemplate importTemplate;
 
@@ -226,6 +223,30 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         assertEquals(PROVIDER_ID_AS_STRING_RUT, providerId);
         String s3FileHandle = (String) exchanges.getFirst().getIn().getHeader(FILE_HANDLE);
         assertEquals(BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT +  "/file1", s3FileHandle);
+    }
+
+    // Ninkasi sends Accept: application/json to endpoints declaring produces(PLAIN). Requires
+    // camel.component.platform-http.serverRequestValidation=false, or Spring MVC rejects with 406.
+    @Test
+    void runImportWithJsonAcceptHeader() throws Exception {
+
+        AdviceWith.adviceWith(context, "admin-chouette-import",
+                a -> a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue")
+                        .replace()
+                        .to("mock:chouetteImportQueue")
+        );
+        context.start();
+
+        BlobStoreFiles d = new BlobStoreFiles();
+        d.add(new BlobStoreFiles.File("file1", null, null, null));
+        String importJson = ObjectMapperFactory.getSharedObjectMapper().writerFor(BlobStoreFiles.class).writeValueAsString(d);
+
+        Map<String, Object> headers = new HashMap<>(getTestHeaders("POST", "application/json"));
+        headers.put(HttpHeaders.ACCEPT, "application/json");
+
+        importQueue.expectedMessageCount(1);
+        importTemplate.sendBodyAndHeaders(importJson, headers);
+        importQueue.assertIsSatisfied();
     }
 
     @Test
@@ -355,14 +376,12 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         String fileName = "netex-test-POST.zip";
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
 
-        AdviceWith.adviceWith(context, "process-file-after-import", a -> {
-            a.interceptSendToEndpoint("direct:updateStatus")
-                    .skipSendToOriginalEndpoint()
-                    .to("mock:updateStatus");
-            a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue")
-                    .replace()
-                    .to("mock:processFileQueue");
-        });
+        // updateStatus is deliberately NOT mocked: its real pubsub publish stringifies every header
+        // and destroyed live upload streams on Camel 4.18; mocking it would hide that bug class.
+        AdviceWith.adviceWith(context, "process-file-after-import", a ->
+                a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue")
+                        .replace()
+                        .to("mock:processFileQueue"));
 
         processFileQueue.expectedMessageCount(1);
 
@@ -389,12 +408,10 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
         String fileName = "netex-test-http-upload.zip";
 
-        AdviceWith.adviceWith(context, "process-file-after-import", a -> {
-            a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
-            a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue");
-        });
+        // updateStatus deliberately not mocked, see postFile
+        AdviceWith.adviceWith(context, "process-file-after-import", a ->
+                a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue"));
 
-        updateStatus.expectedMessageCount(1);
         processFileQueue.expectedMessageCount(1);
 
         HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName).build();
@@ -403,7 +420,6 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         context.start();
         uploadFileTemplate.requestBodyAndHeaders(httpEntity, headers);
 
-        updateStatus.assertIsSatisfied();
         processFileQueue.assertIsSatisfied();
 
         InputStream receivedFile = internalInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);

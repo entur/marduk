@@ -21,7 +21,6 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.converter.stream.CachedOutputStream;
 import org.apache.tomcat.util.http.fileupload.impl.InvalidContentTypeException;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +37,6 @@ import static no.rutebanken.marduk.Constants.*;
 @Component
 public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
 
-    static final String FILE_CONTENT_HEADER = "RutebankenFileContent";
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
 
     @Override
@@ -72,8 +70,8 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.STARTED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
                 .doTry()
                 .log(LoggingLevel.INFO, correlation() + "Uploading timetable file to blob store: ${header." + FILE_HANDLE + "}")
-                .setBody(header(FILE_CONTENT_HEADER))
-                .removeHeader(FILE_CONTENT_HEADER)
+                .setBody(header(FILE_CONTENT))
+                .removeHeader(FILE_CONTENT)
                 .setHeader(Exchange.FILE_NAME, header(FILE_NAME))
                 .to("direct:filterDuplicateFile")
                 .to("direct:uploadInternalBlob")
@@ -81,6 +79,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
                 .setBody(constant(""))
                 .to("direct:processFileAfterImport")
                 .doCatch(Exception.class)
+                .setProperty(FILE_UPLOAD_FAILED, constant(true))
                 .log(LoggingLevel.WARN, correlation() + "Upload of timetable data to blob store failed for file: ${header." + FILE_HANDLE + "} (${exception.stacktrace})")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_TRANSFER).state(JobEvent.State.FAILED).build()).to(ExchangePattern.InOnly, "direct:updateStatus")
                 .end()
@@ -98,15 +97,11 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
 
     }
 
-    // Drain the Part eagerly: on Camel 4.18 platform-http the servlet Part stream is no longer readable
-    // when the downstream upload runs (0-byte blobs). The stream cache spools to disk above the configured
-    // threshold, keeping large uploads off the heap. The JVM test harness does not reproduce the drained
-    // stream; the end-to-end guard is scripts/smoke-upload.sh in the marduk-pipeline superproject.
+    // Drain the Part eagerly: on Camel 4.18 the stream is destroyed before the blob upload reads it
+    // (0-byte blobs). Pinned by the un-mocked upload tests; container-level guard: scripts/smoke-upload.sh.
     static void cachePartContent(Exchange e) throws IOException {
-        try (InputStream partStream = e.getIn().getBody(Part.class).getInputStream();
-             CachedOutputStream cachedContent = new CachedOutputStream(e)) {
-            partStream.transferTo(cachedContent);
-            e.getIn().setHeader(FILE_CONTENT_HEADER, cachedContent.newStreamCache());
+        try (InputStream partStream = e.getIn().getBody(Part.class).getInputStream()) {
+            e.getIn().setHeader(FILE_CONTENT, MardukFileUtils.drainToStreamCache(e, partStream));
         }
     }
 }
