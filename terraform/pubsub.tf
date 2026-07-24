@@ -363,6 +363,7 @@ resource "google_pubsub_subscription" "GtfsRouteDispatcherDeadLetterQueue" {
   topic = google_pubsub_topic.GtfsRouteDispatcherDeadLetterQueue.name
   project = var.gcp_resources_project
   labels = var.labels
+  message_retention_duration = "2678400s"
   expiration_policy {
         ttl = ""
       }
@@ -380,6 +381,7 @@ resource "google_pubsub_subscription" "GtfsRouteDispatcherTopic" {
   project = var.gcp_resources_project
   labels = var.labels
   dead_letter_policy {
+    # damu's GtfsRouteDispatcher consumer hardcodes maxDeliveryAttempts=5 to match; change together
     max_delivery_attempts = 5
     dead_letter_topic = google_pubsub_topic.GtfsRouteDispatcherDeadLetterQueue.id
   }
@@ -387,6 +389,26 @@ resource "google_pubsub_subscription" "GtfsRouteDispatcherTopic" {
   retry_policy {
     minimum_backoff = "10s"
   }
+}
+
+# Dead-letter forwarding runs as the Pub/Sub service agent, which needs
+# publish on the dead-letter topic and subscribe on the source subscription.
+data "google_project" "gcp_resources_project" {
+  project_id = var.gcp_resources_project
+}
+
+resource "google_pubsub_topic_iam_member" "gtfs_route_dispatcher_dead_letter_publisher" {
+  project = var.gcp_resources_project
+  topic   = google_pubsub_topic.GtfsRouteDispatcherDeadLetterQueue.name
+  role    = "roles/pubsub.publisher"
+  member  = "serviceAccount:service-${data.google_project.gcp_resources_project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}
+
+resource "google_pubsub_subscription_iam_member" "gtfs_route_dispatcher_dead_letter_subscriber" {
+  project      = var.gcp_resources_project
+  subscription = google_pubsub_subscription.GtfsRouteDispatcherTopic.name
+  role         = "roles/pubsub.subscriber"
+  member       = "serviceAccount:service-${data.google_project.gcp_resources_project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
 
 resource "google_pubsub_topic" "ExportNetexBlocksQueue" {
