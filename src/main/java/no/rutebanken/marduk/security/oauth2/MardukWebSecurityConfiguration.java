@@ -10,7 +10,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -57,13 +56,13 @@ public class MardukWebSecurityConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http, MultiIssuerAuthenticationManagerResolver multiIssuerResolver) throws Exception {
         http.cors(withDefaults()).csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/services/openapi.yaml")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/services/timetable_admin/openapi.yaml")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/services/timetable-management/openapi.yaml")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/prometheus")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health/liveness")).permitAll()
-                        .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health/readiness")).permitAll()
+                        .requestMatchers("/services/openapi.yaml").permitAll()
+                        .requestMatchers("/services/timetable_admin/openapi.yaml").permitAll()
+                        .requestMatchers("/services/timetable-management/openapi.yaml").permitAll()
+                        .requestMatchers("/actuator/prometheus").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/health/liveness").permitAll()
+                        .requestMatchers("/actuator/health/readiness").permitAll()
                         .anyRequest().authenticated()
                 ).oauth2ResourceServer(configurer -> configurer.authenticationManagerResolver(multiIssuerResolver))
                 .oauth2Client(withDefaults());
