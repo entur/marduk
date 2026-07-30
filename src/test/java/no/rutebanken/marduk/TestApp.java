@@ -36,6 +36,16 @@ public class TestApp extends App {
     }
 
     @Override
+    public void configure() throws Exception {
+        super.configure();
+        // A pubsub consumer thread can survive context shutdown parked in an
+        // uninterruptible awaitTerminated. Camel waits twice this long per stuck
+        // pool, and the thread never terminates, so the default 10s only slows
+        // the build.
+        getContext().getExecutorServiceManager().setShutdownAwaitTermination(1000);
+    }
+
+    @Override
     protected void waitForProviderRepository() {
 
     }
