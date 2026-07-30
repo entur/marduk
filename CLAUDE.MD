@@ -12,13 +12,15 @@ Marduk is a Spring Boot application that orchestrates the timetable data import 
 ## Technology Stack
 
 - **Language**: Java 21
-- **Framework**: Spring Boot 3.x with Apache Camel 4.18.x
-- **Build Tool**: Maven
+- **Framework**: Spring Boot 4 with Apache Camel
+- **Build Tool**: Maven, parent `org.entur.ror:superpom` (sets the Spring Boot version)
 - **Database**: PostgreSQL (with Flyway migrations)
 - **Messaging**: Google Cloud PubSub
 - **Storage**: Google Cloud Storage (GCS)
 - **REST**: Jersey (JAX-RS)
 - **Deployment**: Kubernetes (Helm charts in `helm/`)
+
+Versions live in pom.xml; do not trust versions written in this file.
 
 ## Project Structure
 

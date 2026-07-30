@@ -52,7 +52,6 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -94,12 +93,12 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         @ConditionalOnWebApplication
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             http.cors(withDefaults()).csrf(AbstractHttpConfigurer::disable)
-                    .authorizeHttpRequests(authz -> authz.requestMatchers(AntPathRequestMatcher.antMatcher("/services/openapi.yaml")).permitAll()
-                            .requestMatchers(AntPathRequestMatcher.antMatcher("/services/timetable_admin/openapi.yaml")).permitAll()
-                    .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/prometheus")).permitAll()
-                            .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health")).permitAll()
-                            .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health/liveness")).permitAll()
-                            .requestMatchers(AntPathRequestMatcher.antMatcher("/actuator/health/readiness")).permitAll()
+                    .authorizeHttpRequests(authz -> authz.requestMatchers("/services/openapi.yaml").permitAll()
+                            .requestMatchers("/services/timetable_admin/openapi.yaml").permitAll()
+                    .requestMatchers("/actuator/prometheus").permitAll()
+                            .requestMatchers("/actuator/health").permitAll()
+                            .requestMatchers("/actuator/health/liveness").permitAll()
+                            .requestMatchers("/actuator/health/readiness").permitAll()
                             .anyRequest().authenticated())
                     .oauth2ResourceServer(configurer -> configurer.jwt(withDefaults()))
                     .oauth2Client(withDefaults());

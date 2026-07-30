@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.entur.ror</groupId>
         <artifactId>superpom</artifactId>
-        <version>4.10.0</version>
+        <version>6.5.0</version>
     </parent>
 
     <groupId>no.rutebanken.marduk</groupId>
@@ -24,8 +24,11 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <camel.version>4.18.3</camel.version>
-        <entur.helpers.version>5.50.0</entur.helpers.version>
+        <camel.version>4.21.0</camel.version>
+        <!-- unmanaged by any BOM, must track the kubernetes-client version that camel-kubernetes pulls in -->
+        <kubernetes-client.version>7.7.0</kubernetes-client.version>
+        <entur.helpers.version>7.2.0</entur.helpers.version>
+        <spring-cloud-gcp-dependencies.version>7.4.10</spring-cloud-gcp-dependencies.version>
         <commons-io.version>2.21.0</commons-io.version>
         <commons-csv.version>1.14.1</commons-csv.version>
         <zt-zip.version>1.17</zt-zip.version>
@@ -38,6 +41,28 @@
     <dependencyManagement>
         <dependencies>
 
+            <!--
+              Must precede spring-cloud-gcp-dependencies, which pins opentelemetry-api to an older
+              version than the rest of the opentelemetry modules resolve to. First declaration wins.
+            -->
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom</artifactId>
+                <version>${opentelemetry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!--
+              entur-helpers still pins spring-cloud-gcp 5.11.3, which references Boot 3 classes that
+              no longer exist. Remove this once helpers ships a Boot 4 compatible version.
+            -->
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>spring-cloud-gcp-dependencies</artifactId>
+                <version>${spring-cloud-gcp-dependencies.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>org.apache.camel.springboot</groupId>
                 <artifactId>camel-spring-boot-bom</artifactId>
@@ -62,20 +87,6 @@
             <groupId>org.entur.ror.helpers</groupId>
             <artifactId>storage-gcp-gcs</artifactId>
             <version>${entur.helpers.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-codec-http2</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.protobuf</groupId>
-                    <artifactId>protobuf-lite</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.entur.ror.helpers</groupId>
@@ -99,6 +110,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!-- WebClient auto-configuration is no longer part of the web starters in Boot 4 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-webclient</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -172,6 +188,19 @@
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-kubernetes-starter</artifactId>
+            <exclusions>
+                <!-- fabric8's default Vert.x transport is built for Netty 4.1, Spring Boot 4 forces
+                     Netty 4.2. Use the Netty-free JDK transport so k8s leader election keeps working. -->
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-httpclient-vertx</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-httpclient-jdk</artifactId>
+            <version>${kubernetes-client.version}</version>
         </dependency>
         <!-- Cluster services back the master: endpoint used by BaseRouteBuilder.singletonFrom()
              (kubernetes leader election in prod, file-lock locally). Camel 4.18 no longer pulls
@@ -200,6 +229,11 @@
 
         <!-- Other-->
 
+        <!-- Boot 4 moved Flyway auto-configuration into its own module; without it migrations never run -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-flyway</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
@@ -227,13 +261,6 @@
         <dependency>
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>
-        </dependency>
-
-        <!--Janino is required by Logback for conditional processing in logback.xml-->
-        <dependency>
-            <groupId>org.codehaus.janino</groupId>
-            <artifactId>janino</artifactId>
-            <scope>runtime</scope>
         </dependency>
 
         <dependency>
@@ -270,12 +297,12 @@
         <!-- testing -->
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>gcloud</artifactId>
+            <artifactId>testcontainers-gcloud</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

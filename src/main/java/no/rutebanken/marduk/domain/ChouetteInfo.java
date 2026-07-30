@@ -107,6 +107,15 @@ public class ChouetteInfo {
         return enableAutoValidation;
     }
 
+    /**
+     * A referential that is null or blank cannot be validated. Camel's Simple language, which
+     * used to express this filter, treats a blank string as false, so this keeps the nightly
+     * selection unchanged.
+     */
+    public boolean isAutoValidationCandidate() {
+        return enableAutoValidation && referential != null && !referential.isBlank();
+    }
+
     public ChouetteInfo setId(Long id) {
         this.id = id;
         return this;

@@ -28,7 +28,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.testcontainers.containers.PubSubEmulatorContainer;
+import org.testcontainers.gcloud.PubSubEmulatorContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.FileReader;

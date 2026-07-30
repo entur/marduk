@@ -4,5 +4,26 @@
   ],
   "timezone": "Europe/Oslo",
   "automergeSchedule": "after 10pm every weekday",
-  "separateMinorPatch": true
+  "separateMinorPatch": true,
+  "packageRules": [
+    {
+      "description": "The superpom carries the Spring Boot version, so a superpom minor is a Spring Boot minor. org.entur packages are exempt from the shared release-age cooldown, so an automerged bump would land unreviewed the day it is published.",
+      "matchPackageNames": [
+        "org.entur.ror:superpom"
+      ],
+      "automerge": false
+    },
+    {
+      "description": "Camel is not SemVer compliant. The shared config only guards camel-spring-boot-bom, but camel.version also drives camel-test-spring-junit5.",
+      "matchPackageNames": [
+        "org.apache.camel.springboot:camel-spring-boot-bom",
+        "org.apache.camel:camel-test-spring-junit5"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "automerge": false
+    }
+  ]
 }

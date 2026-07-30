@@ -17,6 +17,8 @@
 package no.rutebanken.marduk.routes.chouette;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.ChouetteInfo;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.processors.NightlyValidationFileProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -75,7 +77,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
         from("direct:triggerAntuValidationForAllProviders")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorService("allProvidersExecutorService")
-                .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} && ${body.chouetteInfo.referential}"))
+                .filter(e -> isAutoValidationCandidate(e, true))
                 .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
@@ -99,7 +101,7 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
         from("direct:chouetteValidateLevel2ForAllProviders")
                 .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
                 .split().body().parallelProcessing().executorService("allProvidersExecutorService")
-                .filter(simple("${body.chouetteInfo.enableAutoValidation} && ${body.chouetteInfo.migrateDataToProvider} == null && ${body.chouetteInfo.referential}"))
+                .filter(e -> isAutoValidationCandidate(e, false))
                 .process(this::setNewCorrelationId)
                 .setHeader(PROVIDER_ID, simple("${body.id}"))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
@@ -184,6 +186,12 @@ public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder
                 .end()
                 .routeId("chouette-process-job-list-after-validation");
 
+    }
+
+    private static boolean isAutoValidationCandidate(Exchange e, boolean requireMigrationTarget) {
+        ChouetteInfo chouetteInfo = e.getIn().getBody(Provider.class).getChouetteInfo();
+        return chouetteInfo.isAutoValidationCandidate()
+                && (chouetteInfo.getMigrateDataToProvider() != null) == requireMigrationTarget;
     }
 
 }
