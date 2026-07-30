@@ -59,10 +59,15 @@ public class NetexFlexibleLinesExportRouteBuilder extends BaseRouteBuilder {
         from("google-pubsub:{{marduk.pubsub.project.id}}:FlexibleLinesExportQueue")
                 .log(LoggingLevel.INFO, correlation() + "Received notification from Uttu of new flexible NeTEx dataset ${body}")
 
+                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
+                // An unknown referential cannot succeed on redelivery, so ack and drop the
+                // notification instead of failing and having Pub/Sub redeliver it forever
+                .filter(e -> e.getIn().getHeader(PROVIDER_ID) == null)
+                    .log(LoggingLevel.WARN, correlation() + "Ignoring flexible lines export notification for unknown referential ${header." + CHOUETTE_REFERENTIAL + "}")
+                    .stop()
+                .end()
                 .process(e -> {
-                    Long providerId =  getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class));
-                    Provider provider = getProviderRepository().getProvider(providerId);
-                    e.getIn().setHeader(PROVIDER_ID, providerId);
+                    Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
                     e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
                     e.getIn().setHeader(FILE_HANDLE, BLOBSTORE_PATH_UTTU +  e.getIn().getBody(String.class));
                 })
