@@ -28,7 +28,7 @@
         <!-- unmanaged by any BOM, must track the kubernetes-client version that camel-kubernetes pulls in -->
         <kubernetes-client.version>7.7.0</kubernetes-client.version>
         <entur.helpers.version>7.2.0</entur.helpers.version>
-        <spring-cloud-gcp-dependencies.version>7.4.10</spring-cloud-gcp-dependencies.version>
+        <spring-cloud-gcp-dependencies.version>8.1.0</spring-cloud-gcp-dependencies.version>
         <commons-io.version>2.21.0</commons-io.version>
         <commons-csv.version>1.14.1</commons-csv.version>
         <zt-zip.version>1.17</zt-zip.version>
