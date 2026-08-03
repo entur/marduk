@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Copy maven settings
@@ -23,10 +23,10 @@ jobs:
           wget https://raw.githubusercontent.com/entur/ror-maven-settings/master/.m2/settings.xml -O .github/workflows/settings.xml
       - uses: actions/setup-java@v5
         with:
-          java-version: 21.0.5+11
+          java-version: 21.0.12
           distribution: liberica
       - name: Cache Maven dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -53,7 +53,7 @@ jobs:
                   -Dsonar.projectName=${SONAR_PROJECT_NAME} \
                   -Dsonar.host.url=https://sonarcloud.io \
                   -Dsonar.token=${SONAR_TOKEN}
-      - uses: actions/upload-artifact@v5.0.0
+      - uses: actions/upload-artifact@v7
         with:
           path: target
   openapi-lint:
