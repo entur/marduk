@@ -28,11 +28,11 @@
         <!-- unmanaged by any BOM, must track the kubernetes-client version that camel-kubernetes pulls in -->
         <kubernetes-client.version>7.7.0</kubernetes-client.version>
         <entur.helpers.version>7.2.0</entur.helpers.version>
-        <spring-cloud-gcp-dependencies.version>7.4.10</spring-cloud-gcp-dependencies.version>
-        <commons-io.version>2.21.0</commons-io.version>
+        <spring-cloud-gcp-dependencies.version>8.1.0</spring-cloud-gcp-dependencies.version>
+        <commons-io.version>2.22.0</commons-io.version>
         <commons-csv.version>1.14.1</commons-csv.version>
-        <zt-zip.version>1.17</zt-zip.version>
-        <json-unit.version>5.1.2</json-unit.version>
+        <zt-zip.version>1.18.2</zt-zip.version>
+        <json-unit.version>6.0.1</json-unit.version>
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
         <argLine/>
@@ -335,7 +335,7 @@
             <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
-                <version>7.21.0</version>
+                <version>7.24.0</version>
                 <executions>
                     <execution>
                         <id>generate-timetable-management-api</id>
