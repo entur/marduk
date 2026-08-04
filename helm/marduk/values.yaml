@@ -17,16 +17,39 @@ common:
       - secretRef:
           name: marduk-auth
     probes:
-      liveness:
-        path: /actuator/health/liveness
-        periodSeconds: 10
-        failureThreshold: 3
-        port: 9001
-      readiness:
-        path: /actuator/health/readiness
-        periodSeconds: 10
-        failureThreshold: 3
-        port: 9001
+      # spec replaces the chart's whole probe block, which emits no timeoutSeconds and so gets
+      # the 1s k8s default - too tight for a path that shares platform-http's task executor
+      # with 150MB uploads. Both probes target /services/health because it is served by
+      # platform-http itself: a pod whose Camel mappings never registered fails them, while
+      # /actuator/health stays UP in that state. Liveness thresholds are deliberately slack so
+      # executor saturation recycles nothing, but a permanently unmapped pod is still replaced.
+      spec:
+        livenessProbe:
+          httpGet:
+            path: /services/health
+            port: 8080
+          initialDelaySeconds: 140
+          periodSeconds: 10
+          # 60 x 10s stays clear of spring.mvc.async.request-timeout=300s, so a pod saturated by
+          # uploads about to time out is not killed for it
+          failureThreshold: 60
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /services/health
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        startupProbe:
+          # httpGet, not tcpSocket: the connector binds before Camel starts, so a tcpSocket probe
+          # succeeds immediately and gates nothing
+          httpGet:
+            path: /services/health
+            port: 8080
+          failureThreshold: 300
+          periodSeconds: 1
     prometheus:
       enabled: true
       path: /actuator/prometheus

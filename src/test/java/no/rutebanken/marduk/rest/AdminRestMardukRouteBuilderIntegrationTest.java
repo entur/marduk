@@ -148,6 +148,9 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @EndpointInject("mock:processFileQueue")
     protected MockEndpoint processFileQueue;
 
+    @Produce("http:localhost:{{server.port}}/services/health")
+    protected ProducerTemplate healthTemplate;
+
     @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/import")
     protected ProducerTemplate importTemplate;
 
@@ -177,6 +180,20 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
 
     @Produce("http:localhost:{{server.port}}/services/timetable_admin/upload/" + CHOUETTE_REFERENTIAL_RUT)
     protected ProducerTemplate uploadFileTemplate;
+
+    /**
+     * Both probes target this endpoint, so it has to be served by platform-http itself. The
+     * actuator health group reports UP even when the platform-http mappings are unreachable,
+     * which is the failure mode this endpoint exists to expose.
+     */
+    @Test
+    void getHealth() throws Exception {
+        context.start();
+
+        InputStream response = (InputStream) healthTemplate.requestBodyAndHeaders(null, getTestHeaders("GET"));
+
+        assertEquals("OK", new String(IOUtils.toByteArray(response)));
+    }
 
     @Value("#{'${timetable.export.blob.prefixes:outbound/gtfs/,outbound/netex/}'.split(',')}")
     private List<String> exportFileStaticPrefixes;
