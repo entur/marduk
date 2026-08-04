@@ -88,6 +88,7 @@ class MardukWebSecurityConfigurationTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
+            "/services/health",
             "/services/openapi.yaml",
             "/services/timetable_admin/openapi.yaml",
             "/services/timetable-management/openapi.yaml",
