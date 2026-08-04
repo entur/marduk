@@ -14,6 +14,9 @@ data:
     # platform-http runs routes async; without this, Tomcat's 30s async default can time out a slow
     # upload and recycle its multipart temp files while the route is still processing them
     spring.mvc.async.request-timeout=300s
+    # init the servlet before Camel starts, or platform-http's route mappings are unreachable
+    # and every /services/** request gets Spring's no-handler 404
+    spring.mvc.servlet.load-on-startup=1
     server.port={{ .Values.common.service.internalPort }}
     server.compression.enabled=true
 
