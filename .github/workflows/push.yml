@@ -23,7 +23,7 @@ jobs:
           wget https://raw.githubusercontent.com/entur/ror-maven-settings/master/.m2/settings.xml -O .github/workflows/settings.xml
       - uses: actions/setup-java@v5
         with:
-          java-version: 21.0.12
+          java-version: 25.0.4
           distribution: liberica
       - name: Cache Maven dependencies
         uses: actions/cache@v6
@@ -76,9 +76,30 @@ jobs:
     with:
       path: 'src/main/resources/openapi/timetable-management/openapi.yaml'
 
+  docker-smoke:
+    needs: [ maven-verify ]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: artifact
+          path: target
+      - run: docker build -t marduk:smoke .
+      # Nothing else in CI runs the image. Reaching Spring's startup line proves the JRE accepted the
+      # chart's JVM options and loaded the application bytecode; it then fails on config that only
+      # exists in the cluster, which is fine. Anything earlier (wrong class file version, a flag the
+      # JRE rejects) never gets that far.
+      - run: |
+          opts=$(awk '/JDK_JAVA_OPTIONS:/{f=1;next} f&&/^        [^ ]/{sub(/-Dspring.config.location=[^ ]*/,"");printf "%s ",$0;next} f{exit}' helm/marduk/values.yaml)
+          docker run --rm -e JDK_JAVA_OPTIONS="$opts" marduk:smoke 2>&1 | tee smoke.log || true
+          grep -q "using Java" smoke.log
+
   docker-build:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [maven-verify]
+    needs: [maven-verify, docker-smoke]
     uses: entur/gha-docker/.github/workflows/build.yml@v1
     with:
       build_artifact_name: artifact

@@ -53,9 +53,11 @@ common:
   configmap:
     data:
       JDK_JAVA_OPTIONS:
-        -server -Xss512m -Xmx5g -XX:+UseParallelGC -XX:GCTimeRatio=4
+        -server -Xss512k -Xmx5g -XX:+UseParallelGC -XX:GCTimeRatio=4
         -XX:AdaptiveSizePolicyWeight=90 -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40
-        -XX:ActiveProcessorCount=2 -Dspring.config.location=/etc/application-config/application.properties
+        -XX:ActiveProcessorCount=2 --enable-native-access=ALL-UNNAMED
+        --sun-misc-unsafe-memory-access=allow
+        -Dspring.config.location=/etc/application-config/application.properties
         -Dfile.encoding=UTF-8
       TZ: Europe/Oslo
     enabled: true
