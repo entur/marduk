@@ -79,6 +79,7 @@ jobs:
   docker-smoke:
     needs: [ maven-verify ]
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -93,17 +94,21 @@ jobs:
       # exists in the cluster, which is fine. Anything earlier (wrong class file version, a flag the
       # JRE rejects) never gets that far.
       - run: |
-          opts=$(awk '/JDK_JAVA_OPTIONS:/{f=1;next} f&&/^        [^ ]/{sub(/-Dspring.config.location=[^ ]*/,"");printf "%s ",$0;next} f{exit}' helm/marduk/values.yaml)
-          docker run --rm -e JDK_JAVA_OPTIONS="$opts" marduk:smoke 2>&1 | tee smoke.log || true
+          opts=$(yq '.common.configmap.data.JDK_JAVA_OPTIONS' helm/marduk/values.yaml \
+                 | sed 's#-Dspring.config.location=[^ ]*##')
+          # An empty or truncated lift would still let the app log "using Java", so fail loudly here
+          # instead of silently degrading the gate to a flagless run.
+          case "$opts" in *--enable-native-access*) ;; *) echo "::error::could not read JDK_JAVA_OPTIONS"; exit 1 ;; esac
+          timeout 180 docker run --rm -e JDK_JAVA_OPTIONS="$opts" marduk:smoke 2>&1 | tee smoke.log || true
           grep -q "using Java" smoke.log
 
   docker-build:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [maven-verify, docker-smoke]
+    needs: [maven-verify]
     uses: entur/gha-docker/.github/workflows/build.yml@v1
     with:
       build_artifact_name: artifact
       build_artifact_path: target
   docker-push:
-    needs: [docker-build]
+    needs: [docker-build, docker-smoke]
     uses: entur/gha-docker/.github/workflows/push.yml@v1

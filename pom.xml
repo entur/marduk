@@ -84,8 +84,9 @@
             <artifactId>entur-google-pubsub</artifactId>
             <version>${entur.helpers.version}</version>
             <exclusions>
-                <!-- Build-time library leaked as a compile dependency, managed by no BOM, so it pins
-                     itself to an old Boot version. Nothing loads it at runtime. -->
+                <!-- Build-time library leaked as a compile dependency. spring-boot-dependencies does
+                     not manage it, so it stays at the 4.0.4 that entur-helpers' own parent pins.
+                     Nothing loads it at runtime. -->
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-loader-tools</artifactId>

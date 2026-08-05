@@ -31,10 +31,9 @@ rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get", "watch", "list", "create"]
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    resourceNames: ["marduk-leaders"]
-    verbs: ["get", "watch", "list", "update", "patch", "delete"]
+  # Leader election for singletonFrom() routes. camel.cluster.kubernetes.config-map-name names the
+  # Lease, not a ConfigMap: KubernetesClusterService hardcodes leaseResourceType=Lease and the
+  # starter exposes no way to change it.
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
     verbs: ["create", "get", "update", "list"]

@@ -75,10 +75,14 @@ common:
     enabled: true
   configmap:
     data:
+      # IgnoreUnrecognizedVMOptions keeps the JVM starting if this chart is ever deployed against a
+      # pre-JDK-24 image: --sun-misc-unsafe-memory-access does not exist there and would otherwise
+      # kill the launcher before any log line.
       JDK_JAVA_OPTIONS:
         -server -Xss512k -Xmx5g -XX:+UseParallelGC -XX:GCTimeRatio=4
         -XX:AdaptiveSizePolicyWeight=90 -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40
-        -XX:ActiveProcessorCount=2 --enable-native-access=ALL-UNNAMED
+        -XX:ActiveProcessorCount=2
+        -XX:+IgnoreUnrecognizedVMOptions --enable-native-access=ALL-UNNAMED
         --sun-misc-unsafe-memory-access=allow
         -Dspring.config.location=/etc/application-config/application.properties
         -Dfile.encoding=UTF-8
