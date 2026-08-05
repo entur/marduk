@@ -15,18 +15,18 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - name: Copy maven settings
         run: |
           wget https://raw.githubusercontent.com/entur/ror-maven-settings/master/.m2/settings.xml -O .github/workflows/settings.xml
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5.7.0
         with:
           java-version: 25.0.4
           distribution: liberica
       - name: Cache Maven dependencies
-        uses: actions/cache@v6
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -53,25 +53,25 @@ jobs:
                   -Dsonar.projectName=${SONAR_PROJECT_NAME} \
                   -Dsonar.host.url=https://sonarcloud.io \
                   -Dsonar.token=${SONAR_TOKEN}
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.1
         with:
           path: target
   openapi-lint:
     needs: [ maven-verify ]
-    uses: entur/gha-api/.github/workflows/lint.yml@v6
+    uses: entur/gha-api/.github/workflows/lint.yml@v6.3.1
     secrets: inherit
     with:
       path: 'src/main/resources/openapi/timetable-management/openapi.yaml'
   openapi-validate:
     needs: [ maven-verify ]
-    uses: entur/gha-api/.github/workflows/validate.yml@v6
+    uses: entur/gha-api/.github/workflows/validate.yml@v6.3.1
     secrets: inherit
     with:
       path: 'src/main/resources/openapi/timetable-management/openapi.yaml'
   openapi-publish:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [ openapi-lint, openapi-validate ]
-    uses: entur/gha-api/.github/workflows/publish.yml@v6
+    uses: entur/gha-api/.github/workflows/publish.yml@v6.3.1
     secrets: inherit
     with:
       path: 'src/main/resources/openapi/timetable-management/openapi.yaml'
@@ -83,8 +83,8 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/download-artifact@v8.0.1
         with:
           name: artifact
           path: target
@@ -105,10 +105,10 @@ jobs:
   docker-build:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [maven-verify]
-    uses: entur/gha-docker/.github/workflows/build.yml@v1
+    uses: entur/gha-docker/.github/workflows/build.yml@v1.11.0
     with:
       build_artifact_name: artifact
       build_artifact_path: target
   docker-push:
     needs: [docker-build, docker-smoke]
-    uses: entur/gha-docker/.github/workflows/push.yml@v1
+    uses: entur/gha-docker/.github/workflows/push.yml@v1.11.0
