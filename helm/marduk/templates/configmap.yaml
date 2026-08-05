@@ -6,9 +6,8 @@ data:
     spring.main.sources=no.rutebanken.marduk
     spring.profiles.active=gcs-blobstore
     spring.datasource.url=jdbc:postgresql://localhost:5432/marduk
-    spring.datasource.platform=postgresql
     spring.datasource.driver-class-name=org.postgresql.Driver
-    spring.datasource.maxActive=10
+    spring.datasource.hikari.maximum-pool-size=10
     spring.servlet.multipart.max-file-size=150MB
     spring.servlet.multipart.max-request-size=150MB
     # platform-http runs routes async; without this, Tomcat's 30s async default can time out a slow
