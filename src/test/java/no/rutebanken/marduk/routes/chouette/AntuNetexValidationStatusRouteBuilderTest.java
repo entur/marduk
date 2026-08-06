@@ -20,6 +20,7 @@ import java.util.Map;
 
 import static no.rutebanken.marduk.Constants.*;
 import static no.rutebanken.marduk.routes.chouette.AntuNetexValidationStatusRouteBuilder.STATUS_VALIDATION_FAILED;
+import static no.rutebanken.marduk.routes.chouette.AntuNetexValidationStatusRouteBuilder.STATUS_VALIDATION_TIMEOUT;
 import static no.rutebanken.marduk.routes.chouette.AntuNetexValidationStatusRouteBuilder.STATUS_VALIDATION_OK;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -146,6 +147,54 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain())
                 && JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION.name().equals(je.getAction())
                 && JobEvent.State.FAILED.equals(je.getState())));
+    }
+
+    @Test
+    void testAntuStatusValidationTimeoutShouldReportTimeoutWithErrorCode() throws Exception {
+
+        AdviceWith.adviceWith(context, "antu-netex-validation-failed", a ->
+                a.interceptSendToEndpoint("direct:updateStatus")
+                        .skipSendToOriginalEndpoint()
+                        .to("mock:updateStatus"));
+
+        context.start();
+
+        updateStatus.expectedMessageCount(1);
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put(VALIDATION_STAGE_HEADER, VALIDATION_STAGE_PREVALIDATION);
+        headers.put(VALIDATION_DATASET_FILE_HANDLE_HEADER, "testFileName");
+        headers.put(VALIDATION_CORRELATION_ID_HEADER, "testCorrelationId");
+        sendBodyAndHeadersToPubSub(importTemplate, STATUS_VALIDATION_TIMEOUT, headers);
+
+        updateStatus.assertIsSatisfied();
+
+        List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
+        assertTrue(events.stream().anyMatch(je -> JobEvent.TimetableAction.PREVALIDATION.name().equals(je.getAction())
+                && JobEvent.State.TIMEOUT.equals(je.getState())
+                && JobEvent.JOB_ERROR_VALIDATION_INCOMPLETE.equals(je.getErrorCode())));
+    }
+
+    @Test
+    void testAntuStatusTimeoutForUnknownStageIsDiscarded() throws Exception {
+
+        AdviceWith.adviceWith(context, "antu-netex-validation-failed", a ->
+                a.interceptSendToEndpoint("direct:updateStatus")
+                        .skipSendToOriginalEndpoint()
+                        .to("mock:updateStatus"));
+
+        context.start();
+
+        updateStatus.expectedMessageCount(0);
+        updateStatus.setSleepForEmptyTest(5000);
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put(VALIDATION_STAGE_HEADER, "no-such-stage");
+        headers.put(VALIDATION_DATASET_FILE_HANDLE_HEADER, "testFileName");
+        headers.put(VALIDATION_CORRELATION_ID_HEADER, "testCorrelationId");
+        sendBodyAndHeadersToPubSub(importTemplate, STATUS_VALIDATION_TIMEOUT, headers);
+
+        updateStatus.assertIsSatisfied();
     }
 
     @Test

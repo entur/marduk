@@ -24,6 +24,7 @@ import no.rutebanken.marduk.routes.experimental.NisabaHeadersProcessor;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.processors.PrevalidatedFileMetadataProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +39,9 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
     protected static final String STATUS_VALIDATION_STARTED = "started";
     protected static final String STATUS_VALIDATION_OK = "ok";
     protected static final String STATUS_VALIDATION_FAILED = "failed";
+    // Antu could not complete the validation, as opposed to the dataset being invalid.
+    protected static final String STATUS_VALIDATION_TIMEOUT = "timeout";
+    private static final String VALIDATION_JOB_STATE_PROPERTY = "EnturValidationJobState";
 
     private final ExperimentalImportHelpers experimentalImportHelpers;
     private final String nisabaExchangeContainerName;
@@ -76,6 +80,12 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .to("direct:antuNetexValidationComplete")
                 .when(body().isEqualTo(constant(STATUS_VALIDATION_FAILED)))
                 .to("direct:antuNetexValidationFailed")
+                .when(body().isEqualTo(constant(STATUS_VALIDATION_TIMEOUT)))
+                .setProperty(VALIDATION_JOB_STATE_PROPERTY, constant(JobEvent.State.TIMEOUT))
+                .setHeader(Constants.JOB_ERROR_CODE, constant(JobEvent.JOB_ERROR_VALIDATION_INCOMPLETE))
+                .to("direct:antuNetexValidationFailed")
+                .otherwise()
+                .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown Antu validation status ${body} for referential ${header." + DATASET_REFERENTIAL + "}. Discarding.")
                 .routeId("antu-netex-validation-status");
 
         from("direct:antuNetexValidationStarted")
@@ -316,22 +326,22 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .routeId("antu-netex-validation-complete");
 
         from("direct:antuNetexValidationFailed")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation failed for referential ${header." + DATASET_REFERENTIAL + "}")
                 .choice()
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.FAILED).build())
+                .process(e -> buildUnsuccessfulValidationEvent(e, JobEvent.TimetableAction.PREVALIDATION))
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.FAILED).build())
+                .process(e -> buildUnsuccessfulValidationEvent(e, JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION))
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION).state(JobEvent.State.FAILED).build())
+                .process(e -> buildUnsuccessfulValidationEvent(e, JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION))
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_FLEX_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.FAILED).build())
+                .process(e -> buildUnsuccessfulValidationEvent(e, JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION))
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION).state(JobEvent.State.FAILED).build())
+                .process(e -> buildUnsuccessfulValidationEvent(e, JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION))
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.FAILED).build())
+                .process(e -> buildUnsuccessfulValidationEvent(e, JobEvent.TimetableAction.PREVALIDATION))
                 .otherwise()
                 .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
+                .stop()
                 //end otherwise
                 .end()
                 // end choice
@@ -339,6 +349,11 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .to("direct:updateStatus")
                 .routeId("antu-netex-validation-failed");
 
+    }
+
+    private static void buildUnsuccessfulValidationEvent(Exchange e, JobEvent.TimetableAction timetableAction) {
+        JobEvent.State state = e.getProperty(VALIDATION_JOB_STATE_PROPERTY, JobEvent.State.FAILED, JobEvent.State.class);
+        JobEvent.providerJobBuilder(e).timetableAction(timetableAction).state(state).build();
     }
 
     /**

@@ -93,6 +93,11 @@ public class JobEvent {
      */
     public static final String JOB_ERROR_VALIDATION_NO_DATA = "ERROR_VALIDATION_NO_DATA";
 
+    /**
+     * The validation service could not validate every file in the dataset, so no verdict was reached.
+     */
+    public static final String JOB_ERROR_VALIDATION_INCOMPLETE = "ERROR_VALIDATION_INCOMPLETE";
+
 
     /**
      * Chouette failure codes
