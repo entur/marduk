@@ -4,8 +4,8 @@ metadata:
   name: marduk-psql-connection
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{.Release.Name}}
-    shortname: marduk
-    team: ror
+    {{- include "marduk.common.labels" . | indent 4 }}
+  annotations:
+    {{- include "marduk.common.annotations" . | indent 4 }}
 data:
   INSTANCES: {{.Values.sql.instance}}

@@ -161,3 +161,5 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "marduk.common.labels" . | indent 4 }}
+  annotations:
+    {{- include "marduk.common.annotations" . | indent 4 }}
