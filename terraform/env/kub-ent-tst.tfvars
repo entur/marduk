@@ -1,7 +1,0 @@
-gcp_resources_project = "ent-marduk-tst"
-antu_netex_validation_status_queue_topic = "projects/ent-antu-tst/topics/AntuNetexValidationStatusQueue"
-bucket_instance_suffix="test"
-ashur_service_account="serviceAccount:application@ent-ashur-tst.iam.gserviceaccount.com"
-marduk_exchange_storage_bucket="marduk-exchange-test"
-servicelinker_service_account="serviceAccount:application@ent-servicelnk-tst.iam.gserviceaccount.com"
-servicelinker_terraform_service_account="serviceAccount:gh-servicelinker-5cdd-tst@ent-github-shr.iam.gserviceaccount.com"
