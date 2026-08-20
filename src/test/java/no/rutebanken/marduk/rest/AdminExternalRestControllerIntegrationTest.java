@@ -1,287 +1,215 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
-
 package no.rutebanken.marduk.rest;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.MardukSpringBootBaseTest;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.TestConstants;
-import no.rutebanken.marduk.exceptions.MardukException;
-import org.apache.camel.EndpointInject;
-import org.apache.camel.Exchange;
-import org.apache.camel.Produce;
-import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.component.mock.MockEndpoint;
+import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.pubsub.RecordingPubSubPublisher;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHeaders;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.IMPORT_TYPE;
+import static no.rutebanken.marduk.Constants.IMPORT_TYPE_NETEX_FLEX;
 import static no.rutebanken.marduk.TestConstants.CHOUETTE_REFERENTIAL_RUT;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 /**
- * Integration tests for the new Spring REST API endpoints (AdminExternalRestController).
- * These endpoints are designed for machine-to-machine communication.
+ * The machine-to-machine timetable-management API end to end, over real HTTP.
+ *
+ * <p>Nothing on the upload path is stubbed out beyond the publisher: the job status reporting is real,
+ * because it used to stringify every header and destroy the live upload stream, and stubbing it would hide
+ * that class of bug.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = TestApp.class)
-class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+class AdminExternalRestControllerIntegrationTest extends MardukSpringBootBaseTest {
 
-    @EndpointInject("mock:processFileQueue")
-    protected MockEndpoint processFileQueue;
+    private static final String DATASETS = "/services/timetable-management/datasets/";
+    private static final String FLEX_DATASETS = "/services/timetable-management/flex-datasets/";
 
-    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT)
-    protected ProducerTemplate uploadFileTemplate;
+    /**
+     * The recording publisher comes from {@link AdminRestControllerIntegrationTest}'s nested
+     * {@code @TestConfiguration}, which reaches every Spring test in the suite: {@code TestApp} spells out
+     * {@code @ComponentScan}, and doing so replaces Boot's default {@code TypeExcludeFilter} instead of
+     * adding to it. The same leak is what supplies the suite's {@code AuthorizationService}, so declaring a
+     * second publisher here would only collide with the first. Left as it is deliberately; putting the filter
+     * back means giving every Spring test its own authorization bean, which is its own change.
+     */
+    @Autowired
+    private MardukPubSubPublisher publisher;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable-management/flex-datasets/" + CHOUETTE_REFERENTIAL_RUT)
-    protected ProducerTemplate uploadFlexFileTemplate;
+    @Value("${server.port}")
+    private int port;
 
-    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT + "/filtered")
-    protected ProducerTemplate downloadFilteredDatasetTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT + "/filtered?throwExceptionOnFailure=false")
-    protected ProducerTemplate downloadFilteredDatasetNotFoundTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/unknown_codespace?throwExceptionOnFailure=false")
-    protected ProducerTemplate uploadFileUnknownCodespaceTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT + "?throwExceptionOnFailure=false")
-    protected ProducerTemplate uploadFileNoThrowTemplate;
+    private CloseableHttpClient client;
 
     @BeforeEach
-    void setUpProvider() {
+    void setUpClient() {
+        client = HttpClients.createDefault();
         when(providerRepository.getReferential(TestConstants.PROVIDER_ID_RUT)).thenReturn(CHOUETTE_REFERENTIAL_RUT);
+        recorded().clear();
+    }
+
+    @AfterEach
+    void closeClient() throws IOException {
+        client.close();
+    }
+
+    private RecordingPubSubPublisher recorded() {
+        return (RecordingPubSubPublisher) publisher;
     }
 
     @Test
-    void uploadNetexDatasetViaSpringApi() throws Exception {
-        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
-
-        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
+    void aDatasetIsStoredAndTheImportStarted() throws Exception {
+        knownCodespace();
         String fileName = "netex-test-spring-http-upload.zip";
 
-        // updateStatus deliberately not mocked: its real pubsub publish stringifies every header and
-        // destroyed live upload streams on Camel 4.18; mocking it hid exactly the bug this test pins.
-        AdviceWith.adviceWith(context, "process-file-after-import", a ->
-                a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue"));
+        assertEquals(200, send(upload(DATASETS + CHOUETTE_REFERENTIAL_RUT, fileName)).status());
 
-        processFileQueue.expectedMessageCount(1);
-
-        HttpEntity httpEntity = MultipartEntityBuilder.create()
-                .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
-                .build();
-        Map<String, Object> headers = getTestHeaders("POST");
-
-        context.start();
-        uploadFileTemplate.requestBodyAndHeaders(httpEntity, headers);
-
-        processFileQueue.assertIsSatisfied();
-
-        // Verify file was uploaded to blob store
-        InputStream receivedFile = internalInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
-        assertNotNull(receivedFile, "File should be uploaded to blob store");
-        byte[] fileContent = receivedFile.readAllBytes();
-        assertTrue(fileContent.length > 0, "Uploaded file should have content");
-
-        // Verify IMPORT_TYPE header is NOT set to NETEX_FLEX for regular dataset uploads
-        List<Exchange> exchanges = processFileQueue.getExchanges();
-        assertEquals(1, exchanges.size());
-        String importType = exchanges.getFirst().getIn().getHeader(IMPORT_TYPE, String.class);
-        assertNotEquals(IMPORT_TYPE_NETEX_FLEX, importType, "IMPORT_TYPE should NOT be set to IMPORT_TYPE_NETEX_FLEX for regular dataset uploads");
+        assertStored(fileName);
+        assertEquals(1, recorded().publishedTo(MardukQueues.PROCESS_FILE_QUEUE).size());
     }
 
     @Test
-    void uploadFlexNetexDatasetViaSpringApi() throws Exception {
-        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+    void anOrdinaryDatasetIsNotMarkedAsAFlexImport() throws Exception {
+        knownCodespace();
 
-        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
+        send(upload(DATASETS + CHOUETTE_REFERENTIAL_RUT, "netex.zip"));
+
+        assertNotEquals(IMPORT_TYPE_NETEX_FLEX, importTypePublished());
+    }
+
+    @Test
+    void aFlexDatasetIsMarkedAsAFlexImport() throws Exception {
+        knownCodespace();
         String fileName = "netex-flex-test-spring-http-upload.zip";
 
-        // updateStatus deliberately not mocked, see uploadNetexDatasetViaSpringApi
-        AdviceWith.adviceWith(context, "process-file-after-import", a ->
-                a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue"));
+        assertEquals(200, send(upload(FLEX_DATASETS + CHOUETTE_REFERENTIAL_RUT, fileName)).status());
 
-        processFileQueue.expectedMessageCount(1);
-
-        HttpEntity httpEntity = MultipartEntityBuilder.create()
-                .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
-                .build();
-        Map<String, Object> headers = getTestHeaders("POST");
-
-        context.start();
-        uploadFlexFileTemplate.requestBodyAndHeaders(httpEntity, headers);
-
-        processFileQueue.assertIsSatisfied();
-
-        // Verify file was uploaded to blob store
-        InputStream receivedFile = internalInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
-        assertNotNull(receivedFile, "File should be uploaded to blob store");
-        byte[] fileContent = receivedFile.readAllBytes();
-        assertTrue(fileContent.length > 0, "Uploaded file should have content");
-
-        // Verify IMPORT_TYPE header was set to NETEX_FLEX in the process queue
-        List<Exchange> exchanges = processFileQueue.getExchanges();
-        assertEquals(1, exchanges.size());
-        String importType = exchanges.getFirst().getIn().getHeader(IMPORT_TYPE, String.class);
-        assertEquals(IMPORT_TYPE_NETEX_FLEX, importType, "IMPORT_TYPE should be set to IMPORT_TYPE_NETEX_FLEX for flex dataset uploads");
+        assertStored(fileName);
+        assertEquals(IMPORT_TYPE_NETEX_FLEX, importTypePublished());
     }
 
     @Test
-    void downloadFilteredDatasetViaSpringApi() {
-        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+    void theFilteredDatasetIsDownloadedAsItWasStored() throws Exception {
+        knownCodespace();
+        byte[] content = "test-netex-content".getBytes();
+        internalInMemoryBlobStoreRepository.uploadBlob(filteredDatasetPath(), new ByteArrayInputStream(content));
 
-        // Set up a blob in the store for download
-        String blobPath = Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
-                + "rb_" + CHOUETTE_REFERENTIAL_RUT.toLowerCase()
-                + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
-        byte[] testContent = "test-netex-content".getBytes();
-        internalInMemoryBlobStoreRepository.uploadBlob(blobPath, new ByteArrayInputStream(testContent));
+        Response response = send(get(DATASETS + CHOUETTE_REFERENTIAL_RUT + "/filtered"));
 
-        Map<String, Object> headers = getTestHeaders("GET");
-
-        context.start();
-        Exchange response = downloadFilteredDatasetTemplate.request(downloadFilteredDatasetTemplate.getDefaultEndpoint(),
-                exchange -> {
-                    exchange.getIn().setHeaders(headers);
-                });
-
-        assertNotNull(response.getMessage().getBody(byte[].class), "Response body should not be null");
-        assertArrayEquals(testContent, response.getMessage().getBody(byte[].class), "Downloaded content should match uploaded content");
+        assertEquals(200, response.status());
+        assertArrayEquals(content, response.bytes());
     }
 
     @Test
-    void downloadFilteredDatasetNotFound() {
-        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+    void aMissingFilteredDatasetIsNotFound() throws Exception {
+        knownCodespace();
 
-        // Don't set up any blob - should return 404
-        Map<String, Object> headers = Map.of(
-                Exchange.HTTP_METHOD, "GET",
-                HttpHeaders.AUTHORIZATION, "Bearer test-token",
-                CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT);
-
-        context.start();
-        Exchange response = downloadFilteredDatasetNotFoundTemplate.request(downloadFilteredDatasetNotFoundTemplate.getDefaultEndpoint(),
-                exchange -> {
-                    exchange.getIn().setHeaders(headers);
-                });
-
-        assertEquals(404, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
-    }
-
-    // The upload route swallows failures in its doCatch and flags the exchange instead; the
-    // controller must turn that flag into the documented 500 instead of a false-positive 200.
-    @Test
-    void uploadReturns500WhenBlobStoreFails() throws Exception {
-        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
-
-        AdviceWith.adviceWith(context, "upload-file-and-start-import", a ->
-                a.weaveByToUri("direct:uploadInternalBlob").replace().process(e -> {
-                    throw new MardukException("simulated blob store failure");
-                }));
-
-        context.start();
-
-        Exchange response = uploadFileNoThrowTemplate.request(uploadFileNoThrowTemplate.getDefaultEndpoint(), e -> {
-            e.getIn().setBody(MultipartEntityBuilder.create()
-                    .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, "netex-blobstore-failure.zip")
-                    .build());
-            e.getIn().setHeaders(getTestHeaders("POST"));
-        });
-
-        assertEquals(500, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
-    }
-
-    // Failures outside the route's doCatch surface as an exchange exception; same 500 contract.
-    @Test
-    void uploadReturns500WhenRouteFailsBeforeUpload() throws Exception {
-        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
-
-        AdviceWith.adviceWith(context, "upload-file-and-start-import", a ->
-                a.weaveAddFirst().process(e -> {
-                    throw new MardukException("simulated failure at route entry");
-                }));
-
-        context.start();
-
-        Exchange response = uploadFileNoThrowTemplate.request(uploadFileNoThrowTemplate.getDefaultEndpoint(), e -> {
-            e.getIn().setBody(MultipartEntityBuilder.create()
-                    .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, "netex-route-entry-failure.zip")
-                    .build());
-            e.getIn().setHeaders(getTestHeaders("POST"));
-        });
-
-        assertEquals(500, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+        assertEquals(404, send(get(DATASETS + CHOUETTE_REFERENTIAL_RUT + "/filtered")).status());
     }
 
     @Test
-    void uploadWithoutFilePartFails() {
-        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
-
-        context.start();
-
-        Exchange response = uploadFileNoThrowTemplate.request(uploadFileNoThrowTemplate.getDefaultEndpoint(), e -> {
-            e.getIn().setBody(MultipartEntityBuilder.create()
-                    .addBinaryBody("not-the-file-part", "irrelevant".getBytes(), ContentType.DEFAULT_BINARY, "ignored.zip")
-                    .build());
-            e.getIn().setHeaders(getTestHeaders("POST"));
-        });
-
-        assertEquals(500, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
-    }
-
-    @Test
-    void uploadDatasetUnknownCodespace() {
+    void anUploadForAnUnknownCodespaceIsNotFound() throws Exception {
         when(providerRepository.getProviderId("unknown_codespace")).thenReturn(null);
 
-        String fileName = "netex-test-unknown-codespace.zip";
-
-        HttpEntity httpEntity = MultipartEntityBuilder.create()
-                .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
-                .build();
-        Map<String, Object> headers = Map.of(
-                Exchange.HTTP_METHOD, "POST",
-                HttpHeaders.AUTHORIZATION, "Bearer test-token",
-                CHOUETTE_REFERENTIAL, "unknown_codespace");
-
-        context.start();
-        Exchange response = uploadFileUnknownCodespaceTemplate.request(uploadFileUnknownCodespaceTemplate.getDefaultEndpoint(),
-                exchange -> {
-                    exchange.getIn().setBody(httpEntity);
-                    exchange.getIn().setHeaders(headers);
-                });
-
-        assertEquals(404, response.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
+        assertEquals(404, send(upload(DATASETS + "unknown_codespace", "netex.zip")).status());
     }
 
-    private static Map<String, Object> getTestHeaders(String method) {
-        return Map.of(
-                Exchange.HTTP_METHOD, method,
-                HttpHeaders.AUTHORIZATION, "Bearer test-token",
-                CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT);
+    @Test
+    void anUploadThatFailsAnswers500() throws Exception {
+        // An upload that did not happen must not answer 200. getProviderId answers, so authorization passes,
+        // but the provider itself is not there - which is what the upload needs in order to decide whether to
+        // start the import.
+        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(4242L);
+
+        assertEquals(500, send(upload(DATASETS + CHOUETTE_REFERENTIAL_RUT, "netex-upload-failure.zip")).status());
+    }
+
+    @Test
+    void anUploadWithoutAFilePartIsRejected() throws Exception {
+        knownCodespace();
+        HttpPost request = post(DATASETS + CHOUETTE_REFERENTIAL_RUT);
+        request.setEntity(MultipartEntityBuilder.create()
+                .addBinaryBody("not-the-file-part", "irrelevant".getBytes(), ContentType.DEFAULT_BINARY, "ignored.zip")
+                .build());
+
+        assertTrue(send(request).status() >= 400, "an upload with no file part answered a success");
+        assertTrue(recorded().publishedTo(MardukQueues.PROCESS_FILE_QUEUE).isEmpty());
+    }
+
+    // --------------------------------------------------------------------------------------- plumbing
+
+    private void knownCodespace() {
+        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+    }
+
+    private static String filteredDatasetPath() {
+        return Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
+                + "rb_" + CHOUETTE_REFERENTIAL_RUT.toLowerCase()
+                + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+    }
+
+    private void assertStored(String fileName) throws IOException {
+        InputStream stored = internalInMemoryBlobStoreRepository.getBlob(
+                Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/' + fileName);
+        assertNotNull(stored, "the uploaded file was not stored");
+        assertTrue(stored.readAllBytes().length > 0, "the uploaded file was stored empty");
+    }
+
+    private String importTypePublished() {
+        return recorded().publishedTo(MardukQueues.PROCESS_FILE_QUEUE).getFirst().attributes().get(IMPORT_TYPE);
+    }
+
+    private record Response(int status, byte[] bytes) {
+    }
+
+    private HttpPost upload(String path, String fileName) {
+        HttpPost request = post(path);
+        request.setEntity(MultipartEntityBuilder.create()
+                .addBinaryBody("file", getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName)
+                .build());
+        return request;
+    }
+
+    private HttpPost post(String path) {
+        HttpPost request = new HttpPost("http://localhost:" + port + path);
+        request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        return request;
+    }
+
+    private HttpGet get(String path) {
+        HttpGet request = new HttpGet("http://localhost:" + port + path);
+        request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        return request;
+    }
+
+    private Response send(HttpUriRequestBase request) throws IOException {
+        return client.execute(request, response -> new Response(
+                response.getCode(),
+                response.getEntity() == null ? new byte[0] : EntityUtils.toByteArray(response.getEntity())));
     }
 }

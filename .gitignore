@@ -47,3 +47,6 @@ gradlew.bat
 # Mac
 .DS_Store
 /.DS_Store
+
+# Agent worktrees created by Claude Code
+.claude/worktrees/

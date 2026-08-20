@@ -18,34 +18,25 @@ package no.rutebanken.marduk.rest;
 
 import jakarta.ws.rs.NotFoundException;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.rest.openapi.api.DatasetsApi;
 import no.rutebanken.marduk.rest.openapi.api.FlexDatasetsApi;
 import no.rutebanken.marduk.rest.openapi.model.UploadResult;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
 import no.rutebanken.marduk.security.UsernameService;
-import no.rutebanken.marduk.routes.file.MardukFileUtils;
+import no.rutebanken.marduk.upload.TimetableFileUploader;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Exchange;
-import org.apache.camel.ProducerTemplate;
-import org.apache.camel.spi.Synchronization;
-import org.apache.camel.support.DefaultExchange;
-import org.rutebanken.helper.organisation.NotAuthenticatedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.*;
@@ -63,23 +54,23 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
     private final MardukAuthorizationService mardukAuthorizationService;
     private final ProviderRepository providerRepository;
     private final MardukInternalBlobStoreService blobStoreService;
-    private final ProducerTemplate producerTemplate;
-    private final CamelContext camelContext;
+    private final TimetableFileUploader fileUploader;
     private final UsernameService usernameService;
+    private final boolean duplicateFilterRest;
 
     public AdminExternalRestController(
             MardukAuthorizationService mardukAuthorizationService,
             ProviderRepository providerRepository,
             MardukInternalBlobStoreService blobStoreService,
-            ProducerTemplate producerTemplate,
-            CamelContext camelContext,
-            UsernameService usernameService) {
+            TimetableFileUploader fileUploader,
+            UsernameService usernameService,
+            @Value("${duplicate.filter.rest:true}") boolean duplicateFilterRest) {
         this.mardukAuthorizationService = mardukAuthorizationService;
         this.providerRepository = providerRepository;
         this.blobStoreService = blobStoreService;
-        this.producerTemplate = producerTemplate;
-        this.camelContext = camelContext;
+        this.fileUploader = fileUploader;
         this.usernameService = usernameService;
+        this.duplicateFilterRest = duplicateFilterRest;
     }
 
     @Override
@@ -92,7 +83,7 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
 
         LOG.info("[{}] Authorization OK for Spring HTTP endpoint, uploading files and starting import pipeline", correlationId);
 
-        triggerFileUpload(file, codespace, providerId, correlationId, null);
+        upload(file, codespace, providerId, correlationId, null);
 
         return ResponseEntity.ok(new UploadResult().correlationId(correlationId));
     }
@@ -107,7 +98,7 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
 
         LOG.info("[{}] Authorization OK for Spring HTTP endpoint, uploading flex files and starting import pipeline", correlationId);
 
-        triggerFileUpload(file, codespace, providerId, correlationId, IMPORT_TYPE_NETEX_FLEX);
+        upload(file, codespace, providerId, correlationId, IMPORT_TYPE_NETEX_FLEX);
 
         return ResponseEntity.ok(new UploadResult().correlationId(correlationId));
     }
@@ -140,6 +131,12 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
         }
     }
 
+    private void upload(MultipartFile file, String codespace, Long providerId, String correlationId, String importType) {
+        fileUploader.upload(file, new TimetableFileUploader.Upload(
+                codespace, providerId, correlationId, usernameService.getPreferredUsername(),
+                importType, duplicateFilterRest, false));
+    }
+
     private Long validateAndGetProviderId(String codespace) {
         Long providerId = providerRepository.getProviderId(codespace);
         if (providerId == null) {
@@ -148,73 +145,4 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
         return providerId;
     }
 
-    private void triggerFileUpload(MultipartFile file, String codespace, Long providerId, String correlationId, String importType) {
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("No file provided");
-        }
-
-        String fileName = file.getOriginalFilename();
-        LOG.debug("[{}] Processing file: name={}, size={}, contentType={}",
-                correlationId, fileName, file.getSize(), file.getContentType());
-
-        Exchange exchange = new DefaultExchange(camelContext);
-        try {
-            exchange.getIn().setHeader(CHOUETTE_REFERENTIAL, codespace);
-            exchange.getIn().setHeader(PROVIDER_ID, providerId);
-            exchange.getIn().setHeader(CORRELATION_ID, correlationId);
-            exchange.getIn().setHeader(FILE_APPLY_DUPLICATES_FILTER, true);
-            exchange.getIn().setHeader(FILE_NAME, fileName);
-            exchange.getIn().setHeader(FILE_HANDLE, "inbound/received/" + codespace + "/" + fileName);
-            exchange.getIn().setHeader(USERNAME, usernameService.getPreferredUsername());
-
-            if (importType != null) {
-                exchange.getIn().setHeader(IMPORT_TYPE, importType);
-            }
-
-            // Drain the multipart stream once while the request is live; a lazy servlet stream is
-            // destroyed before the route reads it on Camel 4.18.
-            try (InputStream fileStream = file.getInputStream()) {
-                exchange.getIn().setHeader(FILE_CONTENT, MardukFileUtils.drainToStreamCache(exchange, fileStream));
-            }
-
-            producerTemplate.send("direct:uploadFileAndStartImport", exchange);
-
-            if (exchange.getException() != null) {
-                throw new MardukException("Upload failed for " + fileName, exchange.getException());
-            }
-            if (Boolean.TRUE.equals(exchange.getProperty(FILE_UPLOAD_FAILED))) {
-                throw new MardukException("Upload failed for " + fileName + ", see job status for correlationId " + correlationId);
-            }
-        } catch (IOException e) {
-            throw new MardukException("Failed to process multipart file", e);
-        } finally {
-            // If the exchange never reached the route (drain or send failure), its parked completions
-            // never ran and the spooled cache file would leak; run them here (no-op after success).
-            List<Synchronization> completions = exchange.getExchangeExtension().handoverCompletions();
-            if (completions != null) {
-                completions.forEach(completion -> completion.onFailure(exchange));
-            }
-        }
-    }
-
-    @ExceptionHandler(MardukException.class)
-    public ResponseEntity<String> handleUploadFailure(MardukException e) {
-        LOG.error("Upload processing failed", e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
-    }
-
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<String> handleAccessDenied(AccessDeniedException e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-    }
-
-    @ExceptionHandler(NotAuthenticatedException.class)
-    public ResponseEntity<String> handleNotAuthenticated(NotAuthenticatedException e) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
-    }
-
-    @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<String> handleNotFound(NotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-    }
 }

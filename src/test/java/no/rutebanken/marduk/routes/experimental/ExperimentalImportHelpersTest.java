@@ -4,7 +4,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukSpringBootBaseTest;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
-import org.apache.camel.Exchange;
+import no.rutebanken.marduk.pipeline.MardukMessage;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -17,80 +17,80 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
     @Test
     void testShouldRunExperimentalImportIfEnabledForCodespace() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
-        Exchange exchange = exchange();
+        MardukMessage message = message();
         ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, providerRepository);
-        Assertions.assertTrue(filter.shouldRunExperimentalImport(exchange));
+        Assertions.assertTrue(filter.shouldRunExperimentalImport(message));
     }
 
     @Test
     void testShouldNotRunExperimentalImportIfNotEnabledForCurrentCodespace() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithoutExperimentalImport()));
-        Exchange exchange = exchange();
+        MardukMessage message = message();
         ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, providerRepository);
-        Assertions.assertFalse(filter.shouldRunExperimentalImport(exchange));
+        Assertions.assertFalse(filter.shouldRunExperimentalImport(message));
     }
 
     @Test
     void testShouldNotRunExperimentalImportIfDisabledForAllCodespaces() {
         ExperimentalImportHelpers filter = new ExperimentalImportHelpers(false, providerRepository);
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
-        Assertions.assertFalse(filter.shouldRunExperimentalImport(exchange()));
+        Assertions.assertFalse(filter.shouldRunExperimentalImport(message()));
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithoutExperimentalImport()));
-        Assertions.assertFalse(filter.shouldRunExperimentalImport(exchange()));
+        Assertions.assertFalse(filter.shouldRunExperimentalImport(message()));
     }
 
     @Test
     void testPathToExportedNetexFileToMergeWithFlexForExperimentalImport() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
-        Exchange exchange = exchange();
+        MardukMessage message = message();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
         String expectedPath = "filtered-netex/TST/netex-before-merging/correlation/TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
-        Assertions.assertEquals(expectedPath, helpers.pathToExportedNetexFileToMergeWithFlex(exchange));
+        Assertions.assertEquals(expectedPath, helpers.pathToExportedNetexFileToMergeWithFlex(message));
     }
 
     @Test
     void testPathToExportedNetexFileToMergeWithFlexForNormalImport() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithoutExperimentalImport()));
-        Exchange exchange = exchange();
+        MardukMessage message = message();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, providerRepository);
         String expectedPath = Constants.BLOBSTORE_PATH_CHOUETTE + "netex/TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
-        Assertions.assertEquals(expectedPath, helpers.pathToExportedNetexFileToMergeWithFlex(exchange));
+        Assertions.assertEquals(expectedPath, helpers.pathToExportedNetexFileToMergeWithFlex(message));
     }
 
     @Test
     void testFlexibleDataWorkingDirectoryForExperimentalImport() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
-        Exchange exchange = exchange();
+        MardukMessage message = message();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
         String expectedPath = "/base/folder/correlation/unpacked-with-flexible-lines";
-        Assertions.assertEquals(expectedPath, helpers.flexibleDataWorkingDirectory(exchange));
+        Assertions.assertEquals(expectedPath, helpers.flexibleDataWorkingDirectory(message));
     }
 
     @Test
     void testFlexibleDataWorkingDirectoryForNormalImport() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithoutExperimentalImport()));
-        Exchange exchange = exchange();
+        MardukMessage message = message();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, providerRepository);
         String expectedPath = "/base/folder/unpacked-with-flexible-lines";
-        Assertions.assertEquals(expectedPath, helpers.flexibleDataWorkingDirectory(exchange));
+        Assertions.assertEquals(expectedPath, helpers.flexibleDataWorkingDirectory(message));
     }
 
     @Test
     void testDirectoryForMergedNetexForExperimentalImport() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
-        Exchange exchange = exchange();
+        MardukMessage message = message();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
         String expectedPath = "/base/folder/correlation/result";
-        Assertions.assertEquals(expectedPath, helpers.directoryForMergedNetex(exchange));
+        Assertions.assertEquals(expectedPath, helpers.directoryForMergedNetex(message));
     }
 
     @Test
     void testDirectoryForMergedNetexForNormalImport() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithoutExperimentalImport()));
-        Exchange exchange = exchange();
+        MardukMessage message = message();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(false, providerRepository);
         String expectedPath = "/base/folder/result";
-        Assertions.assertEquals(expectedPath, helpers.directoryForMergedNetex(exchange));
+        Assertions.assertEquals(expectedPath, helpers.directoryForMergedNetex(message));
     }
 
     // --- setServiceLinkModesHeader tests ---
@@ -99,13 +99,13 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
     void testSetServiceLinkModesHeaderNotSetWhenModesIsNull() {
         // providerWithExperimentalImport() leaves generateMissingServiceLinksForModes null
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
-        Exchange exchange = exchange();
+        MardukMessage message = message();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
 
-        helpers.setServiceLinkModesHeader(exchange);
+        helpers.setServiceLinkModesHeader(message);
 
         Assertions.assertNull(
-            exchange.getIn().getHeader(Constants.SERVICE_LINK_MODES_HEADER),
+            message.getHeader(Constants.SERVICE_LINK_MODES_HEADER),
             "Header should not be set when generateMissingServiceLinksForModes is null"
         );
     }
@@ -113,14 +113,14 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
     @Test
     void testSetServiceLinkModesHeaderIsEmptyStringWhenModesIsEmptySet() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithServiceLinkModes(Set.of())));
-        Exchange exchange = exchange();
+        MardukMessage message = message();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
 
-        helpers.setServiceLinkModesHeader(exchange);
+        helpers.setServiceLinkModesHeader(message);
 
         Assertions.assertEquals(
             "",
-            exchange.getIn().getHeader(Constants.SERVICE_LINK_MODES_HEADER, String.class),
+            message.getHeader(Constants.SERVICE_LINK_MODES_HEADER, String.class),
             "Empty mode set should produce an empty header value (signals: generate for no modes)"
         );
     }
@@ -128,12 +128,12 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
     @Test
     void testSetServiceLinkModesHeaderContainsAllConfiguredModes() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithServiceLinkModes(Set.of("BUS", "RAIL"))));
-        Exchange exchange = exchange();
+        MardukMessage message = message();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
 
-        helpers.setServiceLinkModesHeader(exchange);
+        helpers.setServiceLinkModesHeader(message);
 
-        String header = exchange.getIn().getHeader(Constants.SERVICE_LINK_MODES_HEADER, String.class);
+        String header = message.getHeader(Constants.SERVICE_LINK_MODES_HEADER, String.class);
         Assertions.assertNotNull(header, "Header should be set when modes are configured");
         Assertions.assertEquals(Set.of("BUS", "RAIL"), Set.of(header.split(",")),
             "Header should contain exactly the configured modes (order-independent)");
@@ -142,15 +142,15 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
     @Test
     void testSetServiceLinkModesHeaderStripsRbPrefix() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithServiceLinkModes(Set.of("FERRY"))));
-        Exchange exchange = exchange();
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, "rb_TST");
+        MardukMessage message = message();
+        message.setHeader(Constants.DATASET_REFERENTIAL, "rb_TST");
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
 
-        helpers.setServiceLinkModesHeader(exchange);
+        helpers.setServiceLinkModesHeader(message);
 
         Assertions.assertEquals(
             "FERRY",
-            exchange.getIn().getHeader(Constants.SERVICE_LINK_MODES_HEADER, String.class),
+            message.getHeader(Constants.SERVICE_LINK_MODES_HEADER, String.class),
             "rb_ prefix should be stripped when looking up the provider"
         );
     }
@@ -159,7 +159,7 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
     void testShouldSkipServicelinkerWhenModesIsEmptySet() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithServiceLinkModes(Set.of())));
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
-        Assertions.assertTrue(helpers.shouldSkipServicelinker(exchange()),
+        Assertions.assertTrue(helpers.shouldSkipServicelinker(message()),
             "Empty modes set should signal that servicelinker should be skipped");
     }
 
@@ -167,7 +167,7 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
     void testShouldNotSkipServicelinkerWhenModesIsNull() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
-        Assertions.assertFalse(helpers.shouldSkipServicelinker(exchange()),
+        Assertions.assertFalse(helpers.shouldSkipServicelinker(message()),
             "Null modes (unconfigured) should not skip servicelinker");
     }
 
@@ -175,7 +175,7 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
     void testShouldNotSkipServicelinkerWhenModesIsNonEmpty() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithServiceLinkModes(Set.of("BUS"))));
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
-        Assertions.assertFalse(helpers.shouldSkipServicelinker(exchange()),
+        Assertions.assertFalse(helpers.shouldSkipServicelinker(message()),
             "Non-empty modes should not skip servicelinker");
     }
 
@@ -193,26 +193,26 @@ class ExperimentalImportHelpersTest extends MardukSpringBootBaseTest {
     @Test
     void testShouldRunExperimentalImportWithRbPrefixedReferential() {
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
-        Exchange exchange = exchange();
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, "rb_TST");
+        MardukMessage message = message();
+        message.setHeader(Constants.DATASET_REFERENTIAL, "rb_TST");
         ExperimentalImportHelpers filter = new ExperimentalImportHelpers(true, providerRepository);
-        Assertions.assertTrue(filter.shouldRunExperimentalImport(exchange));
+        Assertions.assertTrue(filter.shouldRunExperimentalImport(message));
     }
 
     @Test
     void testPathToNetexForAshurFilteringIncludesCorrelationId() {
-        Exchange exchange = exchange();
+        MardukMessage message = message();
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
         String expectedPath = Constants.BLOBSTORE_PATH_OUTBOUND + "netex/TST/correlation/TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
-        Assertions.assertEquals(expectedPath, helpers.pathToNetexForAshurFiltering(exchange));
+        Assertions.assertEquals(expectedPath, helpers.pathToNetexForAshurFiltering(message));
     }
 
     @Test
     void testPathToNetexForAshurFilteringWithRbPrefix() {
-        Exchange exchange = exchange();
-        exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, "rb_TST");
+        MardukMessage message = message();
+        message.setHeader(Constants.CHOUETTE_REFERENTIAL, "rb_TST");
         ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
         String expectedPath = Constants.BLOBSTORE_PATH_OUTBOUND + "netex/rb_TST/correlation/rb_TST-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
-        Assertions.assertEquals(expectedPath, helpers.pathToNetexForAshurFiltering(exchange));
+        Assertions.assertEquals(expectedPath, helpers.pathToNetexForAshurFiltering(message));
     }
 }

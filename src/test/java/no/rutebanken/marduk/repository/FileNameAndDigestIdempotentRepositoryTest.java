@@ -26,10 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -126,26 +124,23 @@ class FileNameAndDigestIdempotentRepositoryTest extends MardukSpringBootBaseTest
         Assertions.assertNull(createdAt);
     }
 
-    private FileNameAndDigestIdempotentRepository idempotentRepositoryWithMockedJdbcTemplate() throws SQLException {
-        JdbcTemplate mockJdbcTemplate = mock(JdbcTemplate.class);
-        DataSource mockDataSource = mock(DataSource.class);
-        Connection mockConnection = mock(Connection.class);
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
-        return new FileNameAndDigestIdempotentRepository(mockDataSource, "test") {
-            @Override
-            public JdbcTemplate getJdbcTemplate() {
-                return mockJdbcTemplate;
-            }
-        };
-    }
-
     @SuppressWarnings("unchecked")
     @Test
-    void testCreatedAtThrowsExceptionOnUnexpectedDbError() throws SQLException {
-        FileNameAndDigestIdempotentRepository repository = idempotentRepositoryWithMockedJdbcTemplate();
-        JdbcTemplate mockedJdbcTemplate = repository.getJdbcTemplate();
-        when(mockedJdbcTemplate.queryForObject(any(), any(Class.class))).thenThrow(new DataAccessException("Simulated DB error") {});
+    void testCreatedAtThrowsExceptionOnUnexpectedDbError() {
+        // The JdbcTemplate is passed in rather than overriding a getter. The previous version of this test
+        // stubbed a mock the code never consulted - getCreatedAt reads the field - so it passed on whatever
+        // the real JdbcTemplate happened to throw against a mock DataSource, not on the simulated error.
+        JdbcTemplate mockJdbcTemplate = mock(JdbcTemplate.class);
+        when(mockJdbcTemplate.queryForObject(any(), any(Class.class), any(), any()))
+                .thenThrow(new DataAccessException("Simulated DB error") {
+                });
+        FileNameAndDigestIdempotentRepository repository = new FileNameAndDigestIdempotentRepository(
+                mockJdbcTemplate, mock(TransactionTemplate.class), "test", -1);
+
         Exception exception = assertThrows(MardukException.class, () -> repository.getCreatedAt("123"));
+
         assertTrue(exception.getMessage().contains("An unexpected error occured while getting createdAt timestamp for file 123"));
+        assertEquals("Simulated DB error", exception.getCause().getMessage(),
+                "the simulated error was not the one that surfaced");
     }
 }

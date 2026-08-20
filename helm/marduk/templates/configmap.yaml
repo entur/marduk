@@ -10,27 +10,36 @@ data:
     spring.datasource.hikari.maximum-pool-size=10
     spring.servlet.multipart.max-file-size=150MB
     spring.servlet.multipart.max-request-size=150MB
-    # platform-http runs routes async; without this, Tomcat's 30s async default can time out a slow
-    # upload and recycle its multipart temp files while the route is still processing them
-    spring.mvc.async.request-timeout=300s
-    # init the servlet before Camel starts, or platform-http's route mappings are unreachable
-    # and every /services/** request gets Spring's no-handler 404
+    # Serve /services/** from the first request rather than on first hit, so the readiness probe does
+    # not pay for the DispatcherServlet's initialisation
     spring.mvc.servlet.load-on-startup=1
-    # platform-http runs every /services/** route on this pool; Boot's default core of 8 with an
-    # unbounded queue never grows, so slow uploads can starve the readiness probe off the pool
-    spring.task.execution.pool.core-size=32
+    # The admin API document, at the path the REST DSL published it on
+    springdoc.api-docs.path=/services/openapi
+    springdoc.api-docs.enabled=true
     server.port={{ .Values.common.service.internalPort }}
     server.compression.enabled=true
 
-    # Camel
+    # Camel is gone from the code. These keys are kept for one release only, so that rolling the
+    # image back without rolling back the chart still finds the configuration the old jar needs.
+    # Delete this block in the release after the one that removes Camel.
     camel.main.name=Marduk
     # Global stream caching off, per-route .streamCaching() opt-in; the opt-in activates the
     # context strategy, so spooling below applies to the upload stream caches too
     camel.main.streamCachingEnabled=false
     camel.main.streamCachingSpoolEnabled=true
-    # Pre-4.18 behaviour: don't reject requests upfront on Accept/Content-Type vs produces/consumes (406/415)
-    camel.component.platform-http.serverRequestValidation=false
     camel.dataformat.jackson.module-refs=jacksonJavaTimeModule
+    # Pre-4.18 behaviour: don't reject requests upfront on Accept/Content-Type vs produces/consumes
+    # (406/415). The Spring MVC controllers get the same result by declaring no produces at all.
+    camel.component.platform-http.serverRequestValidation=false
+    # The remaining two are spring.* keys, but they configure the same rolled-back platform-http and nothing
+    # in the current code: no controller returns a Callable or a DeferredResult, so nothing async dispatches,
+    # and /services/** runs on the Tomcat threads rather than on applicationTaskExecutor.
+    # platform-http ran routes async; without this Tomcat's 30s async default could time out a slow upload
+    # and recycle its multipart temp files while the route was still reading them.
+    spring.mvc.async.request-timeout=300s
+    # platform-http ran every /services/** route on this pool; Boot's default core of 8 with an unbounded
+    # queue never grows, so slow uploads could starve the readiness probe off the pool.
+    spring.task.execution.pool.core-size=32
     camel.cluster.kubernetes.enabled=true
     camel.cluster.kubernetes.cluster-labels[app]=marduk
     camel.cluster.kubernetes.config-map-name=marduk-leaders
@@ -43,6 +52,66 @@ data:
     camel.metrics.enable-route-event-notifier=false
     camel.metrics.enable-route-policy=false
     camel.metrics.enable-exchange-event-notifier=false
+
+    # Camel replacement, see docs/camel-removal.md. Every key here is inert for the Camel version, which
+    # neither consumes through entur-google-pubsub nor has a bean named taskScheduler for @Scheduled to find.
+    # Autocreate defaults to TRUE in entur-google-pubsub and the consumer base class calls it on startup, so
+    # without this every consumer would try to create a terraformed subscription and fail on pubsub.topics.create.
+    entur.pubsub.subscriber.autocreate=false
+    # The consumer base class sleeps this long on the subscriber callback thread after a failure, which is
+    # also what stops that subscriber terminating during shutdown. Cannot be 0: MardukAggregateGtfsStatusQueue
+    # has no retry_policy, so PubSub would redeliver a persistent failure there with no backoff.
+    entur.pubsub.consumer.retry.delay=1000
+    # One callback thread per subscription, which is what Camel gave: camel-google-pubsub built an executor
+    # per endpoint and defaulted concurrentConsumers to 1, so the 22 consumer routes had 22 threads between
+    # them and a slow message blocked only its own route. This key is NOT per subscription - spring-cloud-gcp
+    # registers one global-gcp-pubsub-subscriber pool of this size and hands it to every subscriber - so 1
+    # here means a single thread delivering for all 22, and one slow Chouette poll or blob copy stops the
+    # other 21. Raise it with the number of MardukPubSubConsumer subclasses; ConfigMapInvariantsTest counts
+    # them. Concurrency per subscription stays at one through the flow control below, so this is no hotter
+    # than the Camel version was.
+    spring.cloud.gcp.pubsub.subscriber.executor-threads=22
+    spring.cloud.gcp.pubsub.subscriber.flow-control.max-outstanding-element-count=1
+    # Publishes issued while the context is closing - the drain finishing a job, a status event on the way
+    # out - would otherwise hit a RejectedExecutionException from the publisher pool, which is the one
+    # failure mode a drain exists to avoid.
+    spring.cloud.gcp.pubsub.publisher.executor-accept-tasks-after-context-close=true
+    # Boot's TaskSchedulingAutoConfiguration backs off because spring-cloud-gcp registers TaskScheduler beans,
+    # so this only means anything because SchedulingConfig declares the taskScheduler bean itself. Sized for
+    # the scheduled jobs replacing the quartz routes, which quartz used to run on a pool of ten.
+    spring.task.scheduling.pool.size=8
+    # A batch whose runner died keeps its claim, and nothing else will serve those rows until the sweep
+    # reclaims them. The threshold has to outlast the longest job it can interrupt: a remote graph build
+    # blocks for up to otp.graph.build.remote.kubernetes.timeout below, and reclaiming a build that is
+    # still running would have a second pod start the same build. ConfigMapInvariantsTest compares the two.
+    marduk.batch.claim.timeout=PT5H
+    marduk.batch.claim.sweep.interval.ms=600000
+    # The graph builds get a scheduler of their own because a build holds its thread for hours.
+    marduk.graph.build.scheduler.pool.size=4
+    marduk.leader.kubernetes.enabled=true
+    # The shutdown budget. These do not nest, they add up, in this order:
+    #   1. subscriber close, 10s per subscriber that still has a callback running, serialised across the 22
+    #      ContextClosedEvent listeners and bounded by nothing here (EnturGooglePubSubUtils.closeSubscriber
+    #      awaits termination for 10s; an idle subscriber terminates in milliseconds, so this is 10s times
+    #      the number busy at SIGTERM, not 10s times 22)
+    #   2. the drain, up to 60s, at phase MAX_VALUE so it runs first among the Lifecycle beans. Invoked
+    #      inline, so timeout-per-shutdown-phase does NOT bound it - the latch is awaited after stop()
+    #      has already returned
+    #   3. graceful HTTP shutdown, at MAX_VALUE-1024 so it runs after the drain. Tomcat pauses the
+    #      connectors and then waits for active requests with no bound of its own, so this phase is
+    #      bounded exactly by timeout-per-shutdown-phase
+    #   4. bean destruction
+    # 60 + 30 against terminationGracePeriodSeconds=180 in values.yaml leaves 90s for step 1 and step 4:
+    # nine busy subscribers at 10s each, less whatever bean destruction takes.
+    # Note the connector stays open through steps 1 and 2, which is what keeps a pod serving while its
+    # Service endpoint is still being withdrawn.
+    marduk.shutdown.drain.timeout.seconds=60
+    # In-flight uploads finish instead of getting a connection reset on every rolling restart. Camel's
+    # shutdown waited 25s for in-flight platform-http exchanges; this is the same budget, and the only one
+    # of the three that timeout-per-shutdown-phase actually enforces. Raise both this and the grace period
+    # together if a 150MB upload is ever seen truncated.
+    server.shutdown=graceful
+    spring.lifecycle.timeout-per-shutdown-phase=30s
 
     # PubSub
     # project id and credential location are not set, they are retrieved automatically through the GOOGLE_APPLICATION_CREDENTIALS environment variable
@@ -68,6 +137,10 @@ data:
 
     # database configuration
     spring.flyway.enabled=true
+    # Rolling the image back one release leaves V2 in flyway_schema_history with no V2 on the classpath,
+    # which Flyway treats as a validation failure and refuses to start on. Without this the rollback is
+    # not a rollback, it is an outage. Must be deployed with V2 or before it, never after.
+    spring.flyway.ignore-migration-patterns=*:missing
 
     # Duplicate file filter
     duplicate.filter.web={{ .Values.duplicateFileFilter.webFilter }}
@@ -75,6 +148,8 @@ data:
 
     # Prevalidation in Antu
     antu.validate.cron.schedule={{ .Values.antu.prevalidationCronSchedule }}
+    # Same helm value, space-separated for Spring's cron parser instead of + for a quartz trigger URI.
+    antu.validate.cron={{ .Values.antu.prevalidationCronSchedule | replace "+" " " }}
     antu.validate.autoStartup=true
 
     # Chouette
@@ -84,6 +159,10 @@ data:
     chouette.retry.delay=30000
     chouette.url={{ .Values.chouette.service }}
     chouette.remove.old.jobs.cron.schedule={{ .Values.chouette.removeOldJobsCronSchedule }}
+    # Same helm value, space-separated for Spring's cron parser instead of + for a quartz trigger URI.
+    # Rendered from the one source so the two spellings cannot drift; the quartz key above stays for the
+    # Camel version, which is still what a rolled-back pod would read.
+    chouette.remove.old.jobs.cron={{ .Values.chouette.removeOldJobsCronSchedule | replace "+" " " }}
     chouette.remove.old.jobs.keep.days=20
     chouette.remove.old.jobs.keep.jobs=20
     chouette.max.retries=3000
@@ -125,7 +204,6 @@ data:
     logging.level.no.rutebanken=INFO
     logging.level.org.apache=INFO
     logging.config=classpath:logback.xml
-    logging.level.org.apache.camel.component.http.HttpComponent=WARN
     logging.level.no.rutebanken.marduk.security.oauth2.EnturPartnerAuth0RolesClaimAdapter=DEBUG
 
     # NeTeX import
@@ -141,19 +219,23 @@ data:
     gtfs.export.chouette={{ .Values.chouette.gtfsExport }}
 
     # Other
-    # the Camel shutdown timeout must be shorter than the Kubernetes terminationGracePeriod
-    marduk.shutdown.timeout=25
     servicelinker.linkingEnabled={{ .Values.servicelinker.enableLinking }}
     ashur.filteringEnabled={{ .Values.ashur.enableFiltering }}
     marduk.experimental-import.enabled={{ .Values.experimentalImportEnabled }}
 
     providers.api.url={{ .Values.nanna.service }}/services/providers/
     fetch.osm.cron.schedule={{ .Values.osm.fetchCronSchedule }}
+    # Same helm value, space-separated for Spring. Hourly at 11 minutes past, not daily.
+    fetch.osm.cron={{ .Values.osm.fetchCronSchedule | replace "+" " " }}
     fetch.osm.map.url=https://storage.googleapis.com/ror-osmdata-prd/osm-data/norway-latest.osm.pbf
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
     otp.graph.build.remote.kubernetes.timeout=12000
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
     otp.graph.build.autoStartup={{ .Values.otp.graph.build.autoStartup }}
+    # Same value under the name the code actually reads. Only otp.* was rendered here, while the code has
+    # always read otp2.*, so this flag has never been in effect in a deployed environment - it fell back to
+    # its default of true. Every environment sets it to true, so rendering it changes nothing today.
+    otp2.graph.build.autoStartup={{ .Values.otp.graph.build.autoStartup }}
     line.statistics.calculation.enabled={{ .Values.line.statistics.calculation.enabled }}
 kind: ConfigMap
 metadata:
