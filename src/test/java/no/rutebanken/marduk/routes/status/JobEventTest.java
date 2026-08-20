@@ -17,9 +17,7 @@
 package no.rutebanken.marduk.routes.status;
 
 import no.rutebanken.marduk.Constants;
-import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.support.DefaultExchange;
+import no.rutebanken.marduk.pipeline.MardukMessage;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -30,11 +28,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JobEventTest {
 
-    private static Exchange exchange() {
-        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
-        exchange.getIn().setHeader(Constants.PROVIDER_ID, "1");
-        exchange.getIn().setHeader(Constants.CORRELATION_ID, "correlation");
-        return exchange;
+    private static MardukMessage testMessage() {
+        return new MardukMessage()
+                .setHeader(Constants.PROVIDER_ID, 0L)
+                .setHeader(Constants.DATASET_REFERENTIAL, "TST")
+                .setHeader(Constants.CHOUETTE_REFERENTIAL, "TST")
+                .setHeader(Constants.CORRELATION_ID, "correlation");
     }
 
     /**
@@ -45,7 +44,7 @@ class JobEventTest {
     void explicitEventTimeIsUsed() {
         Instant emitTime = Instant.parse("2026-06-03T10:15:30Z");
 
-        JobEvent event = JobEvent.providerJobBuilder(exchange())
+        JobEvent event = JobEvent.providerJobBuilder(testMessage())
                 .timetableAction(JobEvent.TimetableAction.LINKING)
                 .state(JobEvent.State.OK)
                 .eventTime(emitTime)
@@ -62,7 +61,7 @@ class JobEventTest {
     void eventTimeDefaultsToNowWhenNotSet() {
         Instant before = Instant.now();
 
-        JobEvent event = JobEvent.providerJobBuilder(exchange())
+        JobEvent event = JobEvent.providerJobBuilder(testMessage())
                 .timetableAction(JobEvent.TimetableAction.LINKING)
                 .state(JobEvent.State.STARTED)
                 .build();
@@ -82,7 +81,7 @@ class JobEventTest {
     void nullEventTimeFallsBackToNow() {
         Instant before = Instant.now();
 
-        JobEvent event = JobEvent.providerJobBuilder(exchange())
+        JobEvent event = JobEvent.providerJobBuilder(testMessage())
                 .timetableAction(JobEvent.TimetableAction.LINKING)
                 .state(JobEvent.State.OK)
                 .eventTime(null)

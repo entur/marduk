@@ -1,102 +1,59 @@
 package no.rutebanken.marduk.routes.processors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.MardukSpringBootBaseTest;
-import no.rutebanken.marduk.domain.FileNameAndDigest;
 import no.rutebanken.marduk.domain.PrevalidatedFileMetadata;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.support.DefaultExchange;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 
-class PrevalidatedFileMetadataProcessorTest extends MardukSpringBootBaseTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-    @Autowired
-    private FileNameAndDigestIdempotentRepository idempotentRepository;
+class PrevalidatedFileMetadataProcessorTest {
 
-    private Processor processor;
-    private ObjectMapper objectMapper;
+    private static final LocalDateTime RECEIVED_AT = LocalDateTime.of(2026, 3, 27, 12, 0, 0);
 
-    @BeforeEach
-    void setup() {
-        FileNameAndDigest fileNameAndDigest = new FileNameAndDigest("existingFile.zip", "digestOne");
-        idempotentRepository.add(fileNameAndDigest.toString());
-        processor = new PrevalidatedFileMetadataProcessor(idempotentRepository);
-        objectMapper = ObjectMapperFactory.getSharedObjectMapper();
+    private final FileNameAndDigestIdempotentRepository idempotentRepository =
+            mock(FileNameAndDigestIdempotentRepository.class);
+    private final PrevalidatedFileMetadataProcessor processor =
+            new PrevalidatedFileMetadataProcessor(idempotentRepository);
+
+    @Test
+    void theMetadataRecordsWhenTheFileWasFirstReceivedAndUnderWhichName() throws Exception {
+        when(idempotentRepository.getCreatedAt("existingFile.zip")).thenReturn(RECEIVED_AT);
+
+        PrevalidatedFileMetadataProcessor.Metadata metadata = processor.describe("existingFile.zip", "rut");
+
+        assertEquals(RECEIVED_AT, metadata.createdAt());
+        PrevalidatedFileMetadata written = ObjectMapperFactory.getSharedObjectMapper()
+                .readValue(metadata.json(), PrevalidatedFileMetadata.class);
+        assertEquals(RECEIVED_AT, written.getCreatedAt());
+        assertEquals("existingFile.zip", written.getOriginalFileName());
     }
 
     @Test
-    void processWhenFileExists() throws Exception {
-        CamelContext context = new DefaultCamelContext();
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader(Constants.FILE_NAME, "existingFile.zip");
-        exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, "rut");
+    void theMetadataIsFiledUnderTheReferentialSoTheNightlyValidationFindsIt() {
+        when(idempotentRepository.getCreatedAt("testFile.zip")).thenReturn(RECEIVED_AT);
 
-        processor.process(exchange);
+        PrevalidatedFileMetadataProcessor.Metadata metadata = processor.describe("testFile.zip", "testReferential");
 
-        // Verify headers
-        Assertions.assertNotNull(exchange.getIn().getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
-        Assertions.assertEquals(
-                Constants.BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "rut/" + Constants.PREVALIDATED_NETEX_METADATA_FILENAME,
-                exchange.getIn().getHeader(Constants.FILE_HANDLE)
-        );
-
-        // Verify body is an InputStream
-        Assertions.assertInstanceOf(ByteArrayInputStream.class, exchange.getIn().getBody());
-
-        // Verify JSON content
-        InputStream body = exchange.getIn().getBody(InputStream.class);
-        PrevalidatedFileMetadata metadata = objectMapper.readValue(body, PrevalidatedFileMetadata.class);
-
-        Assertions.assertNotNull(metadata.getCreatedAt());
-        Assertions.assertEquals("existingFile.zip", metadata.getOriginalFileName());
+        assertEquals("last-prevalidated-files/testReferential/netex.metadata.json", metadata.fileHandle());
     }
 
     @Test
-    void processCreatesCorrectMetadataFilePath() throws Exception {
-        CamelContext context = new DefaultCamelContext();
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader(Constants.FILE_NAME, "testFile.zip");
-        exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, "testReferential");
+    void aFileWithNoRecordedArrivalFallsBackToNow() {
+        when(idempotentRepository.getCreatedAt("unknown.zip")).thenReturn(null);
 
-        processor.process(exchange);
+        LocalDateTime before = LocalDateTime.now();
+        PrevalidatedFileMetadataProcessor.Metadata metadata = processor.describe("unknown.zip", "rut");
+        LocalDateTime after = LocalDateTime.now();
 
-        String expectedPath = "last-prevalidated-files/testReferential/netex.metadata.json";
-        Assertions.assertEquals(expectedPath, exchange.getIn().getHeader(Constants.FILE_HANDLE));
-    }
-
-    @Test
-    void processCreatesValidJson() throws Exception {
-        CamelContext context = new DefaultCamelContext();
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader(Constants.FILE_NAME, "existingFile.zip");
-        exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, "rut");
-
-        processor.process(exchange);
-
-        // Read the JSON from the body
-        InputStream body = exchange.getIn().getBody(InputStream.class);
-        String jsonString = new String(body.readAllBytes(), StandardCharsets.UTF_8);
-
-        // Verify it's valid JSON containing expected fields
-        Assertions.assertTrue(jsonString.contains("\"createdAt\""));
-        Assertions.assertTrue(jsonString.contains("\"originalFileName\""));
-        Assertions.assertTrue(jsonString.contains("\"existingFile.zip\""));
-
-        // Verify it can be deserialized back to the object
-        PrevalidatedFileMetadata metadata = objectMapper.readValue(jsonString, PrevalidatedFileMetadata.class);
-        Assertions.assertNotNull(metadata);
+        assertFalse(metadata.createdAt().isBefore(before));
+        assertFalse(metadata.createdAt().isAfter(after));
+        assertTrue(metadata.json().contains("\"createdAt\""));
     }
 }

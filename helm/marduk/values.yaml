@@ -6,6 +6,16 @@ common:
   team: ror
   deployment:
     replicas: 2
+    # A cap, not a wait: a healthy shutdown still exits in seconds. It has to cover the sum of, in order,
+    # 10s per PubSub subscriber that is mid-callback at SIGTERM, the 60s drain, the 30s graceful HTTP
+    # shutdown, and bean destruction - templates/configmap.yaml derives each one. 60 + 30 of that is fixed,
+    # so 180 leaves 90s for the subscriber close and bean destruction, which is nine busy subscribers at
+    # 10s each; 120 left 30s, or three with nothing to spare. Enabling graceful HTTP shutdown at the
+    # previous 90s phase timeout would have overrun 120 outright, which ConfigMapInvariantsTest now catches.
+    # The ceiling of all 22 busy at once is 310s and is deliberately not covered: reaching it needs a long
+    # callback on every subscription simultaneously, and SIGKILL would then land during the subscriber
+    # close, before the drain, abandoning the same work it abandons today.
+    terminationGracePeriodSeconds: 180
   container:
     labels: { customLogRetention: enabled }
     forceReplicas: 2
@@ -18,11 +28,11 @@ common:
           name: marduk-auth
     probes:
       # spec replaces the chart's whole probe block, which emits no timeoutSeconds and so gets
-      # the 1s k8s default - too tight for a path that shares platform-http's task executor
-      # with 150MB uploads. Both probes target /services/health because it is served by
-      # platform-http itself: a pod whose Camel mappings never registered fails them, while
-      # /actuator/health stays UP in that state. Liveness thresholds are deliberately slack so
-      # executor saturation recycles nothing, but a permanently unmapped pod is still replaced.
+      # the 1s k8s default - too tight for a path that shares its thread pool with 150MB uploads.
+      # Both probes target /services/health rather than /actuator/health because it reports on the
+      # layer that serves the API: a pod not serving /services/** fails it, while the actuator
+      # health group stays UP in that state. Liveness thresholds are deliberately slack so pool
+      # saturation recycles nothing, but a permanently broken pod is still replaced.
       spec:
         livenessProbe:
           httpGet:
@@ -30,8 +40,8 @@ common:
             port: 8080
           initialDelaySeconds: 140
           periodSeconds: 10
-          # 60 x 10s stays clear of spring.mvc.async.request-timeout=300s, so a pod saturated by
-          # uploads about to time out is not killed for it
+          # 10 minutes: a pod whose request threads are all busy with 150MB uploads is not killed
+          # for it
           failureThreshold: 60
           timeoutSeconds: 5
         readinessProbe:
@@ -43,8 +53,8 @@ common:
           failureThreshold: 3
           timeoutSeconds: 5
         startupProbe:
-          # httpGet, not tcpSocket: the connector binds before Camel starts, so a tcpSocket probe
-          # succeeds immediately and gates nothing
+          # httpGet, not tcpSocket: the connector binds before the application can serve /services/**,
+          # so a tcpSocket probe succeeds immediately and gates nothing
           httpGet:
             path: /services/health
             port: 8080

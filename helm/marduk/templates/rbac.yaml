@@ -35,9 +35,19 @@ rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get", "watch", "list", "create"]
-  # Leader election for singletonFrom() routes. camel.cluster.kubernetes.config-map-name names the
-  # Lease, not a ConfigMap: KubernetesClusterService hardcodes leaseResourceType=Lease and the
-  # starter exposes no way to change it.
+  # Leader election. Two implementations use this rule during the migration off Camel:
+  #
+  #   - camel-master, for the remaining singletonFrom() routes. Note that
+  #     camel.cluster.kubernetes.config-map-name does NOT name the Lease, despite what this comment used
+  #     to say: NativeLeaseResourceManager names it after the lock group, lowercased, so there is one
+  #     Lease per singleton route rather than one called marduk-leaders.
+  #   - KubernetesLeaderElection, which gates the @Scheduled jobs that replaced the quartz routes.
+  #
+  # "patch" is required by the second and not the first. fabric8's LeaseLock renews the lease with a
+  # PATCH, while Camel's manager uses an update, so the rule was sufficient for Camel and silently
+  # insufficient here: the lease is created once, every renewal is forbidden, and leadership flaps as
+  # soon as it expires. Verified against the local cluster - acquisition succeeded and renewTime never
+  # advanced.
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
-    verbs: ["create", "get", "update", "list"]
+    verbs: ["create", "get", "update", "patch", "list"]

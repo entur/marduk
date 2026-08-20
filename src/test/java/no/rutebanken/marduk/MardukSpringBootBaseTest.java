@@ -3,14 +3,9 @@ package no.rutebanken.marduk;
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.pipeline.MardukMessage;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
 import no.rutebanken.marduk.repository.MardukBlobStoreRepository;
-import org.apache.camel.CamelContext;
-import org.apache.camel.EndpointInject;
-import org.apache.camel.Exchange;
-import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.support.DefaultExchange;
 import org.apache.commons.io.IOUtils;
 import org.entur.pubsub.base.EnturGooglePubSubAdmin;
 import org.junit.jupiter.api.AfterAll;
@@ -97,9 +92,9 @@ public abstract class MardukSpringBootBaseTest {
     @MockitoBean
     public CacheProviderRepository providerRepository;
 
+    @Autowired
+    private no.rutebanken.marduk.repository.IdempotentRepository fileNameAndDigestIdempotentRepository;
 
-    @EndpointInject("mock:sink")
-    protected MockEndpoint sink;
 
     @PostConstruct
     void initInMemoryBlobStoreRepositories() {
@@ -142,10 +137,17 @@ public abstract class MardukSpringBootBaseTest {
         when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RB_RUT)).thenReturn(PROVIDER_ID_RB_RUT);
 
         mardukInMemoryBlobStoreRepository.deleteAllFilesInFolder("");
+        // The internal bucket was missing from this list. It went unnoticed while every test method got a
+        // fresh context - and therefore a fresh in-memory store - from the Camel test base's
+        // @DirtiesContext(AFTER_EACH_TEST_METHOD).
+        internalInMemoryBlobStoreRepository.deleteAllFilesInFolder("");
         exchangeInMemoryBlobStoreRepository.deleteAllFilesInFolder("");
         graphsInMemoryBlobStoreRepository.deleteAllFilesInFolder("");
         otpReportInMemoryBlobStoreRepository.deleteAllFilesInFolder("");
 
+        // Likewise the duplicate-file keys: a second upload of the same file in the same class is a
+        // duplicate otherwise, which is silently a no-op rather than a failure.
+        fileNameAndDigestIdempotentRepository.clear();
     }
 
     @AfterEach
@@ -170,6 +172,24 @@ public abstract class MardukSpringBootBaseTest {
     protected static Provider provider(long id) throws IOException {
         return Provider.create(IOUtils.toString(new FileReader(
                 "src/test/resources/no/rutebanken/marduk/providerRepository/provider" + id  + ".json")));
+    }
+
+    protected Provider provider(String ref, long id, Long migrateToProvider) {
+        Provider provider = new Provider();
+        provider.setChouetteInfo(new ChouetteInfo());
+        provider.getChouetteInfo().setReferential(ref);
+        provider.getChouetteInfo().setMigrateDataToProvider(migrateToProvider);
+        provider.setId(id);
+        provider.getChouetteInfo().setEnableBlocksExport(true);
+        return provider;
+    }
+
+    protected InputStream getTestNetexArchiveAsStream() {
+        return getClass().getResourceAsStream("/no/rutebanken/marduk/routes/file/beans/netex.zip");
+    }
+
+    protected InputStream getLargeTestNetexArchiveAsStream() {
+        return getClass().getResourceAsStream("/no/rutebanken/marduk/routes/file/beans/AOR.zip");
     }
 
     protected static  InputStream dummyData() {
@@ -205,14 +225,13 @@ public abstract class MardukSpringBootBaseTest {
         return provider;
     }
 
-    protected Exchange exchange() {
-        CamelContext ctx = new DefaultCamelContext();
-        Exchange exchange = new DefaultExchange(ctx);
-        exchange.getIn().setHeader(Constants.PROVIDER_ID, testProviderId);
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, testDatasetReferential);
-        exchange.getIn().setHeader(Constants.CHOUETTE_REFERENTIAL, testDatasetReferential);
-        exchange.getIn().setHeader(Constants.CORRELATION_ID, "correlation");
-        exchange.setProperty(Constants.FOLDER_NAME, "/base/folder");
-        return exchange;
+    /** The fixture the converted components are tested against. */
+    protected MardukMessage message() {
+        return new MardukMessage()
+                .setHeader(Constants.PROVIDER_ID, testProviderId)
+                .setHeader(Constants.DATASET_REFERENTIAL, testDatasetReferential)
+                .setHeader(Constants.CHOUETTE_REFERENTIAL, testDatasetReferential)
+                .setHeader(Constants.CORRELATION_ID, "correlation")
+                .setProperty(Constants.FOLDER_NAME, "/base/folder");
     }
 }
