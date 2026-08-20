@@ -1,70 +1,37 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.pubsub;
 
-package no.rutebanken.marduk.routes;
-
-import org.apache.camel.CamelContext;
-import org.apache.camel.Endpoint;
-import org.apache.camel.component.google.pubsub.GooglePubsubEndpoint;
-import org.apache.camel.component.master.MasterEndpoint;
-import org.apache.camel.spi.CamelEvent;
-import org.apache.camel.support.DefaultInterceptSendToEndpoint;
-import org.apache.camel.support.EventNotifierSupport;
 import org.entur.pubsub.base.EnturGooglePubSubAdmin;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Create PubSub topics and subscriptions on startup.
- * This is used only in unit tests and local environment.
+ * Creates the destinations marduk only publishes to.
+ *
+ * <p>Camel's autocreate notifier walked every endpoint in the context, so it created a topic for producers
+ * as well as consumers. {@code AbstractEnturGooglePubSubConsumer} creates only what it subscribes to, which
+ * is exactly the asymmetry that left antu's outbound status topic uncreated and its first publish failing
+ * with {@code NOT_FOUND}. Marduk publishes to eight destinations it never consumes.
+ *
+ * <p>A no-op wherever {@code entur.pubsub.subscriber.autocreate} is false, which is every deployed
+ * environment - it exists for a fresh emulator in tests and local development.
  */
 @Component
-@Profile("google-pubsub-autocreate")
-public class AutoCreatePubSubSubscriptionEventNotifier extends EventNotifierSupport {
+public class PubSubPublishTargets {
 
     private final EnturGooglePubSubAdmin enturGooglePubSubAdmin;
+    private final MardukQueues queues;
 
-    public AutoCreatePubSubSubscriptionEventNotifier(EnturGooglePubSubAdmin enturGooglePubSubAdmin) {
+    public PubSubPublishTargets(EnturGooglePubSubAdmin enturGooglePubSubAdmin, MardukQueues queues) {
         this.enturGooglePubSubAdmin = enturGooglePubSubAdmin;
+        this.queues = queues;
     }
 
-    @Override
-    public void notify(CamelEvent event) {
-
-        if (event instanceof CamelEvent.CamelContextStartingEvent camelContextStartingEvent) {
-            CamelContext context = camelContextStartingEvent.getContext();
-            context.getEndpoints().stream().filter(e -> e.getEndpointUri().contains("google-pubsub:")).forEach(this::createSubscriptionIfMissing);
-        }
-
+    @EventListener
+    void handleContextRefreshed(ContextRefreshedEvent contextRefreshedEvent) {
+        // The bare destination name, not queues.topic(...): the admin passes whatever it is given to both
+        // createTopic and createSubscription, so a project-qualified name would be nonsense to one of them.
+        // Cross-project destinations are terraformed anyway, and autocreate is off wherever they are real.
+        queues.publishOnlyDestinations().forEach(enturGooglePubSubAdmin::createSubscriptionIfMissing);
     }
-
-    private void createSubscriptionIfMissing(Endpoint e) {
-        GooglePubsubEndpoint gep;
-        if (e instanceof GooglePubsubEndpoint googlePubsubEndpoint) {
-            gep = googlePubsubEndpoint;
-        } else if (e instanceof MasterEndpoint masterEndpoint && ((MasterEndpoint) e).getEndpoint() instanceof GooglePubsubEndpoint) {
-            gep = (GooglePubsubEndpoint) masterEndpoint.getEndpoint();
-        } else if (e instanceof DefaultInterceptSendToEndpoint defaultInterceptSendToEndpoint && defaultInterceptSendToEndpoint.getOriginalEndpoint() instanceof GooglePubsubEndpoint googlePubsubEndpoint) {
-            gep = googlePubsubEndpoint;
-        } else if (e instanceof MasterEndpoint masterEndpoint && masterEndpoint.getEndpoint() instanceof DefaultInterceptSendToEndpoint defaultInterceptSendToEndpoint) {
-            gep = (GooglePubsubEndpoint) defaultInterceptSendToEndpoint.getOriginalEndpoint();
-        } else {
-            throw new IllegalStateException("Incompatible endpoint: " + e);
-        }
-        enturGooglePubSubAdmin.createSubscriptionIfMissing(gep.getDestinationName());
-    }
-
 }

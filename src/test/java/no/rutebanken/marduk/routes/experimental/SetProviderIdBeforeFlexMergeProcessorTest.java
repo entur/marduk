@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.routes.experimental;
 
 import no.rutebanken.marduk.MardukSpringBootBaseTest;
+import no.rutebanken.marduk.pipeline.MardukMessage;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -10,39 +11,34 @@ import static no.rutebanken.marduk.Constants.*;
 import static org.mockito.Mockito.when;
 
 class SetProviderIdBeforeFlexMergeProcessorTest extends MardukSpringBootBaseTest {
+
     SetProviderIdBeforeFlexMergeProcessor initializeProcessor(Boolean experimentalImportEnabled) {
-        ExperimentalImportHelpers experimentalImportHelpers = new ExperimentalImportHelpers(
-            experimentalImportEnabled,
-            providerRepository
-        );
         return new SetProviderIdBeforeFlexMergeProcessor(
-            experimentalImportHelpers,
+            new ExperimentalImportHelpers(experimentalImportEnabled, providerRepository),
             providerRepository
         );
     }
 
     @Test
-    void testProcessorDoesNotChangeProviderIdForExperimentalImports() throws Exception {
+    void testProcessorDoesNotChangeProviderIdForExperimentalImports() {
+        // useExperimentalImport is configured on the non-rb_ provider, so switching to the rb_ provider here
+        // would send the rest of the merge down the wrong path.
         when(providerRepository.getProviderId(testDatasetReferential)).thenReturn(testProviderId);
         when(providerRepository.getProviders()).thenReturn(List.of(providerWithExperimentalImport()));
 
-        var exchange = exchange();
-        SetProviderIdBeforeFlexMergeProcessor processor = initializeProcessor(true);
-        processor.process(exchange);
+        MardukMessage message = message();
+        initializeProcessor(true).setProviderIdIfChouetteImport(message);
 
-        Long actualProviderId = exchange.getIn().getHeader(PROVIDER_ID, Long.class);
-        Assertions.assertEquals(testProviderId, actualProviderId);
+        Assertions.assertEquals(testProviderId, message.getHeader(PROVIDER_ID, Long.class));
     }
 
     @Test
-    void testProcessorUpdatesProviderIdForChouetteImports() throws Exception {
+    void testProcessorUpdatesProviderIdForChouetteImports() {
         when(providerRepository.getProviderId(testDatasetReferential)).thenReturn(testRbProviderId);
 
-        var exchange = exchange();
-        SetProviderIdBeforeFlexMergeProcessor processor = initializeProcessor(false);
-        processor.process(exchange);
+        MardukMessage message = message();
+        initializeProcessor(false).setProviderIdIfChouetteImport(message);
 
-        Long actualProviderId = exchange.getIn().getHeader(PROVIDER_ID, Long.class);
-        Assertions.assertEquals(testRbProviderId, actualProviderId);
+        Assertions.assertEquals(testRbProviderId, message.getHeader(PROVIDER_ID, Long.class));
     }
 }

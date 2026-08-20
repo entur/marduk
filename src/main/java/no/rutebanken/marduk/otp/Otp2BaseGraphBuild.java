@@ -1,135 +1,165 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.otp;
 
-package no.rutebanken.marduk.routes.otp.otp2;
-
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.kubernetes.KubernetesJobTimeoutException;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
+import no.rutebanken.marduk.batch.BatchRunner;
+import no.rutebanken.marduk.domain.BlobStoreFiles;
+import no.rutebanken.marduk.pipeline.MardukMdc;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.routes.otp.otp2.Otp2BaseGraphBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.PredicateBuilder;
-import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
-import org.springframework.beans.factory.annotation.Autowired;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
-
 import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ_PREFIX;
-import static no.rutebanken.marduk.Constants.OTP_BUILD_CANDIDATE;
-import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
-import static no.rutebanken.marduk.Constants.TIMESTAMP;
 
 /**
- * Build remotely a base OTP2 graph containing OSM data and elevation data (but not transit data)
+ * Builds the OTP2 street graph: OSM and elevation data, no transit.
+ *
+ * <p>Replaces {@code Otp2BaseGraphRouteBuilder}. The two queues it consumed are now
+ * {@link Otp2BaseGraphBuildConsumer} and {@link Otp2BaseGraphCandidateBuildConsumer}, which record a request
+ * and return; this serves whatever has accumulated. A candidate build differs only in where the graph is
+ * written and which NeTEx build it triggers, which is what the {@code RutebankenOtpBuildCandidate} exchange
+ * property decided.
+ *
+ * <p>A build that fails is reported as FAILED and its requests are consumed rather than retried, as the
+ * route's {@code doCatch(Exception)} did - the graph builder is a Kubernetes job, and a failing one fails the
+ * same way every time.
  */
 @Component
-public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
+public class Otp2BaseGraphBuild {
 
-    @Value("${otp.graph.blobstore.subdirectory:graphs}")
-    private String blobStoreSubdirectory;
+    /** Batch kinds. The two aggregations were separate, so they stay separate here. */
+    public static final String KIND = "otp2-base-graph";
+    public static final String CANDIDATE_KIND = "otp2-base-graph-candidate";
 
-    @Autowired
-    private Otp2BaseGraphBuilder otp2BaseGraphBuilder;
+    /**
+     * Both kinds, so a production build and a candidate build cannot overlap - they write the same
+     * published street graph path. Named after the route both aggregate controllers were registered under,
+     * which is what serialised them under Camel.
+     */
+    public static final String EXCLUSION_GROUP = "otp2-base-graph-build";
 
-    @Override
-    public void configure() throws Exception {
-        super.configure();
+    private static final Logger LOGGER = LoggerFactory.getLogger(Otp2BaseGraphBuild.class);
 
+    private final BatchRunner batchRunner;
+    private final Otp2BaseGraphBuilder graphBuilder;
+    private final MardukInternalBlobStoreService internalBlobStore;
+    private final Otp2GraphWorkDirectory workDirectory;
+    private final MardukPubSubPublisher publisher;
+    private final JobEventPublisher jobEvents;
+    private final boolean scheduleEnabled;
 
-        // the job is deleted on timeout, so a redelivery rebuilds from scratch instead of reattaching to it
-        onException(KubernetesJobTimeoutException.class)
-                .maximumRedeliveries(0);
+    public Otp2BaseGraphBuild(
+            BatchRunner batchRunner,
+            Otp2BaseGraphBuilder graphBuilder,
+            MardukInternalBlobStoreService internalBlobStore,
+            Otp2GraphWorkDirectory workDirectory,
+            MardukPubSubPublisher publisher,
+            JobEventPublisher jobEvents,
+            @Value("${otp2.graph.build.autoStartup:true}") boolean scheduleEnabled) {
+        this.batchRunner = batchRunner;
+        this.graphBuilder = graphBuilder;
+        this.internalBlobStore = internalBlobStore;
+        this.workDirectory = workDirectory;
+        this.publisher = publisher;
+        this.jobEvents = jobEvents;
+        this.scheduleEnabled = scheduleEnabled;
+    }
 
-        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue?maxAckExtensionPeriod=14400").autoStartup("{{otp2.graph.build.autoStartup:true}}")
-                .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.getAggregateControllerForRoute("otp2-base-graph-build"))
-                .process(this::addSynchronizationForAggregatedExchange)
-                .process(this::setNewCorrelationId)
-                .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 base graph building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .to("direct:buildOtp2BaseGraph")
-                .routeId("pubsub-otp2-base-graph-build");
+    /**
+     * Five seconds, matching how often {@code quartz://marduk/checkAggregation} poked the idle-route check
+     * that completed the aggregation. {@code fixedDelay} rather than {@code fixedRate}, so a tick never
+     * starts while a build from the previous one is still running.
+     *
+     * <p>{@code autoStartup} gates the schedule and nothing else. It used to decide whether the route
+     * started, which also silenced the queue; now the admin endpoint that publishes a build request still
+     * works, and the request waits until the schedule is switched back on.
+     */
+    @Scheduled(fixedDelayString = "${otp2.graph.build.batch.interval.ms:5000}", scheduler = "graphBuildScheduler")
+    void buildOnSchedule() {
+        if (!scheduleEnabled) {
+            return;
+        }
+        batchRunner.runOverWholeBatch(EXCLUSION_GROUP, KIND, batch -> build(batch.aggregate(), false));
+    }
 
-        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue?maxAckExtensionPeriod=14400").autoStartup("{{otp2.graph.build.autoStartup:true}}")
-                .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.getAggregateControllerForRoute("otp2-base-graph-build"))
-                .process(this::addSynchronizationForAggregatedExchange)
-                .process(this::setNewCorrelationId)
-                .setProperty(OTP_BUILD_CANDIDATE, simple("true", Boolean.class))
-                .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} OTP2 base graph candidate building requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .to("direct:buildOtp2BaseGraph")
-                .routeId("pubsub-otp2-base-graph-candidate-build");
+    @Scheduled(fixedDelayString = "${otp2.graph.build.batch.interval.ms:5000}", scheduler = "graphBuildScheduler")
+    void buildCandidateOnSchedule() {
+        if (!scheduleEnabled) {
+            return;
+        }
+        batchRunner.runOverWholeBatch(EXCLUSION_GROUP, CANDIDATE_KIND,
+                batch -> build(batch.aggregate(), true));
+    }
 
-        from("direct:buildOtp2BaseGraph")
-                .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
-                .to("direct:sendOtp2BaseGraphStartedEventsInNewTransaction")
-                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID() + "/${exchangeProperty." + TIMESTAMP + "}"))
+    /**
+     * Builds one graph for the whole batch.
+     *
+     * @param request the batch's aggregate message: the newest request's headers under a correlation id of
+     *                the batch's own, which is what {@code setNewCorrelationId} gave the aggregated exchange
+     */
+    void build(MardukMessage request, boolean candidate) {
+        MardukMdc.set(request);
 
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 base graph building in directory ${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}.")
-                .to("direct:remoteBuildOtp2BaseGraphAndSendStatus")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP2 base graph building route.")
-                .routeId("otp2-base-graph-build");
+        String timestamp = Otp2GraphWorkDirectory.timestamp();
+        reportGraphJob(request, timestamp, JobEvent.State.STARTED);
+        String workDir = workDirectory.path(timestamp);
+        LOGGER.info("Starting OTP2 base graph building in directory {}.", workDir);
 
-        from("direct:remoteBuildOtp2BaseGraphAndSendStatus")
-                .log(LoggingLevel.INFO, correlation() + "Preparing OTP2 graph with all non-transit data...")
-                .doTry()
-                .to("direct:remoteBuildAndCopyOtp2BaseGraph")
-                .doCatch(Exception.class)
-                .log(LoggingLevel.ERROR, correlation() + "OTP2 Base Graph building failed: ${exception.message} stacktrace: ${exception.stacktrace}")
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_BASE).state(JobEvent.State.FAILED).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
-                .to("direct:updateStatus")
-                .end()
-                .routeId("otp2-remote-base-graph-build-and-send-status");
+        LOGGER.info("Preparing OTP2 graph with all non-transit data...");
+        try {
+            buildAndPublish(request, candidate, timestamp, workDir);
+        } catch (RuntimeException e) {
+            LOGGER.error("OTP2 Base Graph building failed: {}", e.getMessage(), e);
+            reportGraphJob(request, timestamp, JobEvent.State.FAILED);
+        }
+        LOGGER.info("Done with OTP2 base graph building.");
+    }
 
-        from("direct:remoteBuildAndCopyOtp2BaseGraph")
-                .to("direct:remoteBuildOtp2BaseGraph")
-                // copy new base graph in remote storage
-                .setHeader(Constants.FILE_PREFIX, simple("${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}/" + OTP2_BASE_GRAPH_OBJ_PREFIX))
-                .to("direct:findInternalBlob")
-                .log(LoggingLevel.INFO, correlation() + "Found OTP2 base graph named ${body.fileNameOnly} matching file prefix ${header." + Constants.FILE_PREFIX + "}")
-                .process(new Otp2BaseGraphPublishingProcessor(blobStoreSubdirectory))
-                .to("direct:copyInternalBlobInBucket")
-                .to(logDebugShowAll())
-                .choice()
-                .when(PredicateBuilder.not(exchangeProperty(OTP_BUILD_CANDIDATE)))
-                .log(LoggingLevel.INFO, correlation() + "Copied new OTP2 base graph, triggering NeTex graph build")
-                .setBody(constant(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue")
-                .otherwise()
-                .log(LoggingLevel.INFO, correlation() + "Copied new OTP2 candidate base graph, triggering candidate NeTEx graph build")
-                .setBody(constant(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphCandidateBuildQueue")
-                .end()
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_BASE).state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
-                .to("direct:updateStatus")
-                .to("direct:remoteOtp2CleanUp")
-                .routeId("otp2-remote-base-graph-build-copy");
+    private void buildAndPublish(MardukMessage request, boolean candidate, String timestamp, String workDir) {
+        graphBuilder.build(workDir, timestamp, candidate);
+        LOGGER.info("Done building new OTP2 base graph.");
 
-        from("direct:remoteBuildOtp2BaseGraph")
-                .process(new OtpGraphBuilderProcessor(otp2BaseGraphBuilder))
-                .log(LoggingLevel.INFO, correlation() + "Done building new OTP2 base graph.")
-                .routeId("otp2-remote-base-graph-build");
+        String filePrefix = workDir + "/" + OTP2_BASE_GRAPH_OBJ_PREFIX;
+        BlobStoreFiles.File built = internalBlobStore.findBlob(filePrefix);
+        if (built == null) {
+            throw new IllegalStateException("No OTP2 base graph matching the file prefix " + filePrefix);
+        }
+        LOGGER.info("Found OTP2 base graph named {} matching file prefix {}", built.getFileNameOnly(), filePrefix);
 
-        from("direct:sendOtp2BaseGraphStartedEventsInNewTransaction")
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_BASE).state(JobEvent.State.STARTED).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
-                .to("direct:updateStatus")
-                .routeId("otp2-base-graph-build-send-started-events");
+        Otp2GraphPublishing.BaseGraph paths = Otp2GraphPublishing.baseGraph(
+                workDir, built.getFileNameOnly(), workDirectory.blobStoreSubdirectory());
+        internalBlobStore.copyBlobInBucket(paths.builtPath(), paths.publishedPath());
 
+        triggerNetexGraphBuild(request, candidate);
+        reportGraphJob(request, timestamp, JobEvent.State.OK);
+        // Only on success, as the route did: a failed build leaves its output for inspection.
+        workDirectory.delete(workDir);
+    }
+
+    private void triggerNetexGraphBuild(MardukMessage request, boolean candidate) {
+        request.setBody("");
+        if (candidate) {
+            LOGGER.info("Copied new OTP2 candidate base graph, triggering candidate NeTEx graph build");
+            publisher.publish(MardukQueues.OTP2_GRAPH_CANDIDATE_BUILD_QUEUE, request);
+        } else {
+            LOGGER.info("Copied new OTP2 base graph, triggering NeTex graph build");
+            publisher.publish(MardukQueues.OTP2_GRAPH_BUILD_QUEUE, request);
+        }
+    }
+
+    /** The graph job's correlation id is the build timestamp, not the request's. */
+    private void reportGraphJob(MardukMessage request, String timestamp, JobEvent.State state) {
+        jobEvents.reportSystemJob(request, builder -> builder
+                .jobDomain(JobEvent.JobDomain.GRAPH)
+                .action(JobEvent.TimetableAction.OTP2_BUILD_BASE)
+                .state(state)
+                .correlationId(timestamp));
     }
 }

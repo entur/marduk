@@ -1,213 +1,156 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.chouette;
 
-package no.rutebanken.marduk.routes.chouette;
-
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.TestConstants;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+import no.rutebanken.marduk.domain.ChouetteInfo;
+import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.pubsub.RecordingPubSubPublisher;
+import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.*;
-import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.model.language.SimpleExpression;
-import org.apache.commons.io.IOUtils;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_ID;
+import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_TYPE;
+import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
+import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.pipeline.RetryPolicies.noRetries;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+class ChouetteValidationConsumerTest {
 
-class ChouetteValidationRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+    private HttpServer server;
+    private ChouetteClient client;
+    private RecordingPubSubPublisher publisher;
+    private ProviderRepository providerRepository;
+    private final List<String> requested = new CopyOnWriteArrayList<>();
 
-	@EndpointInject("mock:chouetteCreateValidation")
-	protected MockEndpoint chouetteCreateValidation;
+    @BeforeEach
+    void startServer() throws IOException {
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", this::respond);
+        server.start();
+        client = new ChouetteClient("http://127.0.0.1:" + server.getAddress().getPort(), noRetries());
+        publisher = new RecordingPubSubPublisher();
 
-	@EndpointInject("mock:pollJobStatus")
-	protected MockEndpoint pollJobStatus;
+        Provider provider = new Provider();
+        provider.setId(2L);
+        ChouetteInfo info = new ChouetteInfo();
+        info.setReferential("rut");
+        provider.setChouetteInfo(info);
+        providerRepository = mock(ProviderRepository.class);
+        when(providerRepository.getProvider(2L)).thenReturn(provider);
+    }
 
-	@EndpointInject("mock:chouetteGetJobsForProvider")
-	protected MockEndpoint chouetteGetJobs;
+    @AfterEach
+    void stopServer() throws IOException {
+        client.close();
+        server.stop(0);
+    }
 
-	@EndpointInject("mock:processValidationResult")
-	protected MockEndpoint processValidationResult;
+    private void respond(HttpExchange exchange) throws IOException {
+        try (InputStream body = exchange.getRequestBody()) {
+            body.readAllBytes();
+        }
+        requested.add(exchange.getRequestURI().getPath());
+        exchange.getResponseHeaders().add("Location",
+                "http://chouette/chouette_iev/referentials/rut/scheduled_jobs/5");
+        exchange.sendResponseHeaders(200, -1);
+        exchange.close();
+    }
 
-	@EndpointInject("mock:chouetteTransferExportQueue")
-	protected MockEndpoint chouetteTransferExportQueue;
+    private ChouetteValidationConsumer consumer() {
+        return new ChouetteValidationConsumer(client, providerRepository,
+                new JobEventPublisher(publisher), new ChouetteJobSubmission(publisher));
+    }
 
-	@EndpointInject("mock:checkScheduledJobsBeforeTriggeringExport")
-	protected MockEndpoint chouetteCheckScheduledJobs;
+    private static MardukMessage validationRequest(JobEvent.TimetableAction level) {
+        return new MardukMessage()
+                .setHeader(PROVIDER_ID, 2L)
+                .setHeader(CORRELATION_ID, "corr")
+                .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, level.name());
+    }
 
-	@EndpointInject("mock:updateStatus")
-	protected MockEndpoint updateStatus;
+    private List<JobEvent> reportedEvents() {
+        return publisher.publishedTo(MardukQueues.JOB_EVENT_QUEUE).stream()
+                .map(p -> JobEvent.fromString(p.body()))
+                .toList();
+    }
 
-	@Produce("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
-	protected ProducerTemplate validationTemplate;
+    @Test
+    void theValidatorIsCalledForTheProvidersDataspace() {
+        consumer().handle(validationRequest(JobEvent.TimetableAction.VALIDATION_LEVEL_1));
 
-	@Produce("direct:processValidationResult")
-	protected ProducerTemplate processValidationResultTemplate;
+        assertEquals(List.of("/chouette_iev/referentials/rut/validator"), requested);
+    }
 
-	@Produce("direct:checkScheduledJobsBeforeTriggeringExport")
-	protected ProducerTemplate triggerJobListTemplate;
+    @Test
+    void theRequestedLevelIsWhatTheJobIsReportedUnder() {
+        // A level 1 and a level 2 validation of the same dataspace have to be two jobs in nabu.
+        consumer().handle(validationRequest(JobEvent.TimetableAction.VALIDATION_LEVEL_2));
 
-	@Value("${chouette.url}")
-	private String chouetteUrl;
+        assertEquals("VALIDATION_LEVEL_2", reportedEvents().getFirst().getAction());
+        assertEquals("VALIDATION_LEVEL_2", publisher.publishedTo(MardukQueues.CHOUETTE_POLL_STATUS_QUEUE)
+                .getFirst().attributes().get(CHOUETTE_JOB_STATUS_JOB_TYPE));
+    }
 
-	@BeforeEach
-	protected void setUp() throws IOException {
-		super.setUp();
-		chouetteCreateValidation.reset();
-		pollJobStatus.reset();
-		chouetteGetJobs.reset();
-		processValidationResult.reset();
-		chouetteTransferExportQueue.reset();
-		chouetteCheckScheduledJobs.reset();
-		updateStatus.reset();
-	}
-	
-	@Test
-	void testRunChouetteValidation() throws Exception {
+    @Test
+    void theJobIsPutOnThePollQueueWithTheValidationResultHandlerAsItsDestination() {
+        consumer().handle(validationRequest(JobEvent.TimetableAction.VALIDATION_LEVEL_1));
 
-		// Mock initial call to Chouette to validation job
-		AdviceWith.adviceWith(context, "chouette-send-validation-job", a -> {
-			a.weaveByToUri(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/validator")
-					.replace().to("mock:chouetteCreateValidation");
-			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-					.to("mock:updateStatus");
-		});
+        var polled = publisher.publishedTo(MardukQueues.CHOUETTE_POLL_STATUS_QUEUE).getFirst();
+        assertEquals("direct:processValidationResult",
+                polled.attributes().get(CHOUETTE_JOB_STATUS_ROUTING_DESTINATION));
+        assertEquals("5", polled.attributes().get(CHOUETTE_JOB_ID));
+    }
 
-		// Mock job polling route - AFTER header validation (to ensure that we send correct headers in test as well)
-		AdviceWith.adviceWith(context, "chouette-validate-job-status-parameters", a -> a.interceptSendToEndpoint("direct:checkJobStatus").skipSendToOriginalEndpoint()
-				.to("mock:pollJobStatus"));
+    @Test
+    void theValidationIsReportedAsPending() {
+        consumer().handle(validationRequest(JobEvent.TimetableAction.VALIDATION_LEVEL_1));
 
-		// Mock update status calls
-		AdviceWith.adviceWith(context, "chouette-process-validation-status", a -> {
-			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint()
-					.to("mock:updateStatus");
-			a.interceptSendToEndpoint("direct:checkScheduledJobsBeforeTriggeringExport").skipSendToOriginalEndpoint()
-					.to("mock:checkScheduledJobsBeforeTriggeringExport");
-		});
+        assertEquals(JobEvent.State.PENDING, reportedEvents().getFirst().getState());
+    }
 
-		// we must manually start when we are done with all the advice with
-		context.start();
+    @Test
+    void aRequestForADataspaceThatDoesNotExistIsReportedAsFailedRatherThanDropped() {
+        // The operator asked for something; nabu has to show that it did not happen.
+        MardukMessage message = validationRequest(JobEvent.TimetableAction.VALIDATION_LEVEL_1)
+                .setHeader(PROVIDER_ID, 999L);
 
-		// 1 initial import call
-		chouetteCreateValidation.expectedMessageCount(1);
-		chouetteCreateValidation.returnReplyHeader("Location", new SimpleExpression(
-				chouetteUrl.replace("http:", "http://") + "/chouette_iev/referentials/rut/scheduled_jobs/1"));
+        consumer().handle(message);
 
-	
-		pollJobStatus.expectedMessageCount(1);
-		
-		
-		updateStatus.expectedMessageCount(2);
-		chouetteCheckScheduledJobs.expectedMessageCount(1);
-		
-		
-		Map<String, String> headers = new HashMap<>();
-		headers.put(Constants.PROVIDER_ID, TestConstants.PROVIDER_ID_AS_STRING_RUT);
-		headers.put(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.VALIDATION_LEVEL_2.toString());
-		sendBodyAndHeadersToPubSub(validationTemplate, "", headers);
+        assertTrue(requested.isEmpty(), "Chouette was asked to validate a dataspace with no provider");
+        assertEquals(JobEvent.State.FAILED, reportedEvents().getLast().getState());
+    }
 
-		chouetteCreateValidation.assertIsSatisfied();
-		pollJobStatus.assertIsSatisfied();
-		
-		Exchange exchange = pollJobStatus.getReceivedExchanges().getFirst();
-		exchange.getIn().setHeader("action_report_result", "OK");
-		exchange.getIn().setHeader("validation_report_result", "OK");
-		processValidationResultTemplate.send(exchange );
-		
-		chouetteCheckScheduledJobs.assertIsSatisfied();
-		updateStatus.assertIsSatisfied();
-		
-		
-	}
+    @Test
+    void aRequestWithoutACorrelationIdGetsOne() {
+        MardukMessage message = validationRequest(JobEvent.TimetableAction.VALIDATION_LEVEL_1)
+                .removeHeader(CORRELATION_ID);
 
+        consumer().handle(message);
 
-	@Test
-	void testJobListResponseTerminated() throws Exception {
-		testJobListResponse("/no/rutebanken/marduk/chouette/getJobListResponseAllTerminated.json", true);
-	}
+        assertNotNull(message.getHeader(CORRELATION_ID), "the job would be untraceable in nabu");
+    }
 
-	@Test
-	void testJobListResponseScheduled() throws Exception {
-		testJobListResponse("/no/rutebanken/marduk/chouette/getJobListResponseScheduled.json", false);
-	}
-
-	void testJobListResponse(String jobListResponseClasspathReference, boolean expectExport) throws Exception {
-
-		AdviceWith.adviceWith(context, "chouette-process-job-list-after-validation", a -> {
-			a.interceptSendToEndpoint(chouetteUrl + "/*")
-					.skipSendToOriginalEndpoint()
-					.to("mock:chouetteGetJobsForProvider");
-
-			a.weaveByToUri("google-pubsub:(.*):ChouetteTransferExportQueue").replace().to("mock:chouetteTransferExportQueue");
-
-
-		});
-
-		context.start();
-
-		// 1 call to list other import jobs in referential
-		chouetteGetJobs.expectedMessageCount(1);
-		chouetteGetJobs.returnReplyBody(new Expression() {
-
-			@SuppressWarnings("unchecked")
-			@Override
-			public <T> T evaluate(Exchange ex, Class<T> arg1) {
-				try {
-					return (T) IOUtils.toString(getClass().getResourceAsStream(jobListResponseClasspathReference), StandardCharsets.UTF_8);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			}
-		});
-
-		chouetteTransferExportQueue.returnReplyBody(new Expression() {
-
-			@SuppressWarnings("unchecked")
-			@Override
-			public <T> T evaluate(Exchange ex, Class<T> arg1) {
-				try {
-					return (T) IOUtils.toString(getClass().getResourceAsStream(jobListResponseClasspathReference), StandardCharsets.UTF_8);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			}
-		});
-
-		Map<String, Object> headers = new HashMap<>();
-		headers.put(CHOUETTE_REFERENTIAL, TestConstants.CHOUETTE_REFERENTIAL_RUT);
-		headers.put(Constants.PROVIDER_ID,2);
-		
-		triggerJobListTemplate.sendBodyAndHeaders(null,headers);
-		
-		chouetteGetJobs.assertIsSatisfied();
-
-		if (expectExport) {
-			chouetteTransferExportQueue.expectedMessageCount(1);
-		}
-		chouetteTransferExportQueue.assertIsSatisfied();
-
-	}
-
+    @Test
+    void theSubscriptionIsTheValidationQueue() {
+        assertEquals(MardukQueues.CHOUETTE_VALIDATION_QUEUE, consumer().destination());
+    }
 }

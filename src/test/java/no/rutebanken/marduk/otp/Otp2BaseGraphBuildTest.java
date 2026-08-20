@@ -1,100 +1,324 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.otp;
 
-package no.rutebanken.marduk.routes.otp.otp2;
-
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.TestConstants;
-import no.rutebanken.marduk.domain.BlobStoreFiles;
+import no.rutebanken.marduk.batch.BatchRunner;
+import no.rutebanken.marduk.batch.BatchedRequests;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.InFlightWork;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.pubsub.RecordingPubSubPublisher;
+import no.rutebanken.marduk.repository.InMemoryMardukBlobStoreRepository;
+import no.rutebanken.marduk.routes.otp.otp2.Otp2BaseGraphBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.EndpointInject;
-import org.apache.camel.Produce;
-import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.jupiter.api.Assertions;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ_PREFIX;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+class Otp2BaseGraphBuildTest {
 
-class Otp2BaseGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+    private static final String INTERNAL_CONTAINER = "marduk-internal";
+    private static final String GRAPH_FILE_NAME = OTP2_BASE_GRAPH_OBJ_PREFIX + "-EN-0051.obj";
+    private static final String PUBLISHED_GRAPH = "graphs/street/" + GRAPH_FILE_NAME;
 
-    private static final String OTP2_BASE_GRAPH_FILE_NAME = OTP2_BASE_GRAPH_OBJ_PREFIX + "-XXX.obj";
+    private InMemoryMardukBlobStoreRepository internalRepository;
+    private MardukInternalBlobStoreService internalBlobStore;
+    private RecordingPubSubPublisher publisher;
+    private BatchedRequests requests;
 
-    @Value("${otp.graph.blobstore.subdirectory}")
-    private String graphSubdirectory;
+    /** What the graph builder was asked to do, and what it writes into the work directory. */
+    private final List<String> builtWorkDirs = new ArrayList<>();
+    private final List<Boolean> builtAsCandidate = new ArrayList<>();
+    /** The MDC the build ran under, captured while it runs rather than after. */
+    private final List<String> builtUnderCodespace = new ArrayList<>();
+    private boolean builderWritesAGraph = true;
+    private RuntimeException builderFailure;
 
-    @EndpointInject("mock:remoteBuildNetexGraph")
-    protected MockEndpoint remoteBuildNetexGraph;
+    @BeforeEach
+    void setUp() {
+        internalRepository = new InMemoryMardukBlobStoreRepository(new ConcurrentHashMap<>());
+        internalBlobStore = new MardukInternalBlobStoreService(INTERNAL_CONTAINER, internalRepository);
+        publisher = new RecordingPubSubPublisher();
+        requests = mock(BatchedRequests.class);
+    }
 
-    @EndpointInject("mock:updateStatus")
-    private MockEndpoint updateStatus;
+    private Otp2BaseGraphBuild build(boolean scheduleEnabled, boolean leader) {
+        return build(new BatchRunner(requests, () -> leader, new InFlightWork()), scheduleEnabled);
+    }
 
-    @EndpointInject("mock:otpGraphBuildQueue")
-    private MockEndpoint otpGraphBuildQueue;
+    private Otp2BaseGraphBuild build(BatchRunner batchRunner, boolean scheduleEnabled) {
+        return new Otp2BaseGraphBuild(
+                batchRunner,
+                graphBuilder(),
+                internalBlobStore,
+                new Otp2GraphWorkDirectory(internalBlobStore, "graphs", true),
+                publisher,
+                new JobEventPublisher(publisher),
+                scheduleEnabled);
+    }
 
-    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue")
-    private ProducerTemplate producerTemplate;
+    private Otp2BaseGraphBuilder graphBuilder() {
+        return new Otp2BaseGraphBuilder() {
+            @Override
+            public void build(String otpWorkDir, String timestamp, boolean candidate) {
+                builtWorkDirs.add(otpWorkDir);
+                builtAsCandidate.add(candidate);
+                builtUnderCodespace.add(org.slf4j.MDC.get("codespace"));
+                if (builderWritesAGraph) {
+                    internalRepository.uploadBlob(otpWorkDir + '/' + GRAPH_FILE_NAME, dummy());
+                }
+                internalRepository.uploadBlob(otpWorkDir + "/partial-output", dummy());
+                if (builderFailure != null) {
+                    throw builderFailure;
+                }
+            }
+        };
+    }
+
+    private static ByteArrayInputStream dummy() {
+        return new ByteArrayInputStream("dummy".getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static MardukMessage request(String correlationId) {
+        return new MardukMessage()
+                .setHeader(CORRELATION_ID, correlationId)
+                .setHeader(PROVIDER_ID, 2L)
+                .setHeader(CHOUETTE_REFERENTIAL, "rb_rut");
+    }
+
+    private BatchedRequests.Batch batchOf(String kind, String... correlationIds) {
+        List<MardukMessage> messages = new ArrayList<>();
+        for (String correlationId : correlationIds) {
+            messages.add(request(correlationId));
+        }
+        BatchedRequests.Batch batch = new BatchedRequests.Batch(kind, UUID.randomUUID().toString(), messages);
+        when(requests.claim(kind)).thenReturn(batch);
+        return batch;
+    }
+
+    private List<JobEvent> reportedEvents() {
+        return publisher.publishedTo(MardukQueues.JOB_EVENT_QUEUE).stream()
+                .map(published -> JobEvent.fromString(published.body()))
+                .toList();
+    }
 
     @Test
-    void testBaseGraphBuilding() throws Exception {
-        AdviceWith.adviceWith(context, "otp2-base-graph-build-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-and-send-status", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-copy", a -> {
-            a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-            a.weaveByToUri("google-pubsub:(.*):Otp2GraphBuildQueue").replace().to("mock:otpGraphBuildQueue");
-            a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().to("mock:remoteBuildNetexGraph");
-        });
+    void aStreetGraphBuildPublishesTheGraphAndTriggersTheTransitGraphBuild() {
+        build(true, true).build(request("corr-id"), false);
 
-        remoteBuildNetexGraph.expectedMessageCount(1);
-        remoteBuildNetexGraph.whenAnyExchangeReceived(e -> {
-                    // create a dummy base graph file in the work subdirectory of the internal bucket with an arbitrary serialization id
-                    String graphFileName = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_BASE_GRAPH_FILE_NAME;
-                    internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData());
-                }
-        );
-        // The build queue is consumed by a master: singleton route, so allow time for this instance to win
-        // leader election and start consuming before asserting, rather than racing consumer startup.
-        remoteBuildNetexGraph.setResultWaitTime(20000);
+        assertTrue(internalRepository.exist(PUBLISHED_GRAPH),
+                "the built street graph was not copied to the street graph directory");
+        assertEquals(1, publisher.publishedTo(MardukQueues.OTP2_GRAPH_BUILD_QUEUE).size());
+        assertEquals(0, publisher.publishedTo(MardukQueues.OTP2_GRAPH_CANDIDATE_BUILD_QUEUE).size());
 
-        updateStatus.expectedMessageCount(2);
-        updateStatus.setResultWaitTime(20000);
-        otpGraphBuildQueue.expectedMessageCount(1);
+        List<JobEvent> events = reportedEvents();
+        assertEquals(List.of(JobEvent.State.STARTED, JobEvent.State.OK),
+                events.stream().map(JobEvent::getState).toList());
+        assertTrue(events.stream().allMatch(event -> JobEvent.JobDomain.GRAPH.equals(event.getDomain())
+                && JobEvent.TimetableAction.OTP2_BUILD_BASE.toString().equals(event.getAction())));
+    }
 
-        context.start();
+    @Test
+    void aCandidateBuildTriggersTheCandidateTransitGraphBuildInstead() {
+        build(true, true).build(request("corr-id"), true);
 
-        sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(TestConstants.PROVIDER_ID_RUT, "ref", "corr-id"));
-        remoteBuildNetexGraph.assertIsSatisfied();
+        assertEquals(List.of(true), builtAsCandidate);
+        assertEquals(1, publisher.publishedTo(MardukQueues.OTP2_GRAPH_CANDIDATE_BUILD_QUEUE).size());
+        assertEquals(0, publisher.publishedTo(MardukQueues.OTP2_GRAPH_BUILD_QUEUE).size());
+        assertTrue(internalRepository.exist(PUBLISHED_GRAPH),
+                "a candidate street graph is published to the same place as the ordinary one");
+    }
 
-        updateStatus.assertIsSatisfied();
-        otpGraphBuildQueue.assertIsSatisfied();
+    @Test
+    void theGraphJobIsReportedUnderTheBuildTimestampRatherThanTheRequestsCorrelationId() {
+        build(true, true).build(request("corr-id"), false);
 
-        List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
+        List<String> correlationIds = reportedEvents().stream().map(JobEvent::getCorrelationId).distinct().toList();
+        assertEquals(1, correlationIds.size(), "the started and finished events belong to different jobs");
+        assertNotEquals("corr-id", correlationIds.getFirst());
+        assertTrue(correlationIds.getFirst().matches("\\d{17}"),
+                "expected a yyyyMMddHHmmssSSS timestamp but got " + correlationIds.getFirst());
+    }
 
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.getDomain()) && JobEvent.State.STARTED.equals(je.getState())));
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState())));
+    @Test
+    void theWorkDirectoryIsEmptiedAfterASuccessfulBuild() {
+        build(true, true).build(request("corr-id"), false);
 
-        // the graph object is present in the graph subdirectory of the internal bucket
-        BlobStoreFiles blobsInVersionedSubDirectory = internalInMemoryBlobStoreRepository.listBlobs(graphSubdirectory + '/'  + OTP2_STREET_GRAPH_DIR + '/' + OTP2_BASE_GRAPH_FILE_NAME);
-        Assertions.assertEquals(1, blobsInVersionedSubDirectory.getFiles().size());
+        String workDir = builtWorkDirs.getFirst();
+        assertTrue(internalRepository.listBlobs(workDir).getFiles().isEmpty(),
+                "the remote work directory was left behind");
+    }
 
+    @Test
+    void aFailingBuilderIsReportedAsFailedWithoutTriggeringATransitGraphBuild() {
+        builderFailure = new IllegalStateException("the graph builder job failed");
+
+        build(true, true).build(request("corr-id"), false);
+
+        assertEquals(List.of(JobEvent.State.STARTED, JobEvent.State.FAILED),
+                reportedEvents().stream().map(JobEvent::getState).toList());
+        assertEquals(0, publisher.publishedTo(MardukQueues.OTP2_GRAPH_BUILD_QUEUE).size());
+    }
+
+    @Test
+    void aFailedBuildLeavesItsWorkDirectoryForInspection() {
+        // The route cleaned up on the success path only, and that is preserved: the graph builder's partial
+        // output is the only evidence of why it failed.
+        builderFailure = new IllegalStateException("the graph builder job failed");
+
+        build(true, true).build(request("corr-id"), false);
+
+        assertFalse(internalRepository.listBlobs(builtWorkDirs.getFirst()).getFiles().isEmpty());
+    }
+
+    @Test
+    void aBuilderThatProducedNoGraphFailsTheBuild() {
+        builderWritesAGraph = false;
+
+        build(true, true).build(request("corr-id"), false);
+
+        assertEquals(List.of(JobEvent.State.STARTED, JobEvent.State.FAILED),
+                reportedEvents().stream().map(JobEvent::getState).toList());
+    }
+
+    @Test
+    void aFailedBuildConsumesItsRequestsRatherThanRetryingThem() {
+        // doCatch(Exception) swallowed the failure, so the aggregated messages were acknowledged. A graph
+        // builder job that fails fails the same way next tick, and retrying it forever would report FAILED
+        // every five seconds.
+        builderFailure = new IllegalStateException("the graph builder job failed");
+        BatchedRequests.Batch batch = batchOf(Otp2BaseGraphBuild.KIND, "corr-id");
+
+        build(true, true).buildOnSchedule();
+
+        verify(requests).complete(batch);
+        verify(requests, never()).release(any());
+    }
+
+    @Test
+    void oneBuildServesEveryRequestInTheBatch() {
+        batchOf(Otp2BaseGraphBuild.KIND, "first", "second", "third");
+
+        build(true, true).buildOnSchedule();
+
+        assertEquals(1, builtWorkDirs.size());
+    }
+
+    @Test
+    void theScheduledBuildIsGatedByAutoStartupSoTheAdminEndpointStillWorks() {
+        // The flag used to stop the route, which also stopped the queue being consumed. Now the request is
+        // recorded either way and only the schedule is off, so nothing is lost while it is switched off.
+        batchOf(Otp2BaseGraphBuild.KIND, "corr-id");
+
+        build(false, true).buildOnSchedule();
+
+        verify(requests, never()).claim(any());
+        assertTrue(builtWorkDirs.isEmpty());
+    }
+
+    @Test
+    void aFollowerDoesNotBuild() {
+        batchOf(Otp2BaseGraphBuild.KIND, "corr-id");
+
+        build(true, false).buildOnSchedule();
+
+        verify(requests, never()).claim(any());
+        assertTrue(builtWorkDirs.isEmpty());
+    }
+
+    @Test
+    void theTriggeredTransitBuildCarriesTheBatchesOwnCorrelationIdRatherThanARequests() {
+        // setNewCorrelationId gave the aggregated exchange an id of its own. Writing that id onto the
+        // newest request instead would move one arbitrary provider's job under the batch's id.
+        BatchedRequests.Batch batch = batchOf(Otp2BaseGraphBuild.KIND, "first", "newest");
+
+        build(true, true).buildOnSchedule();
+
+        assertEquals(batch.claimId(),
+                publisher.publishedTo(MardukQueues.OTP2_GRAPH_BUILD_QUEUE).getFirst()
+                        .attributes().get(CORRELATION_ID));
+        assertEquals(List.of("first", "newest"),
+                batch.requests().stream().map(m -> m.getHeader(CORRELATION_ID, String.class)).toList(),
+                "a contributing request was stamped with the batch's correlation id");
+    }
+
+    @Test
+    void theTriggeredTransitBuildCarriesNoProvidersIdentity() {
+        // Every header on this message goes out as a PubSub attribute. Master aggregated into an empty
+        // exchange, so the transit build request carried no referential and the transit build reported it
+        // as nobody's job - which is the premise of aRequestWithNoReferentialIsNotAProvidersJob over in
+        // Otp2NetexGraphBuildTest. Copying a request's headers here would report one arbitrary provider a
+        // graph job it never asked for.
+        batchOf(Otp2BaseGraphBuild.KIND, "first", "newest");
+
+        build(true, true).buildOnSchedule();
+
+        Map<String, String> attributes =
+                publisher.publishedTo(MardukQueues.OTP2_GRAPH_BUILD_QUEUE).getFirst().attributes();
+        assertNull(attributes.get(CHOUETTE_REFERENTIAL),
+                "a provider's referential reached the transit build request: " + attributes);
+        assertNull(attributes.get(PROVIDER_ID),
+                "a provider id reached the transit build request: " + attributes);
+    }
+
+    @Test
+    void theStreetGraphBuildLogsUnderNoCodespace() {
+        // The aggregate has no referential, so MardukMdc.set leaves the codespace unset, as
+        // updateMdcFromHeaders did on an exchange with no headers. Read during the build: MDC is
+        // thread-local and the assertion would otherwise see whatever the previous test left behind.
+        batchOf(Otp2BaseGraphBuild.KIND, "corr-id");
+
+        build(true, true).buildOnSchedule();
+
+        assertNull(builtUnderCodespace.getFirst(),
+                "one arbitrary provider's codespace labelled the whole graph build");
+    }
+
+    @Test
+    void bothStreetGraphBuildsShareOneExclusionGroupSoTheyCannotOverlap() {
+        // They write the same published street graph path. Both routes named the same aggregate controller
+        // route, whose inflight count is what stopped one starting while the other ran.
+        BatchRunner runner = mock(BatchRunner.class);
+        Otp2BaseGraphBuild build = build(runner, true);
+
+        build.buildOnSchedule();
+        build.buildCandidateOnSchedule();
+
+        verify(runner).runOverWholeBatch(
+                eq(Otp2BaseGraphBuild.EXCLUSION_GROUP), eq(Otp2BaseGraphBuild.KIND), any());
+        verify(runner).runOverWholeBatch(
+                eq(Otp2BaseGraphBuild.EXCLUSION_GROUP), eq(Otp2BaseGraphBuild.CANDIDATE_KIND), any());
+    }
+
+    @Test
+    void theCandidateScheduleServesTheCandidateBatch() {
+        batchOf(Otp2BaseGraphBuild.CANDIDATE_KIND, "corr-id");
+
+        build(true, true).buildCandidateOnSchedule();
+
+        assertEquals(List.of(true), builtAsCandidate);
     }
 }

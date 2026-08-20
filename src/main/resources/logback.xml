@@ -35,6 +35,8 @@
                             },
                             "message": "%message\n%ex{full}",
                             "severity": "%level",
+                            <!-- Always empty since Camel was removed: kept so the log schema
+                                 the collectors parse does not change in the same release. -->
                             "breadcrumb": "%X{camel.breadcrumbId}",
                             "correlationId": "%X{correlationId:-}",
                             "codespace": "%X{codespace:-}",
@@ -54,7 +56,6 @@
         <logger name="org" level="INFO"/>
 
         <!--- Reducing verbosity of Jackson startup logs-->
-        <logger name="org.apache.camel.component.jackson.JacksonDataFormat" level="WARN" />
 
         <root level="INFO">
             <appender-ref ref="console"/>

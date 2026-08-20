@@ -6,11 +6,7 @@ import no.rutebanken.marduk.MardukSpringBootBaseTest;
 import no.rutebanken.marduk.domain.PrevalidatedFileMetadata;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.support.DefaultExchange;
+import no.rutebanken.marduk.pipeline.MardukMessage;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,15 +22,13 @@ class NightlyValidationFileProcessorTest extends MardukSpringBootBaseTest {
     @Autowired
     private MardukInternalBlobStoreService mardukInternalBlobStoreService;
 
-    private Processor processor;
+    private NightlyValidationFileProcessor processor;
     private ObjectMapper objectMapper;
-    private CamelContext camelContext;
 
     @BeforeEach
     void setup() {
         processor = new NightlyValidationFileProcessor(mardukInternalBlobStoreService);
         objectMapper = ObjectMapperFactory.getSharedObjectMapper();
-        camelContext = new DefaultCamelContext();
     }
 
     @Test
@@ -54,13 +48,13 @@ class NightlyValidationFileProcessorTest extends MardukSpringBootBaseTest {
         uploadBlob(originalFilePath, "original file content");
 
         // Process exchange
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, referential);
-        processor.process(exchange);
+        MardukMessage message = new MardukMessage();
+        message.setHeader(Constants.DATASET_REFERENTIAL, referential);
+        processor.locate(message);
 
         // Verify headers
-        Assertions.assertEquals(originalFilePath, exchange.getIn().getHeader(Constants.FILE_HANDLE));
-        Assertions.assertEquals(createdAt.toString(), exchange.getIn().getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
+        Assertions.assertEquals(originalFilePath, message.getHeader(Constants.FILE_HANDLE));
+        Assertions.assertEquals(createdAt.toString(), message.getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
     }
 
     @Test
@@ -80,13 +74,13 @@ class NightlyValidationFileProcessorTest extends MardukSpringBootBaseTest {
         uploadBlob(legacyFilePath, "legacy file content");
 
         // Process exchange
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, referential);
-        processor.process(exchange);
+        MardukMessage message = new MardukMessage();
+        message.setHeader(Constants.DATASET_REFERENTIAL, referential);
+        processor.locate(message);
 
         // Verify fallback to legacy file
-        Assertions.assertEquals(legacyFilePath, exchange.getIn().getHeader(Constants.FILE_HANDLE));
-        Assertions.assertNotNull(exchange.getIn().getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
+        Assertions.assertEquals(legacyFilePath, message.getHeader(Constants.FILE_HANDLE));
+        Assertions.assertNotNull(message.getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
     }
 
     @Test
@@ -98,13 +92,13 @@ class NightlyValidationFileProcessorTest extends MardukSpringBootBaseTest {
         uploadBlob(legacyFilePath, "legacy file content");
 
         // Process exchange
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, referential);
-        processor.process(exchange);
+        MardukMessage message = new MardukMessage();
+        message.setHeader(Constants.DATASET_REFERENTIAL, referential);
+        processor.locate(message);
 
         // Verify fallback to legacy file
-        Assertions.assertEquals(legacyFilePath, exchange.getIn().getHeader(Constants.FILE_HANDLE));
-        Assertions.assertNotNull(exchange.getIn().getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
+        Assertions.assertEquals(legacyFilePath, message.getHeader(Constants.FILE_HANDLE));
+        Assertions.assertNotNull(message.getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
     }
 
     @Test
@@ -120,13 +114,13 @@ class NightlyValidationFileProcessorTest extends MardukSpringBootBaseTest {
         uploadBlob(legacyFilePath, "legacy file content");
 
         // Process exchange
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, referential);
-        processor.process(exchange);
+        MardukMessage message = new MardukMessage();
+        message.setHeader(Constants.DATASET_REFERENTIAL, referential);
+        processor.locate(message);
 
         // Verify fallback to legacy file
-        Assertions.assertEquals(legacyFilePath, exchange.getIn().getHeader(Constants.FILE_HANDLE));
-        Assertions.assertNotNull(exchange.getIn().getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
+        Assertions.assertEquals(legacyFilePath, message.getHeader(Constants.FILE_HANDLE));
+        Assertions.assertNotNull(message.getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
     }
 
     @Test
@@ -134,12 +128,12 @@ class NightlyValidationFileProcessorTest extends MardukSpringBootBaseTest {
         String referential = "nonexistent";
 
         // Process exchange with no files present
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, referential);
-        processor.process(exchange);
+        MardukMessage message = new MardukMessage();
+        message.setHeader(Constants.DATASET_REFERENTIAL, referential);
+        processor.locate(message);
 
         // Verify no FILE_HANDLE is set
-        Assertions.assertNull(exchange.getIn().getHeader(Constants.FILE_HANDLE));
+        Assertions.assertNull(message.getHeader(Constants.FILE_HANDLE));
     }
 
     @Test
@@ -158,13 +152,13 @@ class NightlyValidationFileProcessorTest extends MardukSpringBootBaseTest {
         uploadBlob(legacyFilePath, "legacy file content");
 
         // Process exchange
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, referential);
-        processor.process(exchange);
+        MardukMessage message = new MardukMessage();
+        message.setHeader(Constants.DATASET_REFERENTIAL, referential);
+        processor.locate(message);
 
         // Verify fallback to legacy file
-        Assertions.assertEquals(legacyFilePath, exchange.getIn().getHeader(Constants.FILE_HANDLE));
-        Assertions.assertNotNull(exchange.getIn().getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
+        Assertions.assertEquals(legacyFilePath, message.getHeader(Constants.FILE_HANDLE));
+        Assertions.assertNotNull(message.getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
     }
 
     @Test
@@ -183,13 +177,13 @@ class NightlyValidationFileProcessorTest extends MardukSpringBootBaseTest {
         uploadBlob(originalFilePath, "original file content");
 
         // Process exchange
-        Exchange exchange = new DefaultExchange(camelContext);
-        exchange.getIn().setHeader(Constants.DATASET_REFERENTIAL, referential);
-        processor.process(exchange);
+        MardukMessage message = new MardukMessage();
+        message.setHeader(Constants.DATASET_REFERENTIAL, referential);
+        processor.locate(message);
 
         // Verify FILE_HANDLE is set but FILTERING_FILE_CREATED_TIMESTAMP is not
-        Assertions.assertEquals(originalFilePath, exchange.getIn().getHeader(Constants.FILE_HANDLE));
-        Assertions.assertNull(exchange.getIn().getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
+        Assertions.assertEquals(originalFilePath, message.getHeader(Constants.FILE_HANDLE));
+        Assertions.assertNull(message.getHeader(Constants.FILTERING_FILE_CREATED_TIMESTAMP));
     }
 
     private void uploadBlob(String path, String content) {

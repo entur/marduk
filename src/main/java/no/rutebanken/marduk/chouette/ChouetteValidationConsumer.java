@@ -1,199 +1,86 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
-
-package no.rutebanken.marduk.routes.chouette;
+package no.rutebanken.marduk.chouette;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukPubSubConsumer;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
-import no.rutebanken.marduk.routes.processors.NightlyValidationFileProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import no.rutebanken.marduk.routes.status.JobEvent.State;
-import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
-import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
-import org.apache.camel.Exchange;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.LoggingLevel;
-import org.springframework.beans.factory.annotation.Value;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 
-import static no.rutebanken.marduk.Constants.*;
-import static no.rutebanken.marduk.Utils.getLastPathElementOfUrl;
+import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 /**
- * Runs validation in Chouette
+ * Asks Chouette to validate a dataspace.
+ *
+ * <p>Replaces {@code ChouetteValidationRouteBuilder}'s consumer. The requested level travels on the message
+ * and is what the job's status events are reported under, so a level 1 and a level 2 validation of the same
+ * dataspace are two jobs in nabu rather than one.
  */
 @Component
-public class ChouetteValidationRouteBuilder extends AbstractChouetteRouteBuilder {
+public class ChouetteValidationConsumer extends MardukPubSubConsumer {
 
-    private final MardukInternalBlobStoreService mardukInternalBlobStoreService;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChouetteValidationConsumer.class);
 
-    @Value("${antu.validate.cron.schedule:0+30+23+?+*+MON-FRI}")
-    private String antuValidateCronSchedule;
+    private final ChouetteClient chouetteClient;
+    private final ProviderRepository providerRepository;
+    private final JobEventPublisher jobEvents;
+    private final ChouetteJobSubmission submission;
 
-    @Value("${chouette.validate.level2.cron.schedule:0+30+21+?+*+MON-FRI}")
-    private String level2CronSchedule;
-
-    @Value("${chouette.url}")
-    private String chouetteUrl;
-
-    public ChouetteValidationRouteBuilder(MardukInternalBlobStoreService mardukInternalBlobStoreService) {
-        this.mardukInternalBlobStoreService = mardukInternalBlobStoreService;
+    public ChouetteValidationConsumer(
+            ChouetteClient chouetteClient,
+            ProviderRepository providerRepository,
+            JobEventPublisher jobEvents,
+            ChouetteJobSubmission submission) {
+        this.chouetteClient = chouetteClient;
+        this.providerRepository = providerRepository;
+        this.jobEvents = jobEvents;
+        this.submission = submission;
     }
 
     @Override
-    public void configure() throws Exception {
-        super.configure();
-
-        singletonFrom("quartz://marduk/nightlyValidation?cron=" + antuValidateCronSchedule + "&trigger.timeZone=Europe/Oslo")
-                .autoStartup("{{antu.validate.autoStartup:true}}")
-                .filter(e -> shouldQuartzRouteTrigger(e, antuValidateCronSchedule))
-                .log(LoggingLevel.INFO, "Quartz triggers validation in antu for all providers in Chouette.")
-                .to(ExchangePattern.InOnly, "direct:triggerAntuValidationForAllProviders")
-                .routeId("antu-nightly-prevalidation-quartz");
-
-        singletonFrom("quartz://marduk/chouetteValidateLevel2?cron=" + level2CronSchedule + "&trigger.timeZone=Europe/Oslo")
-                .autoStartup("{{chouette.validate.level2.autoStartup:false}}")
-                .filter(e -> shouldQuartzRouteTrigger(e, level2CronSchedule))
-                .log(LoggingLevel.INFO, "Quartz triggers validation of Level2 for all providers in Chouette.")
-                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel2ForAllProviders")
-                .routeId("chouette-validate-level2-quartz");
-
-        from("direct:triggerAntuValidationForAllProviders")
-                .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
-                .split().body().parallelProcessing().executorService("allProvidersExecutorService")
-                .filter(e -> isAutoValidationCandidate(e, true))
-                .process(this::setNewCorrelationId)
-                .setHeader(PROVIDER_ID, simple("${body.id}"))
-                .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
-                .setHeader(USERNAME, constant("System"))
-                .setHeader(DATASET_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
-                .process(new NightlyValidationFileProcessor(mardukInternalBlobStoreService))
-                .to("direct:antuNetexNightlyValidation")
-                .routeId("trigger-antu-validation-for-all-providers");
-
-        // Trigger validation level1 for provider in body of the camel exchange
-        from("direct:triggerChouetteValidationLevel1ForProvider")
-                .setHeader(PROVIDER_ID, simple("${body.id}"))
-                .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
-                .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
-                .setHeader(USERNAME, constant("System"))
-                .setBody(constant(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
-                .routeId("chouette-validate-level1-all-providers");
-
-        // Trigger validation level2 for all level2 providers (ie no migrateDateToProvider and referential set)
-        from("direct:chouetteValidateLevel2ForAllProviders")
-                .process(e -> e.getIn().setBody(getProviderRepository().getProviders()))
-                .split().body().parallelProcessing().executorService("allProvidersExecutorService")
-                .filter(e -> isAutoValidationCandidate(e, false))
-                .process(this::setNewCorrelationId)
-                .setHeader(PROVIDER_ID, simple("${body.id}"))
-                .setHeader(CHOUETTE_REFERENTIAL, simple("${body.chouetteInfo.referential}"))
-                .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
-                .setHeader(USERNAME, constant("System"))
-                .setBody(constant(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
-                .routeId("chouette-validate-level2-all-providers");
-
-        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue").streamCaching()
-                .process(this::setCorrelationIdIfMissing)
-                .removeHeader(Constants.CHOUETTE_JOB_ID)
-                .log(LoggingLevel.INFO, correlation() + "Starting Chouette validation")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.class)).state(State.PENDING).build())
-                .to("direct:updateStatus")
-
-                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getReferential()))
-                .process(e -> e.getIn().setHeader(JSON_PART, Parameters.getValidationParameters(getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class))))) //Using header to addToExchange json data
-
-                .to("direct:assertHeadersForChouetteValidation")
-
-                .log(LoggingLevel.DEBUG, correlation() + "Creating multipart request")
-                .process(this::toGenericChouetteMultipart)
-                .setHeader(Exchange.CONTENT_TYPE, simple("multipart/form-data"))
-                .toD(chouetteUrl + "/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/validator")
-                .process(e -> {
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_URL, e.getIn().getHeader("Location", String.class));
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_ID, getLastPathElementOfUrl(e.getIn().getHeader("Location", String.class)));
-                })
-                .setHeader(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, constant("direct:processValidationResult"))
-                .process(e ->
-                    e.getIn().setHeader(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, e.getIn().getHeader(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL))
-                )
-                .removeHeader("loopCounter")
-                .setBody(constant(""))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
-                .routeId("chouette-send-validation-job");
-
-        from("direct:assertHeadersForChouetteValidation")
-                .choice()
-                .when(simple("${header." + CHOUETTE_REFERENTIAL + "} == null || ${header." + PROVIDER_ID + "} == null "))
-                .log(LoggingLevel.WARN, correlation() + "Unable to start Chouette validation for missing referential or providerId")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.class)).state(State.FAILED).build())
-                .to("direct:updateStatus")
-                .stop()
-                .end()
-                .routeId("chouette-send-validation-job-validate-headers");
-
-        // Will be sent here after polling completes
-        from("direct:processValidationResult")
-                .to(logDebugShowAll())
-                .setBody(constant(""))
-                .choice()
-                .when(simple("${header.action_report_result} == 'OK' && ${header.validation_report_result} == 'OK'"))
-                .to("direct:checkScheduledJobsBeforeTriggeringExport")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, TimetableAction.class)).state(State.OK).build())
-                .when(simple("${header.action_report_result} == 'OK' && ${header.validation_report_result} == 'NOK'"))
-                .log(LoggingLevel.INFO, correlation() + "Validation failed (processed ok, but timetable data is faulty)")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, TimetableAction.class)).state(State.FAILED).build())
-                .otherwise()
-                .log(LoggingLevel.WARN, correlation() + "Validation went wrong  with error code ${header." + Constants.JOB_ERROR_CODE + "}")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(e.getIn().getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, TimetableAction.class)).state(State.FAILED).build())
-                .end()
-                .to("direct:updateStatus")
-                .routeId("chouette-process-validation-status");
-
-        // Check that no other import jobs in status SCHEDULED exists for this referential. If so, do not trigger export
-        from("direct:checkScheduledJobsBeforeTriggeringExport")
-                .setProperty("job_status_url", simple("{{chouette.url}}/chouette_iev/referentials/${header." + CHOUETTE_REFERENTIAL + "}/jobs?timetableAction=importer&status=SCHEDULED&status=STARTED"))
-                .toD("${exchangeProperty.job_status_url}")
-                .choice()
-                .when().jsonpath("$.*[?(@.status == 'SCHEDULED')].status")
-                .log(LoggingLevel.INFO, correlation() + "Validation ok, skipping export as there are more import jobs active")
-                .when(method(getClass(), "shouldTransferData").isEqualTo(true))
-                .log(LoggingLevel.INFO, correlation() + "Validation ok, transfering data to next dataspace")
-                .setBody(constant(""))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteTransferExportQueue")
-                .otherwise()
-                .log(LoggingLevel.INFO, correlation() + "Validation ok, triggering NeTEx export.")
-                .setBody(constant(""))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue") // Check on provider if should trigger transfer
-                .end()
-                .routeId("chouette-process-job-list-after-validation");
-
+    protected String destination() {
+        return MardukQueues.CHOUETTE_VALIDATION_QUEUE;
     }
 
-    private static boolean isAutoValidationCandidate(Exchange e, boolean requireMigrationTarget) {
-        ChouetteInfo chouetteInfo = e.getIn().getBody(Provider.class).getChouetteInfo();
-        return chouetteInfo.isAutoValidationCandidate()
-                && (chouetteInfo.getMigrateDataToProvider() != null) == requireMigrationTarget;
+    @Override
+    protected void handle(MardukMessage message) {
+        ensureCorrelationId(message);
+        message.removeHeader(Constants.CHOUETTE_JOB_ID);
+        LOGGER.info("Starting Chouette validation");
+        jobEvents.reportProviderJob(message, builder -> builder.timetableAction(level(message))
+                .state(JobEvent.State.PENDING));
+
+        Long providerId = message.getHeader(PROVIDER_ID, Long.class);
+        Provider provider = providerRepository.getProvider(providerId);
+        String referential = provider == null ? null : provider.getChouetteInfo().getReferential();
+        if (referential == null || referential.isBlank()) {
+            // Asserted after reporting PENDING, as the route did, so an operator sees in nabu that
+            // something was asked for and did not happen rather than nothing at all.
+            LOGGER.warn("Unable to start Chouette validation for missing referential or providerId");
+            jobEvents.reportProviderJob(message, builder -> builder.timetableAction(level(message))
+                    .state(JobEvent.State.FAILED));
+            return;
+        }
+
+        message.setHeader(CHOUETTE_REFERENTIAL, referential);
+        String jobLocation = chouetteClient.postMultipart(
+                "/chouette_iev/referentials/" + referential + "/validator",
+                ChouetteMultipart.parameters(Parameters.getValidationParameters(provider)));
+
+        submission.pollUntilDone(message, jobLocation,
+                ChouetteValidationResultHandler.DESTINATION, level(message));
     }
 
+    private static JobEvent.TimetableAction level(MardukMessage message) {
+        return message.getHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, JobEvent.TimetableAction.class);
+    }
 }
-
-

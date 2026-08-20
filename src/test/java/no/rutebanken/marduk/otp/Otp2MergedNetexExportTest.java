@@ -1,273 +1,186 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.otp;
 
-package no.rutebanken.marduk.routes.netex;
-
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.exceptions.MardukException;
-import no.rutebanken.marduk.TestConstants;
+import no.rutebanken.marduk.domain.ChouetteInfo;
+import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.pubsub.RecordingPubSubPublisher;
+import no.rutebanken.marduk.repository.InMemoryMardukBlobStoreRepository;
+import no.rutebanken.marduk.repository.ProviderRepository;
+import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.EndpointInject;
-import org.apache.camel.Produce;
-import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.component.mock.MockEndpoint;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import no.rutebanken.marduk.services.MardukPublicBlobStoreService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
-import static no.rutebanken.marduk.routes.netex.NetexDsjConverterTest.NETEX_1_16_ENTRY;
-import static no.rutebanken.marduk.routes.netex.NetexDsjConverterTest.assertDowngraded;
-import static no.rutebanken.marduk.routes.netex.NetexDsjConverterTest.mixedArchiveEntries;
-import static no.rutebanken.marduk.routes.netex.NetexDsjConverterTest.unzip;
-import static no.rutebanken.marduk.routes.netex.NetexDsjConverterTest.zip;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+class Otp2MergedNetexExportTest {
 
-class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+    private static final String CONTAINER = "marduk";
+    private static final String STOPS_BLOB = "tiamat/Full_latest.zip";
+    private static final String MERGED_BLOB = "outbound/netex/rb_norway-aggregated-netex.zip";
+    private static final String RUT_EXPORT = "outbound/netex/rb_rut-aggregated-netex.zip";
+    private static final String AKT_EXPORT = "outbound/netex/rb_akt-aggregated-netex.zip";
 
-    @Produce("direct:otp2ExportMergedNetex")
-    protected ProducerTemplate startRoute;
+    @TempDir
+    Path workingDirectory;
 
-    @Value("${netex.export.stop.place.blob.path:tiamat/Full_latest.zip}")
-    private String stopPlaceExportBlobPath;
+    private InMemoryMardukBlobStoreRepository repository;
+    private MardukPublicBlobStoreService blobStore;
+    private RecordingPubSubPublisher publisher;
+    private ProviderRepository providerRepository;
 
-    @Value("${netex.export.file.path:netex/rb_norway-aggregated-netex.zip}")
-    private String netexExportMergedFilePath;
-
-    @EndpointInject("mock:updateStatus")
-    protected MockEndpoint updateStatus;
-
-    @Autowired
-    private NetexDsjExportConfig netexDsjExportConfig;
-
-    @Test
-    void testExportMergedNetex() throws Exception {
-
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-
-        // Create stop file in memory blob store
-        mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"));
-
-        // Create provider netex export in memory blob store
-        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-aggregated-netex.zip", new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip"));
-
-        updateStatus.expectedMessageCount(2);
-
-        context.start();
-
-        startRoute.requestBody(null);
-
-        updateStatus.assertIsSatisfied();
-
-        List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.getDomain()) && JobEvent.State.STARTED.equals(je.getState())));
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState())));
-
-        assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath)).as("Expected merged netex file to have been uploaded").isNotNull();
+    @BeforeEach
+    void setUp() {
+        repository = new InMemoryMardukBlobStoreRepository(new ConcurrentHashMap<>());
+        blobStore = new MardukPublicBlobStoreService(CONTAINER, repository);
+        publisher = new RecordingPubSubPublisher();
+        providerRepository = mock(ProviderRepository.class);
+        when(providerRepository.getProviders()).thenReturn(List.of(provider("rb_rut", null), provider("rb_akt", null)));
     }
 
-
-    /**
-     * A per-provider export that is not a zip archive (a truncated upload, a blob with the wrong content) must fail
-     * the aggregated export and name the offending export: skipping it would publish a Norway dataset silently
-     * missing that provider and feed it to the OTP graph build.
-     */
-    @Test
-    void testExportMergedNetexFailsAndNamesACorruptProviderExport() throws Exception {
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-        when(providerRepository.getProviders()).thenReturn(List.of(provider(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, TestConstants.PROVIDER_ID_RB_RUT, null)));
-
-        mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"));
-        // the export of the provider is present in both variant folders, so nothing needs to be distributed and the
-        // aggregation itself is what opens the corrupt archive
-        byte[] corrupt = "not a zip archive".getBytes(StandardCharsets.UTF_8);
-        mardukInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.newExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT), new ByteArrayInputStream(corrupt));
-        mardukInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.legacyExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT), new ByteArrayInputStream(corrupt));
-
-        context.start();
-
-        assertThatThrownBy(() -> startRoute.requestBody(null))
-                .cause()
-                .isInstanceOf(MardukException.class)
-                .hasMessageContaining(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT + "-aggregated-netex.zip");
-
-        assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath)).as("No aggregated export must be published").isNull();
+    private static Provider provider(String referential, Long migrateDataToProvider) {
+        Provider provider = new Provider();
+        ChouetteInfo info = new ChouetteInfo();
+        info.setReferential(referential);
+        info.setMigrateDataToProvider(migrateDataToProvider);
+        provider.setChouetteInfo(info);
+        return provider;
     }
 
-    /**
-     * With the dual DatedServiceJourney export enabled, the aggregated export is built from the new and legacy
-     * per-provider exports and the default folder receives the default variant.
-     */
-    @Test
-    void testExportMergedNetexDsjVariants() throws Exception {
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-        // a provider whose export is published (not migrated to another provider)
-        when(providerRepository.getProviders()).thenReturn(List.of(provider(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, TestConstants.PROVIDER_ID_RB_RUT, null)));
-
-        mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"));
-        // the new variant of the provider export is a NeTEx 1.16 dataset, the legacy variant its downgraded copy
-        Map<String, byte[]> newEntries = mixedArchiveEntries();
-        String newExportPath = netexDsjExportConfig.newExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT);
-        String legacyExportPath = netexDsjExportConfig.legacyExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT);
-        mardukInMemoryBlobStoreRepository.uploadBlob(newExportPath, new ByteArrayInputStream(zip(newEntries)));
-        java.io.ByteArrayOutputStream legacyNetex = new java.io.ByteArrayOutputStream();
-        NetexDsjConverter.downgradeXml(NetexDsjConverterTest.NETEX_1_16_FIXTURE.toFile(), legacyNetex, Long.MAX_VALUE);
-        Map<String, byte[]> legacyEntries = new java.util.LinkedHashMap<>(newEntries);
-        legacyEntries.put(NETEX_1_16_ENTRY, legacyNetex.toByteArray());
-        mardukInMemoryBlobStoreRepository.uploadBlob(legacyExportPath, new ByteArrayInputStream(zip(legacyEntries)));
-
-        updateStatus.expectedMessageCount(2);
-        context.start();
-        startRoute.requestBody(null);
-        updateStatus.assertIsSatisfied();
-
-        String mergedFileName = "rb_norway-aggregated-netex.zip";
-        Map<String, byte[]> newMerged = unzip(readBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.NEW, mergedFileName)));
-        Map<String, byte[]> legacyMerged = unzip(readBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.LEGACY, mergedFileName)));
-        byte[] defaultMerged = readBlob(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath);
-
-        assertThat(newMerged.keySet()).contains(NETEX_1_16_ENTRY, "_stops.xml");
-        assertThat(new String(newMerged.get(NETEX_1_16_ENTRY), StandardCharsets.UTF_8)).contains("version=\"1.16:");
-        assertThat(legacyMerged.keySet()).contains(NETEX_1_16_ENTRY, "_stops.xml");
-        assertDowngraded(new String(legacyMerged.get(NETEX_1_16_ENTRY), StandardCharsets.UTF_8));
-        // the stop place export contains no DatedServiceJourney and is used as is in both variants
-        assertThat(legacyMerged.get("_stops.xml")).isEqualTo(newMerged.get("_stops.xml"));
-        // the default folder receives the legacy variant (netex.export.dsj.default.variant=legacy in the test configuration)
-        assertThat(defaultMerged).isEqualTo(readBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.LEGACY, mergedFileName)));
+    private Otp2MergedNetexExport export() {
+        return new Otp2MergedNetexExport(
+                blobStore,
+                providerRepository,
+                new JobEventPublisher(publisher),
+                workingDirectory.toString(),
+                STOPS_BLOB,
+                "netex/rb_norway-aggregated-netex.zip",
+                "_stops");
     }
 
-    /**
-     * A provider that has not published since the dual export was enabled exists only in the default folder:
-     * its export is distributed to the new and legacy folders before the aggregated exports are built.
-     */
-    @Test
-    void testExportMergedNetexDsjVariantsDistributesMissingProviderExports() throws Exception {
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        // the distribution of the missing exports must add no job event of its own: the two expected below are the
-        // STARTED and OK of the aggregated export itself
-        AdviceWith.adviceWith(context, "netex-dsj-export-report-job-event", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-        when(providerRepository.getProviders()).thenReturn(List.of(provider(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, TestConstants.PROVIDER_ID_RB_RUT, null)));
-
-        mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"));
-        // the NeTEx 1.16 export exists only in the default folder
-        mardukInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.defaultExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT), new ByteArrayInputStream(zip(mixedArchiveEntries())));
-
-        updateStatus.expectedMessageCount(2);
-        context.start();
-        startRoute.requestBody(null);
-        updateStatus.assertIsSatisfied();
-
-        // the provider export has been distributed
-        assertThat(mardukInMemoryBlobStoreRepository.getBlob(netexDsjExportConfig.newExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT))).isNotNull();
-        assertThat(mardukInMemoryBlobStoreRepository.getBlob(netexDsjExportConfig.legacyExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT))).isNotNull();
-
-        String mergedFileName = "rb_norway-aggregated-netex.zip";
-        Map<String, byte[]> newMerged = unzip(readBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.NEW, mergedFileName)));
-        Map<String, byte[]> legacyMerged = unzip(readBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.LEGACY, mergedFileName)));
-        assertThat(new String(newMerged.get(NETEX_1_16_ENTRY), StandardCharsets.UTF_8)).contains("version=\"1.16:");
-        assertDowngraded(new String(legacyMerged.get(NETEX_1_16_ENTRY), StandardCharsets.UTF_8));
-        assertThat(readBlob(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath)).isEqualTo(readBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.LEGACY, mergedFileName)));
+    private void upload(String name, String file) throws IOException {
+        try (InputStream contents = Files.newInputStream(Path.of(file))) {
+            repository.uploadBlob(name, contents);
+        }
     }
 
-    /**
-     * The distribution of the missing exports and the aggregation must work on the same providers. The provider
-     * cache is refreshed every few minutes: a provider that drops out of it after the aggregated export has read the
-     * provider list would otherwise be neither distributed nor recorded as missing, and both variants would be
-     * built without it while agreeing with each other.
-     */
-    @Test
-    void testExportMergedNetexDsjVariantsDistributesTheProvidersReadAtTheStart() throws Exception {
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "netex-dsj-export-report-job-event", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-        // the provider is in the cache when the aggregated export starts, and gone from every later reading
-        when(providerRepository.getProviders()).thenReturn(
-                List.of(provider(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, TestConstants.PROVIDER_ID_RB_RUT, null)),
-                List.of());
-
-        mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"));
-        // the export exists only in the default folder and must be distributed before the variants are built
-        mardukInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.defaultExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT), new ByteArrayInputStream(zip(mixedArchiveEntries())));
-
-        updateStatus.expectedMessageCount(2);
-        context.start();
-        startRoute.requestBody(null);
-        updateStatus.assertIsSatisfied();
-
-        String mergedFileName = "rb_norway-aggregated-netex.zip";
-        Map<String, byte[]> newMerged = unzip(readBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.NEW, mergedFileName)));
-        Map<String, byte[]> legacyMerged = unzip(readBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.LEGACY, mergedFileName)));
-        assertThat(newMerged.keySet()).as("The provider read at the start must be in the new variant").contains(NETEX_1_16_ENTRY);
-        assertThat(legacyMerged.keySet()).as("The provider read at the start must be in the legacy variant").contains(NETEX_1_16_ENTRY);
+    private void uploadStopPlaceExport() throws IOException {
+        upload(STOPS_BLOB, "src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip");
     }
 
-    /**
-     * A per-provider export that cannot be distributed to the legacy and new folders must fail the aggregated export:
-     * building it anyway would publish a Norway dataset silently missing that provider, and feed it to the OTP graph
-     * build.
-     */
-    @Test
-    void testExportMergedNetexDsjVariantsFailsWhenAProviderExportCannotBeDistributed() throws Exception {
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-        when(providerRepository.getProviders()).thenReturn(List.of(provider(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, TestConstants.PROVIDER_ID_RB_RUT, null)));
-
-        mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"));
-        // the export of the provider is missing from the legacy folder and cannot be downgraded: its content is not a
-        // zip archive (a truncated or corrupted export)
-        mardukInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.newExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT),
-                new ByteArrayInputStream("not a zip archive".getBytes(StandardCharsets.UTF_8)));
-
-        context.start();
-
-        assertThatThrownBy(() -> startRoute.requestBody(null))
-                .hasRootCauseInstanceOf(MardukException.class);
-
-        // no aggregated export has been published, neither in the variant folders nor in the default folder
-        String mergedFileName = "rb_norway-aggregated-netex.zip";
-        assertThat(mardukInMemoryBlobStoreRepository.getBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.NEW, mergedFileName))).isNull();
-        assertThat(mardukInMemoryBlobStoreRepository.getBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.LEGACY, mergedFileName))).isNull();
-        assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath)).isNull();
+    private void uploadProviderExport(String name) throws IOException {
+        upload(name, "src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip");
     }
 
-    private byte[] readBlob(String path) throws java.io.IOException {
-        InputStream blob = mardukInMemoryBlobStoreRepository.getBlob(path);
-        assertThat(blob).as("Expected blob %s", path).isNotNull();
-        return blob.readAllBytes();
+    private static MardukMessage request() {
+        return new MardukMessage().setHeader(CORRELATION_ID, "corr-id");
+    }
+
+    private Set<String> mergedArchiveEntries() throws IOException {
+        try (InputStream merged = repository.getBlob(MERGED_BLOB)) {
+            return ZipFileUtils.listFilesInZip(merged.readAllBytes()).stream()
+                    .map(ZipEntry::getName)
+                    .collect(java.util.stream.Collectors.toSet());
+        }
+    }
+
+    private List<JobEvent> reportedEvents() {
+        return publisher.publishedTo(MardukQueues.JOB_EVENT_QUEUE).stream()
+                .map(published -> JobEvent.fromString(published.body()))
+                .toList();
+    }
+
+    @Test
+    void everyProvidersExportAndTheStopPlacesAreMergedIntoOneArchive() throws IOException {
+        uploadProviderExport(RUT_EXPORT);
+        uploadProviderExport(AKT_EXPORT);
+        uploadStopPlaceExport();
+
+        assertTrue(export().export(request()));
+
+        assertEquals(Set.of("WF739.xml", "_stops.xml"), mergedArchiveEntries(),
+                "the stop place file is renamed to the name the profile expects");
+        assertEquals(List.of(JobEvent.State.STARTED, JobEvent.State.OK),
+                reportedEvents().stream().map(JobEvent::getState).toList());
+        assertEquals(JobEvent.JobDomain.TIMETABLE_PUBLISH, reportedEvents().getFirst().getDomain());
+        assertEquals(JobEvent.TimetableAction.EXPORT_NETEX_MERGED.toString(),
+                reportedEvents().getFirst().getAction());
+    }
+
+    @Test
+    void aProviderWhoseDataMigratesOnwardsIsNotIncluded() {
+        // Its data is exported by the dataspace it migrates into, so including it would duplicate every line.
+        when(providerRepository.getProviders())
+                .thenReturn(List.of(provider("rut", 2L), provider("rb_rut", null)));
+
+        assertEquals(List.of("rb_rut-aggregated-netex.zip"), export().aggregatedNetexFiles());
+    }
+
+    @Test
+    void aProviderWithNoExportYetIsSkippedRatherThanFailingTheMerge() throws IOException {
+        uploadProviderExport(RUT_EXPORT);
+        uploadStopPlaceExport();
+
+        assertTrue(export().export(request()));
+
+        assertEquals(Set.of("WF739.xml", "_stops.xml"), mergedArchiveEntries());
+    }
+
+    @Test
+    void aMissingStopPlaceExportFailsTheExportAndProducesNoArchive() throws IOException {
+        uploadProviderExport(RUT_EXPORT);
+
+        assertFalse(export().export(request()), "the caller must abort the graph build");
+
+        assertEquals(List.of(JobEvent.State.STARTED, JobEvent.State.FAILED),
+                reportedEvents().stream().map(JobEvent::getState).toList());
+        assertFalse(repository.exist(MERGED_BLOB));
+    }
+
+    @Test
+    void theWorkingDirectoryIsRemovedAfterAFailedExport() throws IOException {
+        // Unpacked, the providers' exports and the stop place registry come to more than the pod's disk.
+        uploadProviderExport(RUT_EXPORT);
+
+        export().export(request());
+
+        assertTrue(childrenOf(workingDirectory).isEmpty(),
+                "the local working directory was left behind: " + childrenOf(workingDirectory));
+    }
+
+    @Test
+    void theWorkingDirectoryIsRemovedAfterASuccessfulExport() throws IOException {
+        uploadProviderExport(RUT_EXPORT);
+        uploadStopPlaceExport();
+
+        export().export(request());
+
+        assertTrue(childrenOf(workingDirectory).isEmpty(),
+                "the local working directory was left behind: " + childrenOf(workingDirectory));
+    }
+
+    private static List<Path> childrenOf(Path directory) throws IOException {
+        try (Stream<Path> children = Files.list(directory)) {
+            return children.toList();
+        }
     }
 }

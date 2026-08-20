@@ -1,50 +1,61 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
-
-package no.rutebanken.marduk.routes.netex;
+package no.rutebanken.marduk.netex;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import org.apache.camel.LoggingLevel;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.services.MardukPublicBlobStoreService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 
 /**
- * Upload a dated version of an exported file with a unique name to the marduk-exchange blobstore.
+ * Keeps a uniquely named copy of a published NeTEx export in the marduk-exchange bucket, for the codespaces
+ * whose dated service journey ids are generated from it.
+ *
+ * <p>Was {@code direct:copyDatedExport}.
  */
 @Component
-public class UploadDatedExportRouteBuilder extends BaseRouteBuilder {
+public class DatedExportUpload {
 
-    @Value("${netex.export.dated.version.path:outbound/dated}")
-    private String blobStorePath;
+    private static final Logger LOGGER = LoggerFactory.getLogger(DatedExportUpload.class);
 
-    @Override
-    public void configure() throws Exception {
-        super.configure();
+    private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
 
-        from("direct:copyDatedExport").streamCaching()
-                .setProperty("datedVersionFileName", simple("${header." + CHOUETTE_REFERENTIAL + "}-${date:now:yyyyMMddHHmmssSSS}.zip"))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Start copying dated version of ${exchangeProperty.datedVersionFileName} to marduk-exchange")
-                .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
-                .setHeader(TARGET_FILE_HANDLE, simple(blobStorePath + "/${exchangeProperty.datedVersionFileName}"))
-                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
-                .to("direct:copyBlobToAnotherBucket")
-                .routeId("copy-dated-export");
+    private final MardukPublicBlobStoreService publicBlobStore;
+    private final String blobStorePath;
+    private final String exchangeContainer;
 
+    public DatedExportUpload(
+            MardukPublicBlobStoreService publicBlobStore,
+            @Value("${netex.export.dated.version.path:outbound/dated}") String blobStorePath,
+            @Value("${blobstore.gcs.exchange.container.name}") String exchangeContainer) {
+        this.publicBlobStore = publicBlobStore;
+        this.blobStorePath = blobStorePath;
+        this.exchangeContainer = exchangeContainer;
+    }
+
+    public void copyDatedExport(MardukMessage message) {
+        String referential = message.getHeader(CHOUETTE_REFERENTIAL, String.class);
+        String datedVersionFileName = referential + "-" + LocalDateTime.now().format(TIMESTAMP) + ".zip";
+        LOGGER.info("Start copying dated version of {} to marduk-exchange", datedVersionFileName);
+
+        String fileHandle = Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + referential + "-"
+                + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+        String targetFileHandle = blobStorePath + "/" + datedVersionFileName;
+        // Recorded on the message because the route set them as headers, so they travel on to the
+        // notifications the publication sends afterwards.
+        message.setHeader(FILE_HANDLE, fileHandle);
+        message.setHeader(TARGET_FILE_HANDLE, targetFileHandle);
+        message.setHeader(TARGET_CONTAINER, exchangeContainer);
+
+        publicBlobStore.copyBlobToAnotherBucket(fileHandle, exchangeContainer, targetFileHandle);
     }
 }

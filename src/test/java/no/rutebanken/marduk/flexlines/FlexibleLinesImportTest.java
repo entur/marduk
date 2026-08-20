@@ -1,85 +1,129 @@
-package no.rutebanken.marduk.routes.flexlines;
+package no.rutebanken.marduk.flexlines;
 
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.domain.ChouetteInfo;
+import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.pubsub.RecordingPubSubPublisher;
+import no.rutebanken.marduk.repository.InMemoryMardukBlobStoreRepository;
+import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.EndpointInject;
-import org.apache.camel.Exchange;
-import org.apache.camel.Produce;
-import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.component.mock.MockEndpoint;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static no.rutebanken.marduk.Constants.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.IMPORT_TYPE_NETEX_FLEX;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
+import static no.rutebanken.marduk.Constants.VALIDATION_CORRELATION_ID_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_DATASET_FILE_HANDLE_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_IMPORT_TYPE;
+import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_IMPORT_TIMETABLE_FLEX;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_FLEX_POSTVALIDATION;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class NetexFlexibleLinesImportRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
+class FlexibleLinesImportTest {
 
-    private static final String TEST_FILE_NAME = "test.xml";
+    private static final String HANDLE = "inbound/atb/flexible-lines.zip";
+    private static final String INTERNAL_CONTAINER = "marduk-internal";
+    private static final String ANTU_CONTAINER = "antu-exchange";
 
-    @Produce("direct:flexibleLinesImport")
-    protected ProducerTemplate startRoute;
+    private InMemoryMardukBlobStoreRepository internalRepository;
+    private RecordingPubSubPublisher publisher;
+    private FlexibleLinesImport flexibleLinesImport;
 
-    @EndpointInject("mock:updateStatus")
-    protected MockEndpoint updateStatus;
+    @BeforeEach
+    void setUp() {
+        internalRepository = new InMemoryMardukBlobStoreRepository(new ConcurrentHashMap<>());
+        publisher = new RecordingPubSubPublisher();
 
-    @EndpointInject("mock:antuNetexValidationQueue")
-    protected MockEndpoint antuNetexValidationQueue;
+        Provider provider = new Provider();
+        provider.setId(1L);
+        ChouetteInfo chouetteInfo = new ChouetteInfo();
+        chouetteInfo.setReferential("atb");
+        provider.setChouetteInfo(chouetteInfo);
+        ProviderRepository providerRepository = mock(ProviderRepository.class);
+        when(providerRepository.getProvider(1L)).thenReturn(provider);
+
+        flexibleLinesImport = new FlexibleLinesImport(
+                providerRepository,
+                new MardukInternalBlobStoreService(INTERNAL_CONTAINER, internalRepository),
+                new JobEventPublisher(publisher),
+                publisher,
+                ANTU_CONTAINER);
+    }
+
+    private static MardukMessage flexImport() {
+        return new MardukMessage()
+                .setHeader(PROVIDER_ID, 1L)
+                .setHeader(FILE_HANDLE, HANDLE)
+                .setHeader(CORRELATION_ID, "corr-id-1");
+    }
+
+    private void storeTheArchive() {
+        internalRepository.uploadBlob(
+                HANDLE, new ByteArrayInputStream("zip bytes".getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private Map<String, String> validationRequest() {
+        return publisher.publishedTo(MardukQueues.ANTU_NETEX_VALIDATION_QUEUE).getFirst().attributes();
+    }
 
     @Test
-    void correctHeadersAndStatusShouldBeSet() throws Exception {
+    void theArchiveIsCopiedFromTheInternalBucketIntoTheBucketAntuReads() {
+        storeTheArchive();
+        MardukMessage message = flexImport();
 
-        AdviceWith.adviceWith(context, "flexible-lines-import", a -> {
-            a.interceptSendToEndpoint("direct:updateStatus")
-                    .skipSendToOriginalEndpoint()
-                    .to("mock:updateStatus");
-            a.weaveByToUri("google-pubsub:(.*):AntuNetexValidationQueue")
-                    .replace()
-                    .to("mock:antuNetexValidationQueue");
-        });
+        flexibleLinesImport.start(message);
 
-        when(providerRepository.getProvider(anyLong()))
-                .thenReturn(provider("atb", 1, null));
+        internalRepository.setContainerName(ANTU_CONTAINER);
+        assertNotNull(internalRepository.getBlob(HANDLE), "the archive was not copied into antu's bucket");
+        assertEquals(ANTU_CONTAINER, message.getHeader(TARGET_CONTAINER, String.class));
+        assertEquals(HANDLE, message.getHeader(TARGET_FILE_HANDLE, String.class));
+    }
 
-        // create a dummy test file in the blobstore repository
-        internalInMemoryBlobStoreRepository.uploadBlob(TEST_FILE_NAME, dummyData());
+    @Test
+    void theValidationRequestNamesTheFlexImportProfileAndStage() {
+        storeTheArchive();
 
-        context.start();
+        flexibleLinesImport.start(flexImport());
 
-        startRoute.sendBodyAndHeaders(
-                null,
-                Map.of(PROVIDER_ID, 1L,
-                        FILE_HANDLE, TEST_FILE_NAME,
-                        CORRELATION_ID, "corr-id-" + 1L)
-        );
+        Map<String, String> request = validationRequest();
+        assertEquals("atb", request.get(DATASET_REFERENTIAL));
+        assertEquals(VALIDATION_STAGE_FLEX_POSTVALIDATION, request.get(VALIDATION_STAGE_HEADER));
+        assertEquals(VALIDATION_CLIENT_MARDUK, request.get(VALIDATION_CLIENT_HEADER));
+        assertEquals(VALIDATION_PROFILE_IMPORT_TIMETABLE_FLEX, request.get(VALIDATION_PROFILE_HEADER));
+        assertEquals(HANDLE, request.get(VALIDATION_DATASET_FILE_HANDLE_HEADER));
+        assertEquals("corr-id-1", request.get(VALIDATION_CORRELATION_ID_HEADER));
+        assertEquals(IMPORT_TYPE_NETEX_FLEX, request.get(VALIDATION_IMPORT_TYPE));
+    }
 
-        List<Exchange> messages = antuNetexValidationQueue.getExchanges();
+    @Test
+    void thePostValidationIsReportedAsPending() {
+        storeTheArchive();
 
-        assertNotNull(messages);
-        assertEquals(1, messages.size(), "Expected 1 message in AntuNetexValidationQueue");
+        flexibleLinesImport.start(flexImport());
 
-        Exchange message = messages.getFirst();
-
-        assertEquals("atb", message.getIn().getHeader(DATASET_REFERENTIAL));
-        assertEquals(VALIDATION_STAGE_FLEX_POSTVALIDATION, message.getIn().getHeader(VALIDATION_STAGE_HEADER));
-        assertEquals(VALIDATION_CLIENT_MARDUK, message.getIn().getHeader(VALIDATION_CLIENT_HEADER));
-        assertEquals(VALIDATION_PROFILE_IMPORT_TIMETABLE_FLEX, message.getIn().getHeader(VALIDATION_PROFILE_HEADER));
-        assertEquals(TEST_FILE_NAME, message.getIn().getHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER));
-        assertEquals("corr-id-1", message.getIn().getHeader(VALIDATION_CORRELATION_ID_HEADER));
-
-        List<Exchange> jobEvents = updateStatus.getExchanges();
-
-        assertNotNull(jobEvents);
-        assertEquals(1, jobEvents.size(), "Expected 1 jobEvent");
-
-        String jobEvent = jobEvents.getFirst().getIn().getBody(String.class);
-
-        assertEquals(JobEvent.State.PENDING, JobEvent.fromString(jobEvent).getState());
-        assertEquals(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION.toString(), JobEvent.fromString(jobEvent).getAction());
+        JobEvent reported = JobEvent.fromString(
+                publisher.publishedTo(MardukQueues.JOB_EVENT_QUEUE).getFirst().body());
+        assertEquals(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION.name(), reported.getAction());
+        assertEquals(JobEvent.State.PENDING, reported.getState());
     }
 }

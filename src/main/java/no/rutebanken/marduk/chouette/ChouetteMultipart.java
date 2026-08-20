@@ -1,81 +1,55 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.chouette;
 
-package no.rutebanken.marduk.routes.chouette;
-
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import org.apache.camel.Exchange;
-import org.apache.camel.component.http.HttpMethods;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
 import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
-import static no.rutebanken.marduk.Constants.FILE_NAME;
-import static no.rutebanken.marduk.Constants.JSON_PART;
+/**
+ * The multipart bodies Chouette's job endpoints expect.
+ *
+ * <p>Lifted out of {@code AbstractChouetteRouteBuilder} unchanged, so the bytes on the wire are the same
+ * ones Chouette has always received. That was the reason for building {@link ChouetteClient} on Apache
+ * HttpClient5: this builder produces the entity, and re-encoding it through a different client's multipart
+ * writer would be a behaviour change nothing needs.
+ */
+public final class ChouetteMultipart {
 
-public abstract class AbstractChouetteRouteBuilder extends BaseRouteBuilder{
+    private static final String PARAMETERS_PART = "parameters";
+    private static final String PARAMETERS_FILENAME = "parameters.json";
 
-	protected void toGenericChouetteMultipart(Exchange exchange) {
-	    String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);
-		if (!StringUtils.hasText(jsonPart)) {
-	        throw new IllegalArgumentException("No json data");
-	    }
+    private ChouetteMultipart() {
+    }
 
-	    MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
-	    entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART,byte[].class), ContentType.DEFAULT_BINARY, "parameters.json");
+    /** Just the job parameters, for a validation, export or transfer. */
+    public static HttpEntity parameters(String jsonPart) {
+        return MultipartEntityBuilder.create()
+                .addBinaryBody(PARAMETERS_PART, requireJson(jsonPart), ContentType.DEFAULT_BINARY, PARAMETERS_FILENAME)
+                .build();
+    }
 
-	    exchange.getMessage().setBody(entityBuilder.build());
-	    exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
-	    exchange.getMessage().setHeader(Exchange.CONTENT_TYPE, "multipart/form-data");
-		exchange.getMessage().setHeader(Exchange.HTTP_METHOD, HttpMethods.POST);
-	}
+    /** The job parameters plus the dataset, for an import. */
+    public static HttpEntity parametersAndFeed(String jsonPart, String fileName, InputStream feed) {
+        if (!StringUtils.hasText(fileName)) {
+            throw new IllegalArgumentException("No file handle");
+        }
+        byte[] parameters = requireJson(jsonPart);
+        if (feed == null) {
+            throw new IllegalArgumentException("No data");
+        }
+        return MultipartEntityBuilder.create()
+                .addBinaryBody(PARAMETERS_PART, parameters, ContentType.DEFAULT_BINARY, PARAMETERS_FILENAME)
+                .addBinaryBody("feed", feed, ContentType.DEFAULT_BINARY, fileName)
+                .build();
+    }
 
-	protected void toImportMultipart(Exchange exchange) {
-	    String fileName = exchange.getIn().getHeader(FILE_NAME, String.class);
-	    if (!StringUtils.hasText(fileName)) {
-	        throw new IllegalArgumentException("No file handle");
-	    }
-
-	    String jsonPart = exchange.getIn().getHeader(JSON_PART, String.class);
-	    if (!StringUtils.hasText(jsonPart)) {
-	        throw new IllegalArgumentException("No json data");
-	    }
-
-	    InputStream inputStream = exchange.getIn().getBody(InputStream.class);
-	    if (inputStream == null) {
-	        throw new IllegalArgumentException("No data");
-	    }
-
-	    MultipartEntityBuilder entityBuilder = MultipartEntityBuilder.create();
-	    entityBuilder.addBinaryBody("parameters", exchange.getIn().getHeader(JSON_PART, byte[].class), ContentType.DEFAULT_BINARY, "parameters.json");
-	    entityBuilder.addBinaryBody("feed", inputStream, ContentType.DEFAULT_BINARY, fileName);
-
-	    exchange.getMessage().setBody(entityBuilder.build());
-	    exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
-	    exchange.getMessage().setHeader(Exchange.CONTENT_TYPE, "multipart/form-data");
-	}
-
-
-	public boolean shouldTransferData(Exchange exchange) {
-		Provider currentProvider = getProviderRepository().getProvider(exchange.getIn().getHeader(Constants.PROVIDER_ID,Long.class));
-		return currentProvider.getChouetteInfo().getMigrateDataToProvider() != null;
-	}
-
+    private static byte[] requireJson(String jsonPart) {
+        if (!StringUtils.hasText(jsonPart)) {
+            throw new IllegalArgumentException("No json data");
+        }
+        return jsonPart.getBytes(StandardCharsets.UTF_8);
+    }
 }

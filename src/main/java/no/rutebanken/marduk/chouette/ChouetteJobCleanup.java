@@ -1,77 +1,92 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.chouette;
 
-package no.rutebanken.marduk.routes.chouette;
-
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.component.http.HttpMethods;
+import no.rutebanken.marduk.leader.LeaderElection;
+import no.rutebanken.marduk.pipeline.MardukMdc;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 /**
- * Route deleting old chouette jobs at regular intervals.
+ * Deletes Chouette's completed jobs, nightly and on request.
+ *
+ * <p>Replaces the quartz half of {@code ChouetteRemoveOldJobsRouteBuilder}. Three differences from what
+ * camel-master plus quartz did:
+ *
+ * <ul>
+ *   <li><b>No lenient-fire-time guard.</b> {@code shouldQuartzRouteTrigger} re-checked that the fire time
+ *       was close to a scheduled time, because a {@code master:} route resumed on a leadership change and
+ *       quartz re-fired a trigger it had missed. A Spring scheduled task has no such resume, so the guard
+ *       has nothing to guard against and is gone rather than reimplemented.
+ *   <li><b>Leadership is checked when the task fires</b>, not when a route starts. A pod that loses the
+ *       lease between two firings simply skips the next one.
+ *   <li><b>{@code autoStartup} gates the schedule, not the operation.</b> It used to decide whether the
+ *       route started at all; here the task still fires and returns immediately, so the same flag cannot
+ *       accidentally disable the admin endpoint that calls the same cleanup by hand.
+ * </ul>
  */
-
 @Component
-public class ChouetteRemoveOldJobsRouteBuilder extends BaseRouteBuilder {
-    @Value("${chouette.remove.old.jobs.cron.schedule:0+15+23+?+*+MON-FRI}")
-    private String cronSchedule;
+public class ChouetteJobCleanup {
 
-    @Value("${chouette.remove.old.jobs.keep.days:100}")
-    private int keepDays;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChouetteJobCleanup.class);
 
-    @Value("${chouette.remove.old.jobs.keep.jobs:100}")
-    private int keepJobs;
+    private final ChouetteClient chouette;
+    private final LeaderElection leaderElection;
+    private final int keepJobs;
+    private final int keepDays;
+    private final boolean scheduleEnabled;
 
-    @Value("${chouette.url}")
-    private String chouetteUrl;
+    public ChouetteJobCleanup(
+            ChouetteClient chouette,
+            LeaderElection leaderElection,
+            @Value("${chouette.remove.old.jobs.keep.jobs:100}") int keepJobs,
+            @Value("${chouette.remove.old.jobs.keep.days:100}") int keepDays,
+            @Value("${chouette.remove.old.jobs.autoStartup:true}") boolean scheduleEnabled) {
+        this.chouette = chouette;
+        this.leaderElection = leaderElection;
+        this.keepJobs = keepJobs;
+        this.keepDays = keepDays;
+        this.scheduleEnabled = scheduleEnabled;
+    }
 
+    /**
+     * The cron is space-separated, unlike the {@code +}-separated quartz trigger it replaces. The ConfigMap
+     * renders both from the same helm value so they cannot drift.
+     *
+     * <p>{@code @Scheduled} parses its cron eagerly, so an unparseable value fails the context at startup
+     * rather than silently never firing.
+     */
+    @Scheduled(cron = "${chouette.remove.old.jobs.cron:0 15 23 * * MON-FRI}", zone = "Europe/Oslo")
+    void removeOldJobsOnSchedule() {
+        if (!scheduleEnabled) {
+            return;
+        }
+        if (!leaderElection.isLeader()) {
+            LOGGER.debug("Not the leader, skipping the scheduled Chouette job cleanup");
+            return;
+        }
+        MardukMdc.clear();
+        MardukMdc.setCorrelationId(UUID.randomUUID().toString());
+        try {
+            LOGGER.info("Scheduled deletion of old jobs in Chouette");
+            removeOldJobs(keepJobs, keepDays);
+        } finally {
+            MardukMdc.clear();
+        }
+    }
 
-    @Override
-    public void configure() throws Exception {
-        super.configure();
-
-        singletonFrom("quartz://marduk/chouetteRemoveOldJobsQuartz?cron=" + cronSchedule + "&trigger.timeZone=Europe/Oslo")
-                .autoStartup("{{chouette.remove.old.jobs.autoStartup:true}}")
-                .filter(e -> shouldQuartzRouteTrigger(e, cronSchedule))
-                .process(this::setNewCorrelationId)
-                .log(LoggingLevel.INFO, correlation() + "Quartz triggers deletion of old jobs in Chouette.")
-                .to("direct:chouetteRemoveOldJobs")
-                .routeId("chouette-remove-old-jobs-quartz");
-
-
-        from("direct:chouetteRemoveOldJobs")
-                .log(LoggingLevel.INFO, correlation() + "Starting Chouette remove old jobs")
-                .process(this::removeAllCamelHeaders)
-                .setBody(constant(""))
-                .setHeader(Exchange.HTTP_METHOD, constant(HttpMethods.DELETE))
-
-                .choice().when(header("keepJobs").isNull())
-                .setHeader("keepJobs", constant(keepJobs))
-                .end()
-
-                .choice().when(header("keepDays").isNull())
-                .setHeader("keepDays", constant(keepDays))
-                .end()
-
-                .toD(chouetteUrl + "/chouette_iev/admin/completed_jobs?keepJobs=${header.keepJobs}&keepDays=${header.keepDays}")
-                .log(LoggingLevel.INFO, correlation() + "Completed Chouette remove old jobs")
-                .routeId("chouette-remove-old-jobs");
-
+    /**
+     * @param keepJobs how many completed jobs to keep, or null for the configured default
+     * @param keepDays how many days of completed jobs to keep, or null for the configured default
+     */
+    public void removeOldJobs(Integer keepJobs, Integer keepDays) {
+        int jobs = keepJobs != null ? keepJobs : this.keepJobs;
+        int days = keepDays != null ? keepDays : this.keepDays;
+        LOGGER.info("Starting Chouette remove old jobs, keeping {} jobs and {} days", jobs, days);
+        chouette.delete("/chouette_iev/admin/completed_jobs?keepJobs=" + jobs + "&keepDays=" + days);
+        LOGGER.info("Completed Chouette remove old jobs");
     }
 }
