@@ -1,55 +1,60 @@
-package no.rutebanken.marduk.routes.otp.otp2;
+package no.rutebanken.marduk.otp;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.domain.BlobStoreFiles;
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
-
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ_PREFIX;
+import static no.rutebanken.marduk.Constants.OTP2_NETEX_GRAPH_DIR;
+import static no.rutebanken.marduk.Constants.OTP2_STREET_GRAPH_DIR;
 
 /**
- * Camel processor that constructs the file name of the newly built NeTEx graph.
- * The new graph is saved in a directory whose name is the compatibility version of the graph (example: EN-0051).
- * The compatibility version is extracted from the name of the graph file produced by the graph builder (example: Graph-otp2-EN-0051.obj).
+ * Where a freshly built OTP2 graph is copied to.
+ *
+ * <p>Replaces {@code Otp2BaseGraphPublishingProcessor} and {@code Otp2NetexGraphPublishingProcessor}, which
+ * did nothing but compute these paths and write them to headers the next route step read.
  */
-public class Otp2NetexGraphPublishingProcessor implements Processor {
+public final class Otp2GraphPublishing {
 
-    private final String otpGraphsBucketName;
-
-    public Otp2NetexGraphPublishingProcessor(String otpGraphsBucketName) {
-        this.otpGraphsBucketName = otpGraphsBucketName;
+    private Otp2GraphPublishing() {
     }
 
-
-    @Override
-    public void process(Exchange e) {
-        BlobStoreFiles.File file = e.getIn().getBody(BlobStoreFiles.File.class);
-        if(file == null) {
-            throw new IllegalStateException("File not found in message body");
-        }
-        String graphFileName = file.getFileNameOnly();
-        String graphCompatibilityVersion = getGraphCompatibilityVersion(graphFileName);
-        String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + graphFileName;
-        String publishedGraphPath = Constants.OTP2_NETEX_GRAPH_DIR
-                + "/" + graphCompatibilityVersion
-                + "/" + e.getProperty(TIMESTAMP, String.class)
-                + '-' + graphFileName;
-
-        String publishedGraphVersion = Constants.OTP2_NETEX_GRAPH_DIR + "/" + e.getProperty(TIMESTAMP, String.class) + "-report";
-
-        e.getIn().setHeader(GRAPH_COMPATIBILITY_VERSION, graphCompatibilityVersion);
-        e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);
-        e.getIn().setHeader(TARGET_FILE_HANDLE, publishedGraphPath);
-        e.getIn().setHeader(TARGET_CONTAINER, otpGraphsBucketName);
-        e.setProperty(OTP_GRAPH_VERSION, publishedGraphVersion);
+    /**
+     * The street graph keeps the name the builder gave it, which carries the compatibility version, and
+     * lands in one directory for all versions - so rebuilding the same version overwrites it.
+     */
+    public record BaseGraph(String builtPath, String publishedPath) {
     }
 
-    protected static String getGraphCompatibilityVersion(String graphFileName) {
+    /**
+     * The transit graph lands in a directory named after its compatibility version and is prefixed with the
+     * build timestamp, so every build is kept.
+     *
+     * @param reportVersion the folder the build report is copied to, and what the current-report page points at
+     */
+    public record NetexGraph(String compatibilityVersion, String builtPath, String publishedPath,
+                             String reportVersion) {
+    }
+
+    public static BaseGraph baseGraph(String workDir, String graphFileName, String blobStoreSubdirectory) {
+        return new BaseGraph(
+                workDir + "/" + graphFileName,
+                blobStoreSubdirectory + "/" + OTP2_STREET_GRAPH_DIR + "/" + graphFileName);
+    }
+
+    public static NetexGraph netexGraph(String workDir, String timestamp, String graphFileName) {
+        String compatibilityVersion = graphCompatibilityVersion(graphFileName);
+        return new NetexGraph(
+                compatibilityVersion,
+                workDir + "/" + graphFileName,
+                OTP2_NETEX_GRAPH_DIR + "/" + compatibilityVersion + "/" + timestamp + '-' + graphFileName,
+                OTP2_NETEX_GRAPH_DIR + "/" + timestamp + "-report");
+    }
+
+    /**
+     * The version the builder put in the file name, as in {@code Graph-otp2-EN-0051.obj}. A name that does
+     * not carry one is published under {@code unknown-version} rather than rejected.
+     */
+    public static String graphCompatibilityVersion(String graphFileName) {
         if (graphFileName.startsWith(OTP2_GRAPH_OBJ_PREFIX + "-")) {
             return graphFileName.substring(OTP2_GRAPH_OBJ_PREFIX.length() + 1, graphFileName.lastIndexOf('.'));
-        } else {
-            return "unknown-version";
         }
+        return "unknown-version";
     }
-
 }

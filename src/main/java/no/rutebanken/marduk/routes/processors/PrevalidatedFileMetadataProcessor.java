@@ -18,34 +18,32 @@ package no.rutebanken.marduk.routes.processors;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 import no.rutebanken.marduk.domain.PrevalidatedFileMetadata;
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.time.LocalDateTime;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES;
+import static no.rutebanken.marduk.Constants.PREVALIDATED_NETEX_METADATA_FILENAME;
 
 /**
- * Processor that creates metadata for a prevalidated NeTEx file.
- * <p>
- * This processor:
- * 1. Looks up the createdAt timestamp from the idempotent repository using the original filename
- * 2. Creates a PrevalidatedFileMetadata object with the timestamp and original filename
- * 3. Serializes it to JSON and sets it as the exchange body (as InputStream)
- * 4. Sets FILE_HANDLE to the metadata file path in last-prevalidated-files/{referential}/
- * <p>
- * After this processor runs, the route can call direct:uploadInternalBlob to write the metadata file.
+ * Describes the metadata file written for a dataset that has just passed pre-validation.
+ *
+ * <p>The file records when the dataset was first received and under which name, which is what
+ * {@link NightlyValidationFileProcessor} reads to find the original file again the following night.
  */
-public class PrevalidatedFileMetadataProcessor implements Processor {
+public class PrevalidatedFileMetadataProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PrevalidatedFileMetadataProcessor.class);
     private static final ObjectWriter OBJECT_WRITER = ObjectMapperFactory.getSharedObjectMapper().writerFor(PrevalidatedFileMetadata.class);
+
+    /** Where the metadata file goes, when the dataset arrived, and the JSON to write. */
+    public record Metadata(String fileHandle, LocalDateTime createdAt, String json) {
+    }
 
     private final FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
 
@@ -53,28 +51,28 @@ public class PrevalidatedFileMetadataProcessor implements Processor {
         this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
     }
 
-    @Override
-    public void process(Exchange exchange) throws Exception {
-        String originalFileName = exchange.getIn().getHeader(FILE_NAME, String.class);
-        String referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);
-
+    /**
+     * @param originalFileName the name the dataset was uploaded under, which is also the idempotency key
+     * @param referential      the Chouette referential the metadata file is filed under
+     */
+    public Metadata describe(String originalFileName, String referential) {
         LocalDateTime createdAt = fileNameAndDigestIdempotentRepository.getCreatedAt(originalFileName);
-
         if (createdAt == null) {
             LOGGER.warn("No createdAt timestamp found for file {}, using current time", originalFileName);
             createdAt = LocalDateTime.now();
         }
 
-        PrevalidatedFileMetadata metadata = new PrevalidatedFileMetadata(createdAt, originalFileName);
-        String json = OBJECT_WRITER.writeValueAsString(metadata);
-
-        exchange.getIn().setBody(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
-
-        String metadataFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + referential + "/" + PREVALIDATED_NETEX_METADATA_FILENAME;
-        exchange.getIn().setHeader(FILE_HANDLE, metadataFilePath);
-        exchange.getIn().setHeader(FILTERING_FILE_CREATED_TIMESTAMP, createdAt.toString());
-
+        String fileHandle = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + referential + "/" + PREVALIDATED_NETEX_METADATA_FILENAME;
         LOGGER.info("Prepared metadata for prevalidated file. Original filename: {}, createdAt: {}, metadata path: {}",
-                originalFileName, createdAt, metadataFilePath);
+                originalFileName, createdAt, fileHandle);
+        return new Metadata(fileHandle, createdAt, toJson(new PrevalidatedFileMetadata(createdAt, originalFileName)));
+    }
+
+    private static String toJson(PrevalidatedFileMetadata metadata) {
+        try {
+            return OBJECT_WRITER.writeValueAsString(metadata);
+        } catch (IOException e) {
+            throw new MardukException("Could not serialise the prevalidated file metadata", e);
+        }
     }
 }

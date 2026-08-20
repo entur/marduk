@@ -1,74 +1,107 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.gtfs;
 
-package no.rutebanken.marduk.routes.chouette;
-
+import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.pipeline.MardukMdc;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
+import no.rutebanken.marduk.pubsub.MardukPubSubConsumer;
+import no.rutebanken.marduk.pubsub.MardukQueues;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.PredicateBuilder;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
+import java.util.UUID;
 
+/**
+ * Tracks damu's per-codespace GTFS export, and triggers the national merge when one finishes.
+ *
+ * <p>Replaces {@code DamuExportGtfsStatusRouteBuilder}.
+ *
+ * <p>Nothing happens beyond a log line while {@code gtfs.export.chouette} is true, because the export that
+ * matters is then Chouette's and damu's is running in parallel for comparison. That flag gated everything
+ * after it in the Camel version, including the merge trigger, and still does.
+ */
 @Component
-public class DamuExportGtfsStatusRouteBuilder extends AbstractChouetteRouteBuilder {
+public class DamuGtfsExportStatusConsumer extends MardukPubSubConsumer {
 
-    private static final String STATUS_EXPORT_STARTED = "started";
-    private static final String STATUS_EXPORT_OK = "ok";
-    private static final String STATUS_EXPORT_FAILED = "failed";
+    private static final Logger LOGGER = LoggerFactory.getLogger(DamuGtfsExportStatusConsumer.class);
 
-    @Value("${gtfs.export.chouette:true}")
-    private boolean useChouetteGtfsExport;
+    /**
+     * Damu sends its export status in the message <b>body</b>, not an attribute. Pinned by
+     * {@code WireContractTest}; damu's own {@code WireContractTest} pins the other side.
+     */
+    static final String STATUS_EXPORT_STARTED = "started";
+    static final String STATUS_EXPORT_OK = "ok";
+    static final String STATUS_EXPORT_FAILED = "failed";
+
+    private final JobEventPublisher jobEvents;
+    private final MardukPubSubPublisher publisher;
+    private final boolean useChouetteGtfsExport;
+
+    public DamuGtfsExportStatusConsumer(
+            JobEventPublisher jobEvents,
+            MardukPubSubPublisher publisher,
+            @Value("${gtfs.export.chouette:true}") boolean useChouetteGtfsExport) {
+        this.jobEvents = jobEvents;
+        this.publisher = publisher;
+        this.useChouetteGtfsExport = useChouetteGtfsExport;
+    }
 
     @Override
-    public void configure() throws Exception {
-        super.configure();
+    protected String destination() {
+        return MardukQueues.DAMU_EXPORT_GTFS_STATUS_QUEUE;
+    }
 
-        from("google-pubsub:{{marduk.pubsub.project.id}}:DamuExportGtfsStatusQueue")
-                .process(this::setCorrelationIdIfMissing)
-                .choice()
-                .when(body().isEqualTo(constant(STATUS_EXPORT_STARTED)))
-                .to("direct:damuGtfsExportStarted")
-                .when(body().isEqualTo(constant(STATUS_EXPORT_OK)))
-                .to("direct:damuGtfsExportComplete")
-                .when(body().isEqualTo(constant(STATUS_EXPORT_FAILED)))
-                .to("direct:damuGtfsExportFailed")
-                .routeId("damu-status-export-gtfs");
+    @Override
+    protected void handle(MardukMessage message) {
+        setCorrelationIdIfMissing(message);
+        String codespace = message.getHeader(Constants.DATASET_REFERENTIAL, String.class);
 
-        from("direct:damuGtfsExportStarted")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Damu GTFS export started for codespace ${header." + DATASET_REFERENTIAL + "}")
-                .filter(PredicateBuilder.not(constant(useChouetteGtfsExport)))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT).state(JobEvent.State.STARTED).build())
-                .to("direct:updateStatus")
-                .routeId("damu-started-export-gtfs");
+        switch (message.getBody(String.class)) {
+            case STATUS_EXPORT_STARTED -> {
+                LOGGER.info("Damu GTFS export started for codespace {}", codespace);
+                reportStatus(message, JobEvent.State.STARTED);
+            }
+            case STATUS_EXPORT_OK -> {
+                LOGGER.info("Damu GTFS export complete for codespace {}", codespace);
+                if (!useChouetteGtfsExport) {
+                    // Published before the status report, which overwrites the body with the job event.
+                    publisher.publish(MardukQueues.GTFS_EXPORT_MERGED_QUEUE, message);
+                    reportStatus(message, JobEvent.State.OK);
+                }
+            }
+            case STATUS_EXPORT_FAILED -> {
+                LOGGER.info("Damu GTFS export failed for codespace {}", codespace);
+                reportStatus(message, JobEvent.State.FAILED);
+            }
+            // The Camel version had no otherwise branch, so an unrecognised status was acked and dropped
+            // in silence. Kept, but said out loud - a status nobody recognises is how a job ends up with
+            // no terminal state.
+            default -> LOGGER.warn(
+                    "Ignoring unrecognised Damu GTFS export status '{}' for codespace {}",
+                    message.getBody(String.class), codespace);
+        }
+    }
 
-        from("direct:damuGtfsExportComplete")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Damu GTFS export complete for codespace ${header." + DATASET_REFERENTIAL + "}")
-                .filter(PredicateBuilder.not(constant(useChouetteGtfsExport)))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT).state(JobEvent.State.OK).build())
-                .to("direct:updateStatus")
-                .routeId("damu-complete-export-gtfs");
+    private void reportStatus(MardukMessage message, JobEvent.State state) {
+        if (useChouetteGtfsExport) {
+            return;
+        }
+        jobEvents.reportProviderJob(message,
+                builder -> builder.timetableAction(JobEvent.TimetableAction.EXPORT).state(state));
+    }
 
-        from("direct:damuGtfsExportFailed")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Damu GTFS export failed for codespace ${header." + DATASET_REFERENTIAL + "}")
-                .filter(PredicateBuilder.not(constant(useChouetteGtfsExport)))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT).state(JobEvent.State.FAILED).build())
-                .to("direct:updateStatus")
-                .routeId("damu-failed-export-gtfs");
+    /**
+     * Sets the MDC after filling in a missing correlation id, so the log lines above carry one. Camel's
+     * {@code interceptFrom} ran before the route could generate it, and these lines went out unlabelled.
+     */
+    private static void setCorrelationIdIfMissing(MardukMessage message) {
+        if (message.getHeader(Constants.CORRELATION_ID, String.class) == null) {
+            message.setHeader(Constants.CORRELATION_ID, UUID.randomUUID().toString());
+            MardukMdc.set(message);
+        }
     }
 }

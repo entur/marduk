@@ -1,10 +1,13 @@
-package no.rutebanken.marduk.routes.experimental;
+package no.rutebanken.marduk.experimental;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.pipeline.MardukMdc;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukPubSubConsumer;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,117 +16,135 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.LINKED_NETEX_FILE_PATH_HEADER;
+import static no.rutebanken.marduk.Constants.LINKING_ERROR_CODE_HEADER;
+import static no.rutebanken.marduk.Constants.LINKING_NETEX_FILE_STATUS_FAILED;
+import static no.rutebanken.marduk.Constants.LINKING_NETEX_FILE_STATUS_HEADER;
+import static no.rutebanken.marduk.Constants.LINKING_NETEX_FILE_STATUS_STARTED;
+import static no.rutebanken.marduk.Constants.LINKING_NETEX_FILE_STATUS_SUCCEEDED;
+import static no.rutebanken.marduk.Constants.LINKING_STATUS_EVENT_TIME_HEADER;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.SOURCE_CONTAINER;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 
 /**
- * Routes for integrating Servicelinker into the NeTEx processing pipeline.
- * <p>
- * When linking is enabled, this route intercepts the flow between Antu pre-validation and Ashur filtering:
- * 1. Copies the pre-validated NeTEx ZIP to the exchange bucket for Servicelinker to read
- * 2. Publishes a message to ServicelinkerInboundQueue
- * 3. Waits for the async callback on ServicelinkerStatusQueue
- * 4. On success: copies the enriched file from Servicelinker's exchange bucket to a dedicated path in the internal bucket (the original is left untouched)
- * 5. Continues to Ashur filtering: Marduk copies the enriched file from the internal bucket to the exchange bucket, which Ashur then reads
- * <p>
- * On failure, the original file remains in the internal bucket and the pipeline continues
- * to Ashur without ServiceLink enrichment (graceful degradation).
+ * Handles servicelinker's verdict on an enrichment job and continues the import into Ashur filtering.
+ *
+ * <p>Enrichment is best effort: a failure is reported and the flow carries on with the file that was sent,
+ * because a dataset without generated service links is still importable. Only a status nobody recognises
+ * stops the import here.
+ *
+ * <p>Replaces the PubSub route in {@code ServicelinkerEnrichmentStatusRouteBuilder}; the enrichment request
+ * it also held is now {@link ExperimentalImportPath#enrichThenFilter}.
  */
 @Component
-public class ServicelinkerEnrichmentStatusRouteBuilder extends BaseRouteBuilder {
+public class ServicelinkerEnrichmentStatusConsumer extends MardukPubSubConsumer {
 
-    private static final Logger logger = LoggerFactory.getLogger(ServicelinkerEnrichmentStatusRouteBuilder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServicelinkerEnrichmentStatusConsumer.class);
 
-    private final ExperimentalImportHelpers experimentalImportHelpers;
-    private final boolean linkingEnabled;
+    private final ProviderRepository providerRepository;
+    private final ExperimentalImportPath experimentalImportPath;
+    private final MardukInternalBlobStoreService internalBlobStore;
+    private final JobEventPublisher jobEvents;
+    private final String servicelinkerExchangeContainer;
 
-    public ServicelinkerEnrichmentStatusRouteBuilder(
-        ExperimentalImportHelpers experimentalImportHelpers,
-        @Value("${servicelinker.linkingEnabled:false}") boolean linkingEnabled
-    ) {
-        this.experimentalImportHelpers = experimentalImportHelpers;
-        this.linkingEnabled = linkingEnabled;
+    public ServicelinkerEnrichmentStatusConsumer(
+            ProviderRepository providerRepository,
+            ExperimentalImportPath experimentalImportPath,
+            MardukInternalBlobStoreService internalBlobStore,
+            JobEventPublisher jobEvents,
+            @Value("${blobstore.gcs.servicelinker.exchange.container.name}") String servicelinkerExchangeContainer) {
+        this.providerRepository = providerRepository;
+        this.experimentalImportPath = experimentalImportPath;
+        this.internalBlobStore = internalBlobStore;
+        this.jobEvents = jobEvents;
+        this.servicelinkerExchangeContainer = servicelinkerExchangeContainer;
     }
 
     @Override
-    public void configure() throws Exception {
-        super.configure();
+    protected String destination() {
+        return MardukQueues.SERVICELINKER_STATUS_QUEUE;
+    }
 
-        from("direct:servicelinkerEnrichAfterPreValidation")
-                .choice()
-                    .when(exchange -> !linkingEnabled)
-                        .log(LoggingLevel.INFO, correlation() + "Servicelinker linking is disabled, skipping enrichment")
-                        .to("direct:ashurNetexFilterAfterPreValidation")
-                    .when(experimentalImportHelpers::shouldSkipServicelinker)
-                        .log(LoggingLevel.INFO, correlation() + "Service link modes explicitly set to empty for referential ${header." + DATASET_REFERENTIAL + "}, skipping servicelinker")
-                        .to("direct:ashurNetexFilterAfterPreValidation")
-                    .otherwise()
-                        .log(LoggingLevel.INFO, correlation() + "Triggering Servicelinker enrichment for referential ${header." + DATASET_REFERENTIAL + "}")
-                        .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexForServicelinker")
-                        .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
-                        .process(experimentalImportHelpers::setServiceLinkModesHeader)
-                        .to("direct:copyInternalBlobToAnotherBucket")
-                        .to("google-pubsub:{{marduk.pubsub.project.id}}:ServicelinkerInboundQueue")
-                        .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.LINKING).state(JobEvent.State.PENDING).build())
-                        .to("direct:updateStatus")
-                        .log(LoggingLevel.INFO, correlation() + "Done sending to Servicelinker for enrichment")
-                .end()
-                .routeId("servicelinker-enrich-after-pre-validation");
+    @Override
+    protected void handle(MardukMessage message) {
+        String referential = message.getHeader(DATASET_REFERENTIAL, String.class);
+        message.setHeader(PROVIDER_ID, providerRepository.getProviderId(referential));
+        message.setHeader(CHOUETTE_REFERENTIAL, referential);
+        MardukMdc.set(message);
 
-        from("google-pubsub:{{servicelinker.pubsub.project.id}}:" + Constants.SERVICELINKER_STATUS_TOPIC)
-                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(DATASET_REFERENTIAL, String.class))))
-                .setHeader(CHOUETTE_REFERENTIAL, header(DATASET_REFERENTIAL))
-                .process(this::updateMdcFromHeaders)
-                .choice()
-                .when(header(Constants.LINKING_NETEX_FILE_STATUS_HEADER).isEqualTo(Constants.LINKING_NETEX_FILE_STATUS_SUCCEEDED))
-                    .log(LoggingLevel.INFO, correlation() + "Received notification that Servicelinker enrichment has succeeded. File location: ${header." + Constants.LINKED_NETEX_FILE_PATH_HEADER + "}")
-                    .to("direct:copyEnrichedDatasetToInternalBucket")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.LINKING).state(JobEvent.State.OK).eventTime(linkingStatusEventTime(e)).build())
-                .endChoice()
-                .when(header(Constants.LINKING_NETEX_FILE_STATUS_HEADER).isEqualTo(Constants.LINKING_NETEX_FILE_STATUS_STARTED))
-                    .log(LoggingLevel.INFO, correlation() + "Received notification that Servicelinker enrichment has started.")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.LINKING).state(JobEvent.State.STARTED).eventTime(linkingStatusEventTime(e)).build())
-                    .to("direct:updateStatus")
-                    .stop()
-                .endChoice()
-                .when(header(Constants.LINKING_NETEX_FILE_STATUS_HEADER).isEqualTo(Constants.LINKING_NETEX_FILE_STATUS_FAILED))
-                    .log(LoggingLevel.WARN, correlation() + "Received notification that Servicelinker enrichment has failed. Continuing with original file.")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.LINKING).state(JobEvent.State.FAILED).errorCode(e.getIn().getHeader(LINKING_ERROR_CODE_HEADER, String.class)).eventTime(linkingStatusEventTime(e)).build())
-                .endChoice()
-                .otherwise()
-                    .log(LoggingLevel.ERROR, correlation() + "Received notification with unknown Servicelinker linking status: ${header." + Constants.LINKING_NETEX_FILE_STATUS_HEADER + "}")
-                    .stop()
-                .end() // end otherwise
-                .end() // end choice
-                .to("direct:updateStatus")
-                .to("direct:ashurNetexFilterAfterPreValidation")
-                .routeId("servicelinker-enrichment-status-route");
+        String status = message.getHeader(LINKING_NETEX_FILE_STATUS_HEADER, String.class);
+        switch (status) {
+            case LINKING_NETEX_FILE_STATUS_SUCCEEDED -> {
+                LOGGER.info("Received notification that Servicelinker enrichment has succeeded. File location: {}",
+                        message.getHeader(LINKED_NETEX_FILE_PATH_HEADER, String.class));
+                copyEnrichedDatasetToInternalBucket(message);
+                report(message, JobEvent.State.OK);
+            }
+            case LINKING_NETEX_FILE_STATUS_STARTED -> {
+                LOGGER.info("Received notification that Servicelinker enrichment has started.");
+                report(message, JobEvent.State.STARTED);
+                return;
+            }
+            case LINKING_NETEX_FILE_STATUS_FAILED -> {
+                LOGGER.warn("Received notification that Servicelinker enrichment has failed. Continuing with original file.");
+                reportFailed(message);
+            }
+            case null, default -> {
+                LOGGER.error("Received notification with unknown Servicelinker linking status: {}", status);
+                return;
+            }
+        }
+        experimentalImportPath.filterAfterPreValidation(message);
+    }
 
-        from("direct:copyEnrichedDatasetToInternalBucket")
-                // Store the enriched file at a dedicated path in the internal bucket, leaving the original untouched
-                .setHeader(FILE_HANDLE, header(Constants.LINKED_NETEX_FILE_PATH_HEADER))
-                .setHeader(TARGET_FILE_HANDLE, header(Constants.LINKED_NETEX_FILE_PATH_HEADER))
-                .setHeader(SOURCE_CONTAINER, simple("${properties:blobstore.gcs.servicelinker.exchange.container.name}"))
-                .to("direct:copyBlobFromAnotherBucketToInternalBucket")
-                .end()
-                .routeId("copy-enriched-dataset-to-internal-bucket-route");
+    /** Keeps the enriched file at its own path, leaving the file that was sent for enrichment untouched. */
+    private void copyEnrichedDatasetToInternalBucket(MardukMessage message) {
+        String enriched = message.getHeader(LINKED_NETEX_FILE_PATH_HEADER, String.class);
+        message.setHeader(FILE_HANDLE, enriched);
+        message.setHeader(TARGET_FILE_HANDLE, enriched);
+        message.setHeader(SOURCE_CONTAINER, servicelinkerExchangeContainer);
+        internalBlobStore.copyBlobFromAnotherBucket(servicelinkerExchangeContainer, enriched, enriched);
+    }
 
+    private void report(MardukMessage message, JobEvent.State state) {
+        jobEvents.reportProviderJob(message, builder -> builder
+                .timetableAction(JobEvent.TimetableAction.LINKING)
+                .state(state)
+                .eventTime(eventTime(message)));
     }
 
     /**
-     * Servicelinker stamps each status message with the instant it emitted the status.
-     * Using that as the JobEvent event time keeps STARTED ordered before SUCCESS even when
-     * Pub/Sub delivers the two messages out of order. Falls back to null (i.e. now()) when the
-     * header is missing or unparseable, e.g. messages from an older servicelinker.
+     * Reports servicelinker's own failure reason, overriding the error code the builder reads off the
+     * message so that a stale {@code RutebankenJobErrorCode} cannot be reported as the reason linking failed.
      */
-    private static Instant linkingStatusEventTime(Exchange exchange) {
-        String value = exchange.getIn().getHeader(LINKING_STATUS_EVENT_TIME_HEADER, String.class);
+    private void reportFailed(MardukMessage message) {
+        jobEvents.reportProviderJob(message, builder -> builder
+                .timetableAction(JobEvent.TimetableAction.LINKING)
+                .state(JobEvent.State.FAILED)
+                .errorCode(message.getHeader(LINKING_ERROR_CODE_HEADER, String.class))
+                .eventTime(eventTime(message)));
+    }
+
+    /**
+     * Servicelinker stamps each status message with the instant it emitted the status. Using that as the
+     * JobEvent event time keeps STARTED ordered before SUCCESS even when PubSub delivers the two messages
+     * out of order. Falls back to null, i.e. now, when the attribute is missing or unparseable - a message
+     * from an older servicelinker, for instance.
+     */
+    private static Instant eventTime(MardukMessage message) {
+        String value = message.getHeader(LINKING_STATUS_EVENT_TIME_HEADER, String.class);
         if (value == null || value.isBlank()) {
             return null;
         }
         try {
             return Instant.parse(value);
         } catch (DateTimeParseException e) {
-            logger.warn("Could not parse {} header value '{}', falling back to receive time", LINKING_STATUS_EVENT_TIME_HEADER, value);
+            LOGGER.warn("Could not parse {} header value '{}', falling back to receive time",
+                    LINKING_STATUS_EVENT_TIME_HEADER, value);
             return null;
         }
     }

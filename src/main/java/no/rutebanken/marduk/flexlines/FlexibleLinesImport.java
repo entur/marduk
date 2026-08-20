@@ -1,58 +1,89 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
-
-package no.rutebanken.marduk.routes.flexlines;
+package no.rutebanken.marduk.flexlines;
 
 import no.rutebanken.marduk.domain.Provider;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.LoggingLevel;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.IMPORT_TYPE_NETEX_FLEX;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
+import static no.rutebanken.marduk.Constants.VALIDATION_CORRELATION_ID_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_DATASET_FILE_HANDLE_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_IMPORT_TYPE;
+import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_PROFILE_IMPORT_TIMETABLE_FLEX;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_FLEX_POSTVALIDATION;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
 
+/**
+ * Asks antu to validate a flexible-lines NeTEx archive uploaded through the operator portal.
+ *
+ * <p>The Uttu path is {@link FlexibleLinesExportConsumer}; this one differs in where the file sits - the
+ * internal bucket rather than the exchange bucket - and in the profile, which tells antu the archive is an
+ * import rather than an export.
+ *
+ * <p>Replaces the body of {@code direct:flexibleLinesImport}.
+ */
 @Component
-public class NetexFlexibleLinesImportRouteBuilder extends BaseRouteBuilder {
+public class FlexibleLinesImport {
 
-    @Override
-    public void configure() throws Exception {
-        super.configure();
+    private static final Logger LOGGER = LoggerFactory.getLogger(FlexibleLinesImport.class);
 
-        // start the validation in antu
-        from("direct:flexibleLinesImport")
-                .log(LoggingLevel.INFO, correlation() + "Post-validating flexible NeTEx dataset")
-                .to("direct:copyInternalBlobToValidationBucket")
-                .process(e -> {
-                    Provider provider = getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
-                })
-                .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_FLEX_POSTVALIDATION))
-                .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
-                .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_IMPORT_TIMETABLE_FLEX))
-                .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
-                .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
-                .setHeader(VALIDATION_IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
-                .to("google-pubsub:{{antu.pubsub.project.id}}:AntuNetexValidationQueue")
-                .process(e -> JobEvent.providerJobBuilder(e)
-                        .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION)
-                        .state(JobEvent.State.PENDING)
-                        .jobId(null)
-                        .build())
-                .to("direct:updateStatus")
-                .routeId("flexible-lines-import");
+    private final ProviderRepository providerRepository;
+    private final MardukInternalBlobStoreService internalBlobStore;
+    private final JobEventPublisher jobEvents;
+    private final MardukPubSubPublisher publisher;
+    private final String antuExchangeContainer;
+
+    public FlexibleLinesImport(
+            ProviderRepository providerRepository,
+            MardukInternalBlobStoreService internalBlobStore,
+            JobEventPublisher jobEvents,
+            MardukPubSubPublisher publisher,
+            @Value("${blobstore.gcs.antu.exchange.container.name}") String antuExchangeContainer) {
+        this.providerRepository = providerRepository;
+        this.internalBlobStore = internalBlobStore;
+        this.jobEvents = jobEvents;
+        this.publisher = publisher;
+        this.antuExchangeContainer = antuExchangeContainer;
     }
 
+    public void start(MardukMessage message) {
+        LOGGER.info("Post-validating flexible NeTEx dataset");
+        String fileHandle = message.getHeader(FILE_HANDLE, String.class);
+        message.setHeader(TARGET_CONTAINER, antuExchangeContainer);
+        message.setHeader(TARGET_FILE_HANDLE, fileHandle);
+        internalBlobStore.copyBlobToAnotherBucket(fileHandle, antuExchangeContainer, fileHandle);
+
+        Provider provider = providerRepository.getProvider(message.getHeader(PROVIDER_ID, Long.class));
+        message.setHeader(DATASET_REFERENTIAL, provider.getChouetteInfo().getReferential());
+
+        message.setHeader(VALIDATION_STAGE_HEADER, VALIDATION_STAGE_FLEX_POSTVALIDATION);
+        message.setHeader(VALIDATION_CLIENT_HEADER, VALIDATION_CLIENT_MARDUK);
+        message.setHeader(VALIDATION_PROFILE_HEADER, VALIDATION_PROFILE_IMPORT_TIMETABLE_FLEX);
+        message.setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, fileHandle);
+        message.setHeader(VALIDATION_CORRELATION_ID_HEADER, message.getHeader(CORRELATION_ID, String.class));
+        message.setHeader(VALIDATION_IMPORT_TYPE, IMPORT_TYPE_NETEX_FLEX);
+        publisher.publish(MardukQueues.ANTU_NETEX_VALIDATION_QUEUE, message);
+
+        jobEvents.reportProviderJob(message, builder -> builder
+                .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION)
+                .state(JobEvent.State.PENDING)
+                .jobId(null));
+    }
 }

@@ -1,86 +1,70 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.chouette;
 
-package no.rutebanken.marduk.routes.chouette;
-
-import org.apache.camel.Exchange;
-import org.apache.camel.component.http.HttpMethods;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.support.DefaultExchange;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.apache.hc.core5.http.HttpEntity;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import static no.rutebanken.marduk.Constants.FILE_NAME;
-import static no.rutebanken.marduk.Constants.JSON_PART;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class AbstractChouetteRouteBuilderTest {
+class ChouetteMultipartTest {
 
-    // concrete subclass to reach the protected helpers
-    private static final class TestChouetteRouteBuilder extends AbstractChouetteRouteBuilder {
+    private static final String PARAMETERS = "{\"parameters\":{\"importer\":{}}}";
+
+    private static String bodyOf(HttpEntity entity) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        entity.writeTo(out);
+        return out.toString(StandardCharsets.UTF_8);
     }
 
-    private final AbstractChouetteRouteBuilder routeBuilder = new TestChouetteRouteBuilder();
-    private DefaultCamelContext context;
-
-    @BeforeEach
-    void setUp() {
-        context = new DefaultCamelContext();
-        context.start();
-    }
-
-    @AfterEach
-    void tearDown() {
-        context.stop();
-    }
-
-    // camel-http 4.18 cannot convert a constant(...) Expression on HTTP_METHOD; must be a plain value.
     @Test
-    void httpMethodHeaderIsAPlainHttpMethod() {
-        Exchange exchange = exchangeWithJsonPart();
+    void parametersGoOutAsAJsonFilePart() throws IOException {
+        HttpEntity entity = ChouetteMultipart.parameters(PARAMETERS);
 
-        routeBuilder.toGenericChouetteMultipart(exchange);
-
-        HttpMethods httpMethod = assertDoesNotThrow(
-                () -> exchange.getMessage().getHeader(Exchange.HTTP_METHOD, HttpMethods.class),
-                "HTTP_METHOD must be a plain HttpMethods value, not a constant(...) Expression");
-        assertEquals(HttpMethods.POST, httpMethod);
+        String body = bodyOf(entity);
+        assertTrue(entity.getContentType().startsWith("multipart/form-data"), entity.getContentType());
+        assertTrue(body.contains("name=\"parameters\""), body);
+        assertTrue(body.contains("filename=\"parameters.json\""), body);
+        assertTrue(body.contains(PARAMETERS), body);
     }
 
-    // Same anti-pattern: CONTENT_TYPE must be a plain String, not a simple(...) Expression.
     @Test
-    void contentTypeHeaderIsAPlainString() {
-        Exchange genericExchange = exchangeWithJsonPart();
-        routeBuilder.toGenericChouetteMultipart(genericExchange);
-        assertEquals("multipart/form-data", genericExchange.getMessage().getHeader(Exchange.CONTENT_TYPE));
+    void anImportCarriesTheParametersAndTheFeed() throws IOException {
+        HttpEntity entity = ChouetteMultipart.parametersAndFeed(
+                PARAMETERS, "netex.zip", new ByteArrayInputStream("zip-bytes".getBytes(StandardCharsets.UTF_8)));
 
-        Exchange importExchange = exchangeWithJsonPart();
-        importExchange.getIn().setHeader(FILE_NAME, "netex.zip");
-        importExchange.getIn().setBody("payload".getBytes(StandardCharsets.UTF_8));
-        routeBuilder.toImportMultipart(importExchange);
-        assertEquals("multipart/form-data", importExchange.getMessage().getHeader(Exchange.CONTENT_TYPE));
+        String body = bodyOf(entity);
+        assertTrue(body.contains("filename=\"parameters.json\""), body);
+        assertTrue(body.contains("name=\"feed\""), body);
+        assertTrue(body.contains("filename=\"netex.zip\""), body);
+        assertTrue(body.contains("zip-bytes"), body);
     }
 
-    private Exchange exchangeWithJsonPart() {
-        Exchange exchange = new DefaultExchange(context);
-        exchange.getIn().setHeader(JSON_PART, "{}".getBytes(StandardCharsets.UTF_8));
-        return exchange;
+    @Test
+    void missingParametersAreRejected() {
+        // Chouette answers 500 on a job submitted without parameters, so failing here says why.
+        assertThrows(IllegalArgumentException.class, () -> ChouetteMultipart.parameters(null));
+        assertThrows(IllegalArgumentException.class, () -> ChouetteMultipart.parameters("  "));
+    }
+
+    @Test
+    void anImportWithoutAFileNameOrFeedIsRejected() {
+        ByteArrayInputStream feed = new ByteArrayInputStream(new byte[0]);
+        assertThrows(IllegalArgumentException.class, () -> ChouetteMultipart.parametersAndFeed(PARAMETERS, null, feed));
+        assertThrows(IllegalArgumentException.class, () -> ChouetteMultipart.parametersAndFeed(PARAMETERS, "", feed));
+        assertThrows(IllegalArgumentException.class,
+                () -> ChouetteMultipart.parametersAndFeed(PARAMETERS, "netex.zip", null));
+    }
+
+    @Test
+    void theFileNameIsCheckedBeforeTheFeedIsTouched() {
+        // The feed is a stream over a blob download; validating the cheap arguments first avoids reading it
+        // only to throw the request away.
+        assertThrows(IllegalArgumentException.class,
+                () -> ChouetteMultipart.parametersAndFeed(PARAMETERS, null, null));
     }
 }

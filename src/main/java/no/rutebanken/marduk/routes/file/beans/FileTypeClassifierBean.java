@@ -23,7 +23,7 @@ import no.rutebanken.marduk.exceptions.MardukZipFileEntryNameEncodingException;
 import no.rutebanken.marduk.routes.file.FileType;
 import no.rutebanken.marduk.routes.file.MardukFileUtils;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
-import org.apache.camel.Exchange;
+import no.rutebanken.marduk.pipeline.MardukMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,8 +60,15 @@ public class FileTypeClassifierBean {
      */
     static final Pattern XML_FILES_REGEX = Pattern.compile(".+\\.xml");
 
-    public boolean validateFile(byte[] data, Exchange exchange) {
-        String relativePath = exchange.getIn().getHeader(FILE_HANDLE, String.class);
+    /**
+     * Classifies the file and records the type on the message.
+     *
+     * @return false if it could not be classified at all, which the caller reports as a failed
+     *         classification. A recognised-but-unusable file returns true with the type set, e.g.
+     *         {@code NOT_A_ZIP_FILE}, so the caller can report a specific error code.
+     */
+    public boolean validateFile(byte[] data, MardukMessage message) {
+        String relativePath = message.getHeader(FILE_HANDLE, String.class);
         LOGGER.debug("Validating file with path '{}'.", relativePath);
         try {
             if (relativePath == null || relativePath.isBlank()) {
@@ -70,7 +77,7 @@ public class FileTypeClassifierBean {
 
             FileType fileType = classifyFile(relativePath, data);
             LOGGER.debug("File is classified as {}", fileType);
-            exchange.getIn().setHeader(FILE_TYPE, fileType.name());
+            message.setHeader(FILE_TYPE, fileType.name());
             return true;
         } catch (RuntimeException e) {
             LOGGER.warn("Exception while trying to classify file '{}'", relativePath, e);

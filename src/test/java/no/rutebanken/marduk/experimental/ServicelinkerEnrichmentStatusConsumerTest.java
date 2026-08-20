@@ -1,241 +1,190 @@
-package no.rutebanken.marduk.routes.experimental;
+package no.rutebanken.marduk.experimental;
 
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.domain.ChouetteInfo;
+import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.pubsub.RecordingPubSubPublisher;
+import no.rutebanken.marduk.repository.InMemoryMardukBlobStoreRepository;
+import no.rutebanken.marduk.repository.ProviderRepository;
+import no.rutebanken.marduk.routes.experimental.ExperimentalImportHelpers;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.EndpointInject;
-import org.apache.camel.Produce;
-import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.component.mock.MockEndpoint;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.context.TestPropertySource;
 
-import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_NAME;
+import static no.rutebanken.marduk.Constants.FILTERING_FILE_CREATED_TIMESTAMP;
+import static no.rutebanken.marduk.Constants.LINKED_NETEX_FILE_PATH_HEADER;
+import static no.rutebanken.marduk.Constants.LINKING_ERROR_CODE_HEADER;
+import static no.rutebanken.marduk.Constants.LINKING_NETEX_FILE_STATUS_FAILED;
+import static no.rutebanken.marduk.Constants.LINKING_NETEX_FILE_STATUS_HEADER;
+import static no.rutebanken.marduk.Constants.LINKING_NETEX_FILE_STATUS_STARTED;
+import static no.rutebanken.marduk.Constants.LINKING_NETEX_FILE_STATUS_SUCCEEDED;
+import static no.rutebanken.marduk.Constants.LINKING_STATUS_EVENT_TIME_HEADER;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-@TestPropertySource(properties = {"servicelinker.linkingEnabled=true"})
-class ServicelinkerEnrichmentStatusRouteBuilderTest extends MardukRouteBuilderIntegrationTestBase {
+class ServicelinkerEnrichmentStatusConsumerTest {
 
-    @Produce("google-pubsub:{{servicelinker.pubsub.project.id}}:" + Constants.SERVICELINKER_STATUS_TOPIC)
-    protected ProducerTemplate statusTemplate;
+    private static final String INTERNAL = "marduk-internal";
+    private static final String EXCHANGE = "marduk-exchange";
+    private static final String SERVICELINKER = "servicelinker-exchange";
+    private static final String ORIGINAL = "chouette/netex-before-validation/tst-export.zip";
+    private static final String ENRICHED = "servicelinker/tst/corr/tst-aggregated-netex.zip";
 
-    @EndpointInject("mock:ashurNetexFilterAfterPreValidation")
-    protected MockEndpoint ashurFilterEndpoint;
+    private final Map<String, Map<String, byte[]>> buckets = new ConcurrentHashMap<>();
+    private final RecordingPubSubPublisher publisher = new RecordingPubSubPublisher();
+    private final ProviderRepository providerRepository = mock(ProviderRepository.class);
 
-    @EndpointInject("mock:updateStatus")
-    protected MockEndpoint updateStatusEndpoint;
-
-    @EndpointInject("mock:copyBlobFromAnotherBucketToInternalBucket")
-    protected MockEndpoint copyBlobFromAnotherBucketToInternalEndpoint;
+    private ServicelinkerEnrichmentStatusConsumer consumer;
 
     @BeforeEach
-    @Override
-    protected void setUp() throws IOException {
-        super.setUp();
-        ashurFilterEndpoint.reset();
+    void setUp() {
+        Provider provider = new Provider();
+        provider.setId(2L);
+        ChouetteInfo info = new ChouetteInfo();
+        info.setReferential("tst");
+        info.setEnableExperimentalImport(true);
+        provider.setChouetteInfo(info);
+        when(providerRepository.getProviders()).thenReturn(List.of(provider));
+        when(providerRepository.getProviderId("tst")).thenReturn(2L);
+
+        ExperimentalImportHelpers helpers = new ExperimentalImportHelpers(true, providerRepository);
+        JobEventPublisher jobEvents = new JobEventPublisher(publisher);
+        ExperimentalImportPath path = new ExperimentalImportPath(
+                helpers,
+                new MardukInternalBlobStoreService(INTERNAL, new InMemoryMardukBlobStoreRepository(buckets)),
+                publisher, jobEvents, true, EXCHANGE);
+        consumer = new ServicelinkerEnrichmentStatusConsumer(
+                providerRepository, path,
+                new MardukInternalBlobStoreService(INTERNAL, new InMemoryMardukBlobStoreRepository(buckets)),
+                jobEvents, SERVICELINKER);
     }
 
-    void interceptRoutes() throws Exception {
-        AdviceWith.adviceWith(context, "servicelinker-enrichment-status-route", a -> {
-            a.interceptSendToEndpoint("direct:updateStatus")
-                    .skipSendToOriginalEndpoint()
-                    .to("mock:updateStatus");
-            a.interceptSendToEndpoint("direct:ashurNetexFilterAfterPreValidation")
-                    .skipSendToOriginalEndpoint()
-                    .to("mock:ashurNetexFilterAfterPreValidation");
-        });
-
-        AdviceWith.adviceWith(context, "copy-enriched-dataset-to-internal-bucket-route", a -> {
-            a.interceptSendToEndpoint("direct:copyBlobFromAnotherBucketToInternalBucket")
-                    .skipSendToOriginalEndpoint()
-                    .to("mock:copyBlobFromAnotherBucketToInternalBucket");
-        });
+    private MardukMessage status(String linkingStatus) {
+        buckets.computeIfAbsent(INTERNAL, key -> new ConcurrentHashMap<>())
+                .put(ORIGINAL, "zip".getBytes(StandardCharsets.UTF_8));
+        buckets.computeIfAbsent(SERVICELINKER, key -> new ConcurrentHashMap<>())
+                .put(ENRICHED, "enriched".getBytes(StandardCharsets.UTF_8));
+        return new MardukMessage()
+                .setHeader(CORRELATION_ID, "corr")
+                .setHeader(DATASET_REFERENTIAL, "tst")
+                .setHeader(FILE_NAME, "netex.zip")
+                .setHeader(FILE_HANDLE, ORIGINAL)
+                .setHeader(FILTERING_FILE_CREATED_TIMESTAMP, "2026-03-27T12:00:00")
+                .setHeader(LINKED_NETEX_FILE_PATH_HEADER, ENRICHED)
+                .setHeader(LINKING_NETEX_FILE_STATUS_HEADER, linkingStatus);
     }
 
-    @Test
-    void testAshurTriggeredAfterSuccessfulLinking() throws Exception {
-        interceptRoutes();
+    private byte[] blob(String container, String name) {
+        return buckets.getOrDefault(container, Map.of()).get(name);
+    }
 
-        context.start();
+    private JobEvent linkingEvent() {
+        return JobEvent.fromString(publisher.publishedTo(MardukQueues.JOB_EVENT_QUEUE).getFirst().body());
+    }
 
-        updateStatusEndpoint.expectedMessageCount(1);
-        copyBlobFromAnotherBucketToInternalEndpoint.expectedMessageCount(1);
-        ashurFilterEndpoint.expectedMessageCount(1);
-
-        sendBodyAndHeadersToPubSub(statusTemplate, null, Map.of(
-            Constants.LINKING_NETEX_FILE_STATUS_HEADER, Constants.LINKING_NETEX_FILE_STATUS_SUCCEEDED,
-            Constants.LINKED_NETEX_FILE_PATH_HEADER, "servicelinker/tst/some-uuid/tst-aggregated-netex.zip",
-            Constants.FILE_HANDLE, "chouette/netex-before-validation/tst-export.zip",
-            Constants.DATASET_REFERENTIAL, "tst",
-            Constants.PROVIDER_ID, "0",
-            Constants.CORRELATION_ID, "someCorrelationId"
-        ));
-
-        updateStatusEndpoint.assertIsSatisfied();
-        copyBlobFromAnotherBucketToInternalEndpoint.assertIsSatisfied();
-        ashurFilterEndpoint.assertIsSatisfied();
-
-        var receivedMessages = updateStatusEndpoint.getReceivedExchanges().stream()
-            .map(exchange -> exchange.getIn().getBody(String.class))
-            .toList();
-
-        assertTrue(
-            receivedMessages.stream().anyMatch(body -> body.contains("\"action\":\"LINKING\"") && body.contains("\"state\":\"OK\"")),
-            "Expected status update with action=LINKING and state=OK"
-        );
-
-        // The enriched file must be written to the dedicated servicelinker path, not the original FILE_HANDLE
-        var copyExchange = copyBlobFromAnotherBucketToInternalEndpoint.getReceivedExchanges().getFirst();
-        String enrichedPath = "servicelinker/tst/some-uuid/tst-aggregated-netex.zip";
-        assertEquals(enrichedPath, copyExchange.getIn().getHeader(Constants.TARGET_FILE_HANDLE, String.class),
-            "Expected TARGET_FILE_HANDLE to be enriched path, not original");
-
-        // Ashur must receive the enriched path as FILE_HANDLE, not the original
-        var ashurExchange = ashurFilterEndpoint.getReceivedExchanges().getFirst();
-        assertEquals(enrichedPath, ashurExchange.getIn().getHeader(Constants.FILE_HANDLE, String.class),
-            "Expected FILE_HANDLE forwarded to Ashur to be enriched path, not original");
+    private String handleSentToAshur() {
+        return publisher.publishedTo(MardukQueues.FILTER_NETEX_FILE_QUEUE).getFirst().attributes().get(FILE_HANDLE);
     }
 
     @Test
-    void testAshurTriggeredAfterFailedLinking() throws Exception {
-        interceptRoutes();
+    void theJobIsResolvedFromTheDatasetReferentialTheStatusCarries() {
+        MardukMessage message = status(LINKING_NETEX_FILE_STATUS_STARTED);
 
-        context.start();
+        consumer.handle(message);
 
-        updateStatusEndpoint.expectedMessageCount(1);
-        copyBlobFromAnotherBucketToInternalEndpoint.expectedMessageCount(0);
-        ashurFilterEndpoint.expectedMessageCount(1);
-
-        sendBodyAndHeadersToPubSub(statusTemplate, null, Map.of(
-            Constants.LINKING_NETEX_FILE_STATUS_HEADER, Constants.LINKING_NETEX_FILE_STATUS_FAILED,
-            Constants.LINKED_NETEX_FILE_PATH_HEADER, "",
-            Constants.FILE_HANDLE, "chouette/netex-before-validation/tst-export.zip",
-            Constants.DATASET_REFERENTIAL, "tst",
-            Constants.PROVIDER_ID, "0",
-            Constants.CORRELATION_ID, "someCorrelationId",
-            Constants.LINKING_ERROR_CODE_HEADER, "OSRM timeout"
-        ));
-
-        updateStatusEndpoint.assertIsSatisfied();
-        copyBlobFromAnotherBucketToInternalEndpoint.assertIsSatisfied();
-        ashurFilterEndpoint.assertIsSatisfied();
-
-        var receivedMessages = updateStatusEndpoint.getReceivedExchanges().stream()
-            .map(exchange -> exchange.getIn().getBody(String.class))
-            .toList();
-
-        assertTrue(
-            receivedMessages.stream().anyMatch(body -> body.contains("\"action\":\"LINKING\"") && body.contains("\"state\":\"FAILED\"")),
-            "Expected status update with action=LINKING and state=FAILED"
-        );
+        assertEquals(2L, message.getHeader(PROVIDER_ID, Long.class));
+        assertEquals("tst", message.getHeader(CHOUETTE_REFERENTIAL, String.class));
     }
 
     @Test
-    void testStartedStatusStopsAndPropagatesEmitTime() throws Exception {
-        interceptRoutes();
+    void anEnrichedDatasetIsKeptAtItsOwnPathAndSentOnToAshur() {
+        consumer.handle(status(LINKING_NETEX_FILE_STATUS_SUCCEEDED));
 
-        context.start();
-
-        // STARTED branch updates status then stops — it must not copy the file or continue to Ashur
-        updateStatusEndpoint.expectedMessageCount(1);
-        copyBlobFromAnotherBucketToInternalEndpoint.expectedMessageCount(0);
-        ashurFilterEndpoint.expectedMessageCount(0);
-
-        Instant emitTime = Instant.parse("2026-06-03T10:15:30Z");
-
-        sendBodyAndHeadersToPubSub(statusTemplate, null, Map.of(
-            Constants.LINKING_NETEX_FILE_STATUS_HEADER, Constants.LINKING_NETEX_FILE_STATUS_STARTED,
-            Constants.LINKING_STATUS_EVENT_TIME_HEADER, emitTime.toString(),
-            Constants.DATASET_REFERENTIAL, "tst",
-            Constants.PROVIDER_ID, "0",
-            Constants.CORRELATION_ID, "someCorrelationId"
-        ));
-
-        updateStatusEndpoint.assertIsSatisfied();
-        copyBlobFromAnotherBucketToInternalEndpoint.assertIsSatisfied();
-        ashurFilterEndpoint.assertIsSatisfied();
-
-        JobEvent event = relayedJobEvent();
-        assertEquals("LINKING", event.getAction());
-        assertEquals(JobEvent.State.STARTED, event.getState());
-        assertEquals(emitTime, event.getEventTime(), "Servicelinker emit time must be propagated to the JobEvent");
+        assertNotNull(blob(INTERNAL, ENRICHED), "the enriched file is copied into marduk's own bucket");
+        assertEquals("zip", new String(blob(INTERNAL, ORIGINAL), StandardCharsets.UTF_8),
+                "the file that was sent for enrichment is left untouched");
+        assertEquals(JobEvent.TimetableAction.LINKING.name(), linkingEvent().getAction());
+        assertEquals(JobEvent.State.OK, linkingEvent().getState());
+        assertEquals(ENRICHED, handleSentToAshur(), "Ashur must filter the enriched file, not the original");
     }
 
     @Test
-    void testEmitTimePropagatedOnSuccess() throws Exception {
-        interceptRoutes();
+    void aStartedEnrichmentIsReportedAndTheImportWaits() {
+        consumer.handle(status(LINKING_NETEX_FILE_STATUS_STARTED));
 
-        context.start();
-
-        updateStatusEndpoint.expectedMessageCount(1);
-
-        Instant emitTime = Instant.parse("2026-06-03T10:20:45Z");
-
-        sendBodyAndHeadersToPubSub(statusTemplate, null, Map.of(
-            Constants.LINKING_NETEX_FILE_STATUS_HEADER, Constants.LINKING_NETEX_FILE_STATUS_SUCCEEDED,
-            Constants.LINKED_NETEX_FILE_PATH_HEADER, "servicelinker/tst/some-uuid/tst-aggregated-netex.zip",
-            Constants.LINKING_STATUS_EVENT_TIME_HEADER, emitTime.toString(),
-            Constants.FILE_HANDLE, "chouette/netex-before-validation/tst-export.zip",
-            Constants.DATASET_REFERENTIAL, "tst",
-            Constants.PROVIDER_ID, "0",
-            Constants.CORRELATION_ID, "someCorrelationId"
-        ));
-
-        updateStatusEndpoint.assertIsSatisfied();
-
-        JobEvent event = relayedJobEvent();
-        assertEquals(JobEvent.State.OK, event.getState());
-        assertEquals(emitTime, event.getEventTime(), "Servicelinker emit time must be propagated to the JobEvent");
+        assertEquals(JobEvent.State.STARTED, linkingEvent().getState());
+        assertNull(blob(INTERNAL, ENRICHED));
+        assertTrue(publisher.publishedTo(MardukQueues.FILTER_NETEX_FILE_QUEUE).isEmpty());
     }
 
     @Test
-    void testMissingEmitTimeFallsBackToProcessingTime() throws Exception {
-        assertFallbackToProcessingTime(null);
+    void aFailedEnrichmentIsReportedAndTheImportCarriesOnWithTheOriginalFile() {
+        // A dataset without generated service links is still importable, so linking failure degrades
+        // rather than stopping the import.
+        consumer.handle(status(LINKING_NETEX_FILE_STATUS_FAILED)
+                .setHeader(LINKING_ERROR_CODE_HEADER, "OSRM timeout"));
+
+        assertEquals(JobEvent.State.FAILED, linkingEvent().getState());
+        assertEquals("OSRM timeout", linkingEvent().getErrorCode());
+        assertNull(blob(INTERNAL, ENRICHED));
+        assertEquals(ORIGINAL, handleSentToAshur());
     }
 
     @Test
-    void testUnparseableEmitTimeFallsBackToProcessingTime() throws Exception {
-        assertFallbackToProcessingTime("not-a-timestamp");
+    void anUnknownLinkingStatusStopsTheImportRatherThanBeingRetried() {
+        consumer.handle(status("NO_SUCH_STATUS"));
+
+        assertTrue(publisher.published().isEmpty());
     }
 
-    private void assertFallbackToProcessingTime(String emitTimeHeader) throws Exception {
-        interceptRoutes();
+    @Test
+    void theEventTimeServicelinkerStampedIsWhatIsReported() {
+        // Keeps STARTED ordered before SUCCESS in nabu even when PubSub delivers the two out of order.
+        Instant emitted = Instant.parse("2026-06-03T10:15:30Z");
 
-        context.start();
+        consumer.handle(status(LINKING_NETEX_FILE_STATUS_STARTED)
+                .setHeader(LINKING_STATUS_EVENT_TIME_HEADER, emitted.toString()));
 
-        updateStatusEndpoint.expectedMessageCount(1);
+        assertEquals(emitted, linkingEvent().getEventTime());
+    }
 
-        java.util.Map<String, String> headers = new java.util.HashMap<>(Map.of(
-            Constants.LINKING_NETEX_FILE_STATUS_HEADER, Constants.LINKING_NETEX_FILE_STATUS_SUCCEEDED,
-            Constants.LINKED_NETEX_FILE_PATH_HEADER, "servicelinker/tst/some-uuid/tst-aggregated-netex.zip",
-            Constants.FILE_HANDLE, "chouette/netex-before-validation/tst-export.zip",
-            Constants.DATASET_REFERENTIAL, "tst",
-            Constants.PROVIDER_ID, "0",
-            Constants.CORRELATION_ID, "someCorrelationId"
-        ));
-        if (emitTimeHeader != null) {
-            headers.put(Constants.LINKING_STATUS_EVENT_TIME_HEADER, emitTimeHeader);
-        }
-
+    @Test
+    void anUnparseableEventTimeFallsBackToTheTimeTheStatusWasHandled() {
         Instant before = Instant.now();
-        sendBodyAndHeadersToPubSub(statusTemplate, null, headers);
-        updateStatusEndpoint.assertIsSatisfied();
-        Instant after = Instant.now();
 
-        JobEvent event = relayedJobEvent();
-        assertEquals(JobEvent.State.OK, event.getState());
-        assertTrue(!event.getEventTime().isBefore(before) && !event.getEventTime().isAfter(after),
-            "Expected event time to fall back to processing time (~now), but was " + event.getEventTime());
+        consumer.handle(status(LINKING_NETEX_FILE_STATUS_STARTED)
+                .setHeader(LINKING_STATUS_EVENT_TIME_HEADER, "not-a-timestamp"));
+
+        Instant reported = linkingEvent().getEventTime();
+        assertTrue(!reported.isBefore(before) && !reported.isAfter(Instant.now()), "was " + reported);
     }
 
-    private JobEvent relayedJobEvent() {
-        String body = updateStatusEndpoint.getReceivedExchanges().getFirst().getIn().getBody(String.class);
-        return JobEvent.fromString(body);
+    @Test
+    void aMissingEventTimeFallsBackToTheTimeTheStatusWasHandled() {
+        Instant before = Instant.now();
+
+        consumer.handle(status(LINKING_NETEX_FILE_STATUS_STARTED));
+
+        Instant reported = linkingEvent().getEventTime();
+        assertTrue(!reported.isBefore(before) && !reported.isAfter(Instant.now()), "was " + reported);
     }
 }

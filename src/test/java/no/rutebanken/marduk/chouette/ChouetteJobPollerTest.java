@@ -1,240 +1,429 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.chouette;
 
-package no.rutebanken.marduk.routes.chouette;
-
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
-import no.rutebanken.marduk.TestConstants;
-import no.rutebanken.marduk.routes.chouette.json.JobResponse;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pipeline.RetryPolicy;
+import no.rutebanken.marduk.pubsub.InFlightWork;
+import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.pubsub.RecordingPubSubPublisher;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.*;
-import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.commons.io.IOUtils;
-import static org.junit.jupiter.api.Assertions.*;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class ChouettePollJobStatusMardukRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_ID;
+import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_TYPE;
+import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION;
+import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_URL;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.pipeline.RetryPolicies.noRetries;
+import static no.rutebanken.marduk.pipeline.RetryPolicies.retriesWithoutWaiting;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-	@EndpointInject("mock:destination")
-	protected MockEndpoint destination;
+/**
+ * Driven against a real HTTP server standing in for Chouette, so the status and report payloads are parsed
+ * the way they arrive on the wire.
+ */
+class ChouetteJobPollerTest {
 
-	@EndpointInject("mock:updateStatus")
-	protected MockEndpoint updateStatus;
+    private static final String DESTINATION = "direct:processImportResult";
 
-	@EndpointInject("mock:chouetteGetJobStatus")
-	protected MockEndpoint chouetteGetJobStatus;
+    private HttpServer server;
+    private ChouetteClient client;
+    private RecordingPubSubPublisher publisher;
+    private ThreadPoolTaskScheduler scheduler;
+    private InFlightWork inFlightWork;
+    private final List<String> dispatched = new CopyOnWriteArrayList<>();
+    private final List<MardukMessage> dispatchedMessages = new CopyOnWriteArrayList<>();
+    private final List<String> requested = new CopyOnWriteArrayList<>();
 
-	@EndpointInject("mock:chouetteGetActionReport")
-	protected MockEndpoint chouetteGetActionReport;
+    /** Path prefix to response body. First match wins. */
+    private final Map<String, String> responses = new HashMap<>();
 
-	@EndpointInject("mock:chouetteGetValidationReport")
-	protected MockEndpoint chouetteGetValidationReport;
+    @BeforeEach
+    void startServer() throws IOException {
+        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", this::respond);
+        server.start();
+        client = new ChouetteClient("http://127.0.0.1:" + server.getAddress().getPort(), noRetries());
+        publisher = new RecordingPubSubPublisher();
+        scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.initialize();
+        inFlightWork = new InFlightWork();
+    }
 
-	@Produce("google-pubsub:{{marduk.pubsub.project.id}}:ChouettePollStatusQueue")
-	protected ProducerTemplate pollStartTemplate;
+    @AfterEach
+    void stopServer() throws IOException {
+        scheduler.shutdown();
+        client.close();
+        server.stop(0);
+    }
 
-	@Produce("direct:checkValidationReport")
-	protected ProducerTemplate validationReportTemplate;
+    private void respond(HttpExchange exchange) throws IOException {
+        try (InputStream body = exchange.getRequestBody()) {
+            body.readAllBytes();
+        }
+        String path = exchange.getRequestURI().getPath();
+        requested.add(path);
+        String payload = responses.entrySet().stream()
+                .filter(entry -> path.contains(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse("{}");
+        byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
+        exchange.sendResponseHeaders(200, bytes.length);
+        try (var out = exchange.getResponseBody()) {
+            out.write(bytes);
+        }
+    }
 
-	@EndpointInject("mock:chouetteGetJobsForProvider")
-	protected MockEndpoint getJobs;
+    private ChouetteJobPoller poller(int maxRetries) {
+        return poller(maxRetries, publisher, noRetries());
+    }
 
-	@Produce("direct:chouetteGetJobsForProvider")
-	protected ProducerTemplate getJobsTemplate;
+    private ChouetteJobPoller poller(int maxRetries, MardukPubSubPublisher target, RetryPolicy retryPolicy) {
+        return new ChouetteJobPoller(client, target, new JobEventPublisher(publisher),
+                List.of(recordingHandler(DESTINATION)), scheduler, inFlightWork, retryPolicy, maxRetries, 1);
+    }
 
-	@Value("${chouette.url}")
-	private String chouetteUrl;
+    private ChouetteJobResultHandler recordingHandler(String destination) {
+        return new ChouetteJobResultHandler() {
+            @Override
+            public String destination() {
+                return destination;
+            }
 
-	@Test
-	void testPollJobStatus() throws Exception {
+            @Override
+            public void handle(MardukMessage message) {
+                dispatched.add(destination);
+                dispatchedMessages.add(message.copy());
+            }
+        };
+    }
 
-		// Mock get status call to chouette
-		AdviceWith.adviceWith(context, "chouette-get-job-status", a -> {
-			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/scheduled_jobs/1")
-					.skipSendToOriginalEndpoint().to("mock:chouetteGetJobStatus");
-			a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus");
-		});
+    private MardukMessage pollRequest() {
+        return new MardukMessage()
+                .setHeader(CORRELATION_ID, "corr")
+                .setHeader(PROVIDER_ID, 2L)
+                .setHeader(CHOUETTE_JOB_ID, "1")
+                .setHeader(CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, DESTINATION)
+                .setHeader(CHOUETTE_JOB_STATUS_URL, "/chouette_iev/referentials/rut/scheduled_jobs/1")
+                .setHeader(CHOUETTE_JOB_STATUS_JOB_TYPE, JobEvent.TimetableAction.IMPORT.name());
+    }
 
-		AdviceWith.adviceWith(context, "chouette-process-job-reports", a -> {
-			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/action_report.json")
-					.skipSendToOriginalEndpoint().to("mock:chouetteGetActionReport");
+    private void status(String state) {
+        responses.put("scheduled_jobs", """
+                {"id":1,"status":"%s","links":[
+                  {"rel":"action_report","href":"/chouette_iev/referentials/rut/data/1/action_report.json"},
+                  {"rel":"validation_report","href":"/chouette_iev/referentials/rut/data/1/validation_report.json"},
+                  {"rel":"data","href":"/chouette_iev/referentials/rut/data/1/exported.zip"}]}
+                """.formatted(state));
+    }
 
-			a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/data/1/validation_report.json")
-					.skipSendToOriginalEndpoint().to("mock:chouetteGetValidationReport");
-		});
+    private void actionReport(String result) {
+        responses.put("action_report", """
+                {"action_report":{"result":"%s","progression":{"steps":[{"step":"FINALISATION","total":1,"realized":1}]}}}
+                """.formatted(result));
+    }
 
-		AdviceWith.adviceWith(context, "chouette-reschedule-job", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus"));
+    private void validationReport(String verdict) {
+        responses.put("validation_report", "NOK".equals(verdict)
+                ? "{\"validation_report\":{\"check_points\":[{\"severity\":\"ERROR\",\"result\":\"NOK\"}]}}"
+                : "{\"validation_report\":{\"check_points\":[{\"severity\":\"WARNING\",\"result\":\"NOK\"}]}}");
+    }
 
+    private List<JobEvent> reportedEvents() {
+        return publisher.publishedTo(MardukQueues.JOB_EVENT_QUEUE).stream()
+                .map(p -> JobEvent.fromString(p.body()))
+                .toList();
+    }
 
-		// 2 status calls, first return SCHEDULED, then TERMINATED
-		final AtomicInteger reportCounter = new AtomicInteger(0);
-		chouetteGetJobStatus.expectedMessageCount(2);
-		chouetteGetJobStatus.returnReplyBody(new Expression() {
+    @Test
+    void aDestinationWithNoHandlerIsRejectedRatherThanDropped() {
+        // The destination is on the wire, so the only way to see an unknown one is a message written by a
+        // version that knows a handler this one does not. Nacking lets a pod that knows it take the message.
+        status("TERMINATED");
+        actionReport("OK");
+        validationReport("OK");
 
-			@SuppressWarnings("unchecked")
-			@Override
-			public <T> T evaluate(Exchange ex, Class<T> arg1) {
-				try {
-					int currval = reportCounter.getAndIncrement();
-					if (currval == 0) {
-						return (T) IOUtils.toString(getClass().getResourceAsStream(
-								"/no/rutebanken/marduk/chouette/getJobStatusResponseStarted.json"), StandardCharsets.UTF_8);
+        MardukMessage message = pollRequest()
+                .setHeader(CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, "direct:processSomethingUnknown");
 
-					} else {
-						return (T) IOUtils.toString(getClass().getResourceAsStream(
-								"/no/rutebanken/marduk/chouette/getJobStatusResponseTerminated.json"), StandardCharsets.UTF_8);
+        assertThrows(IllegalArgumentException.class, () -> poller(3000).handle(message));
+        assertTrue(dispatched.isEmpty());
+    }
 
-					}
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			}
-		});
+    // ----------------------------------------------------------------------------------- the happy path
 
-		// 1 aciton report call
-		chouetteGetActionReport.expectedMessageCount(1);
-		chouetteGetActionReport.returnReplyBody(new Expression() {
+    @Test
+    void aTerminatedJobHandsBothReportResultsToTheDestination() {
+        status("TERMINATED");
+        actionReport("OK");
+        validationReport("OK");
 
-			@SuppressWarnings("unchecked")
-			@Override
-			public <T> T evaluate(Exchange ex, Class<T> arg1) {
-				try {
-					return (T) IOUtils.toString(getClass()
-							.getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"), StandardCharsets.UTF_8);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			}
-		});
+        poller(3000).handle(pollRequest());
 
-		// 1 aciton report call
-		chouetteGetValidationReport.expectedMessageCount(1);
-		chouetteGetValidationReport.returnReplyBody(new Expression() {
+        assertEquals(List.of(DESTINATION), dispatched);
+        MardukMessage result = dispatchedMessages.getFirst();
+        assertEquals("OK", result.getHeader("action_report_result", String.class));
+        assertEquals("OK", result.getHeader("validation_report_result", String.class));
+        assertEquals("/chouette_iev/referentials/rut/data/1/exported.zip",
+                result.getHeader("data_url", String.class));
+    }
 
-			@SuppressWarnings("unchecked")
-			@Override
-			public <T> T evaluate(Exchange ex, Class<T> arg1) {
-				try {
-					return (T) IOUtils.toString(getClass()
-							.getResourceAsStream("/no/rutebanken/marduk/chouette/getValidationReportResponseOK.json"), StandardCharsets.UTF_8);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			}
-		});
+    @Test
+    void aFailedValidationReportReachesTheDestinationAsNok() {
+        status("TERMINATED");
+        actionReport("OK");
+        validationReport("NOK");
 
-		// Should end up here with 2 headers
-		destination.expectedHeaderReceived("validation_report_result", "OK");
-		destination.expectedHeaderReceived("action_report_result", "OK");
-		destination.expectedMessageCount(1);
+        poller(3000).handle(pollRequest());
 
-		updateStatus.expectedMessageCount(1);
+        assertEquals("NOK", dispatchedMessages.getFirst().getHeader("validation_report_result", String.class));
+    }
 
-		// we must manually start when we are done with all the advice with
-		context.start();
+    @Test
+    void aJobWithoutAValidationReportIsMarkedAsSuch() {
+        responses.put("scheduled_jobs", """
+                {"id":1,"status":"TERMINATED","links":[
+                  {"rel":"action_report","href":"/chouette_iev/referentials/rut/data/1/action_report.json"}]}
+                """);
+        actionReport("OK");
 
-		Map<String, String> headers = new HashMap<>();
-		headers.put(Constants.PROVIDER_ID, TestConstants.PROVIDER_ID_AS_STRING_RUT);
-		headers.put(Constants.FILE_NAME, "file_name");
-		headers.put(Constants.CORRELATION_ID, "corr_id");
-		headers.put(Constants.FILE_HANDLE, "rut/file_name");
-		headers.put(Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, "mock:destination");
-		headers.put(Constants.CHOUETTE_JOB_STATUS_URL, chouetteUrl + "/chouette_iev/referentials/rut/scheduled_jobs/1");
-		headers.put(Constants.CHOUETTE_JOB_STATUS_JOB_TYPE, JobEvent.TimetableAction.IMPORT.name());
-		sendBodyAndHeadersToPubSub(pollStartTemplate, "", headers);
+        poller(3000).handle(pollRequest());
 
-		chouetteGetJobStatus.assertIsSatisfied();
-		chouetteGetActionReport.assertIsSatisfied();
-		chouetteGetValidationReport.assertIsSatisfied();
-		destination.assertIsSatisfied();
-		updateStatus.assertIsSatisfied();
-	}
+        assertEquals("NOT_PRESENT",
+                dispatchedMessages.getFirst().getHeader("validation_report_result", String.class));
+        assertNull(dispatchedMessages.getFirst().getHeader("data_url"));
+    }
 
-	//@Test
-	void testValidationReportResultOK() throws Exception {
-		testValidationReportResult("/no/rutebanken/marduk/chouette/getValidationReportResponseOK.json", "OK");
-	}
+    @Test
+    void aNoDataFailureBecomesAnErrorCodeTheOperatorCanRead() {
+        status("TERMINATED");
+        responses.put("action_report", """
+                {"action_report":{"result":"NOK","failure":{"code":"NO_DATA_FOUND"},
+                  "progression":{"steps":[{"step":"FINALISATION","total":1,"realized":1}]}}}
+                """);
+        validationReport("OK");
 
-	//@Test
-	void testValidationReportResultNOK() throws Exception {
-		testValidationReportResult("/no/rutebanken/marduk/chouette/getValidationReportResponseNOK.json", "NOK");
-	}
+        poller(3000).handle(pollRequest());
 
+        assertEquals(JobEvent.JOB_ERROR_VALIDATION_NO_DATA,
+                dispatchedMessages.getFirst().getHeader(Constants.JOB_ERROR_CODE, String.class));
+    }
 
-	private void testValidationReportResult(String validationReportClasspathReference, String expectedResult)
-			throws Exception {
+    // ------------------------------------------------------------------------------------- rescheduling
 
-		context.start();
+    @Test
+    void anUnfinishedJobIsPutBackOnTheQueue() throws Exception {
+        status("STARTED");
 
-		validationReportTemplate.sendBodyAndHeader(getClass().getResourceAsStream(validationReportClasspathReference),
-				Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION, "mock:destination");
+        poller(3000).handle(pollRequest());
 
-		destination.expectedMessageCount(1);
-		destination.expectedHeaderReceived("validation_report_result", expectedResult);
-		destination.assertIsSatisfied();
+        assertTrue(dispatched.isEmpty(), "an unfinished job must not be reported as done");
+        assertEquals("1", awaitRequeue().getHeader("loopCounter", String.class));
+    }
 
-	}
-	
-	@Test
-	void testGetJobs() throws Exception {
+    @Test
+    void thePollCounterSurvivesTheRoundTrip() throws Exception {
+        // Without it the retry cap never bites and a stuck job is polled for ever.
+        status("STARTED");
 
-		AdviceWith.adviceWith(context, "chouette-list-jobs", a -> a.interceptSendToEndpoint(chouetteUrl + "/chouette_iev/referentials/rut/jobs?addActionParameters=false")
-				.skipSendToOriginalEndpoint()
-				.to("mock:chouetteGetJobsForProvider"));
+        poller(3000).handle(pollRequest().setHeader("loopCounter", 7));
 
-		getJobs.returnReplyBody(new Expression() {
+        assertEquals("8", awaitRequeue().getHeader("loopCounter", String.class));
+    }
 
-			@SuppressWarnings("unchecked")
-			@Override
-			public <T> T evaluate(Exchange ex, Class<T> arg1) {
-				try {
-					return (T) IOUtils.toString(getClass()
-							.getResourceAsStream("/no/rutebanken/marduk/chouette/getJobListResponseScheduled.json"), StandardCharsets.UTF_8);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			}
-		});
+    @Test
+    void theFirstPollOfAStartedJobReportsItAsStarted() throws Exception {
+        status("STARTED");
 
-		context.start();
+        poller(3000).handle(pollRequest());
+        awaitRequeue();
 
+        JobEvent reported = reportedEvents().getFirst();
+        assertEquals("IMPORT", reported.getAction());
+        assertEquals(JobEvent.State.STARTED, reported.getState());
+        assertEquals("1", reported.getExternalId());
+    }
 
+    @Test
+    void aLaterPollOfTheSameJobReportsNothing() throws Exception {
+        status("STARTED");
 
-		
-		// Do rest call
-		Map<String, Object> headers = new HashMap<>();
-		headers.put(Exchange.HTTP_METHOD, "GET");
-		headers.put(Constants.PROVIDER_ID, TestConstants.PROVIDER_ID_AS_STRING_RUT);
-		List<JobResponse> rsp =  (List<JobResponse>) getJobsTemplate.requestBodyAndHeaders(null, headers);
-		// Parse response
+        poller(3000).handle(pollRequest().setHeader("loopCounter", 7));
+        awaitRequeue();
 
-		assertNotEquals(0, rsp.size());
-	
+        assertTrue(reportedEvents().isEmpty(), "a status event per poll would flood nabu");
+    }
 
-	}
+    @Test
+    void aJobStillRunningAtTheRetryCapIsReportedAsTimedOut() {
+        status("STARTED");
 
+        poller(2).handle(pollRequest().setHeader("loopCounter", 2));
 
+        assertEquals(JobEvent.State.TIMEOUT, reportedEvents().getFirst().getState());
+        assertTrue(publisher.publishedTo(MardukQueues.CHOUETTE_POLL_STATUS_QUEUE).isEmpty());
+    }
+
+    @Test
+    void aNonFinalisedActionReportIsPolledAgain() throws Exception {
+        status("TERMINATED");
+        responses.put("action_report", "{\"action_report\":{\"result\":\"OK\",\"progression\":{\"steps\":[{\"step\":\"FINALISATION\",\"total\":2,\"realized\":1}]}}}");
+
+        poller(3000).handle(pollRequest());
+
+        assertTrue(dispatched.isEmpty());
+        awaitRequeue();
+    }
+
+    @Test
+    void aNonFinalisedActionReportAtTheRetryCapFails() {
+        status("TERMINATED");
+        responses.put("action_report", "{\"action_report\":{\"result\":\"OK\",\"progression\":{\"steps\":[{\"step\":\"FINALISATION\",\"total\":2,\"realized\":1}]}}}");
+
+        poller(2).handle(pollRequest().setHeader("loopCounter", 5));
+
+        assertEquals(JobEvent.State.FAILED, reportedEvents().getFirst().getState());
+        assertTrue(dispatched.isEmpty());
+    }
+
+    @Test
+    void aRefusedScheduleStillPutsThePollBackOnTheQueue() throws Exception {
+        // The task is refused from the moment shutdown begins. Losing it would leave the Chouette job
+        // running with nothing following it, and no terminal status would ever be reported.
+        status("STARTED");
+        scheduler.shutdown();
+
+        poller(3000).handle(pollRequest());
+
+        assertEquals("1", awaitRequeue().getHeader("loopCounter", String.class));
+        assertEquals(0, inFlightWork.count(), "the shutdown drain will now wait out its whole timeout");
+    }
+
+    @Test
+    void aRepublishThatKeepsFailingReleasesTheWorkItTracked() throws Exception {
+        // The exception a scheduled task throws lands in a Future nobody reads, so the counter is the only
+        // thing that would show it - and a counter that never comes back down blocks every later shutdown.
+        status("STARTED");
+        FailingPublisher failing = new FailingPublisher();
+
+        poller(3000, failing, retriesWithoutWaiting()).handle(pollRequest());
+
+        long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+        while (inFlightWork.count() > 0 && System.nanoTime() < deadline) {
+            Thread.sleep(20);
+        }
+        assertEquals(0, inFlightWork.count(), "the republish leaked its in-flight work");
+        assertEquals(4, failing.attempts.get(), "the republish was not retried");
+    }
+
+    /** Refuses everything, as a publisher whose topic has just been taken away would. */
+    private static class FailingPublisher implements MardukPubSubPublisher {
+        private final AtomicInteger attempts = new AtomicInteger();
+
+        @Override
+        public void publish(String destination, MardukMessage message) {
+            attempts.incrementAndGet();
+            throw new IllegalStateException("no such topic");
+        }
+    }
+
+    // ------------------------------------------------------------------------------------ failed states
+
+    @Test
+    void anAbortedJobIsReportedAsFailed() {
+        status("ABORTED");
+
+        poller(3000).handle(pollRequest());
+
+        assertEquals(JobEvent.State.FAILED, reportedEvents().getFirst().getState());
+        assertTrue(dispatched.isEmpty(), "a failed job must not look like a result");
+    }
+
+    @Test
+    void aCancelledJobIsReportedAsCancelled() {
+        status("CANCELED");
+
+        poller(3000).handle(pollRequest());
+
+        assertEquals(JobEvent.State.CANCELLED, reportedEvents().getFirst().getState());
+        assertTrue(dispatched.isEmpty());
+    }
+
+    @Test
+    void anEmptyActionReportFailsTheJobRatherThanTheMessage() {
+        // A terminated job whose report will not parse cannot be retried into existence.
+        status("TERMINATED");
+        responses.put("action_report", "");
+
+        poller(3000).handle(pollRequest());
+
+        assertEquals(JobEvent.State.FAILED, reportedEvents().getFirst().getState());
+        assertTrue(dispatched.isEmpty());
+    }
+
+    @Test
+    void aJobWithoutAnActionReportUrlIsAnError() {
+        responses.put("scheduled_jobs", "{\"id\":1,\"status\":\"TERMINATED\",\"links\":[]}");
+
+        assertThrows(IllegalArgumentException.class, () -> poller(3000).handle(pollRequest()));
+    }
+
+    // -------------------------------------------------------------------------------- request validation
+
+    @Test
+    void aPollRequestMissingAnythingItNeedsIsRejected() {
+        for (String header : List.of(CORRELATION_ID, PROVIDER_ID, CHOUETTE_JOB_STATUS_ROUTING_DESTINATION,
+                CHOUETTE_JOB_STATUS_URL, CHOUETTE_JOB_STATUS_JOB_TYPE)) {
+            MardukMessage incomplete = pollRequest().removeHeader(header);
+            assertThrows(IllegalArgumentException.class, () -> poller(3000).handle(incomplete),
+                    "a request without " + header + " was accepted");
+            assertTrue(requested.isEmpty(), "an incomplete request must not reach Chouette");
+        }
+    }
+
+    @Test
+    void theSubscriptionIsThePollStatusQueue() {
+        assertEquals(MardukQueues.CHOUETTE_POLL_STATUS_QUEUE, poller(3000).destination());
+    }
+
+    /** The republish is scheduled, so give the scheduler a moment. */
+    private MardukMessage awaitRequeue() throws InterruptedException {
+        long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
+        while (System.nanoTime() < deadline) {
+            List<RecordingPubSubPublisher.Published> queued =
+                    publisher.publishedTo(MardukQueues.CHOUETTE_POLL_STATUS_QUEUE);
+            if (!queued.isEmpty()) {
+                MardukMessage requeued = new MardukMessage(new HashMap<>(queued.getFirst().attributes()),
+                        queued.getFirst().body());
+                return requeued;
+            }
+            Thread.sleep(20);
+        }
+        throw new AssertionError("nothing was put back on " + MardukQueues.CHOUETTE_POLL_STATUS_QUEUE);
+    }
 }

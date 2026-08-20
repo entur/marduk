@@ -48,69 +48,178 @@ Marduk merges the NeTEx datasets containing flexible timetables generated in NPl
 [OpenTripPlanner](https://github.com/opentripplanner) relies on OpenStreetMap data to calculate the first/last leg of a journey (walk from start point or to destination point).
 Marduk schedules a nightly download of OpenStreetMap data that in turn is used by OpenTripPlanner to build an updated street graph.
 
+# Architecture
+
+Marduk is a plain Spring Boot application: a `@Component` per pipeline step consuming a PubSub subscription,
+`@Scheduled` methods for the periodic work, Spring MVC for the admin API, and Kubernetes Lease leader
+election for the work that must happen once per cluster. Apache Camel was removed;
+[docs/camel-removal.md](docs/camel-removal.md) maps the old routes onto what replaced them and records which
+behaviour differences were deliberate. `CLAUDE.MD` is the working guide to the code.
+
 # Deployment
 
 EnTur deploys Marduk using [Harness](https://app.harness.io/ng/account/8VwWgE0WRK67_PWDpkooNA/all/cd/orgs/entur/projects/ror/services/marduk)
 
-# Local environment configuration
+# Building
 
-A minimal local setup requires a database, a Google PubSub emulator and access to a providers repository service ([Baba](https://github.com/entur/baba))
+The build requires a **JDK 25**. The enforcer fails on anything older
+(`Detected JDK ... is version 21.0.12 which is not in the allowed range [25,)`), so set `JAVA_HOME`
+explicitly rather than relying on the shell default:
+
+```sh
+export JAVA_HOME=/path/to/jdk-25          # e.g. /Library/Java/JavaVirtualMachines/liberica-jdk-25.jdk/Contents/Home
+./mvnw clean package                      # produces target/marduk-0.0.1-SNAPSHOT.jar
+./mvnw test                               # unit tests; needs Docker for the PubSub emulator container
+```
+
+Add `-o` to work from the local repository once it is warm - useful offline, and faster:
+
+```sh
+./mvnw -o -DskipTests package
+```
+
+# Running against the local pipeline
+
+This is the shortest path to a running marduk, and the one to prefer: the superproject
+[marduk-pipeline](https://github.com/entur/marduk-pipeline) runs marduk together with every service it
+talks to (antu, ashur, servicelinker, damu, nabu, nanna, baba, ninkasi) plus emulated PubSub, GCS and
+Postgres. Marduk is a submodule of it, so from the superproject root:
+
+```sh
+./scripts/build-all.sh        # every service's jar, marduk included
+docker compose up --build
+```
+
+Marduk answers on <http://localhost:21080>, the admin UI on <http://localhost:21000>. Upload a dataset
+through marduk's REST API:
+
+```sh
+curl -X POST http://localhost:21080/services/timetable_admin/9999/files -F "file=@my-dataset.zip"
+```
+
+`local-k8s/` in the same superproject runs the identical images on a local Kubernetes cluster instead, which
+is the only way to exercise the multi-replica paths - Lease leader election with a real contender, and one
+pod picking up a batch another pod recorded. See `local-k8s/README.md`; in short:
+
+```sh
+./scripts/build-all.sh && docker compose build   # k8s consumes the images compose builds
+kubectl apply -k . --context orbstack            # from the superproject root, not local-k8s/
+./scripts/k8s-port-forward.sh                    # same host ports compose publishes
+```
+
+# Running standalone
+
+A standalone run needs a Postgres, a PubSub emulator and a reachable provider service
+([Nanna](https://github.com/entur/nanna), historically Baba).
 
 ## Marduk database
 Marduk uses a database to store the history of imported file names and checksums.  
-This is used by the idempotent filter to reject files that have been already imported.
-A Docker PostgreSQL database instance can be used for local testing:
-```
-docker run -p 5432:5432 --name marduk-database -e POSTGRES_PASSWORD=myPostgresPassword postgres:13
+This is used by the duplicate-file filter to reject files that have been already imported.
+A Docker PostgreSQL instance can be used for local testing (the pipeline stack uses PostGIS 18; production
+is `POSTGRES_17`):
+
+```sh
+docker run -d -p 5432:5432 --name marduk-database \
+  -e POSTGRES_PASSWORD=mypostgrespassword postgres:17
 ```
 
-A test database can be created with the following commands from the psql client:  
+Create the database and role from `psql`:
 
-```
+```sql
 create database marduk;
 create user marduk with password 'mypassword';
-ALTER ROLE marduk SUPERUSER;
+alter role marduk superuser;
 ```
 
-The database configuration is specified in the Spring Boot application.properties file:  
+Flyway creates the schema at startup when `spring.flyway.enabled=true`.
 
+## Google PubSub emulator
+See https://cloud.google.com/pubsub/docs/emulator for installation. Start it with:
+
+```sh
+gcloud beta emulators pubsub start
 ```
+
+It listens on port 8085 by default.
+
+## Spring Boot configuration file
+`src/test/resources/application.properties` is the closest template; `helm/marduk/templates/configmap.yaml`
+is the deployed set. The minimum a standalone run needs:
+
+```properties
 # Datasource
 spring.datasource.driver-class-name=org.postgresql.Driver
 spring.datasource.url=jdbc:postgresql://localhost:5432/marduk
 spring.datasource.username=marduk
 spring.datasource.password=mypassword
 spring.flyway.enabled=true
-```
 
-When setting the property `spring.flyway.enabled=true`, the database will be auto-created at application startup.
+# PubSub emulator. All five project ids are required: MardukQueues resolves each destination to a project
+# from them, and a missing one fails the context at startup. Locally they are all the same value.
+spring.cloud.gcp.pubsub.emulator-host=localhost:8085
+spring.cloud.gcp.project-id=local-project
+marduk.pubsub.project.id=local-project
+antu.pubsub.project.id=local-project
+nabu.pubsub.project.id=local-project
+ashur.pubsub.project.id=local-project
+servicelinker.pubsub.project.id=local-project
 
-## Google PubSub emulator
-See https://cloud.google.com/pubsub/docs/emulator for details on how to install the Google PubSub emulator.  
-The emulator is started with the following command:
-```
-gcloud beta emulators pubsub start
-```
-and will listen by default on port 8085.  
+# Blob store. These are bucket *names* rather than a choice of implementation, so they are read whichever
+# blobstore profile is active and every one below has no default: leave one out and the context fails.
+# Only blobstore.gcs.graphs.container.name has a default (otp-graphs).
+blobstore.gcs.project.id=local-project
+blobstore.gcs.container.name=marduk
+blobstore.gcs.internal.container.name=marduk-internal
+blobstore.gcs.exchange.container.name=marduk-exchange
+blobstore.gcs.otpreport.container.name=otpreport
+blobstore.gcs.nisaba.exchange.container.name=nisaba-exchange
+blobstore.gcs.antu.exchange.container.name=antu-exchange
+blobstore.gcs.ashur.exchange.container.name=ashur-exchange
+blobstore.gcs.servicelinker.exchange.container.name=servicelinker-exchange
 
-The emulator port must be set in the Spring Boot application.properties file as well:  
-
-```
-spring.cloud.gcp.pubsub.emulatorHost=localhost:8085
-camel.component.google-pubsub.endpoint=localhost:8085
-```
-
-## Access to the providers repository service
-Access to the providers database is configured in the Spring Boot application.properties file:
-```
+# Provider repository
 providers.api.url=http://localhost:11101/services/providers/
+
+# OAuth2 client. Required even for a local run that authenticates nothing: OAuth2Config injects
+# OAuth2ClientProperties, and Boot only registers that bean once a client registration is declared.
+spring.security.oauth2.client.registration.marduk.authorization-grant-type=client_credentials
+spring.security.oauth2.client.registration.marduk.client-id=marduk
+spring.security.oauth2.client.registration.marduk.client-secret=notInUse
+spring.security.oauth2.client.provider.marduk.token-uri=https://notInUse
+marduk.oauth2.client.audience=notInUse
+
+# Chouette. Nothing needs to listen on it to start.
+chouette.url=http://localhost:9999
 ```
 
-## Spring boot configuration file
-The application.properties file used in unit tests src/test/resources/application.properties can be used as a template.  
-The Kubernetes configmap helm/marduk/templates/configmap.yaml can also be used as a template.
+Profiles: `gcs-blobstore` (deployed) or `in-memory-blobstore` / `local-disk-blobstore`; add `test` to switch
+off `MardukWebSecurityConfiguration`, and `google-pubsub-autocreate` to have marduk create its topics and
+subscriptions on an empty emulator.
 
-## Starting the application locally
-- Run `./mvnw package` to generate the Spring Boot jar.
-- The application can be started with the following command line:  
-  ```java -Xmx500m -Dspring.config.location=/path/to/application.properties -Dfile.encoding=UTF-8 -jar target/marduk-0.0.1-SNAPSHOT.jar```
+## Starting the application
+
+```sh
+export JAVA_HOME=/path/to/jdk-25
+./mvnw clean package
+java -Xmx500m \
+  -Dspring.profiles.active=in-memory-blobstore,test,google-pubsub-autocreate \
+  -Dspring.config.location=/path/to/application.properties \
+  -Dfile.encoding=UTF-8 \
+  -jar target/marduk-0.0.1-SNAPSHOT.jar
+```
+
+Marduk waits at startup until the provider service answers, retrying every
+`marduk.provider.service.retry.interval` ms (default 5000), so `Provider Repository not available` in a loop
+means marduk started correctly and cannot reach the provider service - not that it failed. Note that the
+provider fetch goes out through the OAuth2 client, so `spring.security.oauth2.client.provider.marduk.token-uri`
+has to resolve as well as `providers.api.url`; with the placeholder above the loop reports
+`Failed to resolve 'notInUse'`.
+
+The Kubernetes probes target `/services/health`, which answers `OK` as `text/plain` and is the quickest check
+that the admin API came up - the actuator health group stays UP even when `/services/**` is not being served,
+which is why the probes do not use it.
+
+The property block above was checked by running the jar with exactly those values: the context builds and
+startup reaches the provider-repository wait, so nothing is missing from it. A run that also imports a
+dataset needs the emulator, the database and the provider service actually up, which is what the pipeline
+superproject gives you.

@@ -1,368 +1,382 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
-
-package no.rutebanken.marduk.routes.chouette;
+package no.rutebanken.marduk.antu;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
+import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.experimental.ExperimentalImportPath;
+import no.rutebanken.marduk.pipeline.MardukMdc;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukPubSubConsumer;
+import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.routes.experimental.ExperimentalImportHelpers;
-import no.rutebanken.marduk.routes.experimental.FilteringTimestampProcessor;
-import no.rutebanken.marduk.routes.experimental.NisabaHeadersProcessor;
 import no.rutebanken.marduk.routes.file.FileType;
-import no.rutebanken.marduk.routes.processors.PrevalidatedFileMetadataProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.PredicateBuilder;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import no.rutebanken.marduk.services.ExchangeBlobStoreService;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
+import no.rutebanken.marduk.validation.ValidationStages;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.*;
-import static org.apache.camel.builder.PredicateBuilder.and;
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
+import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+import static no.rutebanken.marduk.Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME;
+import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_NAME;
+import static no.rutebanken.marduk.Constants.FILE_TYPE;
+import static no.rutebanken.marduk.Constants.IMPORT_TYPE_NETEX_FLEX;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.VALIDATION_CORRELATION_ID_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_DATASET_FILE_HANDLE_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_IMPORT_TYPE;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_FLEX_POSTVALIDATION;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_NIGHTLY_VALIDATION;
+import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_PREVALIDATION;
 
+/**
+ * Handles antu's verdict on a dataset, at every stage of the pipeline that asks antu to validate one.
+ *
+ * <p>Two attributes decide everything: the status in the message body says whether the validation started,
+ * passed, failed or timed out, and {@code EnturValidationStage} says which of the six validations it was.
+ * The stage decides both which job the status belongs to - see {@link ValidationStages#actionFor} - and, for a
+ * validation that passed, what happens next.
+ *
+ * <p>Replaces {@code AntuNetexValidationStatusRouteBuilder} and its four routes.
+ */
 @Component
-public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRouteBuilder {
+public class AntuValidationStatusConsumer extends MardukPubSubConsumer {
 
-    protected static final String STATUS_VALIDATION_STARTED = "started";
-    protected static final String STATUS_VALIDATION_OK = "ok";
-    protected static final String STATUS_VALIDATION_FAILED = "failed";
-    // Antu could not complete the validation, as opposed to the dataset being invalid.
-    protected static final String STATUS_VALIDATION_TIMEOUT = "timeout";
-    private static final String VALIDATION_JOB_STATE_PROPERTY = "EnturValidationJobState";
+    private static final Logger LOGGER = LoggerFactory.getLogger(AntuValidationStatusConsumer.class);
 
+    /** Antu sends the verdict as the message body, not an attribute. Pinned by {@code WireContractTest}. */
+    static final String STATUS_VALIDATION_STARTED = "started";
+    static final String STATUS_VALIDATION_OK = "ok";
+    static final String STATUS_VALIDATION_FAILED = "failed";
+    /** Antu could not complete the validation, as opposed to the dataset being invalid. */
+    static final String STATUS_VALIDATION_TIMEOUT = "timeout";
+
+    private final ProviderRepository providerRepository;
     private final ExperimentalImportHelpers experimentalImportHelpers;
-    private final String nisabaExchangeContainerName;
+    private final ExperimentalImportPath experimentalImportPath;
+    private final PrevalidatedDataset prevalidatedDataset;
+    private final MardukInternalBlobStoreService internalBlobStore;
+    private final ExchangeBlobStoreService exchangeBlobStore;
+    private final MardukPubSubPublisher publisher;
+    private final JobEventPublisher jobEvents;
+    private final boolean enablePreValidation;
+    private final boolean enablePostValidation;
+    private final String exchangeContainer;
+    private final String publicContainer;
 
-    FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
-
-    public AntuNetexValidationStatusRouteBuilder(
-        ExperimentalImportHelpers experimentalImportHelpers,
-        FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository,
-        @Value("${blobstore.gcs.nisaba.exchange.container.name}") String nisabaExchangeContainerName
-    ) {
+    public AntuValidationStatusConsumer(
+            ProviderRepository providerRepository,
+            ExperimentalImportHelpers experimentalImportHelpers,
+            ExperimentalImportPath experimentalImportPath,
+            PrevalidatedDataset prevalidatedDataset,
+            MardukInternalBlobStoreService internalBlobStore,
+            ExchangeBlobStoreService exchangeBlobStore,
+            MardukPubSubPublisher publisher,
+            JobEventPublisher jobEvents,
+            @Value("${chouette.enablePreValidation:true}") boolean enablePreValidation,
+            @Value("${chouette.enablePostValidation:true}") boolean enablePostValidation,
+            @Value("${blobstore.gcs.exchange.container.name}") String exchangeContainer,
+            @Value("${blobstore.gcs.container.name}") String publicContainer) {
+        this.providerRepository = providerRepository;
         this.experimentalImportHelpers = experimentalImportHelpers;
-        this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
-        this.nisabaExchangeContainerName = nisabaExchangeContainerName;
+        this.experimentalImportPath = experimentalImportPath;
+        this.prevalidatedDataset = prevalidatedDataset;
+        this.internalBlobStore = internalBlobStore;
+        this.exchangeBlobStore = exchangeBlobStore;
+        this.publisher = publisher;
+        this.jobEvents = jobEvents;
+        this.enablePreValidation = enablePreValidation;
+        this.enablePostValidation = enablePostValidation;
+        this.exchangeContainer = exchangeContainer;
+        this.publicContainer = publicContainer;
     }
 
     @Override
-    public void configure() throws Exception {
-        super.configure();
-
-        from("google-pubsub:{{marduk.pubsub.project.id}}:AntuNetexValidationStatusQueue")
-                .validate(header(Constants.VALIDATION_DATASET_FILE_HANDLE_HEADER).isNotNull())
-                .validate(header(Constants.VALIDATION_CORRELATION_ID_HEADER).isNotNull())
-                .setHeader(CORRELATION_ID, header(VALIDATION_CORRELATION_ID_HEADER))
-                .setHeader(FILE_HANDLE, header(VALIDATION_DATASET_FILE_HANDLE_HEADER))
-                .setHeader(FILE_TYPE, constant(FileType.NETEXPROFILE))
-                .setHeader(CHOUETTE_REFERENTIAL, header(DATASET_REFERENTIAL))
-                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(DATASET_REFERENTIAL, String.class))))
-                .process(this::updateMdcFromHeaders)
-                .log(LoggingLevel.INFO, correlation() + "Received Antu NeTEx validation status update for referential ${header." + DATASET_REFERENTIAL + "}, status ${body}")
-                .process(e -> e.getIn().setHeader(FILE_NAME, getFileName(e.getIn().getHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, String.class))))
-                .choice()
-                .when(body().isEqualTo(constant(STATUS_VALIDATION_STARTED)))
-                .to("direct:antuNetexValidationStarted")
-                .when(body().isEqualTo(constant(STATUS_VALIDATION_OK)))
-                .to("direct:antuNetexValidationComplete")
-                .when(body().isEqualTo(constant(STATUS_VALIDATION_FAILED)))
-                .to("direct:antuNetexValidationFailed")
-                .when(body().isEqualTo(constant(STATUS_VALIDATION_TIMEOUT)))
-                .setProperty(VALIDATION_JOB_STATE_PROPERTY, constant(JobEvent.State.TIMEOUT))
-                .setHeader(Constants.JOB_ERROR_CODE, constant(JobEvent.JOB_ERROR_VALIDATION_INCOMPLETE))
-                .to("direct:antuNetexValidationFailed")
-                .otherwise()
-                .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown Antu validation status ${body} for referential ${header." + DATASET_REFERENTIAL + "}. Discarding.")
-                .routeId("antu-netex-validation-status");
-
-        from("direct:antuNetexValidationStarted")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation started for referential ${header." + DATASET_REFERENTIAL + "}")
-
-                .choice()
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e)
-                        .timetableAction(JobEvent.TimetableAction.PREVALIDATION)
-                        .state(JobEvent.State.STARTED)
-                        .jobId(null)
-                        .build())
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e)
-                        .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION)
-                        .state(JobEvent.State.STARTED)
-                        .jobId(null)
-                        .build())
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e)
-                        .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION)
-                        .state(JobEvent.State.STARTED)
-                        .jobId(null)
-                        .build())
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_FLEX_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e)
-                        .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION)
-                        .state(JobEvent.State.STARTED)
-                        .jobId(null)
-                        .build())
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e)
-                        .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION)
-                        .state(JobEvent.State.STARTED)
-                        .jobId(null)
-                        .build())
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e)
-                        .timetableAction(JobEvent.TimetableAction.PREVALIDATION)
-                        .state(JobEvent.State.STARTED)
-                        .jobId(null)
-                        .build())
-                .otherwise()
-                .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
-                .stop()
-                //end otherwise
-                .end()
-                // end choice
-                .end()
-                .to("direct:updateStatus")
-                .routeId("antu-netex-validation-started");
-
-        from("direct:ashurNetexFilterAfterPreValidation")
-                .choice()
-                    .when(header(FILTERING_FILE_CREATED_TIMESTAMP).isNotNull())
-                        .setHeader(DATASET_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
-                        .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + CHOUETTE_REFERENTIAL + "}"))
-                        .log(LoggingLevel.INFO, "Updated value of dataset referential header: ${header." + DATASET_REFERENTIAL + "}")
-                        .log(LoggingLevel.INFO, "Updated value of chouette referential header: ${header." + CHOUETTE_REFERENTIAL + "}")
-                        // Save the pre-filtering file (servicelinker output or original) for later block export
-                        .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToPreFilteringNetexForBlockExport")
-                        .to("direct:copyInternalBlobInBucket")
-                        .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexForAshurFiltering")
-                        .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
-                        .to("direct:copyInternalBlobToAnotherBucket")
-                        .setHeader(FILTERING_PROFILE_HEADER, constant(FILTERING_PROFILE_STANDARD_IMPORT))
-                        .setHeader(FILTERING_NETEX_SOURCE_HEADER, constant(FILTERING_NETEX_SOURCE_MARDUK))
-                        .to("google-pubsub:{{marduk.pubsub.project.id}}:FilterNetexFileQueue")
-                        .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILTERING).state(JobEvent.State.PENDING).build())
-                        .to("direct:updateStatus")
-                        .log(LoggingLevel.INFO, correlation() + "Done sending to Ashur for filtering")
-                    .otherwise()
-                        .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILTERING).state(JobEvent.State.CANCELLED).build())
-                        .log(LoggingLevel.ERROR, correlation() + "Cancelled triggering of filtering because no created timestamp was found for file name: " + header(FILE_NAME))
-                .end()
-                .routeId("ashur-netex-filter-after-pre-validation");
-
-        from("direct:uploadOriginalDatasetToNisaba")
-                .choice()
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Discovered nightly validation header for referential ${header." + DATASET_REFERENTIAL + "}. Dataset will NOT be uploaded to Nisaba.")
-                .otherwise()
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploading original dataset to Nisaba for referential ${header." + DATASET_REFERENTIAL + "}")
-                .process(new NisabaHeadersProcessor(nisabaExchangeContainerName))
-                .to("direct:copyInternalBlobToAnotherBucket")
-                .routeId("upload-original-dataset-to-nisaba");
-
-        from("direct:antuNetexValidationComplete")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Antu NeTEx validation complete for referential ${header." + DATASET_REFERENTIAL + "}")
-                // NOTE: every nested choice()/filter() inside a when() below is closed with .end() before
-                // .endChoice(). In Camel 4.x endChoice() pops only one level, so a missing .end() silently
-                // reattaches the following whens/otherwise to the inner block. Do not remove these .end() calls.
-                .choice()
-
-                .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
-                    .process(new FilteringTimestampProcessor(fileNameAndDigestIdempotentRepository))
-                    .to("direct:uploadOriginalDatasetToNisaba")
-                    // Store original FILE_HANDLE before writing metadata
-                    .setProperty("originalFileHandle", header(FILE_HANDLE))
-                    // Writes metadata file and sets createdAt timestamp header
-                    .process(new PrevalidatedFileMetadataProcessor(fileNameAndDigestIdempotentRepository))
-                    .to("direct:uploadInternalBlobWithoutVersionHeader")
-                    // Restore FILE_HANDLE (nightly validation uses original file via metadata)
-                    .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
-                    .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + CHOUETTE_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
-                    .to("direct:copyInternalBlobInBucket")
-                    .log(LoggingLevel.INFO, correlation() + "Experimental import is enabled for codespace, triggering enrichment and filtering after pre-validation")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
-                    .to("direct:updateStatus")
-                    .to("direct:servicelinkerEnrichAfterPreValidation")
-                    // NOTE: Special case: we stop processing the route here because setting referentials with rb_ prefix
-                    // must be done after sending the prevalidation completed status to nabu. This is essential to ensure
-                    // that links to the prevalidation reports in Antu work correctly.
-                    .stop()
-                .endChoice()
-
-                .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION), exchange -> !experimentalImportHelpers.shouldRunExperimentalImport(exchange)))
-                    // Store original FILE_HANDLE before writing metadata
-                    .setProperty("originalFileHandle", header(FILE_HANDLE))
-                    // Write metadata file (contains createdAt timestamp and original filename for nightly validation)
-                    .process(new PrevalidatedFileMetadataProcessor(fileNameAndDigestIdempotentRepository))
-                    .to("direct:uploadInternalBlobWithoutVersionHeader")
-                    // Restore FILE_HANDLE (nightly validation uses original file via metadata)
-                    .setHeader(FILE_HANDLE, exchangeProperty("originalFileHandle"))
-                    .setHeader(TARGET_FILE_HANDLE, simple(BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "${header." + CHOUETTE_REFERENTIAL + "}-" + CURRENT_PREVALIDATED_NETEX_FILENAME))
-                    // Copies the prevalidated file to the last successfully prevalidated folder
-                    .to("direct:copyInternalBlobInBucket")
-                    .filter(PredicateBuilder.not(simple("{{chouette.enablePreValidation:true}}")))
-                    .log(LoggingLevel.INFO, correlation() + "Posting " + FILE_HANDLE + " ${header." + FILE_HANDLE + "} and " + FILE_TYPE + " ${header." + FILE_TYPE + "} on chouette import queue.")
-                    .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteImportQueue")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
-                    .end()
-                .endChoice()
-
-                .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
-                    .setHeader(FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexWithoutBlocksProducedByAshur")
-                    .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexFromAshurToMergeWithFlex")
-                    .to("direct:copyInternalBlobInBucket")
-                    // Also publish the without-blocks Ashur output at a stable per-referential path so a
-                    // later cross-flow merge (e.g. after FLEX post-validation, which carries the FLEX
-                    // import's correlation id) can locate the latest ordinary NeTEx for this codespace.
-                    .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToLatestNetexWithoutBlocksFromAshur")
-                    .to("direct:copyInternalBlobInBucket")
-                    .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
-                    .process(e -> e.setProperty("exportBlocks", getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().isEnableBlocksExport()))
-                    .choice()
-                    .when(exchangeProperty("exportBlocks").isEqualTo(true))
-                        .log(LoggingLevel.INFO, correlation() + "Starting block export with experimental import")
-                        .to("google-pubsub:{{marduk.pubsub.project.id}}:ExportNetexBlocksQueue")
-                    .otherwise()
-                        .log(LoggingLevel.INFO, correlation() + "Skipping export of NetEx blocks to Ashur after post-validation because provider has blocks export disabled")
-                    .end()
-                .endChoice()
-
-                .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION), exchange -> !experimentalImportHelpers.shouldRunExperimentalImport(exchange)))
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
-                    .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
-                    .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToNetexExportFromChouetteToMergeWithFlex")
-                    .to("direct:copyInternalBlobInBucket")
-                    // Mirror to the shared per-referential fallback path so the experimental merge route
-                    // (which consults this path when its correlation-keyed Ashur primary read is empty) can
-                    // find a recent ordinary export even on a codespace where the experimental pipeline has
-                    // not yet produced one.
-                    .setHeader(TARGET_FILE_HANDLE).method(experimentalImportHelpers, "pathToLatestNetexWithoutBlocksFromAshur")
-                    .to("direct:copyInternalBlobInBucket")
-                    .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
-                    .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexBlocksQueue")
-                    .end()
-                .endChoice()
-
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION).state(JobEvent.State.OK).build())
-                .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
-                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
-                .to("direct:copyInternalBlobInBucket")
-                .end()
-                .endChoice()
-
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_FLEX_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION).state(JobEvent.State.OK).build())
-                .filter(header(VALIDATION_IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX))
-                    .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + DATASET_REFERENTIAL + "}"))
-                .end()
-                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME))
-                .choice()
-                // when importing a dataset uploaded from the operator portal, the original file was stored in
-                // the internal bucket and must be copied to the exchange bucket
-                .when(header(VALIDATION_IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX))
-                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.exchange.container.name}"))
-                .to("direct:copyInternalBlobToAnotherBucket")
-                // otherwise the original file comes from uttu and was stored in the inbound folder of the exchange bucket
-                // and must be copied to the outbound folder in the exchange bucket
-                .otherwise()
-                .to("direct:copyExternalBlobInBucket")
-                .end()
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
-                .endChoice()
-
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION).state(JobEvent.State.OK).build())
-                .choice()
-                .when(header(VALIDATION_IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX))
-                .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + CHOUETTE_REFERENTIAL + "}"))
-                .end()
-                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
-                .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.container.name}"))
-                .to("direct:copyInternalBlobToAnotherBucket")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:PublishMergedNetexQueue")
-                .endChoice()
-
-                .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION), experimentalImportHelpers::shouldRunExperimentalImport))
-                    .log(LoggingLevel.INFO, correlation() + "Nightly validation: Experimental import is enabled for codespace, triggering enrichment and filtering after pre-validation")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
-                    .to("direct:updateStatus")
-                    .to("direct:servicelinkerEnrichAfterPreValidation")
-                    // NOTE: Special case: we stop processing the route here because setting referentials with rb_ prefix
-                    // must be done after sending the prevalidation completed status to nabu. This is essential to ensure
-                    // that links to the prevalidation reports in Antu work correctly.
-                    .stop()
-                .endChoice()
-
-                .when(and(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION), exchange -> !experimentalImportHelpers.shouldRunExperimentalImport(exchange)))
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.OK).build())
-                    .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
-                    .to("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
-                .endChoice()
-
-                .otherwise()
-                .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
-                .stop()
-
-                //end otherwise
-                .end()
-                // end choice
-                .end()
-                .to("direct:updateStatus")
-                .routeId("antu-netex-validation-complete");
-
-        from("direct:antuNetexValidationFailed")
-                .choice()
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_PREVALIDATION))
-                .process(e -> buildUnsuccessfulValidationEvent(e, JobEvent.TimetableAction.PREVALIDATION))
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION))
-                .process(e -> buildUnsuccessfulValidationEvent(e, JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION))
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION))
-                .process(e -> buildUnsuccessfulValidationEvent(e, JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION))
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_FLEX_POSTVALIDATION))
-                .process(e -> buildUnsuccessfulValidationEvent(e, JobEvent.TimetableAction.EXPORT_NETEX_POSTVALIDATION))
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION))
-                .process(e -> buildUnsuccessfulValidationEvent(e, JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION))
-                .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_NIGHTLY_VALIDATION))
-                .process(e -> buildUnsuccessfulValidationEvent(e, JobEvent.TimetableAction.PREVALIDATION))
-                .otherwise()
-                .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Unknown validation stage ${header." + VALIDATION_STAGE_HEADER + "}")
-                .stop()
-                //end otherwise
-                .end()
-                // end choice
-                .end()
-                .to("direct:updateStatus")
-                .routeId("antu-netex-validation-failed");
-
+    protected String destination() {
+        return MardukQueues.ANTU_NETEX_VALIDATION_STATUS_QUEUE;
     }
 
-    private static void buildUnsuccessfulValidationEvent(Exchange e, JobEvent.TimetableAction timetableAction) {
-        JobEvent.State state = e.getProperty(VALIDATION_JOB_STATE_PROPERTY, JobEvent.State.FAILED, JobEvent.State.class);
-        JobEvent.providerJobBuilder(e).timetableAction(timetableAction).state(state).build();
+    @Override
+    protected void handle(MardukMessage message) {
+        String fileHandle = required(message, VALIDATION_DATASET_FILE_HANDLE_HEADER);
+        String referential = message.getHeader(DATASET_REFERENTIAL, String.class);
+
+        message.setHeader(CORRELATION_ID, required(message, VALIDATION_CORRELATION_ID_HEADER));
+        message.setHeader(FILE_HANDLE, fileHandle);
+        message.setHeader(FILE_TYPE, FileType.NETEXPROFILE);
+        message.setHeader(CHOUETTE_REFERENTIAL, referential);
+        message.setHeader(PROVIDER_ID, providerRepository.getProviderId(referential));
+        MardukMdc.set(message);
+
+        String status = message.getBody(String.class);
+        LOGGER.info("Received Antu NeTEx validation status update for referential {}, status {}", referential, status);
+        message.setHeader(FILE_NAME, fileNameOf(fileHandle));
+
+        switch (status) {
+            case STATUS_VALIDATION_STARTED -> validationStarted(message);
+            case STATUS_VALIDATION_OK -> validationComplete(message);
+            case STATUS_VALIDATION_FAILED -> validationFailed(message, JobEvent.State.FAILED);
+            case STATUS_VALIDATION_TIMEOUT -> {
+                message.setHeader(Constants.JOB_ERROR_CODE, JobEvent.JOB_ERROR_VALIDATION_INCOMPLETE);
+                validationFailed(message, JobEvent.State.TIMEOUT);
+            }
+            // Discarded, not nacked: a status no version of marduk understands would be redelivered for ever.
+            case null, default -> LOGGER.error(
+                    "Unknown Antu validation status {} for referential {}. Discarding.", status, referential);
+        }
+    }
+
+    private void validationStarted(MardukMessage message) {
+        LOGGER.info("Antu NeTEx validation started for referential {}",
+                message.getHeader(DATASET_REFERENTIAL, String.class));
+        JobEvent.TimetableAction action = knownActionFor(message);
+        if (action == null) {
+            return;
+        }
+        // jobId(null) drops the antu report id the builder picks up off the message: a validation that has
+        // only started has no report to link to yet.
+        jobEvents.reportProviderJob(message, builder -> builder
+                .timetableAction(action).state(JobEvent.State.STARTED).jobId(null));
+    }
+
+    private void validationFailed(MardukMessage message, JobEvent.State state) {
+        JobEvent.TimetableAction action = knownActionFor(message);
+        if (action == null) {
+            return;
+        }
+        jobEvents.reportProviderJob(message, builder -> builder.timetableAction(action).state(state));
+    }
+
+    private void validationComplete(MardukMessage message) {
+        LOGGER.info("Antu NeTEx validation complete for referential {}",
+                message.getHeader(DATASET_REFERENTIAL, String.class));
+        String stage = message.getHeader(VALIDATION_STAGE_HEADER, String.class);
+        switch (stage) {
+            case VALIDATION_STAGE_PREVALIDATION -> {
+                if (experimentalImportHelpers.shouldRunExperimentalImport(message)) {
+                    prevalidationCompleteForExperimentalImport(message);
+                } else {
+                    prevalidationCompleteForChouetteImport(message);
+                }
+            }
+            case VALIDATION_STAGE_EXPORT_NETEX_POSTVALIDATION -> {
+                if (experimentalImportHelpers.shouldRunExperimentalImport(message)) {
+                    netexPostValidationCompleteForExperimentalImport(message);
+                } else {
+                    netexPostValidationCompleteForChouetteImport(message);
+                }
+            }
+            case VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION -> netexBlocksPostValidationComplete(message);
+            case VALIDATION_STAGE_FLEX_POSTVALIDATION -> flexPostValidationComplete(message);
+            case VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION -> mergedPostValidationComplete(message);
+            case VALIDATION_STAGE_NIGHTLY_VALIDATION -> {
+                if (experimentalImportHelpers.shouldRunExperimentalImport(message)) {
+                    nightlyValidationCompleteForExperimentalImport(message);
+                } else {
+                    nightlyValidationCompleteForChouetteImport(message);
+                }
+            }
+            case null, default -> LOGGER.error("Unknown validation stage {}", stage);
+        }
     }
 
     /**
-     * Extract the NeTEx file name from the NeTEx file path.
+     * The pre-validation passed on a codespace that runs the experimental import.
      *
-     * @param filePath the Netex file path.
-     * @return the NeTEx file name.
+     * <p>The completed pre-validation is reported before the enrichment and filtering step, because that
+     * step is where the {@code rb_} prefix goes onto the referential headers and the links to antu's
+     * pre-validation reports are built from the unprefixed value.
      */
-    private String getFileName(String filePath) {
+    private void prevalidationCompleteForExperimentalImport(MardukMessage message) {
+        prevalidatedDataset.stampCreatedTimestamp(message);
+        prevalidatedDataset.archiveToNisaba(message);
+        prevalidatedDataset.recordAsLastPrevalidated(message);
+        LOGGER.info("Experimental import is enabled for codespace, triggering enrichment and filtering after pre-validation");
+        reportComplete(message);
+        experimentalImportPath.enrichThenFilter(message);
+    }
+
+    private void prevalidationCompleteForChouetteImport(MardukMessage message) {
+        prevalidatedDataset.recordAsLastPrevalidated(message);
+        if (enablePreValidation) {
+            // Chouette validates during the import itself, so the import is triggered elsewhere and nothing
+            // is reported here. The Camel route did send its message body to nabu at this point, but the
+            // body was the empty string the blob store route left behind, which nabu cannot read as a job
+            // event; nothing is published instead.
+            return;
+        }
+        LOGGER.info("Posting {} {} and {} {} on chouette import queue.",
+                FILE_HANDLE, message.getHeader(FILE_HANDLE, String.class),
+                FILE_TYPE, message.getHeader(FILE_TYPE, String.class));
+        // The blob store route left the body empty after writing the metadata file, and the import trigger
+        // carried that rather than antu's status.
+        message.setBody("");
+        publisher.publish(MardukQueues.CHOUETTE_IMPORT_QUEUE, message);
+        reportComplete(message);
+    }
+
+    private void netexPostValidationCompleteForExperimentalImport(MardukMessage message) {
+        message.setHeader(FILE_HANDLE, experimentalImportHelpers.pathToNetexWithoutBlocksProducedByAshur(message));
+        copyInBucket(message, experimentalImportHelpers.pathToNetexFromAshurToMergeWithFlex(message));
+        // Also publish the without-blocks Ashur output at a stable per-referential path so a later
+        // cross-flow merge (e.g. after FLEX post-validation, which carries the FLEX import's correlation
+        // id) can locate the latest ordinary NeTEx for this codespace.
+        copyInBucket(message, experimentalImportHelpers.pathToLatestNetexWithoutBlocksFromAshur(message));
+        publisher.publish(MardukQueues.CHOUETTE_MERGE_WITH_FLEXIBLE_LINES_QUEUE, message);
+
+        if (providerRepository.getProvider(message.getHeader(PROVIDER_ID, Long.class))
+                .getChouetteInfo().isEnableBlocksExport()) {
+            LOGGER.info("Starting block export with experimental import");
+            publisher.publish(MardukQueues.EXPORT_NETEX_BLOCKS_QUEUE, message);
+        } else {
+            LOGGER.info("Skipping export of NetEx blocks to Ashur after post-validation because provider has blocks export disabled");
+        }
+        reportComplete(message);
+    }
+
+    private void netexPostValidationCompleteForChouetteImport(MardukMessage message) {
+        if (!enablePostValidation) {
+            copyInBucket(message, experimentalImportHelpers.pathToNetexExportFromChouetteToMergeWithFlex(message));
+            // Mirror to the shared per-referential fallback path so the experimental merge route (which
+            // consults this path when its correlation-keyed Ashur primary read is empty) can find a recent
+            // ordinary export even on a codespace where the experimental pipeline has not yet produced one.
+            copyInBucket(message, experimentalImportHelpers.pathToLatestNetexWithoutBlocksFromAshur(message));
+            publisher.publish(MardukQueues.CHOUETTE_MERGE_WITH_FLEXIBLE_LINES_QUEUE, message);
+            publisher.publish(MardukQueues.CHOUETTE_EXPORT_NETEX_BLOCKS_QUEUE, message);
+        }
+        reportComplete(message);
+    }
+
+    private void netexBlocksPostValidationComplete(MardukMessage message) {
+        if (!enablePostValidation) {
+            copyInBucket(message, Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
+                    + message.getHeader(CHOUETTE_REFERENTIAL, String.class) + "-" + CURRENT_AGGREGATED_NETEX_FILENAME);
+        }
+        reportComplete(message);
+    }
+
+    private void flexPostValidationComplete(MardukMessage message) {
+        String referential = message.getHeader(CHOUETTE_REFERENTIAL, String.class);
+        boolean uploadedFromOperatorPortal =
+                IMPORT_TYPE_NETEX_FLEX.equals(message.getHeader(VALIDATION_IMPORT_TYPE, String.class));
+        if (uploadedFromOperatorPortal) {
+            message.setHeader(CHOUETTE_REFERENTIAL, "rb_" + message.getHeader(DATASET_REFERENTIAL, String.class));
+        }
+        String target = BLOBSTORE_PATH_OUTBOUND + "netex/"
+                + message.getHeader(CHOUETTE_REFERENTIAL, String.class) + "-" + CURRENT_FLEXIBLE_LINES_NETEX_FILENAME;
+        message.setHeader(TARGET_FILE_HANDLE, target);
+        String dataset = message.getHeader(FILE_HANDLE, String.class);
+        if (uploadedFromOperatorPortal) {
+            // A dataset uploaded from the operator portal was stored in the internal bucket and has to be
+            // copied to the exchange bucket.
+            message.setHeader(TARGET_CONTAINER, exchangeContainer);
+            internalBlobStore.copyBlobToAnotherBucket(dataset, exchangeContainer, target);
+        } else {
+            // Everything else comes from uttu and is already in the inbound folder of the exchange bucket,
+            // so it only moves to the outbound folder of the same bucket.
+            exchangeBlobStore.copyBlobInBucket(dataset, target);
+        }
+        publisher.publish(MardukQueues.CHOUETTE_MERGE_WITH_FLEXIBLE_LINES_QUEUE, message);
+        reportComplete(message, referential);
+    }
+
+    private void mergedPostValidationComplete(MardukMessage message) {
+        String referential = message.getHeader(CHOUETTE_REFERENTIAL, String.class);
+        if (IMPORT_TYPE_NETEX_FLEX.equals(message.getHeader(VALIDATION_IMPORT_TYPE, String.class))) {
+            message.setHeader(CHOUETTE_REFERENTIAL, "rb_" + message.getHeader(CHOUETTE_REFERENTIAL, String.class));
+        }
+        String target = BLOBSTORE_PATH_OUTBOUND + "netex/"
+                + message.getHeader(CHOUETTE_REFERENTIAL, String.class) + "-" + CURRENT_AGGREGATED_NETEX_FILENAME;
+        message.setHeader(TARGET_FILE_HANDLE, target);
+        message.setHeader(TARGET_CONTAINER, publicContainer);
+        internalBlobStore.copyBlobToAnotherBucket(
+                message.getHeader(FILE_HANDLE, String.class), publicContainer, target);
+        publisher.publish(MardukQueues.PUBLISH_MERGED_NETEX_QUEUE, message);
+        reportComplete(message, referential);
+    }
+
+    /** Reports before the enrichment and filtering step for the same reason the pre-validation path does. */
+    private void nightlyValidationCompleteForExperimentalImport(MardukMessage message) {
+        LOGGER.info("Nightly validation: Experimental import is enabled for codespace, triggering enrichment and filtering after pre-validation");
+        reportComplete(message);
+        experimentalImportPath.enrichThenFilter(message);
+    }
+
+    private void nightlyValidationCompleteForChouetteImport(MardukMessage message) {
+        message.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL,
+                JobEvent.TimetableAction.VALIDATION_LEVEL_1.name());
+        publisher.publish(MardukQueues.CHOUETTE_VALIDATION_QUEUE, message);
+        reportComplete(message);
+    }
+
+    /**
+     * Reports the stage's job as OK, last in the branch: a report sent before the copies and the downstream
+     * trigger would tell nabu the step succeeded even though the redelivery has yet to do the work.
+     *
+     * <p>Reached only from a branch whose stage {@link ValidationStages} knows.
+     */
+    private void reportComplete(MardukMessage message) {
+        reportComplete(message, message.getHeader(CHOUETTE_REFERENTIAL, String.class));
+    }
+
+    /**
+     * @param referential the referential to report against, for the two branches that prefix
+     *                    {@code CHOUETTE_REFERENTIAL} with {@code rb_} before the report goes out
+     */
+    private void reportComplete(MardukMessage message, String referential) {
+        JobEvent.TimetableAction action = ValidationStages.actionFor(message.getHeader(VALIDATION_STAGE_HEADER, String.class));
+        jobEvents.reportProviderJob(message, builder -> {
+            builder.timetableAction(action).state(JobEvent.State.OK);
+            if (referential != null) {
+                builder.referential(referential);
+            }
+        });
+    }
+
+    private void copyInBucket(MardukMessage message, String target) {
+        message.setHeader(TARGET_FILE_HANDLE, target);
+        internalBlobStore.copyBlobInBucket(message.getHeader(FILE_HANDLE, String.class), target);
+    }
+
+    private static JobEvent.TimetableAction knownActionFor(MardukMessage message) {
+        String stage = message.getHeader(VALIDATION_STAGE_HEADER, String.class);
+        JobEvent.TimetableAction action = ValidationStages.actionFor(stage);
+        if (action == null) {
+            LOGGER.error("Unknown validation stage {}", stage);
+        }
+        return action;
+    }
+
+    /**
+     * The Camel route validated these two attributes, which failed the exchange and left PubSub to redeliver.
+     * Kept: a status message without them cannot be matched to a job at all.
+     */
+    private static String required(MardukMessage message, String attribute) {
+        String value = message.getHeader(attribute, String.class);
+        if (value == null) {
+            throw new MardukException("Antu validation status is missing the " + attribute + " attribute");
+        }
+        return value;
+    }
+
+    private static String fileNameOf(String filePath) {
         return filePath.substring(filePath.lastIndexOf('/') + 1);
     }
 }

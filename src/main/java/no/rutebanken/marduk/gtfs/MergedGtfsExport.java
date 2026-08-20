@@ -1,120 +1,156 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.gtfs;
 
-package no.rutebanken.marduk.routes.gtfs;
-
-import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
-import no.rutebanken.marduk.routes.aggregation.HeaderPreservingGroupedMessageAggregationStrategy;
-import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.LoggingLevel;
+import no.rutebanken.marduk.batch.BatchRunner;
+import no.rutebanken.marduk.batch.BatchedRequests;
+import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.repository.ProviderRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.List;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.CURRENT_AGGREGATED_GTFS_FILENAME;
+import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.ET_CLIENT_NAME_HEADER;
+import static no.rutebanken.marduk.Constants.GTFS_ROUTE_DISPATCHER_AGGREGATION_HEADER_VALUE;
+import static no.rutebanken.marduk.Constants.GTFS_ROUTE_DISPATCHER_HEADER_NAME;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 /**
- * Route triggering a merge of GTFS files and upload of the resulting files to GCS.
- * <p>
+ * Asks damu to merge every provider's GTFS export into the national dataset.
+ *
+ * <p>Replaces {@code direct:exportMergedGtfs} and {@code direct:createListOfGtfsFiles}, and the Camel
+ * aggregator in front of them: many "export the merged GTFS" requests arrive close together and one export
+ * serves them all, so the requests are batched instead of exported one by one.
  */
 @Component
-public class GtfsMergedExportRouteBuilder extends BaseRouteBuilder {
+public class MergedGtfsExport {
 
-    private static final String STATUS_MERGE_OK = "ok";
-    private static final String STATUS_MERGE_STARTED = "started";
-    private static final String STATUS_MERGE_FAILED = "failed";
-    private static final String STATUS_HEADER = "status";
+    private static final Logger LOGGER = LoggerFactory.getLogger(MergedGtfsExport.class);
 
-    @Value("${gtfs.export.aggregation.timeout:300000}")
-    private int gtfsExportAggregationTimeout;
+    /**
+     * The batched-request kind. It is written into the {@code batched_request} table, so rows recorded by
+     * one version are only picked up by the next if the string is unchanged.
+     */
+    static final String KIND = "gtfs-merged-export";
 
-    @Value("${aggregation.completionSize:100}")
-    private int aggregationCompletionSize;
+    /**
+     * The only headers that travel to damu.
+     *
+     * <p>{@code HeaderPreservingGroupedMessageAggregationStrategy} kept exactly these five from the newest
+     * request and dropped everything else, so this is the attribute set damu and the dispatcher topic see
+     * today. The batch keeps whole messages, so passing one straight on would newly publish the admin
+     * caller's username, or the triggering codespace's file handles, onto a topic other services read.
+     */
+    private static final List<String> HEADERS_TO_DAMU = List.of(
+            DATASET_REFERENTIAL, CORRELATION_ID, PROVIDER_ID, CHOUETTE_REFERENTIAL, ET_CLIENT_NAME_HEADER);
 
-    @Override
-    public void configure() throws Exception {
-        super.configure();
+    private final BatchRunner batchRunner;
+    private final BatchedRequests requests;
+    private final ProviderRepository providerRepository;
+    private final MardukPubSubPublisher publisher;
+    private final boolean scheduleEnabled;
+    private final long inactivityTimeoutMillis;
 
-        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue").autoStartup("{{gtfs.export.autoStartup:true}}")
-                .log(LoggingLevel.INFO, correlation() + "Starting GtfsExportMergedExportRouteBuilder")
-                .process(this::removeSynchronizationForAggregatedExchange)
-                .aggregate(simple("true", Boolean.class))
-                .aggregationStrategy(
-                        new HeaderPreservingGroupedMessageAggregationStrategy(
-                                List.of(
-                                    Constants.DATASET_REFERENTIAL,
-                                    Constants.CORRELATION_ID,
-                                    Constants.PROVIDER_ID,
-                                    Constants.CHOUETTE_REFERENTIAL,
-                                    Constants.ET_CLIENT_NAME_HEADER
-                                )
-                        )
-                )
-                .completionSize(aggregationCompletionSize)
-                .completionTimeout(gtfsExportAggregationTimeout)
-                .executorService("gtfsExportExecutorService")
-                .process(this::addSynchronizationForAggregatedExchange)
-                .process(this::updateMdcFromHeaders)
-                .log(LoggingLevel.INFO, correlation() + "Aggregated ${exchangeProperty.CamelAggregatedSize} GTFS export merged requests (aggregation completion triggered by ${exchangeProperty.CamelAggregatedCompletedBy}).")
-                .log(LoggingLevel.INFO, correlation() + "Preparing GTFS export message from marduk to damu")
-                .to("direct:exportMergedGtfs")
-                .routeId("gtfs-extended-export-merged-route");
+    private int waitingAtLastCheck;
+    private long lastChange = System.nanoTime();
 
-        from("direct:exportMergedGtfs")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Start export of merged GTFS file: ${header." + FILE_NAME + "}")
-                .to("direct:createListOfGtfsFiles")
-                .convertBodyTo(String.class, "UTF-8")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering merging and aggregation of GTFS files ${body} in damu")
-                .setHeader(GTFS_ROUTE_DISPATCHER_HEADER_NAME, simple(GTFS_ROUTE_DISPATCHER_AGGREGATION_HEADER_VALUE))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:GtfsRouteDispatcherTopic")
-                .id("damuAggregateGtfsNext")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done sending message on pubsub")
-                .routeId("gtfs-export-merged-route");
-
-        from("direct:createListOfGtfsFiles")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Creating list of gtfs files for aggregation")
-                .process(e -> e.getIn().setBody(String.join(",", getAggregatedGtfsFiles())))
-                .routeId("gtfs-export-list-files-route");
-
-        from("google-pubsub:{{marduk.pubsub.project.id}}:MardukAggregateGtfsStatusQueue")
-                .process(this::updateMdcFromHeaders)
-                .choice()
-                .when(header(STATUS_HEADER).isEqualTo(STATUS_MERGE_OK))
-                .log(LoggingLevel.INFO, correlation() + "Received status OK from damu aggregation")
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).state(JobEvent.State.OK).correlationId(e.getIn().getHeader(CORRELATION_ID, String.class)).action(JobEvent.TimetableAction.EXPORT_GTFS_MERGED).build())
-                .to(ExchangePattern.InOnly, "direct:updateStatus")
-                .when(header(STATUS_HEADER).isEqualTo(STATUS_MERGE_STARTED))
-                .log(LoggingLevel.INFO, correlation() + "Received status STARTED from damu aggregation")
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).state(JobEvent.State.STARTED).action(JobEvent.TimetableAction.EXPORT_GTFS_MERGED).newCorrelationId().build())
-                .to(ExchangePattern.InOnly, "direct:updateStatus")
-                .when(header(STATUS_HEADER).isEqualTo(STATUS_MERGE_FAILED))
-                .log(LoggingLevel.INFO, correlation() + "Received status FAILED from damu aggregation")
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).state(JobEvent.State.FAILED).action(JobEvent.TimetableAction.EXPORT_GTFS_MERGED).correlationId(e.getIn().getHeader(CORRELATION_ID, String.class)).build())
-                .to(ExchangePattern.InOnly, "direct:updateStatus")
-                .end()
-                .routeId("gtfs-aggregate-status-route");
+    public MergedGtfsExport(
+            BatchRunner batchRunner,
+            BatchedRequests requests,
+            ProviderRepository providerRepository,
+            MardukPubSubPublisher publisher,
+            @Value("${gtfs.export.autoStartup:true}") boolean scheduleEnabled,
+            @Value("${gtfs.export.aggregation.timeout:300000}") long inactivityTimeoutMillis) {
+        this.batchRunner = batchRunner;
+        this.requests = requests;
+        this.providerRepository = providerRepository;
+        this.publisher = publisher;
+        this.scheduleEnabled = scheduleEnabled;
+        this.inactivityTimeoutMillis = inactivityTimeoutMillis;
     }
 
-    private List<String> getAggregatedGtfsFiles() {
-        return getProviderRepository().getProviders().stream()
-                .filter(p -> p.getChouetteInfo().getMigrateDataToProvider() == null)
-                .map(p -> p.getChouetteInfo().getReferential() + "-" + CURRENT_AGGREGATED_GTFS_FILENAME)
+    /**
+     * The timeout half of the aggregator's two completion triggers.
+     *
+     * <p>{@code gtfs.export.aggregation.timeout} is an inactivity timeout, as
+     * {@code AggregateDefinition.completionTimeout} was: the batch is served once no new request has been
+     * recorded for that long, so a burst of provider exports produces one merge rather than one merge per
+     * export. Serving on a fixed period instead would split a burst that straddles a tick, and damu's
+     * merge is the expensive end of that.
+     *
+     * <p>The quiet period is measured off the number of requests waiting rather than a local timestamp,
+     * because a request recorded by the other replica has to reset it too - the aggregator only ever saw
+     * requests on the pod holding the {@code master:} lock, and this consumer runs on both. The check
+     * interval is the resolution of the measurement, and the cost of it is one indexed count.
+     *
+     * <p>{@code gtfs.export.autoStartup} gates this schedule and nothing else, as it does for the Chouette
+     * job cleanup: it used to decide whether the consumer route started at all, which also disabled the
+     * admin endpoint that asks for a merged export.
+     */
+    @Scheduled(fixedDelayString = "${gtfs.export.aggregation.check.interval:5000}")
+    void serveTheBatchOnceRequestsStopArriving() {
+        if (!scheduleEnabled) {
+            LOGGER.debug("The scheduled merged GTFS export is switched off");
+            return;
+        }
+        int waiting = requests.waiting(KIND);
+        if (waiting != waitingAtLastCheck) {
+            waitingAtLastCheck = waiting;
+            lastChange = System.nanoTime();
+            return;
+        }
+        if (waiting == 0 || quietFor() < inactivityTimeoutMillis) {
+            return;
+        }
+        // Before serving, so a failed run waits out another quiet period instead of being retried every
+        // check interval.
+        lastChange = System.nanoTime();
+        LOGGER.info("No new merged GTFS export request for {} ms, serving the {} waiting",
+                inactivityTimeoutMillis, waiting);
+        serveTheBatch();
+    }
+
+    private long quietFor() {
+        return Duration.ofNanos(System.nanoTime() - lastChange).toMillis();
+    }
+
+    /**
+     * Runs one merged export for everything waiting, or nothing if nothing is.
+     *
+     * <p>Synchronized because the size trigger calls this from a PubSub consumer thread while the schedule
+     * calls it from the scheduler's. {@code gtfsExportExecutorService} had a pool size of 1 so that only
+     * one GTFS export ran at a time; two concurrent runs would each publish a merge request to damu, which
+     * is the duplicate work the batch exists to avoid.
+     */
+    synchronized void serveTheBatch() {
+        batchRunner.run(KIND, this::export);
+    }
+
+    private void export(MardukMessage request) {
+        String files = String.join(",", aggregatedGtfsFiles());
+        LOGGER.info("Triggering merging and aggregation of GTFS files {} in damu", files);
+        MardukMessage toDamu = new MardukMessage().setBody(files);
+        HEADERS_TO_DAMU.forEach(header -> toDamu.setHeaderIfPresent(header, request.getHeader(header)));
+        toDamu.setHeader(GTFS_ROUTE_DISPATCHER_HEADER_NAME, GTFS_ROUTE_DISPATCHER_AGGREGATION_HEADER_VALUE);
+        publisher.publish(MardukQueues.GTFS_ROUTE_DISPATCHER_TOPIC, toDamu);
+    }
+
+    /** The per-provider exports damu merges: only the providers that keep their own data. */
+    private List<String> aggregatedGtfsFiles() {
+        return providerRepository.getProviders().stream()
+                .filter(provider -> provider.getChouetteInfo().getMigrateDataToProvider() == null)
+                .map(Provider::getChouetteInfo)
+                .map(info -> info.getReferential() + "-" + CURRENT_AGGREGATED_GTFS_FILENAME)
                 .toList();
     }
 }

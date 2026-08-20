@@ -1,85 +1,99 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.netex;
 
-package no.rutebanken.marduk.routes.netex;
-
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.PredicateBuilder;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.DATASET_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.GTFS_ROUTE_DISPATCHER_EXPORT_HEADER_VALUE;
+import static no.rutebanken.marduk.Constants.GTFS_ROUTE_DISPATCHER_HEADER_NAME;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 
 /**
- * Publish dated merged NeTEx dataset and notify downstream consumers (GTFS export, OTP Graph builder, Kafka topic)
+ * Publishes a merged NeTEx dataset and tells the downstream consumers about it: the OTP2 graph build, the
+ * NeTEx export notification topic, damu's GTFS export and, when enabled, the line statistics calculation.
+ *
+ * <p>Replaces {@code direct:publishMergedDataset} and the two routes only it called.
  */
 @Component
-public class PublishMergedNetexRouteBuilder extends BaseRouteBuilder {
+public class MergedNetexPublication {
 
-    @Value("${gtfs.export.chouette:true}")
-    private boolean useChouetteGtfsExport;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MergedNetexPublication.class);
 
-    @Value("${line.statistics.calculation.enabled:false}")
-    private boolean lineStatisticsCalculationEnabled;
+    private final ProviderRepository providerRepository;
+    private final DatedExportUpload datedExportUpload;
+    private final JobEventPublisher jobEvents;
+    private final MardukPubSubPublisher publisher;
+    private final boolean useChouetteGtfsExport;
+    private final boolean lineStatisticsCalculationEnabled;
 
-    @Override
-    public void configure() throws Exception {
-        super.configure();
+    public MergedNetexPublication(
+            ProviderRepository providerRepository,
+            DatedExportUpload datedExportUpload,
+            JobEventPublisher jobEvents,
+            MardukPubSubPublisher publisher,
+            @Value("${gtfs.export.chouette:true}") boolean useChouetteGtfsExport,
+            @Value("${line.statistics.calculation.enabled:false}") boolean lineStatisticsCalculationEnabled) {
+        this.providerRepository = providerRepository;
+        this.datedExportUpload = datedExportUpload;
+        this.jobEvents = jobEvents;
+        this.publisher = publisher;
+        this.useChouetteGtfsExport = useChouetteGtfsExport;
+        this.lineStatisticsCalculationEnabled = lineStatisticsCalculationEnabled;
+    }
 
-        from("google-pubsub:{{marduk.pubsub.project.id}}:PublishMergedNetexQueue")
-                .to("direct:publishMergedDataset")
-                .routeId("netex-publish-merged-netex-queue");
+    public void publishMergedDataset(MardukMessage message) {
+        Provider provider = providerRepository.getProvider(message.getHeader(PROVIDER_ID, Long.class));
+        if (provider.getChouetteInfo().isGenerateDatedServiceJourneyIds()) {
+            datedExportUpload.copyDatedExport(message);
+        }
 
+        // Was a wireTap, so the notification gets a copy: it strips every header before publishing.
+        notifyExportNetexWithFlexibleLines(message.copy());
 
-        from("direct:publishMergedDataset")
-                .filter(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().isGenerateDatedServiceJourneyIds())
-                .to("direct:copyDatedExport")
-                .end()
+        message.setBody("");
+        jobEvents.reportProviderJob(message, builder -> builder
+                .timetableAction(JobEvent.TimetableAction.OTP2_BUILD_GRAPH)
+                .state(JobEvent.State.PENDING));
+        LOGGER.info("FlexibleLines merging OK, triggering OTP graph build.");
+        publisher.publish(MardukQueues.OTP2_GRAPH_BUILD_QUEUE, message);
 
-                .wireTap("direct:notifyExportNetexWithFlexibleLines")
-                .setBody(constant(""))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(JobEvent.State.PENDING).build())
-                .to("direct:updateStatus")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "FlexibleLines merging OK, triggering OTP graph build.")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue")
-                .to("direct:startDamuGtfsExport")
-                .filter(constant(lineStatisticsCalculationEnabled))
-                    .to("google-pubsub:{{marduk.pubsub.project.id}}:LineStatisticsCalculationQueue")
-                .end()
-                .routeId("publish-merged-dataset");
+        startDamuGtfsExport(message);
 
-        from("direct:notifyExportNetexWithFlexibleLines")
-                .setBody(header(CHOUETTE_REFERENTIAL).regexReplaceAll("rb_", ""))
-                .removeHeaders("*")
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:NetexExportNotificationQueue")
-                .routeId("netex-notify-export");
+        if (lineStatisticsCalculationEnabled) {
+            publisher.publish(MardukQueues.LINE_STATISTICS_CALCULATION_QUEUE, message);
+        }
+    }
 
-        from("direct:startDamuGtfsExport")
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Triggering GTFS export in Damu.")
-                .filter(PredicateBuilder.not(constant(useChouetteGtfsExport)))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT).state(JobEvent.State.PENDING).build())
-                //end filter
-                .end()
-                .removeHeader(DATASET_REFERENTIAL)
-                .setBody(header(CHOUETTE_REFERENTIAL))
-                .process(this::removeAllCamelHeaders)
-                .setHeader(GTFS_ROUTE_DISPATCHER_HEADER_NAME, simple(GTFS_ROUTE_DISPATCHER_EXPORT_HEADER_VALUE))
-                .to("google-pubsub:{{marduk.pubsub.project.id}}:GtfsRouteDispatcherTopic")
-                .routeId("start-damu-gtfs-export");
+    private void notifyExportNetexWithFlexibleLines(MardukMessage notification) {
+        notification.setBody(notification.getHeader(CHOUETTE_REFERENTIAL, String.class).replace("rb_", ""));
+        notification.removeAllHeaders();
+        publisher.publish(MardukQueues.NETEX_EXPORT_NOTIFICATION_QUEUE, notification);
+    }
+
+    private void startDamuGtfsExport(MardukMessage message) {
+        LOGGER.info("Triggering GTFS export in Damu.");
+        if (!useChouetteGtfsExport) {
+            // Built but deliberately not reported: the route had no updateStatus after it. Building it is
+            // still load-bearing, because that is what leaves the event on the message as
+            // RutebankenSystemStatus, and that header travels to damu.
+            JobEvent.providerJobBuilder(message)
+                    .timetableAction(JobEvent.TimetableAction.EXPORT)
+                    .state(JobEvent.State.PENDING)
+                    .build();
+        }
+        message.removeHeader(DATASET_REFERENTIAL);
+        message.setBody(message.getHeader(CHOUETTE_REFERENTIAL, String.class));
+        message.setHeader(GTFS_ROUTE_DISPATCHER_HEADER_NAME, GTFS_ROUTE_DISPATCHER_EXPORT_HEADER_VALUE);
+        publisher.publish(MardukQueues.GTFS_ROUTE_DISPATCHER_TOPIC, message);
     }
 }

@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
-import org.apache.camel.Exchange;
+import no.rutebanken.marduk.pipeline.MardukMessage;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -286,12 +286,12 @@ public class JobEvent {
         return new Builder();
     }
 
-    public static Builder providerJobBuilder(Exchange exchange) {
-        return new ExchangeStatusBuilder(exchange).initProviderJob();
+    public static Builder providerJobBuilder(MardukMessage message) {
+        return new MessageStatusBuilder(message).initProviderJob();
     }
 
-    public static Builder systemJobBuilder(Exchange exchange) {
-        return new ExchangeStatusBuilder(exchange).initSystemJob();
+    public static Builder systemJobBuilder(MardukMessage message) {
+        return new MessageStatusBuilder(message).initSystemJob();
     }
 
 
@@ -404,41 +404,44 @@ public class JobEvent {
         }
     }
 
-    public static class ExchangeStatusBuilder extends Builder {
+    /**
+     * Reads the job's identity off a {@link MardukMessage} and, on {@link #build()}, writes the event back
+     * onto it as the body and the {@code RutebankenSystemStatus} header, which is the contract the routes'
+     * {@code ExchangeStatusBuilder} had before it was deleted.
+     */
+    public static class MessageStatusBuilder extends Builder {
 
-        private final Exchange exchange;
+        private final MardukMessage message;
 
-        private ExchangeStatusBuilder(Exchange exchange) {
+        private MessageStatusBuilder(MardukMessage message) {
             super();
-            this.exchange = exchange;
+            this.message = message;
         }
 
         private Builder initProviderJob() {
-            jobEvent.name = exchange.getIn().getHeader(Constants.FILE_NAME, String.class);
-            String providerId = exchange.getIn().getHeader(PROVIDER_ID, String.class);
-            String originalProviderId = exchange.getIn().getHeader(Constants.ORIGINAL_PROVIDER_ID, providerId, String.class);
+            jobEvent.name = message.getHeader(Constants.FILE_NAME, String.class);
+            String providerId = message.getHeader(PROVIDER_ID, String.class);
+            String originalProviderId = message.getHeader(Constants.ORIGINAL_PROVIDER_ID, providerId, String.class);
             if (originalProviderId == null) {
-                throw new IllegalStateException("Neither the provider id nor the original provider id are defined in the current exchange");
+                throw new IllegalStateException("Neither the provider id nor the original provider id are defined in the current message");
             }
             jobEvent.providerId = Long.valueOf(originalProviderId);
-            jobEvent.correlationId = exchange.getIn().getHeader(CORRELATION_ID, String.class);
-            jobEvent.externalId = exchange.getIn().getHeader(CHOUETTE_JOB_ID, String.class);
-            if(jobEvent.externalId == null) {
-                jobEvent.externalId = exchange.getIn().getHeader(ANTU_VALIDATION_REPORT_ID, String.class);
+            jobEvent.correlationId = message.getHeader(CORRELATION_ID, String.class);
+            jobEvent.externalId = message.getHeader(CHOUETTE_JOB_ID, String.class);
+            if (jobEvent.externalId == null) {
+                jobEvent.externalId = message.getHeader(ANTU_VALIDATION_REPORT_ID, String.class);
             }
-            jobEvent.referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);
-            if(jobEvent.referential == null) {
-                jobEvent.referential = exchange.getIn().getHeader(DATASET_REFERENTIAL, String.class);
+            jobEvent.referential = message.getHeader(CHOUETTE_REFERENTIAL, String.class);
+            if (jobEvent.referential == null) {
+                jobEvent.referential = message.getHeader(DATASET_REFERENTIAL, String.class);
             }
-            jobEvent.username = exchange.getIn().getHeader(USERNAME, String.class);
-            jobEvent.errorCode = exchange.getIn().getHeader(JOB_ERROR_CODE, String.class);
+            jobEvent.username = message.getHeader(USERNAME, String.class);
+            jobEvent.errorCode = message.getHeader(JOB_ERROR_CODE, String.class);
             return this;
         }
 
         private Builder initSystemJob() {
-
-            String currentStatusString = exchange.getIn().getHeader(SYSTEM_STATUS, String.class);
-
+            String currentStatusString = message.getHeader(SYSTEM_STATUS, String.class);
             if (currentStatusString != null) {
                 JobEvent currentJobEvent = JobEvent.fromString(currentStatusString);
                 jobEvent.correlationId = currentJobEvent.correlationId;
@@ -453,16 +456,10 @@ public class JobEvent {
 
         @Override
         public JobEvent build() {
-            if (exchange == null) {
-                throw new IllegalStateException(this.getClass() + " does not hold an instance of exchange.");
-            }
-
-            JobEvent jobEvent = super.build();
-
-            exchange.getIn().setHeader(SYSTEM_STATUS, jobEvent.toString());
-            exchange.getMessage().setBody(jobEvent.toString());
-            exchange.getMessage().setHeaders(exchange.getIn().getHeaders());
-            return jobEvent;
+            JobEvent built = super.build();
+            message.setHeader(SYSTEM_STATUS, built.toString());
+            message.setBody(built.toString());
+            return built;
         }
     }
 

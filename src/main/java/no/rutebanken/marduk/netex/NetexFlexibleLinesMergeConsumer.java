@@ -1,43 +1,46 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
-
-package no.rutebanken.marduk.routes.netex;
+package no.rutebanken.marduk.netex;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.pipeline.MardukMdc;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukPubSubConsumer;
+import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
+import no.rutebanken.marduk.pubsub.MardukQueues;
 import no.rutebanken.marduk.routes.experimental.ExperimentalImportHelpers;
 import no.rutebanken.marduk.routes.experimental.SetProviderIdBeforeFlexMergeProcessor;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
-import org.apache.camel.builder.PredicateBuilder;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import no.rutebanken.marduk.services.AbstractBlobStoreService;
+import no.rutebanken.marduk.services.ExchangeBlobStoreService;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
+import no.rutebanken.marduk.services.MardukPublicBlobStoreService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_CHOUETTE;
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_VERSION;
 import static no.rutebanken.marduk.Constants.FOLDER_NAME;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_HEADER;
 import static no.rutebanken.marduk.Constants.VALIDATION_CLIENT_MARDUK;
 import static no.rutebanken.marduk.Constants.VALIDATION_CORRELATION_ID_HEADER;
@@ -48,166 +51,235 @@ import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_EXPORT_MERGED_POST
 import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
 
 /**
- * Merge NeTEx dataset exported from Chouette with NeTEx dataset with flexible lines
+ * Merges the NeTEx dataset Chouette exported with the flexible-lines dataset Uttu exported.
+ *
+ * <p>Both archives are unpacked side by side into one scratch directory and re-zipped as a single dataset.
+ * Where that dataset then goes depends on what was actually found: only when <em>both</em> sources
+ * contributed does the merge need antu's blessing, and it is uploaded to the validation folder and
+ * post-validated. In every other case - no flexible line data for the codespace, or the merge disabled - the
+ * result is the Chouette export unchanged, so it goes straight to the outbound bucket and is published.
+ *
+ * <p>Replaces {@code NetexMergeChouetteWithFlexibleLineExportRouteBuilder} and the eight routes only it
+ * called.
  */
 @Component
-public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRouteBuilder {
+public class NetexFlexibleLinesMergeConsumer extends MardukPubSubConsumer {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NetexFlexibleLinesMergeConsumer.class);
+
+    private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
 
     private static final String BLOBSTORE_PATH_UTTU = "uttu/";
-    private static final String PROP_HAS_CHOUETTE_DATA = "PROP_HAS_CHOUETTE_DATA";
-    private static final String PROP_AS_FLEXIBLE_DATA = "PROP_HAS_FLEXIBLE_DATA";
-
-    private static final String EXPORT_FILE_NAME = "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
-    private static final String EXPORT_MERGED_FOR_VALIDATION = BLOBSTORE_PATH_UTTU +   "netex/${header." + CHOUETTE_REFERENTIAL + "}" + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
 
     private final ExperimentalImportHelpers experimentalImportHelpers;
-    private final SetProviderIdBeforeFlexMergeProcessor setProviderIdBeforeFlexMergeProcessor;
+    private final SetProviderIdBeforeFlexMergeProcessor setProviderIdBeforeFlexMerge;
+    private final MardukInternalBlobStoreService internalBlobStore;
+    private final MardukPublicBlobStoreService publicBlobStore;
+    private final ExchangeBlobStoreService exchangeBlobStore;
+    private final MergedNetexPublication publication;
+    private final JobEventPublisher jobEvents;
+    private final MardukPubSubPublisher publisher;
+    private final String localWorkingDirectory;
+    private final boolean mergeFlexibleLinesEnabled;
+    private final String antuExchangeContainer;
 
-    public NetexMergeChouetteWithFlexibleLineExportRouteBuilder(
+    public NetexFlexibleLinesMergeConsumer(
             ExperimentalImportHelpers experimentalImportHelpers,
-            SetProviderIdBeforeFlexMergeProcessor setProviderIdBeforeFlexMergeProcessor
-    ) {
+            SetProviderIdBeforeFlexMergeProcessor setProviderIdBeforeFlexMerge,
+            MardukInternalBlobStoreService internalBlobStore,
+            MardukPublicBlobStoreService publicBlobStore,
+            ExchangeBlobStoreService exchangeBlobStore,
+            MergedNetexPublication publication,
+            JobEventPublisher jobEvents,
+            MardukPubSubPublisher publisher,
+            @Value("${netex.export.download.directory:files/netex/merged}") String localWorkingDirectory,
+            @Value("${netex.export.merge.flexible.lines.enabled:false}") boolean mergeFlexibleLinesEnabled,
+            @Value("${blobstore.gcs.antu.exchange.container.name}") String antuExchangeContainer) {
         this.experimentalImportHelpers = experimentalImportHelpers;
-        this.setProviderIdBeforeFlexMergeProcessor = setProviderIdBeforeFlexMergeProcessor;
+        this.setProviderIdBeforeFlexMerge = setProviderIdBeforeFlexMerge;
+        this.internalBlobStore = internalBlobStore;
+        this.publicBlobStore = publicBlobStore;
+        this.exchangeBlobStore = exchangeBlobStore;
+        this.publication = publication;
+        this.jobEvents = jobEvents;
+        this.publisher = publisher;
+        this.localWorkingDirectory = localWorkingDirectory;
+        this.mergeFlexibleLinesEnabled = mergeFlexibleLinesEnabled;
+        this.antuExchangeContainer = antuExchangeContainer;
     }
 
-    @Value("${netex.export.download.directory:files/netex/merged}")
-    private String localWorkingDirectory;
-
-    @Value("${netex.export.merge.flexible.lines.enabled:false}")
-    private String mergeFlexibleLinesEnabled;
+    @Override
+    protected String destination() {
+        return MardukQueues.CHOUETTE_MERGE_WITH_FLEXIBLE_LINES_QUEUE;
+    }
 
     @Override
-    public void configure() throws Exception {
-        super.configure();
+    protected void handle(MardukMessage message) {
+        setCorrelationIdIfMissing(message);
+        LOGGER.info("Merging chouette NeTEx export with FlexibleLines");
+        if (message.getHeader(CHOUETTE_REFERENTIAL) == null) {
+            throw new MardukException("Cannot merge with flexible lines without a Chouette referential");
+        }
 
-        from("google-pubsub:{{marduk.pubsub.project.id}}:ChouetteMergeWithFlexibleLinesQueue")
-                .to("direct:mergeChouetteExportWithFlexibleLinesExport")
-                .routeId("netex-export-merge-chouette-with-flexible-lines-queue");
+        setProviderIdBeforeFlexMerge.setProviderIdIfChouetteImport(message);
+        if (message.getHeader(PROVIDER_ID) == null) {
+            throw new MardukException("Cannot merge with flexible lines without a provider id");
+        }
 
-        from("direct:mergeChouetteExportWithFlexibleLinesExport").streamCaching()
-                .process(this::setCorrelationIdIfMissing)
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Merging chouette NeTEx export with FlexibleLines")
-                .validate(header(Constants.CHOUETTE_REFERENTIAL).isNotNull())
+        String workingDirectory = localWorkingDirectory + "/"
+                + message.getHeader(CORRELATION_ID, String.class) + "_" + LocalDateTime.now().format(TIMESTAMP);
+        message.setProperty(FOLDER_NAME, workingDirectory);
+        try {
+            boolean hasChouetteData = unpackChouetteExport(message);
+            boolean hasFlexibleData = unpackFlexibleLinesExport(message);
 
-                .process(setProviderIdBeforeFlexMergeProcessor)
-                .validate(header(Constants.PROVIDER_ID).isNotNull())
+            if (hasChouetteData && hasFlexibleData) {
+                uploadMergedFileToValidationFolder(message);
+                requestMergedNetexPostValidation(message);
+            } else {
+                uploadMergedFileToOutboundBucket(message);
+                publication.publishMergedDataset(message);
+            }
+        } finally {
+            // In a finally so a failed merge does not leave the unpacked dataset behind on the pod's disk.
+            deleteDirectoryRecursively(workingDirectory);
+        }
+    }
 
-                .setProperty(FOLDER_NAME, simple(localWorkingDirectory + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}"))
-                .doTry()
-                .to("direct:unpackChouetteExportToWorkingFolder")
-                .to("direct:unpackFlexibleLinesExportToWorkingFolder")
-
-                .choice()
-
-                .when(PredicateBuilder.and(exchangeProperty(PROP_HAS_CHOUETTE_DATA).isNotNull(), exchangeProperty(PROP_AS_FLEXIBLE_DATA).isNotNull()))
-                .to("direct:uploadMergedFileToValidationFolder")
-                .to("direct:antuMergedNetexPostValidation")
-
-                .otherwise()
-                .to("direct:uploadMergedFileToOutboundBucket")
-                .to("direct:publishMergedDataset")
-
-                .endDoTry()
-                .doFinally()
-                .process(e -> e.getIn().setHeader(Exchange.FILE_PARENT, e.getProperty(FOLDER_NAME)))
-                .to("direct:cleanUpLocalDirectory")
-                .end()
-
-                .routeId("netex-export-merge-chouette-with-flexible-lines");
-
-
-        from("direct:uploadMergedFileToOutboundBucket").streamCaching()
-                .process(e -> new File(experimentalImportHelpers.directoryForMergedNetex(e)).mkdir())
-                .process(e -> e.getIn().setBody(
-                        ZipFileUtils.zipFilesInFolder(
-                                experimentalImportHelpers.flexibleDataWorkingDirectory(e),
-                                experimentalImportHelpers.directoryForMergedNetex(e) + "/merged.zip")))
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + EXPORT_FILE_NAME))
-                .to("direct:uploadBlob")
-                .routeId("netex-upload-merged-netex-to-outbound-bucket");
-
-
-        from("direct:uploadMergedFileToValidationFolder")
-                .process(e -> new File(experimentalImportHelpers.directoryForMergedNetex(e)).mkdir())
-                .process(e -> e.getIn().setBody(
-                        ZipFileUtils.zipFilesInFolder(
-                                experimentalImportHelpers.flexibleDataWorkingDirectory(e),
-                                experimentalImportHelpers.directoryForMergedNetex(e) + "/merged.zip")))
-                .setHeader(FILE_HANDLE, simple(EXPORT_MERGED_FOR_VALIDATION))
-                .to("direct:uploadInternalBlob")
-                .routeId("netex-merged-upload-to-validation-folder");
-
-
-        from("direct:unpackChouetteExportToWorkingFolder")
-                .setHeader(FILE_HANDLE).method(experimentalImportHelpers, "pathToExportedNetexFileToMergeWithFlex")
-                .to("direct:getInternalBlob")
-                .choice()
-                .when(body().isNotEqualTo(null))
-                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), experimentalImportHelpers.flexibleDataWorkingDirectory(e)))
-                .setProperty(PROP_HAS_CHOUETTE_DATA, constant("true"))
-                .otherwise()
-                .to("direct:tryFallbackToLatestAshurOutput")
-                .routeId("netex-export-merge-chouette-with-flexible-lines-unpack-chouette-export");
-
-        // Fallback in a sub-route to avoid nested choice() (same pattern as direct:unpackFlexibleLinesExportToWorkingFolder).
-        // Only used for experimental codespaces, where the merge can be triggered from a different correlation
+    /**
+     * @return true if the Chouette export - or, for an experimental codespace, the Ashur output standing in
+     *         for it - was found and unpacked
+     */
+    private boolean unpackChouetteExport(MardukMessage message) {
+        String fileHandle = experimentalImportHelpers.pathToExportedNetexFileToMergeWithFlex(message);
+        message.setHeader(FILE_HANDLE, fileHandle);
+        if (unpackInternalBlobIfPresent(message, fileHandle)) {
+            return true;
+        }
+        if (!experimentalImportHelpers.shouldRunExperimentalImport(message)) {
+            LOGGER.info("{} was empty when trying to fetch it from blobstore.", fileHandle);
+            return false;
+        }
+        // Only for experimental codespaces, where the merge can be triggered from a different correlation
         // (e.g. FLEX post-validation) and the correlation-keyed path therefore points to no file.
-        from("direct:tryFallbackToLatestAshurOutput")
-                .choice().when(experimentalImportHelpers::shouldRunExperimentalImport)
-                .to("direct:doFallbackToLatestAshurOutput")
-                .otherwise()
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
-                .routeId("netex-export-merge-chouette-with-flexible-lines-try-fallback-to-latest-ashur-output");
+        String fallbackHandle = experimentalImportHelpers.pathToLatestNetexWithoutBlocksFromAshur(message);
+        message.setHeader(FILE_HANDLE, fallbackHandle);
+        if (unpackInternalBlobIfPresent(message, fallbackHandle)) {
+            return true;
+        }
+        LOGGER.info("{} fallback was empty when trying to fetch latest Ashur output from blobstore.",
+                fallbackHandle);
+        return false;
+    }
 
-        from("direct:doFallbackToLatestAshurOutput")
-                .setHeader(FILE_HANDLE).method(experimentalImportHelpers, "pathToLatestNetexWithoutBlocksFromAshur")
-                .to("direct:getInternalBlob")
-                .choice()
-                .when(body().isNotEqualTo(null))
-                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), experimentalImportHelpers.flexibleDataWorkingDirectory(e)))
-                .setProperty(PROP_HAS_CHOUETTE_DATA, constant("true"))
-                .otherwise()
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${header." + FILE_HANDLE + "} fallback was empty when trying to fetch latest Ashur output from blobstore.")
-                .routeId("netex-export-merge-chouette-with-flexible-lines-do-fallback-to-latest-ashur-output");
+    /** @return true if the flexible lines export was found and unpacked */
+    private boolean unpackFlexibleLinesExport(MardukMessage message) {
+        if (!mergeFlexibleLinesEnabled) {
+            LOGGER.info("Skipping merge with flexible lines as this is disabled.");
+            return false;
+        }
+        String fileHandle = BLOBSTORE_PATH_OUTBOUND + "netex/" + message.getHeader(CHOUETTE_REFERENTIAL, String.class)
+                + "-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME;
+        message.setHeader(FILE_HANDLE, fileHandle);
+        try (InputStream archive = exchangeBlobStore.getBlob(fileHandle)) {
+            if (archive == null) {
+                LOGGER.info("No flexible line data found: {} was empty when trying to fetch it from blobstore.",
+                        fileHandle);
+                return false;
+            }
+            ZipFileUtils.unzipFile(archive, experimentalImportHelpers.flexibleDataWorkingDirectory(message));
+            return true;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not unpack " + fileHandle, e);
+        }
+    }
 
+    private boolean unpackInternalBlobIfPresent(MardukMessage message, String fileHandle) {
+        try (InputStream archive = internalBlobStore.getBlob(fileHandle)) {
+            if (archive == null) {
+                return false;
+            }
+            ZipFileUtils.unzipFile(archive, experimentalImportHelpers.flexibleDataWorkingDirectory(message));
+            return true;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not unpack " + fileHandle, e);
+        }
+    }
 
-        from("direct:unpackFlexibleLinesExportToWorkingFolder")
-                .choice().when(constant(mergeFlexibleLinesEnabled))
-                .to("direct:doUnpackFlexibleLinesExportToWorkingFolder")
-                .otherwise()
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Skipping merge with flexible lines as this is disabled.")
-                .routeId("netex-export-merge-chouette-with-flexible-lines-unpack-flexible-lines-export");
+    private void uploadMergedFileToOutboundBucket(MardukMessage message) {
+        Path merged = zipTheWorkingFolder(message);
+        String fileHandle = BLOBSTORE_PATH_OUTBOUND + "netex/"
+                + message.getHeader(CHOUETTE_REFERENTIAL, String.class) + "-"
+                + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+        message.setHeader(FILE_HANDLE, fileHandle);
+        store(message, merged, fileHandle, publicBlobStore);
+    }
 
-        // do unpack in a sub-route to avoid having nested choice(), which does not work
-        from("direct:doUnpackFlexibleLinesExportToWorkingFolder")
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_FLEXIBLE_LINES_NETEX_FILENAME))
-                .to("direct:fetchExternalBlob")
-                .choice()
-                .when(body().isNotEqualTo(null))
-                .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), experimentalImportHelpers.flexibleDataWorkingDirectory(e)))
-                .setProperty(PROP_AS_FLEXIBLE_DATA, constant("true"))
-                .otherwise()
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "No flexible line data found: ${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
-                .routeId("netex-export-merge-chouette-with-flexible-lines-do-unpack-flexible-lines-export");
+    private void uploadMergedFileToValidationFolder(MardukMessage message) {
+        Path merged = zipTheWorkingFolder(message);
+        String fileHandle = BLOBSTORE_PATH_UTTU + "netex/" + message.getHeader(CHOUETTE_REFERENTIAL, String.class)
+                + "/" + message.getHeader(CORRELATION_ID, String.class) + "_"
+                + LocalDateTime.now().format(TIMESTAMP) + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+        message.setHeader(FILE_HANDLE, fileHandle);
+        store(message, merged, fileHandle, internalBlobStore);
+    }
 
-        // start the validation in antu
-        from("direct:antuMergedNetexPostValidation")
-                .log(LoggingLevel.INFO, correlation() + "validating Merged NeTEx dataset")
-                .to("direct:copyInternalBlobToValidationBucket")
-                .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION))
-                .setHeader(VALIDATION_CLIENT_HEADER, constant(VALIDATION_CLIENT_MARDUK))
-                .setHeader(VALIDATION_PROFILE_HEADER, constant(VALIDATION_PROFILE_TIMETABLE_FLEX_MERGING))
-                .setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, header(FILE_HANDLE))
-                .setHeader(VALIDATION_CORRELATION_ID_HEADER, header(CORRELATION_ID))
-                .to("google-pubsub:{{antu.pubsub.project.id}}:AntuNetexValidationQueue")
-                .process(e -> JobEvent.providerJobBuilder(e)
-                        .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION)
-                        .state(JobEvent.State.PENDING)
-                        .jobId(null)
-                        .build())
-                .to("direct:updateStatus")
-                .routeId("antu-merged-netex-post-validation");
+    private Path zipTheWorkingFolder(MardukMessage message) {
+        String resultDirectory = experimentalImportHelpers.directoryForMergedNetex(message);
+        new File(resultDirectory).mkdir();
+        return ZipFileUtils.zipFilesInFolder(
+                experimentalImportHelpers.flexibleDataWorkingDirectory(message),
+                resultDirectory + "/merged.zip").toPath();
+    }
 
+    /** Streamed off disk: a merged dataset is far larger than the pod's heap. */
+    private static void store(
+            MardukMessage message, Path merged, String fileHandle, AbstractBlobStoreService blobStore) {
+        try (InputStream archive = Files.newInputStream(merged)) {
+            message.setHeader(FILE_VERSION, blobStore.uploadBlob(fileHandle, archive));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not store the merged dataset as " + fileHandle, e);
+        }
+        message.setBody("");
+    }
+
+    private void requestMergedNetexPostValidation(MardukMessage message) {
+        LOGGER.info("validating Merged NeTEx dataset");
+        String fileHandle = message.getHeader(FILE_HANDLE, String.class);
+        message.setHeader(TARGET_CONTAINER, antuExchangeContainer);
+        message.setHeader(TARGET_FILE_HANDLE, fileHandle);
+        internalBlobStore.copyBlobToAnotherBucket(fileHandle, antuExchangeContainer, fileHandle);
+
+        message.setHeader(VALIDATION_STAGE_HEADER, VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION);
+        message.setHeader(VALIDATION_CLIENT_HEADER, VALIDATION_CLIENT_MARDUK);
+        message.setHeader(VALIDATION_PROFILE_HEADER, VALIDATION_PROFILE_TIMETABLE_FLEX_MERGING);
+        message.setHeader(VALIDATION_DATASET_FILE_HANDLE_HEADER, fileHandle);
+        message.setHeader(VALIDATION_CORRELATION_ID_HEADER, message.getHeader(CORRELATION_ID, String.class));
+        publisher.publish(MardukQueues.ANTU_NETEX_VALIDATION_QUEUE, message);
+
+        jobEvents.reportProviderJob(message, builder -> builder
+                .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION)
+                .state(JobEvent.State.PENDING)
+                .jobId(null));
+    }
+
+    private static void setCorrelationIdIfMissing(MardukMessage message) {
+        if (message.getHeader(CORRELATION_ID, String.class) == null) {
+            message.setHeader(CORRELATION_ID, UUID.randomUUID().toString());
+            MardukMdc.set(message);
+        }
+    }
+
+    private static void deleteDirectoryRecursively(String directory) {
+        LOGGER.debug("Deleting local directory {} ...", directory);
+        try {
+            if (FileSystemUtils.deleteRecursively(Path.of(directory))) {
+                LOGGER.debug("Local directory {} cleanup done.", directory);
+            } else {
+                LOGGER.debug("The directory {} did not exist, ignoring deletion request", directory);
+            }
+        } catch (IOException e) {
+            LOGGER.warn("Failed to delete directory {}", directory, e);
+        }
     }
 }

@@ -1,79 +1,186 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
+package no.rutebanken.marduk.otp;
 
-package no.rutebanken.marduk.routes.netex;
-
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.domain.ChouetteInfo;
+import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.pubsub.RecordingPubSubPublisher;
+import no.rutebanken.marduk.repository.InMemoryMardukBlobStoreRepository;
+import no.rutebanken.marduk.repository.ProviderRepository;
+import no.rutebanken.marduk.routes.file.ZipFileUtils;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.EndpointInject;
-import org.apache.camel.Produce;
-import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.component.mock.MockEndpoint;
+import no.rutebanken.marduk.routes.status.JobEventPublisher;
+import no.rutebanken.marduk.services.MardukPublicBlobStoreService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
+import org.junit.jupiter.api.io.TempDir;
 
-import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
 
-import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
-import static org.assertj.core.api.Assertions.assertThat;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+class Otp2MergedNetexExportTest {
 
-class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
+    private static final String CONTAINER = "marduk";
+    private static final String STOPS_BLOB = "tiamat/Full_latest.zip";
+    private static final String MERGED_BLOB = "outbound/netex/rb_norway-aggregated-netex.zip";
+    private static final String RUT_EXPORT = "outbound/netex/rb_rut-aggregated-netex.zip";
+    private static final String AKT_EXPORT = "outbound/netex/rb_akt-aggregated-netex.zip";
 
-    @Produce("direct:otp2ExportMergedNetex")
-    protected ProducerTemplate startRoute;
+    @TempDir
+    Path workingDirectory;
 
-    @Value("${netex.export.stop.place.blob.path:tiamat/Full_latest.zip}")
-    private String stopPlaceExportBlobPath;
+    private InMemoryMardukBlobStoreRepository repository;
+    private MardukPublicBlobStoreService blobStore;
+    private RecordingPubSubPublisher publisher;
+    private ProviderRepository providerRepository;
 
-    @Value("${netex.export.file.path:netex/rb_norway-aggregated-netex.zip}")
-    private String netexExportMergedFilePath;
-
-    @EndpointInject("mock:updateStatus")
-    protected MockEndpoint updateStatus;
-
-    @Test
-    void testExportMergedNetex() throws Exception {
-
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "otp2-netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-
-        // Create stop file in memory blob store
-        mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"));
-
-        // Create provider netex export in memory blob store
-        mardukInMemoryBlobStoreRepository.uploadBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-aggregated-netex.zip", new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip"));
-
-        updateStatus.expectedMessageCount(2);
-
-        context.start();
-
-        startRoute.requestBody(null);
-
-        updateStatus.assertIsSatisfied();
-
-        List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.getDomain()) && JobEvent.State.STARTED.equals(je.getState())));
-        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE_PUBLISH.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState())));
-
-        assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath)).as("Expected merged netex file to have been uploaded").isNotNull();
+    @BeforeEach
+    void setUp() {
+        repository = new InMemoryMardukBlobStoreRepository(new ConcurrentHashMap<>());
+        blobStore = new MardukPublicBlobStoreService(CONTAINER, repository);
+        publisher = new RecordingPubSubPublisher();
+        providerRepository = mock(ProviderRepository.class);
+        when(providerRepository.getProviders()).thenReturn(List.of(provider("rb_rut", null), provider("rb_akt", null)));
     }
 
+    private static Provider provider(String referential, Long migrateDataToProvider) {
+        Provider provider = new Provider();
+        ChouetteInfo info = new ChouetteInfo();
+        info.setReferential(referential);
+        info.setMigrateDataToProvider(migrateDataToProvider);
+        provider.setChouetteInfo(info);
+        return provider;
+    }
+
+    private Otp2MergedNetexExport export() {
+        return new Otp2MergedNetexExport(
+                blobStore,
+                providerRepository,
+                new JobEventPublisher(publisher),
+                workingDirectory.toString(),
+                STOPS_BLOB,
+                "netex/rb_norway-aggregated-netex.zip",
+                "_stops");
+    }
+
+    private void upload(String name, String file) throws IOException {
+        try (InputStream contents = Files.newInputStream(Path.of(file))) {
+            repository.uploadBlob(name, contents);
+        }
+    }
+
+    private void uploadStopPlaceExport() throws IOException {
+        upload(STOPS_BLOB, "src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip");
+    }
+
+    private void uploadProviderExport(String name) throws IOException {
+        upload(name, "src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip");
+    }
+
+    private static MardukMessage request() {
+        return new MardukMessage().setHeader(CORRELATION_ID, "corr-id");
+    }
+
+    private Set<String> mergedArchiveEntries() throws IOException {
+        try (InputStream merged = repository.getBlob(MERGED_BLOB)) {
+            return ZipFileUtils.listFilesInZip(merged.readAllBytes()).stream()
+                    .map(ZipEntry::getName)
+                    .collect(java.util.stream.Collectors.toSet());
+        }
+    }
+
+    private List<JobEvent> reportedEvents() {
+        return publisher.publishedTo(MardukQueues.JOB_EVENT_QUEUE).stream()
+                .map(published -> JobEvent.fromString(published.body()))
+                .toList();
+    }
+
+    @Test
+    void everyProvidersExportAndTheStopPlacesAreMergedIntoOneArchive() throws IOException {
+        uploadProviderExport(RUT_EXPORT);
+        uploadProviderExport(AKT_EXPORT);
+        uploadStopPlaceExport();
+
+        assertTrue(export().export(request()));
+
+        assertEquals(Set.of("WF739.xml", "_stops.xml"), mergedArchiveEntries(),
+                "the stop place file is renamed to the name the profile expects");
+        assertEquals(List.of(JobEvent.State.STARTED, JobEvent.State.OK),
+                reportedEvents().stream().map(JobEvent::getState).toList());
+        assertEquals(JobEvent.JobDomain.TIMETABLE_PUBLISH, reportedEvents().getFirst().getDomain());
+        assertEquals(JobEvent.TimetableAction.EXPORT_NETEX_MERGED.toString(),
+                reportedEvents().getFirst().getAction());
+    }
+
+    @Test
+    void aProviderWhoseDataMigratesOnwardsIsNotIncluded() {
+        // Its data is exported by the dataspace it migrates into, so including it would duplicate every line.
+        when(providerRepository.getProviders())
+                .thenReturn(List.of(provider("rut", 2L), provider("rb_rut", null)));
+
+        assertEquals(List.of("rb_rut-aggregated-netex.zip"), export().aggregatedNetexFiles());
+    }
+
+    @Test
+    void aProviderWithNoExportYetIsSkippedRatherThanFailingTheMerge() throws IOException {
+        uploadProviderExport(RUT_EXPORT);
+        uploadStopPlaceExport();
+
+        assertTrue(export().export(request()));
+
+        assertEquals(Set.of("WF739.xml", "_stops.xml"), mergedArchiveEntries());
+    }
+
+    @Test
+    void aMissingStopPlaceExportFailsTheExportAndProducesNoArchive() throws IOException {
+        uploadProviderExport(RUT_EXPORT);
+
+        assertFalse(export().export(request()), "the caller must abort the graph build");
+
+        assertEquals(List.of(JobEvent.State.STARTED, JobEvent.State.FAILED),
+                reportedEvents().stream().map(JobEvent::getState).toList());
+        assertFalse(repository.exist(MERGED_BLOB));
+    }
+
+    @Test
+    void theWorkingDirectoryIsRemovedAfterAFailedExport() throws IOException {
+        // Unpacked, the providers' exports and the stop place registry come to more than the pod's disk.
+        uploadProviderExport(RUT_EXPORT);
+
+        export().export(request());
+
+        assertTrue(childrenOf(workingDirectory).isEmpty(),
+                "the local working directory was left behind: " + childrenOf(workingDirectory));
+    }
+
+    @Test
+    void theWorkingDirectoryIsRemovedAfterASuccessfulExport() throws IOException {
+        uploadProviderExport(RUT_EXPORT);
+        uploadStopPlaceExport();
+
+        export().export(request());
+
+        assertTrue(childrenOf(workingDirectory).isEmpty(),
+                "the local working directory was left behind: " + childrenOf(workingDirectory));
+    }
+
+    private static List<Path> childrenOf(Path directory) throws IOException {
+        try (Stream<Path> children = Files.list(directory)) {
+            return children.toList();
+        }
+    }
 }

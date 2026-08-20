@@ -1,887 +1,558 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
-
 package no.rutebanken.marduk.rest;
 
+import jakarta.ws.rs.NotFoundException;
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.chouette.ChouetteJobCleanup;
+import no.rutebanken.marduk.chouette.ChouetteJobs;
+import no.rutebanken.marduk.chouette.ChouetteValidationTriggers;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
-import no.rutebanken.marduk.domain.BlobStoreFiles.File;
 import no.rutebanken.marduk.domain.OtpGraphsInfo;
+import no.rutebanken.marduk.osm.OsmMapFetcher;
+import no.rutebanken.marduk.otp.OtpGraphs;
+import no.rutebanken.marduk.pipeline.MardukMdc;
+import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.rest.openapi.model.UploadResult;
-import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
-import no.rutebanken.marduk.routes.chouette.json.Status;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
 import no.rutebanken.marduk.security.UsernameService;
-import org.apache.camel.*;
-import org.apache.camel.model.rest.RestBindingMode;
-import org.apache.camel.model.rest.RestParamType;
-import org.rutebanken.helper.organisation.NotAuthenticatedException;
+import no.rutebanken.marduk.services.IdempotentRepositoryService;
+import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
+import no.rutebanken.marduk.services.MardukPublicBlobStoreService;
+import no.rutebanken.marduk.upload.TimetableFileUploader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.stereotype.Component;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.ws.rs.NotFoundException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.io.InputStream;
 import java.util.List;
+import java.util.UUID;
 
-import static jakarta.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
-import static no.rutebanken.marduk.Constants.*;
-import static org.apache.camel.support.builder.PredicateBuilder.isEqualTo;
+import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.FILE_NAME;
+import static no.rutebanken.marduk.Constants.IMPORT_TYPE_NETEX_FLEX;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
+import static no.rutebanken.marduk.Constants.USERNAME;
 
 /**
- * API endpoints for managing the transit data import pipeline.
- * These endpoints are intended to be used to interact with front-ends (Ninkasi, Bel).
- * See {@link AdminExternalRestRouteBuilder} for the external API used by machine-to-machine clients.
+ * The admin API, used by the operator front ends (Ninkasi, Bel).
+ *
+ * <p>Replaces {@code AdminRestRouteBuilder}: the REST DSL, the {@code platform-http} component, and the
+ * {@code direct:} route per endpoint that existed only to be a REST target. Paths, methods, status codes and
+ * content types are unchanged - Ninkasi is not being asked to move.
+ *
+ * <p>Three things the routes needed and Spring does not:
+ *
+ * <ul>
+ *   <li><b>Header stripping.</b> Every route began with {@code removeHttpHeaders} because platform-http
+ *       copied the request headers, {@code Authorization} included, onto the exchange. A message built here
+ *       carries only what is put on it.
+ *   <li><b>Authorization off the request thread.</b> platform-http handed the exchange to a worker thread
+ *       without a {@code SecurityContext}, so the authorization service rebuilt one from the bearer token.
+ *       A controller method runs on the request thread and the context is simply there.
+ *   <li><b>The wildcard {@code rest("")} routes.</b> They existed to make Jetty match authorization filters
+ *       against paths with path parameters. Spring Security matches the mappings directly.
+ * </ul>
+ *
+ * <p>Two deliberate deviations, both uniform where the routes were not. Every action now carries a
+ * correlation id, so its job events can be followed in nabu - the routes only set one on about half of
+ * them. And authorization is checked before the provider is looked up everywhere, where two routes did it
+ * the other way round and told an unauthorized caller whether a provider id exists.
+ *
+ * <p>The three {@code line_statistics} endpoints are gone. Their {@code direct:chouetteGetStats*} consumers
+ * were deleted with Chouette statistics support, leaving {@code .to()} calls that could only fail; every
+ * request to them has returned a 500 since. See {@link AdminExternalRestController} for the machine-to-machine
+ * API.
  */
-@Component
-public class AdminRestRouteBuilder extends BaseRouteBuilder {
+@RestController
+public class AdminRestController {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AdminRestController.class);
 
 
-    private static final String JSON = "application/json";
+    /** Not {@code application/octet-stream}: the REST DSL declared this spelling and clients match on it. */
     private static final String X_OCTET_STREAM = "application/x-octet-stream";
-    private static final String PLAIN = "text/plain";
-    private static final String OPENAPI_DATA_TYPE_STRING = "string";
-    private static final String OPENAPI_DATA_TYPE_INTEGER = "integer";
 
-    private final String port;
-    private final String host;
-    private final MardukAuthorizationService mardukAuthorizationService;
+    private static final String OTP2_BASE_GRAPH_TYPE = "otp2_base";
+    private static final String OTP2_NETEX_GRAPH_TYPE = "otp2_netex";
+
+    private final MardukAuthorizationService authorizationService;
     private final UsernameService usernameService;
+    private final ProviderRepository providerRepository;
+    private final MardukInternalBlobStoreService internalBlobStore;
+    private final MardukPubSubPublisher publisher;
+    private final MardukPublicBlobStoreService publicBlobStore;
+    private final List<String> timetableExportPrefixes;
+    private final TimetableFileUploader fileUploader;
+    private final IdempotentRepositoryService idempotentRepositoryService;
+    private final ChouetteJobCleanup chouetteJobCleanup;
+    private final ChouetteJobs chouetteJobs;
+    private final ChouetteValidationTriggers validationTriggers;
+    private final OsmMapFetcher osmMapFetcher;
+    private final OtpGraphs otpGraphs;
+    private final boolean duplicateFilterWeb;
+    private final boolean duplicateFilterRest;
+    private final boolean httpImportEnabled;
 
-    public AdminRestRouteBuilder(
-            @Value("${server.port:8080}") String port,
-            @Value("${server.host:0.0.0.0}")
-            String host,
-            MardukAuthorizationService mardukAuthorizationService, UsernameService usernameService) {
-        this.port = port;
-        this.host = host;
-        this.mardukAuthorizationService = mardukAuthorizationService;
+    public AdminRestController(
+            MardukAuthorizationService authorizationService,
+            UsernameService usernameService,
+            ProviderRepository providerRepository,
+            MardukInternalBlobStoreService internalBlobStore,
+            MardukPubSubPublisher publisher,
+            MardukPublicBlobStoreService publicBlobStore,
+            TimetableFileUploader fileUploader,
+            IdempotentRepositoryService idempotentRepositoryService,
+            ChouetteJobCleanup chouetteJobCleanup,
+            ChouetteJobs chouetteJobs,
+            ChouetteValidationTriggers validationTriggers,
+            OsmMapFetcher osmMapFetcher,
+            OtpGraphs otpGraphs,
+            @Value("${duplicate.filter.web:true}") boolean duplicateFilterWeb,
+            @Value("${duplicate.filter.rest:true}") boolean duplicateFilterRest,
+            @Value("${netex.import.http.autoStartup:true}") boolean httpImportEnabled,
+            @Value("#{'${timetable.export.blob.prefixes:outbound/gtfs/,outbound/netex/}'.split(',')}")
+            List<String> timetableExportPrefixes) {
+        this.authorizationService = authorizationService;
         this.usernameService = usernameService;
+        this.providerRepository = providerRepository;
+        this.internalBlobStore = internalBlobStore;
+        this.publisher = publisher;
+        this.publicBlobStore = publicBlobStore;
+        this.fileUploader = fileUploader;
+        this.idempotentRepositoryService = idempotentRepositoryService;
+        this.chouetteJobCleanup = chouetteJobCleanup;
+        this.chouetteJobs = chouetteJobs;
+        this.validationTriggers = validationTriggers;
+        this.osmMapFetcher = osmMapFetcher;
+        this.otpGraphs = otpGraphs;
+        this.duplicateFilterWeb = duplicateFilterWeb;
+        this.duplicateFilterRest = duplicateFilterRest;
+        this.httpImportEnabled = httpImportEnabled;
+        this.timetableExportPrefixes = timetableExportPrefixes;
     }
 
-    @Override
-    public void configure() throws Exception {
-        super.configure();
-
-        onException(AccessDeniedException.class)
-                .handled(true)
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(403))
-                .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
-                .transform(exceptionMessage());
-
-        onException(NotAuthenticatedException.class)
-                .handled(true)
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(401))
-                .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
-                .transform(exceptionMessage());
-
-        onException(NotFoundException.class)
-                .handled(true)
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404))
-                .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
-                .transform(exceptionMessage());
-
-
-        restConfiguration()
-                .component("platform-http")
-                .contextPath("/services")
-                // Keep direct: target routes standalone so several REST routes can share the same
-                // direct endpoint (e.g. /files and /flex/files both reach direct:adminDatasetUploadFile).
-                // Inlining (the Camel default) would absorb the consumer into one REST route.
-                .inlineRoutes(false)
-                .bindingMode(RestBindingMode.json)
-                .apiContextPath("/openapi.yaml")
-                .apiProperty("api.title", "Timetable Admin API").apiProperty("api.version", "1.0");
-
-        rest("")
-                .apiDocs(false)
-                .description("Wildcard definitions necessary to get Jetty to match authorization filters to endpoints with path params")
-                .get()
-                .to("direct:adminRouteAuthorizeGet")
-                .post()
-                .to("direct:adminRouteAuthorizePost")
-                .put()
-                .to("direct:adminRouteAuthorizePut")
-                .delete()
-                .to("direct:adminRouteAuthorizeDelete");
-
-        String commonApiDocEndpoint = "http:" + host + ":" + port + "/services/openapi.yaml?bridgeEndpoint=true";
-
-        rest("/timetable_admin")
-                .post("/idempotentfilter/clean")
-                .description("Clean unique filename and digest Idempotent Stores")
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminApplicationCleanUniqueFilenameAndDigestIdempotentRepos")
-
-                .post("/validate/prevalidation")
-                .description("Triggers the prevalidation process for all providers in Chouette")
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminTriggerPrevalidationForAllProviders")
-
-                .post("/validate/level2")
-                .description("Triggers the validate->export process for all level2 providers in Chouette")
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminChouetteValidateLevel2AllProviders")
-
-                .get("/jobs")
-                .description("List Chouette jobs for all providers. Filters defaults to status=SCHEDULED,STARTED")
-                .param()
-                .required(Boolean.FALSE)
-                .name("status")
-                .type(RestParamType.query)
-                .description("Chouette job statuses")
-                .allowableValues(Arrays.stream(Status.values()).map(Status::name).toList())
-                .endParam()
-                .param()
-                .required(Boolean.FALSE)
-                .name("action")
-                .type(RestParamType.query)
-                .description("Chouette job types")
-                .allowableValues("importer", "exporter", "validator")
-                .endParam()
-                .outType(ProviderAndJobs[].class)
-                .produces(JSON)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminChouetteListJobsAll")
-
-                .delete("/jobs")
-                .description("Cancel all Chouette jobs for all providers")
-                .responseMessage().code(200).message("All jobs canceled").endResponseMessage()
-                .responseMessage().code(500).message("Could not cancel all jobs").endResponseMessage()
-                .to("direct:adminChouetteCancelAllJobsAll")
-
-                .delete("/completed_jobs")
-                .description("Remove completed Chouette jobs for all providers. ")
-                .param()
-                .required(Boolean.FALSE)
-                .name("keepJobs")
-                .type(RestParamType.query)
-                .dataType(OPENAPI_DATA_TYPE_INTEGER)
-                .description("No of jobs to keep, regardless of age")
-                .endParam()
-                .param()
-                .required(Boolean.FALSE)
-                .name("keepDays")
-                .type(RestParamType.query)
-                .dataType(OPENAPI_DATA_TYPE_INTEGER)
-                .description("No of days to keep jobs for")
-                .endParam()
-                .responseMessage().code(200).message("Completed jobs removed").endResponseMessage()
-                .responseMessage().code(500).message("Could not remove complete jobs").endResponseMessage()
-                .to("direct:adminChouetteRemoveOldJobs")
-
-                .post("/clean/{filter}")
-                .description("Triggers the clean ALL dataspace process in Chouette. Only timetable data are deleted, not job data (imports, exports, validations) or stop places")
-                .param()
-                .required(Boolean.TRUE)
-                .name("filter")
-                .type(RestParamType.path)
-                .description("Optional filter to clean only level 1, level 2 or all spaces (no parameter value)")
-                .allowableValues("all", "level1", "level2")
-                .endParam()
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .responseMessage().code(500).message("Internal error - check filter").endResponseMessage()
-                .to("direct:adminChouetteCleanAll")
-
-                .post("/stop_places/clean")
-                .description("Triggers the cleaning of ALL stop places in Chouette")
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .responseMessage().code(500).message("Internal error - check filter").endResponseMessage()
-                .to("direct:adminChouetteCleanStopPlaces")
-
-                .get("/line_statistics/{filter}")
-                .description("List stats about data in chouette for multiple providers")
-                .param().name("providerIds")
-                .type(RestParamType.query).dataType(OPENAPI_DATA_TYPE_INTEGER)
-                .required(Boolean.FALSE)
-                .description("Comma separated list of id for providers to fetch line stats for")
-                .endParam()
-                .param()
-                .name("filter")
-                .required(Boolean.TRUE)
-                .type(RestParamType.path)
-                .description("Filter to fetch statistics for only level 1, level 2 or all spaces")
-                .allowableValues("all", "level1", "level2")
-                .endParam()
-                .bindingMode(RestBindingMode.off)
-                .produces(JSON)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminChouetteStatsMultipleProviders")
-
-                .post("/line_statistics/refresh")
-                .description("Recalculate stats about data in chouette for all providers")
-                .bindingMode(RestBindingMode.off)
-                .produces(PLAIN)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminChouetteStatsRefreshCache")
-
-                .get("/export/files")
-                .description("List files containing exported time table data and graphs")
-                .outType(BlobStoreFiles.class)
-                .produces(JSON)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminChouetteTimetableFilesGet")
-
-                .post("/export/gtfs/merged")
-                .description("Prepare and upload merged GTFS export")
-                .produces(PLAIN)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal error").endResponseMessage()
-                .to("direct:adminTimetableGtfsExport")
-
-                .post("routing_graph/build_base")
-                .description("Triggers building of the OTP base graph using map data (osm + height)")
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminBuildBaseGraph")
-
-                .post("routing_graph/build")
-                .description("Triggers building of the OTP graph using existing NeTEx and and a pre-prepared base graph with map data")
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminBuildGraphNetex")
-
-                .post("routing_graph/build_candidate/{graphType}")
-                .description("Triggers graph building for a candidate OTP version")
-                .param().name("graphType").type(RestParamType.path).description("Type of graph").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminBuildGraphCandidate")
-
-                .get("routing_graph/graphs")
-                .description("List latest generated OTP2 graphs")
-                .outType(OtpGraphsInfo[].class)
-                .produces(JSON)
-                .responseMessage().code(200).endResponseMessage()
-                .to("direct:adminListGraphs")
-
-                .post("/upload/{codespace}")
-                .description("Upload NeTEx file")
-                .deprecated()
-                .param().name("codespace").type(RestParamType.path).description("Provider Codespace").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
-                .consumes(MULTIPART_FORM_DATA)
-                .produces(PLAIN)
-                .bindingMode(RestBindingMode.off)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Internal server error").endResponseMessage()
-                .to("direct:adminExternalUploadFile")
-
-                .get("/download_netex_blocks/{codespace}")
-                .description("Download NeTEx dataset with blocks")
-                .deprecated()
-                .param().name("codespace").type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
-                .produces(X_OCTET_STREAM)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
-                .to("direct:adminExternalDownloadPrivateDataset")
-
-                .get("/openapi.yaml")
-                .apiDocs(false)
-                .bindingMode(RestBindingMode.off)
-                .to(commonApiDocEndpoint);
-
-        rest("/timetable_admin/{providerId}")
-                .post("/import")
-                .description("Triggers the import->validate->export process in Chouette for each blob store file handle. Use /files call to obtain available files. Files are imported in the same order as they are provided")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .type(BlobStoreFiles.class)
-                .outType(String.class)
-                .consumes(JSON)
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Job accepted").endResponseMessage()
-                .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
-                .to("direct:adminDatasetImport")
-
-                .post("/flex/import")
-                .description("Triggers the import->validate->export for each blob store file handle. Use /files call to obtain available files. Files are imported in the same order as they are provided")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .type(BlobStoreFiles.class)
-                .outType(String.class)
-                .consumes(JSON)
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Job accepted").endResponseMessage()
-                .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
-                .to("direct:adminFlexImport")
-
-                .get("/files")
-                .description("List files available for reimport")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .outType(BlobStoreFiles.class)
-                .produces(JSON)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
-                .to("direct:adminDatasetImportList")
-
-                .post("/files")
-                .description("Upload file for import into Chouette")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .consumes(MULTIPART_FORM_DATA)
-                .produces(PLAIN)
-                .bindingMode(RestBindingMode.off)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
-                .to("direct:adminDatasetUploadFile")
-
-                .post("/flex/files")
-                .description("Upload flexible line file for import")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .consumes(MULTIPART_FORM_DATA)
-                .produces(PLAIN)
-                .bindingMode(RestBindingMode.off)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
-                .to("direct:adminUploadFlexFile")
-
-                .get("/files/{fileName}")
-                .description("Download file for reimport")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .param().name("fileName").type(RestParamType.path).description("Name of file to fetch").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
-                .produces(X_OCTET_STREAM)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Invalid fileName").endResponseMessage()
-                .to("direct:adminDatasetFileDownload")
-
-                .get("/line_statistics")
-                .description("List stats about data in chouette for a given provider")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .bindingMode(RestBindingMode.off)
-                .produces(JSON)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
-                .to("direct:adminChouetteStats")
-
-                .get("/jobs")
-                .description("List Chouette jobs for a given provider")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .param()
-                .required(Boolean.FALSE)
-                .name("status")
-                .type(RestParamType.query)
-                .description("Chouette job statuses")
-                .allowableValues(Arrays.stream(Status.values()).map(Status::name).toList())
-                .endParam()
-                .param()
-                .required(Boolean.FALSE)
-                .name("action")
-                .type(RestParamType.query)
-                .description("Chouette job types")
-                .allowableValues("importer", "exporter", "validator")
-                .endParam()
-                .outType(JobResponse[].class)
-                .produces(JSON)
-                .responseMessage().code(200).endResponseMessage()
-                .responseMessage().code(500).message("Invalid providerId").endResponseMessage()
-                .to("direct:adminChouetteListJobs")
-
-                .delete("/jobs")
-                .description("Cancel all Chouette jobs for a given provider")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Job deleted").endResponseMessage()
-                .responseMessage().code(500).message("Invalid jobId").endResponseMessage()
-                .to("direct:adminChouetteCancelAllJobs")
-
-                .delete("/jobs/{jobId}")
-                .description("Cancel a Chouette job for a given provider")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .param().name("jobId").type(RestParamType.path).description("Job id as returned in any of the /jobs GET calls").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Job deleted").endResponseMessage()
-                .responseMessage().code(500).message("Invalid jobId").endResponseMessage()
-                .to("direct:adminChouetteCancelJob")
-
-                .post("/export")
-                .description("Triggers the export process in Chouette. Note that NO validation is performed before export, and that the data must be guaranteed to be error free")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminChouetteExport")
-
-                .post("/validate")
-                .description("Triggers the validate->export process in Chouette")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminChouetteValidate")
-
-                .post("/clean")
-                .description("Triggers the clean dataspace process in Chouette. Only timetable data are deleted, not job data (imports, exports, validations)")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminChouetteClean")
-
-                .post("/transfer")
-                .description("Triggers transfer of data from one dataspace to the next")
-                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminChouetteTransfer");
-
-        rest("/map_admin")
-                .post("/download")
-                .description("Triggers downloading of the latest OSM data")
-                .produces(PLAIN)
-                .responseMessage().code(200).message("Command accepted").endResponseMessage()
-                .to("direct:adminFetchOsm");
-
-        from("direct:adminRouteAuthorizeGet")
-                .throwException(new NotFoundException())
-                .routeId("admin-route-authorize-get");
-
-        from("direct:adminRouteAuthorizePost")
-                .throwException(new NotFoundException())
-                .routeId("admin-route-authorize-post");
-
-        from("direct:adminRouteAuthorizePut")
-                .throwException(new NotFoundException())
-                .routeId("admin-route-authorize-put");
-
-        from("direct:adminRouteAuthorizeDelete")
-                .throwException(new NotFoundException())
-                .routeId("admin-route-authorize-delete");
-
-        from("direct:adminApplicationCleanUniqueFilenameAndDigestIdempotentRepos")
-                .to("direct:authorizeAdminRequest")
-                .to("direct:cleanIdempotentFileStore")
-                .setBody(constant(""))
-                .routeId("admin-application-clean-unique-filename-and-digest-idempotent-repos");
-
-        from("direct:adminTriggerPrevalidationForAllProviders")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, correlation() + "Triggering prevalidation for all providers")
-                .process(this::removeHttpHeaders)
-                .to(ExchangePattern.InOnly, "direct:triggerAntuValidationForAllProviders")
-                .setBody(constant(""))
-                .routeId("admin-trigger-prevalidation-for-all-providers");
-
-        from("direct:adminChouetteValidateLevel2AllProviders")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, correlation() + "Chouette start validation level2 for all providers")
-                .process(this::removeHttpHeaders)
-                .to(ExchangePattern.InOnly, "direct:chouetteValidateLevel2ForAllProviders")
-                .setBody(constant(""))
-                .routeId("admin-chouette-validate-level2-all-providers");
-
-        from("direct:adminChouetteListJobsAll")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.DEBUG, correlation() + "Get chouette active jobs all providers")
-                .process(this::removeHttpHeaders)
-                .process(e -> e.getIn().setHeader("status", e.getIn().getHeader("status") != null ? e.getIn().getHeader("status") : Arrays.asList("STARTED", "SCHEDULED")))
-                .to("direct:chouetteGetJobsAll")
-                .routeId("admin-chouette-list-jobs-all");
-
-        from("direct:adminChouetteCancelAllJobsAll")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, correlation() + "Cancel all chouette jobs for all providers")
-                .process(this::removeHttpHeaders)
-                .to("direct:chouetteCancelAllJobsForAllProviders")
-                .setBody(constant(""))
-                .routeId("admin-chouette-cancel-all-jobs-all");
-
-        from("direct:adminChouetteRemoveOldJobs")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, correlation() + "Removing old chouette jobs for all providers")
-                .process(this::removeHttpHeaders)
-                .to("direct:chouetteRemoveOldJobs")
-                .setBody(constant(""))
-                .routeId("admin-chouette-remove-old-jobs");
-
-        from("direct:adminChouetteCleanAll")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, correlation() + "Chouette clean all dataspaces")
-                .process(this::removeHttpHeaders)
-                .to("direct:chouetteCleanAllReferentials")
-                .setBody(constant(""))
-                .routeId("admin-chouette-clean-all");
-
-        from("direct:adminChouetteCleanStopPlaces")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, correlation() + "Chouette clean all stop places")
-                .process(this::removeHttpHeaders)
-                .to("direct:chouetteCleanStopPlaces")
-                .setBody(constant(""))
-                .routeId("admin-chouette-clean-stop-places");
-
-
-        from("direct:adminChouetteStatsMultipleProviders")
-                .to("direct:authorizeAdminRequest")
-                .process(this::removeHttpHeaders)
-                .choice()
-                .when(simple("${header.providerIds}"))
-                .process(e -> e.getIn().setHeader(PROVIDER_IDS, e.getIn().getHeader("providerIds", "", String.class).split(",")))
-                .end()
-                .log(LoggingLevel.INFO, correlation() + "Get lines statistics for multiple providers (providers whitelist: [${header." + PROVIDER_IDS + "}])")
-                .to("direct:chouetteGetStats")
-                .routeId("admin-chouette-stats-multiple-providers");
-
-        from("direct:adminChouetteStatsRefreshCache")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, correlation() + "refresh stats cache")
-                .process(this::removeHttpHeaders)
-                .to("direct:chouetteRefreshStatsCache")
-                .routeId("admin-chouette-stats-refresh-cache");
-
-        from("direct:adminChouetteTimetableFilesGet")
-                .process(this::setNewCorrelationId)
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, correlation() + "List time table and graph files")
-                .process(this::removeHttpHeaders)
-                .to("direct:listTimetableExportAndGraphBlobs")
-                .routeId("admin-chouette-timetable-files-get");
-
-        from("direct:adminDatasetFileDownload")
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeAdminRequest")
-                .to("direct:validateProvider")
-                .process(e -> e.getIn().setHeader("fileName", URLDecoder.decode(e.getIn().getHeader("fileName", String.class), StandardCharsets.UTF_8)))
-                .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND
-                        + getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))
-                        + "/" + e.getIn().getHeader("fileName", String.class)))
-                .log(LoggingLevel.INFO, correlation() + "blob store download file by name")
-                .process(this::removeHttpHeaders)
-                .to("direct:getInternalBlob")
-                .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
-                .routeId("admin-chouette-file-download");
-
-        from("direct:adminTimetableGtfsExport")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "Triggered merged GTFS export")
-                .process(this::removeHttpHeaders)
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:GtfsExportMergedQueue")
-                .routeId("admin-timetable-merged-gtfs-export");
-
-        from("direct:adminBuildBaseGraph")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "Triggered build of OTP base graph with map data")
-                .process(this::removeHttpHeaders)
-                .setBody(simple(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue")
-                .routeId("admin-build-base-graph");
-
-        from("direct:adminBuildGraphNetex")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "OTP build graph from NeTEx")
-                .process(this::removeHttpHeaders)
-                .setBody(simple(""))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue")
-                .routeId("admin-build-graph-netex");
-
-        from("direct:adminBuildGraphCandidate")
-                .to("direct:authorizeAdminRequest")
-                .process(this::removeHttpHeaders)
-                .setBody(simple(""))
-                .choice()
-                .when(isEqualTo(header("graphType"), constant("otp2_base")))
-                .log(LoggingLevel.INFO, "OTP2 build candidate base graph")
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphCandidateBuildQueue")
-                .when(isEqualTo(header("graphType"), constant("otp2_netex")))
-                .log(LoggingLevel.INFO, "OTP2 build candidate NeTEx graph")
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphCandidateBuildQueue")
-                .otherwise()
-                .setBody(constant("Unknown Graph Type"))
-                .setHeader(Exchange.HTTP_RESPONSE_CODE, constant(400))
-                .setHeader(Exchange.CONTENT_TYPE, constant(PLAIN))
-                .end()
-                .routeId("admin-build-graph-candidate");
-
-        from("direct:adminListGraphs")
-                .process(this::setNewCorrelationId)
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, correlation() + "List graphs status")
-                .process(this::removeHttpHeaders)
-                .to("direct:listGraphs")
-                .routeId("admin-chouette-graph-list");
-
-        from("direct:adminDatasetImport")
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeAdminRequest")
-                .to("direct:validateProvider")
-                // Strip HTTP headers only after authorization so the platform-http worker thread can
-                // rebuild the Spring Security context from the Authorization header (Camel 4.x async).
-                .process(this::removeHttpHeaders)
-                .split(method(ImportFilesSplitter.class, "splitFiles"))
-
-                .process(e -> {
-                    String referential = getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class));
-                    e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND + referential + "/" + e.getIn().getBody(String.class));
-                    e.getIn().setHeader(CHOUETTE_REFERENTIAL, referential);
-                })
-                .process(this::setNewCorrelationId)
-                .process(this::updateMdcFromHeaders)
-                .log(LoggingLevel.INFO, correlation() + "Chouette start import fileHandle=${body}")
-
-                .process(e -> {
-                    String fileNameForStatusLogging = "reimport-" + e.getIn().getBody(String.class);
-                    e.getIn().setHeader(Constants.FILE_NAME, fileNameForStatusLogging);
-                })
-                .setBody(constant(""))
-
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
-                .end()
-                // Replace the split input list left as the body by the splitter with an empty
-                // response body that platform-http can write back to the client.
-                .setBody(constant(""))
-                .routeId("admin-chouette-import");
-
-        from("direct:adminFlexImport")
-                .routeId("admin-flex-import")
-                .setHeader(IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
-                .to("direct:adminDatasetImport");
-
-        from("direct:adminChouetteStats")
-                .process(this::setNewCorrelationId)
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeEditorRequest")
-                .to("direct:validateProvider")
-                .log(LoggingLevel.INFO, correlation() + "Get line statistics for provider ${header.providerId}")
-                .process(this::removeHttpHeaders)
-                .to("direct:chouetteGetStatsSingleProvider")
-                .routeId("admin-chouette-stats");
-
-        from("direct:adminDatasetImportList")
-                .process(this::setNewCorrelationId)
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeAdminRequest")
-                .to("direct:validateProvider")
-                .log(LoggingLevel.INFO, correlation() + "List files in blob store")
-                .process(this::removeHttpHeaders)
-                .to("direct:listInternalBlobsFlat")
-                .routeId("admin-chouette-import-list");
-
-        from("direct:adminUploadFlexFile")
-                .routeId("admin-upload-flex-file")
-                .setHeader(IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
-                .to("direct:adminDatasetUploadFile");
-
-        from("direct:adminDatasetUploadFile")
-                .streamCaching()
-                .process(this::setNewCorrelationId)
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeEditorRequest")
-                .to("direct:validateProvider")
-                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))))
-                .log(LoggingLevel.INFO, correlation() + "Upload files and start import pipeline")
-                .process(this::removeHttpHeaders)
-                .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.web:true}", Boolean.class))
-                .setHeader(FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY, constant(true))
-                .to("direct:uploadFilesAndStartImport")
-                .routeId("admin-chouette-upload-file");
-
-        from("direct:adminChouetteListJobs")
-                .process(this::setNewCorrelationId)
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeAdminRequest")
-                .to("direct:validateProvider")
-                .log(LoggingLevel.INFO, correlation() + "Get chouette jobs status=${header.status} action=${header.action}")
-                .process(this::removeHttpHeaders)
-                .to("direct:chouetteGetJobsForProvider")
-                .routeId("admin-chouette-list-jobs");
-
-        from("direct:adminChouetteCancelAllJobs")
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeAdminRequest")
-                .to("direct:validateProvider")
-                .log(LoggingLevel.INFO, correlation() + "Cancel all chouette jobs")
-                .process(this::removeHttpHeaders)
-                .to("direct:chouetteCancelAllJobsForProvider")
-                .routeId("admin-chouette-cancel-all-jobs");
-
-        from("direct:adminChouetteCancelJob")
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeAdminRequest")
-                .to("direct:validateProvider")
-                .setHeader(Constants.CHOUETTE_JOB_ID, header("jobId"))
-                .log(LoggingLevel.INFO, correlation() + "Cancel chouette job")
-                .process(this::removeHttpHeaders)
-                .to("direct:chouetteCancelJob")
-                .routeId("admin-chouette-cancel-job");
-
-        from("direct:adminChouetteExport")
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeAdminRequest")
-                .to("direct:validateProvider")
-                .log(LoggingLevel.INFO, correlation() + "Chouette start export")
-                .process(this::removeHttpHeaders)
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue")
-                .routeId("admin-chouette-export");
-
-        from("direct:adminChouetteValidate")
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:authorizeEditorRequest")
-                .to("direct:validateProvider")
-                .log(LoggingLevel.INFO, correlation() + "Chouette start validation")
-                .process(this::removeHttpHeaders)
-
-                .choice().when(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().getMigrateDataToProvider() == null)
-                .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_2.name()))
-                .otherwise()
-                .setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, constant(JobEvent.TimetableAction.VALIDATION_LEVEL_1.name()))
-                .end()
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteValidationQueue")
-                .routeId("admin-chouette-validate");
-
-        from("direct:adminFetchOsm")
-                .process(this::setNewCorrelationId)
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "OSM update map data")
-                .process(this::removeHttpHeaders)
-                .to("direct:considerToFetchOsmMapOverNorway")
-                .routeId("admin-fetch-osm");
-
-        from("direct:adminChouetteClean")
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:validateProvider")
-                .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, correlation() + "Chouette clean dataspace")
-                .process(this::removeHttpHeaders)
-                .to("direct:chouetteCleanReferential")
-                .routeId("admin-chouette-clean");
-
-        from("direct:adminChouetteTransfer")
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .log(LoggingLevel.INFO, correlation() + "Chouette transfer dataspace")
-                .process(this::removeHttpHeaders)
-                .setHeader(PROVIDER_ID, header("providerId"))
-                .to("direct:validateProvider")
-                .to("direct:authorizeAdminRequest")
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteTransferExportQueue")
-                .routeId("admin-chouette-transfer");
-
-
-        from("direct:validateProvider")
-                .process(e -> {
-                    if (getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)) == null) {
-                        throw new NotFoundException("Unknown provider id");
-                    }
-                })
-                .id("validate-provider")
-                .routeId("admin-validate-provider");
-
-        from("direct:authorizeAdminRequest")
-                .doTry()
-                .process(e -> mardukAuthorizationService.verifyAdministratorPrivileges(e))
-                .to("direct:setUsername")
-                .routeId("admin-authorize-admin-request");
-
-        from("direct:authorizeEditorRequest")
-                .doTry()
-                .process(e -> mardukAuthorizationService.verifyRouteDataEditorPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class), e))
-                .to("direct:setUsername")
-                .routeId("admin-authorize-editor-request");
-
-        from("direct:authorizeBlocksDownloadRequest")
-                .doTry()
-                .log(LoggingLevel.INFO, "Authorizing NeTEx blocks download for provider ${header." + CHOUETTE_REFERENTIAL + "} ")
-                .process(e -> mardukAuthorizationService.verifyBlockViewerPrivileges(e.getIn().getHeader(PROVIDER_ID, Long.class), e))
-                .to("direct:setUsername")
-                .routeId("admin-authorize-blocks-download-request");
-
-        from("direct:setUsername")
-                .doTry()
-                .process(e -> e.getIn().setHeader(USERNAME, usernameService.getPreferredUsername()))
-                .routeId("admin-set-username");
-
-
-        from("direct:adminExternalUploadFile")
-                .streamCaching()
-                .process(this::setNewCorrelationId)
-                .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
-                .log(LoggingLevel.INFO, correlation() + "Received file from provider ${header.codespace} through the HTTP endpoint")
-                .to("direct:validateReferential")
-                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
-                .to("direct:authorizeEditorRequest")
-                .log(LoggingLevel.INFO, correlation() + "Authorization OK for HTTP endpoint, uploading files and starting import pipeline")
-                .process(this::removeHttpHeaders)
-                .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.rest:true}", Boolean.class))
-                .to("direct:uploadFilesAndStartImport")
-                .process(e -> e.getIn().setBody(new UploadResult()
-                        .correlationId(e.getIn().getHeader(Constants.CORRELATION_ID, String.class)))
-                )
-                .marshal().json()
-                .routeId("admin-external-upload-file")
-                .autoStartup("{{netex.import.http.autoStartup:true}}");
-
-        from("direct:adminExternalUploadFlexFile")
-                .streamCaching()
-                .process(this::setNewCorrelationId)
-                .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
-                .log(LoggingLevel.INFO, correlation() + "Received flex file from provider ${header.codespace} through the HTTP endpoint")
-                .to("direct:validateReferential")
-                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
-                .to("direct:authorizeEditorRequest")
-                .log(LoggingLevel.INFO, correlation() + "Authorization OK for HTTP endpoint, uploading flex files and starting import pipeline")
-                .process(this::removeHttpHeaders)
-                .setHeader(IMPORT_TYPE, constant(IMPORT_TYPE_NETEX_FLEX))
-                .setHeader(FILE_APPLY_DUPLICATES_FILTER, simple("${properties:duplicate.filter.rest:true}", Boolean.class))
-                .to("direct:uploadFilesAndStartImport")
-                .process(e -> e.getIn().setBody(new UploadResult()
-                        .correlationId(e.getIn().getHeader(Constants.CORRELATION_ID, String.class)))
-                )
-                .marshal().json()
-                .routeId("admin-external-upload-flex-file")
-                .autoStartup("{{netex.import.http.autoStartup:true}}");
-
-        from("direct:adminExternalDownloadPrivateDataset")
-                .process(this::setNewCorrelationId)
-                .setHeader(CHOUETTE_REFERENTIAL, header("codespace"))
-                .log(LoggingLevel.INFO, correlation() + "Received Blocks download request for provider ${header." + CHOUETTE_REFERENTIAL + "} through the HTTP endpoint")
-                .to("direct:validateReferential")
-                .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
-                .to("direct:authorizeBlocksDownloadRequest")
-                .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
-                        + "rb_" + e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toLowerCase()
-                        + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
-                .log(LoggingLevel.INFO, correlation() + "Downloading NeTEx dataset with blocks: ${header." + FILE_HANDLE + "}")
-                .process(this::removeHttpHeaders)
-                .to("direct:getInternalBlob")
-                .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
-                .routeId("admin-external-download-private_dataset");
-
-        from("direct:validateReferential")
-                .process(e -> {
-                    if (getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class)) == null) {
-                        throw new NotFoundException("Unknown chouette referential");
-                    }
-                })
-                .id("validate-referential")
-                .routeId("admin-validate-referential");
-
-
+    // ----------------------------------------------------------------------------------- all providers
+
+    @PostMapping("/services/timetable_admin/idempotentfilter/clean")
+    public ResponseEntity<String> cleanIdempotentFilter() {
+        adminRequest();
+        idempotentRepositoryService.cleanUniqueFileNameAndDigestRepo();
+        return accepted();
     }
 
+    @PostMapping("/services/timetable_admin/validate/prevalidation")
+    public ResponseEntity<String> triggerPrevalidationForAllProviders() {
+        adminRequest();
+        LOGGER.info("Triggering prevalidation for all providers");
+        validationTriggers.triggerAntuValidationForAllProviders();
+        return accepted();
+    }
 
-    public static class ImportFilesSplitter {
-        public List<String> splitFiles(@Body BlobStoreFiles files) {
-            return files.getFiles().stream().map(File::getName).toList();
+    @PostMapping("/services/timetable_admin/validate/level2")
+    public ResponseEntity<String> validateLevel2ForAllProviders() {
+        adminRequest();
+        LOGGER.info("Chouette start validation level2 for all providers");
+        validationTriggers.validateLevel2ForAllProviders();
+        return accepted();
+    }
+
+    @GetMapping("/services/timetable_admin/jobs")
+    public List<ProviderAndJobs> listJobsForAllProviders(
+            @RequestParam(required = false) List<String> status,
+            @RequestParam(required = false) String action) {
+        adminRequest();
+        return chouetteJobs.allJobsPerProvider(status != null ? status : List.of("STARTED", "SCHEDULED"), action);
+    }
+
+    @DeleteMapping("/services/timetable_admin/jobs")
+    public ResponseEntity<String> cancelAllJobsForAllProviders() {
+        adminRequest();
+        LOGGER.info("Cancel all chouette jobs for all providers");
+        chouetteJobs.cancelAllForAllProviders();
+        return accepted();
+    }
+
+    @DeleteMapping("/services/timetable_admin/completed_jobs")
+    public ResponseEntity<String> removeCompletedJobs(
+            @RequestParam(required = false) Integer keepJobs,
+            @RequestParam(required = false) Integer keepDays) {
+        adminRequest();
+        LOGGER.info("Removing old chouette jobs for all providers");
+        chouetteJobCleanup.removeOldJobs(keepJobs, keepDays);
+        return accepted();
+    }
+
+    @PostMapping("/services/timetable_admin/clean/{filter}")
+    public ResponseEntity<String> cleanAllReferentials(@PathVariable String filter) {
+        adminRequest();
+        chouetteJobs.cleanAll(filter);
+        return accepted();
+    }
+
+    @PostMapping("/services/timetable_admin/stop_places/clean")
+    public ResponseEntity<String> cleanStopPlaces() {
+        adminRequest();
+        chouetteJobs.cleanStopPlaces();
+        return accepted();
+    }
+
+    @GetMapping("/services/timetable_admin/export/files")
+    public BlobStoreFiles listTimetableExportAndGraphFiles() {
+        adminRequest();
+        LOGGER.info("List time table and graph files");
+        return publicBlobStore.listBlobsInFolders(timetableExportPrefixes);
+    }
+
+    @PostMapping("/services/timetable_admin/export/gtfs/merged")
+    public ResponseEntity<String> exportMergedGtfs() {
+        MardukMessage message = adminRequest();
+        LOGGER.info("Triggered merged GTFS export");
+        publisher.publish(MardukQueues.GTFS_EXPORT_MERGED_QUEUE, message);
+        return accepted();
+    }
+
+    @PostMapping("/services/timetable_admin/routing_graph/build_base")
+    public ResponseEntity<String> buildBaseGraph() {
+        MardukMessage message = adminRequest();
+        LOGGER.info("Triggered build of OTP base graph with map data");
+        publisher.publish(MardukQueues.OTP2_BASE_GRAPH_BUILD_QUEUE, message);
+        return accepted();
+    }
+
+    @PostMapping("/services/timetable_admin/routing_graph/build")
+    public ResponseEntity<String> buildGraphFromNetex() {
+        MardukMessage message = adminRequest();
+        LOGGER.info("OTP build graph from NeTEx");
+        publisher.publish(MardukQueues.OTP2_GRAPH_BUILD_QUEUE, message);
+        return accepted();
+    }
+
+    @PostMapping("/services/timetable_admin/routing_graph/build_candidate/{graphType}")
+    public ResponseEntity<String> buildCandidateGraph(@PathVariable String graphType) {
+        MardukMessage message = adminRequest();
+        switch (graphType) {
+            case OTP2_BASE_GRAPH_TYPE -> {
+                LOGGER.info("OTP2 build candidate base graph");
+                publisher.publish(MardukQueues.OTP2_BASE_GRAPH_CANDIDATE_BUILD_QUEUE, message);
+            }
+            case OTP2_NETEX_GRAPH_TYPE -> {
+                LOGGER.info("OTP2 build candidate NeTEx graph");
+                publisher.publish(MardukQueues.OTP2_GRAPH_CANDIDATE_BUILD_QUEUE, message);
+            }
+            default -> {
+                return ResponseEntity.badRequest().contentType(MediaType.TEXT_PLAIN).body("Unknown Graph Type");
+            }
+        }
+        return accepted();
+    }
+
+    @GetMapping("/services/timetable_admin/routing_graph/graphs")
+    public OtpGraphsInfo listGraphs() {
+        adminRequest();
+        LOGGER.info("List graphs status");
+        return otpGraphs.list();
+    }
+
+    // ------------------------------------------------------------------ deprecated codespace endpoints
+
+    /** @deprecated use {@code POST /services/timetable-management/datasets/{codespace}} */
+    @Deprecated(since = "the timetable-management API")
+    @PostMapping(value = "/services/timetable_admin/upload/{codespace}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public UploadResult uploadByCodespace(
+            @PathVariable String codespace, @RequestParam MultiValueMap<String, MultipartFile> parts) {
+        requireHttpImportEnabled();
+        String correlationId = newCorrelationId();
+        LOGGER.info("Received file from provider {} through the HTTP endpoint", codespace);
+        Long providerId = providerIdOf(codespace);
+        authorizationService.verifyRouteDataEditorPrivileges(providerId);
+        LOGGER.info("Authorization OK for HTTP endpoint, uploading files and starting import pipeline");
+
+        TimetableFileUploader.Upload upload = new TimetableFileUploader.Upload(
+                codespace, providerId, correlationId, usernameService.getPreferredUsername(),
+                null, duplicateFilterRest, false);
+        fileUploader.uploadAll(uploadedFiles(parts), upload);
+        return new UploadResult().correlationId(correlationId);
+    }
+
+    /** @deprecated use {@code GET /services/timetable-management/datasets/{codespace}} */
+    @Deprecated(since = "the timetable-management API")
+    @GetMapping("/services/timetable_admin/download_netex_blocks/{codespace}")
+    public ResponseEntity<Resource> downloadNetexBlocks(@PathVariable String codespace) {
+        newCorrelationId();
+        LOGGER.info("Received Blocks download request for provider {} through the HTTP endpoint", codespace);
+        Long providerId = providerIdOf(codespace);
+        authorizationService.verifyBlockViewerPrivileges(providerId);
+
+        String fileHandle = Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
+                + "rb_" + codespace.toLowerCase()
+                + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+        LOGGER.info("Downloading NeTEx dataset with blocks: {}", fileHandle);
+        return blobResponse(fileHandle);
+    }
+
+    // ------------------------------------------------------------------------------------ per provider
+
+    @PostMapping("/services/timetable_admin/{providerId}/import")
+    public ResponseEntity<String> importFiles(@PathVariable Long providerId, @RequestBody BlobStoreFiles files) {
+        return startImport(providerId, files, null);
+    }
+
+    @PostMapping("/services/timetable_admin/{providerId}/flex/import")
+    public ResponseEntity<String> importFlexFiles(@PathVariable Long providerId, @RequestBody BlobStoreFiles files) {
+        return startImport(providerId, files, IMPORT_TYPE_NETEX_FLEX);
+    }
+
+    @GetMapping("/services/timetable_admin/{providerId}/files")
+    public BlobStoreFiles listFilesForReimport(@PathVariable Long providerId) {
+        adminRequest(providerId);
+        LOGGER.info("List files in blob store");
+        return internalBlobStore.listBlobsFlat(providerRepository.getReferential(providerId));
+    }
+
+    @PostMapping(value = "/services/timetable_admin/{providerId}/files",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadFiles(
+            @PathVariable Long providerId, @RequestParam MultiValueMap<String, MultipartFile> parts) {
+        return upload(providerId, parts, null);
+    }
+
+    @PostMapping(value = "/services/timetable_admin/{providerId}/flex/files",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadFlexFiles(
+            @PathVariable Long providerId, @RequestParam MultiValueMap<String, MultipartFile> parts) {
+        return upload(providerId, parts, IMPORT_TYPE_NETEX_FLEX);
+    }
+
+    @GetMapping("/services/timetable_admin/{providerId}/files/{fileName}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable Long providerId, @PathVariable String fileName) {
+        adminRequest(providerId);
+        String fileHandle = Constants.BLOBSTORE_PATH_INBOUND
+                + providerRepository.getReferential(providerId) + "/" + fileName;
+        LOGGER.info("blob store download file by name {}", fileHandle);
+        return blobResponse(fileHandle);
+    }
+
+    @GetMapping("/services/timetable_admin/{providerId}/jobs")
+    public List<JobResponse> listJobs(
+            @PathVariable Long providerId,
+            @RequestParam(required = false) List<String> status,
+            @RequestParam(required = false) String action) {
+        adminRequest(providerId);
+        LOGGER.info("Get chouette jobs status={} action={}", status, action);
+        return chouetteJobs.jobsFor(providerId, status, action);
+    }
+
+    @DeleteMapping("/services/timetable_admin/{providerId}/jobs")
+    public ResponseEntity<String> cancelAllJobs(@PathVariable Long providerId) {
+        adminRequest(providerId);
+        LOGGER.info("Cancel all chouette jobs");
+        chouetteJobs.cancelAllFor(providerId);
+        return accepted();
+    }
+
+    @DeleteMapping("/services/timetable_admin/{providerId}/jobs/{jobId}")
+    public ResponseEntity<String> cancelJob(@PathVariable Long providerId, @PathVariable String jobId) {
+        adminRequest(providerId);
+        LOGGER.info("Cancel chouette job {}", jobId);
+        chouetteJobs.cancel(providerId, jobId);
+        return accepted();
+    }
+
+    @PostMapping("/services/timetable_admin/{providerId}/export")
+    public ResponseEntity<String> export(@PathVariable Long providerId) {
+        MardukMessage message = adminRequest(providerId);
+        LOGGER.info("Chouette start export");
+        publisher.publish(MardukQueues.CHOUETTE_EXPORT_NETEX_QUEUE, message);
+        return accepted();
+    }
+
+    @PostMapping("/services/timetable_admin/{providerId}/validate")
+    public ResponseEntity<String> validate(@PathVariable Long providerId) {
+        MardukMessage message = editorRequest(providerId);
+        LOGGER.info("Chouette start validation");
+        // A provider that migrates its data onwards is only level 1 here; the level 2 run happens in the
+        // dataspace it migrates into.
+        boolean migrates = providerRepository.getProvider(providerId)
+                .getChouetteInfo().getMigrateDataToProvider() != null;
+        JobEvent.TimetableAction level = migrates
+                ? JobEvent.TimetableAction.VALIDATION_LEVEL_1
+                : JobEvent.TimetableAction.VALIDATION_LEVEL_2;
+        publisher.publish(MardukQueues.CHOUETTE_VALIDATION_QUEUE,
+                message.setHeader(CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL, level.name()));
+        return accepted();
+    }
+
+    @PostMapping("/services/timetable_admin/{providerId}/clean")
+    public ResponseEntity<String> clean(@PathVariable Long providerId) {
+        adminRequest(providerId);
+        chouetteJobs.clean(providerId);
+        return accepted();
+    }
+
+    @PostMapping("/services/timetable_admin/{providerId}/transfer")
+    public ResponseEntity<String> transfer(@PathVariable Long providerId) {
+        MardukMessage message = adminRequest(providerId);
+        LOGGER.info("Chouette transfer dataspace");
+        publisher.publish(MardukQueues.CHOUETTE_TRANSFER_EXPORT_QUEUE, message);
+        return accepted();
+    }
+
+    // ------------------------------------------------------------------------------------------ osm
+
+    @PostMapping("/services/map_admin/download")
+    public ResponseEntity<String> fetchOsmMap() {
+        adminRequest();
+        LOGGER.info("OSM update map data");
+        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(osmMapFetcher.fetchIfChanged());
+    }
+
+    // -------------------------------------------------------------------------------------- internals
+
+    private ResponseEntity<String> startImport(Long providerId, BlobStoreFiles files, String importType) {
+        String username = adminRequest(providerId).getHeader(USERNAME, String.class);
+        String referential = providerRepository.getReferential(providerId);
+        // Imported in the order they were listed: a later file is meant to win over an earlier one.
+        for (BlobStoreFiles.File file : files.getFiles()) {
+            MardukMessage message = new MardukMessage()
+                    .setHeader(PROVIDER_ID, providerId)
+                    .setHeader(CHOUETTE_REFERENTIAL, referential)
+                    .setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND + referential + "/" + file.getName())
+                    .setHeader(FILE_NAME, "reimport-" + file.getName())
+                    .setHeader(CORRELATION_ID, UUID.randomUUID().toString())
+                    .setHeader(USERNAME, username)
+                    .setHeaderIfPresent(Constants.IMPORT_TYPE, importType);
+            MardukMdc.with(message, () -> {
+                LOGGER.info("Chouette start import fileHandle={}", file.getName());
+                publisher.publish(MardukQueues.PROCESS_FILE_QUEUE, message);
+            });
+        }
+        return accepted();
+    }
+
+    private ResponseEntity<String> upload(
+            Long providerId, MultiValueMap<String, MultipartFile> parts, String importType) {
+        MardukMessage request = editorRequest(providerId);
+        String correlationId = request.getHeader(CORRELATION_ID, String.class);
+        String referential = providerRepository.getReferential(providerId);
+        MardukMdc.setCodespaceIfMissing(referential);
+        LOGGER.info("Upload files and start import pipeline");
+        TimetableFileUploader.Upload upload = new TimetableFileUploader.Upload(
+                referential, providerId, correlationId, request.getHeader(USERNAME, String.class),
+                importType, duplicateFilterWeb, true);
+        fileUploader.uploadAll(uploadedFiles(parts), upload);
+        return accepted();
+    }
+
+    /**
+     * Every uploaded part, whatever it is named.
+     *
+     * <p>Bel names the part after the file rather than {@code file}, and the multipart route it replaced
+     * iterated the parts without looking at their names, so neither may be required here.
+     */
+    private static List<MultipartFile> uploadedFiles(MultiValueMap<String, MultipartFile> parts) {
+        return parts.values().stream().flatMap(List::stream).toList();
+    }
+
+    private ResponseEntity<Resource> blobResponse(String fileHandle) {
+        InputStream blob = internalBlobStore.getBlob(fileHandle);
+        if (blob == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(X_OCTET_STREAM))
+                .body(new InputStreamResource(blob));
+    }
+
+    /**
+     * The routes answered a command with an empty body; the status code carries the outcome.
+     *
+     * <p>The content type is set here rather than declared on the mapping: {@code produces} makes Spring
+     * answer 406 when the request's {@code Accept} does not list it, and Ninkasi sends
+     * {@code Accept: application/json} to every endpoint including these. Setting it on the response also
+     * stops Spring negotiating it into something else.
+     */
+    private static ResponseEntity<String> accepted() {
+        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body("");
+    }
+
+    /**
+     * A message for an administrator action, with the caller recorded on it.
+     *
+     * <p>{@code USERNAME} is what nabu shows as the person who triggered a job; the routes set it in
+     * {@code direct:setUsername}, reached from every authorization route, so every action had it.
+     */
+    private MardukMessage adminRequest() {
+        authorizationService.verifyAdministratorPrivileges();
+        return newRequest();
+    }
+
+    private MardukMessage adminRequest(Long providerId) {
+        authorizationService.verifyAdministratorPrivileges();
+        validateProvider(providerId);
+        return newRequest().setHeader(PROVIDER_ID, providerId);
+    }
+
+    private MardukMessage editorRequest(Long providerId) {
+        authorizationService.verifyRouteDataEditorPrivileges(providerId);
+        validateProvider(providerId);
+        return newRequest().setHeader(PROVIDER_ID, providerId);
+    }
+
+    private MardukMessage newRequest() {
+        return new MardukMessage()
+                .setHeader(CORRELATION_ID, newCorrelationId())
+                .setHeader(USERNAME, usernameService.getPreferredUsername());
+    }
+
+    private String newCorrelationId() {
+        String correlationId = UUID.randomUUID().toString();
+        MardukMdc.setCorrelationId(correlationId);
+        return correlationId;
+    }
+
+    private void validateProvider(Long providerId) {
+        if (providerRepository.getProvider(providerId) == null) {
+            throw new NotFoundException("Unknown provider id");
         }
     }
+
+    private Long providerIdOf(String codespace) {
+        Long providerId = providerRepository.getProviderId(codespace);
+        if (providerId == null) {
+            throw new NotFoundException("Unknown chouette referential");
+        }
+        return providerId;
+    }
+
+    private void requireHttpImportEnabled() {
+        if (!httpImportEnabled) {
+            throw new HttpImportDisabledException();
+        }
+    }
+
+    /** {@code netex.import.http.autoStartup=false} used to leave the route unstarted, which failed the send. */
+    static class HttpImportDisabledException extends RuntimeException {
+    }
 }
-
-

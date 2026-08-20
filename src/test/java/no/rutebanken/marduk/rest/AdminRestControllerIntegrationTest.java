@@ -1,39 +1,28 @@
-/*
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by
- * the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *   https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and
- * limitations under the Licence.
- *
- */
-
 package no.rutebanken.marduk.rest;
 
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.nimbusds.jose.JWSAlgorithm;
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.MardukSpringBootBaseTest;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.TestConstants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
-import org.apache.camel.*;
-import org.apache.camel.builder.AdviceWith;
-import org.apache.camel.component.google.pubsub.GooglePubsubConstants;
-import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.commons.compress.utils.IOUtils;
+import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
+import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.pubsub.RecordingPubSubPublisher;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHeaders;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.rutebanken.helper.organisation.authorization.AuthorizationService;
@@ -42,84 +31,87 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationManagerResolver;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
-import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_INBOUND;
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.IMPORT_TYPE;
+import static no.rutebanken.marduk.Constants.IMPORT_TYPE_NETEX_FLEX;
+import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.USERNAME;
 import static no.rutebanken.marduk.TestConstants.CHOUETTE_REFERENTIAL_RUT;
 import static no.rutebanken.marduk.TestConstants.PROVIDER_ID_AS_STRING_RUT;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.config.Customizer.withDefaults;
 
+/**
+ * The admin API end to end: Tomcat, the security filter chain, the controller, and whatever the controller
+ * hands the request to.
+ *
+ * <p>Driven over real HTTP rather than with MockMvc, because two of the things worth guarding are outside the
+ * controller: that a multipart upload survives being read once on the request thread, and that Ninkasi's
+ * {@code Accept: application/json} on a text/plain endpoint is not rejected with a 406.
+ */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = TestApp.class)
-class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
-
+class AdminRestControllerIntegrationTest extends MardukSpringBootBaseTest {
 
     @TestConfiguration
     @EnableWebSecurity
-    static class AdminRestMardukRouteBuilderTestContextConfiguration {
-
-        @Bean
-        CorsConfigurationSource corsConfigurationSource() {
-            CorsConfiguration configuration = new CorsConfiguration();
-            configuration.setAllowedHeaders(Arrays.asList("Origin", "Accept", "X-Requested-With", "Content-Type", "Access-Control-Request-Method", "Access-Control-Request-Headers", "Authorization", "x-correlation-id"));
-            configuration.addAllowedOrigin("*");
-            configuration.setAllowedMethods(Arrays.asList("GET", "PUT", "POST", "DELETE"));
-            UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-            source.registerCorsConfiguration("/**", configuration);
-            return source;
-        }
+    static class AdminRestControllerTestContextConfiguration {
 
         @Bean
         @ConditionalOnWebApplication
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-            http.cors(withDefaults()).csrf(AbstractHttpConfigurer::disable)
-                    .authorizeHttpRequests(authz -> authz.requestMatchers("/services/openapi.yaml").permitAll()
+            http.csrf(AbstractHttpConfigurer::disable)
+                    .authorizeHttpRequests(authz -> authz
+                            .requestMatchers("/services/openapi").permitAll()
+                            .requestMatchers("/services/openapi.yaml").permitAll()
                             .requestMatchers("/services/timetable_admin/openapi.yaml").permitAll()
-                    .requestMatchers("/actuator/prometheus").permitAll()
-                            .requestMatchers("/actuator/health").permitAll()
-                            .requestMatchers("/actuator/health/liveness").permitAll()
-                            .requestMatchers("/actuator/health/readiness").permitAll()
+                            .requestMatchers("/services/health").permitAll()
                             .anyRequest().authenticated())
-                    .oauth2ResourceServer(configurer -> configurer.jwt(withDefaults()))
-                    .oauth2Client(withDefaults());
+                    .oauth2ResourceServer(configurer -> configurer.jwt(withDefaults()));
             return http.build();
         }
 
-
         @Bean
         public JwtDecoder jwtdecoder() {
-            return token -> createTestJwtToken();
-        }
-
-        private Jwt createTestJwtToken() {
-            String userId = "test-user";
-            return Jwt.withTokenValue("test-token")
+            return token -> Jwt.withTokenValue("test-token")
                     .header("typ", "JWT")
                     .header("alg", JWSAlgorithm.RS256.getName())
                     .claim("iss", "https://test-issuer.entur.org")
                     .claim("scope", "openid profile email")
-                    .claim("preferred_username", userId)
-                    .subject(userId)
+                    .claim("preferred_username", "test-user")
+                    .subject("test-user")
                     .audience(Set.of("test-audience"))
                     .build();
         }
@@ -129,437 +121,503 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
             return new TestAuthorizationService();
         }
 
+        /** Publishes are asserted on directly; the emulator adds nothing this test needs. */
         @Bean
-        public AuthenticationManagerResolver<HttpServletRequest> resolver() {
-            // Mirror the production resolver: authenticate the bearer token into a JwtAuthenticationToken
-            // whose principal is the decoded JWT, so UserInfoExtractor can read preferred_username from the
-            // rebuilt security context in direct:setUsername.
-            return request -> (AuthenticationManager) authentication -> new JwtAuthenticationToken(createTestJwtToken());
+        @Primary
+        public MardukPubSubPublisher recordingPublisher() {
+            return new RecordingPubSubPublisher();
         }
-
     }
 
-    @EndpointInject("mock:chouetteImportQueue")
-    protected MockEndpoint importQueue;
-
-    @EndpointInject("mock:chouetteExportNetexQueue")
-    protected MockEndpoint exportQueue;
-
-    @EndpointInject("mock:processFileQueue")
-    protected MockEndpoint processFileQueue;
-
-    @Produce("http:localhost:{{server.port}}/services/health")
-    protected ProducerTemplate healthTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/import")
-    protected ProducerTemplate importTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/export")
-    protected ProducerTemplate exportTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files")
-    protected ProducerTemplate listFilesTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files/netex.zip")
-    protected ProducerTemplate getFileTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files")
-    protected ProducerTemplate postFileTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/flex/files")
-    protected ProducerTemplate postFlexFileTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files/unknown-file.zip")
-    protected ProducerTemplate getUnknownFileTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/export/files")
-    protected ProducerTemplate listExportFilesTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/download_netex_blocks/" + CHOUETTE_REFERENTIAL_RUT)
-    protected ProducerTemplate downloadNetexBlocksTemplate;
-
-    @Produce("http:localhost:{{server.port}}/services/timetable_admin/upload/" + CHOUETTE_REFERENTIAL_RUT)
-    protected ProducerTemplate uploadFileTemplate;
-
-    /**
-     * Both probes target this endpoint, so it has to be served by platform-http itself. The
-     * actuator health group reports UP even when the platform-http mappings are unreachable,
-     * which is the failure mode this endpoint exists to expose.
-     */
-    @Test
-    void getHealth() throws Exception {
-        context.start();
-
-        InputStream response = (InputStream) healthTemplate.requestBodyAndHeaders(null, getTestHeaders("GET"));
-
-        assertEquals("OK", new String(IOUtils.toByteArray(response)));
-    }
+    @Value("${server.port}")
+    private int port;
 
     @Value("#{'${timetable.export.blob.prefixes:outbound/gtfs/,outbound/netex/}'.split(',')}")
     private List<String> exportFileStaticPrefixes;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private MardukPubSubPublisher publisher;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("requestMappingHandlerMapping")
+    private RequestMappingHandlerMapping handlerMapping;
+
+    private CloseableHttpClient client;
 
     @BeforeEach
-    void setUpProvider() {
+    void setUpClient() {
+        client = HttpClients.createDefault();
         when(providerRepository.getReferential(TestConstants.PROVIDER_ID_RUT)).thenReturn(CHOUETTE_REFERENTIAL_RUT);
+        recorded().clear();
+    }
+
+    @AfterEach
+    void closeClient() throws IOException {
+        client.close();
+    }
+
+    private RecordingPubSubPublisher recorded() {
+        return (RecordingPubSubPublisher) publisher;
+    }
+
+    // ------------------------------------------------------------------------------------------ health
+
+    @Test
+    void healthIsServedAsPlainText() throws Exception {
+
+        Response response = send(new HttpGet(url("/services/health")));
+
+        assertEquals(200, response.status());
+        assertEquals("OK", response.body());
     }
 
     @Test
-    void runImport() throws Exception {
+    void theApiDocumentIsServedAtBothOfItsPaths() throws Exception {
 
-        AdviceWith.adviceWith(context, "admin-chouette-import",
-                a -> a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue")
-                        .replace()
-                        .to("mock:chouetteImportQueue")
-        );
-        // we must manually start when we are done with all the advice with
-        context.start();
-
-        BlobStoreFiles d = new BlobStoreFiles();
-        d.add(new BlobStoreFiles.File("file1", null, null, null));
-        d.add(new BlobStoreFiles.File("file2", null, null, null));
-
-        ObjectWriter objectWriter = ObjectMapperFactory.getSharedObjectMapper().writerFor(BlobStoreFiles.class);
-        String importJson = objectWriter.writeValueAsString(d);
-
-        // Do rest call
-
-        Map<String, Object> headers = getTestHeaders("POST", "application/json");
-
-        importTemplate.sendBodyAndHeaders(importJson, headers);
-
-        // setup expectations on the mocks
-        importQueue.expectedMessageCount(2);
-
-        // assert that the test was okay
-        importQueue.assertIsSatisfied();
-
-        List<Exchange> exchanges = importQueue.getExchanges();
-        String providerId = (String) exchanges.getFirst().getIn().getHeader(PROVIDER_ID);
-        assertEquals(PROVIDER_ID_AS_STRING_RUT, providerId);
-        String s3FileHandle = (String) exchanges.getFirst().getIn().getHeader(FILE_HANDLE);
-        assertEquals(BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT +  "/file1", s3FileHandle);
-    }
-
-    // Ninkasi sends Accept: application/json to endpoints declaring produces(PLAIN). Requires
-    // camel.component.platform-http.serverRequestValidation=false, or Spring MVC rejects with 406.
-    @Test
-    void runImportWithJsonAcceptHeader() throws Exception {
-
-        AdviceWith.adviceWith(context, "admin-chouette-import",
-                a -> a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue")
-                        .replace()
-                        .to("mock:chouetteImportQueue")
-        );
-        context.start();
-
-        BlobStoreFiles d = new BlobStoreFiles();
-        d.add(new BlobStoreFiles.File("file1", null, null, null));
-        String importJson = ObjectMapperFactory.getSharedObjectMapper().writerFor(BlobStoreFiles.class).writeValueAsString(d);
-
-        Map<String, Object> headers = new HashMap<>(getTestHeaders("POST", "application/json"));
-        headers.put(HttpHeaders.ACCEPT, "application/json");
-
-        importQueue.expectedMessageCount(1);
-        importTemplate.sendBodyAndHeaders(importJson, headers);
-        importQueue.assertIsSatisfied();
+        assertTrue(send(new HttpGet(url("/services/openapi.yaml"))).body().contains("/services/timetable_admin/"),
+                "the document does not describe the admin API");
+        assertEquals(200, send(new HttpGet(url("/services/timetable_admin/openapi.yaml"))).status());
     }
 
     @Test
-    void runExport() throws Exception {
+    void theApiDocumentDescribesEveryEndpoint() throws Exception {
+        // The document used to be generated from the same REST DSL that defined the routes, so it could not
+        // drift. It is generated from these annotations now, which can only drift if springdoc stops seeing
+        // them - so check that it still sees all of them.
+        String document = send(new HttpGet(url("/services/openapi.yaml"))).body();
 
-        AdviceWith.adviceWith(context, "admin-chouette-export",
-                a -> a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue")
-                        .replace()
-                        .to("mock:chouetteExportNetexQueue")
-        );
-
-        // we must manually start when we are done with all the advice with
-        context.start();
-
-        // Do rest call. ninkasi (via getApiConfig) sends application/json on every call, so the
-        // export trigger must accept it; this guards against re-adding a restrictive consumes().
-        Map<String, Object> headers = getTestHeaders("POST", "application/json");
-        exportTemplate.sendBodyAndHeaders("", headers);
-
-        // setup expectations on the mocks
-        exportQueue.expectedMessageCount(1);
-
-        // assert that the test was okay
-        exportQueue.assertIsSatisfied();
-
-        List<Exchange> exchanges = exportQueue.getExchanges();
-        String providerId = (String) exchanges.getFirst().getIn().getHeader(PROVIDER_ID);
-        assertEquals(PROVIDER_ID_AS_STRING_RUT, providerId);
-    }
-
-    @Test
-    void getBlobStoreFiles() throws Exception {
-
-        // Preparations
-        String testFileName = "ruter_fake_data.zip";
-        String testFileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
-        InputStream testFile = getTestNetexArchiveAsStream();
-
-        //populate fake blob repo
-        internalInMemoryBlobStoreRepository.uploadBlob(testFileStorePath + testFileName, testFile);
-
-        context.start();
-
-        // Do rest call
-        Map<String, Object> headers = getTestHeaders("GET");
-        InputStream response = (InputStream) listFilesTemplate.requestBodyAndHeaders(null, headers);
-        // Parse response
-
-        String s = new String(IOUtils.toByteArray(response));
-
-        ObjectReader objectReader = ObjectMapperFactory.getSharedObjectMapper().readerFor(BlobStoreFiles.class);
-        BlobStoreFiles rsp = objectReader.readValue(s);
-        assertEquals(1, rsp.getFiles().size(), "The list should contain exactly one file");
-        assertEquals(testFileName, rsp.getFiles().getFirst().getName(), "The file name should not be prefixed by the file store path");
-    }
-
-    @Test
-    void getFile() throws Exception {
-        // Preparations
-        String filename = "netex.zip";
-        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
-        InputStream testFile = getTestNetexArchiveAsStream();
-        //populate fake blob repo
-        internalInMemoryBlobStoreRepository.uploadBlob(fileStorePath + filename, testFile);
-
-        context.start();
-
-        Map<String, Object> headers = getTestHeaders("GET");
-        InputStream response = (InputStream) getFileTemplate.requestBodyAndHeaders(null, headers);
-
-        assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
-    }
-
-    @Test
-    void getBlobStoreFile_unknownFile() {
-
-        context.start();
-
-        Map<String, Object> headers = getTestHeaders("GET");
-
-        assertThrows(CamelExecutionException.class, () -> getUnknownFileTemplate.requestBodyAndHeaders(null, headers));
-    }
-
-    @Test
-    void getBlobStoreExportFiles() throws Exception {
-        String testFileName = "netex.zip";
-        InputStream testFile = getTestNetexArchiveAsStream();
-        //populate fake blob repo
-        for (String prefix : exportFileStaticPrefixes) {
-            mardukInMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, testFile);
+        for (String path : mappedPaths(AdminRestController.class)) {
+            assertTrue(document.contains(path + ":"), path + " is missing from the API document");
         }
-        context.start();
+    }
 
-        // Do rest call
-        Map<String, Object> headers = getTestHeaders("GET");
-        InputStream response = (InputStream) listExportFilesTemplate.requestBodyAndHeaders(null, headers);
-        // Parse response
+    private static List<String> mappedPaths(Class<?> controller) {
+        return Arrays.stream(controller.getDeclaredMethods())
+                .flatMap(method -> Stream.of(
+                                Optional.ofNullable(method.getAnnotation(GetMapping.class)).map(GetMapping::value),
+                                Optional.ofNullable(method.getAnnotation(PostMapping.class)).map(PostMapping::value),
+                                Optional.ofNullable(method.getAnnotation(DeleteMapping.class)).map(DeleteMapping::value))
+                        .flatMap(Optional::stream)
+                        .flatMap(Arrays::stream))
+                .distinct()
+                .toList();
+    }
 
-        String s = new String(IOUtils.toByteArray(response));
+    // ------------------------------------------------------------------------------------------ import
 
-        ObjectReader objectReader = ObjectMapperFactory.getSharedObjectMapper().readerFor(BlobStoreFiles.class);
-        BlobStoreFiles rsp = objectReader.readValue(s);
-        assertEquals(exportFileStaticPrefixes.size(), rsp.getFiles().size());
-        assertTrue(exportFileStaticPrefixes.stream().allMatch(prefix -> rsp.getFiles().stream().anyMatch(file -> (prefix + testFileName).equals(file.getName()))));
+    @Test
+    void anImportIsQueuedOncePerFileInTheOrderGiven() throws Exception {
+
+        BlobStoreFiles files = new BlobStoreFiles();
+        files.add(new BlobStoreFiles.File("file1", null, null, null));
+        files.add(new BlobStoreFiles.File("file2", null, null, null));
+
+        Response response = send(postJson(
+                "/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/import", json(files)));
+
+        assertEquals(200, response.status());
+        List<RecordingPubSubPublisher.Published> queued = recorded().publishedTo(MardukQueues.PROCESS_FILE_QUEUE);
+        assertEquals(2, queued.size());
+        assertEquals(PROVIDER_ID_AS_STRING_RUT, queued.getFirst().attributes().get(PROVIDER_ID));
+        assertEquals(BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + "/file1",
+                queued.getFirst().attributes().get(FILE_HANDLE));
+        assertEquals(BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + "/file2",
+                queued.get(1).attributes().get(FILE_HANDLE));
     }
 
     @Test
-    void postSmallFile() throws Exception {
-        postFile(getTestNetexArchiveAsStream(), postFileTemplate);
+    void eachQueuedImportGetsItsOwnCorrelationId() throws Exception {
+
+        BlobStoreFiles files = new BlobStoreFiles();
+        files.add(new BlobStoreFiles.File("file1", null, null, null));
+        files.add(new BlobStoreFiles.File("file2", null, null, null));
+
+        send(postJson("/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/import", json(files)));
+
+        List<RecordingPubSubPublisher.Published> queued = recorded().publishedTo(MardukQueues.PROCESS_FILE_QUEUE);
+        assertNotEquals(queued.getFirst().attributes().get(CORRELATION_ID),
+                queued.get(1).attributes().get(CORRELATION_ID),
+                "two files reimported together must be two jobs in nabu, not one");
+    }
+
+    /** Ninkasi sends {@code Accept: application/json} to endpoints that answer with text/plain. */
+    @Test
+    void aJsonAcceptHeaderIsNotRejected() throws Exception {
+
+        BlobStoreFiles files = new BlobStoreFiles();
+        files.add(new BlobStoreFiles.File("file1", null, null, null));
+        HttpPost request = postJson(
+                "/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/import", json(files));
+        request.setHeader(HttpHeaders.ACCEPT, "application/json");
+
+        assertEquals(200, send(request).status());
+        assertEquals(1, recorded().publishedTo(MardukQueues.PROCESS_FILE_QUEUE).size());
     }
 
     @Test
-    void postLargeFile() throws Exception {
-        postFile(getLargeTestNetexArchiveAsStream(), postFileTemplate);
+    void anUnknownCleanFilterIsABadRequest() throws Exception {
+        // The route validated the same three values but turned a typo into a 500.
+
+        assertEquals(400, send(post("/services/timetable_admin/clean/level3")).status());
+    }
+
+    /**
+     * The same exception, deliberately two answers. The timetable-management spec Entur publishes to its
+     * partners documents 200, 401, 403, 404 and 500 for these endpoints and no 400, and Camel answered 500
+     * there; a client that integrated against that contract must keep getting it. Ninkasi is ours, so the
+     * admin API keeps the more useful 400. Do not unify these.
+     */
+    @Test
+    void aBadArgumentIs400OnTheAdminApiAnd500OnThePublishedPartnerApi() throws Exception {
+        assertEquals(400, send(post("/services/timetable_admin/clean/level3")).status());
+
+        HttpPost partnerUploadWithNoFilePart = post(
+                "/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT);
+        partnerUploadWithNoFilePart.setEntity(MultipartEntityBuilder.create()
+                .addBinaryBody("not-the-file-part", "irrelevant".getBytes(),
+                        ContentType.DEFAULT_BINARY, "ignored.zip")
+                .build());
+
+        assertEquals(500, send(partnerUploadWithNoFilePart).status());
     }
 
     @Test
-    void postFlexFile() throws Exception {
-        postFile(getTestNetexArchiveAsStream(), postFlexFileTemplate);
-        List<Exchange> exchanges = processFileQueue.getExchanges();
-        assertEquals(IMPORT_TYPE_NETEX_FLEX,
-                exchanges.getFirst().getIn().getHeader(IMPORT_TYPE),
-                "Flex import should have expected IMPORT_TYPE header");
+    void anUnknownProviderIsNotFound() throws Exception {
+
+        assertEquals(404, send(post("/services/timetable_admin/999999/export")).status());
     }
 
-    private void postFile(InputStream testFile, ProducerTemplate template) throws Exception {
-        String fileName = "netex-test-POST.zip";
-        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
+    // ------------------------------------------------------------------------------------------ export
 
-        // updateStatus is deliberately NOT mocked: its real pubsub publish stringifies every header
-        // and destroyed live upload streams on Camel 4.18; mocking it would hide that bug class.
-        AdviceWith.adviceWith(context, "process-file-after-import", a ->
-                a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue")
-                        .replace()
-                        .to("mock:processFileQueue"));
+    @Test
+    void anExportIsQueuedForTheProvider() throws Exception {
 
-        processFileQueue.expectedMessageCount(1);
+        Response response = send(postJson(
+                "/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/export", ""));
 
-        context.start();
-
-        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, testFile, ContentType.DEFAULT_BINARY, fileName).build();
-        Map<String, Object> headers = getTestHeaders("POST");
-        template.requestBodyAndHeaders(httpEntity, headers);
-
-        processFileQueue.assertIsSatisfied();
-
-        InputStream receivedFile = internalInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
-        assertNotNull(receivedFile);
-        byte[] fileContent = receivedFile.readAllBytes();
-        assertTrue(fileContent.length > 0);
+        assertEquals(200, response.status());
+        Map<String, String> attributes = recorded()
+                .publishedTo(MardukQueues.CHOUETTE_EXPORT_NETEX_QUEUE).getFirst().attributes();
+        assertEquals(PROVIDER_ID_AS_STRING_RUT, attributes.get(PROVIDER_ID));
     }
 
     @Test
-    void uploadNetexDataset() throws Exception {
+    void theTriggeringUserIsRecordedOnTheJob() throws Exception {
+        // nabu shows this as who started the job. The routes read it from the security context in
+        // direct:setUsername; a controller reads the same context on the request thread.
 
+        send(postJson("/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/export", ""));
+
+        assertEquals("test-user", recorded()
+                .publishedTo(MardukQueues.CHOUETTE_EXPORT_NETEX_QUEUE).getFirst().attributes().get(USERNAME));
+    }
+
+    @Test
+    void theRequestsBearerTokenIsNotPublished() throws Exception {
+        // The routes had to strip the request headers because platform-http copied them onto the exchange.
+        // A message built in the controller never carries them, which is what this pins.
+
+        HttpPost request = postJson("/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/export", "");
+        request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer sensitive-secret-token");
+
+        send(request);
+
+        Map<String, String> attributes = recorded()
+                .publishedTo(MardukQueues.CHOUETTE_EXPORT_NETEX_QUEUE).getFirst().attributes();
+        assertFalse(attributes.containsKey(HttpHeaders.AUTHORIZATION));
+        assertFalse(attributes.keySet().stream().anyMatch(key -> key.toLowerCase().contains("breadcrumb")));
+    }
+
+    @Test
+    void aProviderThatMigratesItsDataOnwardsIsOnlyValidatedAtLevelOne() throws Exception {
+        // Level 2 happens in the dataspace it migrates into, not here.
+
+        send(postJson("/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/validate", ""));
+
+        assertEquals("VALIDATION_LEVEL_1", validationLevelPublished());
+    }
+
+    @Test
+    void aProviderThatKeepsItsOwnDataIsValidatedAtLevelTwo() throws Exception {
+        when(providerRepository.getProvider(4242L)).thenReturn(provider("rb_own", 4242L, null));
+
+        send(postJson("/services/timetable_admin/4242/validate", ""));
+
+        assertEquals("VALIDATION_LEVEL_2", validationLevelPublished());
+    }
+
+    private String validationLevelPublished() {
+        return recorded().publishedTo(MardukQueues.CHOUETTE_VALIDATION_QUEUE).getFirst()
+                .attributes().get(Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL);
+    }
+
+    /**
+     * Ninkasi sends {@code Accept: application/json} everywhere, including to endpoints that answer with
+     * text/plain or a binary body. Camel's platform-http was configured not to check
+     * ({@code serverRequestValidation=false}); Spring MVC answers 406 unless nothing declares a produces.
+     */
+    @Test
+    void noEndpointRejectsNinkasisAcceptHeader() throws Exception {
+        internalInMemoryBlobStoreRepository.uploadBlob(
+                BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + "/netex.zip", getTestNetexArchiveAsStream());
+
+        for (HttpUriRequestBase request : List.of(
+                post("/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/export"),
+                post("/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/validate"),
+                post("/services/timetable_admin/routing_graph/build"),
+                get("/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files"),
+                get("/services/timetable_admin/export/files"),
+                get("/services/timetable_admin/routing_graph/graphs"),
+                get("/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files/netex.zip"),
+                get("/services/health"))) {
+            request.setHeader(HttpHeaders.ACCEPT, "application/json");
+            assertEquals(200, send(request).status(), request.getMethod() + " " + request.getRequestUri());
+        }
+    }
+
+    /**
+     * The same trap, guarded over the mappings themselves rather than a list of paths: Spring MVC answers 406
+     * when a mapping declares a {@code produces} the request's {@code Accept} does not cover, and Ninkasi
+     * sends {@code Accept: application/json} everywhere - including to endpoints that answer with text or
+     * bytes. Camel's platform-http did not check at all.
+     *
+     * <p>Skipped, and only these: the three mappings the timetable-management interfaces generate from the
+     * published spec, whose media types are the partner contract and predate the Camel removal. The skip is
+     * per method, not per controller, so a mapping written by hand on the same controller is still checked -
+     * and the count is asserted, so a generated mapping cannot appear or disappear unnoticed.
+     */
+    @Test
+    void noMappingDeclaresAProducesThatWouldRejectJson() {
+        List<String> generated = new ArrayList<>();
+        List<String> offenders = new ArrayList<>();
+        handlerMapping.getHandlerMethods().forEach((mapping, handler) -> {
+            if (!handler.getBeanType().getPackageName().startsWith("no.rutebanken.marduk")) {
+                return;
+            }
+            String endpoint = mapping + " -> " + handler.getMethod().getName();
+            if (isGeneratedFromThePublishedSpec(handler.getMethod())) {
+                generated.add(endpoint);
+            } else if (wouldReject(mapping, MediaType.APPLICATION_JSON)) {
+                offenders.add(endpoint);
+            }
+        });
+
+        assertEquals(3, generated.size(),
+                "the skipped set is no longer the generated partner API alone: " + generated);
+        assertTrue(offenders.isEmpty(), "these would answer 406 to Accept: application/json: " + offenders);
+    }
+
+    /** True only for a method the controller inherits from a generated timetable-management interface. */
+    private static boolean isGeneratedFromThePublishedSpec(Method method) {
+        return Arrays.stream(method.getDeclaringClass().getInterfaces())
+                .filter(api -> api.getPackageName().startsWith("no.rutebanken.marduk.rest.openapi.api"))
+                .anyMatch(api -> declares(api, method));
+    }
+
+    private static boolean declares(Class<?> type, Method method) {
+        try {
+            type.getMethod(method.getName(), method.getParameterTypes());
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    private static boolean wouldReject(RequestMappingInfo mapping, MediaType accepted) {
+        Set<MediaType> produced = mapping.getProducesCondition().getProducibleMediaTypes();
+        return !produced.isEmpty() && produced.stream().noneMatch(accepted::isCompatibleWith);
+    }
+
+    // ------------------------------------------------------------------------------------------- files
+
+    @Test
+    void theFilesAvailableForReimportAreListedByNameAlone() throws Exception {
+        String testFileName = "ruter_fake_data.zip";
+        internalInMemoryBlobStoreRepository.uploadBlob(
+                BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/' + testFileName,
+                getTestNetexArchiveAsStream());
+
+        Response response = send(get("/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files"));
+
+        BlobStoreFiles listed = blobStoreFiles(response.body());
+        assertEquals(1, listed.getFiles().size());
+        assertEquals(testFileName, listed.getFiles().getFirst().getName(),
+                "the file name should not be prefixed by the file store path");
+    }
+
+    @Test
+    void aFileCanBeDownloadedByName() throws Exception {
+        internalInMemoryBlobStoreRepository.uploadBlob(
+                BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + "/netex.zip", getTestNetexArchiveAsStream());
+
+        Response response = send(get(
+                "/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files/netex.zip"));
+
+        assertEquals(200, response.status());
+        assertArrayEquals(getTestNetexArchiveAsStream().readAllBytes(), response.bytes());
+    }
+
+    @Test
+    void anUnknownFileIsNotFound() throws Exception {
+
+        assertEquals(404, send(get(
+                "/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files/unknown-file.zip")).status());
+    }
+
+    @Test
+    void theExportedFilesAreListedAcrossEveryConfiguredPrefix() throws Exception {
+        String testFileName = "netex.zip";
+        for (String prefix : exportFileStaticPrefixes) {
+            mardukInMemoryBlobStoreRepository.uploadBlob(prefix + testFileName, getTestNetexArchiveAsStream());
+        }
+
+        BlobStoreFiles listed = blobStoreFiles(send(get("/services/timetable_admin/export/files")).body());
+
+        assertEquals(exportFileStaticPrefixes.size(), listed.getFiles().size());
+        assertTrue(exportFileStaticPrefixes.stream().allMatch(prefix -> listed.getFiles().stream()
+                .anyMatch(file -> (prefix + testFileName).equals(file.getName()))));
+    }
+
+    @Test
+    void fileTimestampsStayEpochMillis() throws Exception {
+        // Camel's REST binding wrote dates as timestamps; Spring's ObjectMapper writes ISO strings unless
+        // told otherwise, and Ninkasi parses numbers.
+        mardukInMemoryBlobStoreRepository.uploadBlob(
+                exportFileStaticPrefixes.getFirst() + "netex.zip", getTestNetexArchiveAsStream());
+
+        String body = send(get("/services/timetable_admin/export/files")).body();
+
+        assertTrue(body.matches(".*\"created\":[0-9]+.*"), "created was not an epoch number: " + body);
+        assertTrue(body.matches(".*\"updated\":[0-9]+.*"), "updated was not an epoch number: " + body);
+    }
+
+    // ------------------------------------------------------------------------------------------ upload
+
+    @Test
+    void aSmallFileIsStoredAndTheImportStarted() throws Exception {
+        upload(getTestNetexArchiveAsStream(), "/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files");
+    }
+
+    @Test
+    void aFileTooLargeForTheHeapIsStoredAndTheImportStarted() throws Exception {
+        upload(getLargeTestNetexArchiveAsStream(),
+                "/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files");
+    }
+
+    @Test
+    void aFlexUploadIsMarkedAsAFlexImport() throws Exception {
+        upload(getTestNetexArchiveAsStream(),
+                "/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/flex/files");
+
+        assertEquals(IMPORT_TYPE_NETEX_FLEX, recorded().publishedTo(MardukQueues.PROCESS_FILE_QUEUE)
+                .getFirst().attributes().get(IMPORT_TYPE));
+    }
+
+    @Test
+    void theDeprecatedCodespaceUploadStillWorks() throws Exception {
         when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
 
-
-        String fileStorePath = Constants.BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/';
-        String fileName = "netex-test-http-upload.zip";
-
-        // updateStatus deliberately not mocked, see postFile
-        AdviceWith.adviceWith(context, "process-file-after-import", a ->
-                a.weaveByToUri("google-pubsub:(.*):ProcessFileQueue").replace().to("mock:processFileQueue"));
-
-        processFileQueue.expectedMessageCount(1);
-
-        HttpEntity httpEntity = MultipartEntityBuilder.create().addBinaryBody(fileName, getTestNetexArchiveAsStream(), ContentType.DEFAULT_BINARY, fileName).build();
-        Map<String, Object> headers = getTestHeaders("POST");
-
-        context.start();
-        uploadFileTemplate.requestBodyAndHeaders(httpEntity, headers);
-
-        processFileQueue.assertIsSatisfied();
-
-        InputStream receivedFile = internalInMemoryBlobStoreRepository.getBlob(fileStorePath + fileName);
-        assertNotNull(receivedFile);
-        byte[] fileContent = receivedFile.readAllBytes();
-        assertTrue(fileContent.length > 0);
+        upload(getTestNetexArchiveAsStream(),
+                "/services/timetable_admin/upload/" + CHOUETTE_REFERENTIAL_RUT);
     }
 
     @Test
-    void downloadNetexBlocks() throws Exception {
+    void theDeprecatedBlocksDownloadStillWorks() throws Exception {
+        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+        internalInMemoryBlobStoreRepository.uploadBlob(
+                Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "rb_rut-aggregated-netex.zip",
+                getTestNetexArchiveAsStream());
 
-        // Preparations
-        String filename = "rb_rut-aggregated-netex.zip";
-        InputStream testFile = getTestNetexArchiveAsStream();
-        //populate fake blob repo
-        internalInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + filename, testFile);
+        Response response = send(get(
+                "/services/timetable_admin/download_netex_blocks/" + CHOUETTE_REFERENTIAL_RUT));
 
-        Map<String, Object> headers = getTestHeaders("GET");
-
-        context.start();
-        InputStream response = (InputStream) downloadNetexBlocksTemplate.requestBodyAndHeaders(null, headers);
-        assertTrue(org.apache.commons.io.IOUtils.contentEquals(getTestNetexArchiveAsStream(), response));
+        assertEquals(200, response.status());
+        assertArrayEquals(getTestNetexArchiveAsStream().readAllBytes(), response.bytes());
     }
 
     @Test
-    void exportShouldNotLeakAuthorizationHeaderInResponse() throws Exception {
-        AdviceWith.adviceWith(context, "admin-chouette-export",
-                a -> a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue")
-                        .replace()
-                        .to("mock:chouetteExportNetexQueue")
-        );
-
-        exportQueue.expectedMessageCount(1);
-
-        context.start();
-
-        Map<String, Object> headers = getTestHeaders("POST", "application/json");
-        headers.put(HttpHeaders.AUTHORIZATION, "Bearer sensitive-secret-token");
-
-        exportTemplate.sendBodyAndHeaders("", headers);
-
-        exportQueue.assertIsSatisfied();
-
-        // Check the exchange that went to the mock endpoint - it should not contain the Authorization header
-        List<Exchange> exchanges = exportQueue.getExchanges();
-        Exchange receivedExchange = exchanges.getFirst();
-        Map<String, Object> receivedHeaders = receivedExchange.getIn().getHeaders();
-
-        assertFalse(receivedHeaders.containsKey(HttpHeaders.AUTHORIZATION),
-                "Authorization header should not be forwarded to internal routes");
+    void aPostThatIsNotMultipartIsUnsupportedMediaType() throws Exception {
+        // The route read the request parts, which threw InvalidContentTypeException and was mapped to 415.
+        // Spring hands an empty part map to the controller instead, so the caller got a 200 and no upload.
+        for (String path : List.of(
+                "/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/files",
+                "/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/flex/files",
+                "/services/timetable_admin/upload/" + CHOUETTE_REFERENTIAL_RUT)) {
+            assertEquals(415, send(postJson(path, "{}")).status(), path);
+        }
+        assertTrue(recorded().published().isEmpty(), "something was queued for a request with no file");
     }
 
-    @Test
-    void adminRequestPopulatesUsernameFromRebuiltSecurityContext() throws Exception {
-        // Regression guard: the security context rebuilt on the platform-http worker thread must survive
-        // the authorize step so direct:setUsername can read the principal. When the context was cleared
-        // immediately after the privilege check, USERNAME silently resolved to "unknown".
-        AdviceWith.adviceWith(context, "admin-chouette-export",
-                a -> a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue")
-                        .replace()
-                        .to("mock:chouetteExportNetexQueue")
-        );
-        context.start();
+    /**
+     * Posts one multipart file and asserts it reached the blob store and the pipeline.
+     *
+     * <p>Nothing about the upload path is stubbed out beyond the publisher: the job status reporting is
+     * real, because it used to stringify every header and destroy the live upload stream, and stubbing it
+     * would hide that class of bug.
+     */
+    private void upload(InputStream file, String path) throws Exception {
+        String fileName = "netex-test-POST.zip";
 
-        Map<String, Object> headers = getTestHeaders("POST", "application/json");
-        exportTemplate.sendBodyAndHeaders("", headers);
+        HttpPost request = new HttpPost(url(path));
+        request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        // Named after the file, not "file": that is what Bel sends, and the multipart route it replaced
+        // read the parts without looking at their names.
+        request.setEntity(MultipartEntityBuilder.create()
+                .addBinaryBody(fileName, file, ContentType.DEFAULT_BINARY, fileName)
+                .build());
 
-        exportQueue.expectedMessageCount(1);
-        exportQueue.assertIsSatisfied();
+        assertEquals(200, send(request).status());
 
-        String username = (String) exportQueue.getExchanges().getFirst().getIn().getHeader(USERNAME);
-        assertEquals("test-user", username,
-                "USERNAME must be resolved from the rebuilt security context (was 'unknown' when the context was cleared before direct:setUsername)");
+        assertEquals(1, recorded().publishedTo(MardukQueues.PROCESS_FILE_QUEUE).size(),
+                "the import pipeline was not started for the uploaded file");
+        InputStream stored = internalInMemoryBlobStoreRepository.getBlob(
+                BLOBSTORE_PATH_INBOUND + CHOUETTE_REFERENTIAL_RUT + '/' + fileName);
+        assertNotNull(stored, "the uploaded file was not stored");
+        assertTrue(stored.readAllBytes().length > 0, "the uploaded file was stored empty");
     }
 
-    @Test
-    void outboundPubSubInterceptorExcludesSensitiveHeadersFromAttributes() throws Exception {
-        // The outbound google-pubsub interceptor (BaseRouteBuilder) builds the published ATTRIBUTES map.
-        // Inject a breadcrumbId and an Authorization header immediately before the send, then capture the
-        // exchange right after it: the interceptor sets ATTRIBUTES on that same message, so we can assert
-        // neither sensitive header leaked. Weaving around the send (rather than replacing it) keeps the
-        // google-pubsub endpoint so the interceptor actually runs.
-        AdviceWith.adviceWith(context, "admin-chouette-export", a -> {
-            a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue")
-                    .before()
-                    .process(e -> {
-                        e.getIn().setHeader(Exchange.BREADCRUMB_ID, "test-breadcrumb");
-                        e.getIn().setHeader(HttpHeaders.AUTHORIZATION, "Bearer must-not-leak");
-                    });
-            a.weaveByToUri("google-pubsub:(.*):ChouetteExportNetexQueue")
-                    .after()
-                    .to("mock:chouetteExportNetexQueue");
-        });
-        context.start();
+    // --------------------------------------------------------------------------------------- plumbing
 
-        exportTemplate.sendBodyAndHeaders("", getTestHeaders("POST", "application/json"));
-
-        exportQueue.expectedMessageCount(1);
-        exportQueue.assertIsSatisfied();
-
-        Map<String, String> attributes = exportQueue.getExchanges().getFirst().getIn()
-                .getHeader(GooglePubsubConstants.ATTRIBUTES, Map.class);
-        assertNotNull(attributes, "Outbound interceptor should have built the ATTRIBUTES map");
-        assertTrue(attributes.containsKey(PROVIDER_ID),
-                "Non-sensitive headers should still be published as attributes");
-        assertFalse(attributes.containsKey(Exchange.BREADCRUMB_ID),
-                "breadcrumbId must not leak into published PubSub attributes");
-        assertFalse(attributes.containsKey(HttpHeaders.AUTHORIZATION),
-                "Authorization must not leak into published PubSub attributes");
+    private record Response(int status, byte[] bytes) {
+        String body() {
+            return new String(bytes);
+        }
     }
 
-    private static Map<String, Object> getTestHeaders(String method) {
-        return Map.of(
-                Exchange.HTTP_METHOD, method,
-                HttpHeaders.AUTHORIZATION, "Bearer test-token",
-                CHOUETTE_REFERENTIAL, CHOUETTE_REFERENTIAL_RUT);
+    private String url(String path) {
+        return "http://localhost:" + port + path;
     }
 
-    // Camel 4 strictly matches the request Content-Type against the route's consumes(), so a POST
-    // must send a Content-Type the endpoint declares or platform-http rejects it with 415.
-    private static Map<String, Object> getTestHeaders(String method, String contentType) {
-        Map<String, Object> headers = new HashMap<>(getTestHeaders(method));
-        headers.put(HttpHeaders.CONTENT_TYPE, contentType);
-        return headers;
+    private HttpGet get(String path) {
+        HttpGet request = new HttpGet(url(path));
+        request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        return request;
     }
 
+    private HttpPost post(String path) {
+        HttpPost request = new HttpPost(url(path));
+        request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer test-token");
+        return request;
+    }
+
+    private HttpPost postJson(String path, String body) {
+        HttpPost request = post(path);
+        request.setEntity(new StringEntity(body, ContentType.APPLICATION_JSON));
+        return request;
+    }
+
+    private Response send(HttpUriRequestBase request) throws IOException {
+        return client.execute(request, response -> new Response(
+                response.getCode(),
+                response.getEntity() == null ? new byte[0] : EntityUtils.toByteArray(response.getEntity())));
+    }
+
+    private static String json(BlobStoreFiles files) throws IOException {
+        return ObjectMapperFactory.getSharedObjectMapper().writerFor(BlobStoreFiles.class).writeValueAsString(files);
+    }
+
+    private static BlobStoreFiles blobStoreFiles(String body) throws IOException {
+        ObjectReader reader = ObjectMapperFactory.getSharedObjectMapper().readerFor(BlobStoreFiles.class);
+        return reader.readValue(body);
+    }
 }
