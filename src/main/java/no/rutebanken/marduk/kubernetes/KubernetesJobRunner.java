@@ -237,10 +237,11 @@ public class KubernetesJobRunner {
         }
 
         /**
-         * Kubernetes retries a pod up to backoffLimit times before failing the job.
+         * backoffLimit is a retry count, so Kubernetes allows backoffLimit + 1 attempts and fails the job only once
+         * status.failed exceeds it.
          */
         public boolean isFailureBudgetExhausted(int failures) {
-            return failures >= backoffLimit;
+            return failures > backoffLimit;
         }
 
         public boolean awaitTerminalState(long timeoutNanos) throws InterruptedException {

@@ -127,7 +127,7 @@ class KubernetesJobRunnerTest {
         Job job = job(null, null);
         stubJobLookup(job, job);
         stubWatch(watcher -> {
-            for (int i = 0; i < BACKOFF_LIMIT; i++) {
+            for (int i = 0; i < BACKOFF_LIMIT + 1; i++) {
                 watcher.eventReceived(Watcher.Action.MODIFIED, pod("Failed"));
             }
         });
@@ -167,6 +167,22 @@ class KubernetesJobRunnerTest {
     }
 
     @Test
+    void aRetryStillWithinTheBackoffLimitDoesNotEndTheJob() {
+        // backoffLimit failures leave one attempt, which succeeds
+        stubJobLookup(job(null, null), job(1, null));
+        stubWatch(watcher -> {
+            for (int i = 0; i < BACKOFF_LIMIT; i++) {
+                watcher.eventReceived(Watcher.Action.MODIFIED, pod("Failed"));
+            }
+        });
+
+        assertTimeoutPreemptively(Duration.ofSeconds(5),
+                () -> jobRunner.runJob(CRON_JOB_NAME, JOB_NAME_PREFIX, List.of(), TIMESTAMP));
+
+        verify(deletableJobResource).delete();
+    }
+
+    @Test
     void transientPollFailureIsRetriedAtTheNextInterval() {
         Job runningJob = job(null, null);
         when(namedJobResource.get())
@@ -198,7 +214,7 @@ class KubernetesJobRunnerTest {
         Job job = job(null, null);
         stubJobLookup(job, job);
         stubWatch(watcher -> {
-            for (int i = 0; i < BACKOFF_LIMIT; i++) {
+            for (int i = 0; i < BACKOFF_LIMIT + 1; i++) {
                 watcher.eventReceived(Watcher.Action.MODIFIED, pod("Failed"));
             }
         });
