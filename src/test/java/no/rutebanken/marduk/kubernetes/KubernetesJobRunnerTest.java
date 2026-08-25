@@ -160,7 +160,8 @@ class KubernetesJobRunnerTest {
         stubJobLookup(job, job);
         stubWatch(watcher -> watcher.eventReceived(Watcher.Action.MODIFIED, pod("Running")));
 
-        KubernetesJobRunnerException exception = assertThrows(KubernetesJobRunnerException.class,
+        // a distinct type, so the graph build routes can suppress redelivery on timeout only
+        KubernetesJobTimeoutException exception = assertThrows(KubernetesJobTimeoutException.class,
                 () -> jobRunner.runJob(CRON_JOB_NAME, JOB_NAME_PREFIX, List.of(), TIMESTAMP));
 
         assertTrue(exception.getMessage().startsWith("Timeout while waiting for the Graph Builder job"), exception.getMessage());

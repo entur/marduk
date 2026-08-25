@@ -98,7 +98,7 @@ public class KubernetesJobRunner {
         while (true) {
             long remainingNanos = deadline - System.nanoTime();
             if (remainingNanos <= 0) {
-                throw new KubernetesJobRunnerException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
+                throw new KubernetesJobTimeoutException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
             }
             if (mardukPodWatcher.awaitTerminalState(Math.min(pollIntervalNanos, remainingNanos))) {
                 return;
