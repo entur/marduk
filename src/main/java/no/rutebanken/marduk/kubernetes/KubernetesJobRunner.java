@@ -37,8 +37,11 @@ public class KubernetesJobRunner {
     @Value("${otp.graph.build.remote.kubernetes.job.cleanup:true}")
     private boolean deleteJobAfterCompletion;
 
-    @Value("${otp.graph.build.remote.kubernetes.timeout:9000}")
+    @Value("${otp.graph.build.remote.kubernetes.timeout:5400}")
     private long jobTimeoutSecond;
+
+    @Value("${otp.graph.build.remote.kubernetes.poll.interval:60}")
+    private long pollIntervalSecond;
 
     /**
      * Run a Kubernetes job
@@ -49,7 +52,7 @@ public class KubernetesJobRunner {
      * @param timestamp     timestamp used to create a unique name for the Kubernetes job.
      */
     public void runJob(String cronJobName, String jobNamePrefix, List<EnvVar> envVars, String timestamp) {
-        try (final KubernetesClient kubernetesClient =  new KubernetesClientBuilder().build()) {
+        try (final KubernetesClient kubernetesClient = createKubernetesClient()) {
             String jobName = jobNamePrefix + '-' + timestamp;
 
             final Job job = retrieveOrCreateJob(jobName, cronJobName, envVars, kubernetesClient);
@@ -59,13 +62,8 @@ public class KubernetesJobRunner {
             MardukPodWatcher mardukPodWatcher = new MardukPodWatcher(job, watchLatch, jobName);
             try (Watch watch = kubernetesClient.pods().inNamespace(kubernetesNamespace).withLabel("job-name", jobName).watch(mardukPodWatcher)) {
 
-                boolean jobCompletedBeforeTimeout = watchLatch.await(jobTimeoutSecond, TimeUnit.SECONDS);
-                if (!jobCompletedBeforeTimeout) {
-                    throw new KubernetesJobRunnerException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
-                }
-                JobStatus status = kubernetesClient.batch().v1().jobs().inNamespace(kubernetesNamespace).withName(jobName).get().getStatus();
-                LOGGER.debug("Kubernetes Job status on completion: {}", status);
-                // test the pod status rather than the job status since the job status may be out of sync with the pod status
+                awaitJobCompletion(kubernetesClient, jobName, mardukPodWatcher);
+
                 if (mardukPodWatcher.isSucceeded()) {
                     LOGGER.info("The Graph Builder job {} completed successfully.", jobName);
                 } else if (mardukPodWatcher.isKubernetesClientError()) {
@@ -79,14 +77,86 @@ public class KubernetesJobRunner {
                 Thread.currentThread().interrupt();
                 throw new KubernetesJobRunnerException("Interrupted while watching pod", e);
             } finally {
-                // Delete job after completion unless there was a Kubernetes error that can be retried
-                if (!mardukPodWatcher.isKubernetesClientError() && deleteJobAfterCompletion) {
-                    LOGGER.info("Deleting job {} after completion.", jobName);
-                    deleteKubernetesJob(kubernetesClient, job);
-                    LOGGER.info("Deleted job {} after completion.", jobName);
-                }
+                cleanUpKubernetesJob(kubernetesClient, job, jobName, mardukPodWatcher);
             }
         }
+    }
+
+    protected KubernetesClient createKubernetesClient() {
+        return new KubernetesClientBuilder().build();
+    }
+
+    /**
+     * The poll is a backstop against a watch that stops delivering events without failing: fabric8 7.7.0 never applies
+     * websocketPingInterval, so a watch connection dropped by an intermediary during a long silent stretch raises no
+     * error, schedules no reconnect, and would otherwise leave the caller blocked for the whole job timeout.
+     */
+    private void awaitJobCompletion(KubernetesClient kubernetesClient, String jobName, MardukPodWatcher mardukPodWatcher) throws InterruptedException {
+        long startTime = System.nanoTime();
+        long deadline = startTime + TimeUnit.SECONDS.toNanos(jobTimeoutSecond);
+        long pollIntervalNanos = TimeUnit.SECONDS.toNanos(pollIntervalSecond);
+        while (true) {
+            long remainingNanos = deadline - System.nanoTime();
+            if (remainingNanos <= 0) {
+                throw new KubernetesJobRunnerException("Timeout while waiting for the Graph Builder job " + jobName + " to complete.");
+            }
+            if (mardukPodWatcher.awaitTerminalState(Math.min(pollIntervalNanos, remainingNanos))) {
+                return;
+            }
+            if (pollJobStatus(kubernetesClient, jobName, mardukPodWatcher)) {
+                long elapsedSecond = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startTime);
+                LOGGER.warn("The Graph Builder job {} reached a terminal state detected via status poll after {}s, the pod watch did not deliver the terminal event.", jobName, elapsedSecond);
+                return;
+            }
+        }
+    }
+
+    /**
+     * @return true if the job reached a terminal state.
+     */
+    private boolean pollJobStatus(KubernetesClient kubernetesClient, String jobName, MardukPodWatcher mardukPodWatcher) {
+        Job job;
+        try {
+            job = kubernetesClient.batch().v1().jobs().inNamespace(kubernetesNamespace).withName(jobName).get();
+        } catch (KubernetesClientException e) {
+            // transient API errors must not abort the wait, the next poll retries
+            LOGGER.warn("Unable to poll the status of the Graph Builder job {}, retrying at the next poll interval.", jobName, e);
+            return false;
+        }
+        if (job == null) {
+            throw new KubernetesJobRunnerException("The Graph Builder job " + jobName + " no longer exists in namespace " + kubernetesNamespace);
+        }
+        JobStatus status = job.getStatus();
+        if (status == null) {
+            return false;
+        }
+        if (status.getSucceeded() != null && status.getSucceeded() >= 1) {
+            mardukPodWatcher.markSucceeded();
+            return true;
+        }
+        if (status.getFailed() != null && mardukPodWatcher.isFailureBudgetExhausted(status.getFailed())) {
+            LOGGER.error("The Graph Builder job {} failed {} times, exceeding the backoff limit. Giving up.", jobName, status.getFailed());
+            mardukPodWatcher.markFailed();
+            return true;
+        }
+        return false;
+    }
+
+    private void cleanUpKubernetesJob(KubernetesClient kubernetesClient, Job job, String jobName, MardukPodWatcher mardukPodWatcher) {
+        if (!deleteJobAfterCompletion) {
+            return;
+        }
+        // a Kubernetes client error can be retried, the job must be left in place so that retrieveOrCreateJob() can reattach to it
+        if (mardukPodWatcher.isKubernetesClientError()) {
+            return;
+        }
+        if (Thread.currentThread().isInterrupted()) {
+            LOGGER.warn("Orphaned Kubernetes job {} in namespace {} : the current thread was interrupted, skipping the deletion. The job must be deleted manually.", jobName, kubernetesNamespace);
+            return;
+        }
+        LOGGER.info("Deleting job {} after completion.", jobName);
+        deleteKubernetesJob(kubernetesClient, job, jobName);
+        LOGGER.info("Deleted job {} after completion.", jobName);
     }
 
     /**
@@ -113,11 +183,11 @@ public class KubernetesJobRunner {
         return job;
     }
 
-    private void deleteKubernetesJob(KubernetesClient kubernetesClient, Job job) {
+    private void deleteKubernetesJob(KubernetesClient kubernetesClient, Job job, String jobName) {
         try {
             kubernetesClient.batch().v1().jobs().inNamespace(kubernetesNamespace).resource(job).delete();
         } catch (Exception e) {
-            LOGGER.warn("Unable to delete Kubernetes job after completion", e);
+            LOGGER.warn("Orphaned Kubernetes job {} in namespace {} : the deletion after completion failed. The job must be deleted manually.", jobName, kubernetesNamespace, e);
         }
     }
 
@@ -166,6 +236,29 @@ public class KubernetesJobRunner {
             return succeeded;
         }
 
+        /**
+         * Kubernetes retries a pod up to backoffLimit times before failing the job.
+         */
+        public boolean isFailureBudgetExhausted(int failures) {
+            return failures >= backoffLimit;
+        }
+
+        public boolean awaitTerminalState(long timeoutNanos) throws InterruptedException {
+            return watchLatch.await(timeoutNanos, TimeUnit.NANOSECONDS);
+        }
+
+        public void markSucceeded() {
+            succeeded = true;
+            watchLatch.countDown();
+        }
+
+        /**
+         * Release the wait without setting {@link #succeeded}, so the caller reports a failure.
+         */
+        public void markFailed() {
+            watchLatch.countDown();
+        }
+
         public MardukPodWatcher(Job job, CountDownLatch watchLatch, String jobName) {
             this.watchLatch = watchLatch;
             this.jobName = jobName;
@@ -183,7 +276,7 @@ public class KubernetesJobRunner {
             }
             // counting only actions of type "MODIFIED" since Kubernetes can send multiple events in the phase "Failed" (action=MODIFIED, action=DELETED)
             if (pod.getStatus().getPhase().equals("Failed") && action.name().equals("MODIFIED")) {
-                if (podFailureCounter.incrementAndGet() >= backoffLimit) {
+                if (isFailureBudgetExhausted(podFailureCounter.incrementAndGet())) {
                     LOGGER.error("The Graph Builder job {} failed (reason: {}) after {} retries, exceeding the backoff limit. Giving up.", jobName, pod.getStatus().getReason(), podFailureCounter);
                     watchLatch.countDown();
                 } else {
