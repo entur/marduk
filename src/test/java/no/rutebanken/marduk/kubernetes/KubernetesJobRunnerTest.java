@@ -9,6 +9,7 @@ import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
+import io.fabric8.kubernetes.api.model.batch.v1.JobConditionBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.JobList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -180,6 +181,24 @@ class KubernetesJobRunnerTest {
         assertTimeoutPreemptively(Duration.ofSeconds(5),
                 () -> jobRunner.runJob(CRON_JOB_NAME, JOB_NAME_PREFIX, List.of(), TIMESTAMP));
 
+        verify(deletableJobResource).delete();
+    }
+
+    @Test
+    void deadlineExceededIsTerminalEvenWithinTheBackoffLimit() {
+        // activeDeadlineSeconds and pod failure policies fail the job through a condition, leaving the failure
+        // counter within the backoff limit, so the counters alone never report it as terminal
+        Job failedJob = job(null, 1);
+        failedJob.getStatus().setConditions(List.of(new JobConditionBuilder()
+                .withType("Failed").withStatus("True").withReason("DeadlineExceeded").build()));
+        stubJobLookup(job(null, null), failedJob);
+        stubWatch(watcher -> watcher.eventReceived(Watcher.Action.MODIFIED, pod("Running")));
+
+        KubernetesJobRunnerException exception = assertThrows(KubernetesJobRunnerException.class,
+                () -> jobRunner.runJob(CRON_JOB_NAME, JOB_NAME_PREFIX, List.of(), TIMESTAMP));
+
+        assertTrue(exception.getMessage().contains("failed"), exception.getMessage());
+        assertTrue(loggedAtWarn("DeadlineExceeded"), "the condition reason should be logged");
         verify(deletableJobResource).delete();
     }
 

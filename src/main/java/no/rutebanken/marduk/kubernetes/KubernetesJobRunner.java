@@ -6,6 +6,7 @@ import io.fabric8.kubernetes.api.model.batch.v1.CronJob;
 import io.fabric8.kubernetes.api.model.batch.v1.CronJobSpec;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
+import io.fabric8.kubernetes.api.model.batch.v1.JobCondition;
 import io.fabric8.kubernetes.api.model.batch.v1.JobSpec;
 import io.fabric8.kubernetes.api.model.batch.v1.JobStatus;
 import io.fabric8.kubernetes.client.*;
@@ -130,6 +131,18 @@ public class KubernetesJobRunner {
         if (status == null) {
             return false;
         }
+        // Kubernetes reports the outcome as a condition. It is the only signal for a job failed by activeDeadlineSeconds
+        // or a pod failure policy, where the failure counter can still be within the backoff limit.
+        JobCondition terminalCondition = terminalCondition(status);
+        if (terminalCondition != null) {
+            if ("Complete".equals(terminalCondition.getType())) {
+                mardukPodWatcher.markSucceeded();
+            } else {
+                LOGGER.error("The Graph Builder job {} failed (reason: {}, message: {}). Giving up.", jobName, terminalCondition.getReason(), terminalCondition.getMessage());
+                mardukPodWatcher.markFailed();
+            }
+            return true;
+        }
         if (status.getSucceeded() != null && status.getSucceeded() >= 1) {
             mardukPodWatcher.markSucceeded();
             return true;
@@ -140,6 +153,17 @@ public class KubernetesJobRunner {
             return true;
         }
         return false;
+    }
+
+    private static JobCondition terminalCondition(JobStatus status) {
+        if (status.getConditions() == null) {
+            return null;
+        }
+        return status.getConditions().stream()
+                .filter(condition -> "True".equals(condition.getStatus()))
+                .filter(condition -> "Complete".equals(condition.getType()) || "Failed".equals(condition.getType()))
+                .findFirst()
+                .orElse(null);
     }
 
     private void cleanUpKubernetesJob(KubernetesClient kubernetesClient, Job job, String jobName, MardukPodWatcher mardukPodWatcher) {
