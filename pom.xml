@@ -26,7 +26,7 @@
         <camel.version>4.21.0</camel.version>
         <!-- unmanaged by any BOM, must track the kubernetes-client version that camel-kubernetes pulls in -->
         <kubernetes-client.version>7.7.0</kubernetes-client.version>
-        <entur.helpers.version>7.2.0</entur.helpers.version>
+        <entur.helpers.version>7.3.0</entur.helpers.version>
         <spring-cloud-gcp-dependencies.version>8.1.0</spring-cloud-gcp-dependencies.version>
         <commons-io.version>2.22.0</commons-io.version>
         <commons-csv.version>1.14.1</commons-csv.version>
@@ -397,6 +397,14 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <configuration>
+                    <ignoredVersions>(?i).*[-.](alpha|beta|dev|m|rc)([-.]?\d+)?</ignoredVersions>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.kubernetes.KubernetesJobTimeoutException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -83,6 +84,10 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
         super.configure();
 
 
+        // the job is deleted on timeout, so a redelivery rebuilds from scratch instead of reattaching to it
+        onException(KubernetesJobTimeoutException.class)
+                .maximumRedeliveries(0);
+
         singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue?maxAckExtensionPeriod=14400").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.getAggregateControllerForRoute("otp2-remote-netex-graph-build"))
@@ -92,7 +97,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:remoteBuildOtp2Graph")
                 .routeId("otp2-graph-build");
 
-        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphCandidateBuildQueue").autoStartup("{{otp2.graph.build.autoStartup:true}}")
+        singletonFrom("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphCandidateBuildQueue?maxAckExtensionPeriod=14400").autoStartup("{{otp2.graph.build.autoStartup:true}}")
                 .process(this::removeSynchronizationForAggregatedExchange)
                 .aggregate(new GroupedMessageAggregationStrategy()).constant(true).completionSize(100).aggregateController(idleRouteAggregationMonitor.getAggregateControllerForRoute("otp2-remote-netex-graph-build"))
                 .process(this::addSynchronizationForAggregatedExchange)

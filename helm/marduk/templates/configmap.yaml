@@ -151,7 +151,11 @@ data:
     fetch.osm.cron.schedule={{ .Values.osm.fetchCronSchedule }}
     fetch.osm.map.url=https://storage.googleapis.com/ror-osmdata-prd/osm-data/norway-latest.osm.pbf
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
-    otp.graph.build.remote.kubernetes.timeout=12000
+    # Seconds. NeTEx builds run 16-20 minutes in prd, base builds 18-32. The margin also covers the candidate
+    # builds, which run unreleased OTP images with unpredictable build times.
+    otp.graph.build.remote.kubernetes.timeout=5400
+    # Seconds. Backstop for a pod watch that silently stops delivering events: poll the job status at this interval.
+    otp.graph.build.remote.kubernetes.poll.interval=60
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
     otp.graph.build.autoStartup={{ .Values.otp.graph.build.autoStartup }}
     line.statistics.calculation.enabled={{ .Values.line.statistics.calculation.enabled }}
