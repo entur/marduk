@@ -9,78 +9,6 @@ Marduk is a Spring Boot application that orchestrates the timetable data import 
 - **Data Formats**: NeTEx (primary), GTFS (legacy, being migrated)
 - **Architecture Pattern**: Event-driven, message-based orchestration using Apache Camel
 
-## Technology Stack
-
-- **Language**: Java 25
-- **Framework**: Spring Boot 4 with Apache Camel
-- **Build Tool**: Maven, parent `org.entur.ror:superpom` (sets the Spring Boot version)
-- **Database**: PostgreSQL (with Flyway migrations)
-- **Messaging**: Google Cloud PubSub
-- **Storage**: Google Cloud Storage (GCS)
-- **REST**: Jersey (JAX-RS)
-- **Deployment**: Kubernetes (Helm charts in `helm/`)
-
-Versions live in pom.xml; do not trust versions written in this file.
-
-## Project Structure
-
-```
-src/main/java/no/rutebanken/marduk/
-├── App.java                    # Main Spring Boot application, extends RouteBuilder
-├── Constants.java              # Application-wide constants (headers, paths, file names)
-├── Utils.java                  # Common utility functions
-├── config/                     # Spring configuration classes
-│   ├── CamelConfig.java
-│   ├── OAuth2Config.java
-│   ├── IdempotentRepositoryConfig.java
-│   └── *BlobStoreRepositoryConfig.java
-├── domain/                     # Domain model entities
-│   ├── Provider.java           # Transport data provider entity
-│   ├── ChouetteInfo.java       # Chouette integration config per provider
-│   ├── BlobStoreFiles.java     # File metadata
-│   └── FileNameAndDigest.java  # For idempotency checking
-├── exceptions/                 # Custom exception classes
-├── routes/                     # Apache Camel route builders (main business logic)
-│   ├── BaseRouteBuilder.java           # Abstract base with common routing utilities
-│   ├── TransactionalBaseRouteBuilder.java
-│   ├── inbound/                        # Receiving files from queues
-│   ├── file/                           # File upload, classification, validation
-│   │   ├── FileUploadRouteBuilder.java
-│   │   ├── FileClassificationRouteBuilder.java
-│   │   └── FileType.java               # Enum: GTFS, NETEXPROFILE, etc.
-│   ├── chouette/                       # Chouette database integration
-│   │   ├── ChouetteImportRouteBuilder.java
-│   │   ├── ChouetteValidationRouteBuilder.java
-│   │   ├── ChouetteExportNetexRouteBuilder.java
-│   │   └── ChouetteTransferToDataspaceRouteBuilder.java
-│   ├── netex/                          # NeTEx format handling
-│   │   ├── NetexMergeChouetteWithFlexibleLineExportRouteBuilder.java
-│   │   └── PublishMergedNetexRouteBuilder.java
-│   ├── flexlines/                      # Flexible transport integration
-│   ├── otp/                            # OpenTripPlanner graph building
-│   ├── aggregation/                    # Data aggregation across providers
-│   ├── fetchosm/                       # OpenStreetMap data fetching
-│   ├── gtfs/                           # GTFS export handling
-│   ├── admin/                          # Admin operations
-│   └── status/                         # Job status tracking
-├── rest/                       # REST API endpoints
-│   ├── AdminRestRouteBuilder.java
-│   └── AdminExternalRestRouteBuilder.java
-├── services/                   # Business logic services
-│   ├── *BlobStoreService.java  # Storage abstractions
-│   └── IdempotentRepositoryService.java
-├── repository/                 # Data access layer
-├── security/                   # OAuth2 and authorization
-├── graph/                      # OTP graph related logic
-├── json/                       # JSON serialization helpers
-└── kubernetes/                 # Kubernetes integration
-
-src/main/resources/
-├── db/migration/              # Flyway database migrations
-├── logback.xml                # Logging configuration
-└── openapi/                   # API specifications
-```
-
 ## Key Concepts
 
 ### 1. Apache Camel Routes
@@ -123,88 +51,6 @@ Each step communicates via PubSub queues and updates job status.
 - Duplicate files rejected automatically
 - Implemented via `IdempotentRepositoryService`
 
-## Important Constants
-
-From `Constants.java`, these headers are used throughout:
-- `PROVIDER_ID`: Transport operator ID
-- `CORRELATION_ID`: Trace ID for tracking workflow
-- `FILE_HANDLE`: Blob storage path to file
-- `FILE_TYPE`: Enum indicating GTFS, NETEXPROFILE, etc.
-- `CHOUETTE_REFERENTIAL`: Database schema/namespace
-- `FILE_NAME`: Original filename
-
-## Configuration
-
-### Application Properties
-- Located in `src/test/resources/application.properties` (example)
-- Uses Spring profiles: `in-memory-blobstore`, `test`, `gcs-blobstore`
-- Key properties:
-  - `marduk.pubsub.project.id`: GCP project
-  - `blobstore.gcs.container.name`: Storage bucket
-  - `providers.api.url`: Provider repository service URL
-  - `camel.*`: Camel configuration
-
-### Environment-Specific Config
-- Kubernetes ConfigMaps in `helm/marduk/templates/configmap.yaml`
-- Helm values for different environments
-
-## Testing
-
-- Unit tests use H2 in-memory database
-- PubSub emulator via Testcontainers
-- In-memory blob store for file operations
-- Base test class setup in `src/test/`
-
-## Common Development Tasks
-
-### Adding a New Route
-
-1. Create class extending `BaseRouteBuilder` or `TransactionalBaseRouteBuilder`
-2. Annotate with `@Component`
-3. Override `configure()` method
-4. Define routes with `.from()` and `.to()`
-5. Set meaningful `.routeId()`
-6. Use constants from `Constants.java` for headers
-
-Example:
-```java
-@Component
-public class MyNewRouteBuilder extends BaseRouteBuilder {
-    @Override
-    public void configure() throws Exception {
-        super.configure();
-        
-        from("direct:myRoute")
-            .log(LoggingLevel.INFO, "Processing...")
-            .to("direct:nextStep")
-            .routeId("my-route");
-    }
-}
-```
-
-### Working with Blob Storage
-
-- Use injected `*BlobStoreService` classes
-- Internal blobs: `MardukInternalBlobStoreService`
-- Public blobs: `MardukPublicBlobStoreService`
-- Common operations: `uploadBlob()`, `getBlob()`, `listBlobs()`
-
-### Job Status Updates
-
-```java
-.process(e -> JobEvent.providerJobBuilder(e)
-    .timetableAction(JobEvent.TimetableAction.IMPORT)
-    .state(JobEvent.State.STARTED)
-    .build())
-.to("direct:updateStatus")
-```
-
-### Error Handling
-
-- Use `onException()` in routes for exception handling
-- Log with correlation ID: `correlation() + "message"`
-- Failed jobs go to `MardukDeadLetterQueue`
-
 ## External System Integration
 
 ### Antu
@@ -230,34 +76,6 @@ public class MyNewRouteBuilder extends BaseRouteBuilder {
 ### Uttu/Enki
 - **Purpose**: Flexible transport timetable editors
 - **Integration**: Merges their NeTEx exports with Chouette exports
-
-## Database Schema
-
-- Managed by Flyway migrations in `src/main/resources/db/migration/`
-- Primary tables:
-  - File tracking (name, checksum, timestamp)
-  - Idempotency records
-
-## Security
-
-- OAuth2 authentication via `MardukWebSecurityConfiguration`
-- Authorization service: `MardukAuthorizationService`
-- Role-based access control for REST endpoints
-- Multi-issuer JWT support
-
-## Logging
-
-- Structured logging with Logback
-- JSON format via logstash-logback-encoder
-- MDC logging enabled for correlation tracking
-- Correlation ID propagated through entire workflow
-
-## Deployment
-
-- Docker image built from `Dockerfile`
-- Helm chart in `helm/marduk/`
-- Kubernetes-native (leader election, service discovery)
-- Terraform infrastructure in `terraform/`
 
 ## Scheduled Jobs
 
@@ -307,12 +125,6 @@ java -Xmx500m \
 ./mvnw test
 ```
 
-## API Documentation
-
-- OpenAPI specs in `src/main/resources/openapi/`
-- REST endpoints accessible at `/services/*`
-- Admin endpoints in `AdminRestRouteBuilder` and `AdminExternalRestRouteBuilder`
-
 ## Related Projects (Entur Ecosystem)
 
 - **Bel**: Operator portal for file uploads
@@ -323,10 +135,6 @@ java -Xmx500m \
 - **Damu**: GTFS export generator
 - **Uttu/Enki**: Flexible transport timetable editors
 - **OTP**: OpenTripPlanner journey planner
-
-## License
-
-Licensed under EUPL 1.2 (European Union Public License)
 
 ## Additional Notes for AI Assistants
 
