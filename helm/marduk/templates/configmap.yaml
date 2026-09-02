@@ -17,7 +17,7 @@ data:
     # and every /services/** request gets Spring's no-handler 404
     spring.mvc.servlet.load-on-startup=1
     # platform-http runs every /services/** route on this pool; Boot's default core of 8 with an
-    # unbounded queue never grows, so slow uploads can starve the readiness probe off the pool
+    # unbounded queue never grows, so concurrent 150MB uploads would serialise 8 at a time
     spring.task.execution.pool.core-size=32
     server.port={{ .Values.common.service.internalPort }}
     server.compression.enabled=true
@@ -39,6 +39,14 @@ data:
     # election (enabled above) and turn the file lock off; two beans make master: ambiguous and every
     # singletonFrom() route fails to start. The test profile does the reverse (kubernetes off, file on).
     camel.cluster.file.enabled=false
+    # renew-deadline is the one that matters: the leader drops to "no leader" this long after its last
+    # successful refresh, and the default 10s is inside the range of a full GC on the 5g parallel-GC heap.
+    # lease-duration is not an expiry (Camel decides leadership from Ready-pod membership alone), it is the
+    # Thread.sleep a new leader waits before starting routes, so it is pure downtime on every transition and
+    # is kept at the minimum consistent with renew-deadline. Defaults are 15000/10000/2000.
+    camel.cluster.kubernetes.lease-duration-millis=30000
+    camel.cluster.kubernetes.renew-deadline-millis=20000
+    camel.cluster.kubernetes.retry-period-millis=5000
     camel.component.http.follow-redirects=true
     camel.metrics.enable-route-event-notifier=false
     camel.metrics.enable-route-policy=false

@@ -19,26 +19,35 @@ common:
     probes:
       # spec replaces the chart's whole probe block, which emits no timeoutSeconds and so gets
       # the 1s k8s default - too tight for a path that shares platform-http's task executor
-      # with 150MB uploads. Both probes target /services/health because it is served by
+      # with 150MB uploads. Startup and liveness target /services/health because it is served by
       # platform-http itself: a pod whose Camel mappings never registered fails them, while
       # /actuator/health stays UP in that state. Liveness thresholds are deliberately slack so
       # executor saturation recycles nothing, but a permanently unmapped pod is still replaced.
+      # initialDelaySeconds is omitted throughout: the startup probe gates both other probes.
+      # Readiness stays off the app port, see below.
       spec:
         livenessProbe:
           httpGet:
             path: /services/health
             port: 8080
-          initialDelaySeconds: 140
           periodSeconds: 10
           # 60 x 10s stays clear of spring.mvc.async.request-timeout=300s, so a pod saturated by
           # uploads about to time out is not killed for it
           failureThreshold: 60
           timeoutSeconds: 5
         readinessProbe:
+          # Management port, not /services/health on 8080: camel-kubernetes builds the cluster member
+          # list from the pods whose Ready condition is true, so readiness decides leader election, and
+          # sharing platform-http's connector and task executor with 150MB uploads made a request stall
+          # enough to drop the pod out of the cluster. The tradeoff is that readinessState only tracks
+          # context startup - nothing flips it for broken Camel routes - so an unmapped pod is caught by
+          # the startup probe before it ever serves, and after that only by liveness. That is deliberate:
+          # readiness must answer "did this context start", never "is a downstream healthy". The health
+          # group, not plain /actuator/health, for the same reason - the latter aggregates the database
+          # and returns 503 on any downstream blip, which is a leader election.
           httpGet:
-            path: /services/health
-            port: 8080
-          initialDelaySeconds: 20
+            path: /actuator/health/readiness
+            port: 9001
           periodSeconds: 10
           failureThreshold: 3
           timeoutSeconds: 5
