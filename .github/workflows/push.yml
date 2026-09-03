@@ -52,20 +52,20 @@ jobs:
           path: target
   openapi-lint:
     needs: [ maven-verify ]
-    uses: entur/gha-api/.github/workflows/lint.yml@v6.3.2
+    uses: entur/gha-api/.github/workflows/lint.yml@v6.5.0
     secrets: inherit
     with:
       path: 'src/main/resources/openapi/timetable-management/openapi.yaml'
   openapi-validate:
     needs: [ maven-verify ]
-    uses: entur/gha-api/.github/workflows/validate.yml@v6.3.2
+    uses: entur/gha-api/.github/workflows/validate.yml@v6.5.0
     secrets: inherit
     with:
       path: 'src/main/resources/openapi/timetable-management/openapi.yaml'
   openapi-publish:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [ openapi-lint, openapi-validate ]
-    uses: entur/gha-api/.github/workflows/publish.yml@v6.3.2
+    uses: entur/gha-api/.github/workflows/publish.yml@v6.5.0
     secrets: inherit
     with:
       path: 'src/main/resources/openapi/timetable-management/openapi.yaml'
@@ -99,13 +99,13 @@ jobs:
   docker-build:
     if: github.repository_owner == 'entur' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [maven-verify]
-    uses: entur/gha-docker/.github/workflows/build.yml@v1.11.0
+    uses: entur/gha-docker/.github/workflows/build.yml@v1.12.0
     with:
       build_artifact_name: artifact
       build_artifact_path: target
   docker-push:
     needs: [docker-build, docker-smoke]
-    uses: entur/gha-docker/.github/workflows/push.yml@v1.11.0
+    uses: entur/gha-docker/.github/workflows/push.yml@v1.12.0
 
 
   helm-lint:
