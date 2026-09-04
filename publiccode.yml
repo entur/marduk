@@ -1,0 +1,56 @@
+publiccodeYmlVersion: "0.5.0"
+
+name: Marduk
+url: https://github.com/entur/marduk
+landingURL: https://github.com/entur/marduk
+
+platforms:
+  - linux
+  - web
+
+categories:
+  - workflow-management
+  - data-collection
+  - geographic-information-systems
+
+developmentStatus: stable
+softwareType: standalone/backend
+
+organisation:
+  name: Entur AS
+  uri: https://entur.no
+
+usedBy:
+  - Norway (nationwide), Entur
+
+description:
+  en:
+    localisedName: Marduk
+    shortDescription: Orchestrates the Norwegian national timetable data pipeline.
+    longDescription: >
+      Marduk drives NeTEx and GTFS datasets through import, validation, export and publication, schedules nightly
+      revalidation so time-dependent rules stay correct, and triggers GTFS conversion and journey planner graph
+      rebuilds.
+    documentation: https://github.com/entur/marduk/blob/master/README.md
+    features:
+      - Orchestrates the NeTEx and GTFS import pipeline
+      - Ingests datasets via upload, REST API and PubSub
+      - Schedules nightly revalidation and re-export
+      - Publishes validated datasets as open data
+      - Triggers OpenStreetMap download and graph rebuild
+
+legal:
+  license: EUPL-1.2
+  mainCopyrightOwner: Entur AS
+
+maintenance:
+  type: internal
+  contacts:
+    - name: Entur Open Data and Journey Planning
+      email: kollektivdata@entur.org
+      affiliation: Entur AS
+
+localisation:
+  localisationReady: false
+  availableLanguages:
+    - en
