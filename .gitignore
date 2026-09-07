@@ -47,3 +47,5 @@ gradlew.bat
 # Mac
 .DS_Store
 /.DS_Store
+
+.claude
