@@ -32,6 +32,7 @@ import static no.rutebanken.marduk.Constants.FILE_VERSION;
 import static no.rutebanken.marduk.Constants.IMPORT_TYPE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.USERNAME;
+import static no.rutebanken.marduk.Utils.singleLine;
 
 /**
  * Stores an uploaded timetable file and starts the import pipeline for it.
@@ -92,7 +93,9 @@ public class TimetableFileUploader {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("No file provided");
         }
-        String fileName = file.getOriginalFilename();
+        // The name the client sent is the only untrusted string in the upload, and it becomes the blob path,
+        // the duplicate filter's key and half the log lines below.
+        String fileName = singleLine(file.getOriginalFilename());
         LOGGER.debug("[{}] Processing file: name={}, size={}, contentType={}",
                 upload.correlationId(), fileName, file.getSize(), file.getContentType());
 
@@ -112,7 +115,7 @@ public class TimetableFileUploader {
                 upload(file, upload);
             } catch (RuntimeException e) {
                 LOGGER.warn("Upload failed for {}, continuing with the remaining files",
-                        file == null ? null : file.getOriginalFilename(), e);
+                        file == null ? null : singleLine(file.getOriginalFilename()), e);
             }
         }
     }

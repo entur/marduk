@@ -345,7 +345,7 @@ failure. Wrapping something wider than a single call is the mistake this class e
 
 ## Deliberate divergences from master
 
-Everything above is a difference the conversion produced. The two below are differences that were *chosen*
+Everything above is a difference the conversion produced. The three below are differences that were *chosen*
 after comparing the branch against master. A future maintainer needs to be able to tell these from an
 accident of the migration, which is the only reason they get their own section.
 
@@ -375,6 +375,20 @@ No real client can reach it either, since Ninkasi sends one of the three fixed v
 master, because that endpoint's published OpenAPI spec documents only 200, 401, 403, 404 and 500. This is not
 an inconsistency waiting to be tidied up - the published partner contract is the reason, and there is a test
 on each side saying so.
+
+**Caller-supplied strings have their line breaks stripped on the way in.** Master logged the file name, the
+codespace, the Chouette job id and the `clean` filter straight from the request, through Camel's `.log()`
+with `${header.CamelFileName}` and friends (`AdminRestRouteBuilder.java:567`, `:638`, `:721`,
+`IdempotentFileFilterRoute.java:62`). A value containing a CR or LF forges a line in the log. The branch
+passes each of them through `Utils.singleLine` where it enters, so the raw value is not reachable further in:
+the parameter is bound as `rawSomething` and only the stripped value has the ordinary name.
+
+Stripping at the edge rather than at the log call means the stripped name is also what becomes the blob path,
+the duplicate filter's key and the Chouette query parameter. That is a real divergence for a file called
+`"netex\nzip"`, which master would have stored under a two-line object name. Chosen over sanitizing at each
+of the fourteen log statements because a name that cannot appear in a log line has no business in a GCS path
+either, and because the next endpoint added would have had to remember the rule. Sonar reported all fourteen
+as `javasecurity:S5145`.
 
 ## Notes on individual conversions
 
