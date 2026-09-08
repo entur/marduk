@@ -16,7 +16,7 @@
 
 package no.rutebanken.marduk.services;
 
-import org.apache.camel.spi.IdempotentRepository;
+import no.rutebanken.marduk.repository.IdempotentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

@@ -16,9 +16,6 @@
 
 package no.rutebanken.marduk.routes.file;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.StreamCache;
-import org.apache.camel.converter.stream.CachedOutputStream;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -36,20 +33,6 @@ public class MardukFileUtils {
 
     private MardukFileUtils() {
     }
-
-    /**
-     * Drain a stream into an exchange-scoped, re-readable stream cache, disk-spooled above the
-     * configured threshold. Servlet multipart streams must be drained eagerly like this: on
-     * Camel 4.18 they are destroyed by the first pubsub publish (the producer stringifies every
-     * header before filtering) and by platform-http's deferred reads.
-     */
-    public static StreamCache drainToStreamCache(Exchange exchange, InputStream content) throws IOException {
-        try (CachedOutputStream cachedContent = new CachedOutputStream(exchange)) {
-            content.transferTo(cachedContent);
-            return cachedContent.newStreamCache();
-        }
-    }
-
 
     public static File createTempFile(byte[] data, String prefix, String suffix) throws IOException {
         File inputFile = File.createTempFile(prefix, suffix);

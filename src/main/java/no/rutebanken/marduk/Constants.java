@@ -20,25 +20,18 @@ public final class Constants {
     public static final String FILE_TYPE = "RutebankenFileType";
     public static final String FILE_HANDLE = "RutebankenFileHandle";
     public static final String FILE_VERSION = "RutebankenFileVersion";
-    public static final String FILE_PREFIX = "RutebankenFilePrefix";
     public static final String TARGET_FILE_HANDLE = "RutebankenTargetFileHandle";
-    public static final String TARGET_FILE_PARENT = "RutebankenTargetFileParent";
     public static final String TARGET_CONTAINER = "RutebankenTargetContainer";
 
     public static final String SOURCE_CONTAINER = "RutebankenSourceContainer";
 
-    public static final String FILE_PARENT_COLLECTION = "RutebankenFileParentCollection";
     public static final String PROVIDER_ID = "RutebankenProviderId";
     public static final String PROVIDER_IDS = "RutebankenProviderIds";
     public static final String ORIGINAL_PROVIDER_ID = "RutebankenOriginalProviderId"; // The original provider id that started this chain of events 
     // (providerId can change during the process when transferring data from one referential to another
     public static final String CORRELATION_ID = "RutebankenCorrelationId";
     public static final String CHOUETTE_REFERENTIAL = "RutebankenChouetteReferential";
-    public static final String JSON_PART = "RutebankenJsonPart";
     public static final String FILE_NAME = "RutebankenFileName";
-    public static final String FILE_CONTENT = "RutebankenFileContent";
-    // exchange property set by the upload route's doCatch so HTTP entry points can report failure
-    public static final String FILE_UPLOAD_FAILED = "RutebankenFileUploadFailed";
 
     public static final String CURRENT_AGGREGATED_GTFS_FILENAME = "aggregated-gtfs.zip";
     public static final String CURRENT_AGGREGATED_NETEX_FILENAME = "aggregated-netex.zip";
@@ -47,17 +40,12 @@ public final class Constants {
     public static final String CURRENT_PREVALIDATED_NETEX_FILENAME = "netex.zip";
     public static final String PREVALIDATED_NETEX_METADATA_FILENAME = "netex.metadata.json";
 
-    public static final String GRAPH_COMPATIBILITY_VERSION = "RutebankenGraphCompatibilityVersion";
-
-    public static final String OTP2_GRAPH_OBJ = "Graph-otp2.obj";
     public static final String OTP2_GRAPH_OBJ_PREFIX = "Graph-otp2";
     public static final String OTP2_BASE_GRAPH_OBJ_PREFIX = "streetGraph-otp2";
     public static final String OTP2_NETEX_GRAPH_DIR = "netex-otp2";
 
     public static final String OTP2_STREET_GRAPH_DIR = "street";
     public static final String OTP2_GRAPH_REPORT_INDEX_FILE = "index_otp2.html";
-
-    public static final String FILE_TARGET_MD5 = "RutebankenMd5SumRecordedForTargetFile";
 
     public static final String FILE_APPLY_DUPLICATES_FILTER = "RutebankenApplyDuplicateFilter";
     public static final String FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY = "RutebankenApplyDuplicateFilterOnNameOnly";
@@ -76,7 +64,6 @@ public final class Constants {
     public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks/";
     public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_BEFORE_VALIDATION = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks-before-validation/";
 
-
     public static final String CHOUETTE_JOB_STATUS_URL = "RutebankenChouetteJobStatusURL";
     public static final String CHOUETTE_JOB_ID = "RutebankenChouetteJobId";
     public static final String CHOUETTE_JOB_STATUS_ROUTING_DESTINATION = "RutebankenChouetteJobStatusRoutingDestination";
@@ -86,7 +73,6 @@ public final class Constants {
     public static final String ANTU_VALIDATION_REPORT_ID = "EnturValidationReportId";
 
     public static final String USERNAME = "RutebankenUsername";
-    public static final String JOB_ACTION = "RutebankenJobAction";
     public static final String JOB_ERROR_CODE = "RutebankenJobErrorCode";
 
     public static final String FOLDER_NAME = "RutebankenFolderName";
@@ -95,16 +81,6 @@ public final class Constants {
     public static final String TIMESTAMP = "RutebankenTimeStamp";
 
     public static final String ET_CLIENT_NAME_HEADER = "ET-Client-Name";
-
-    public static final String OTP_REMOTE_WORK_DIR = "RutebankenOtpRemoteWorkDir";
-    public static final String OTP_GRAPH_VERSION = "RutebankenGraphVersion";
-    public static final String OTP_BUILD_CANDIDATE = "RutebankenOtpBuildCandidate";
-
-
-    public static final String INCLUDE_SHAPES = "IncludeShapes";
-
-    public static final String CAMEL_ALL_HEADERS = "Camel*";
-    public static final String CAMEL_ALL_HTTP_HEADERS = "CamelHttp*";
 
     /**
      * Dataset codespace used for interacting with Damu and Antu
@@ -142,17 +118,16 @@ public final class Constants {
     public static final String VALIDATION_PROFILE_TIMETABLE_FINLAND = "TimetableFinland";
 
     public static final String FILTERING_PROFILE_HEADER = "EnturFilteringProfile";
+    // Not sent by marduk today, but a value of ashur's FilterProfile enum.
     public static final String FILTERING_PROFILE_AS_IS = "AsIsImportFilter";
     public static final String FILTERING_PROFILE_STANDARD_IMPORT = "StandardImportFilter";
     public static final String FILTERING_PROFILE_INCLUDE_BLOCKS_AND_RESTRICTED_JOURNEYS = "IncludeBlocksAndRestrictedJourneysFilter";
     public static final String FILTERING_FILE_CREATED_TIMESTAMP = "FileCreatedTimestamp";
 
     public static final String FILTERING_NETEX_SOURCE_HEADER = "NetexSource";
+    // Not sent by marduk today; the other value ashur reads out of NetexSource.
     public static final String FILTERING_NETEX_SOURCE_CHOUETTE = "chouette";
     public static final String FILTERING_NETEX_SOURCE_MARDUK = "marduk";
-
-    public static final String FILTER_NETEX_FILE_SUBSCRIPTION = "FilterNetexFileQueue";
-    public static final String FILTER_NETEX_FILE_STATUS_TOPIC = "FilterNetexFileStatusQueue";
 
     public static final String FILTER_NETEX_FILE_STATUS_HEADER = "Status";
 
@@ -162,8 +137,6 @@ public final class Constants {
 
     public static final String FILTERED_NETEX_FILE_PATH_HEADER = "FilteredNetexFilePath";
     public static final String FILTERING_ERROR_CODE_HEADER = "FilteringErrorCode";
-
-    public static final String SERVICELINKER_STATUS_TOPIC = "ServicelinkerStatusQueue";
 
     // Matches constants in PubSubMessageHandler.kt in servicelinker
     public static final String LINKING_NETEX_FILE_STATUS_HEADER = "LinkingStatus";

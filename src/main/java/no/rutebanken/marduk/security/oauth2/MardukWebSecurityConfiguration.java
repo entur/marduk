@@ -62,6 +62,9 @@ public class MardukWebSecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(HttpMethod.GET, "/services/health").permitAll()
+                        // Both spellings of the same document: springdoc serves JSON at the configured
+                        // path and YAML at that path plus .yaml
+                        .requestMatchers("/services/openapi").permitAll()
                         .requestMatchers("/services/openapi.yaml").permitAll()
                         .requestMatchers("/services/timetable_admin/openapi.yaml").permitAll()
                         .requestMatchers("/services/timetable-management/openapi.yaml").permitAll()

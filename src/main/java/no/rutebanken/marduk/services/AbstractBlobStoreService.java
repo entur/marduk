@@ -4,14 +4,18 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.MardukBlobStoreRepository;
-import org.apache.camel.Exchange;
-import org.apache.camel.Header;
 
 import java.io.InputStream;
 import java.util.Collection;
 
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-
+/**
+ * Blob operations on one bucket.
+ *
+ * <p>The parameters used to carry {@code @Header} annotations so Camel could bind them from the message.
+ * They are now ordinary parameters and the caller reads what it needs off its own message, which is the
+ * point: the binding was invisible at the call site, so a renamed header produced a null argument rather
+ * than a compile error.
+ */
 public abstract class AbstractBlobStoreService {
 
     protected final MardukBlobStoreRepository repository;
@@ -24,83 +28,78 @@ public abstract class AbstractBlobStoreService {
         this.repository.setContainerName(containerName);
     }
 
-    public BlobStoreFiles listBlobsInFolder(@Header(value = Exchange.FILE_PARENT) String folder) {
+    public BlobStoreFiles listBlobsInFolder(String folder) {
         return repository.listBlobs(folder + "/");
     }
 
-    public BlobStoreFiles listBlobsInFolders(@Header(value = Constants.FILE_PARENT_COLLECTION) Collection<String> folders) {
+    public BlobStoreFiles listBlobsInFolders(Collection<String> folders) {
         return repository.listBlobs(folders);
     }
 
-    public BlobStoreFiles listBlobs(@Header(value = Constants.CHOUETTE_REFERENTIAL) String referential) {
+    public BlobStoreFiles listBlobs(String referential) {
         return repository.listBlobs(Constants.BLOBSTORE_PATH_INBOUND + referential + "/");
     }
 
-    public BlobStoreFiles listBlobsFlat(@Header(value = Constants.CHOUETTE_REFERENTIAL) String referential) {
+    public BlobStoreFiles listBlobsFlat(String referential) {
         return repository.listBlobsFlat(Constants.BLOBSTORE_PATH_INBOUND + referential + "/");
     }
 
-    public BlobStoreFiles.File findBlob(@Header(value = Constants.FILE_PREFIX) String prefix) {
+    public BlobStoreFiles.File findBlob(String prefix) {
         BlobStoreFiles blobStoreFiles = repository.listBlobs(prefix);
-        if(blobStoreFiles.getFiles().isEmpty()) {
+        if (blobStoreFiles.getFiles().isEmpty()) {
             return null;
-        } else if(blobStoreFiles.getFiles().size() > 1) {
+        } else if (blobStoreFiles.getFiles().size() > 1) {
             throw new MardukException("Found multiple files matching the prefix " + prefix);
         }
         return blobStoreFiles.getFiles().getFirst();
     }
 
-    public InputStream getBlob(@Header(value = Constants.FILE_HANDLE) String name) {
+    public InputStream getBlob(String name) {
         return repository.getBlob(name);
     }
 
-    public Boolean blobExists(@Header(value = FILE_HANDLE) String name) {
+    public boolean blobExists(String name) {
         return repository.exist(name);
     }
 
-    public void uploadBlob(@Header(value = Constants.FILE_HANDLE) String name,
-                           InputStream inputStream, Exchange exchange) {
-        long generation = repository.uploadBlob(name, inputStream);
-        exchange.getIn().setHeader(Constants.FILE_VERSION, generation);
+    /**
+     * @return the generation of the uploaded blob, which the caller records as
+     *         {@code RutebankenFileVersion} so a later copy can name this exact version
+     */
+    public long uploadBlob(String name, InputStream inputStream) {
+        return repository.uploadBlob(name, inputStream);
     }
 
-    public void uploadBlobWithoutVersionHeader(@Header(value = Constants.FILE_HANDLE) String name,
-                                                InputStream inputStream) {
+    public void uploadBlobWithoutVersionHeader(String name, InputStream inputStream) {
         repository.uploadBlob(name, inputStream);
     }
 
-    public void copyBlobInBucket(@Header(value = Constants.FILE_HANDLE) String sourceName, @Header(value = Constants.TARGET_FILE_HANDLE) String targetName) {
+    public void copyBlobInBucket(String sourceName, String targetName) {
         repository.copyBlob(containerName, sourceName, containerName, targetName);
     }
 
-    public void copyBlobToAnotherBucket(@Header(value = Constants.FILE_HANDLE) String sourceName,
-                                        @Header(value = Constants.TARGET_CONTAINER) String targetContainerName,
-                                        @Header(value = Constants.TARGET_FILE_HANDLE) String targetName) {
+    public void copyBlobToAnotherBucket(String sourceName, String targetContainerName, String targetName) {
         repository.copyBlob(containerName, sourceName, targetContainerName, targetName);
     }
 
-    public void copyBlobFromAnotherBucket(@Header(value = Constants.SOURCE_CONTAINER) String sourceContainerName,
-                                          @Header(value = FILE_HANDLE) String sourceName,
-                                          @Header(value = Constants.TARGET_FILE_HANDLE) String targetName) {
+    public void copyBlobFromAnotherBucket(String sourceContainerName, String sourceName, String targetName) {
         repository.copyBlob(sourceContainerName, sourceName, containerName, targetName);
     }
 
-    public void copyVersionedBlobToAnotherBucket(@Header(value = Constants.FILE_HANDLE) String sourceName,
-                                        @Header(value = Constants.FILE_VERSION) Long sourceVersion,
-                                        @Header(value = Constants.TARGET_CONTAINER) String targetContainerName,
-                                        @Header(value = Constants.TARGET_FILE_HANDLE) String targetName) {
+    public void copyVersionedBlobToAnotherBucket(
+            String sourceName, Long sourceVersion, String targetContainerName, String targetName) {
         repository.copyVersionedBlob(containerName, sourceName, sourceVersion, targetContainerName, targetName);
     }
 
-    public void copyAllBlobs(@Header(value = Exchange.FILE_PARENT) String sourceFolder, @Header(value = Constants.TARGET_CONTAINER) String targetContainerName, @Header(value = Constants.TARGET_FILE_PARENT) String targetFolder) {
+    public void copyAllBlobs(String sourceFolder, String targetContainerName, String targetFolder) {
         repository.copyAllBlobs(containerName, sourceFolder, targetContainerName, targetFolder);
     }
 
-    public boolean deleteBlob(@Header(value = FILE_HANDLE) String name) {
+    public boolean deleteBlob(String name) {
         return repository.delete(name);
     }
 
-    public boolean deleteAllBlobsInFolder(@Header(value = Exchange.FILE_PARENT) String folder) {
+    public boolean deleteAllBlobsInFolder(String folder) {
         return repository.deleteAllFilesInFolder(folder);
     }
 

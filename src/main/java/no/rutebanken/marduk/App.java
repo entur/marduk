@@ -16,16 +16,9 @@
 
 package no.rutebanken.marduk;
 
-import com.jayway.jsonpath.Configuration;
-import com.jayway.jsonpath.Option;
-import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
-import com.jayway.jsonpath.spi.json.JsonProvider;
-import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
-import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import no.rutebanken.marduk.config.GcsBlobStoreRepositoryConfig;
 import no.rutebanken.marduk.config.IdempotentRepositoryConfig;
 import no.rutebanken.marduk.repository.CacheProviderRepository;
-import org.apache.camel.builder.RouteBuilder;
 import org.entur.pubsub.base.config.GooglePubSubConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,19 +30,14 @@ import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoCon
 import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import java.util.EnumSet;
-import java.util.Set;
 
 /**
- * A spring-boot application that includes a Camel route builder to set up the Camel routes
+ * The application entry point.
  */
 @SpringBootApplication(exclude={UserDetailsServiceAutoConfiguration.class})
 @EnableScheduling
 @Import({GcsBlobStoreRepositoryConfig.class, IdempotentRepositoryConfig.class, GooglePubSubConfig.class})
-public class App extends RouteBuilder {
-
-	@Value("${marduk.shutdown.timeout:300}")
-	private Long shutdownTimeout;
+public class App {
 
 	@Value("${marduk.provider.service.retry.interval:5000}")
 	private Integer providerRetryInterval;
@@ -63,26 +51,25 @@ public class App extends RouteBuilder {
     public static void main(String... args) {
         LOGGER.info("Starting Marduk...");
 
-        configureJsonPath();
-
 	    SpringApplication.run(App.class,args);
     }
 
-	@Override
-	public void configure() throws Exception {
+	/**
+	 * Nothing starts consuming before the provider repository answers.
+	 *
+	 * <p>Every consumer needs it to turn a provider id into a referential, so a pod that starts without it
+	 * would fail every message it touched.
+	 */
+	@jakarta.annotation.PostConstruct
+	void awaitProviderRepository() throws InterruptedException {
 		waitForProviderRepository();
-
-		getContext().getShutdownStrategy().setTimeout(shutdownTimeout);
-		getContext().setUseMDCLogging(true);
-		getContext().setUseBreadcrumb(true);
-		getContext().setMessageHistory(true);
 	}
 
 	protected void waitForProviderRepository() throws InterruptedException {
 		while (true){
 			try {
 				providerRepository.populate();
-				LOGGER.info("Provider Repository available. Starting camel routes...");
+				LOGGER.info("Provider Repository available.");
 				return;
 			} catch (Exception e) {
 				LOGGER.warn("Provider Repository not available. Waiting {} secs before retrying...", providerRetryInterval/1000, e);
@@ -91,26 +78,4 @@ public class App extends RouteBuilder {
         }
 	}
 
-	private static void configureJsonPath() {
-		Configuration.setDefaults(new Configuration.Defaults() {
-
-		    private final JsonProvider jsonProvider = new JacksonJsonProvider();
-		    private final MappingProvider mappingProvider = new JacksonMappingProvider();
-
-		    @Override
-		    public JsonProvider jsonProvider() {
-		        return jsonProvider;
-		    }
-
-		    @Override
-		    public MappingProvider mappingProvider() {
-		        return mappingProvider;
-		    }
-
-		    @Override
-		    public Set<Option> options() {
-		        return EnumSet.noneOf(Option.class);
-		    }
-		});
-    }
 }
