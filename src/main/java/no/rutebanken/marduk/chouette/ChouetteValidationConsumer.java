@@ -56,6 +56,8 @@ public class ChouetteValidationConsumer extends MardukPubSubConsumer {
         ensureCorrelationId(message);
         message.removeHeader(Constants.CHOUETTE_JOB_ID);
         LOGGER.info("Starting Chouette validation");
+        // Before the referential is resolved, as the route did, so an admin-triggered validation reports
+        // PENDING to nabu with a null referential. Changing the order would change what nabu records.
         jobEvents.reportProviderJob(message, builder -> builder.timetableAction(level(message))
                 .state(JobEvent.State.PENDING));
 

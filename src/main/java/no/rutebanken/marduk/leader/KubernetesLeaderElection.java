@@ -15,9 +15,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Leader election on a Kubernetes Lease, held by the pod whose hostname wins it.
  *
- * <p>Uses the same Lease API camel-master used underneath, so the existing RBAC covers it: the Role
- * already grants {@code create, get, update, list} on {@code coordination.k8s.io/leases}. Nothing needs
- * adding.
+ * <p>Uses the same Lease API camel-master used underneath, but not the same verbs. fabric8's
+ * {@code LeaseLock} renews with a PATCH where Camel's manager used an update, so the Role's existing
+ * {@code create, get, update, list} on {@code coordination.k8s.io/leases} is silently insufficient: the
+ * lease is acquired once, every renewal is forbidden, and leadership flaps as soon as it expires.
+ * {@code patch} is added to the Role in {@code helm/marduk/templates/rbac.yaml}, which carries the same
+ * note.
  *
  * <p>The Lease name is deliberately <em>not</em> one of the ten camel-master used. Sharing a name would
  * make old and new pods contend correctly during a rollout, which sounds better than it is: the two

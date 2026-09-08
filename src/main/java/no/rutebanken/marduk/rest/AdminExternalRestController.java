@@ -18,6 +18,7 @@ package no.rutebanken.marduk.rest;
 
 import jakarta.ws.rs.NotFoundException;
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.pipeline.MardukMdc;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.rest.openapi.api.DatasetsApi;
 import no.rutebanken.marduk.rest.openapi.api.FlexDatasetsApi;
@@ -77,7 +78,7 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
     @Override
     public ResponseEntity<UploadResult> upload(String rawCodespace, MultipartFile file) {
         String codespace = singleLine(rawCodespace);
-        String correlationId = UUID.randomUUID().toString();
+        String correlationId = newCorrelationId();
         LOG.info("[{}] Received file from provider {} through the Spring HTTP endpoint", correlationId, codespace);
 
         Long providerId = validateAndGetProviderId(codespace);
@@ -93,7 +94,7 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
     @Override
     public ResponseEntity<UploadResult> uploadFlexDataset(String rawCodespace, MultipartFile file) {
         String codespace = singleLine(rawCodespace);
-        String correlationId = UUID.randomUUID().toString();
+        String correlationId = newCorrelationId();
         LOG.info("[{}] Received flex file from provider {} through the Spring HTTP endpoint", correlationId, codespace);
 
         Long providerId = validateAndGetProviderId(codespace);
@@ -109,7 +110,7 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
     @Override
     public ResponseEntity<Resource> download(String rawCodespace) {
         String codespace = singleLine(rawCodespace);
-        String correlationId = UUID.randomUUID().toString();
+        String correlationId = newCorrelationId();
         LOG.info("[{}] Received Blocks download request for provider {} through the Spring HTTP endpoint", correlationId, codespace);
 
         Long providerId = validateAndGetProviderId(codespace);
@@ -139,6 +140,19 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
         fileUploader.upload(file, new TimetableFileUploader.Upload(
                 codespace, providerId, correlationId, usernameService.getPreferredUsername(),
                 importType, duplicateFilterRest, false));
+    }
+
+    /**
+     * The id the caller gets back, installed in the MDC as well.
+     *
+     * <p>{@link MardukMdcFilter} can only see the caller's {@code correlationId} header, which these
+     * endpoints do not require. Without this the upload's own log lines carry either no correlation id or a
+     * different one from the id returned in the response.
+     */
+    private static String newCorrelationId() {
+        String correlationId = UUID.randomUUID().toString();
+        MardukMdc.setCorrelationId(correlationId);
+        return correlationId;
     }
 
     private Long validateAndGetProviderId(String codespace) {

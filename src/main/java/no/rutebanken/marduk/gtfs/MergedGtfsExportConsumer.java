@@ -23,6 +23,12 @@ import org.springframework.stereotype.Component;
  * not wait out the quiet period. Nothing happens on a follower:
  * {@link no.rutebanken.marduk.batch.BatchRunner} is leader-gated, which matches the {@code singletonFrom}
  * the aggregating route used.
+ *
+ * <p>So this trigger is best effort - it fires only when the request that crosses the threshold happens to
+ * be delivered to the leader - and the timeout trigger is the one that always serves the batch eventually.
+ * That matters when {@code gtfs.export.autoStartup} is false, because then the timeout trigger is switched
+ * off and a size-complete batch waits for the next request rather than being served. The flag defaults to
+ * true and no environment sets it.
  */
 @Component
 public class MergedGtfsExportConsumer extends MardukPubSubConsumer {
