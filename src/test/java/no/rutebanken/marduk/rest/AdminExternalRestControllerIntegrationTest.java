@@ -19,6 +19,7 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,7 +27,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.IMPORT_TYPE;
 import static no.rutebanken.marduk.Constants.IMPORT_TYPE_NETEX_FLEX;
 import static no.rutebanken.marduk.TestConstants.CHOUETTE_REFERENTIAL_RUT;
@@ -159,6 +162,24 @@ class AdminExternalRestControllerIntegrationTest extends MardukSpringBootBaseTes
 
         assertTrue(send(request).status() >= 400, "an upload with no file part answered a success");
         assertTrue(recorded().publishedTo(MardukQueues.PROCESS_FILE_QUEUE).isEmpty());
+    }
+
+    @Test
+    void theCorrelationIdReturnedToTheCallerIsTheOneTheRequestIsLoggedUnder() throws Exception {
+        // The MDC is what the log pattern renders. These endpoints mint their own correlation id, so
+        // MardukMdcFilter - which only sees the caller's header - cannot supply it.
+        AtomicReference<String> mdcDuringTheRequest = new AtomicReference<>();
+        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenAnswer(invocation -> {
+            mdcDuringTheRequest.set(MDC.get("correlationId"));
+            return TestConstants.PROVIDER_ID_RUT;
+        });
+
+        send(upload(DATASETS + CHOUETTE_REFERENTIAL_RUT, "netex.zip"));
+
+        String published = recorded().publishedTo(MardukQueues.PROCESS_FILE_QUEUE)
+                .getFirst().attributes().get(CORRELATION_ID);
+        assertNotNull(published);
+        assertEquals(published, mdcDuringTheRequest.get());
     }
 
     // --------------------------------------------------------------------------------------- plumbing

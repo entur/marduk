@@ -39,9 +39,12 @@ public class Otp2BaseGraphBuild {
     public static final String CANDIDATE_KIND = "otp2-base-graph-candidate";
 
     /**
-     * Both kinds, so a production build and a candidate build cannot overlap - they write the same
+     * Both kinds, so a production build and a candidate build do not overlap - they write the same
      * published street graph path. Named after the route both aggregate controllers were registered under,
      * which is what serialised them under Camel.
+     *
+     * <p>Within one pod only. {@link BatchRunner} documents the handover window that leaves open, which
+     * camel-master left open too.
      */
     public static final String EXCLUSION_GROUP = "otp2-base-graph-build";
 

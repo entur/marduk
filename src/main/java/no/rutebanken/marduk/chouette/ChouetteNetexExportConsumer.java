@@ -62,6 +62,8 @@ public class ChouetteNetexExportConsumer extends MardukPubSubConsumer {
         ensureCorrelationId(message);
         message.removeHeader(Constants.CHOUETTE_JOB_ID);
         LOGGER.info("Starting Chouette Netex export");
+        // Before the referential is resolved, as the route did, so an admin-triggered export reports PENDING
+        // to nabu with a null referential. Changing the order would change what nabu records.
         jobEvents.reportProviderJob(message, builder -> builder
                 .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX).state(JobEvent.State.PENDING));
 

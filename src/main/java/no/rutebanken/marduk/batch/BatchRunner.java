@@ -101,8 +101,16 @@ public class BatchRunner {
      * base graph routes named {@code otp2-base-graph-build} in
      * {@code idleRouteAggregationMonitor.getAggregateControllerForRoute}, and both sent to the route with
      * that id; the check only force-completed a group when that route had no exchange in flight, so a
-     * production build and a candidate build could not overlap. They share work directories and blob paths,
+     * production build and a candidate build could not overlap. They publish to the same street graph path,
      * so that mattered. Failing to acquire leaves the requests waiting, which is what the aggregator did.
+     *
+     * <p><b>The exclusion is per process, not per cluster,</b> and so was the aggregate controller it
+     * replaces. A pod that loses the lease mid-build keeps building - {@link LeaderElection} is a flag, not
+     * a consumer that can be stopped - so the new leader can start the other kind in the group against a
+     * build the old leader is still running. Same-kind overlap is excluded properly, in the database, by
+     * {@link BatchedRequests#claim}; cross-kind exclusion within a group is not, and closing that needs a
+     * distributed lock held for the whole build rather than a semaphore. camel-master left the same window
+     * open, so this is not a regression, but it is not the guarantee the group name suggests either.
      */
     private void runBatch(String exclusionGroup, String kind, Consumer<BatchedRequests.Batch> job) {
         if (!leaderElection.isLeader()) {

@@ -450,6 +450,16 @@ job never reaches a terminal state under its own id. Preserved, and pinned by a 
 On `OK` and `FAILED` the incoming `CORRELATION_ID` also overwrites whatever `initSystemJob` read from
 `RutebankenSystemStatus`, and a message without one makes `build()` throw and the message nack. Preserved.
 
+The Chouette NeTEx export and the Chouette validation both report `PENDING` *before* resolving the provider's
+referential, so an admin-triggered export or validation - whose message carries only `PROVIDER_ID`, the
+correlation id and the username - reaches nabu with a null referential on that first event. The later events
+in the same job have it, because the consumer sets `CHOUETTE_REFERENTIAL` on the message immediately
+afterwards. Master had the identical ordering:
+`ChouetteExportNetexRouteBuilder.java:75` reports `PENDING` and `:78` sets the header,
+`ChouetteValidationRouteBuilder.java:118` reports and `:121` sets. Preserved rather than tidied, because
+moving the report after the lookup changes what nabu records for every admin-triggered export and validation,
+and for validation it would also have to keep the PENDING-then-FAILED pair that an unknown provider produces.
+
 `direct:checkScheduledJobsBeforeTriggeringNextAction` asked Chouette for
 `/jobs?timetableAction=importer&status=SCHEDULED&status=STARTED`. Everywhere else the parameter is `action`,
 which is what Chouette documents, so `timetableAction` most likely filters nothing and the answer covers
@@ -504,8 +514,13 @@ Two behaviour notes on that conversion:
 - `gtfs.export.autoStartup` gates the schedule, not the operation, as it does for the Chouette job cleanup.
   Not quite equivalent: the admin endpoint publishes to the queue rather than calling the export, so with the
   flag off an admin-triggered export is recorded and then served only once `aggregation.completionSize`
-  requests accumulate. Under Camel the queue was not consumed at all with the flag off, so the endpoint was
-  entirely dead - this is better, not identical.
+  requests accumulate - and then only if the request that crosses the threshold is delivered to the leader,
+  because the size trigger runs in the consumer on whichever pod got the message and only the leader can
+  serve. With the flag on, the timeout trigger on the leader is the backstop and this does not matter. With
+  it off there is no backstop, so a size-complete batch can sit until the next request arrives. The flag
+  defaults to true and no environment sets it, so this is latent rather than live. Under Camel the queue was
+  not consumed at all with the flag off, so the endpoint was entirely dead - this is better, not identical,
+  and not deterministic either.
 - Serving the batch is `synchronized`. `gtfsExportExecutorService` had a pool size of one so that only one
   export ran at a time, and with two triggers - the tick on the scheduler's thread, the size check on a
   consumer's - `fixedDelay` alone no longer guarantees it.
