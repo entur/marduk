@@ -50,6 +50,11 @@ public final class Constants {
     public static final String OTP2_GRAPH_OBJ_PREFIX = "Graph-otp2";
     public static final String OTP2_BASE_GRAPH_OBJ_PREFIX = "streetGraph-otp2";
     public static final String OTP2_NETEX_GRAPH_DIR = "netex-otp2";
+    /**
+     * Stable name of the latest published graph within a serialization version directory.
+     * OTP instances load this file directly, without resolving the pointer file first.
+     */
+    public static final String OTP2_CURRENT_GRAPH_OBJ = OTP2_GRAPH_OBJ_PREFIX + "-current.obj";
 
     public static final String OTP2_STREET_GRAPH_DIR = "street";
     public static final String OTP2_GRAPH_REPORT_INDEX_FILE = "index_otp2.html";

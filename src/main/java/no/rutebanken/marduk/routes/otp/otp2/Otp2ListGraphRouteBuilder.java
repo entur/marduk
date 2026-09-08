@@ -37,13 +37,21 @@ import static no.rutebanken.marduk.Constants.*;
 public class Otp2ListGraphRouteBuilder extends BaseRouteBuilder {
 
     private static final String PROPERTY_OTP2_NETEX_GRAPH_FILES = "OTP2_NETEX_GRAPH_FILES";
+
+    /**
+     * Matches the timestamped transit graph files, capturing the serialization id.
+     * The stable copy of the latest graph ({@link Constants#OTP2_CURRENT_GRAPH_OBJ}) is excluded since it duplicates
+     * the timestamped graph file.
+     */
+    static final Pattern OTP2_NETEX_GRAPH_FILE_NAME_PATTERN = Pattern.compile(OTP2_NETEX_GRAPH_DIR + "/" + "(.*)" + "/(?!" + Pattern.quote(OTP2_CURRENT_GRAPH_OBJ) + "$).*\\.obj");
+
     private final Pattern otp2NetexGraphFileNameRegex;
     private final Pattern otp2StreetGraphFileNameRegex;
     private final String blobStoreGraphSubdirectory;
 
     public Otp2ListGraphRouteBuilder(@Value("${otp.graph.blobstore.subdirectory:graphs}") String blobStoreGraphSubdirectory) {
         this.blobStoreGraphSubdirectory = blobStoreGraphSubdirectory;
-        otp2NetexGraphFileNameRegex = Pattern.compile(OTP2_NETEX_GRAPH_DIR + "/" + "(.*)" + "/.*\\.obj");
+        otp2NetexGraphFileNameRegex = OTP2_NETEX_GRAPH_FILE_NAME_PATTERN;
         otp2StreetGraphFileNameRegex = Pattern.compile(blobStoreGraphSubdirectory + "/" + OTP2_STREET_GRAPH_DIR + "/" + OTP2_BASE_GRAPH_OBJ_PREFIX + "-(.*).*\\.obj");
     }
 
