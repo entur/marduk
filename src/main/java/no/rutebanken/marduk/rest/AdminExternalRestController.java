@@ -40,6 +40,7 @@ import java.io.InputStream;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.*;
+import static no.rutebanken.marduk.Utils.singleLine;
 
 /**
  * Spring REST API endpoints for managing the transit data import pipeline.
@@ -74,7 +75,8 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
     }
 
     @Override
-    public ResponseEntity<UploadResult> upload(String codespace, MultipartFile file) {
+    public ResponseEntity<UploadResult> upload(String rawCodespace, MultipartFile file) {
+        String codespace = singleLine(rawCodespace);
         String correlationId = UUID.randomUUID().toString();
         LOG.info("[{}] Received file from provider {} through the Spring HTTP endpoint", correlationId, codespace);
 
@@ -89,7 +91,8 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
     }
 
     @Override
-    public ResponseEntity<UploadResult> uploadFlexDataset(String codespace, MultipartFile file) {
+    public ResponseEntity<UploadResult> uploadFlexDataset(String rawCodespace, MultipartFile file) {
+        String codespace = singleLine(rawCodespace);
         String correlationId = UUID.randomUUID().toString();
         LOG.info("[{}] Received flex file from provider {} through the Spring HTTP endpoint", correlationId, codespace);
 
@@ -104,7 +107,8 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
     }
 
     @Override
-    public ResponseEntity<Resource> download(String codespace) {
+    public ResponseEntity<Resource> download(String rawCodespace) {
+        String codespace = singleLine(rawCodespace);
         String correlationId = UUID.randomUUID().toString();
         LOG.info("[{}] Received Blocks download request for provider {} through the Spring HTTP endpoint", correlationId, codespace);
 

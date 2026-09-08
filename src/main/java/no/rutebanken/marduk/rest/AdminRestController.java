@@ -53,6 +53,7 @@ import static no.rutebanken.marduk.Constants.IMPORT_TYPE_NETEX_FLEX;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
 import static no.rutebanken.marduk.Constants.PROVIDER_IDS;
 import static no.rutebanken.marduk.Constants.USERNAME;
+import static no.rutebanken.marduk.Utils.singleLine;
 
 /**
  * The admin API, used by the operator front ends (Ninkasi, Bel).
@@ -78,6 +79,10 @@ import static no.rutebanken.marduk.Constants.USERNAME;
  * correlation id, so its job events can be followed in nabu - the routes only set one on about half of
  * them. And authorization is checked before the provider is looked up everywhere, where two routes did it
  * the other way round and told an unauthorized caller whether a provider id exists.
+ *
+ * <p>A caller-supplied string is bound as {@code rawSomething} and passed through
+ * {@link no.rutebanken.marduk.Utils#singleLine} before anything else sees it, so the raw value cannot be
+ * used by accident. The routes had the same exposure and no such guard.
  *
  * <p>The three {@code line_statistics} endpoints are gone. Their {@code direct:chouetteGetStats*} consumers
  * were deleted with Chouette statistics support, leaving {@code .to()} calls that could only fail; every
@@ -204,9 +209,9 @@ public class AdminRestController {
     }
 
     @PostMapping("/services/timetable_admin/clean/{filter}")
-    public ResponseEntity<String> cleanAllReferentials(@PathVariable String filter) {
+    public ResponseEntity<String> cleanAllReferentials(@PathVariable("filter") String rawFilter) {
         adminRequest();
-        chouetteJobs.cleanAll(filter);
+        chouetteJobs.cleanAll(singleLine(rawFilter));
         return accepted();
     }
 
@@ -281,8 +286,10 @@ public class AdminRestController {
     @PostMapping(value = "/services/timetable_admin/upload/{codespace}",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public UploadResult uploadByCodespace(
-            @PathVariable String codespace, @RequestParam MultiValueMap<String, MultipartFile> parts) {
+            @PathVariable("codespace") String rawCodespace,
+            @RequestParam MultiValueMap<String, MultipartFile> parts) {
         requireHttpImportEnabled();
+        String codespace = singleLine(rawCodespace);
         String correlationId = newCorrelationId();
         LOGGER.info("Received file from provider {} through the HTTP endpoint", codespace);
         Long providerId = providerIdOf(codespace);
@@ -299,8 +306,9 @@ public class AdminRestController {
     /** @deprecated use {@code GET /services/timetable-management/datasets/{codespace}} */
     @Deprecated(since = "the timetable-management API")
     @GetMapping("/services/timetable_admin/download_netex_blocks/{codespace}")
-    public ResponseEntity<Resource> downloadNetexBlocks(@PathVariable String codespace) {
+    public ResponseEntity<Resource> downloadNetexBlocks(@PathVariable("codespace") String rawCodespace) {
         newCorrelationId();
+        String codespace = singleLine(rawCodespace);
         LOGGER.info("Received Blocks download request for provider {} through the HTTP endpoint", codespace);
         Long providerId = providerIdOf(codespace);
         authorizationService.verifyBlockViewerPrivileges(providerId);
@@ -346,10 +354,11 @@ public class AdminRestController {
     }
 
     @GetMapping("/services/timetable_admin/{providerId}/files/{fileName}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable Long providerId, @PathVariable String fileName) {
+    public ResponseEntity<Resource> downloadFile(
+            @PathVariable Long providerId, @PathVariable("fileName") String rawFileName) {
         adminRequest(providerId);
         String fileHandle = Constants.BLOBSTORE_PATH_INBOUND
-                + providerRepository.getReferential(providerId) + "/" + fileName;
+                + providerRepository.getReferential(providerId) + "/" + singleLine(rawFileName);
         LOGGER.info("blob store download file by name {}", fileHandle);
         return blobResponse(fileHandle);
     }
@@ -357,9 +366,11 @@ public class AdminRestController {
     @GetMapping("/services/timetable_admin/{providerId}/jobs")
     public List<JobResponse> listJobs(
             @PathVariable Long providerId,
-            @RequestParam(required = false) List<String> status,
-            @RequestParam(required = false) String action) {
+            @RequestParam(name = "status", required = false) List<String> rawStatus,
+            @RequestParam(name = "action", required = false) String rawAction) {
         adminRequest(providerId);
+        List<String> status = singleLine(rawStatus);
+        String action = singleLine(rawAction);
         LOGGER.info("Get chouette jobs status={} action={}", status, action);
         return chouetteJobs.jobsFor(providerId, status, action);
     }
@@ -373,8 +384,10 @@ public class AdminRestController {
     }
 
     @DeleteMapping("/services/timetable_admin/{providerId}/jobs/{jobId}")
-    public ResponseEntity<String> cancelJob(@PathVariable Long providerId, @PathVariable String jobId) {
+    public ResponseEntity<String> cancelJob(
+            @PathVariable Long providerId, @PathVariable("jobId") String rawJobId) {
         adminRequest(providerId);
+        String jobId = singleLine(rawJobId);
         LOGGER.info("Cancel chouette job {}", jobId);
         chouetteJobs.cancel(providerId, jobId);
         return accepted();
@@ -435,16 +448,17 @@ public class AdminRestController {
         String referential = providerRepository.getReferential(providerId);
         // Imported in the order they were listed: a later file is meant to win over an earlier one.
         for (BlobStoreFiles.File file : files.getFiles()) {
+            String fileName = singleLine(file.getName());
             MardukMessage message = new MardukMessage()
                     .setHeader(PROVIDER_ID, providerId)
                     .setHeader(CHOUETTE_REFERENTIAL, referential)
-                    .setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND + referential + "/" + file.getName())
-                    .setHeader(FILE_NAME, "reimport-" + file.getName())
+                    .setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_INBOUND + referential + "/" + fileName)
+                    .setHeader(FILE_NAME, "reimport-" + fileName)
                     .setHeader(CORRELATION_ID, UUID.randomUUID().toString())
                     .setHeader(USERNAME, username)
                     .setHeaderIfPresent(Constants.IMPORT_TYPE, importType);
             MardukMdc.with(message, () -> {
-                LOGGER.info("Chouette start import fileHandle={}", file.getName());
+                LOGGER.info("Chouette start import fileHandle={}", fileName);
                 publisher.publish(MardukQueues.PROCESS_FILE_QUEUE, message);
             });
         }

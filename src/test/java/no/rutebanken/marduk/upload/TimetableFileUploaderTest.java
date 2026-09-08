@@ -172,6 +172,15 @@ class TimetableFileUploaderTest {
     }
 
     @Test
+    void aFileNameCannotCarryLineBreaksIntoTheBlobPathOrTheHeaders() {
+        uploader().upload(file("netex.zip\nINFO  forged", "zip bytes"), upload(null));
+
+        assertTrue(internalRepository.exist(BLOBSTORE_PATH_INBOUND + "rut/netex.zipINFO  forged"));
+        var queued = publisher.publishedTo(MardukQueues.PROCESS_FILE_QUEUE);
+        assertEquals("netex.zipINFO  forged", queued.getFirst().attributes().get(FILE_NAME));
+    }
+
+    @Test
     void aFlexUploadIsMarkedAsSuchOnTheQueue() {
         uploader().upload(file("zip bytes"), upload(IMPORT_TYPE_NETEX_FLEX));
 
