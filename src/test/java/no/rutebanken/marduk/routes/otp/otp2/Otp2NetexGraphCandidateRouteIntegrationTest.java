@@ -98,9 +98,10 @@ class Otp2NetexGraphCandidateRouteIntegrationTest extends MardukRouteBuilderInte
         BlobStoreFiles currentFileBlobStoreFiles = graphsInMemoryBlobStoreRepository.listBlobs("current-otp2");
         Assertions.assertTrue(currentFileBlobStoreFiles.getFiles().isEmpty());
 
-        // the graph object and the versioned current file are present in the version subdirectory
+        // the graph object, its stable copy and the versioned current file are present in the version subdirectory
         BlobStoreFiles blobsInVersionedSubDirectory = graphsInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
-        Assertions.assertEquals(2, blobsInVersionedSubDirectory.getFiles().size());
+        Assertions.assertEquals(3, blobsInVersionedSubDirectory.getFiles().size());
+        Assertions.assertTrue(blobsInVersionedSubDirectory.getFiles().stream().anyMatch(f -> f.getName().endsWith("/" + Constants.OTP2_CURRENT_GRAPH_OBJ)));
 
     }
 }

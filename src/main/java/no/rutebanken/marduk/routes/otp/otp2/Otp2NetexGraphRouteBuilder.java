@@ -37,6 +37,7 @@ import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
+import static no.rutebanken.marduk.Constants.OTP2_CURRENT_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ_PREFIX;
 import static no.rutebanken.marduk.Constants.OTP_BUILD_CANDIDATE;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_VERSION;
@@ -57,6 +58,8 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
     private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
 
     private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
+
+    private static final String PUBLISHED_GRAPH_PATH_PROPERTY = "RutebankenPublishedGraphPath";
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
@@ -158,9 +161,18 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Done copying new OTP2 graph: ${header." + FILE_HANDLE + "}")
 
                 .setProperty(GRAPH_PATH_PROPERTY, header(FILE_HANDLE))
+                .setProperty(PUBLISHED_GRAPH_PATH_PROPERTY, header(TARGET_FILE_HANDLE))
+
+                // copy the new graph to a stable name for the current graph compatibility version.
+                // OTP instances load this file directly; it must be in place before the pointer files are updated
+                // since the pointer files trigger the redeployment of the OTP instances.
+                .setHeader(FILE_HANDLE, exchangeProperty(PUBLISHED_GRAPH_PATH_PROPERTY))
+                .setHeader(TARGET_FILE_HANDLE, simple(Constants.OTP2_NETEX_GRAPH_DIR + "/${header." + Constants.GRAPH_COMPATIBILITY_VERSION + "}/" + OTP2_CURRENT_GRAPH_OBJ))
+                .to("direct:copyOtpGraphsBlobInBucket")
+                .log(LoggingLevel.INFO, correlation() + "Done copying new OTP2 graph to its stable name: ${header." + TARGET_FILE_HANDLE + "}")
 
                 // update file containing the reference to the latest graph for the current graph compatibility version
-                .setBody(header(TARGET_FILE_HANDLE))
+                .setBody(exchangeProperty(PUBLISHED_GRAPH_PATH_PROPERTY))
                 .setHeader(FILE_HANDLE, simple(Constants.OTP2_NETEX_GRAPH_DIR + "/${header." + Constants.GRAPH_COMPATIBILITY_VERSION + "}/"  + otpGraphCurrentFile))
                 .to("direct:uploadOtpGraphsBlob")
                 .log(LoggingLevel.INFO, correlation() + "Done uploading reference to versioned current OTP2graph: ${header." + FILE_HANDLE + "}")
