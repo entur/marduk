@@ -26,6 +26,7 @@ import no.rutebanken.marduk.rest.openapi.model.UploadResult;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
 import no.rutebanken.marduk.security.UsernameService;
 import no.rutebanken.marduk.routes.file.MardukFileUtils;
+import no.rutebanken.marduk.routes.netex.NetexDsjExportConfig;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
@@ -45,6 +46,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
@@ -66,6 +68,7 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
     private final ProducerTemplate producerTemplate;
     private final CamelContext camelContext;
     private final UsernameService usernameService;
+    private final NetexDsjExportConfig netexDsjExportConfig;
 
     public AdminExternalRestController(
             MardukAuthorizationService mardukAuthorizationService,
@@ -73,13 +76,15 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
             MardukInternalBlobStoreService blobStoreService,
             ProducerTemplate producerTemplate,
             CamelContext camelContext,
-            UsernameService usernameService) {
+            UsernameService usernameService,
+            NetexDsjExportConfig netexDsjExportConfig) {
         this.mardukAuthorizationService = mardukAuthorizationService;
         this.providerRepository = providerRepository;
         this.blobStoreService = blobStoreService;
         this.producerTemplate = producerTemplate;
         this.camelContext = camelContext;
         this.usernameService = usernameService;
+        this.netexDsjExportConfig = netexDsjExportConfig;
     }
 
     @Override
@@ -113,20 +118,31 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
     }
 
     @Override
-    public ResponseEntity<Resource> download(String codespace) {
+    public ResponseEntity<Resource> download(String codespace, String dsjcompatibility) {
         String correlationId = UUID.randomUUID().toString();
-        LOG.info("[{}] Received Blocks download request for provider {} through the Spring HTTP endpoint", correlationId, codespace);
+        LOG.info("[{}] Received Blocks download request for provider {} through the Spring HTTP endpoint (dsjcompatibility={})", correlationId, codespace, dsjcompatibility);
 
         Long providerId = validateAndGetProviderId(codespace);
         mardukAuthorizationService.verifyBlockViewerPrivileges(providerId);
 
-        String fileHandle = Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
-                + "rb_" + codespace.toLowerCase()
-                + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+        NetexDsjExportConfig.Variant variant;
+        try {
+            variant = netexDsjExportConfig.resolveApiVariant(dsjcompatibility);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ByteArrayResource(e.getMessage().getBytes(StandardCharsets.UTF_8)));
+        }
+        String referential = "rb_" + codespace.toLowerCase();
+        String fileHandle = netexDsjExportConfig.blocksExportPath(variant, referential);
 
         LOG.info("[{}] Downloading NeTEx dataset with blocks: {}", correlationId, fileHandle);
 
         InputStream blob = blobStoreService.getBlob(fileHandle);
+        if (blob == null && variant == NetexDsjExportConfig.Variant.LEGACY) {
+            // the NeTEx 1.15 copy is produced after the blocks export: fall back to the export produced by the pipeline
+            fileHandle = netexDsjExportConfig.blocksExportPath(referential);
+            LOG.warn("[{}] No NeTEx 1.15 copy of the NeTEx dataset with blocks for {}, falling back to {}", correlationId, referential, fileHandle);
+            blob = blobStoreService.getBlob(fileHandle);
+        }
         if (blob == null) {
             return ResponseEntity.notFound().build();
         }

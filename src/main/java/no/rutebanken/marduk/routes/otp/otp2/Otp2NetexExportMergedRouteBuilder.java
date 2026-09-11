@@ -19,6 +19,8 @@ package no.rutebanken.marduk.routes.otp.otp2;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
+import no.rutebanken.marduk.routes.netex.NetexDsjExportConfig;
+import no.rutebanken.marduk.routes.netex.NetexDsjExportConfig.Variant;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
@@ -30,12 +32,17 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static no.rutebanken.marduk.Constants.*;
 
 /**
  * Route combining netex exports per provider with stop place export for a common netex export for Norway.
+ * <p>
+ * When the dual DatedServiceJourney export is enabled (see {@link NetexDsjExportConfig}), the aggregated export is
+ * built twice, from the legacy (NeTEx 1.15) and from the new (NeTEx 1.16) per-provider exports, and stored in the
+ * corresponding folders. The variant configured as default is then copied into the default folder.
  */
 @Component
 public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
@@ -44,6 +51,14 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
     private static final String STOPS_FILES_SUBFOLDER = "/stops";
     private static final String MERGED_NETEX_SUBFOLDER = "/result";
 
+    /**
+     * Folder of the public bucket from which the per-provider exports are fetched, for instance {@code outbound/netex/}.
+     */
+    private static final String PROP_SOURCE_FOLDER = "RutebankenNetexExportSourceFolder";
+    /**
+     * Path of the merged export in the public bucket.
+     */
+    private static final String PROP_TARGET_FILE_HANDLE = "RutebankenNetexExportTargetFileHandle";
     @Value("${otp2.netex.export.download.directory:files/netex/merged-otp2}")
     private String localWorkingDirectory;
 
@@ -56,7 +71,11 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
     @Value("${netex.export.stops.file.prefix:_stops}")
     private String netexExportStopsFilePrefix;
 
+    private final NetexDsjExportConfig netexDsjExportConfig;
 
+    public Otp2NetexExportMergedRouteBuilder(NetexDsjExportConfig netexDsjExportConfig) {
+        this.netexDsjExportConfig = netexDsjExportConfig;
+    }
 
     @Override
     public void configure() throws Exception {
@@ -74,9 +93,8 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .to("direct:cleanUpLocalDirectory")
 
                 .doTry()
-                .to("direct:otp2FetchLatestProviderNetexExports")
                 .to("direct:otp2FetchStopsNetexExport")
-                .to("direct:otp2MergeNetex")
+                .to("direct:otp2BuildMergedNetexExports")
                 // Use wire tap to avoid replacing body
                 .wireTap("direct:otp2ReportExportMergedNetexOK")
                 .end()
@@ -91,6 +109,51 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .to(ExchangePattern.InOnly, "direct:updateStatus")
                 .routeId("otp2-netex-export-merged-report-ok");
 
+        // Sub-route to avoid a choice() nested in the doTry() of the main route.
+        from("direct:otp2BuildMergedNetexExports")
+                .choice()
+                .when(constant(netexDsjExportConfig.isEnabled()))
+                    .to("direct:otp2ExportMergedNetexDsjVariants")
+                .otherwise()
+                    .setProperty(PROP_SOURCE_FOLDER, constant(NetexDsjExportConfig.DEFAULT_EXPORT_PATH))
+                    .setProperty(PROP_TARGET_FILE_HANDLE, constant(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath))
+                    .to("direct:otp2ExportMergedNetexVariant")
+                .end()
+                .routeId("otp2-netex-export-build-merged-exports");
+
+        // Build the aggregated export for the new (NeTEx 1.16) and legacy (NeTEx 1.15) variants of the per-provider
+        // exports, then copy the default variant into the default folder.
+        from("direct:otp2ExportMergedNetexDsjVariants")
+                // providers that have not published since the dual export was enabled exist only in the default folder
+                .to("direct:distributeMissingDsjNetexExports")
+
+                .setProperty(PROP_SOURCE_FOLDER, constant(netexDsjExportConfig.variantFolder(Variant.NEW)))
+                .setProperty(PROP_TARGET_FILE_HANDLE, constant(netexDsjExportConfig.variantPath(Variant.NEW, mergedNetexFileName())))
+                .to("direct:otp2ExportMergedNetexVariant")
+
+                .setProperty(PROP_SOURCE_FOLDER, constant(netexDsjExportConfig.variantFolder(Variant.LEGACY)))
+                .setProperty(PROP_TARGET_FILE_HANDLE, constant(netexDsjExportConfig.variantPath(Variant.LEGACY, mergedNetexFileName())))
+                .to("direct:otp2ExportMergedNetexVariant")
+
+                .setHeader(FILE_HANDLE, constant(netexDsjExportConfig.variantPath(netexDsjExportConfig.getDefaultVariant(), mergedNetexFileName())))
+                .setHeader(TARGET_FILE_HANDLE, constant(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Copying the " + netexDsjExportConfig.getDefaultVariant() + " variant of the combined Netex for Norway to the default folder")
+                .to("direct:copyBlobInBucket")
+                .routeId("otp2-netex-export-merged-dsj-variants");
+
+        // Build one aggregated export from the per-provider exports found in the source folder and the stop place
+        // export, and upload it to the target file handle. The stop place export contains no DatedServiceJourney and
+        // is used as is in every variant.
+        from("direct:otp2ExportMergedNetexVariant")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Building combined Netex for Norway from ${exchangeProperty." + PROP_SOURCE_FOLDER + "}")
+                .to("direct:otp2FetchLatestProviderNetexExports")
+                .process(e -> copyAndRenameStopFiles(e.getProperty(FOLDER_NAME, String.class) + STOPS_FILES_SUBFOLDER, e.getProperty(FOLDER_NAME, String.class) + UNPACKED_NETEX_SUBFOLDER))
+                .to("direct:otp2MergeNetex")
+                // free the disk space before building the next variant
+                .process(e -> FileUtils.deleteDirectory(new File(e.getProperty(FOLDER_NAME, String.class) + UNPACKED_NETEX_SUBFOLDER)))
+                .process(e -> FileUtils.deleteDirectory(new File(e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUBFOLDER)))
+                .routeId("otp2-netex-export-merged-variant");
+
         from("direct:otp2FetchLatestProviderNetexExports")
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Fetching netex files for all providers.")
                 .process(e -> e.getIn().setBody(getAggregatedNetexFiles()))
@@ -100,15 +163,15 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
 
 
         from("direct:otp2FetchProviderNetexExport")
-                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Fetching " + BLOBSTORE_PATH_OUTBOUND + "netex/${body}")
+                .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Fetching ${exchangeProperty." + PROP_SOURCE_FOLDER + "}${body}")
                 .setProperty("fileName", body())
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + "netex/${exchangeProperty.fileName}"))
+                .setHeader(FILE_HANDLE, simple("${exchangeProperty." + PROP_SOURCE_FOLDER + "}${exchangeProperty.fileName}"))
                 .to("direct:getBlob")
                 .choice()
                 .when(body().isNotEqualTo(null))
                 .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class)  + UNPACKED_NETEX_SUBFOLDER))
                 .otherwise()
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "${exchangeProperty.fileName} was empty when trying to fetch it from blobstore.")
+                .log(LoggingLevel.WARN, getClass().getName(), correlation() + "${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
                 .routeId("otp2-netex-export-fetch-latest-for-provider");
 
 
@@ -120,8 +183,6 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .choice()
                 .when(body().isNotEqualTo(null))
                 .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class),  e.getProperty(FOLDER_NAME, String.class) + STOPS_FILES_SUBFOLDER))
-                .process(e -> copyAndRenameStopFiles( e.getProperty(FOLDER_NAME, String.class) + STOPS_FILES_SUBFOLDER, e.getProperty(FOLDER_NAME, String.class) + UNPACKED_NETEX_SUBFOLDER))
-
                 .otherwise()
                 .log(LoggingLevel.WARN, getClass().getName(), correlation() + "No stop place export found, unable to create merged Netex for Norway")
                 .process(e -> JobEvent.systemJobBuilder(e).state(JobEvent.State.FAILED).build()).to("direct:updateStatus")
@@ -132,8 +193,8 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Merging Netex files for all providers and stop place registry.")
                 .process(e -> new File( e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUBFOLDER).mkdir())
                 .process(e -> e.getIn().setBody(ZipFileUtils.zipFilesInFolder( e.getProperty(FOLDER_NAME, String.class) + UNPACKED_NETEX_SUBFOLDER,  e.getProperty(FOLDER_NAME, String.class) + MERGED_NETEX_SUBFOLDER + "/merged.zip")))
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploading new combined Netex for Norway for OTP")
+                .setHeader(FILE_HANDLE, simple("${exchangeProperty." + PROP_TARGET_FILE_HANDLE + "}"))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploading new combined Netex for Norway for OTP to ${header." + FILE_HANDLE + "}")
                 .to("direct:uploadBlob")
                 .routeId("otp2-netex-export-merge-file");
 
@@ -146,6 +207,12 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                        .toList();
     }
 
+    /**
+     * Name of the merged export file, without its folder (for instance {@code rb_norway-aggregated-netex.zip}).
+     */
+    private String mergedNetexFileName() {
+        return Paths.get(netexExportMergedFilePath).getFileName().toString();
+    }
 
     /**
      * Copy stop files from stop place registry to ensure they are given a name in compliance with profile.

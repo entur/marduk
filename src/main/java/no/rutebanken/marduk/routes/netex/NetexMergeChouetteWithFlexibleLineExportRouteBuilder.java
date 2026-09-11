@@ -57,18 +57,20 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
     private static final String PROP_HAS_CHOUETTE_DATA = "PROP_HAS_CHOUETTE_DATA";
     private static final String PROP_AS_FLEXIBLE_DATA = "PROP_HAS_FLEXIBLE_DATA";
 
-    private static final String EXPORT_FILE_NAME = "netex/${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
     private static final String EXPORT_MERGED_FOR_VALIDATION = BLOBSTORE_PATH_UTTU +   "netex/${header." + CHOUETTE_REFERENTIAL + "}" + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
 
     private final ExperimentalImportHelpers experimentalImportHelpers;
     private final SetProviderIdBeforeFlexMergeProcessor setProviderIdBeforeFlexMergeProcessor;
+    private final NetexDsjExportConfig netexDsjExportConfig;
 
     public NetexMergeChouetteWithFlexibleLineExportRouteBuilder(
             ExperimentalImportHelpers experimentalImportHelpers,
-            SetProviderIdBeforeFlexMergeProcessor setProviderIdBeforeFlexMergeProcessor
+            SetProviderIdBeforeFlexMergeProcessor setProviderIdBeforeFlexMergeProcessor,
+            NetexDsjExportConfig netexDsjExportConfig
     ) {
         this.experimentalImportHelpers = experimentalImportHelpers;
         this.setProviderIdBeforeFlexMergeProcessor = setProviderIdBeforeFlexMergeProcessor;
+        this.netexDsjExportConfig = netexDsjExportConfig;
     }
 
     @Value("${netex.export.download.directory:files/netex/merged}")
@@ -123,7 +125,9 @@ public class NetexMergeChouetteWithFlexibleLineExportRouteBuilder extends BaseRo
                         ZipFileUtils.zipFilesInFolder(
                                 experimentalImportHelpers.flexibleDataWorkingDirectory(e),
                                 experimentalImportHelpers.directoryForMergedNetex(e) + "/merged.zip")))
-                .setHeader(FILE_HANDLE, simple(BLOBSTORE_PATH_OUTBOUND + EXPORT_FILE_NAME))
+                // when the dual DatedServiceJourney export is enabled, the export is stored in the "new" folder and
+                // distributed to the other folders by direct:publishMergedDataset
+                .setHeader(FILE_HANDLE).method(netexDsjExportConfig, "publicationTargetPath")
                 .to("direct:uploadBlob")
                 .routeId("netex-upload-merged-netex-to-outbound-bucket");
 

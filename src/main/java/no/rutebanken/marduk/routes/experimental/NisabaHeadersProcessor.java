@@ -35,7 +35,7 @@ public class NisabaHeadersProcessor implements Processor {
         String timestamp = dateTime.format(fmt).replace(":", "_");
         String referential = exchange.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class);
         String targetFileName = "/" + referential + "_" + timestamp + ".zip";
-        String pathToTargetFile = "imported/" + referential + targetFileName;
+        String pathToTargetFile = BLOBSTORE_PATH_NISABA_IMPORTED + referential + targetFileName;
         exchange.getIn().setHeader(TARGET_FILE_HANDLE, pathToTargetFile);
         exchange.getIn().setHeader(TARGET_CONTAINER, containerName);
         LOGGER.info("Set Nisaba upload target: container='{}', fileHandle='{}'", containerName, pathToTargetFile);

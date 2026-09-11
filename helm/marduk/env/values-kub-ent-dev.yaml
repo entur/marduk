@@ -62,6 +62,15 @@ netex:
     http:
       autoStartup: true
   export: tiamat/CurrentAndFuture_latest.zip
+  # Dual DatedServiceJourney export (NeTEx 1.15 legacy / 1.16 new).
+  # defaultVariant: variant published in the default folder of the public bucket (legacy or new)
+  # apiDefaultVariant: variant returned by the timetable API when dsjcompatibility is not specified (legacy or new)
+  # upgradeEnabled: upgrade uploaded NeTEx 1.15 datasets to 1.16, once the import pipeline works with NeTEx 1.16
+  dsj:
+    enabled: true
+    defaultVariant: legacy
+    apiDefaultVariant: legacy
+    upgradeEnabled: false
 
 osm:
   fetchCronSchedule: 0+11+*+*+*+?

@@ -20,6 +20,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.routes.chouette.json.Parameters;
 import no.rutebanken.marduk.routes.file.FileType;
+import no.rutebanken.marduk.routes.netex.NetexDsjExportConfig;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEvent.State;
 import no.rutebanken.marduk.routes.status.JobEvent.TimetableAction;
@@ -54,15 +55,18 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
     private final String nisabaExchangeContainerName;
     private final boolean enablePreValidation;
     private final List<String> allowedCodespacesForStopUpdate;
+    private final NetexDsjExportConfig netexDsjExportConfig;
 
     public ChouetteImportRouteBuilder(@Value("${chouette.url}") String chouetteUrl,
                                       @Value("${chouette.enablePreValidation:true}") boolean enablePreValidation,
                                       @Value("${chouette.include.stops.codespaces:}") List<String> allowedCodespacesForStopUpdate,
-                                      @Value("${blobstore.gcs.nisaba.exchange.container.name}") String nisabaExchangeContainerName) {
+                                      @Value("${blobstore.gcs.nisaba.exchange.container.name}") String nisabaExchangeContainerName,
+                                      NetexDsjExportConfig netexDsjExportConfig) {
         this.chouetteUrl = chouetteUrl;
         this.enablePreValidation = enablePreValidation;
         this.nisabaExchangeContainerName = nisabaExchangeContainerName;
         this.allowedCodespacesForStopUpdate= allowedCodespacesForStopUpdate;
+        this.netexDsjExportConfig = netexDsjExportConfig;
     }
 
     @Override
@@ -226,6 +230,11 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setHeader(DATASET_IMPORT_KEY, simple("${header." + CHOUETTE_REFERENTIAL + "}_${body.replace(':','_')}"))
                 .setHeader(TARGET_FILE_HANDLE, simple("imported/${header." + CHOUETTE_REFERENTIAL + "}/${header." +  DATASET_IMPORT_KEY + "}.zip"))
                 .setHeader(TARGET_CONTAINER, constant(nisabaExchangeContainerName))
+                // NeTEx 1.15 copy and default variant of the original dataset in Nisaba
+                // (no-op when the dual DatedServiceJourney export is disabled)
+                .to("direct:distributeOriginalDatasetToNisaba")
+                // the dataset as uploaded goes to the imported-dsj-new folder when the dual export is enabled
+                .setHeader(TARGET_FILE_HANDLE).method(netexDsjExportConfig, "originalDatasetPublicationPath")
                 .to("direct:copyVersionedInternalBlobToAnotherBucket")
                 .routeId("chouette-copy-original-dataset");
 
