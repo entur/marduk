@@ -130,6 +130,8 @@ public class ChouetteExportNetexBlocksRouteBuilder extends AbstractChouetteRoute
                 .when(constant(enablePostValidation))
                 .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:uploadInternalBlob")
+                // NeTEx 1.15 copy of the blocks export for the timetable API (no-op when the dual DatedServiceJourney export is disabled)
+                .to("direct:distributeDsjNetexBlocksExport")
                 .setBody(constant(""))
                 .otherwise()
                 .setHeader(FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_BEFORE_VALIDATION + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))

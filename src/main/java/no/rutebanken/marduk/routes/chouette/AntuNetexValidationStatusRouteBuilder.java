@@ -22,6 +22,7 @@ import no.rutebanken.marduk.routes.experimental.ExperimentalImportHelpers;
 import no.rutebanken.marduk.routes.experimental.FilteringTimestampProcessor;
 import no.rutebanken.marduk.routes.experimental.NisabaHeadersProcessor;
 import no.rutebanken.marduk.routes.file.FileType;
+import no.rutebanken.marduk.routes.netex.NetexDsjExportConfig;
 import no.rutebanken.marduk.routes.processors.PrevalidatedFileMetadataProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
@@ -47,14 +48,17 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
     private final String nisabaExchangeContainerName;
 
     FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
+    private final NetexDsjExportConfig netexDsjExportConfig;
 
     public AntuNetexValidationStatusRouteBuilder(
         ExperimentalImportHelpers experimentalImportHelpers,
         FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository,
+        NetexDsjExportConfig netexDsjExportConfig,
         @Value("${blobstore.gcs.nisaba.exchange.container.name}") String nisabaExchangeContainerName
     ) {
         this.experimentalImportHelpers = experimentalImportHelpers;
         this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
+        this.netexDsjExportConfig = netexDsjExportConfig;
         this.nisabaExchangeContainerName = nisabaExchangeContainerName;
     }
 
@@ -170,6 +174,11 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploading original dataset to Nisaba for referential ${header." + DATASET_REFERENTIAL + "}")
                 .process(new NisabaHeadersProcessor(nisabaExchangeContainerName))
+                // NeTEx 1.15 copy and default variant of the original dataset in Nisaba
+                // (no-op when the dual DatedServiceJourney export is disabled)
+                .to("direct:distributeOriginalDatasetToNisaba")
+                // the dataset as uploaded goes to the imported-dsj-new folder when the dual export is enabled
+                .setHeader(TARGET_FILE_HANDLE).method(netexDsjExportConfig, "originalDatasetPublicationPath")
                 .to("direct:copyInternalBlobToAnotherBucket")
                 .routeId("upload-original-dataset-to-nisaba");
 
@@ -262,6 +271,8 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:copyInternalBlobInBucket")
+                // NeTEx 1.15 copy of the blocks export for the timetable API (no-op when the dual DatedServiceJourney export is disabled)
+                .to("direct:distributeDsjNetexBlocksExport")
                 .end()
                 .endChoice()
 
@@ -291,7 +302,9 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .when(header(VALIDATION_IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX))
                 .setHeader(CHOUETTE_REFERENTIAL, simple("rb_${header." + CHOUETTE_REFERENTIAL + "}"))
                 .end()
-                .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_OUTBOUND + "netex/" + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                // when the dual DatedServiceJourney export is enabled, the export is stored in the "new" folder and
+                // distributed to the other folders by direct:publishMergedDataset
+                .setHeader(TARGET_FILE_HANDLE).method(netexDsjExportConfig, "publicationTargetPath")
                 .setHeader(TARGET_CONTAINER, simple("${properties:blobstore.gcs.container.name}"))
                 .to("direct:copyInternalBlobToAnotherBucket")
                 .to("google-pubsub:{{marduk.pubsub.project.id}}:PublishMergedNetexQueue")

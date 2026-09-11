@@ -25,6 +25,7 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.FileInputStream;
 
@@ -49,6 +50,9 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
     @EndpointInject("mock:NetexExportNotificationQueue")
     protected MockEndpoint netexExportNotificationQueue;
 
+    @Autowired
+    private NetexDsjExportConfig netexDsjExportConfig;
+
 
     @Test
     void testExportMergedNetex() throws Exception {
@@ -66,7 +70,8 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
 
         otpBuildGraph.expectedMessageCount(1);
         otpBuildGraph.setResultWaitTime(20000);
-        updateStatus.expectedMessageCount(1);
+        // OTP2_BUILD_GRAPH pending event, plus the STARTED and OK events of the DSJ export distribution
+        updateStatus.expectedMessageCount(3);
         updateStatus.setResultWaitTime(20000);
         netexExportNotificationQueue.expectedMessageCount(1);
         netexExportNotificationQueue.setResultWaitTime(20000);
@@ -87,6 +92,9 @@ class NetexMergeChouetteWithFlexibleLineExportRouteTest extends MardukRouteBuild
         netexExportNotificationQueue.assertIsSatisfied();
 
         assertNotNull(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + "netex/rb_rut-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME), "Expected merged netex file to have been uploaded");
+        // the dual DatedServiceJourney export is enabled in the test configuration: the merged file is also stored in the new and legacy folders
+        assertNotNull(mardukInMemoryBlobStoreRepository.getBlob(netexDsjExportConfig.newExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT)), "Expected merged netex file to have been uploaded to the new DSJ export folder");
+        assertNotNull(mardukInMemoryBlobStoreRepository.getBlob(netexDsjExportConfig.legacyExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT)), "Expected merged netex file to have been uploaded to the legacy DSJ export folder");
         assertFalse(exchangeInMemoryBlobStoreRepository.listBlobs(BLOBSTORE_PATH_OUTBOUND + "dated").getFiles().isEmpty(), "Expected merged netex file to have been uploaded to marduk exchange for DatedServiceJourneyId-generation");
         assertEquals(TestConstants.CHOUETTE_REFERENTIAL_RUT, netexExportNotificationQueue.getExchanges().getFirst().getIn().getBody());
 

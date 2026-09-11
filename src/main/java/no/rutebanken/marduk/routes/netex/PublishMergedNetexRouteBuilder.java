@@ -37,6 +37,12 @@ public class PublishMergedNetexRouteBuilder extends BaseRouteBuilder {
     @Value("${line.statistics.calculation.enabled:false}")
     private boolean lineStatisticsCalculationEnabled;
 
+    private final NetexDsjExportConfig netexDsjExportConfig;
+
+    public PublishMergedNetexRouteBuilder(NetexDsjExportConfig netexDsjExportConfig) {
+        this.netexDsjExportConfig = netexDsjExportConfig;
+    }
+
     @Override
     public void configure() throws Exception {
         super.configure();
@@ -47,6 +53,12 @@ public class PublishMergedNetexRouteBuilder extends BaseRouteBuilder {
 
 
         from("direct:publishMergedDataset")
+                // Store the legacy (NeTEx 1.15) and new (NeTEx 1.16) variants of the dataset and copy the default
+                // variant into the default folder before notifying downstream consumers.
+                .filter(constant(netexDsjExportConfig.isEnabled()))
+                .to("direct:distributeDsjNetexExport")
+                .end()
+
                 .filter(e -> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID, Long.class)).getChouetteInfo().isGenerateDatedServiceJourneyIds())
                 .to("direct:copyDatedExport")
                 .end()

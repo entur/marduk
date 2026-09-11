@@ -144,6 +144,22 @@ data:
     netex.export.download.directory=/tmp/marduk/files/netex/merged
     otp2.netex.export.download.directory=/tmp/marduk/files/netex/merged-otp2
 
+    # Dual NeTEx export during the transition to the NeTEx 1.16 DatedServiceJourney structure:
+    # the exports are stored in netex-dsj-new (NeTEx 1.16) and netex-dsj-legacy (NeTEx 1.15),
+    # and the default folder receives the variant selected by netex.export.dsj.default.variant (legacy or new).
+    netex.export.dsj.enabled={{ .Values.netex.dsj.enabled }}
+    netex.export.dsj.default.variant={{ .Values.netex.dsj.defaultVariant }}
+    netex.export.dsj.api.default.variant={{ .Values.netex.dsj.apiDefaultVariant }}
+    netex.export.dsj.legacy.blob.path=outbound/netex-dsj-legacy/
+    netex.export.dsj.new.blob.path=outbound/netex-dsj-new/
+    netex.export.dsj.download.directory=/tmp/marduk/files/netex/dsj
+    netex.export.dsj.xslt.max.file.size.mb=300
+    # Only these codespaces produce DatedServiceJourneys with replacement information, the only construct that differs
+    # between NeTEx 1.15 and 1.16: only their datasets are downgraded (export) or upgraded (import)
+    netex.dsj.codespaces=VYG,GOA,SJN
+    # Upgrade uploaded NeTEx 1.15 datasets to NeTEx 1.16; to enable once Chouette and Antu work with NeTEx 1.16
+    netex.import.dsj.upgrade.enabled={{ .Values.netex.dsj.upgradeEnabled }}
+
     # GTFS export
     gtfs.export.download.directory=/tmp/marduk/files/gtfs/merged
     gtfs.export.chouette={{ .Values.chouette.gtfsExport }}

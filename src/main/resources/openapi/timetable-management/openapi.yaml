@@ -206,6 +206,17 @@ paths:
         required: true
         schema:
           type: string
+      - name: dsjcompatibility
+        in: query
+        description: |
+          Structure of DatedServiceJourney in the returned dataset, during the transition to NeTEx 1.16:
+          `legacy` returns a NeTEx 1.15 dataset (default), `new` returns a NeTEx 1.16 dataset.
+        required: false
+        schema:
+          type: string
+          enum:
+          - legacy
+          - new
       responses:
         '200':
           description: NeTEx dataset ZIP archive with private data. Expired data and
@@ -226,6 +237,11 @@ paths:
           content:
             text/plain:
               example: Access denied
+        '400':
+          description: Bad Request - invalid value for the dsjcompatibility parameter.
+          content:
+            text/plain:
+              example: "Invalid value for parameter dsjcompatibility: 'old', expected legacy or new"
         '404':
           description: Not Found - most likely a typo in the request URL.
           content:

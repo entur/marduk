@@ -24,10 +24,12 @@ import no.rutebanken.marduk.rest.openapi.model.UploadResult;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.chouette.json.Status;
+import no.rutebanken.marduk.routes.netex.NetexDsjExportConfig;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.security.MardukAuthorizationService;
 import no.rutebanken.marduk.security.UsernameService;
 import org.apache.camel.*;
+import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
 import org.apache.camel.model.rest.RestParamType;
 import org.rutebanken.helper.organisation.NotAuthenticatedException;
@@ -64,16 +66,43 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     private final String host;
     private final MardukAuthorizationService mardukAuthorizationService;
     private final UsernameService usernameService;
+    private final NetexDsjExportConfig netexDsjExportConfig;
+
+    private static final String PROP_BLOCKS_EXPORT_FALLBACK = "RutebankenBlocksExportFallback";
+    private static final String PROP_BAD_REQUEST = "RutebankenBadRequest";
 
     public AdminRestRouteBuilder(
             @Value("${server.port:8080}") String port,
             @Value("${server.host:0.0.0.0}")
             String host,
-            MardukAuthorizationService mardukAuthorizationService, UsernameService usernameService) {
+            MardukAuthorizationService mardukAuthorizationService, UsernameService usernameService,
+            NetexDsjExportConfig netexDsjExportConfig) {
         this.port = port;
         this.host = host;
         this.mardukAuthorizationService = mardukAuthorizationService;
         this.usernameService = usernameService;
+        this.netexDsjExportConfig = netexDsjExportConfig;
+    }
+
+    /**
+     * Select the variant of the NeTEx blocks export requested with the dsjcompatibility query parameter.
+     * When the NeTEx 1.15 copy is requested, the export produced by the pipeline is kept as a fallback.
+     */
+    private void setBlocksExportFileHandle(Exchange e) {
+        String referential = "rb_" + e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toLowerCase();
+        NetexDsjExportConfig.Variant variant;
+        try {
+            variant = netexDsjExportConfig.resolveApiVariant(e.getIn().getHeader("dsjcompatibility", String.class));
+        } catch (IllegalArgumentException iae) {
+            e.setProperty(PROP_BAD_REQUEST, true);
+            e.getIn().setHeader(Exchange.HTTP_RESPONSE_CODE, 400);
+            e.getIn().setBody(iae.getMessage());
+            return;
+        }
+        e.getIn().setHeader(FILE_HANDLE, netexDsjExportConfig.blocksExportPath(variant, referential));
+        if (variant == NetexDsjExportConfig.Variant.LEGACY) {
+            e.setProperty(PROP_BLOCKS_EXPORT_FALLBACK, netexDsjExportConfig.blocksExportPath(referential));
+        }
     }
 
     @Override
@@ -255,6 +284,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
                 .to("direct:adminTimetableGtfsExport")
 
+                .post("/export/netex/dsj")
+                .description("Distributes the current NeTEx export of every provider to the legacy (NeTEx 1.15) and new (NeTEx 1.16) DatedServiceJourney export folders, then regenerates the Norway aggregated exports")
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Command accepted").endResponseMessage()
+                .responseMessage().code(500).message("Internal error").endResponseMessage()
+                .to("direct:adminNetexDsjExportAll")
+
                 .post("routing_graph/build_base")
                 .description("Triggers building of the OTP base graph using map data (osm + height)")
                 .produces(PLAIN)
@@ -296,6 +332,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .description("Download NeTEx dataset with blocks")
                 .deprecated()
                 .param().name("codespace").type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
+                .param().name("dsjcompatibility").type(RestParamType.query).required(false).description("Structure of DatedServiceJourney in the returned dataset: legacy (NeTEx 1.15, default) or new (NeTEx 1.16)").dataType(OPENAPI_DATA_TYPE_STRING).allowableValues("legacy", "new").endParam()
                 .produces(X_OCTET_STREAM)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
@@ -422,6 +459,13 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminChouetteExport")
+
+                .post("/export/netex/dsj")
+                .description("Distributes the current NeTEx export of the provider to the legacy (NeTEx 1.15) and new (NeTEx 1.16) DatedServiceJourney export folders")
+                .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
+                .produces(PLAIN)
+                .responseMessage().code(200).message("Command accepted").endResponseMessage()
+                .to("direct:adminNetexDsjExport")
 
                 .post("/validate")
                 .description("Triggers the validate->export process in Chouette")
@@ -732,6 +776,28 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ChouetteExportNetexQueue")
                 .routeId("admin-chouette-export");
 
+        from("direct:adminNetexDsjExport")
+                .setHeader(PROVIDER_ID, header("providerId"))
+                .to("direct:authorizeAdminRequest")
+                .to("direct:validateProvider")
+                .process(e -> e.getIn().setHeader(CHOUETTE_REFERENTIAL, getProviderRepository().getReferential(e.getIn().getHeader(PROVIDER_ID, Long.class))))
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.INFO, correlation() + "Distribute NeTEx export to the DatedServiceJourney export folders")
+                .process(this::removeHttpHeaders)
+                .setBody(constant(""))
+                // fire and forget: the downgrade of a large dataset takes longer than the HTTP request timeout
+                .wireTap("direct:distributeDsjNetexExport")
+                .routeId("admin-netex-dsj-export");
+
+        from("direct:adminNetexDsjExportAll")
+                .to("direct:authorizeAdminRequest")
+                .process(this::setNewCorrelationId)
+                .log(LoggingLevel.INFO, correlation() + "Distribute NeTEx exports of all providers to the DatedServiceJourney export folders")
+                .process(this::removeHttpHeaders)
+                .setBody(constant(""))
+                .wireTap("direct:distributeAllDsjNetexExports")
+                .routeId("admin-netex-dsj-export-all");
+
         from("direct:adminChouetteValidate")
                 .setHeader(PROVIDER_ID, header("providerId"))
                 .to("direct:authorizeEditorRequest")
@@ -855,12 +921,19 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:validateReferential")
                 .process(e -> e.getIn().setHeader(PROVIDER_ID, getProviderRepository().getProviderId(e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class))))
                 .to("direct:authorizeBlocksDownloadRequest")
-                .process(e -> e.getIn().setHeader(FILE_HANDLE, Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
-                        + "rb_" + e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toLowerCase()
-                        + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
+                .process(this::setBlocksExportFileHandle)
+                .filter(exchangeProperty(PROP_BAD_REQUEST).isEqualTo(true))
+                    .stop()
+                .end()
                 .log(LoggingLevel.INFO, correlation() + "Downloading NeTEx dataset with blocks: ${header." + FILE_HANDLE + "}")
                 .process(this::removeHttpHeaders)
                 .to("direct:getInternalBlob")
+                // the NeTEx 1.15 copy is produced after the blocks export: fall back to the export produced by the pipeline
+                .choice().when(PredicateBuilder.and(simple("${body} == null"), exchangeProperty(PROP_BLOCKS_EXPORT_FALLBACK).isNotNull()))
+                    .setHeader(FILE_HANDLE, exchangeProperty(PROP_BLOCKS_EXPORT_FALLBACK))
+                    .log(LoggingLevel.WARN, correlation() + "No NeTEx 1.15 copy of the NeTEx dataset with blocks, falling back to ${header." + FILE_HANDLE + "}")
+                    .to("direct:getInternalBlob")
+                .end()
                 .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()
                 .routeId("admin-external-download-private_dataset");
 
