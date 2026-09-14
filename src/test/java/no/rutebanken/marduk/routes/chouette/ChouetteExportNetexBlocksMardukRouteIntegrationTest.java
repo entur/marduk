@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -92,9 +91,9 @@ class ChouetteExportNetexBlocksMardukRouteIntegrationTest extends MardukRouteBui
             @Override
             public <T> T evaluate(Exchange ex, Class<T> arg1) {
                 try {
-                    // Should be GTFS contnet
-                    return (T) IOUtils.toString(getClass()
-                            .getResourceAsStream("/no/rutebanken/marduk/chouette/getActionReportResponseOK.json"), StandardCharsets.UTF_8);
+                    // the NeTEx blocks export produced by Chouette, stored as is and downgraded to NeTEx 1.15
+                    return (T) IOUtils.toByteArray(getClass()
+                            .getResourceAsStream("/no/rutebanken/marduk/routes/file/beans/netex.zip"));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

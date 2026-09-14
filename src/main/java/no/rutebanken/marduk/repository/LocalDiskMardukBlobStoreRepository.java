@@ -19,6 +19,7 @@ import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.exceptions.MardukException;
 import org.rutebanken.helper.storage.repository.LocalDiskBlobStoreRepository;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,23 +46,56 @@ public class LocalDiskMardukBlobStoreRepository extends LocalDiskBlobStoreReposi
         return listBlobs(Collections.singletonList(prefix));
     }
 
+    /**
+     * List the blobs whose name starts with one of the prefixes, like a Google Cloud Storage prefix query: the
+     * prefix may be a folder ({@code outbound/netex/}), the complete name of a blob
+     * ({@code outbound/netex/rb_vyg-aggregated-netex.zip}) or the beginning of a blob name
+     * ({@code outbound/netex/rb_vyg-}).
+     * <p>
+     * A prefix that is the beginning of a folder name ({@code outbound/net}) matches nothing, unlike in Google Cloud
+     * Storage where folders are only a naming convention. No caller relies on that form.
+     */
     @Override
     public BlobStoreFiles listBlobs(Collection<String> prefixes) {
 
         BlobStoreFiles blobStoreFiles = new BlobStoreFiles();
         for (String prefix : prefixes) {
-            if (Paths.get(getContainerFolder(), prefix).toFile().isDirectory()) {
-                try (Stream<Path> walk = Files.walk(Paths.get(getContainerFolder(), prefix))) {
-                    List<BlobStoreFiles.File> result = walk.filter(Files::isRegularFile)
-                            .map(path -> new BlobStoreFiles.File(Paths.get(getContainerFolder()).relativize(path).toString(), getFileCreationDate(path), getFileLastModifiedDate(path), getFileSize(path))).toList();
-                    blobStoreFiles.add(result);
-                } catch (IOException e) {
-                    throw new MardukException(e);
-                }
+            Path searchRoot = searchRoot(prefix);
+            if (searchRoot == null) {
+                continue;
             }
-
+            try (Stream<Path> walk = Files.walk(searchRoot)) {
+                List<BlobStoreFiles.File> result = walk.filter(Files::isRegularFile)
+                        .filter(path -> blobName(path).startsWith(prefix))
+                        .map(path -> new BlobStoreFiles.File(blobName(path), getFileCreationDate(path), getFileLastModifiedDate(path), getFileSize(path))).toList();
+                blobStoreFiles.add(result);
+            } catch (IOException e) {
+                throw new MardukException(e);
+            }
         }
         return blobStoreFiles;
+    }
+
+    /**
+     * The folder to walk to find the blobs matching a prefix: the prefix itself when it is a folder, otherwise the
+     * folder holding it, since the prefix then names a blob or the beginning of a blob name.
+     *
+     * @return null if that folder does not exist, in which case no blob can match the prefix.
+     */
+    private Path searchRoot(String prefix) {
+        Path path = Paths.get(getContainerFolder(), prefix);
+        if (Files.isDirectory(path)) {
+            return path;
+        }
+        Path parent = path.getParent();
+        return parent != null && Files.isDirectory(parent) ? parent : null;
+    }
+
+    /**
+     * The name of a blob: its path relative to the container folder, with '/' as separator whatever the platform.
+     */
+    private String blobName(Path path) {
+        return Paths.get(getContainerFolder()).relativize(path).toString().replace(File.separatorChar, '/');
     }
 
     @Override

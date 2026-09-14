@@ -67,6 +67,15 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
     @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT + "/filtered?throwExceptionOnFailure=false")
     protected ProducerTemplate downloadFilteredDatasetNotFoundTemplate;
 
+    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT + "/filtered?dsjcompatibility=new")
+    protected ProducerTemplate downloadFilteredDatasetNewTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT + "/filtered?dsjcompatibility=legacy")
+    protected ProducerTemplate downloadFilteredDatasetLegacyTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/" + CHOUETTE_REFERENTIAL_RUT + "/filtered?dsjcompatibility=old&throwExceptionOnFailure=false")
+    protected ProducerTemplate downloadFilteredDatasetInvalidVariantTemplate;
+
     @Produce("http:localhost:{{server.port}}/services/timetable-management/datasets/unknown_codespace?throwExceptionOnFailure=false")
     protected ProducerTemplate uploadFileUnknownCodespaceTemplate;
 
@@ -172,6 +181,36 @@ class AdminExternalRestControllerIntegrationTest extends MardukRouteBuilderInteg
 
         assertNotNull(response.getMessage().getBody(byte[].class), "Response body should not be null");
         assertArrayEquals(testContent, response.getMessage().getBody(byte[].class), "Downloaded content should match uploaded content");
+    }
+
+    /**
+     * When both variants exist, the API returns the NeTEx 1.15 copy by default and the variant requested with the
+     * dsjcompatibility parameter otherwise.
+     */
+    @Test
+    void downloadFilteredDatasetSelectsTheDsjVariant() {
+        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+
+        String referential = "rb_" + CHOUETTE_REFERENTIAL_RUT.toLowerCase();
+        byte[] newContent = "netex-1.16-content".getBytes();
+        byte[] legacyContent = "netex-1.15-content".getBytes();
+        internalInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME, new ByteArrayInputStream(newContent));
+        internalInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_DSJ_LEGACY + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME, new ByteArrayInputStream(legacyContent));
+
+        Map<String, Object> headers = getTestHeaders("GET");
+        context.start();
+
+        Exchange defaultResponse = downloadFilteredDatasetTemplate.request(downloadFilteredDatasetTemplate.getDefaultEndpoint(), exchange -> exchange.getIn().setHeaders(headers));
+        assertArrayEquals(legacyContent, defaultResponse.getMessage().getBody(byte[].class), "The NeTEx 1.15 copy is returned by default");
+
+        Exchange legacyResponse = downloadFilteredDatasetLegacyTemplate.request(downloadFilteredDatasetLegacyTemplate.getDefaultEndpoint(), exchange -> exchange.getIn().setHeaders(headers));
+        assertArrayEquals(legacyContent, legacyResponse.getMessage().getBody(byte[].class), "dsjcompatibility=legacy returns the NeTEx 1.15 copy");
+
+        Exchange newResponse = downloadFilteredDatasetNewTemplate.request(downloadFilteredDatasetNewTemplate.getDefaultEndpoint(), exchange -> exchange.getIn().setHeaders(headers));
+        assertArrayEquals(newContent, newResponse.getMessage().getBody(byte[].class), "dsjcompatibility=new returns the export produced by the pipeline");
+
+        Exchange invalidResponse = downloadFilteredDatasetInvalidVariantTemplate.request(downloadFilteredDatasetInvalidVariantTemplate.getDefaultEndpoint(), exchange -> exchange.getIn().setHeaders(headers));
+        assertEquals(400, invalidResponse.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
     }
 
     @Test

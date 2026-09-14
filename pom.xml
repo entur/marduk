@@ -35,6 +35,7 @@
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
         <argLine/>
+        <netex-java-model.version>2.0.16.1</netex-java-model.version>
     </properties>
 
     <dependencyManagement>
@@ -238,6 +239,15 @@
         </dependency>
 
         <!-- Other-->
+
+        <!-- NeTEx schemas, used by the tests of no.rutebanken.marduk.netex.conversion to validate the converted
+             documents. The conversions themselves are maintained here, not in the library. -->
+        <dependency>
+            <groupId>org.entur</groupId>
+            <artifactId>netex-java-model</artifactId>
+            <version>${netex-java-model.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Boot 4 moved Flyway auto-configuration into its own module; without it migrations never run -->
         <dependency>

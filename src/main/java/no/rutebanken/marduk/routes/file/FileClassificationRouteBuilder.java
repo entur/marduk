@@ -153,6 +153,8 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK).build())
                 .to("direct:updateStatus")
                 .setBody(constant(""))
+                // upgrade NeTEx 1.15 datasets to NeTEx 1.16 (no-op unless enabled, see NetexDsjUpgradeRouteBuilder)
+                .to("direct:upgradeNetexDatasetIfNeeded")
                 .choice()
                 .when(header(IMPORT_TYPE).isEqualTo(IMPORT_TYPE_NETEX_FLEX))
                 .to("direct:flexibleLinesImport")

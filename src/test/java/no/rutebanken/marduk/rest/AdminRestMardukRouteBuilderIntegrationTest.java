@@ -178,6 +178,12 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
     @Produce("http:localhost:{{server.port}}/services/timetable_admin/download_netex_blocks/" + CHOUETTE_REFERENTIAL_RUT)
     protected ProducerTemplate downloadNetexBlocksTemplate;
 
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/download_netex_blocks/" + CHOUETTE_REFERENTIAL_RUT + "?dsjcompatibility=new")
+    protected ProducerTemplate downloadNetexBlocksNewTemplate;
+
+    @Produce("http:localhost:{{server.port}}/services/timetable_admin/download_netex_blocks/" + CHOUETTE_REFERENTIAL_RUT + "?dsjcompatibility=old&throwExceptionOnFailure=false")
+    protected ProducerTemplate downloadNetexBlocksInvalidVariantTemplate;
+
     @Produce("http:localhost:{{server.port}}/services/timetable_admin/upload/" + CHOUETTE_REFERENTIAL_RUT)
     protected ProducerTemplate uploadFileTemplate;
 
@@ -442,6 +448,31 @@ class AdminRestMardukRouteBuilderIntegrationTest extends MardukRouteBuilderInteg
         assertNotNull(receivedFile);
         byte[] fileContent = receivedFile.readAllBytes();
         assertTrue(fileContent.length > 0);
+    }
+
+    /**
+     * The NeTEx 1.15 copy is returned by default, the export produced by the pipeline with dsjcompatibility=new,
+     * and an invalid value is rejected.
+     */
+    @Test
+    void downloadNetexBlocksSelectsTheDsjVariant() throws Exception {
+        String filename = "rb_rut-aggregated-netex.zip";
+        byte[] newContent = "netex-1.16-content".getBytes();
+        byte[] legacyContent = "netex-1.15-content".getBytes();
+        internalInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + filename, new java.io.ByteArrayInputStream(newContent));
+        internalInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_DSJ_LEGACY + filename, new java.io.ByteArrayInputStream(legacyContent));
+
+        Map<String, Object> headers = getTestHeaders("GET");
+        context.start();
+
+        Exchange defaultResponse = downloadNetexBlocksTemplate.request(downloadNetexBlocksTemplate.getDefaultEndpoint(), e -> e.getIn().setHeaders(headers));
+        assertArrayEquals(legacyContent, defaultResponse.getMessage().getBody(byte[].class));
+
+        Exchange newResponse = downloadNetexBlocksNewTemplate.request(downloadNetexBlocksNewTemplate.getDefaultEndpoint(), e -> e.getIn().setHeaders(headers));
+        assertArrayEquals(newContent, newResponse.getMessage().getBody(byte[].class));
+
+        Exchange invalidResponse = downloadNetexBlocksInvalidVariantTemplate.request(downloadNetexBlocksInvalidVariantTemplate.getDefaultEndpoint(), e -> e.getIn().setHeaders(headers));
+        assertEquals(400, invalidResponse.getMessage().getHeader(Exchange.HTTP_RESPONSE_CODE));
     }
 
     @Test
