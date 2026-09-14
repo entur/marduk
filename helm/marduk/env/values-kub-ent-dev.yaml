@@ -70,7 +70,7 @@ netex:
     enabled: true
     defaultVariant: legacy
     apiDefaultVariant: legacy
-    upgradeEnabled: false
+    upgradeEnabled: true
 
 osm:
   fetchCronSchedule: 0+11+*+*+*+?
