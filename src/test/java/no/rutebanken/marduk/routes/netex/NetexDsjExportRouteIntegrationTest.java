@@ -36,6 +36,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -112,6 +113,32 @@ class NetexDsjExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
         updateStatus.assertIsSatisfied();
         assertThat(jobStates()).containsExactly(JobEvent.State.STARTED, JobEvent.State.OK);
         assertThreeVariants(referential);
+    }
+
+    @Test
+    void distributeReportsTheSystemAsTheUserWhenNoUserTriggeredIt() throws Exception {
+        String referential = TestConstants.CHOUETTE_REFERENTIAL_RB_RUT;
+        mardukInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.newExportPath(referential), new ByteArrayInputStream(sourceArchive));
+        updateStatus.expectedMessageCount(2);
+
+        distribute.requestBodyAndHeaders(null, distributeHeaders(TestConstants.PROVIDER_ID_RB_RUT, referential, "corr-system"));
+
+        updateStatus.assertIsSatisfied();
+        assertThat(jobUsernames()).containsExactly("System", "System");
+    }
+
+    @Test
+    void distributeReportsTheUserThatTriggeredIt() throws Exception {
+        String referential = TestConstants.CHOUETTE_REFERENTIAL_RB_RUT;
+        mardukInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.newExportPath(referential), new ByteArrayInputStream(sourceArchive));
+        updateStatus.expectedMessageCount(2);
+        Map<String, Object> headers = new HashMap<>(distributeHeaders(TestConstants.PROVIDER_ID_RB_RUT, referential, "corr-user"));
+        headers.put(Constants.USERNAME, "john.doe");
+
+        distribute.requestBodyAndHeaders(null, headers);
+
+        updateStatus.assertIsSatisfied();
+        assertThat(jobUsernames()).containsExactly("john.doe", "john.doe");
     }
 
     @Test
@@ -387,6 +414,12 @@ class NetexDsjExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
         InputStream blob = mardukInMemoryBlobStoreRepository.getBlob(path);
         assertThat(blob).as("Expected blob %s", path).isNotNull();
         return blob.readAllBytes();
+    }
+
+    private List<String> jobUsernames() {
+        return updateStatus.getExchanges().stream()
+                .map(e -> JobEvent.fromString(e.getIn().getBody(String.class)).getUsername())
+                .toList();
     }
 
     private List<JobEvent.State> jobStates() {
