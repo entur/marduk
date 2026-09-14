@@ -384,11 +384,6 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
         e.getIn().setHeader(TARGET_FILE_HANDLE, NetexDsjExportConfig.legacyOriginalDatasetPath(originalDatasetPath));
     }
 
-    private void rethrowCaughtException(Exchange e) throws Exception {
-        Exception caught = e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
-        throw caught != null ? caught : new MardukException("Failed to distribute the NeTEx export");
-    }
-
     private void rethrowUnlessDistributionFailuresIgnored(Exchange e) throws Exception {
         if (!e.getProperty(PROP_IGNORE_DISTRIBUTION_FAILURES, false, Boolean.class)) {
             rethrowCaughtException(e);
