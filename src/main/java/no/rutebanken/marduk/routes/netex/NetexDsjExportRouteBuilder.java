@@ -53,6 +53,11 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
      */
     static final String PROP_IGNORE_DISTRIBUTION_FAILURES = "RutebankenDsjIgnoreDistributionFailures";
     private static final String DOWNGRADED_FILE_NAME = "legacy.zip";
+    /**
+     * Reported as the user of the job events of an export that no user triggered, typically an aggregated export
+     * distributing the provider exports that are missing from the legacy or new folder.
+     */
+    private static final String SYSTEM_USERNAME = "System";
 
     private final NetexDsjExportConfig netexDsjExportConfig;
 
@@ -66,6 +71,7 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:distributeDsjNetexExport")
                 .validate(header(CHOUETTE_REFERENTIAL).isNotNull())
+                .process(this::defaultUsernameToSystem)
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Distributing the NeTEx export of ${header." + CHOUETTE_REFERENTIAL + "} to the legacy and new DatedServiceJourney export folders")
                 .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_LEGACY).state(JobEvent.State.STARTED).build())
                 .to("direct:updateStatus")
@@ -147,6 +153,7 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
 
         from("direct:doDistributeDsjNetexBlocksExport")
                 .validate(header(CHOUETTE_REFERENTIAL).isNotNull())
+                .process(this::defaultUsernameToSystem)
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Downgrading the NeTEx blocks export of ${header." + CHOUETTE_REFERENTIAL + "} to NeTEx 1.15")
                 .setProperty(PROP_SAVED_FILE_HANDLE, header(FILE_HANDLE))
                 .setProperty(PROP_DSJ_EXPORT_FOLDER, simple(netexDsjExportConfig.getDownloadDirectory() + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}"))
@@ -385,6 +392,16 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
     private void rethrowUnlessDistributionFailuresIgnored(Exchange e) throws Exception {
         if (!e.getProperty(PROP_IGNORE_DISTRIBUTION_FAILURES, false, Boolean.class)) {
             rethrowCaughtException(e);
+        }
+    }
+
+    /**
+     * Report the job events of an export that no user triggered as triggered by the system, the way the other
+     * routes triggered by the pipeline itself do: a job event without a username is rendered as an empty entry.
+     */
+    private void defaultUsernameToSystem(Exchange e) {
+        if (e.getIn().getHeader(USERNAME) == null) {
+            e.getIn().setHeader(USERNAME, SYSTEM_USERNAME);
         }
     }
 
