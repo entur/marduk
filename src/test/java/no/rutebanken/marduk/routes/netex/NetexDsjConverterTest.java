@@ -85,6 +85,29 @@ class NetexDsjConverterTest {
         return entries;
     }
 
+    /**
+     * ZipInputStream reports no entry at all for content that is not a zip archive, so an unchecked conversion would
+     * silently produce an empty export.
+     */
+    @Test
+    void convertZipRejectsContentThatIsNotAZipArchive() {
+        File target = new File(tmpDir, "converted.zip");
+        assertThatThrownBy(() -> NetexDsjConverter.downgradeZip(
+                new ByteArrayInputStream("not a zip archive".getBytes(StandardCharsets.UTF_8)), target, tmpDir, NO_SIZE_LIMIT))
+                .isInstanceOf(MardukException.class)
+                .hasMessageContaining("empty or is not a zip archive");
+    }
+
+    @Test
+    void convertZipRejectsAnEmptyArchive() throws IOException {
+        File target = new File(tmpDir, "converted.zip");
+        byte[] emptyArchive = zip(Map.of());
+        assertThatThrownBy(() -> NetexDsjConverter.downgradeZip(
+                new ByteArrayInputStream(emptyArchive), target, tmpDir, NO_SIZE_LIMIT))
+                .isInstanceOf(MardukException.class)
+                .hasMessageContaining("empty or is not a zip archive");
+    }
+
     @Test
     void downgradeZipTransformsOnlyNetex116Documents() throws IOException {
         Map<String, byte[]> source = mixedArchiveEntries();

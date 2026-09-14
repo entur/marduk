@@ -162,6 +162,47 @@ class NetexDsjExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
     }
 
     /**
+     * The legacy copy is overwritten in place and the timetable API cannot tell a stale one from a current one, so a
+     * failed downgrade must fail the publication instead of leaving the previous copy next to a freshly published
+     * blocks export.
+     */
+    @Test
+    void distributeBlocksExportFailsInsteadOfLeavingAStaleLegacyCopy() throws Exception {
+        String referential = TestConstants.CHOUETTE_REFERENTIAL_RB_RUT;
+        byte[] staleLegacyCopy = "the legacy copy of a previous run".getBytes(StandardCharsets.UTF_8);
+        internalInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.legacyBlocksExportPath(referential), new ByteArrayInputStream(staleLegacyCopy));
+        // a blocks export that cannot be downgraded
+        internalInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.blocksExportPath(referential), new ByteArrayInputStream("not a zip archive".getBytes(StandardCharsets.UTF_8)));
+
+        Map<String, Object> headers = new java.util.HashMap<>(distributeHeaders(TestConstants.PROVIDER_ID_RB_RUT, referential, "corr-blocks-fail"));
+        Exchange result = distributeBlocks.send(distributeBlocks.getDefaultEndpoint(), e -> e.getIn().setHeaders(headers));
+
+        assertThat(result.getException()).as("the failure is propagated so that the publication is retried").isNotNull();
+        assertThat(internalBlob(netexDsjExportConfig.legacyBlocksExportPath(referential)))
+                .as("the stale legacy copy is still there, which is why the publication must not be reported as successful")
+                .isEqualTo(staleLegacyCopy);
+    }
+
+    /**
+     * The manual backfill distributes every provider in one run, so it tolerates a provider whose export cannot be
+     * downgraded instead of stopping at the first one.
+     */
+    @Test
+    void distributeBlocksExportFailureIsToleratedByTheBackfill() throws Exception {
+        String referential = TestConstants.CHOUETTE_REFERENTIAL_RB_RUT;
+        internalInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.blocksExportPath(referential), new ByteArrayInputStream("not a zip archive".getBytes(StandardCharsets.UTF_8)));
+
+        Map<String, Object> headers = new java.util.HashMap<>(distributeHeaders(TestConstants.PROVIDER_ID_RB_RUT, referential, "corr-blocks-backfill"));
+        Exchange result = distributeBlocks.send(distributeBlocks.getDefaultEndpoint(), e -> {
+            e.getIn().setHeaders(headers);
+            // set by direct:distributeAllDsjNetexExports for the whole batch
+            e.setProperty(NetexDsjExportRouteBuilder.PROP_IGNORE_DISTRIBUTION_FAILURES, true);
+        });
+
+        assertThat(result.getException()).as("the backfill skips the provider instead of failing the batch").isNull();
+    }
+
+    /**
      * The legacy folder and the default folder are written by the route itself; the caller stores the dataset as
      * uploaded in the new folder, so the headers it needs are restored.
      */
@@ -249,6 +290,32 @@ class NetexDsjExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertDowngraded(new String(legacyEntries.get(NETEX_1_16_ENTRY), StandardCharsets.UTF_8));
         assertThat(legacyEntries.get(OLD_NETEX_ENTRY)).isEqualTo(sourceEntries.get(OLD_NETEX_ENTRY));
         assertThat(nisabaBlobs.get("imported/" + fileName)).isEqualTo(nisabaBlobs.get("imported-dsj-legacy/" + fileName));
+    }
+
+    /**
+     * The default folder of Nisaba is written by this route only: a failure must fail the calling step so that it is
+     * retried, instead of leaving the import without an original dataset in the default folder.
+     */
+    @Test
+    void distributeOriginalDatasetToNisabaFailsWhenTheDatasetCannotBeDowngraded() {
+        String referential = TestConstants.CHOUETTE_REFERENTIAL_RB_RUT;
+        String originalFileHandle = "inbound/received/rb_rut/original.zip";
+        String nisabaFileHandle = "imported/rb_rut/rb_rut_2026-09-10T10_00_00.000.zip";
+        // a truncated or corrupted upload: the downgrade of the dataset fails
+        internalInMemoryBlobStoreRepository.uploadBlob(originalFileHandle,
+                new ByteArrayInputStream("not a zip archive".getBytes(StandardCharsets.UTF_8)));
+
+        Map<String, Object> headers = new java.util.HashMap<>(distributeHeaders(TestConstants.PROVIDER_ID_RB_RUT, referential, "corr-9"));
+        headers.put(Constants.FILE_HANDLE, originalFileHandle);
+        headers.put(Constants.TARGET_FILE_HANDLE, nisabaFileHandle);
+        headers.put(Constants.TARGET_CONTAINER, exchangeContainerName);
+
+        assertThatThrownBy(() -> distributeOriginal.sendBodyAndHeaders("", headers))
+                .isInstanceOf(CamelExecutionException.class);
+
+        // nothing has been written to the Nisaba bucket
+        assertThat(exchangeInMemoryBlobStoreRepository.getBlob(nisabaFileHandle)).isNull();
+        assertThat(exchangeInMemoryBlobStoreRepository.getBlob("imported-dsj-legacy/rb_rut/rb_rut_2026-09-10T10_00_00.000.zip")).isNull();
     }
 
     private byte[] exchangeBlob(String path) throws IOException {

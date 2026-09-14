@@ -86,7 +86,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
     /**
      * Select the variant of the NeTEx blocks export requested with the dsjcompatibility query parameter.
-     * When the NeTEx 1.15 copy is requested, the export produced by the pipeline is kept as a fallback.
+     * When the legacy copy is requested, the export produced by the pipeline is kept as a fallback.
      */
     private void setBlocksExportFileHandle(Exchange e) {
         String referential = "rb_" + e.getIn().getHeader(CHOUETTE_REFERENTIAL, String.class).toLowerCase();
@@ -285,7 +285,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:adminTimetableGtfsExport")
 
                 .post("/export/netex/dsj")
-                .description("Distributes the current NeTEx export of every provider to the legacy (NeTEx 1.15) and new (NeTEx 1.16) DatedServiceJourney export folders, then regenerates the Norway aggregated exports")
+                .description("Distributes the current NeTEx export of every provider to the legacy (NeTEx 1.15 structure) and new (NeTEx 1.16 structure) DatedServiceJourney export folders, then regenerates the Norway aggregated exports")
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .responseMessage().code(500).message("Internal error").endResponseMessage()
@@ -332,7 +332,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .description("Download NeTEx dataset with blocks")
                 .deprecated()
                 .param().name("codespace").type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
-                .param().name("dsjcompatibility").type(RestParamType.query).required(false).description("Structure of DatedServiceJourney in the returned dataset: legacy (NeTEx 1.15, default) or new (NeTEx 1.16)").dataType(OPENAPI_DATA_TYPE_STRING).allowableValues("legacy", "new").endParam()
+                .param().name("dsjcompatibility").type(RestParamType.query).required(false).description("Structure of DatedServiceJourney in the returned dataset: legacy (NeTEx 1.15 structure, repeated DatedServiceJourneyRef; the default) or new (NeTEx 1.16 structure, replacedJourneys). A dataset without replacement information is returned unchanged.").dataType(OPENAPI_DATA_TYPE_STRING).allowableValues("legacy", "new").endParam()
                 .produces(X_OCTET_STREAM)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
@@ -461,7 +461,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:adminChouetteExport")
 
                 .post("/export/netex/dsj")
-                .description("Distributes the current NeTEx export of the provider to the legacy (NeTEx 1.15) and new (NeTEx 1.16) DatedServiceJourney export folders")
+                .description("Distributes the current NeTEx export of the provider to the legacy (NeTEx 1.15 structure) and new (NeTEx 1.16 structure) DatedServiceJourney export folders")
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
@@ -928,10 +928,10 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Downloading NeTEx dataset with blocks: ${header." + FILE_HANDLE + "}")
                 .process(this::removeHttpHeaders)
                 .to("direct:getInternalBlob")
-                // the NeTEx 1.15 copy is produced after the blocks export: fall back to the export produced by the pipeline
+                // the legacy copy is produced after the blocks export: fall back to the export produced by the pipeline
                 .choice().when(PredicateBuilder.and(simple("${body} == null"), exchangeProperty(PROP_BLOCKS_EXPORT_FALLBACK).isNotNull()))
                     .setHeader(FILE_HANDLE, exchangeProperty(PROP_BLOCKS_EXPORT_FALLBACK))
-                    .log(LoggingLevel.WARN, correlation() + "No NeTEx 1.15 copy of the NeTEx dataset with blocks, falling back to ${header." + FILE_HANDLE + "}")
+                    .log(LoggingLevel.WARN, correlation() + "No legacy copy of the NeTEx dataset with blocks, falling back to ${header." + FILE_HANDLE + "}")
                     .to("direct:getInternalBlob")
                 .end()
                 .choice().when(simple("${body} == null")).setHeader(Exchange.HTTP_RESPONSE_CODE, constant(404)).endChoice()

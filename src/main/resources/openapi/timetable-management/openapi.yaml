@@ -210,7 +210,10 @@ paths:
         in: query
         description: |
           Structure of DatedServiceJourney in the returned dataset, during the transition to NeTEx 1.16:
-          `legacy` returns a NeTEx 1.15 dataset (default), `new` returns a NeTEx 1.16 dataset.
+          `legacy` (the default) returns the NeTEx 1.15 structure, in which replaced journeys are repeated
+          `DatedServiceJourneyRef` elements; `new` returns the NeTEx 1.16 structure, in which they are held in a
+          `replacedJourneys` container. Only datasets that contain replacement information differ between the
+          two; the others are returned unchanged and declare the NeTEx version the pipeline exported.
         required: false
         schema:
           type: string

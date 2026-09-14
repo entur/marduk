@@ -41,17 +41,19 @@ Marduk schedules a nightly revalidation of every dataset which triggers a regene
 # Dual NeTEx export during the NeTEx 1.16 transition
 NeTEx 1.16 ([netex-java-model 2.0.16](https://github.com/entur/netex-java-model/releases/tag/v2.0.16)) changes the structure of `DatedServiceJourney` in a non backward-compatible way.
 While consumers migrate, Marduk publishes every dataset (and the Norway aggregated export) in three folders of the public bucket:
-* `outbound/netex-dsj-new/`: the dataset as exported by the import pipeline (NeTEx 1.16)
-* `outbound/netex-dsj-legacy/`: the dataset downgraded to NeTEx 1.15 with the `NeTExDowngrader` of netex-java-model (the stop place export contains no `DatedServiceJourney` and is not transformed)
+* `outbound/netex-dsj-new/`: the dataset as exported by the import pipeline, with the NeTEx 1.16 `DatedServiceJourney` structure (`replacedJourneys`)
+* `outbound/netex-dsj-legacy/`: the dataset with the NeTEx 1.15 `DatedServiceJourney` structure (repeated `DatedServiceJourneyRef`), produced by the `NeTExDowngrader` (the stop place export contains no `DatedServiceJourney` and is not transformed)
 * `outbound/netex/`: the default folder, a copy of the variant selected by `netex.export.dsj.default.variant` (`legacy` first, then `new`)
 
+`legacy` and `new` name the `DatedServiceJourney` replacement structure, not the NeTEx version of the dataset. Only the datasets that contain replacement information are converted; a dataset without it is copied between the folders unchanged and keeps the NeTEx version the pipeline exported, which is NeTEx 1.16 once Chouette has migrated. A legacy folder therefore holds a mix of NeTEx versions, all of them free of the 1.16 replacement structure.
+
 The two other export channels follow the same principle:
-* the private export (NeTEx with blocks) is stored in the internal bucket both as produced (`chouette/netex-with-blocks/`) and downgraded to NeTEx 1.15 (`chouette/netex-with-blocks-dsj-legacy/`). The timetable API download endpoint returns the NeTEx 1.15 copy by default (`netex.export.dsj.api.default.variant`); the query parameter `dsjcompatibility=new` selects the NeTEx 1.16 dataset and `dsjcompatibility=legacy` the NeTEx 1.15 dataset.
-* the original dataset uploaded to Nisaba (`imported/`) is accompanied by a NeTEx 1.15 copy in `imported-dsj-legacy/`.
+* the private export (NeTEx with blocks) is stored in the internal bucket both as produced (`chouette/netex-with-blocks/`) and as a legacy copy (`chouette/netex-with-blocks-dsj-legacy/`). The timetable API download endpoint returns the legacy copy by default (`netex.export.dsj.api.default.variant`); the query parameter `dsjcompatibility=new` selects the NeTEx 1.16 structure and `dsjcompatibility=legacy` the NeTEx 1.15 structure.
+* the original dataset uploaded to Nisaba (`imported/`) is accompanied by a legacy copy in `imported-dsj-legacy/`.
 
-Only the datasets of the codespaces listed in `netex.dsj.codespaces` (VYG, GOA, SJN, FLT) contain DatedServiceJourneys with replacement information, the only construct that differs between NeTEx 1.15 and 1.16; the legacy variant of the other datasets is a plain copy.
+Only the datasets of the codespaces listed in `netex.dsj.codespaces` (VYG, GOA, SJN) contain DatedServiceJourneys with replacement information, the only construct that differs between NeTEx 1.15 and 1.16; the legacy variant of the other datasets is a plain copy.
 
-Once the import pipeline works with NeTEx 1.16 (`netex.import.dsj.upgrade.enabled`), datasets uploaded by these codespaces that still contain NeTEx 1.15 files are upgraded to NeTEx 1.16 with the `NeTExUpgrader` of netex-java-model right after the file classification; the upgraded dataset replaces the uploaded file.
+Once the import pipeline works with NeTEx 1.16 (`netex.import.dsj.upgrade.enabled`), datasets uploaded by these codespaces that still contain NeTEx 1.15 files are upgraded to NeTEx 1.16 with the `NeTExUpgrader` right after the file classification; the upgraded dataset replaces the uploaded file.
 
 The dual export is controlled by `netex.export.dsj.enabled`. The current exports of all providers can be (re)distributed to the three folders (and the private exports downgraded) with `POST /timetable_admin/export/netex/dsj` (or `POST /timetable_admin/{providerId}/export/netex/dsj` for a single provider).
 

@@ -33,7 +33,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import static no.rutebanken.marduk.Constants.*;
 
@@ -41,7 +44,7 @@ import static no.rutebanken.marduk.Constants.*;
  * Route combining netex exports per provider with stop place export for a common netex export for Norway.
  * <p>
  * When the dual DatedServiceJourney export is enabled (see {@link NetexDsjExportConfig}), the aggregated export is
- * built twice, from the legacy (NeTEx 1.15) and from the new (NeTEx 1.16) per-provider exports, and stored in the
+ * built twice, from the legacy (NeTEx 1.15 structure) and from the new (NeTEx 1.16 structure) per-provider exports, and stored in the
  * corresponding folders. The variant configured as default is then copied into the default folder.
  */
 @Component
@@ -59,6 +62,14 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
      * Path of the merged export in the public bucket.
      */
     private static final String PROP_TARGET_FILE_HANDLE = "RutebankenNetexExportTargetFileHandle";
+    /**
+     * Per-provider exports that were not found in the folder of the variant being built.
+     */
+    private static final String PROP_MISSING_PROVIDER_EXPORTS = "RutebankenNetexExportMissingProviderExports";
+    /**
+     * The same, for the first variant built, against which the following variants are checked.
+     */
+    private static final String PROP_REFERENCE_MISSING_PROVIDER_EXPORTS = "RutebankenNetexExportReferenceMissingProviderExports";
     @Value("${otp2.netex.export.download.directory:files/netex/merged-otp2}")
     private String localWorkingDirectory;
 
@@ -121,7 +132,7 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .end()
                 .routeId("otp2-netex-export-build-merged-exports");
 
-        // Build the aggregated export for the new (NeTEx 1.16) and legacy (NeTEx 1.15) variants of the per-provider
+        // Build the aggregated export for the new (NeTEx 1.16 structure) and legacy (NeTEx 1.15 structure) variants of the per-provider
         // exports, then copy the default variant into the default folder.
         from("direct:otp2ExportMergedNetexDsjVariants")
                 // providers that have not published since the dual export was enabled exist only in the default folder
@@ -146,7 +157,9 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
         // is used as is in every variant.
         from("direct:otp2ExportMergedNetexVariant")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Building combined Netex for Norway from ${exchangeProperty." + PROP_SOURCE_FOLDER + "}")
+                .process(e -> e.setProperty(PROP_MISSING_PROVIDER_EXPORTS, Collections.synchronizedSet(new LinkedHashSet<String>())))
                 .to("direct:otp2FetchLatestProviderNetexExports")
+                .process(this::verifyVariantCoversTheSameProviders)
                 .process(e -> copyAndRenameStopFiles(e.getProperty(FOLDER_NAME, String.class) + STOPS_FILES_SUBFOLDER, e.getProperty(FOLDER_NAME, String.class) + UNPACKED_NETEX_SUBFOLDER))
                 .to("direct:otp2MergeNetex")
                 // free the disk space before building the next variant
@@ -172,6 +185,7 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .process(e -> ZipFileUtils.unzipFile(e.getIn().getBody(InputStream.class), e.getProperty(FOLDER_NAME, String.class)  + UNPACKED_NETEX_SUBFOLDER))
                 .otherwise()
                 .log(LoggingLevel.WARN, getClass().getName(), correlation() + "${header." + FILE_HANDLE + "} was empty when trying to fetch it from blobstore.")
+                .process(this::recordMissingProviderExport)
                 .routeId("otp2-netex-export-fetch-latest-for-provider");
 
 
@@ -205,6 +219,37 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                        .filter(p -> p.getChouetteInfo().getMigrateDataToProvider() == null)
                        .map(p -> p.getChouetteInfo().getReferential() + "-" + CURRENT_AGGREGATED_NETEX_FILENAME)
                        .toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void recordMissingProviderExport(Exchange e) {
+        Set<String> missing = e.getProperty(PROP_MISSING_PROVIDER_EXPORTS, Set.class);
+        if (missing != null) {
+            missing.add(e.getProperty("fileName", String.class));
+        }
+    }
+
+    /**
+     * Every variant of the aggregated export must be built from the exports of the same providers. A provider export
+     * that is present in the folder of one variant but missing from the folder of another would silently disappear
+     * from one of the aggregated exports, and with it from the OTP graph built from that export, so the export is
+     * failed instead: the caller (a publication or a graph build) retries it.
+     * <p>
+     * A provider that has never published has no export in any folder and is missing from every variant, which is
+     * accepted.
+     */
+    @SuppressWarnings("unchecked")
+    private void verifyVariantCoversTheSameProviders(Exchange e) {
+        Set<String> missing = e.getProperty(PROP_MISSING_PROVIDER_EXPORTS, Set.class);
+        Set<String> reference = e.getProperty(PROP_REFERENCE_MISSING_PROVIDER_EXPORTS, Set.class);
+        if (reference == null) {
+            e.setProperty(PROP_REFERENCE_MISSING_PROVIDER_EXPORTS, missing);
+        } else if (!reference.equals(missing)) {
+            throw new MardukException("The NeTEx exports found in " + e.getProperty(PROP_SOURCE_FOLDER, String.class)
+                    + " do not cover the same providers as the ones the previous variant of the aggregated export was built from"
+                    + " (missing here: " + missing + ", missing there: " + reference
+                    + "): aborting to avoid publishing an incomplete aggregated export for Norway");
+        }
     }
 
     /**

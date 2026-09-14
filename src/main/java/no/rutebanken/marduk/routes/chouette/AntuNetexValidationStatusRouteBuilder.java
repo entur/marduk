@@ -174,7 +174,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .otherwise()
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Uploading original dataset to Nisaba for referential ${header." + DATASET_REFERENTIAL + "}")
                 .process(new NisabaHeadersProcessor(nisabaExchangeContainerName))
-                // NeTEx 1.15 copy and default variant of the original dataset in Nisaba
+                // legacy copy and default variant of the original dataset in Nisaba
                 // (no-op when the dual DatedServiceJourney export is disabled)
                 .to("direct:distributeOriginalDatasetToNisaba")
                 // the dataset as uploaded goes to the imported-dsj-new folder when the dual export is enabled
@@ -271,7 +271,7 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:copyInternalBlobInBucket")
-                // NeTEx 1.15 copy of the blocks export for the timetable API (no-op when the dual DatedServiceJourney export is disabled)
+                // legacy copy of the blocks export for the timetable API (no-op when the dual DatedServiceJourney export is disabled)
                 .to("direct:distributeDsjNetexBlocksExport")
                 .end()
                 .endChoice()

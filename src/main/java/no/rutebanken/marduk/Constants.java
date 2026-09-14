@@ -81,7 +81,7 @@ public final class Constants {
     public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks/";
     public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_BEFORE_VALIDATION = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks-before-validation/";
     /**
-     * NeTEx 1.15 copy of the NeTEx blocks export, produced during the transition to the NeTEx 1.16 DatedServiceJourney structure.
+     * Legacy copy of the NeTEx blocks export, produced during the transition to the NeTEx 1.16 DatedServiceJourney structure.
      */
     public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_DSJ_LEGACY = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks-dsj-legacy/";
     /**
@@ -89,7 +89,7 @@ public final class Constants {
      */
     public static final String BLOBSTORE_PATH_NISABA_IMPORTED = "imported/";
     /**
-     * Folder of the Nisaba bucket receiving the NeTEx 1.15 copies of the original datasets.
+     * Folder of the Nisaba bucket receiving the legacy copies of the original datasets.
      */
     public static final String BLOBSTORE_PATH_NISABA_IMPORTED_DSJ_LEGACY = "imported-dsj-legacy/";
     /**
@@ -97,7 +97,7 @@ public final class Constants {
      */
     public static final String BLOBSTORE_PATH_NISABA_IMPORTED_DSJ_NEW = "imported-dsj-new/";
     /**
-     * Staging folder in the internal bucket for the NeTEx 1.15 copies of the original datasets before they are copied to Nisaba.
+     * Staging folder in the internal bucket for the legacy copies of the original datasets before they are copied to Nisaba.
      */
     public static final String BLOBSTORE_PATH_DSJ_LEGACY_ORIGINAL_DATASET = "dsj-legacy/original/";
 

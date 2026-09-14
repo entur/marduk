@@ -138,9 +138,9 @@ public class AdminExternalRestController implements DatasetsApi, FlexDatasetsApi
 
         InputStream blob = blobStoreService.getBlob(fileHandle);
         if (blob == null && variant == NetexDsjExportConfig.Variant.LEGACY) {
-            // the NeTEx 1.15 copy is produced after the blocks export: fall back to the export produced by the pipeline
+            // the legacy copy is produced after the blocks export: fall back to the export produced by the pipeline
             fileHandle = netexDsjExportConfig.blocksExportPath(referential);
-            LOG.warn("[{}] No NeTEx 1.15 copy of the NeTEx dataset with blocks for {}, falling back to {}", correlationId, referential, fileHandle);
+            LOG.warn("[{}] No legacy copy of the NeTEx dataset with blocks for {}, falling back to {}", correlationId, referential, fileHandle);
             blob = blobStoreService.getBlob(fileHandle);
         }
         if (blob == null) {

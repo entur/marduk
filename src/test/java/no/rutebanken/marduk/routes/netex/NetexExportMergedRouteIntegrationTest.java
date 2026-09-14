@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes.netex;
 
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.TestConstants;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
@@ -42,6 +43,7 @@ import static no.rutebanken.marduk.routes.netex.NetexDsjConverterTest.mixedArchi
 import static no.rutebanken.marduk.routes.netex.NetexDsjConverterTest.unzip;
 import static no.rutebanken.marduk.routes.netex.NetexDsjConverterTest.zip;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -166,6 +168,37 @@ class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegratio
         assertThat(new String(newMerged.get(NETEX_1_16_ENTRY), StandardCharsets.UTF_8)).contains("version=\"1.16:");
         assertDowngraded(new String(legacyMerged.get(NETEX_1_16_ENTRY), StandardCharsets.UTF_8));
         assertThat(readBlob(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath)).isEqualTo(readBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.LEGACY, mergedFileName)));
+    }
+
+    /**
+     * A per-provider export that cannot be distributed to the legacy and new folders must fail the aggregated export:
+     * building it anyway would publish a Norway dataset silently missing that provider, and feed it to the OTP graph
+     * build.
+     */
+    @Test
+    void testExportMergedNetexDsjVariantsFailsWhenAProviderExportCannotBeDistributed() throws Exception {
+        AdviceWith.adviceWith(context, "otp2-netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWith.adviceWith(context, "otp2-netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWith.adviceWith(context, "netex-dsj-export-distribute", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+
+        when(providerRepository.getProviders()).thenReturn(List.of(provider(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, TestConstants.PROVIDER_ID_RB_RUT, null)));
+
+        mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"));
+        // the export of the provider is missing from the legacy folder and cannot be downgraded: its content is not a
+        // zip archive (a truncated or corrupted export)
+        mardukInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.newExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT),
+                new ByteArrayInputStream("not a zip archive".getBytes(StandardCharsets.UTF_8)));
+
+        context.start();
+
+        assertThatThrownBy(() -> startRoute.requestBody(null))
+                .hasRootCauseInstanceOf(MardukException.class);
+
+        // no aggregated export has been published, neither in the variant folders nor in the default folder
+        String mergedFileName = "rb_norway-aggregated-netex.zip";
+        assertThat(mardukInMemoryBlobStoreRepository.getBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.NEW, mergedFileName))).isNull();
+        assertThat(mardukInMemoryBlobStoreRepository.getBlob(netexDsjExportConfig.variantPath(NetexDsjExportConfig.Variant.LEGACY, mergedFileName))).isNull();
+        assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath)).isNull();
     }
 
     private byte[] readBlob(String path) throws java.io.IOException {

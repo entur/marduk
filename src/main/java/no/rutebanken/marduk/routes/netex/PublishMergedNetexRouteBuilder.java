@@ -53,7 +53,7 @@ public class PublishMergedNetexRouteBuilder extends BaseRouteBuilder {
 
 
         from("direct:publishMergedDataset")
-                // Store the legacy (NeTEx 1.15) and new (NeTEx 1.16) variants of the dataset and copy the default
+                // Store the legacy (NeTEx 1.15 structure) and new (NeTEx 1.16 structure) variants of the dataset and copy the default
                 // variant into the default folder before notifying downstream consumers.
                 .filter(constant(netexDsjExportConfig.isEnabled()))
                 .to("direct:distributeDsjNetexExport")

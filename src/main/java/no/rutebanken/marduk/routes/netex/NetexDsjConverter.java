@@ -54,7 +54,7 @@ import static no.rutebanken.marduk.routes.file.beans.FileClassifierPredicates.NE
 
 /**
  * Convert NeTEx documents between NeTEx 1.15 and NeTEx 1.16 (DatedServiceJourney structure) with the
- * {@link NeTExDowngrader} and {@link NeTExUpgrader} from netex-java-model.
+ * {@link NeTExDowngrader} and {@link NeTExUpgrader}.
  * <p>
  * Only documents whose {@code PublicationDelivery/@version} starts with the source version of the conversion are
  * transformed; every other file is copied byte for byte. The XSLT processor loads the whole document in memory,
@@ -195,6 +195,7 @@ public final class NetexDsjConverter {
      * @param targetZip         the archive to create.
      * @param tmpDir            an existing directory where each XML entry is temporarily spooled before processing.
      * @param maxXsltInputBytes largest document accepted for transformation.
+     * @throws MardukException if the source is not a zip archive or holds no entry.
      */
     public static Report convertZip(Direction direction, InputStream sourceZip, File targetZip, File tmpDir, long maxXsltInputBytes) throws IOException {
         int entries = 0;
@@ -216,6 +217,11 @@ public final class NetexDsjConverter {
                 out.closeEntry();
                 entries++;
             }
+        }
+        if (entries == 0) {
+            // ZipInputStream reports no entry at all for a file that is not a zip archive or whose content was
+            // truncated before the first entry: converting it would produce an empty archive silently.
+            throw new MardukException("Cannot convert (" + direction + ") the archive: it is empty or is not a zip archive");
         }
         return new Report(entries, converted);
     }

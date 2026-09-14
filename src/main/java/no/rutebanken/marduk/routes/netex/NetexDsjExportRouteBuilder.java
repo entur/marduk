@@ -35,8 +35,9 @@ import static no.rutebanken.marduk.Constants.*;
 /**
  * Distribute a freshly published NeTEx dataset to the three export folders used during the transition to the
  * NeTEx 1.16 DatedServiceJourney structure (see {@link NetexDsjExportConfig}):
- * the dataset exported by the import pipeline is stored in the "new" folder, a downgraded NeTEx 1.15 copy is
- * stored in the "legacy" folder, and the variant configured as default is copied into the default folder.
+ * the dataset exported by the import pipeline is stored in the "new" folder, the legacy copy (downgraded when
+ * the dataset carries replacement information, a plain copy otherwise) is stored in the "legacy" folder, and the
+ * variant configured as default is copied into the default folder.
  */
 @Component
 public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
@@ -46,6 +47,11 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
     private static final String PROP_SAVED_FILE_HANDLE = "RutebankenDsjSavedFileHandle";
     private static final String PROP_SAVED_FILE_VERSION = "RutebankenDsjSavedFileVersion";
     private static final String PROP_SAVED_TARGET_FILE_HANDLE = "RutebankenDsjSavedTargetFileHandle";
+    /**
+     * Whether the distribution of one provider may fail without failing the whole batch. Only the manual backfill
+     * sets it: a batch whose result is merged into an aggregated export must fail rather than skip a provider.
+     */
+    static final String PROP_IGNORE_DISTRIBUTION_FAILURES = "RutebankenDsjIgnoreDistributionFailures";
     private static final String DOWNGRADED_FILE_NAME = "legacy.zip";
 
     private final NetexDsjExportConfig netexDsjExportConfig;
@@ -128,9 +134,11 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                 .end()
                 .routeId("netex-dsj-export-seed-new-from-default");
 
-        // Private export (NeTEx with blocks): store a NeTEx 1.15 copy of the blocks export next to the one produced by
-        // the pipeline. Called after every publication of the blocks export; a failure is reported but does not fail
-        // the publication (the timetable API falls back to the export produced by the pipeline).
+        // Private export (NeTEx with blocks): store a legacy copy of the blocks export next to the one produced by
+        // the pipeline. Called after every publication of the blocks export. The legacy copy is overwritten in place,
+        // so a failure fails the calling step and is retried; swallowing it would leave the previous legacy copy next
+        // to a freshly published blocks export. Only the manual backfill tolerates it, so that one provider that
+        // cannot be downgraded does not stop the others (see PROP_IGNORE_DISTRIBUTION_FAILURES).
         from("direct:distributeDsjNetexBlocksExport")
                 .filter(constant(netexDsjExportConfig.isEnabled()))
                 .to("direct:doDistributeDsjNetexBlocksExport")
@@ -148,6 +156,9 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                     .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Failed to downgrade the NeTEx blocks export of ${header." + CHOUETTE_REFERENTIAL + "}: ${exception.message}")
                     .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_LEGACY).state(JobEvent.State.FAILED).build())
                     .to("direct:updateStatus")
+                    // the timetable API cannot tell a stale legacy copy from a current one: fail the publication so
+                    // that it is retried, rather than serving the previous copy as the current dataset.
+                    .process(this::rethrowUnlessDistributionFailuresIgnored)
                 .doFinally()
                     .process(e -> deleteDirectoryRecursively(e.getProperty(PROP_DSJ_EXPORT_FOLDER, String.class)))
                     .setHeader(FILE_HANDLE, exchangeProperty(PROP_SAVED_FILE_HANDLE))
@@ -186,7 +197,7 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
 
         // Original dataset: store the dataset uploaded by the provider in the three folders of the Nisaba bucket used
         // during the transition, the same way a published dataset is stored in three folders of the public bucket.
-        // This route writes the NeTEx 1.15 copy in imported-dsj-legacy and the variant selected by
+        // This route writes the legacy copy in imported-dsj-legacy and the variant selected by
         // netex.export.dsj.default.variant in the default folder imported; the caller stores the dataset as uploaded
         // in imported-dsj-new (see NetexDsjExportConfig#originalDatasetPublicationPath).
         // Expects the headers set for the upload of the original dataset: FILE_HANDLE (original dataset in the
@@ -210,6 +221,10 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                     .to("direct:copyDefaultVariantOriginalDatasetToNisaba")
                 .doCatch(Exception.class)
                     .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Failed to store the original dataset of ${header." + CHOUETTE_REFERENTIAL + "} in the DatedServiceJourney folders of Nisaba: ${exception.message}")
+                    // the default folder receives the dataset from this route only: swallowing the failure would
+                    // leave the import without an original dataset in Nisaba, silently and for good. Fail the
+                    // calling step instead so that it is retried.
+                    .process(this::rethrowCaughtException)
                 .doFinally()
                     .process(e -> deleteDirectoryRecursively(e.getProperty(PROP_DSJ_EXPORT_FOLDER, String.class)))
                     .setHeader(FILE_HANDLE, exchangeProperty(PROP_SAVED_FILE_HANDLE))
@@ -220,7 +235,7 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                 .end()
                 .routeId("netex-dsj-export-do-distribute-original-to-nisaba");
 
-        // The default folder receives the variant selected by netex.export.dsj.default.variant: the NeTEx 1.15 copy
+        // The default folder receives the variant selected by netex.export.dsj.default.variant: the legacy copy
         // staged in the internal bucket when the legacy variant is the default and the dataset was downgraded, the
         // dataset as uploaded otherwise (the two are identical for a codespace without replacement information).
         from("direct:copyDefaultVariantOriginalDatasetToNisaba")
@@ -247,6 +262,8 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
         from("direct:distributeAllDsjNetexExports")
                 .process(this::setCorrelationIdIfMissing)
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Distributing the NeTEx exports of all providers to the legacy and new DatedServiceJourney export folders")
+                // an export that cannot be distributed must not prevent the other providers from being processed
+                .setProperty(PROP_IGNORE_DISTRIBUTION_FAILURES, constant(true))
                 .process(e -> e.getIn().setBody(getPublishedProviders()))
                 .split(body())
                     .process(this::setProviderHeaders)
@@ -262,8 +279,12 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
         // folders are complete.
         from("direct:distributeMissingDsjNetexExports")
                 .process(this::setCorrelationIdIfMissing)
+                // an aggregated export built from a folder from which a provider export is missing would silently
+                // lose that provider: a provider that cannot be distributed fails the aggregated export, which is
+                // then retried, rather than being skipped.
+                .setProperty(PROP_IGNORE_DISTRIBUTION_FAILURES, constant(false))
                 .process(e -> e.getIn().setBody(getPublishedProviders()))
-                .split(body())
+                .split(body()).stopOnException()
                     .process(this::setProviderHeaders)
                     .to("direct:distributeDsjNetexExportIfMissing")
                 .end()
@@ -307,12 +328,15 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                 .setBody(constant(""))
                 .routeId("netex-dsj-export-distribute-if-published");
 
-        // An export that cannot be downgraded must not prevent the other providers from being processed.
+        // An export that cannot be downgraded must not prevent the other providers from being processed, as long as
+        // the caller does not build an aggregated export out of the folders being filled (see
+        // PROP_IGNORE_DISTRIBUTION_FAILURES).
         from("direct:distributeDsjNetexExportIgnoringFailures")
                 .doTry()
                     .to("direct:distributeDsjNetexExport")
                 .doCatch(Exception.class)
-                    .log(LoggingLevel.WARN, getClass().getName(), correlation() + "Skipping ${header." + CHOUETTE_REFERENTIAL + "}: ${exception.message}")
+                    .log(LoggingLevel.WARN, getClass().getName(), correlation() + "Failed to distribute the NeTEx export of ${header." + CHOUETTE_REFERENTIAL + "}: ${exception.message}")
+                    .process(this::rethrowUnlessDistributionFailuresIgnored)
                 .end()
                 .routeId("netex-dsj-export-distribute-ignoring-failures");
     }
@@ -354,7 +378,14 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
     }
 
     private void rethrowCaughtException(Exchange e) throws Exception {
-        throw e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
+        Exception caught = e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
+        throw caught != null ? caught : new MardukException("Failed to distribute the NeTEx export");
+    }
+
+    private void rethrowUnlessDistributionFailuresIgnored(Exchange e) throws Exception {
+        if (!e.getProperty(PROP_IGNORE_DISTRIBUTION_FAILURES, false, Boolean.class)) {
+            rethrowCaughtException(e);
+        }
     }
 
     private void setProviderHeaders(Exchange e) {

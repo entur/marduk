@@ -33,12 +33,19 @@ import static no.rutebanken.marduk.Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
  * <p>
  * When enabled, each published dataset is stored in three folders of the public bucket:
  * <ul>
- *     <li>{@code netex-dsj-new}: the dataset as exported by the import pipeline (NeTEx 1.16);</li>
- *     <li>{@code netex-dsj-legacy}: the dataset downgraded to NeTEx 1.15;</li>
+ *     <li>{@code netex-dsj-new}: the dataset as exported by the import pipeline, with the NeTEx 1.16
+ *     DatedServiceJourney structure ({@code replacedJourneys});</li>
+ *     <li>{@code netex-dsj-legacy}: the dataset with the NeTEx 1.15 DatedServiceJourney structure (repeated
+ *     {@code DatedServiceJourneyRef});</li>
  *     <li>the default folder {@code netex}: a copy of one of the two variants, selected by
  *     {@code netex.export.dsj.default.variant}.</li>
  * </ul>
  * When disabled, the dataset is published directly in the default folder as before.
+ * <p>
+ * The variant names refer to the DatedServiceJourney replacement structure, not to the NeTEx version of the
+ * dataset: only the datasets that contain replacement information are converted, so a dataset without it is
+ * copied between the folders unchanged and keeps the NeTEx version the pipeline exported, which is NeTEx 1.16
+ * once Chouette has migrated.
  */
 @Component
 public class NetexDsjExportConfig {
@@ -50,11 +57,12 @@ public class NetexDsjExportConfig {
      */
     public enum Variant {
         /**
-         * NeTEx 1.15, produced by downgrading the exported dataset.
+         * The NeTEx 1.15 DatedServiceJourney structure, produced by downgrading the datasets that carry
+         * replacement information; the others are copied unchanged.
          */
         LEGACY,
         /**
-         * NeTEx 1.16, the dataset as exported by the import pipeline.
+         * The NeTEx 1.16 DatedServiceJourney structure, as exported by the import pipeline.
          */
         NEW
     }
@@ -176,14 +184,14 @@ public class NetexDsjExportConfig {
     }
 
     /**
-     * Path of the NeTEx 1.16 variant of the dataset.
+     * Path of the new variant of the dataset.
      */
     public String newExportPath(@Header(Constants.CHOUETTE_REFERENTIAL) String referential) {
         return newBlobPath + aggregatedNetexFileName(referential);
     }
 
     /**
-     * Path of the NeTEx 1.15 variant of the dataset.
+     * Path of the legacy variant of the dataset.
      */
     public String legacyExportPath(@Header(Constants.CHOUETTE_REFERENTIAL) String referential) {
         return legacyBlobPath + aggregatedNetexFileName(referential);
@@ -226,7 +234,7 @@ public class NetexDsjExportConfig {
     }
 
     /**
-     * Path in the internal bucket of the NeTEx 1.15 copy of the NeTEx blocks export.
+     * Path in the internal bucket of the legacy copy of the NeTEx blocks export.
      */
     public String legacyBlocksExportPath(@Header(Constants.CHOUETTE_REFERENTIAL) String referential) {
         return Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_DSJ_LEGACY + aggregatedNetexFileName(referential);
@@ -237,7 +245,7 @@ public class NetexDsjExportConfig {
     }
 
     /**
-     * Path in the Nisaba bucket of the NeTEx 1.15 copy of an original dataset, given the path of the original dataset
+     * Path in the Nisaba bucket of the legacy copy of an original dataset, given the path of the original dataset
      * in the default folder ({@code imported/<referential>/<referential>_<timestamp>.zip}).
      */
     public static String legacyOriginalDatasetPath(String originalDatasetPath) {
@@ -270,7 +278,7 @@ public class NetexDsjExportConfig {
     }
 
     /**
-     * Staging path in the internal bucket of the NeTEx 1.15 copy of an original dataset.
+     * Staging path in the internal bucket of the legacy copy of an original dataset.
      */
     public static String legacyOriginalDatasetStagingPath(String originalDatasetPath) {
         return originalDatasetPathIn(Constants.BLOBSTORE_PATH_DSJ_LEGACY_ORIGINAL_DATASET, originalDatasetPath);

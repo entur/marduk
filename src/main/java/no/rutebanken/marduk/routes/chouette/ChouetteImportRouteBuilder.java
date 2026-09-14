@@ -230,7 +230,7 @@ public class ChouetteImportRouteBuilder extends AbstractChouetteRouteBuilder {
                 .setHeader(DATASET_IMPORT_KEY, simple("${header." + CHOUETTE_REFERENTIAL + "}_${body.replace(':','_')}"))
                 .setHeader(TARGET_FILE_HANDLE, simple("imported/${header." + CHOUETTE_REFERENTIAL + "}/${header." +  DATASET_IMPORT_KEY + "}.zip"))
                 .setHeader(TARGET_CONTAINER, constant(nisabaExchangeContainerName))
-                // NeTEx 1.15 copy and default variant of the original dataset in Nisaba
+                // legacy copy and default variant of the original dataset in Nisaba
                 // (no-op when the dual DatedServiceJourney export is disabled)
                 .to("direct:distributeOriginalDatasetToNisaba")
                 // the dataset as uploaded goes to the imported-dsj-new folder when the dual export is enabled
