@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.routes.netex;
 
+import jakarta.annotation.PostConstruct;
 import no.rutebanken.marduk.Constants;
 import org.apache.camel.Header;
 import org.springframework.beans.factory.annotation.Value;
@@ -71,10 +72,14 @@ public class NetexDsjExportConfig {
     private boolean enabled;
 
     @Value("${netex.export.dsj.default.variant:legacy}")
-    private String defaultVariant;
+    private String defaultVariantName;
 
     @Value("${netex.export.dsj.api.default.variant:legacy}")
-    private String apiDefaultVariant;
+    private String apiDefaultVariantName;
+
+    private Variant defaultVariant;
+
+    private Variant apiDefaultVariant;
 
     @Value("${netex.export.dsj.legacy.blob.path:outbound/netex-dsj-legacy/}")
     private String legacyBlobPath;
@@ -107,15 +112,38 @@ public class NetexDsjExportConfig {
         return enabled;
     }
 
+    /**
+     * Both configured variants are resolved once, at startup, so that a misconfigured value fails the context with
+     * a message naming the property instead of being discovered per request. The API variant in particular is only
+     * read while serving a download, so an unparseable value would otherwise turn every download into a 400.
+     */
+    @PostConstruct
+    void resolveConfiguredVariants() {
+        defaultVariant = parseVariant(defaultVariantName, "netex.export.dsj.default.variant");
+        apiDefaultVariant = parseVariant(apiDefaultVariantName, "netex.export.dsj.api.default.variant");
+    }
+
+    /**
+     * @throws IllegalStateException if the value does not name a {@link Variant}, naming the property at fault.
+     */
+    static Variant parseVariant(String value, String property) {
+        try {
+            return Variant.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new IllegalStateException("Invalid value '" + value + "' for property " + property
+                    + ": expected legacy or new");
+        }
+    }
+
     public Variant getDefaultVariant() {
-        return Variant.valueOf(defaultVariant.trim().toUpperCase());
+        return defaultVariant;
     }
 
     /**
      * Variant served by the timetable API when the request does not specify one.
      */
     public Variant getApiDefaultVariant() {
-        return Variant.valueOf(apiDefaultVariant.trim().toUpperCase());
+        return apiDefaultVariant;
     }
 
     /**
