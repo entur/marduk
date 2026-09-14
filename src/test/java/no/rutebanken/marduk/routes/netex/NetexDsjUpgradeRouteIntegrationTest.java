@@ -83,6 +83,23 @@ class NetexDsjUpgradeRouteIntegrationTest extends MardukRouteBuilderIntegrationT
         assertThat(new String(upgraded.get(NETEX_1_16_ENTRY), StandardCharsets.UTF_8)).contains("version=\"1.16:");
     }
 
+    /**
+     * The nightly validation reuses a stored dataset without classifying it, so its exchange carries no file type.
+     */
+    @Test
+    void unclassifiedDatasetsAreUpgraded() throws Exception {
+        String fileHandle = "inbound/received/rb_rut/netex-unclassified.zip";
+        internalInMemoryBlobStoreRepository.uploadBlob(fileHandle, new ByteArrayInputStream(datasetWithFilesToUpgrade));
+
+        Map<String, Object> headers = headers(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, fileHandle, FileType.NETEXPROFILE);
+        headers.remove(Constants.FILE_TYPE);
+        Exchange result = upgradeIfNeeded.send(upgradeIfNeeded.getDefaultEndpoint(), e -> e.getIn().setHeaders(headers));
+
+        assertThat(result.getException()).isNull();
+        Map<String, byte[]> upgraded = unzip(internalBlob(fileHandle));
+        assertUpgraded(new String(upgraded.get(NETEX_1_15_ENTRY), StandardCharsets.UTF_8));
+    }
+
     @Test
     void datasetsWithoutFilesOlderThanNetex116AreKeptAsIs() throws Exception {
         String fileHandle = "inbound/received/rb_rut/netex-1.16.zip";

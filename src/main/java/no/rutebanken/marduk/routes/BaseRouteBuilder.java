@@ -246,6 +246,14 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
 
     /**
+     * Rethrow the exception caught by the enclosing doCatch(), so that a step that reported a failure still fails.
+     */
+    protected void rethrowCaughtException(Exchange e) throws Exception {
+        Exception caught = e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class);
+        throw caught != null ? caught : new MardukException("Route " + e.getFromRouteId() + " failed");
+    }
+
+    /**
      * Quartz should only trigger if singleton route is started, this node is the cluster leader for the route and fireTime is (almost) same as scheduledFireTime.
      * <p>
      * To avoid multiple firings in cluster and re-firing as route is resumed upon change of leadership.

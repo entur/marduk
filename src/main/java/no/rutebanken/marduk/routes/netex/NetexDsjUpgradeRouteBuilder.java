@@ -30,12 +30,15 @@ import java.io.InputStream;
 import static no.rutebanken.marduk.Constants.*;
 
 /**
- * Upgrade the pre-1.16 NeTEx files of an uploaded dataset to NeTEx 1.16 once the import pipeline works with NeTEx 1.16.
+ * Upgrade the pre-1.16 NeTEx files of a dataset to NeTEx 1.16 once the import pipeline works with NeTEx 1.16.
  * <p>
  * Only the datasets of the codespaces whose DatedServiceJourneys carry replacement information
  * (see {@link NetexDsjExportConfig#hasDsjReplacements(String)}) are concerned: the other datasets are accepted as is.
- * The upgraded dataset replaces the uploaded file in the internal bucket, so that the rest of the pipeline
+ * The upgraded dataset replaces the stored file in the internal bucket, so that the rest of the pipeline
  * (pre-validation, import, export) works on a NeTEx 1.16 dataset.
+ * <p>
+ * Called both when a provider uploads a dataset and when the nightly validation reuses the dataset stored by the
+ * previous upload, which may predate the switch to NeTEx 1.16.
  */
 @Component
 public class NetexDsjUpgradeRouteBuilder extends BaseRouteBuilder {
@@ -54,9 +57,9 @@ public class NetexDsjUpgradeRouteBuilder extends BaseRouteBuilder {
     public void configure() throws Exception {
         super.configure();
 
-        // Called after the classification of an uploaded file, with FILE_HANDLE pointing to the file in the
-        // internal bucket. No-op unless the upgrade is enabled, the file is a NeTEx dataset and its codespace
-        // produces DatedServiceJourney replacement information.
+        // Called after the classification of an uploaded file and by the nightly validation, with FILE_HANDLE
+        // pointing to the file in the internal bucket. No-op unless the upgrade is enabled, the file is a NeTEx
+        // dataset and its codespace produces DatedServiceJourney replacement information.
         from("direct:upgradeNetexDatasetIfNeeded")
                 .filter(this::requiresUpgradeCheck)
                 .to("direct:upgradeNetexDataset")
@@ -87,12 +90,22 @@ public class NetexDsjUpgradeRouteBuilder extends BaseRouteBuilder {
 
     private boolean requiresUpgradeCheck(Exchange e) {
         return netexDsjExportConfig.isUpgradeEnabled()
-                && FileType.NETEXPROFILE.name().equals(e.getIn().getHeader(FILE_TYPE, String.class))
+                && isNetexOrUnclassified(e)
                 && netexDsjExportConfig.hasDsjReplacements(referentialFor(e));
     }
 
     /**
-     * The referential of the uploaded file: the CHOUETTE_REFERENTIAL header when present (files uploaded through
+     * FILE_TYPE is set by the classification of an uploaded file. The nightly validation reuses a dataset that is
+     * already stored and never classifies it, so its exchange carries no FILE_TYPE: an absent header is not a reason
+     * to skip the upgrade, the codespace decides. A header naming another type (GTFS, ...) still skips it.
+     */
+    private static boolean isNetexOrUnclassified(Exchange e) {
+        String fileType = e.getIn().getHeader(FILE_TYPE, String.class);
+        return fileType == null || FileType.NETEXPROFILE.name().equals(fileType);
+    }
+
+    /**
+     * The referential of the dataset: the CHOUETTE_REFERENTIAL header when present (files uploaded through
      * the HTTP endpoints), otherwise the referential of the provider identified by the PROVIDER_ID header.
      */
     private String referentialFor(Exchange e) {

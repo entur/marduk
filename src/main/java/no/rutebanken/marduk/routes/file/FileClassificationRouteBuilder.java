@@ -195,6 +195,7 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                     return mardukInternalBlobStoreService.blobExists(fileHandle);
                 })
                 .log(LoggingLevel.INFO, correlation() + "File with file handle ${header." + FILE_HANDLE + "} found in blob store. Triggering nightly prevalidation.")
+                .to("direct:upgradeNetexDatasetForNightlyValidation")
                 .to("direct:copyInternalBlobToValidationBucket")
                 .to("direct:setNetexValidationProfile")
                 .setHeader(VALIDATION_STAGE_HEADER, constant(VALIDATION_STAGE_NIGHTLY_VALIDATION))
@@ -210,6 +211,26 @@ public class FileClassificationRouteBuilder extends BaseRouteBuilder {
                 .to("direct:triggerChouetteValidationLevel1ForProvider")
                 .end()
                 .routeId("antu-netex-nightly-validation");
+
+        // The nightly validation reuses the dataset stored by the last upload, which may predate the switch to
+        // NeTEx 1.16: it must be upgraded before it is copied to the validation bucket, exactly like an uploaded
+        // dataset (see NetexDsjUpgradeRouteBuilder). A failed upgrade fails this provider's nightly run: validating
+        // and re-importing the stored pre-1.16 dataset is what the upgrade exists to prevent, since a NeTEx 1.16
+        // Chouette drops its DatedServiceJourney replacement references silently. There is therefore no fallback
+        // to the stored dataset.
+        // The doTry/doCatch is in its own route so that it is not nested in the choice() of the calling route, and
+        // because an onException on the calling route would not see this failure: it is raised in another route,
+        // whose error handler marks the exchange as failure-handled before it returns here.
+        from("direct:upgradeNetexDatasetForNightlyValidation")
+                .doTry()
+                    .to("direct:upgradeNetexDatasetIfNeeded")
+                .doCatch(Exception.class)
+                    .log(LoggingLevel.ERROR, correlation() + "Failed to upgrade ${header." + FILE_HANDLE + "} to NeTEx 1.16 before the nightly validation: ${exception.message}")
+                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.PREVALIDATION).state(JobEvent.State.FAILED).build())
+                    .to("direct:updateStatus")
+                    .process(this::rethrowCaughtException)
+                .end()
+                .routeId("antu-netex-nightly-validation-upgrade");
 
         from("direct:setNetexValidationProfile")
                 .choice()
