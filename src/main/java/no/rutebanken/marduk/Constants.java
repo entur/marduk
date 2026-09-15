@@ -47,6 +47,12 @@ public final class Constants {
     public static final String CURRENT_PREVALIDATED_NETEX_FILENAME = "netex.zip";
     public static final String PREVALIDATED_NETEX_METADATA_FILENAME = "netex.metadata.json";
 
+    /**
+     * Postfix of the copy of a dataset kept as uploaded, before it was upgraded to NeTEx 1.16
+     * (netex.zip -> netex-original-v115.zip). See NetexDsjUpgradeRouteBuilder.
+     */
+    public static final String ORIGINAL_NETEX_V115_FILE_NAME_POSTFIX = "-original-v115";
+
     public static final String GRAPH_COMPATIBILITY_VERSION = "RutebankenGraphCompatibilityVersion";
 
     public static final String OTP2_GRAPH_OBJ = "Graph-otp2.obj";

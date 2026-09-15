@@ -81,6 +81,29 @@ class NetexDsjUpgradeRouteIntegrationTest extends MardukRouteBuilderIntegrationT
         // a file declaring a version older than 1.15 is upgraded as well
         assertThat(new String(upgraded.get(OLD_NETEX_ENTRY), StandardCharsets.UTF_8)).contains("version=\"1.16\"");
         assertThat(new String(upgraded.get(NETEX_1_16_ENTRY), StandardCharsets.UTF_8)).contains("version=\"1.16:");
+        // the dataset as uploaded is kept next to the upgraded one
+        assertThat(internalBlob("inbound/received/rb_rut/netex-original-v115.zip")).isEqualTo(datasetWithFilesToUpgrade);
+    }
+
+    /**
+     * The backup is the dataset currently stored, not the first one ever uploaded: a later upload replaces it.
+     */
+    @Test
+    void aNewUploadReplacesTheBackupOfThePreviousOne() throws Exception {
+        String fileHandle = "inbound/received/rb_rut/netex.zip";
+        String backupHandle = "inbound/received/rb_rut/netex-original-v115.zip";
+        internalInMemoryBlobStoreRepository.uploadBlob(fileHandle, new ByteArrayInputStream(datasetWithFilesToUpgrade));
+        upgradeIfNeeded.send(upgradeIfNeeded.getDefaultEndpoint(), e -> e.getIn().setHeaders(headers(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, fileHandle, FileType.NETEXPROFILE)));
+        assertThat(internalBlob(backupHandle)).isEqualTo(datasetWithFilesToUpgrade);
+
+        byte[] secondUpload = zip(Map.of(NETEX_1_15_ENTRY, Files.readAllBytes(NETEX_1_15_FIXTURE)));
+        internalInMemoryBlobStoreRepository.uploadBlob(fileHandle, new ByteArrayInputStream(secondUpload));
+
+        Exchange result = upgradeIfNeeded.send(upgradeIfNeeded.getDefaultEndpoint(), e -> e.getIn().setHeaders(headers(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, fileHandle, FileType.NETEXPROFILE)));
+
+        assertThat(result.getException()).isNull();
+        assertThat(internalBlob(backupHandle)).isEqualTo(secondUpload);
+        assertUpgraded(new String(unzip(internalBlob(fileHandle)).get(NETEX_1_15_ENTRY), StandardCharsets.UTF_8));
     }
 
     /**
@@ -109,6 +132,7 @@ class NetexDsjUpgradeRouteIntegrationTest extends MardukRouteBuilderIntegrationT
 
         assertThat(result.getException()).isNull();
         assertThat(internalBlob(fileHandle)).isEqualTo(datasetWithoutFilesToUpgrade);
+        assertNoBackup("inbound/received/rb_rut/netex-1.16-original-v115.zip");
     }
 
     @Test
@@ -120,6 +144,7 @@ class NetexDsjUpgradeRouteIntegrationTest extends MardukRouteBuilderIntegrationT
 
         assertThat(result.getException()).isNull();
         assertThat(internalBlob(fileHandle)).isEqualTo(datasetWithFilesToUpgrade);
+        assertNoBackup("inbound/received/rb_atb/netex-original-v115.zip");
     }
 
     @Test
@@ -131,6 +156,7 @@ class NetexDsjUpgradeRouteIntegrationTest extends MardukRouteBuilderIntegrationT
 
         assertThat(result.getException()).isNull();
         assertThat(internalBlob(fileHandle)).isEqualTo(datasetWithFilesToUpgrade);
+        assertNoBackup("inbound/received/rb_rut/gtfs-original-v115.zip");
     }
 
     private static Map<String, Object> headers(String referential, String fileHandle, FileType fileType) {
@@ -141,6 +167,13 @@ class NetexDsjUpgradeRouteIntegrationTest extends MardukRouteBuilderIntegrationT
         headers.put(Constants.FILE_HANDLE, fileHandle);
         headers.put(Constants.FILE_TYPE, fileType.name());
         return headers;
+    }
+
+    /**
+     * A dataset that is not upgraded is not overwritten either, so there is nothing to keep a copy of.
+     */
+    private void assertNoBackup(String backupPath) {
+        assertThat(internalInMemoryBlobStoreRepository.getBlob(backupPath)).as("Unexpected backup %s", backupPath).isNull();
     }
 
     private byte[] internalBlob(String path) throws java.io.IOException {

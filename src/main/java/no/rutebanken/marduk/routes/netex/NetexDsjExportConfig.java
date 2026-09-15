@@ -27,6 +27,7 @@ import java.util.Locale;
 
 import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_OUTBOUND;
 import static no.rutebanken.marduk.Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+import static no.rutebanken.marduk.Constants.ORIGINAL_NETEX_V115_FILE_NAME_POSTFIX;
 
 /**
  * Configuration of the dual NeTEx export produced during the transition to the NeTEx 1.16 DatedServiceJourney
@@ -310,6 +311,22 @@ public class NetexDsjExportConfig {
      */
     public static String legacyOriginalDatasetStagingPath(String originalDatasetPath) {
         return originalDatasetPathIn(Constants.BLOBSTORE_PATH_DSJ_LEGACY_ORIGINAL_DATASET, originalDatasetPath);
+    }
+
+    /**
+     * Path of the copy of a dataset kept as uploaded, before it is overwritten by its NeTEx 1.16 version: the same
+     * folder of the same bucket, with the file name postfixed by {@code -original-v115}
+     * ({@code inbound/received/rb_vyg/netex.zip} -> {@code inbound/received/rb_vyg/netex-original-v115.zip}).
+     * <p>
+     * The postfix is inserted before the extension of the file name, if it has one. A dot in a folder name is not
+     * an extension, hence the comparison with the position of the last separator.
+     */
+    public static String originalV115BackupPath(@Header(Constants.FILE_HANDLE) String fileHandle) {
+        int lastSeparator = fileHandle.lastIndexOf('/');
+        int lastDot = fileHandle.lastIndexOf('.');
+        return lastDot > lastSeparator
+                ? fileHandle.substring(0, lastDot) + ORIGINAL_NETEX_V115_FILE_NAME_POSTFIX + fileHandle.substring(lastDot)
+                : fileHandle + ORIGINAL_NETEX_V115_FILE_NAME_POSTFIX;
     }
 
     public static String aggregatedNetexFileName(String referential) {
