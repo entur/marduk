@@ -44,6 +44,7 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
 
     private static final String PROP_DSJ_EXPORT_FOLDER = "RutebankenDsjExportFolder";
     private static final String PROP_NEW_EXPORT_EXISTS = "RutebankenDsjNewExportExists";
+    private static final String PROP_SAVED_BODY = "RutebankenDsjSavedBody";
     private static final String PROP_SAVED_FILE_HANDLE = "RutebankenDsjSavedFileHandle";
     private static final String PROP_SAVED_FILE_VERSION = "RutebankenDsjSavedFileVersion";
     private static final String PROP_SAVED_TARGET_FILE_HANDLE = "RutebankenDsjSavedTargetFileHandle";
@@ -155,6 +156,7 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                 .validate(header(CHOUETTE_REFERENTIAL).isNotNull())
                 .process(this::defaultUsernameToSystem)
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Downgrading the NeTEx blocks export of ${header." + CHOUETTE_REFERENTIAL + "} to NeTEx 1.15")
+                .setProperty(PROP_SAVED_BODY, body())
                 .setProperty(PROP_SAVED_FILE_HANDLE, header(FILE_HANDLE))
                 .setProperty(PROP_DSJ_EXPORT_FOLDER, simple(netexDsjExportConfig.getDownloadDirectory() + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}"))
                 .doTry()
@@ -169,7 +171,8 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                 .doFinally()
                     .process(e -> deleteDirectoryRecursively(e.getProperty(PROP_DSJ_EXPORT_FOLDER, String.class)))
                     .setHeader(FILE_HANDLE, exchangeProperty(PROP_SAVED_FILE_HANDLE))
-                    .setBody(constant(""))
+                    .setBody(exchangeProperty(PROP_SAVED_BODY))
+                    .removeProperty(PROP_SAVED_BODY)
                 .end()
                 .routeId("netex-dsj-export-do-distribute-blocks");
 
@@ -219,6 +222,7 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
         from("direct:doDistributeOriginalDatasetToNisaba")
                 .validate(header(TARGET_FILE_HANDLE).isNotNull())
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Storing the original dataset ${header." + FILE_HANDLE + "} in the DatedServiceJourney folders of Nisaba")
+                .setProperty(PROP_SAVED_BODY, body())
                 .setProperty(PROP_SAVED_FILE_HANDLE, header(FILE_HANDLE))
                 .setProperty(PROP_SAVED_TARGET_FILE_HANDLE, header(TARGET_FILE_HANDLE))
                 .setProperty(PROP_SAVED_FILE_VERSION, header(FILE_VERSION))
@@ -238,7 +242,10 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                     .setHeader(TARGET_FILE_HANDLE, exchangeProperty(PROP_SAVED_TARGET_FILE_HANDLE))
                     // direct:uploadInternalBlob overwrites FILE_VERSION with the generation of the staged copy
                     .setHeader(FILE_VERSION, exchangeProperty(PROP_SAVED_FILE_VERSION))
-                    .setBody(constant(""))
+                    // this route is a side step: it must leave the exchange as it found it. The caller may carry a
+                    // serialised JobEvent in the body, which direct:updateStatus publishes and nothing else.
+                    .setBody(exchangeProperty(PROP_SAVED_BODY))
+                    .removeProperty(PROP_SAVED_BODY)
                 .end()
                 .routeId("netex-dsj-export-do-distribute-original-to-nisaba");
 

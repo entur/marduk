@@ -111,6 +111,47 @@ class AntuNetexValidationStatusRouteBuilderTest extends MardukRouteBuilderIntegr
                 && JobEvent.State.OK.equals(je.getState())));
     }
 
+    /**
+     * The blocks post-validation must report OK to Nabu in both configurations. This class runs with the
+     * default chouette.enablePostValidation=true, so the filtered block of the branch is skipped entirely:
+     * it pins the job event to a position outside that filter. The flag-off variant, where the branch also
+     * copies the blobs and stores the legacy NeTEx 1.15 copy, is covered by
+     * {@link AntuNetexBlocksPostValidationStatusRouteBuilderTest}.
+     */
+    @Test
+    void testBlocksPostValidationReportsOkWhenPostValidationIsEnabled() throws Exception {
+
+        AdviceWith.adviceWith(context, "antu-netex-validation-complete", a -> a
+                .interceptSendToEndpoint("direct:updateStatus")
+                .skipSendToOriginalEndpoint()
+                .to("mock:updateStatus"));
+
+        // we must manually start when we are done with all the advice with
+        context.start();
+
+        updateStatus.expectedMessageCount(1);
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put(VALIDATION_STAGE_HEADER, VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION);
+        headers.put(VALIDATION_DATASET_FILE_HANDLE_HEADER, "testFileName");
+        headers.put(VALIDATION_CORRELATION_ID_HEADER, "testCorrelationId");
+        headers.put(DATASET_REFERENTIAL, TestConstants.CHOUETTE_REFERENTIAL_RB_RUT);
+        sendBodyAndHeadersToPubSub(importTemplate, STATUS_VALIDATION_OK, headers);
+
+        updateStatus.assertIsSatisfied();
+
+        String published = updateStatus.getExchanges().getFirst().getIn().getBody(String.class);
+        assertNotNull(published);
+        assertFalse(published.isBlank(), "direct:updateStatus publishes the body and nothing else");
+
+        JobEvent jobEvent = JobEvent.fromString(published);
+        assertEquals(JobEvent.JobDomain.TIMETABLE, jobEvent.getDomain());
+        assertEquals(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION.name(), jobEvent.getAction());
+        assertEquals(JobEvent.State.OK, jobEvent.getState());
+        // the filtered block is skipped, so the DSJ distribution never defaults the username to the system
+        assertNull(jobEvent.getUsername());
+    }
+
     @Test
     void testAntuStatusValidationFailedShouldStopMergeWithFlexibleLine() throws Exception {
 

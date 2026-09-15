@@ -176,10 +176,17 @@ class NetexDsjExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
 
         Map<String, Object> headers = new java.util.HashMap<>(distributeHeaders(TestConstants.PROVIDER_ID_RB_RUT, referential, "corr-4"));
         headers.put(Constants.FILE_HANDLE, "some/validated/file.zip");
-        Exchange result = distributeBlocks.send(distributeBlocks.getDefaultEndpoint(), e -> e.getIn().setHeaders(headers));
+        Exchange result = distributeBlocks.send(distributeBlocks.getDefaultEndpoint(), e -> {
+            e.getIn().setHeaders(headers);
+            // direct:antuNetexValidationComplete carries the serialised job event in the body
+            e.getIn().setBody("the body of the caller");
+        });
 
         assertThat(result.getException()).isNull();
         assertThat(result.getIn().getHeader(Constants.FILE_HANDLE)).as("FILE_HANDLE is restored for the caller").isEqualTo("some/validated/file.zip");
+        assertThat(result.getIn().getBody(String.class))
+                .as("the body is restored for the caller: direct:updateStatus publishes it and nothing else")
+                .isEqualTo("the body of the caller");
         // the export produced by the pipeline is untouched
         assertThat(internalBlob(netexDsjExportConfig.blocksExportPath(referential))).isEqualTo(sourceArchive);
         Map<String, byte[]> legacyEntries = unzip(internalBlob(netexDsjExportConfig.legacyBlocksExportPath(referential)));
@@ -245,11 +252,17 @@ class NetexDsjExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
         headers.put(Constants.TARGET_FILE_HANDLE, nisabaFileHandle);
         // the exchange bucket stands in for the Nisaba bucket
         headers.put(Constants.TARGET_CONTAINER, exchangeContainerName);
-        Exchange result = distributeOriginal.send(distributeOriginal.getDefaultEndpoint(), e -> e.getIn().setHeaders(headers));
+        Exchange result = distributeOriginal.send(distributeOriginal.getDefaultEndpoint(), e -> {
+            e.getIn().setHeaders(headers);
+            e.getIn().setBody("the body of the caller");
+        });
 
         assertThat(result.getException()).isNull();
         assertThat(result.getIn().getHeader(Constants.FILE_HANDLE)).isEqualTo(originalFileHandle);
         assertThat(result.getIn().getHeader(Constants.TARGET_FILE_HANDLE)).isEqualTo(nisabaFileHandle);
+        assertThat(result.getIn().getBody(String.class))
+                .as("the body is restored for the caller, like the file handles above")
+                .isEqualTo("the body of the caller");
         assertThat(netexDsjExportConfig.originalDatasetPublicationPath(nisabaFileHandle))
                 .isEqualTo("imported-dsj-new/rb_rut/rb_rut_2026-09-10T10_00_00.000.zip");
 

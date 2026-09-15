@@ -267,13 +267,13 @@ public class AntuNetexValidationStatusRouteBuilder extends AbstractChouetteRoute
                 .endChoice()
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION))
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION).state(JobEvent.State.OK).build())
                 .filter(PredicateBuilder.not(simple("{{chouette.enablePostValidation:true}}")))
                 .setHeader(TARGET_FILE_HANDLE, simple(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "${header." + CHOUETTE_REFERENTIAL + "}-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME))
                 .to("direct:copyInternalBlobInBucket")
                 // legacy copy of the blocks export for the timetable API (no-op when the dual DatedServiceJourney export is disabled)
                 .to("direct:distributeDsjNetexBlocksExport")
                 .end()
+                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION).state(JobEvent.State.OK).build())
                 .endChoice()
 
                 .when(header(VALIDATION_STAGE_HEADER).isEqualTo(VALIDATION_STAGE_FLEX_POSTVALIDATION))
