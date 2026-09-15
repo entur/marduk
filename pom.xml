@@ -31,6 +31,7 @@
         <commons-io.version>2.22.0</commons-io.version>
         <commons-csv.version>1.14.1</commons-csv.version>
         <zt-zip.version>1.18.2</zt-zip.version>
+        <commons-compress.version>1.28.0</commons-compress.version>
         <json-unit.version>6.0.1</json-unit.version>
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
@@ -276,6 +277,16 @@
             <artifactId>zt-zip</artifactId>
             <version>${zt-zip.version}</version>
             <type>jar</type>
+        </dependency>
+
+        <!--
+          Raw (already-deflated) zip entry copy for the aggregated NeTEx export.
+          ZipFile#getRawInputStream / ZipArchiveOutputStream#addRawArchiveEntry have no java.util.zip equivalent.
+        -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>${commons-compress.version}</version>
         </dependency>
 
         <dependency>

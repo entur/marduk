@@ -70,6 +70,13 @@ public class BlobStoreRoute extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.")
                 .routeId("blobstore-download");
 
+        from("direct:getBlobContent")
+                .to(logDebugShowAll())
+                .bean(mardukPublicBlobStoreService, "getBlobContent")
+                .to(logDebugShowAll())
+                .log(LoggingLevel.INFO, correlation() + "Returning from fetching file ${header." + FILE_HANDLE + "} from blob store.")
+                .routeId("blobstore-download-content");
+
         from("direct:findBlob")
                 .to(logDebugShowAll())
                 .bean(mardukPublicBlobStoreService, "findBlob")

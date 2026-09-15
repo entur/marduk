@@ -46,5 +46,22 @@ public interface MardukBlobStoreRepository  extends BlobStoreRepository {
      */
     BlobStoreFiles listBlobsFlat(String prefix);
 
+    /**
+     * Return the content of a blob, or {@code null} if it does not exist.
+     * <p>
+     * The default implementation reads the stream returned by {@link #getBlob(String)}. The GCS implementation
+     * overrides it to download the blob once: {@code BlobStoreHelper#getBlobInputStream} calls
+     * {@code Blob#getContent()} twice, once to compute an MD5 over bytes it then discards and once to build the
+     * stream that is actually returned, so every blob is fetched twice and the bytes handed to the caller are the
+     * ones that were never checked.
+     */
+    default byte[] getBlobContent(String name) {
+        try (java.io.InputStream inputStream = getBlob(name)) {
+            return inputStream == null ? null : inputStream.readAllBytes();
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+    }
+
 
 }
