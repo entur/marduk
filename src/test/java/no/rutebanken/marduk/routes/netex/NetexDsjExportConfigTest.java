@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.netex;
 
 import org.junit.jupiter.api.Test;
 
+import static no.rutebanken.marduk.routes.netex.NetexDsjExportConfig.originalV115BackupPath;
 import static no.rutebanken.marduk.routes.netex.NetexDsjExportConfig.parseVariant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -63,5 +64,35 @@ class NetexDsjExportConfigTest {
                 .hasMessageContaining("netex.export.dsj.default.variant");
         assertThatThrownBy(() -> parseVariant("bogus", "netex.export.dsj.api.default.variant"))
                 .hasMessageContaining("netex.export.dsj.api.default.variant");
+    }
+
+    @Test
+    void theBackupOfAnUploadedDatasetKeepsItsExtension() {
+        assertThat(originalV115BackupPath("inbound/received/rb_vyg/netex.zip"))
+                .isEqualTo("inbound/received/rb_vyg/netex-original-v115.zip");
+    }
+
+    @Test
+    void theBackupOfADatasetWithoutExtensionIsJustPostfixed() {
+        assertThat(originalV115BackupPath("inbound/received/rb_vyg/netex"))
+                .isEqualTo("inbound/received/rb_vyg/netex-original-v115");
+    }
+
+    /**
+     * A dot in a folder name is not an extension.
+     */
+    @Test
+    void aDotInAFolderNameIsNotMistakenForAnExtension() {
+        assertThat(originalV115BackupPath("inbound/received/rb_vyg.v2/netex"))
+                .isEqualTo("inbound/received/rb_vyg.v2/netex-original-v115");
+    }
+
+    /**
+     * Only the last extension is separated, which is what the datasets, always zip archives, need.
+     */
+    @Test
+    void onlyTheLastExtensionIsSeparated() {
+        assertThat(originalV115BackupPath("inbound/received/rb_vyg/netex.2026-01-01.zip"))
+                .isEqualTo("inbound/received/rb_vyg/netex.2026-01-01-original-v115.zip");
     }
 }

@@ -37,6 +37,18 @@ import static no.rutebanken.marduk.Constants.*;
  * The upgraded dataset replaces the stored file in the internal bucket, so that the rest of the pipeline
  * (pre-validation, import, export) works on a NeTEx 1.16 dataset.
  * <p>
+ * Since the upgrade overwrites the stored file, the dataset as it was uploaded is first copied next to it, under the
+ * same name postfixed by {@code -original-v115} ({@code netex.zip} -> {@code netex-original-v115.zip}, see
+ * {@link NetexDsjExportConfig#originalV115BackupPath(String)}), so that the bytes the provider submitted remain
+ * available while the transition lasts. The copy is taken only when the upgrade actually converted a file: a dataset
+ * that is already NeTEx 1.16 is left alone and leaves no copy. It is a regular file of the provider's folder, listed
+ * and downloadable through the timetable API like the dataset itself, and a later upload replaces it, so that it
+ * always mirrors the dataset currently stored.
+ * <p>
+ * Re-importing the copy itself upgrades it in place and backs it up under a twice-postfixed name. This is accepted
+ * rather than guarded against: skipping the copy for an already-postfixed name would leave a re-imported original
+ * unpreserved, and refusing to overwrite an existing copy would pin it to the first upload for good.
+ * <p>
  * Called both when a provider uploads a dataset and when the nightly validation reuses the dataset stored by the
  * previous upload, which may predate the switch to NeTEx 1.16.
  */
@@ -82,10 +94,22 @@ public class NetexDsjUpgradeRouteBuilder extends BaseRouteBuilder {
         // Sub-route to avoid a filter() nested in the doTry() of the calling route.
         from("direct:replaceUpgradedNetexDataset")
                 .filter(exchangeProperty(PROP_DSJ_UPGRADED).isEqualTo(true))
+                    .to("direct:backupOriginalNetexDataset")
                     .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Replacing ${header." + FILE_HANDLE + "} with the dataset upgraded to NeTEx 1.16")
                     .to("direct:uploadInternalBlob")
                 .end()
                 .routeId("netex-dsj-upgrade-replace");
+
+        // A server-side copy, taken while the stored file still holds the dataset as it was uploaded: the dataset is
+        // neither downloaded nor uploaded a second time, and the body, the upgraded archive waiting to be uploaded,
+        // is left untouched. Runs in the doTry() of the calling route, so a failed copy fails the upgrade before the
+        // original is overwritten.
+        from("direct:backupOriginalNetexDataset")
+                .setHeader(TARGET_FILE_HANDLE).method(netexDsjExportConfig, "originalV115BackupPath")
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Keeping ${header." + FILE_HANDLE + "} as uploaded in ${header." + TARGET_FILE_HANDLE + "} before upgrading it to NeTEx 1.16")
+                .to("direct:copyInternalBlobInBucket")
+                .removeHeader(TARGET_FILE_HANDLE)
+                .routeId("netex-dsj-upgrade-backup-original");
     }
 
     private boolean requiresUpgradeCheck(Exchange e) {

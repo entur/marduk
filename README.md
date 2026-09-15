@@ -55,6 +55,8 @@ Only the datasets of the codespaces listed in `netex.dsj.codespaces` (VYG, GOA, 
 
 Once the import pipeline works with NeTEx 1.16 (`netex.import.dsj.upgrade.enabled`), datasets uploaded by these codespaces that still contain NeTEx 1.15 files are upgraded to NeTEx 1.16 with the `NeTExUpgrader` right after the file classification; the upgraded dataset replaces the uploaded file.
 
+Since the upgrade overwrites the uploaded file, the dataset is first copied as it was uploaded next to the upgraded one, in the same folder of the internal bucket, under the same name postfixed by `-original-v115` (`inbound/received/rb_vyg/netex.zip` → `inbound/received/rb_vyg/netex-original-v115.zip`). The copy is only taken when the upgrade actually converted a file, so a dataset already in NeTEx 1.16 leaves none; it is listed and downloaded through the timetable API like any other file of the provider, and the next upgrade of that dataset replaces it.
+
 The dual export is controlled by `netex.export.dsj.enabled`. The current exports of all providers can be (re)distributed to the three folders (and the private exports downgraded) with `POST /timetable_admin/export/netex/dsj` (or `POST /timetable_admin/{providerId}/export/netex/dsj` for a single provider).
 
 # GTFS export
