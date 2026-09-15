@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.repository;
 
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.Provider;
 import org.apache.commons.lang3.StringUtils;
@@ -42,6 +43,20 @@ public class GcsMardukBlobStoreRepository extends GcsBlobStoreRepository impleme
     public GcsMardukBlobStoreRepository(com.google.cloud.storage.Storage storage, ProviderRepository providerRepository) {
         super(storage);
         this.providerRepository = providerRepository;
+    }
+
+    /**
+     * Download the blob once, instead of the two downloads that the shared helper performs.
+     * <p>
+     * The integrity of what is returned is not weakened: the helper hashed the bytes of its first download and then
+     * returned those of a second, unchecked one. Every consumer of this method reads the bytes as a zip archive,
+     * whose per-entry CRC-32 covers exactly the bytes that are used.
+     */
+    @Override
+    public byte[] getBlobContent(String name) {
+        BlobId blobId = BlobId.of(containerName(), name);
+        Blob blob = storage().get(blobId);
+        return blob == null ? null : blob.getContent();
     }
 
     @Override
