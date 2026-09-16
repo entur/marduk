@@ -53,6 +53,17 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
      * sets it: a batch whose result is merged into an aggregated export must fail rather than skip a provider.
      */
     static final String PROP_IGNORE_DISTRIBUTION_FAILURES = "RutebankenDsjIgnoreDistributionFailures";
+    /**
+     * Whether the distribution reports its progress as a job event of the provider. Only the batches clear it: they
+     * distribute every provider in a single exchange, so their job events would all carry the correlation id of the
+     * batch, and Nabu, which aggregates job events by correlation id, would merge them into one job attributed to
+     * whichever provider was distributed first. A batch is a system action that belongs to no provider's import job.
+     */
+    static final String PROP_REPORT_JOB_EVENTS = "RutebankenDsjReportJobEvents";
+    /**
+     * The state reported by direct:reportDsjNetexExportJobEvent.
+     */
+    private static final String PROP_JOB_EVENT_STATE = "RutebankenDsjJobEventState";
     private static final String DOWNGRADED_FILE_NAME = "legacy.zip";
     /**
      * Reported as the user of the job events of an export that no user triggered, typically an aggregated export
@@ -74,8 +85,8 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                 .validate(header(CHOUETTE_REFERENTIAL).isNotNull())
                 .process(this::defaultUsernameToSystem)
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Distributing the NeTEx export of ${header." + CHOUETTE_REFERENTIAL + "} to the legacy and new DatedServiceJourney export folders")
-                .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_LEGACY).state(JobEvent.State.STARTED).build())
-                .to("direct:updateStatus")
+                .setProperty(PROP_JOB_EVENT_STATE, constant(JobEvent.State.STARTED))
+                .to("direct:reportDsjNetexExportJobEvent")
                 .setProperty(PROP_DSJ_EXPORT_FOLDER, simple(netexDsjExportConfig.getDownloadDirectory() + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}"))
                 .doTry()
                     .to("direct:seedDsjNewNetexExportIfMissing")
@@ -83,12 +94,12 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                     .setHeader(FILE_HANDLE).method(netexDsjExportConfig, "defaultVariantSourcePath")
                     .setHeader(TARGET_FILE_HANDLE).method(netexDsjExportConfig, "defaultExportPath")
                     .to("direct:copyBlobInBucket")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_LEGACY).state(JobEvent.State.OK).build())
-                    .to("direct:updateStatus")
+                    .setProperty(PROP_JOB_EVENT_STATE, constant(JobEvent.State.OK))
+                    .to("direct:reportDsjNetexExportJobEvent")
                 .doCatch(Exception.class)
                     .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Failed to distribute the NeTEx export of ${header." + CHOUETTE_REFERENTIAL + "}: ${exception.message}")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_LEGACY).state(JobEvent.State.FAILED).build())
-                    .to("direct:updateStatus")
+                    .setProperty(PROP_JOB_EVENT_STATE, constant(JobEvent.State.FAILED))
+                    .to("direct:reportDsjNetexExportJobEvent")
                     // the default folder must not diverge from the other folders: fail the publication so that it is retried
                     .process(this::rethrowCaughtException)
                 .doFinally()
@@ -96,6 +107,21 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                 .end()
                 .setBody(constant(""))
                 .routeId("netex-dsj-export-distribute");
+
+        // Report the state carried by PROP_JOB_EVENT_STATE as an EXPORT_NETEX_LEGACY job event of the provider being
+        // distributed, unless the distribution runs as part of a batch (see PROP_REPORT_JOB_EVENTS).
+        // In its own route so that the filter is not nested in the doTry() of the calling routes, and so that the
+        // event is not even built when it is not reported: JobEvent.build() serialises the event into the body, and a
+        // body that direct:updateStatus never publishes would be left behind for the next step to trip over.
+        from("direct:reportDsjNetexExportJobEvent")
+                .filter(this::reportsJobEvents)
+                    .process(e -> JobEvent.providerJobBuilder(e)
+                            .timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_LEGACY)
+                            .state(e.getProperty(PROP_JOB_EVENT_STATE, JobEvent.State.class))
+                            .build())
+                    .to("direct:updateStatus")
+                .end()
+                .routeId("netex-dsj-export-report-job-event");
 
         // Legacy variant of the public export: downgraded for the codespaces whose datasets contain DatedServiceJourney
         // replacement information, a plain copy of the new variant for the others.
@@ -163,8 +189,8 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                     .to("direct:createLegacyDsjNetexBlocksExport")
                 .doCatch(Exception.class)
                     .log(LoggingLevel.ERROR, getClass().getName(), correlation() + "Failed to downgrade the NeTEx blocks export of ${header." + CHOUETTE_REFERENTIAL + "}: ${exception.message}")
-                    .process(e -> JobEvent.providerJobBuilder(e).timetableAction(JobEvent.TimetableAction.EXPORT_NETEX_LEGACY).state(JobEvent.State.FAILED).build())
-                    .to("direct:updateStatus")
+                    .setProperty(PROP_JOB_EVENT_STATE, constant(JobEvent.State.FAILED))
+                    .to("direct:reportDsjNetexExportJobEvent")
                     // the timetable API cannot tell a stale legacy copy from a current one: fail the publication so
                     // that it is retried, rather than serving the previous copy as the current dataset.
                     .process(this::rethrowUnlessDistributionFailuresIgnored)
@@ -278,6 +304,9 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Distributing the NeTEx exports of all providers to the legacy and new DatedServiceJourney export folders")
                 // an export that cannot be distributed must not prevent the other providers from being processed
                 .setProperty(PROP_IGNORE_DISTRIBUTION_FAILURES, constant(true))
+                // the whole batch runs in one exchange: its job events would be aggregated into a single job (see
+                // PROP_REPORT_JOB_EVENTS)
+                .setProperty(PROP_REPORT_JOB_EVENTS, constant(false))
                 .process(e -> e.getIn().setBody(getPublishedProviders()))
                 .split(body())
                     .process(this::setProviderHeaders)
@@ -297,6 +326,9 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                 // lose that provider: a provider that cannot be distributed fails the aggregated export, which is
                 // then retried, rather than being skipped.
                 .setProperty(PROP_IGNORE_DISTRIBUTION_FAILURES, constant(false))
+                // the whole batch runs in the exchange of the aggregated export: its job events would be aggregated
+                // into a single job (see PROP_REPORT_JOB_EVENTS)
+                .setProperty(PROP_REPORT_JOB_EVENTS, constant(false))
                 .process(e -> e.getIn().setBody(getPublishedProviders()))
                 .split(body()).stopOnException()
                     .process(this::setProviderHeaders)
@@ -389,6 +421,14 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
     private void setLegacyOriginalDatasetTargetHeader(Exchange e) {
         String originalDatasetPath = e.getProperty(PROP_SAVED_TARGET_FILE_HANDLE, String.class);
         e.getIn().setHeader(TARGET_FILE_HANDLE, NetexDsjExportConfig.legacyOriginalDatasetPath(originalDatasetPath));
+    }
+
+    /**
+     * Whether the distribution reports its progress as a job event of the provider, true unless a batch cleared it
+     * (see {@link #PROP_REPORT_JOB_EVENTS}).
+     */
+    private boolean reportsJobEvents(Exchange e) {
+        return e.getProperty(PROP_REPORT_JOB_EVENTS, true, Boolean.class);
     }
 
     private void rethrowUnlessDistributionFailuresIgnored(Exchange e) throws Exception {

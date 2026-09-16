@@ -92,7 +92,7 @@ class NetexDsjExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
 
     @BeforeEach
     void prepare() throws Exception {
-        AdviceWith.adviceWith(context, "netex-dsj-export-distribute", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus"));
+        AdviceWith.adviceWith(context, "netex-dsj-export-report-job-event", a -> a.interceptSendToEndpoint("direct:updateStatus").skipSendToOriginalEndpoint().to("mock:updateStatus"));
         // stub the call to Chouette that provides the timestamp of the dataset uploaded to Nisaba
         AdviceWith.adviceWith(context, "chouette-copy-original-dataset", a -> a.interceptSendToEndpoint(chouetteUrl + "/*")
                 .skipSendToOriginalEndpoint()
@@ -398,6 +398,50 @@ class NetexDsjExportRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
         updateStatus.assertIsSatisfied();
         assertThat(jobStates()).containsExactly(JobEvent.State.STARTED, JobEvent.State.OK);
         assertThreeVariants(referential);
+    }
+
+    /**
+     * A batch distributes every provider in a single exchange, so all its job events would carry the correlation id of
+     * the batch and Nabu, which aggregates job events by correlation id, would merge them into one job attributed to
+     * whichever provider was distributed first. The batch reports nothing instead; the distribution itself is
+     * unaffected.
+     */
+    @Test
+    void theBatchDistributesWithoutReportingProviderJobEvents() throws Exception {
+        String referential = TestConstants.CHOUETTE_REFERENTIAL_RB_RUT;
+        mardukInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.newExportPath(referential), new ByteArrayInputStream(sourceArchive));
+        updateStatus.expectedMessageCount(0);
+
+        Exchange result = distributeIfPublished.send(distributeIfPublished.getDefaultEndpoint(), e -> {
+            e.getIn().setHeaders(distributeHeaders(TestConstants.PROVIDER_ID_RB_RUT, referential, "corr-batch"));
+            // set by direct:distributeAllDsjNetexExports and direct:distributeMissingDsjNetexExports for the whole batch
+            e.setProperty(NetexDsjExportRouteBuilder.PROP_REPORT_JOB_EVENTS, false);
+        });
+
+        assertThat(result.getException()).isNull();
+        updateStatus.assertIsSatisfied();
+        assertThreeVariants(referential);
+    }
+
+    /**
+     * A failed distribution reports nothing either when it runs in a batch: the failure is reported by the step that
+     * the batch is part of (the aggregated export), not as a job event of the provider.
+     */
+    @Test
+    void theBatchReportsNoJobEventWhenTheDistributionFails() throws Exception {
+        String referential = TestConstants.CHOUETTE_REFERENTIAL_RB_RUT;
+        // an export that cannot be downgraded
+        mardukInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.newExportPath(referential),
+                new ByteArrayInputStream("not a zip archive".getBytes(StandardCharsets.UTF_8)));
+        updateStatus.expectedMessageCount(0);
+
+        Exchange result = distributeIfPublished.send(distributeIfPublished.getDefaultEndpoint(), e -> {
+            e.getIn().setHeaders(distributeHeaders(TestConstants.PROVIDER_ID_RB_RUT, referential, "corr-batch-failure"));
+            e.setProperty(NetexDsjExportRouteBuilder.PROP_REPORT_JOB_EVENTS, false);
+        });
+
+        assertThat(result.getException()).as("the aggregated export must fail rather than lose the provider").isNotNull();
+        updateStatus.assertIsSatisfied();
     }
 
     private byte[] internalBlob(String path) throws IOException {

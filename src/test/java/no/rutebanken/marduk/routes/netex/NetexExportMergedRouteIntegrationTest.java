@@ -146,6 +146,9 @@ class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegratio
     void testExportMergedNetexDsjVariantsDistributesMissingProviderExports() throws Exception {
         AdviceWith.adviceWith(context, "otp2-netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
         AdviceWith.adviceWith(context, "otp2-netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        // the distribution of the missing exports must add no job event of its own: the two expected below are the
+        // STARTED and OK of the aggregated export itself
+        AdviceWith.adviceWith(context, "netex-dsj-export-report-job-event", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
         when(providerRepository.getProviders()).thenReturn(List.of(provider(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, TestConstants.PROVIDER_ID_RB_RUT, null)));
 
@@ -179,7 +182,6 @@ class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegratio
     void testExportMergedNetexDsjVariantsFailsWhenAProviderExportCannotBeDistributed() throws Exception {
         AdviceWith.adviceWith(context, "otp2-netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
         AdviceWith.adviceWith(context, "otp2-netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "netex-dsj-export-distribute", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
 
         when(providerRepository.getProviders()).thenReturn(List.of(provider(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, TestConstants.PROVIDER_ID_RB_RUT, null)));
 
