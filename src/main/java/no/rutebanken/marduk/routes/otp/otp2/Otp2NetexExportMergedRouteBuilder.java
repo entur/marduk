@@ -16,11 +16,13 @@
 
 package no.rutebanken.marduk.routes.otp.otp2;
 
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.file.RawZipMerger;
 import no.rutebanken.marduk.routes.netex.NetexDsjExportConfig;
 import no.rutebanken.marduk.routes.netex.NetexDsjExportConfig.Variant;
+import no.rutebanken.marduk.routes.netex.NetexDsjExportRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
@@ -79,7 +81,8 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
      */
     private static final String PROP_STOPS_ARCHIVE = "RutebankenNetexExportStopsArchive";
     /**
-     * The per-provider export file names to aggregate, read once for the whole export.
+     * The per-provider export file names to aggregate, derived once for the whole export from the snapshotted
+     * published providers.
      */
     private static final String PROP_PROVIDER_EXPORT_FILES = "RutebankenNetexExportProviderExportFiles";
     @Value("${otp2.netex.export.download.directory:files/netex/merged-otp2}")
@@ -116,10 +119,11 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
 
                 .setProperty(FOLDER_NAME, simple(localWorkingDirectory + "/${header." + CORRELATION_ID + "}_${date:now:yyyyMMddHHmmssSSS}"))
 
-                // read once, so that every variant aggregates the same providers: the provider cache is refreshed
-                // every few minutes, and a provider dropping out of it between two readings would silently leave its
-                // export out of an aggregate without being recorded as missing
-                .process(e -> e.setProperty(PROP_PROVIDER_EXPORT_FILES, getAggregatedNetexFiles()))
+                // read once, so that the distribution of the missing exports and every variant work on the same
+                // providers: the provider cache is refreshed every few minutes, and a provider dropping out of it
+                // between two readings would silently leave its export out of an aggregate without being recorded
+                // as missing
+                .process(this::snapshotPublishedProviders)
 
                 .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.TIMETABLE_PUBLISH).action(JobEvent.TimetableAction.EXPORT_NETEX_MERGED).fileName(netexExportStopsFilePrefix).state(JobEvent.State.STARTED).newCorrelationId().build())
                 .to(ExchangePattern.InOnly, "direct:updateStatus")
@@ -245,11 +249,16 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
 
     }
 
-    List<String> getAggregatedNetexFiles() {
-        return getProviderRepository().getProviders().stream()
-                       .filter(p -> p.getChouetteInfo().getMigrateDataToProvider() == null)
-                       .map(p -> p.getChouetteInfo().getReferential() + "-" + CURRENT_AGGREGATED_NETEX_FILENAME)
-                       .toList();
+    /**
+     * Snapshot the published providers and the file names of their exports for the whole aggregated export (see
+     * {@link NetexDsjExportRouteBuilder#PROP_PUBLISHED_PROVIDERS}).
+     */
+    private void snapshotPublishedProviders(Exchange e) {
+        List<Provider> providers = getPublishedProviders();
+        e.setProperty(NetexDsjExportRouteBuilder.PROP_PUBLISHED_PROVIDERS, providers);
+        e.setProperty(PROP_PROVIDER_EXPORT_FILES, providers.stream()
+                .map(p -> NetexDsjExportConfig.aggregatedNetexFileName(p.getChouetteInfo().getReferential()))
+                .toList());
     }
 
     @SuppressWarnings("unchecked")

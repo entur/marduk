@@ -65,6 +65,14 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
      */
     static final String PROP_REPORT_JOB_EVENTS = "RutebankenDsjReportJobEvents";
     /**
+     * The published providers the aggregated export is built from, snapshotted once by
+     * {@code direct:otp2ExportMergedNetex}. {@code direct:distributeMissingDsjNetexExports} checks these providers,
+     * and not the provider cache, so that the distribution and the aggregation reason about the same providers even
+     * if the cache is refreshed in between: a provider dropping out of the cache between the two would otherwise be
+     * neither distributed nor recorded as missing, and the aggregated export would silently lack it.
+     */
+    public static final String PROP_PUBLISHED_PROVIDERS = "RutebankenDsjPublishedProviders";
+    /**
      * The state reported by direct:reportDsjNetexExportJobEvent.
      */
     private static final String PROP_JOB_EVENT_STATE = "RutebankenDsjJobEventState";
@@ -337,7 +345,7 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                 // the whole batch runs in the exchange of the aggregated export: its job events would be aggregated
                 // into a single job (see PROP_REPORT_JOB_EVENTS)
                 .setProperty(PROP_REPORT_JOB_EVENTS, constant(false))
-                .process(e -> e.getIn().setBody(getProvidersMissingFromAVariantFolder()))
+                .process(e -> e.getIn().setBody(getProvidersMissingFromAVariantFolder(publishedProviders(e))))
                 .split(body()).stopOnException()
                     .process(this::setProviderHeaders)
                     .to("direct:distributeDsjNetexExportIfMissing")
@@ -463,24 +471,27 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
     }
 
     /**
-     * Providers whose dataset is published in the public bucket.
+     * The providers snapshotted by the aggregated export (see {@link #PROP_PUBLISHED_PROVIDERS}).
      */
-    private List<Provider> getPublishedProviders() {
-        return getProviderRepository().getProviders().stream()
-                .filter(p -> p.getChouetteInfo().getMigrateDataToProvider() == null)
-                .toList();
+    @SuppressWarnings("unchecked")
+    private static List<Provider> publishedProviders(Exchange e) {
+        List<Provider> providers = e.getProperty(PROP_PUBLISHED_PROVIDERS, List.class);
+        if (providers == null) {
+            throw new MardukException("The published providers to check against the DatedServiceJourney export folders"
+                    + " must be snapshotted in the exchange property " + PROP_PUBLISHED_PROVIDERS);
+        }
+        return providers;
     }
 
     /**
-     * The published providers whose export is missing from the legacy or the new DatedServiceJourney export folder.
+     * The given published providers whose export is missing from the legacy or the new DatedServiceJourney export folder.
      * <p>
      * Both folders are listed once and the providers are matched against the two listings in memory. Looking every
      * provider up individually, as the routes downstream still do for the few providers returned here, is two
      * blob store requests per provider on every aggregated export, almost always only to find that nothing is
      * missing.
      */
-    private List<Provider> getProvidersMissingFromAVariantFolder() {
-        List<Provider> providers = getPublishedProviders();
+    private List<Provider> getProvidersMissingFromAVariantFolder(List<Provider> providers) {
         List<String> fileNames = providers.stream()
                 .map(p -> NetexDsjExportConfig.aggregatedNetexFileName(p.getChouetteInfo().getReferential()))
                 .toList();
