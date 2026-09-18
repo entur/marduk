@@ -14,7 +14,7 @@
       "automerge": false
     },
     {
-      "description": "Camel is not SemVer compliant. The shared config only guards camel-spring-boot-bom, but camel.version also drives camel-test-spring-junit5.",
+      "description": "Camel is not SemVer compliant, so a minor may carry breaking changes and must be reviewed and tested on its own. Keep it out of the all-minor-patch aggregate PR and give it a dedicated one; only patch updates stay in the aggregate. Both artifacts share camel.version, so they must be grouped together to avoid conflicting branches. The shared config only guards camel-spring-boot-bom, but camel.version also drives camel-test-spring-junit5.",
       "matchPackageNames": [
         "org.apache.camel.springboot:camel-spring-boot-bom",
         "org.apache.camel:camel-test-spring-junit5"
@@ -23,6 +23,8 @@
         "major",
         "minor"
       ],
+      "groupName": "Apache Camel",
+      "groupSlug": "apache-camel",
       "automerge": false
     },
     {
