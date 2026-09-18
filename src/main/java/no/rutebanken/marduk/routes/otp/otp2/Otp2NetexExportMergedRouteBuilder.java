@@ -233,7 +233,7 @@ public class Otp2NetexExportMergedRouteBuilder extends BaseRouteBuilder {
                 .stop()
                 .routeId("otp2-netex-export-fetch-latest-for-stops");
 
-        from("direct:otp2MergeNetex").streamCaching()
+        from("direct:otp2MergeNetex")
                 .log(LoggingLevel.DEBUG, getClass().getName(), correlation() + "Merging Netex files for all providers and stop place registry.")
                 .to("direct:otp2PackMergedNetex")
                 .setHeader(FILE_HANDLE, simple("${exchangeProperty." + PROP_TARGET_FILE_HANDLE + "}"))
