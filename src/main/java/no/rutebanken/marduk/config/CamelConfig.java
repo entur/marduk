@@ -51,6 +51,23 @@ public class CamelConfig {
     }
 
     /**
+     * Configure the Camel thread pool used to download the per-provider NeTEx exports when building the aggregated
+     * export for Norway.
+     * <p>
+     * A dedicated pool, rather than {@code allProvidersExecutorService}: the aggregated export is on the critical
+     * path of every OTP2 graph build.
+     */
+    @Bean
+    public ExecutorService netexAggregationExecutorService(CamelContext camelContext) throws Exception {
+        ThreadPoolBuilder poolBuilder = new ThreadPoolBuilder(camelContext);
+        return poolBuilder
+                .poolSize(8)
+                .maxPoolSize(8)
+                .maxQueueSize(200)
+                .build("netexAggregationExecutorService");
+    }
+
+    /**
      * Configure the Camel thread pool for GTFS export routes.
      * The pool size is set to 1 in order to limit resource usage and prioritize other routes.
      * This means that at most one route among GTFS extended and GTFS basic export routes

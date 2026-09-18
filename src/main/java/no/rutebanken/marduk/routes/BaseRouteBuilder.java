@@ -17,6 +17,7 @@
 package no.rutebanken.marduk.routes;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.routes.aggregation.IdleRouteAggregationMonitor;
@@ -184,6 +185,16 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
 
     protected ProviderRepository getProviderRepository() {
         return providerRepository;
+    }
+
+    /**
+     * Providers whose dataset is published in the public bucket, that is the providers whose data is not migrated to
+     * another provider.
+     */
+    protected List<Provider> getPublishedProviders() {
+        return getProviderRepository().getProviders().stream()
+                .filter(p -> p.getChouetteInfo().getMigrateDataToProvider() == null)
+                .toList();
     }
 
     protected void setNewCorrelationId(Exchange e) {

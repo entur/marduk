@@ -40,6 +40,17 @@ public abstract class AbstractBlobStoreService {
         return repository.listBlobsFlat(Constants.BLOBSTORE_PATH_INBOUND + referential + "/");
     }
 
+    /**
+     * Lists every blob under a folder, including those in its subfolders, with names relative to the folder: listing
+     * {@code outbound/netex/} yields {@code rb_rut-aggregated-netex.zip}. It is one request for the whole folder,
+     * where checking each blob with {@link #findBlob(String)} is one request per blob.
+     *
+     * @param prefix the folder, ending with a slash
+     */
+    public BlobStoreFiles listBlobsFlatInFolder(String prefix) {
+        return repository.listBlobsFlat(prefix);
+    }
+
     public BlobStoreFiles.File findBlob(@Header(value = Constants.FILE_PREFIX) String prefix) {
         BlobStoreFiles blobStoreFiles = repository.listBlobs(prefix);
         if(blobStoreFiles.getFiles().isEmpty()) {
