@@ -40,6 +40,15 @@ public abstract class AbstractBlobStoreService {
         return repository.listBlobsFlat(Constants.BLOBSTORE_PATH_INBOUND + referential + "/");
     }
 
+    /**
+     * List the blobs under a folder, with names relative to it.
+     * <p>
+     * One request, where looking each blob up with {@link #findBlob(String)} is one request per blob.
+     */
+    public BlobStoreFiles listBlobsFlatInFolder(String prefix) {
+        return repository.listBlobsFlat(prefix);
+    }
+
     public BlobStoreFiles.File findBlob(@Header(value = Constants.FILE_PREFIX) String prefix) {
         BlobStoreFiles blobStoreFiles = repository.listBlobs(prefix);
         if(blobStoreFiles.getFiles().isEmpty()) {

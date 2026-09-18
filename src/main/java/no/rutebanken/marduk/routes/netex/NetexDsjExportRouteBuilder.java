@@ -16,8 +16,10 @@
 
 package no.rutebanken.marduk.routes.netex;
 
+import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.exceptions.MardukException;
+import no.rutebanken.marduk.services.MardukPublicBlobStoreService;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
@@ -28,7 +30,9 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static no.rutebanken.marduk.Constants.*;
 
@@ -73,8 +77,12 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
 
     private final NetexDsjExportConfig netexDsjExportConfig;
 
-    public NetexDsjExportRouteBuilder(NetexDsjExportConfig netexDsjExportConfig) {
+    private final MardukPublicBlobStoreService mardukPublicBlobStoreService;
+
+    public NetexDsjExportRouteBuilder(NetexDsjExportConfig netexDsjExportConfig,
+                                      MardukPublicBlobStoreService mardukPublicBlobStoreService) {
         this.netexDsjExportConfig = netexDsjExportConfig;
+        this.mardukPublicBlobStoreService = mardukPublicBlobStoreService;
     }
 
     @Override
@@ -329,7 +337,7 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
                 // the whole batch runs in the exchange of the aggregated export: its job events would be aggregated
                 // into a single job (see PROP_REPORT_JOB_EVENTS)
                 .setProperty(PROP_REPORT_JOB_EVENTS, constant(false))
-                .process(e -> e.getIn().setBody(getPublishedProviders()))
+                .process(e -> e.getIn().setBody(getProvidersMissingFromAVariantFolder()))
                 .split(body()).stopOnException()
                     .process(this::setProviderHeaders)
                     .to("direct:distributeDsjNetexExportIfMissing")
@@ -461,5 +469,59 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
         return getProviderRepository().getProviders().stream()
                 .filter(p -> p.getChouetteInfo().getMigrateDataToProvider() == null)
                 .toList();
+    }
+
+    /**
+     * The published providers whose export is missing from the legacy or the new DatedServiceJourney export folder.
+     * <p>
+     * Both folders are listed once and the providers are matched against the two listings in memory. Looking every
+     * provider up individually, as the routes downstream still do for the few providers returned here, is two
+     * blob store requests per provider on every aggregated export, almost always only to find that nothing is
+     * missing.
+     */
+    private List<Provider> getProvidersMissingFromAVariantFolder() {
+        List<Provider> providers = getPublishedProviders();
+        List<String> fileNames = providers.stream()
+                .map(p -> NetexDsjExportConfig.aggregatedNetexFileName(p.getChouetteInfo().getReferential()))
+                .toList();
+        Map<String, Long> newExports = countExportsByFileName(netexDsjExportConfig.getNewBlobPath(), fileNames);
+        Map<String, Long> legacyExports = countExportsByFileName(netexDsjExportConfig.getLegacyBlobPath(), fileNames);
+        List<Provider> missing = providers.stream()
+                .filter(p -> !isPresentExactlyOnce(newExports, p, netexDsjExportConfig.getNewBlobPath())
+                        || !isPresentExactlyOnce(legacyExports, p, netexDsjExportConfig.getLegacyBlobPath()))
+                .toList();
+        log.info("Checked {} providers against the DatedServiceJourney export folders, {} need to be distributed",
+                providers.size(), missing.size());
+        return missing;
+    }
+
+    /**
+     * The blobs of a folder, counted by the export file name they start with. A file name is only a prefix of the
+     * blob name, as {@link no.rutebanken.marduk.services.AbstractBlobStoreService#findBlob(String)} treats it.
+     */
+    private Map<String, Long> countExportsByFileName(String folder, List<String> fileNames) {
+        Map<String, Long> counts = new HashMap<>();
+        for (BlobStoreFiles.File file : mardukPublicBlobStoreService.listBlobsFlatInFolder(folder).getFiles()) {
+            for (String fileName : fileNames) {
+                if (file.getName().startsWith(fileName)) {
+                    counts.merge(fileName, 1L, Long::sum);
+                }
+            }
+        }
+        return counts;
+    }
+
+    /**
+     * Reproduces what {@code direct:findBlob} does for a single provider: absent means the export has to be
+     * distributed, and several matches is an error, because the folder then holds an export that cannot be
+     * identified.
+     */
+    private boolean isPresentExactlyOnce(Map<String, Long> exports, Provider provider, String folder) {
+        String fileName = NetexDsjExportConfig.aggregatedNetexFileName(provider.getChouetteInfo().getReferential());
+        long count = exports.getOrDefault(fileName, 0L);
+        if (count > 1) {
+            throw new MardukException("Found multiple files matching the prefix " + folder + fileName);
+        }
+        return count == 1;
     }
 }

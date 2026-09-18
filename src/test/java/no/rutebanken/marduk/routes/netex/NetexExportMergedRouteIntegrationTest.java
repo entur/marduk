@@ -95,6 +95,35 @@ class NetexExportMergedRouteIntegrationTest extends MardukRouteBuilderIntegratio
 
 
     /**
+     * A per-provider export that is not a zip archive (a truncated upload, a blob with the wrong content) must fail
+     * the aggregated export and name the offending export: skipping it would publish a Norway dataset silently
+     * missing that provider and feed it to the OTP graph build.
+     */
+    @Test
+    void testExportMergedNetexFailsAndNamesACorruptProviderExport() throws Exception {
+        AdviceWith.adviceWith(context, "otp2-netex-export-merged-route", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+        AdviceWith.adviceWith(context, "otp2-netex-export-merged-report-ok", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+
+        when(providerRepository.getProviders()).thenReturn(List.of(provider(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT, TestConstants.PROVIDER_ID_RB_RUT, null)));
+
+        mardukInMemoryBlobStoreRepository.uploadBlob(stopPlaceExportBlobPath, new FileInputStream("src/test/resources/no/rutebanken/marduk/routes/netex/stops.zip"));
+        // the export of the provider is present in both variant folders, so nothing needs to be distributed and the
+        // aggregation itself is what opens the corrupt archive
+        byte[] corrupt = "not a zip archive".getBytes(StandardCharsets.UTF_8);
+        mardukInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.newExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT), new ByteArrayInputStream(corrupt));
+        mardukInMemoryBlobStoreRepository.uploadBlob(netexDsjExportConfig.legacyExportPath(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT), new ByteArrayInputStream(corrupt));
+
+        context.start();
+
+        assertThatThrownBy(() -> startRoute.requestBody(null))
+                .cause()
+                .isInstanceOf(MardukException.class)
+                .hasMessageContaining(TestConstants.CHOUETTE_REFERENTIAL_RB_RUT + "-aggregated-netex.zip");
+
+        assertThat(mardukInMemoryBlobStoreRepository.getBlob(BLOBSTORE_PATH_OUTBOUND + netexExportMergedFilePath)).as("No aggregated export must be published").isNull();
+    }
+
+    /**
      * With the dual DatedServiceJourney export enabled, the aggregated export is built from the new and legacy
      * per-provider exports and the default folder receives the default variant.
      */
