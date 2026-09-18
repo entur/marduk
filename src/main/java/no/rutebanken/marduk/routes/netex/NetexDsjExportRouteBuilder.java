@@ -68,8 +68,7 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
      * The published providers the aggregated export is built from, snapshotted once by
      * {@code direct:otp2ExportMergedNetex}. {@code direct:distributeMissingDsjNetexExports} checks these providers,
      * and not the provider cache, so that the distribution and the aggregation reason about the same providers even
-     * if the cache is refreshed in between: a provider dropping out of the cache between the two would otherwise be
-     * neither distributed nor recorded as missing, and the aggregated export would silently lack it.
+     * if the cache is refreshed in between.
      */
     public static final String PROP_PUBLISHED_PROVIDERS = "RutebankenDsjPublishedProviders";
     /**
@@ -485,11 +484,6 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
 
     /**
      * The given published providers whose export is missing from the legacy or the new DatedServiceJourney export folder.
-     * <p>
-     * Both folders are listed once and the providers are matched against the two listings in memory. Looking every
-     * provider up individually, as the routes downstream still do for the few providers returned here, is two
-     * blob store requests per provider on every aggregated export, almost always only to find that nothing is
-     * missing.
      */
     private List<Provider> getProvidersMissingFromAVariantFolder(List<Provider> providers) {
         List<String> fileNames = providers.stream()
@@ -507,8 +501,8 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
     }
 
     /**
-     * The blobs of a folder, counted by the export file name they start with. A file name is only a prefix of the
-     * blob name, as {@link no.rutebanken.marduk.services.AbstractBlobStoreService#findBlob(String)} treats it.
+     * Lists the folder once and counts, for each export file name, the blobs whose name starts with it. Prefix
+     * matching mirrors {@code direct:findBlob}, which the distribution routes use to look an export up.
      */
     private Map<String, Long> countExportsByFileName(String folder, List<String> fileNames) {
         Map<String, Long> counts = new HashMap<>();
@@ -523,9 +517,8 @@ public class NetexDsjExportRouteBuilder extends BaseRouteBuilder {
     }
 
     /**
-     * Reproduces what {@code direct:findBlob} does for a single provider: absent means the export has to be
-     * distributed, and several matches is an error, because the folder then holds an export that cannot be
-     * identified.
+     * Whether the folder holds exactly one blob for the export of the provider. No blob means the export must be
+     * distributed; several blobs is an error, as in {@code direct:findBlob}, since the export cannot be identified.
      */
     private boolean isPresentExactlyOnce(Map<String, Long> exports, Provider provider, String folder) {
         String fileName = NetexDsjExportConfig.aggregatedNetexFileName(provider.getChouetteInfo().getReferential());

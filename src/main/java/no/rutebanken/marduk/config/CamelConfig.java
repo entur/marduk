@@ -55,8 +55,7 @@ public class CamelConfig {
      * export for Norway.
      * <p>
      * A dedicated pool, rather than {@code allProvidersExecutorService}: the aggregated export is on the critical
-     * path of every OTP2 graph build and should neither wait behind a bulk Chouette operation nor starve one. The
-     * work is network-bound, so the pool is larger than the number of processors the pod is given.
+     * path of every OTP2 graph build.
      */
     @Bean
     public ExecutorService netexAggregationExecutorService(CamelContext camelContext) throws Exception {

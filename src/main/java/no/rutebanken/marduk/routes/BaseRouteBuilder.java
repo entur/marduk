@@ -190,9 +190,6 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     /**
      * Providers whose dataset is published in the public bucket, that is the providers whose data is not migrated to
      * another provider.
-     * <p>
-     * The provider cache is refreshed every few minutes. A route that reasons about the set of published providers in
-     * several steps must read it once and carry the result along, or the steps may not agree on the set.
      */
     protected List<Provider> getPublishedProviders() {
         return getProviderRepository().getProviders().stream()

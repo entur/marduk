@@ -41,23 +41,6 @@ import java.util.Map;
  * Merges several zip archives into one aggregated archive by copying the entries
  * <em>without decompressing them</em>.
  * <p>
- * The per-provider NeTEx exports are already deflated and the aggregated Norway export does not touch their
- * contents, so inflating every entry only to deflate it again is pure waste: it is by far the dominant cost of the
- * aggregated export. {@link ZipFile#getRawInputStream(ZipArchiveEntry)} hands out the compressed bytes of an entry
- * and {@link ZipArchiveOutputStream#addRawArchiveEntry(ZipArchiveEntry, InputStream)} writes them back verbatim,
- * carrying over the method, the sizes and the CRC. {@code java.util.zip} offers no equivalent: its
- * {@code ZipOutputStream} always feeds what is written to it through a {@code Deflater}.
- * <p>
- * Entries read through {@link ZipFile} come from the central directory, where the CRC and both sizes are always
- * present, so {@code addRawArchiveEntry} always takes its two-phase path. That also normalises away the data
- * descriptors that the Chouette exports carry (general purpose bit 3): the copy gets the real sizes inline in its
- * local file header and no trailing descriptor.
- * <p>
- * The merge is resolved into a {@link Plan} before anything is written, so that entries contributed under the same
- * name by several archives can be resolved the way the previous implementation did: it unpacked every archive into
- * one flat directory, where the last writer silently won. The plan owns the sources added to it and closes them
- * when it is closed, so a merge is one try-with-resources block.
- * <p>
  * Archives are merged in the order they are added and, within each, in physical (local header offset) order, so the
  * aggregated export does not depend on the order in which the downloads happened to complete.
  */
@@ -76,7 +59,7 @@ public final class RawZipMerger {
      * A source archive, open for the duration of the merge: the output reads its entries from it.
      * <p>
      * The archive is held in memory rather than spooled to disk, since the blob store hands out the whole blob as a
-     * byte array anyway; writing it out would only add a disk round trip.
+     * byte array anyway.
      */
     public static final class Source implements Closeable {
 
@@ -90,8 +73,7 @@ public final class RawZipMerger {
 
         /**
          * Open an archive held in memory, failing with its label when it is not a readable zip archive (a truncated
-         * upload, a blob with the wrong content): the aggregation must not silently skip a per-provider export, or it
-         * would publish a Norway dataset missing a whole provider.
+         * upload, a blob with the wrong content).
          */
         public static Source of(String label, byte[] content) {
             try {
@@ -125,15 +107,16 @@ public final class RawZipMerger {
     private record Resolved(Source source, ZipArchiveEntry entry, ZipArchiveEntry target) {
     }
 
+    /**
+     * What {@link Plan#writeTo(Path)} wrote: the number of entries in the aggregated archive, the entry names that
+     * more than one source contributed (each written once, from the last source), and the size of the archive in
+     * bytes.
+     */
     public record Result(int entriesWritten, List<String> duplicateNames, long bytesWritten) {
     }
 
     /**
      * The entries to write, resolved by name, and the sources they are read from.
-     * <p>
-     * The plan owns its sources: closing it closes every source that was added to it, whether or not the merge was
-     * written. In a try-with-resources block a failure to close a source is added as suppressed to the exception of
-     * the merge, rather than replacing it.
      */
     public static final class Plan implements Closeable {
 
@@ -151,7 +134,7 @@ public final class RawZipMerger {
         }
 
         /**
-         * Contribute every entry of one archive, under its own name. The plan takes ownership of the source.
+         * Contribute every entry of one archive, under its own name.
          */
         public Plan add(Source source) {
             own(source);
@@ -170,9 +153,6 @@ public final class RawZipMerger {
          * Contribute every top level entry of one archive, renamed {@code prefix + suffix},
          * {@code prefix + 1 + suffix}, ... in physical order. The stop place export is published under names the
          * NeTEx profile mandates.
-         * <p>
-         * These names are positional, so a nested entry must not shift them. The replaced implementation listed the
-         * unpacked folder without recursing and therefore never saw one either.
          */
         public Plan addRenamed(Source source, String prefix, String suffix) {
             own(source);
