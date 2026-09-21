@@ -156,7 +156,7 @@ data:
     netex.export.dsj.xslt.max.file.size.mb=300
     # Only these codespaces produce DatedServiceJourneys with replacement information, the only construct that differs
     # between NeTEx 1.15 and 1.16: only their datasets are downgraded (export) or upgraded (import)
-    netex.dsj.codespaces=VYG,GOA,SJN
+    netex.dsj.codespaces=VYG,GOA,SJN,FLT
     # Upgrade uploaded NeTEx 1.15 datasets to NeTEx 1.16; to enable once Chouette and Antu work with NeTEx 1.16
     netex.import.dsj.upgrade.enabled={{ .Values.netex.dsj.upgradeEnabled }}
 

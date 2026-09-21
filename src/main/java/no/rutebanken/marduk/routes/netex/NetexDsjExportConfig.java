@@ -99,7 +99,7 @@ public class NetexDsjExportConfig {
      * differs between NeTEx 1.15 and NeTEx 1.16. Only their datasets are converted (downgraded on export, upgraded
      * on import); the datasets of the other codespaces are used as is.
      */
-    @Value("${netex.dsj.codespaces:VYG,GOA,SJN}")
+    @Value("${netex.dsj.codespaces:VYG,GOA,SJN,FLT}")
     private List<String> dsjCodespaces;
 
     /**
