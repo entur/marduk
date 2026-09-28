@@ -10,8 +10,8 @@ common:
     labels: { customLogRetention: enabled }
     forceReplicas: 2
     image: <+artifacts.primary.image>
-    memoryLimit: 8000
-    memory: 7000
+    memoryLimit: 12000
+    memory: 10000
     cpu: 2
     envFrom:
       - secretRef:
@@ -88,7 +88,7 @@ common:
       # pre-JDK-24 image: --sun-misc-unsafe-memory-access does not exist there and would otherwise
       # kill the launcher before any log line.
       JDK_JAVA_OPTIONS:
-        -server -Xss512k -Xmx5g -XX:+UseParallelGC -XX:GCTimeRatio=4
+        -server -Xss512k -Xmx7g -XX:+UseParallelGC -XX:GCTimeRatio=4
         -XX:AdaptiveSizePolicyWeight=90 -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40
         -XX:ActiveProcessorCount=2
         -XX:+IgnoreUnrecognizedVMOptions --enable-native-access=ALL-UNNAMED
