@@ -114,7 +114,8 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .setProperty(PROP_MESSAGES, simple("${body}"))
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtp2NetexGraphBuildStartedEventsInNewTransaction")
-                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID() + "/${exchangeProperty." + TIMESTAMP + "}"))
+                // the UUID must be generated per exchange: builds started in the same millisecond would otherwise share a work directory
+                .process(e -> e.setProperty(OTP_REMOTE_WORK_DIR, blobStoreSubdirectory + "/work/" + UUID.randomUUID() + "/" + e.getProperty(TIMESTAMP, String.class)))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 graph building in remote directory ${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}.")
 
                 .choice()
