@@ -19,7 +19,10 @@ package no.rutebanken.marduk;
 import no.rutebanken.marduk.security.oauth2.MardukWebSecurityConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
+import org.springframework.boot.web.server.autoconfigure.ServerProperties;
+import org.springframework.boot.webmvc.autoconfigure.WebMvcProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 
@@ -28,21 +31,13 @@ import org.springframework.context.annotation.FilterType;
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = MardukWebSecurityConfiguration.class),
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = App.class),
 })
+// Camel 4.22 platform-http injects these without registering them, and WebEnvironment.NONE does not either
+@EnableConfigurationProperties({ServerProperties.class, WebMvcProperties.class})
 public class TestApp extends App {
 
 
     public static void main(String[] args) {
         SpringApplication.run(TestApp.class, args);
-    }
-
-    @Override
-    public void configure() throws Exception {
-        super.configure();
-        // A pubsub consumer thread can survive context shutdown parked in an
-        // uninterruptible awaitTerminated. Camel waits twice this long per stuck
-        // pool, and the thread never terminates, so the default 10s only slows
-        // the build.
-        getContext().getExecutorServiceManager().setShutdownAwaitTermination(1000);
     }
 
     @Override

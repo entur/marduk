@@ -334,6 +334,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .param().name("codespace").type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
                 .param().name("dsjcompatibility").type(RestParamType.query).required(false).description("Structure of DatedServiceJourney in the returned dataset: legacy (NeTEx 1.15 structure, repeated DatedServiceJourneyRef; the default) or new (NeTEx 1.16 structure, replacedJourneys). A dataset without replacement information is returned unchanged.").dataType(OPENAPI_DATA_TYPE_STRING).allowableValues("legacy", "new").endParam()
                 .produces(X_OCTET_STREAM)
+                // binary body; under json binding Camel 4.22 would marshal it as JSON
+                .bindingMode(RestBindingMode.off)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid codespace").endResponseMessage()
                 .to("direct:adminExternalDownloadPrivateDataset")
@@ -400,6 +402,8 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .param().name("providerId").type(RestParamType.path).description("Provider id as obtained from the nabu service").dataType(OPENAPI_DATA_TYPE_INTEGER).endParam()
                 .param().name("fileName").type(RestParamType.path).description("Name of file to fetch").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
                 .produces(X_OCTET_STREAM)
+                // binary body; under json binding Camel 4.22 would marshal it as JSON
+                .bindingMode(RestBindingMode.off)
                 .responseMessage().code(200).endResponseMessage()
                 .responseMessage().code(500).message("Invalid fileName").endResponseMessage()
                 .to("direct:adminDatasetFileDownload")
