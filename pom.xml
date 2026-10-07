@@ -36,7 +36,7 @@
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
         <argLine/>
-        <netex-java-model.version>2.0.16.1</netex-java-model.version>
+        <netex-java-model.version>2.0.16.2</netex-java-model.version>
     </properties>
 
     <dependencyManagement>
@@ -317,7 +317,7 @@
         <dependency>
             <groupId>org.openapitools</groupId>
             <artifactId>jackson-databind-nullable</artifactId>
-            <version>0.2.11</version>
+            <version>0.2.12</version>
         </dependency>
 
         <dependency>
