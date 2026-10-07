@@ -178,7 +178,7 @@ data:
     # Seconds. Backstop for a pod watch that silently stops delivering events: poll the job status at this interval.
     otp.graph.build.remote.kubernetes.poll.interval=60
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
-    otp.graph.build.autoStartup={{ .Values.otp.graph.build.autoStartup }}
+    otp2.graph.build.autoStartup={{ .Values.otp.graph.build.autoStartup }}
     line.statistics.calculation.enabled={{ .Values.line.statistics.calculation.enabled }}
 kind: ConfigMap
 metadata:
