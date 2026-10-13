@@ -16,7 +16,9 @@
 
 package no.rutebanken.marduk.routes.file;
 
+import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
 import no.rutebanken.marduk.routes.TransactionalBaseRouteBuilder;
+import no.rutebanken.marduk.routes.experimental.FilteringTimestampProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
@@ -38,6 +40,13 @@ import static no.rutebanken.marduk.Constants.*;
 public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
 
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
+
+    FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository;
+
+
+    public FileUploadRouteBuilder(FileNameAndDigestIdempotentRepository fileNameAndDigestIdempotentRepository) {
+      this.fileNameAndDigestIdempotentRepository = fileNameAndDigestIdempotentRepository;
+    }
 
     @Override
     public void configure() {
@@ -88,6 +97,7 @@ public class FileUploadRouteBuilder extends TransactionalBaseRouteBuilder {
         from("direct:processFileAfterImport")
                 .choice()
                 .when(e-> getProviderRepository().getProvider(e.getIn().getHeader(PROVIDER_ID,Long.class)).getChouetteInfo().isEnableAutoImport())
+                .process(new FileUploadedTimestampProcessor(fileNameAndDigestIdempotentRepository))
                 .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:ProcessFileQueue")
                 .log(LoggingLevel.INFO, correlation() + "Triggered import pipeline for timetable file: ${header." + FILE_HANDLE + "}")
                 .otherwise()
