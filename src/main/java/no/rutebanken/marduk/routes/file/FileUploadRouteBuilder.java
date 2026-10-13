@@ -18,7 +18,6 @@ package no.rutebanken.marduk.routes.file;
 
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
 import no.rutebanken.marduk.routes.TransactionalBaseRouteBuilder;
-import no.rutebanken.marduk.routes.experimental.FilteringTimestampProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
