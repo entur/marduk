@@ -17,7 +17,6 @@
 package no.rutebanken.marduk.rest;
 
 import jakarta.ws.rs.NotFoundException;
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.rest.openapi.api.DatasetsApi;

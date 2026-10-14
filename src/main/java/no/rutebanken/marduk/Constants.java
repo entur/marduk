@@ -74,6 +74,8 @@ public final class Constants {
     public static final String FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY = "RutebankenApplyDuplicateFilterOnNameOnly";
     public static final String FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES = "RutebankenSkipStatusUpdateForDuplicateFiles";
 
+    public static final String FILE_UPLOADED_TIMESTAMP = "FileUploadedTimestamp";
+
     public static final String BLOBSTORE_PATH_INBOUND = "inbound/received/";
     public static final String BLOBSTORE_PATH_OUTBOUND = "outbound/";
 
@@ -177,7 +179,6 @@ public final class Constants {
     public static final String FILTERING_PROFILE_STANDARD_IMPORT = "StandardImportFilter";
     public static final String FILTERING_PROFILE_INCLUDE_BLOCKS_AND_RESTRICTED_JOURNEYS = "IncludeBlocksAndRestrictedJourneysFilter";
     public static final String FILTERING_FILE_CREATED_TIMESTAMP = "FileCreatedTimestamp";
-
     public static final String FILTERING_NETEX_SOURCE_HEADER = "NetexSource";
     public static final String FILTERING_NETEX_SOURCE_CHOUETTE = "chouette";
     public static final String FILTERING_NETEX_SOURCE_MARDUK = "marduk";
