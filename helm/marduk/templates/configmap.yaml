@@ -170,6 +170,8 @@ data:
 
     providers.api.url={{ .Values.nanna.service }}/services/providers/
     fetch.osm.cron.schedule={{ .Values.osm.fetchCronSchedule }}
+    # The OSM data file itself is read by the graph builder directly from the osm-data bucket.
+    # Marduk only fetches the checksum file (<url>.md5) to detect updates and trigger a base graph build.
     fetch.osm.map.url=https://storage.googleapis.com/ror-osmdata-prd/osm-data/norway-latest.osm.pbf
     otp.graph.build.remote.kubernetes.namespace={{ .Release.Namespace }}
     # Seconds. NeTEx builds run 16-20 minutes in prd, base builds 18-32. The margin also covers the candidate
