@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.otp.otp2;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.kubernetes.KubernetesJobTimeoutException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.otp.OtpGraphBuildTimestamp;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.ExchangePattern;
@@ -28,8 +29,6 @@ import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ_PREFIX;
 import static no.rutebanken.marduk.Constants.OTP_BUILD_CANDIDATE;
@@ -77,10 +76,10 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("pubsub-otp2-base-graph-candidate-build");
 
         from("direct:buildOtp2BaseGraph")
-                .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
+                // the timestamp is generated per exchange: it is the unique identifier of the build (see OtpGraphBuildTimestamp)
+                .process(e -> e.setProperty(TIMESTAMP, OtpGraphBuildTimestamp.generate()))
                 .to("direct:sendOtp2BaseGraphStartedEventsInNewTransaction")
-                // the UUID must be generated per exchange: builds started in the same millisecond would otherwise share a work directory
-                .process(e -> e.setProperty(OTP_REMOTE_WORK_DIR, blobStoreSubdirectory + "/work/" + UUID.randomUUID() + "/" + e.getProperty(TIMESTAMP, String.class)))
+                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/${exchangeProperty." + TIMESTAMP + "}"))
 
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 base graph building in directory ${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}.")
                 .to("direct:remoteBuildOtp2BaseGraphAndSendStatus")
