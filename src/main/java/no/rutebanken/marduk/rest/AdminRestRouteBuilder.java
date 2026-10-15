@@ -494,7 +494,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
 
         rest("/map_admin")
                 .post("/download")
-                .description("Triggers downloading of the latest OSM data")
+                .description("Checks whether the OSM data file has been updated and, if so, triggers a base graph build")
                 .produces(PLAIN)
                 .responseMessage().code(200).message("Command accepted").endResponseMessage()
                 .to("direct:adminFetchOsm");
@@ -820,9 +820,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         from("direct:adminFetchOsm")
                 .process(this::setNewCorrelationId)
                 .to("direct:authorizeAdminRequest")
-                .log(LoggingLevel.INFO, "OSM update map data")
+                .log(LoggingLevel.INFO, "Checking for OSM map update")
                 .process(this::removeHttpHeaders)
-                .to("direct:considerToFetchOsmMapOverNorway")
+                .to("direct:checkForOsmMapUpdate")
                 .routeId("admin-fetch-osm");
 
         from("direct:adminChouetteClean")
