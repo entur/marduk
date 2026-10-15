@@ -16,7 +16,9 @@
 
 package no.rutebanken.marduk.routes.osm;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.exceptions.MardukException;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
@@ -30,8 +32,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class OsmUpdateRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
@@ -55,10 +59,13 @@ class OsmUpdateRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBas
         otp2BaseGraphBuildQueue.expectedMessageCount(1);
 
         context.start();
-        checkForOsmMapUpdate.sendBody("");
+        checkForOsmMapUpdate.sendBodyAndHeader("", Constants.CORRELATION_ID, "test-correlation-id");
 
         otp2BaseGraphBuildQueue.assertIsSatisfied();
         assertEquals(CURRENT_MD5_FILE_CONTENT, storedMd5FileContent());
+
+        // only the correlation id is published with the build request: no HTTP response header, no file handle
+        assertEquals(Map.of(Constants.CORRELATION_ID, "test-correlation-id"), otp2BaseGraphBuildQueue.getExchanges().getFirst().getIn().getHeaders());
     }
 
     @Test
@@ -102,9 +109,31 @@ class OsmUpdateRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBas
         assertEquals(PREVIOUS_MD5_FILE_CONTENT, storedMd5FileContent());
     }
 
+    @Test
+    void testBaseGraphBuildIsNotTriggeredWhenFetchedChecksumIsInvalid() throws Exception {
+        adviceRoutes("");
+        storeMd5FileContent(PREVIOUS_MD5_FILE_CONTENT);
+        otp2BaseGraphBuildQueue.expectedMessageCount(0);
+
+        context.start();
+        CamelExecutionException exception = assertThrows(CamelExecutionException.class, () -> checkForOsmMapUpdate.sendBody(""));
+        assertInstanceOf(MardukException.class, exception.getCause());
+
+        otp2BaseGraphBuildQueue.assertIsSatisfied();
+        assertEquals(PREVIOUS_MD5_FILE_CONTENT, storedMd5FileContent());
+    }
+
     private void adviceRoutes() throws Exception {
-        // replace the HTTP call to the osm-data bucket by a stub returning the current MD5 file
-        AdviceWith.adviceWith(context, "osm-fetch-md5sum", a -> a.weaveByToUri("https?://.*").replace().process(e -> e.getMessage().setBody(CURRENT_MD5_FILE_CONTENT)));
+        adviceRoutes(CURRENT_MD5_FILE_CONTENT);
+    }
+
+    private void adviceRoutes(String fetchedMd5FileContent) throws Exception {
+        // replace the HTTP call to the osm-data bucket by a stub returning the given MD5 file content
+        // together with a typical HTTP response header
+        AdviceWith.adviceWith(context, "osm-fetch-md5sum", a -> a.weaveByToUri("https?://.*").replace().process(e -> {
+            e.getMessage().setBody(fetchedMd5FileContent);
+            e.getMessage().setHeader("ETag", "\"" + CURRENT_MD5 + "\"");
+        }));
         AdviceWith.adviceWith(context, "osm-check-for-newer-map", a -> a.weaveByToUri("google-pubsub:(.*):Otp2BaseGraphBuildQueue").replace().to("mock:otp2BaseGraphBuildQueue"));
     }
 
