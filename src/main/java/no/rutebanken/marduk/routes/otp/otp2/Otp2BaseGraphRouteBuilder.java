@@ -17,10 +17,13 @@
 package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.graph.GraphControlRepository.GraphType;
+import no.rutebanken.marduk.graph.Otp2GraphControlService;
 import no.rutebanken.marduk.kubernetes.KubernetesJobTimeoutException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
+import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
@@ -29,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ_PREFIX;
@@ -47,6 +51,9 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
 
     @Autowired
     private Otp2BaseGraphBuilder otp2BaseGraphBuilder;
+
+    @Autowired
+    private Otp2GraphControlService otp2GraphControlService;
 
     @Override
     public void configure() throws Exception {
@@ -77,6 +84,11 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("pubsub-otp2-base-graph-candidate-build");
 
         from("direct:buildOtp2BaseGraph")
+                // while the graph builder is paused, the build requests are stored and replayed when it is resumed
+                .filter(this::deferProductionBuildIfPaused)
+                    .log(LoggingLevel.INFO, getClass().getName(), correlation() + "The graph builder is paused, the OTP2 base graph build is deferred.")
+                    .stop()
+                .end()
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtp2BaseGraphStartedEventsInNewTransaction")
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID() + "/${exchangeProperty." + TIMESTAMP + "}"))
@@ -131,5 +143,13 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:updateStatus")
                 .routeId("otp2-base-graph-build-send-started-events");
 
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean deferProductionBuildIfPaused(Exchange e) {
+        if (Boolean.TRUE.equals(e.getProperty(OTP_BUILD_CANDIDATE, Boolean.class))) {
+            return false;
+        }
+        return otp2GraphControlService.deferIfPaused(GraphType.BASE, e.getIn().getBody(List.class));
     }
 }
