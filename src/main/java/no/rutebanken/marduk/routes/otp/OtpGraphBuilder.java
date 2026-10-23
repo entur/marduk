@@ -9,7 +9,7 @@ public interface OtpGraphBuilder {
      * Build an OTP graph and store it in working directory.
      * Depending on the implementation the working directory can be either a local or a remote directory.
      * @param otpWorkDir the directory where the graph is saved.
-     * @param timestamp a timestamp used for creating unique file and directory names.
+     * @param timestamp the unique build timestamp used for creating unique file, directory and job names, see {@link OtpGraphBuildTimestamp}.
      */
     void build(String otpWorkDir, String timestamp, boolean candidate);
 }

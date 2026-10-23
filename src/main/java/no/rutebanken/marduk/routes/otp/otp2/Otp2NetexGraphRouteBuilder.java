@@ -19,6 +19,7 @@ package no.rutebanken.marduk.routes.otp.otp2;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.kubernetes.KubernetesJobTimeoutException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
+import no.rutebanken.marduk.routes.otp.OtpGraphBuildTimestamp;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
@@ -33,7 +34,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
@@ -112,9 +112,10 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:remoteBuildOtp2Graph")
                 .setProperty(PROP_MESSAGES, simple("${body}"))
-                .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
+                // the timestamp is generated per exchange: it is the unique identifier of the build (see OtpGraphBuildTimestamp)
+                .process(e -> e.setProperty(TIMESTAMP, OtpGraphBuildTimestamp.generate()))
                 .to("direct:sendOtp2NetexGraphBuildStartedEventsInNewTransaction")
-                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID() + "/${exchangeProperty." + TIMESTAMP + "}"))
+                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/${exchangeProperty." + TIMESTAMP + "}"))
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 graph building in remote directory ${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}.")
 
                 .choice()
