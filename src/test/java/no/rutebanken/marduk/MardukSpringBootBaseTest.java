@@ -13,9 +13,7 @@ import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.support.DefaultExchange;
 import org.apache.commons.io.IOUtils;
 import org.entur.pubsub.base.EnturGooglePubSubAdmin;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,7 +50,13 @@ public abstract class MardukSpringBootBaseTest {
     protected final Long testRbProviderId = 1L;
     protected final String testDatasetChouetteReferential = "rb_TST";
 
-    private static PubSubEmulatorContainer pubsubEmulator;
+    // Shared by every test class in the JVM, Testcontainers' Ryuk removes it on exit
+    private static final PubSubEmulatorContainer pubsubEmulator =
+            new PubSubEmulatorContainer(DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:emulators"));
+
+    static {
+        pubsubEmulator.start();
+    }
 
     @Autowired
     private EnturGooglePubSubAdmin enturGooglePubSubAdmin;
@@ -108,22 +112,6 @@ public abstract class MardukSpringBootBaseTest {
         exchangeInMemoryBlobStoreRepository.setContainerName(exchangeContainerName);
         graphsInMemoryBlobStoreRepository.setContainerName(graphsContainerName);
         otpReportInMemoryBlobStoreRepository.setContainerName(otpReportContainerName);
-    }
-
-    @BeforeAll
-    public static void init() {
-        pubsubEmulator =
-                new PubSubEmulatorContainer(
-                        DockerImageName.parse(
-                                "gcr.io/google.com/cloudsdktool/cloud-sdk:emulators"
-                        )
-                );
-        pubsubEmulator.start();
-    }
-
-    @AfterAll
-    public static void tearDown() {
-        pubsubEmulator.stop();
     }
 
     @BeforeEach
