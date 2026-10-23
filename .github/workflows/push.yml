@@ -50,6 +50,11 @@ jobs:
       - uses: actions/upload-artifact@v7.0.2
         with:
           path: target
+      - uses: actions/upload-artifact@v7.0.2
+        if: failure()
+        with:
+          name: surefire-reports
+          path: target/surefire-reports
   openapi-lint:
     needs: [ maven-verify ]
     uses: entur/gha-api/.github/workflows/lint.yml@v6.3.2

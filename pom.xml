@@ -23,6 +23,8 @@
         <developerConnection>scm:git:ssh://git@github.com:entur/marduk.git</developerConnection>
     </scm>
     <properties>
+        <forkCount>2</forkCount>
+        <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
         <camel.version>4.22.1</camel.version>
         <!-- unmanaged by any BOM, must track the kubernetes-client version that camel-kubernetes pulls in -->
         <kubernetes-client.version>7.8.0</kubernetes-client.version>
@@ -404,6 +406,8 @@
                 </argLine>
                     <systemPropertyVariables combine.children="override">
                         <spring.output.ansi.enabled>ALWAYS</spring.output.ansi.enabled>
+                        <server.port>2808${surefire.forkNumber}</server.port>
+                        <camel.cluster.file.root>${project.build.directory}/fork${surefire.forkNumber}/camel/master</camel.cluster.file.root>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
