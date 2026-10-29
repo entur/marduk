@@ -123,6 +123,9 @@ public final class Constants {
     public static final String FOLDER_NAME = "RutebankenFolderName";
     public static final String SYSTEM_STATUS = "RutebankenSystemStatus";
 
+    /**
+     * Unique identifier of an OTP graph build, see {@link no.rutebanken.marduk.routes.otp.OtpGraphBuildTimestamp}.
+     */
     public static final String TIMESTAMP = "RutebankenTimeStamp";
 
     public static final String ET_CLIENT_NAME_HEADER = "ET-Client-Name";
