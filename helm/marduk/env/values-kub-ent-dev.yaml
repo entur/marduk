@@ -68,7 +68,7 @@ netex:
   # upgradeEnabled: upgrade uploaded NeTEx 1.15 datasets to 1.16, once the import pipeline works with NeTEx 1.16
   dsj:
     enabled: true
-    defaultVariant: legacy
+    defaultVariant: new
     apiDefaultVariant: legacy
     upgradeEnabled: true
 
