@@ -69,7 +69,7 @@ netex:
   dsj:
     enabled: true
     defaultVariant: new
-    apiDefaultVariant: legacy
+    apiDefaultVariant: new
     upgradeEnabled: true
 
 osm:

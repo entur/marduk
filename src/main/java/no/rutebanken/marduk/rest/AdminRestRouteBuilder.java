@@ -332,7 +332,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .description("Download NeTEx dataset with blocks")
                 .deprecated()
                 .param().name("codespace").type(RestParamType.path).description("Codespace of the organization producing the NeTEx dataset with blocks").dataType(OPENAPI_DATA_TYPE_STRING).endParam()
-                .param().name("dsjcompatibility").type(RestParamType.query).required(false).description("Structure of DatedServiceJourney in the returned dataset: legacy (NeTEx 1.15 structure, repeated DatedServiceJourneyRef; the default) or new (NeTEx 1.16 structure, replacedJourneys). A dataset without replacement information is returned unchanged.").dataType(OPENAPI_DATA_TYPE_STRING).allowableValues("legacy", "new").endParam()
+                .param().name("dsjcompatibility").type(RestParamType.query).required(false).description("Structure of DatedServiceJourney in the returned dataset: new (NeTEx 1.16 structure, replacedJourneys; the default) or legacy (NeTEx 1.15 structure, repeated DatedServiceJourneyRef). A dataset without replacement information is returned unchanged.").dataType(OPENAPI_DATA_TYPE_STRING).allowableValues("legacy", "new").endParam()
                 .produces(X_OCTET_STREAM)
                 // binary body; under json binding Camel 4.22 would marshal it as JSON
                 .bindingMode(RestBindingMode.off)
