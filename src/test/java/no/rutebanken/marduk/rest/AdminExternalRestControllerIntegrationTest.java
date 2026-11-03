@@ -128,6 +128,36 @@ class AdminExternalRestControllerIntegrationTest extends MardukSpringBootBaseTes
         assertArrayEquals(content, response.bytes());
     }
 
+    /**
+     * When both variants exist, the API returns the NeTEx 1.15 copy by default and the variant requested with the
+     * dsjcompatibility parameter otherwise.
+     */
+    @Test
+    void theFilteredDatasetIsReturnedInTheRequestedDsjVariant() throws Exception {
+        knownCodespace();
+        String referential = "rb_" + CHOUETTE_REFERENTIAL_RUT.toLowerCase();
+        byte[] newContent = "netex-1.16-content".getBytes();
+        byte[] legacyContent = "netex-1.15-content".getBytes();
+        internalInMemoryBlobStoreRepository.uploadBlob(filteredDatasetPath(), new ByteArrayInputStream(newContent));
+        internalInMemoryBlobStoreRepository.uploadBlob(Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_DSJ_LEGACY + referential + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME, new ByteArrayInputStream(legacyContent));
+        String filtered = DATASETS + CHOUETTE_REFERENTIAL_RUT + "/filtered";
+
+        assertArrayEquals(legacyContent, send(get(filtered)).bytes(), "The NeTEx 1.15 copy is returned by default");
+        assertArrayEquals(legacyContent, send(get(filtered + "?dsjcompatibility=legacy")).bytes(), "dsjcompatibility=legacy returns the NeTEx 1.15 copy");
+        assertArrayEquals(newContent, send(get(filtered + "?dsjcompatibility=new")).bytes(), "dsjcompatibility=new returns the export produced by the pipeline");
+        assertEquals(400, send(get(filtered + "?dsjcompatibility=old")).status());
+    }
+
+    @Test
+    void theLegacyVariantFallsBackToTheExportProducedByThePipeline() throws Exception {
+        // the legacy copy is produced after the blocks export
+        knownCodespace();
+        byte[] content = "netex-1.16-content".getBytes();
+        internalInMemoryBlobStoreRepository.uploadBlob(filteredDatasetPath(), new ByteArrayInputStream(content));
+
+        assertArrayEquals(content, send(get(DATASETS + CHOUETTE_REFERENTIAL_RUT + "/filtered?dsjcompatibility=legacy")).bytes());
+    }
+
     @Test
     void aMissingFilteredDatasetIsNotFound() throws Exception {
         knownCodespace();

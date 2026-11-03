@@ -535,6 +535,52 @@ class AdminRestControllerIntegrationTest extends MardukSpringBootBaseTest {
         assertArrayEquals(getTestNetexArchiveAsStream().readAllBytes(), response.bytes());
     }
 
+    /**
+     * The NeTEx 1.15 copy is returned by default, the export produced by the pipeline with dsjcompatibility=new,
+     * and an invalid value is rejected.
+     */
+    @Test
+    void theBlocksDownloadSelectsTheDsjVariant() throws Exception {
+        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+        byte[] newContent = "netex-1.16-content".getBytes();
+        byte[] legacyContent = "netex-1.15-content".getBytes();
+        internalInMemoryBlobStoreRepository.uploadBlob(
+                Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "rb_rut-aggregated-netex.zip",
+                new java.io.ByteArrayInputStream(newContent));
+        internalInMemoryBlobStoreRepository.uploadBlob(
+                Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_DSJ_LEGACY + "rb_rut-aggregated-netex.zip",
+                new java.io.ByteArrayInputStream(legacyContent));
+        String path = "/services/timetable_admin/download_netex_blocks/" + CHOUETTE_REFERENTIAL_RUT;
+
+        assertArrayEquals(legacyContent, send(get(path)).bytes());
+        assertArrayEquals(newContent, send(get(path + "?dsjcompatibility=new")).bytes());
+        assertEquals(400, send(get(path + "?dsjcompatibility=old")).status());
+    }
+
+    @Test
+    void theLegacyBlocksDownloadFallsBackToTheExportProducedByThePipeline() throws Exception {
+        // the legacy copy is produced after the blocks export
+        when(providerRepository.getProviderId(CHOUETTE_REFERENTIAL_RUT)).thenReturn(TestConstants.PROVIDER_ID_RUT);
+        byte[] content = "netex-1.16-content".getBytes();
+        internalInMemoryBlobStoreRepository.uploadBlob(
+                Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + "rb_rut-aggregated-netex.zip",
+                new java.io.ByteArrayInputStream(content));
+
+        Response response = send(get("/services/timetable_admin/download_netex_blocks/"
+                + CHOUETTE_REFERENTIAL_RUT + "?dsjcompatibility=legacy"));
+
+        assertEquals(200, response.status());
+        assertArrayEquals(content, response.bytes());
+    }
+
+    @Test
+    void theDsjDistributionOfOneProviderIsAcceptedAndRunsInTheBackground() throws Exception {
+        Response response = send(postJson(
+                "/services/timetable_admin/" + PROVIDER_ID_AS_STRING_RUT + "/export/netex/dsj", ""));
+
+        assertEquals(200, response.status());
+    }
+
     @Test
     void aPostThatIsNotMultipartIsUnsupportedMediaType() throws Exception {
         // The route read the request parts, which threw InvalidContentTypeException and was mapped to 415.

@@ -2,6 +2,7 @@ package no.rutebanken.marduk.file;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.flexlines.FlexibleLinesImport;
+import no.rutebanken.marduk.netex.NetexDsjUpgrade;
 import no.rutebanken.marduk.pipeline.MardukMessage;
 import no.rutebanken.marduk.pubsub.MardukPubSubConsumer;
 import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
@@ -52,6 +53,7 @@ public class FileClassificationConsumer extends MardukPubSubConsumer {
     private final MardukPubSubPublisher publisher;
     private final AntuValidation antuValidation;
     private final FlexibleLinesImport flexibleLinesImport;
+    private final NetexDsjUpgrade netexDsjUpgrade;
     private final FileTypeClassifierBean fileTypeClassifier = new FileTypeClassifierBean();
     private final boolean chouettePreValidationEnabled;
 
@@ -62,6 +64,7 @@ public class FileClassificationConsumer extends MardukPubSubConsumer {
             MardukPubSubPublisher publisher,
             AntuValidation antuValidation,
             FlexibleLinesImport flexibleLinesImport,
+            NetexDsjUpgrade netexDsjUpgrade,
             @Value("${chouette.enablePreValidation:true}") boolean chouettePreValidationEnabled) {
         this.internalBlobStore = internalBlobStore;
         this.providerRepository = providerRepository;
@@ -69,6 +72,7 @@ public class FileClassificationConsumer extends MardukPubSubConsumer {
         this.publisher = publisher;
         this.antuValidation = antuValidation;
         this.flexibleLinesImport = flexibleLinesImport;
+        this.netexDsjUpgrade = netexDsjUpgrade;
         this.chouettePreValidationEnabled = chouettePreValidationEnabled;
     }
 
@@ -143,6 +147,9 @@ public class FileClassificationConsumer extends MardukPubSubConsumer {
         jobEvents.reportProviderJob(message, b -> b
                 .timetableAction(JobEvent.TimetableAction.FILE_CLASSIFICATION).state(JobEvent.State.OK));
         message.setBody("");
+
+        // No-op unless enabled; replaces the stored dataset, so everything downstream sees NeTEx 1.16.
+        netexDsjUpgrade.upgradeIfNeeded(message);
 
         if (IMPORT_TYPE_NETEX_FLEX.equals(message.getHeader(IMPORT_TYPE, String.class))) {
             flexibleLinesImport.start(message);

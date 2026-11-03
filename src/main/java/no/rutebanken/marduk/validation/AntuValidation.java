@@ -2,6 +2,7 @@ package no.rutebanken.marduk.validation;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.Provider;
+import no.rutebanken.marduk.netex.NetexDsjUpgrade;
 import no.rutebanken.marduk.pipeline.MardukMdc;
 import no.rutebanken.marduk.pipeline.MardukMessage;
 import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
@@ -47,6 +48,7 @@ public class AntuValidation {
     private final MardukInternalBlobStoreService internalBlobStore;
     private final ProviderRepository providerRepository;
     private final NetexValidationProfiles netexValidationProfiles;
+    private final NetexDsjUpgrade netexDsjUpgrade;
     private final JobEventPublisher jobEvents;
     private final MardukPubSubPublisher publisher;
     private final String antuExchangeContainer;
@@ -55,12 +57,14 @@ public class AntuValidation {
             MardukInternalBlobStoreService internalBlobStore,
             ProviderRepository providerRepository,
             NetexValidationProfiles netexValidationProfiles,
+            NetexDsjUpgrade netexDsjUpgrade,
             JobEventPublisher jobEvents,
             MardukPubSubPublisher publisher,
             @Value("${blobstore.gcs.antu.exchange.container.name}") String antuExchangeContainer) {
         this.internalBlobStore = internalBlobStore;
         this.providerRepository = providerRepository;
         this.netexValidationProfiles = netexValidationProfiles;
+        this.netexDsjUpgrade = netexDsjUpgrade;
         this.jobEvents = jobEvents;
         this.publisher = publisher;
         this.antuExchangeContainer = antuExchangeContainer;
@@ -96,6 +100,7 @@ public class AntuValidation {
             return false;
         }
         LOGGER.info("File with file handle {} found in blob store. Triggering nightly prevalidation.", fileHandle);
+        netexDsjUpgrade.upgradeForNightlyValidation(message);
         copyToValidationBucket(message);
         request(message, VALIDATION_STAGE_NIGHTLY_VALIDATION, false);
         return true;

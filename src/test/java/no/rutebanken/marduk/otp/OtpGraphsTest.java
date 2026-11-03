@@ -12,8 +12,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
 
+import static no.rutebanken.marduk.Constants.OTP2_CURRENT_GRAPH_OBJ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OtpGraphsTest {
@@ -77,5 +80,34 @@ class OtpGraphsTest {
 
         assertTrue(graphs.transitGraphs().isEmpty());
         assertTrue(graphs.streetGraphs().isEmpty());
+    }
+
+    @Test
+    void timestampedGraphFileMatchesWithSerializationId() {
+        Matcher m = OtpGraphs.OTP2_NETEX_GRAPH_FILE_NAME_PATTERN
+                .matcher("netex-otp2/EN-0051/2026-09-08T03:00:00-Graph-otp2-EN-0051.obj");
+        assertTrue(m.find());
+        assertEquals("EN-0051", m.group(1));
+    }
+
+    @Test
+    void stableCopyAndPointerFileDoNotMatch() {
+        assertFalse(OtpGraphs.OTP2_NETEX_GRAPH_FILE_NAME_PATTERN
+                .matcher("netex-otp2/EN-0051/" + OTP2_CURRENT_GRAPH_OBJ).find());
+        assertFalse(OtpGraphs.OTP2_NETEX_GRAPH_FILE_NAME_PATTERN
+                .matcher("netex-otp2/EN-0051/current-otp2").find());
+    }
+
+    @Test
+    void latestGraphListedIsTheTimestampedFileNotTheStableCopy() {
+        graphsRepository.uploadBlob("netex-otp2/EN-0051/2026-09-08T03:00:00-Graph-otp2-EN-0051.obj", dummy());
+        // the stable copy is written after the timestamped file
+        graphsRepository.uploadBlob("netex-otp2/EN-0051/" + OTP2_CURRENT_GRAPH_OBJ, dummy());
+
+        List<OtpGraphsInfo.OtpGraphFile> transit = otpGraphs.list().transitGraphs();
+
+        assertEquals(1, transit.size());
+        assertEquals("2026-09-08T03:00:00-Graph-otp2-EN-0051.obj", transit.getFirst().name());
+        assertEquals("EN-0051", transit.getFirst().serializationId());
     }
 }

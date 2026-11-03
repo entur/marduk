@@ -198,7 +198,10 @@ where a Camel route and a consumer both read the same subscription.
 | `DamuExportGtfsStatusRouteBuilder` | `DamuGtfsExportStatusConsumer` |
 | `http:` producers against Chouette | `ChouetteClient` |
 | `quartz://marduk/chouetteRemoveOldJobsQuartz` | `ChouetteJobCleanup.removeOldJobsOnSchedule`, `@Scheduled` |
-| `FetchOsmRouteBuilder` + `quartz://marduk/fetchOsmMap` | `OsmMapFetcher`, `@Scheduled` |
+| `FetchOsmRouteBuilder`, then `OsmUpdateRouteBuilder`, + `quartz://marduk/fetchOsmMap` | `OsmMapFetcher`, `@Scheduled` |
+| `NetexDsjExportRouteBuilder`, `direct:adminNetexDsjExport*` | `NetexDsjExport`, `NetexDsjBackfill` |
+| `NetexDsjUpgradeRouteBuilder`, `direct:upgradeNetexDataset*` | `NetexDsjUpgrade` |
+| `NetexDsjExportConfig`, `NetexDsjConverter` | the same classes, moved to `netex/`, without the Camel `@Header` bindings |
 | `MonitorCandidateBaseGraphBuilderVersionRouteBuilder` | `CandidateBaseGraphBuilderMonitor`, `@Scheduled` |
 | `InboundQueueRouteBuilder` | `MardukInboundQueueConsumer` |
 | `FileClassificationRouteBuilder`'s consumer | `FileClassificationConsumer` |
@@ -393,6 +396,10 @@ as `javasecurity:S5145`.
 ## Notes on individual conversions
 
 ### One bug fixed rather than reproduced
+
+*Superseded: master stopped downloading the map (see *Merging master*), so the download, the stored-checksum
+ordering below and `OsmMapFetcherTest`'s truncated-download tests are gone with it. The ordering rule survives
+in the new check: the checksum is stored only after the build has been triggered.*
 
 **[measured]** `direct:fetchOsmMapOverNorway` stored the OSM checksum *before* downloading and verifying the
 archive. A truncated download threw `Md5ChecksumValidationException`, which
@@ -611,12 +618,13 @@ either pod once leftover messages from earlier testing were purged.
   and the rows were deleted. One job for two requests, which is what the aggregator was for.
 - `taskScheduler` resolved unambiguously: no `TaskSchedulerRouter` line and no WARN at startup, so the pool
   size property is not being silently ignored.
-- `POST /services/map_admin/download` times out locally because it genuinely starts downloading the Norway OSM
-  extract from geofabrik. Working as intended.
+- `POST /services/map_admin/download` timed out locally because it genuinely started downloading the Norway OSM
+  extract from geofabrik. It only fetches the checksum file now.
 
 **One production bug found**, the missing `patch` verb on `leases` - see *There are ten leaders* above.
 
-**A second bug, caught by reading the rig's config rather than by running it.** `OsmMapFetcher.fetch()` read
+**A second bug, caught by reading the rig's config rather than by running it.** (No longer applicable: the map is
+not downloaded by marduk any more.) `OsmMapFetcher.fetch()` read
 the whole OSM extract into a `byte[]`. The Norway file is well over a gigabyte and the pod limit is 1280Mi;
 Camel had spooled it to disk through the route's `.streamCaching()`. It streams to a temp file and hashes from
 there now. `ChouetteClient` grew a `downloadTo` for the same reason, and `getBytes` is documented as
@@ -775,6 +783,56 @@ Two things passed the build and the whole test suite and still broke a pod:
 - **The ConfigMap keeps its `camel.*` block for one release.** A helm rollback restores the chart and the
   image together, but rolling only the image back is a plausible emergency action, and the old jar needs those
   keys. There is a comment saying to delete the block in the next release.
+
+## Merging master (NeTEx 1.16 DatedServiceJourney work)
+
+`origin/master` kept adding Camel routes while this branch removed them: the dual NeTEx 1.15/1.16 export, the
+upgrade of uploaded datasets, the raw-zip aggregation of the Norway export, the stable graph name, the
+checksum-only OSM check and the Camel 4.22 bump. Each change was ported to the class that replaced its route
+rather than re-introduced. Where the port was a choice, it is recorded here.
+
+| Master | Here |
+| --- | --- |
+| `NetexDsjExportRouteBuilder` (`direct:distribute*`) | `NetexDsjExport`. `PROP_IGNORE_DISTRIBUTION_FAILURES` and `PROP_REPORT_JOB_EVENTS` became a private `Mode` (publication, backfill, missing) passed down |
+| `NetexDsjUpgradeRouteBuilder`, `direct:upgradeNetexDatasetForNightlyValidation` | `NetexDsjUpgrade`, called by `FileClassificationConsumer` and by `AntuValidation.requestNightlyValidationIfFilePresent` |
+| `direct:adminNetexDsjExport`, `direct:adminNetexDsjExportAll` (`wireTap`) | `AdminRestController`, handing the work to `NetexDsjBackfill`'s single thread |
+| `Otp2NetexExportMergedRouteBuilder` | `Otp2MergedNetexExport`, on `RawZipMerger`; the `netexAggregationExecutorService` is a pool of 8 owned by the class |
+| `copyOtpGraphsBlobInBucket`, `PUBLISHED_GRAPH_PATH_PROPERTY` | `Otp2NetexGraphBuild.publish`, one `copyBlobInBucket` before the pointer files |
+| `OsmUpdateRouteBuilder` | `OsmMapFetcher`; `Md5ChecksumValidationException` is deleted, as on master |
+| `FileUploadedTimestampProcessor` | the same class, a `@Component` on `MardukMessage`, called by `TimetableFileUploader` before it queues the file |
+
+Judgement calls:
+
+- **No in-process retry in the DSJ code.** Camel's error handler redelivered each blob step three times. The
+  distribution and the upgrade do not wrap their blob calls in `RetryPolicy`: a failure propagates, so the
+  publication, the import step or the aggregated export fails and PubSub redelivers it, which is what master's
+  own comments already rely on ("fail the calling step so that it is retried"). The one exception is the
+  Nisaba copy in `ChouetteImportResultHandler`, which was already under `RetryPolicy` and stays there, with the
+  distribution inside it.
+- **The backfill is sequential.** `distributeAllExports` keeps going past a provider whose export cannot be
+  distributed, as the ignoring route did. A provider that cannot be downgraded is swallowed per provider, so the
+  aggregated export is still built afterwards, as on master. Only a failure that is not swallowed (several files
+  matching a provider's export, for instance) is rethrown after the loop, so that `NetexDsjBackfill` does not go
+  on to build the aggregated export from folders that are not filled. Master's split had no such failure to
+  propagate in this mode, so that case is stricter here.
+- **`FILE_VERSION` follows the upgrade.** The upgrade overwrites the stored file, and the import later copies
+  "that version" to Nisaba. `direct:uploadInternalBlob` updated the header as a side effect; `NetexDsjUpgrade`
+  sets it from the upload explicitly. `NetexDsjUpgradeTest` pins it.
+- **The legacy and staging copies are made with `uploadBlobWithoutVersionHeader`.** The route's
+  `uploadInternalBlob` and `uploadBlob` overwrote `FILE_VERSION` with the copy's generation, which nothing
+  downstream wants.
+- **The message is restored, not the exchange.** The routes saved and restored `FILE_HANDLE`, the body and
+  `FILE_VERSION` around each side step. Here only the body is restored (a status report leaves the serialised
+  event in it, and `JobEventPublisher` publishes it); the methods do not change the headers in the first place.
+- **`dsjcompatibility` is stripped like the other caller-supplied strings** (`Utils.singleLine`) before it is
+  validated, on both controllers. The internal controller answers an unknown value with a 400 through its
+  `IllegalArgumentException` handler; the external one returns the message in the body, as master did.
+- **The OSM check swallows a bad checksum file on the schedule only.** Master's route had no `onException`;
+  the scheduled call logs and waits for the next firing, the admin endpoint still fails.
+- **The pom keeps its Camel-free dependency set.** From master it takes `commons-compress`, `netex-java-model`
+  (test), `kubernetes-client` 7.8.0, `entur-helpers` 7.4.0 and the two-fork surefire setup, and drops the
+  Camel 4.22 bump and the `camel.cluster.file.root` test property. The ConfigMap keeps `otp2.graph.build.autoStartup`
+  and, for one more release, the `otp.*` spelling the earlier commits added.
 
 ## The final sweep
 

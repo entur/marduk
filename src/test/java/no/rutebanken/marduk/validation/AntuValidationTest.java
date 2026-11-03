@@ -1,5 +1,10 @@
 package no.rutebanken.marduk.validation;
 
+import java.nio.file.Path;
+import org.junit.jupiter.api.io.TempDir;
+import no.rutebanken.marduk.netex.NetexDsjUpgrade;
+import no.rutebanken.marduk.netex.NetexDsjConverterTest;
+import no.rutebanken.marduk.netex.NetexDsjTestConfig;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.pipeline.MardukMessage;
@@ -73,6 +78,7 @@ class AntuValidationTest {
                 new MardukInternalBlobStoreService("marduk-internal", internalRepository),
                 providerRepository,
                 new NetexValidationProfiles(List.of(), List.of("OYM")),
+                NetexDsjTestConfig.disabledUpgrade(),
                 new JobEventPublisher(publisher),
                 publisher,
                 ANTU_CONTAINER);
@@ -196,6 +202,7 @@ class AntuValidationTest {
                 new MardukInternalBlobStoreService("marduk-internal", internalRepository),
                 providers,
                 new NetexValidationProfiles(List.of(), List.of("OYM")),
+                NetexDsjTestConfig.disabledUpgrade(),
                 new JobEventPublisher(publisher),
                 publisher,
                 ANTU_CONTAINER);
@@ -213,6 +220,55 @@ class AntuValidationTest {
         assertTrue(antuValidation.requestNightlyValidationIfFilePresent(message));
 
         assertEquals(VALIDATION_STAGE_NIGHTLY_VALIDATION, requestAttributes().get(VALIDATION_STAGE_HEADER));
+    }
+
+    private AntuValidation withUpgrade(Path workingDirectory) {
+        ProviderRepository providers = mock(ProviderRepository.class);
+        Provider provider = new Provider();
+        provider.setChouetteInfo(new ChouetteInfo().setReferential("rb_rut"));
+        when(providers.getProvider(2L)).thenReturn(provider);
+        when(providers.getReferential(2L)).thenReturn("rb_rut");
+        MardukInternalBlobStoreService internal = new MardukInternalBlobStoreService("marduk-internal", internalRepository);
+        NetexDsjUpgrade upgrade = new NetexDsjUpgrade(NetexDsjTestConfig.create(workingDirectory), internal, providers,
+                new JobEventPublisher(publisher));
+        return new AntuValidation(internal, providers, new NetexValidationProfiles(List.of(), List.of("OYM")),
+                upgrade, new JobEventPublisher(publisher), publisher, ANTU_CONTAINER);
+    }
+
+    /**
+     * The nightly validation reuses the dataset stored by the last upload, which may predate NeTEx 1.16. It must be
+     * upgraded before it is sent to Antu, or the pipeline validates a dataset whose DatedServiceJourney replacement
+     * references a NeTEx 1.16 Chouette drops silently.
+     */
+    @Test
+    void theStoredDatasetIsUpgradedBeforeTheNightlyValidationIsRequested(@TempDir Path workingDirectory) throws Exception {
+        byte[] stored = NetexDsjConverterTest.zip(java.util.Map.of("VYG_netex-1.15.xml",
+                java.nio.file.Files.readAllBytes(NetexDsjConverterTest.NETEX_1_15_FIXTURE)));
+        internalRepository.uploadBlob(HANDLE, new ByteArrayInputStream(stored));
+        MardukMessage message = netexMessage().removeHeader(FILE_TYPE).setHeader(DATASET_REFERENTIAL, "rb_rut");
+
+        assertTrue(withUpgrade(workingDirectory).requestNightlyValidationIfFilePresent(message));
+
+        NetexDsjConverterTest.assertUpgraded(new String(NetexDsjConverterTest.unzip(
+                internalRepository.getBlob(HANDLE).readAllBytes()).get("VYG_netex-1.15.xml"), StandardCharsets.UTF_8));
+        assertEquals(1, publisher.publishedTo(MardukQueues.ANTU_NETEX_VALIDATION_QUEUE).size());
+    }
+
+    /**
+     * A dataset that cannot be upgraded must not be validated as it is: the nightly run of that provider fails and
+     * reports a failed pre-validation instead.
+     */
+    @Test
+    void aDatasetThatCannotBeUpgradedFailsTheNightlyRunAndSendsNothingToAntu(@TempDir Path workingDirectory) {
+        internalRepository.uploadBlob(HANDLE, new ByteArrayInputStream("not a zip archive".getBytes(StandardCharsets.UTF_8)));
+        MardukMessage message = netexMessage().removeHeader(FILE_TYPE).setHeader(DATASET_REFERENTIAL, "rb_rut");
+
+        org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class,
+                () -> withUpgrade(workingDirectory).requestNightlyValidationIfFilePresent(message));
+
+        assertTrue(publisher.publishedTo(MardukQueues.ANTU_NETEX_VALIDATION_QUEUE).isEmpty());
+        assertEquals(JobEvent.TimetableAction.PREVALIDATION.name(), reported().getAction());
+        assertEquals(JobEvent.State.FAILED, reported().getState());
     }
 
     @Test

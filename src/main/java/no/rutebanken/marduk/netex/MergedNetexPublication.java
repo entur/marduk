@@ -31,6 +31,7 @@ public class MergedNetexPublication {
 
     private final ProviderRepository providerRepository;
     private final DatedExportUpload datedExportUpload;
+    private final NetexDsjExport netexDsjExport;
     private final JobEventPublisher jobEvents;
     private final MardukPubSubPublisher publisher;
     private final boolean useChouetteGtfsExport;
@@ -39,12 +40,14 @@ public class MergedNetexPublication {
     public MergedNetexPublication(
             ProviderRepository providerRepository,
             DatedExportUpload datedExportUpload,
+            NetexDsjExport netexDsjExport,
             JobEventPublisher jobEvents,
             MardukPubSubPublisher publisher,
             @Value("${gtfs.export.chouette:true}") boolean useChouetteGtfsExport,
             @Value("${line.statistics.calculation.enabled:false}") boolean lineStatisticsCalculationEnabled) {
         this.providerRepository = providerRepository;
         this.datedExportUpload = datedExportUpload;
+        this.netexDsjExport = netexDsjExport;
         this.jobEvents = jobEvents;
         this.publisher = publisher;
         this.useChouetteGtfsExport = useChouetteGtfsExport;
@@ -52,6 +55,12 @@ public class MergedNetexPublication {
     }
 
     public void publishMergedDataset(MardukMessage message) {
+        // Store the legacy (NeTEx 1.15 structure) and new (NeTEx 1.16 structure) variants of the dataset and
+        // copy the default variant into the default folder before notifying downstream consumers.
+        if (netexDsjExport.isEnabled()) {
+            netexDsjExport.distributeExport(message);
+        }
+
         Provider provider = providerRepository.getProvider(message.getHeader(PROVIDER_ID, Long.class));
         if (provider.getChouetteInfo().isGenerateDatedServiceJourneyIds()) {
             datedExportUpload.copyDatedExport(message);

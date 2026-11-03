@@ -4,6 +4,8 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.experimental.ExperimentalImportPath;
 import no.rutebanken.marduk.pipeline.MardukMdc;
+import no.rutebanken.marduk.netex.NetexDsjExport;
+import no.rutebanken.marduk.netex.NetexDsjExportConfig;
 import no.rutebanken.marduk.pipeline.MardukMessage;
 import no.rutebanken.marduk.pubsub.MardukPubSubConsumer;
 import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
@@ -76,6 +78,8 @@ public class AntuValidationStatusConsumer extends MardukPubSubConsumer {
     private final ExchangeBlobStoreService exchangeBlobStore;
     private final MardukPubSubPublisher publisher;
     private final JobEventPublisher jobEvents;
+    private final NetexDsjExport netexDsjExport;
+    private final NetexDsjExportConfig netexDsjExportConfig;
     private final boolean enablePreValidation;
     private final boolean enablePostValidation;
     private final String exchangeContainer;
@@ -90,6 +94,8 @@ public class AntuValidationStatusConsumer extends MardukPubSubConsumer {
             ExchangeBlobStoreService exchangeBlobStore,
             MardukPubSubPublisher publisher,
             JobEventPublisher jobEvents,
+            NetexDsjExport netexDsjExport,
+            NetexDsjExportConfig netexDsjExportConfig,
             @Value("${chouette.enablePreValidation:true}") boolean enablePreValidation,
             @Value("${chouette.enablePostValidation:true}") boolean enablePostValidation,
             @Value("${blobstore.gcs.exchange.container.name}") String exchangeContainer,
@@ -102,6 +108,8 @@ public class AntuValidationStatusConsumer extends MardukPubSubConsumer {
         this.exchangeBlobStore = exchangeBlobStore;
         this.publisher = publisher;
         this.jobEvents = jobEvents;
+        this.netexDsjExport = netexDsjExport;
+        this.netexDsjExportConfig = netexDsjExportConfig;
         this.enablePreValidation = enablePreValidation;
         this.enablePostValidation = enablePostValidation;
         this.exchangeContainer = exchangeContainer;
@@ -268,6 +276,9 @@ public class AntuValidationStatusConsumer extends MardukPubSubConsumer {
         if (!enablePostValidation) {
             copyInBucket(message, Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
                     + message.getHeader(CHOUETTE_REFERENTIAL, String.class) + "-" + CURRENT_AGGREGATED_NETEX_FILENAME);
+            // Legacy copy of the blocks export for the timetable API (a no-op when the dual DatedServiceJourney
+            // export is disabled).
+            netexDsjExport.distributeBlocksExport(message);
         }
         reportComplete(message);
     }
@@ -302,8 +313,9 @@ public class AntuValidationStatusConsumer extends MardukPubSubConsumer {
         if (IMPORT_TYPE_NETEX_FLEX.equals(message.getHeader(VALIDATION_IMPORT_TYPE, String.class))) {
             message.setHeader(CHOUETTE_REFERENTIAL, "rb_" + message.getHeader(CHOUETTE_REFERENTIAL, String.class));
         }
-        String target = BLOBSTORE_PATH_OUTBOUND + "netex/"
-                + message.getHeader(CHOUETTE_REFERENTIAL, String.class) + "-" + CURRENT_AGGREGATED_NETEX_FILENAME;
+        // When the dual DatedServiceJourney export is enabled, the export is stored in the "new" folder and
+        // distributed to the other folders by MergedNetexPublication.
+        String target = netexDsjExportConfig.publicationTargetPath(message.getHeader(CHOUETTE_REFERENTIAL, String.class));
         message.setHeader(TARGET_FILE_HANDLE, target);
         message.setHeader(TARGET_CONTAINER, publicContainer);
         internalBlobStore.copyBlobToAnotherBucket(

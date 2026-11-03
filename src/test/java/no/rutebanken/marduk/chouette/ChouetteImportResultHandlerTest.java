@@ -1,5 +1,11 @@
 package no.rutebanken.marduk.chouette;
 
+import java.nio.file.Path;
+import org.junit.jupiter.api.io.TempDir;
+import no.rutebanken.marduk.netex.NetexDsjExportConfig;
+import no.rutebanken.marduk.netex.NetexDsjConverterTest;
+import no.rutebanken.marduk.netex.NetexDsjExport;
+import no.rutebanken.marduk.netex.NetexDsjTestConfig;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import no.rutebanken.marduk.domain.ChouetteInfo;
@@ -111,7 +117,8 @@ class ChouetteImportResultHandlerTest {
     private ChouetteImportResultHandler handler() {
         return new ChouetteImportResultHandler(client, chouetteJobs,
                 new MardukInternalBlobStoreService("marduk-internal", internalRepository),
-                new JobEventPublisher(publisher), publisher, noRetries(), NISABA);
+                new JobEventPublisher(publisher), publisher, noRetries(),
+                NetexDsjTestConfig.disabledExport(), NetexDsjTestConfig.disabled(), NISABA);
     }
 
     private static MardukMessage result(String actionReport, String validationReport) {
@@ -146,6 +153,26 @@ class ChouetteImportResultHandlerTest {
 
         assertTrue(nisabaRepository.exist("imported/rut/rut_2026-08-18T10_00_00.zip"),
                 "the dataset was not archived under the key Chouette's update time gives it");
+    }
+
+    @Test
+    void withTheDualExportTheDatasetIsKeptInThreeNisabaFolders(@TempDir Path workingDirectory) throws Exception {
+        NetexDsjExportConfig dsjConfig = NetexDsjTestConfig.create(workingDirectory);
+        MardukInternalBlobStoreService internal = new MardukInternalBlobStoreService("marduk-internal", internalRepository);
+        internalRepository.uploadBlob(HANDLE, new ByteArrayInputStream(NetexDsjConverterTest.zip(NetexDsjConverterTest.mixedArchiveEntries())));
+        NetexDsjExport dsj = new NetexDsjExport(dsjConfig, null, internal, new JobEventPublisher(publisher));
+        ChouetteImportResultHandler handler = new ChouetteImportResultHandler(client, chouetteJobs, internal,
+                new JobEventPublisher(publisher), publisher, noRetries(), dsj, dsjConfig, NISABA);
+
+        handler.handle(result("OK", "OK"));
+
+        String name = "rut/rut_2026-08-18T10_00_00.zip";
+        assertTrue(nisabaRepository.exist("imported-dsj-new/" + name), "the dataset as uploaded");
+        assertTrue(nisabaRepository.exist("imported-dsj-legacy/" + name), "the legacy copy");
+        assertTrue(nisabaRepository.exist("imported/" + name), "the default variant");
+        NetexDsjConverterTest.assertDowngraded(new String(NetexDsjConverterTest.unzip(
+                nisabaRepository.getBlob("imported-dsj-legacy/" + name).readAllBytes()).get(NetexDsjConverterTest.NETEX_1_16_ENTRY),
+                StandardCharsets.UTF_8));
     }
 
     @Test

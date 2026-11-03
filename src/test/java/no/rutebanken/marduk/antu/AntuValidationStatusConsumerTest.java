@@ -4,6 +4,9 @@ import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.experimental.ExperimentalImportPath;
+import no.rutebanken.marduk.netex.NetexDsjExport;
+import no.rutebanken.marduk.netex.NetexDsjExportConfig;
+import no.rutebanken.marduk.netex.NetexDsjTestConfig;
 import no.rutebanken.marduk.pipeline.MardukMessage;
 import no.rutebanken.marduk.pubsub.MardukQueues;
 import no.rutebanken.marduk.pubsub.RecordingPubSubPublisher;
@@ -16,11 +19,14 @@ import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEventPublisher;
 import no.rutebanken.marduk.services.ExchangeBlobStoreService;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
+import no.rutebanken.marduk.services.MardukPublicBlobStoreService;
 import no.rutebanken.marduk.validation.ValidationStages;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -79,6 +85,10 @@ class AntuValidationStatusConsumerTest {
     private boolean blocksExport = true;
     private boolean enablePreValidation;
     private boolean enablePostValidation;
+    private boolean dsjExport;
+
+    @TempDir
+    Path dsjWorkingDirectory;
 
     @BeforeEach
     void setUp() {
@@ -99,15 +109,21 @@ class AntuValidationStatusConsumerTest {
         // Servicelinker linking is left off so the experimental branches run straight through to Ashur.
         ExperimentalImportPath path = new ExperimentalImportPath(
                 helpers, internalBlobStore(), publisher, jobEvents, false, EXCHANGE);
+        NetexDsjExportConfig dsjConfig = NetexDsjTestConfig.create(dsjWorkingDirectory, dsjExport, false);
+        NetexDsjExport dsj = new NetexDsjExport(dsjConfig,
+                new MardukPublicBlobStoreService(PUBLIC, new InMemoryMardukBlobStoreRepository(buckets)),
+                internalBlobStore(), jobEvents);
         return new AntuValidationStatusConsumer(
                 providerRepository,
                 helpers,
                 path,
-                new PrevalidatedDataset(internalBlobStore(), idempotentRepository, NISABA),
+                new PrevalidatedDataset(internalBlobStore(), idempotentRepository, dsj, dsjConfig, NISABA),
                 internalBlobStore(),
                 new ExchangeBlobStoreService(EXCHANGE, new InMemoryMardukBlobStoreRepository(buckets)),
                 publisher,
                 jobEvents,
+                dsj,
+                dsjConfig,
                 enablePreValidation,
                 enablePostValidation,
                 EXCHANGE,
@@ -180,47 +196,6 @@ class AntuValidationStatusConsumerTest {
                 .removeHeader(VALIDATION_CORRELATION_ID_HEADER);
 
         assertThrows(MardukException.class, () -> consumer().handle(message));
-    }
-
-    /**
-     * The blocks post-validation must report OK to Nabu in both configurations. This class runs with the
-     * default chouette.enablePostValidation=true, so the filtered block of the branch is skipped entirely:
-     * it pins the job event to a position outside that filter. The flag-off variant, where the branch also
-     * copies the blobs and stores the legacy NeTEx 1.15 copy, is covered by
-     * {@link AntuNetexBlocksPostValidationStatusRouteBuilderTest}.
-     */
-    @Test
-    void testBlocksPostValidationReportsOkWhenPostValidationIsEnabled() throws Exception {
-
-        AdviceWith.adviceWith(context, "antu-netex-validation-complete", a -> a
-                .interceptSendToEndpoint("direct:updateStatus")
-                .skipSendToOriginalEndpoint()
-                .to("mock:updateStatus"));
-
-        // we must manually start when we are done with all the advice with
-        context.start();
-
-        updateStatus.expectedMessageCount(1);
-
-        Map<String, String> headers = new HashMap<>();
-        headers.put(VALIDATION_STAGE_HEADER, VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION);
-        headers.put(VALIDATION_DATASET_FILE_HANDLE_HEADER, "testFileName");
-        headers.put(VALIDATION_CORRELATION_ID_HEADER, "testCorrelationId");
-        headers.put(DATASET_REFERENTIAL, TestConstants.CHOUETTE_REFERENTIAL_RB_RUT);
-        sendBodyAndHeadersToPubSub(importTemplate, STATUS_VALIDATION_OK, headers);
-
-        updateStatus.assertIsSatisfied();
-
-        String published = updateStatus.getExchanges().getFirst().getIn().getBody(String.class);
-        assertNotNull(published);
-        assertFalse(published.isBlank(), "direct:updateStatus publishes the body and nothing else");
-
-        JobEvent jobEvent = JobEvent.fromString(published);
-        assertEquals(JobEvent.JobDomain.TIMETABLE, jobEvent.getDomain());
-        assertEquals(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION.name(), jobEvent.getAction());
-        assertEquals(JobEvent.State.OK, jobEvent.getState());
-        // the filtered block is skipped, so the DSJ distribution never defaults the username to the system
-        assertNull(jobEvent.getUsername());
     }
 
     @Test
@@ -362,6 +337,19 @@ class AntuValidationStatusConsumerTest {
     }
 
     @Test
+    void withTheDualExportTheOriginalDatasetIsArchivedInThreeNisabaFolders() {
+        experimentalImport = true;
+        dsjExport = true;
+
+        consumer().handle(status(STATUS_VALIDATION_OK, VALIDATION_STAGE_PREVALIDATION));
+
+        String name = "tst/tst_2026-03-27T12_00_00.zip";
+        assertNotNull(blob(NISABA, "imported-dsj-new/" + name), "the dataset as uploaded");
+        assertNotNull(blob(NISABA, "imported-dsj-legacy/" + name), "the legacy copy");
+        assertNotNull(blob(NISABA, "imported/" + name), "the default variant");
+    }
+
+    @Test
     void anExperimentalCodespaceReportsThePrevalidationBeforeTheReferentialsArePrefixed() {
         // The links to antu's pre-validation reports are built from the unprefixed referential, so the
         // report has to be out before the enrichment and filtering step renames them.
@@ -458,6 +446,21 @@ class AntuValidationStatusConsumerTest {
     }
 
     @Test
+    void aValidatedBlocksExportAlsoGetsALegacyCopyWithTheDualExportAndStillReportsTheJobEvent() {
+        dsjExport = true;
+
+        consumer().handle(status(STATUS_VALIDATION_OK, VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION, "rb_tst"));
+
+        assertNotNull(blob(INTERNAL, "chouette/netex-with-blocks/rb_tst-aggregated-netex.zip"));
+        assertNotNull(blob(INTERNAL, "chouette/netex-with-blocks-dsj-legacy/rb_tst-aggregated-netex.zip"));
+        // the distribution leaves nothing of its own in the message: Nabu must still get the OK event
+        JobEvent event = onlyReported();
+        assertEquals(JobEvent.TimetableAction.EXPORT_NETEX_BLOCKS_POSTVALIDATION.name(), event.getAction());
+        assertEquals(JobEvent.State.OK, event.getState());
+        assertEquals(JobEvent.JobDomain.TIMETABLE, event.getDomain());
+    }
+
+    @Test
     void aValidatedBlocksExportIsOnlyReportedWhenChouetteOwnsThePostValidation() {
         enablePostValidation = true;
 
@@ -515,6 +518,18 @@ class AntuValidationStatusConsumerTest {
         assertEquals(1, publisher.publishedTo(MardukQueues.PUBLISH_MERGED_NETEX_QUEUE).size());
         assertEquals(JobEvent.TimetableAction.EXPORT_NETEX_MERGED_POSTVALIDATION.name(), onlyReported().getAction());
         assertEquals(JobEvent.State.OK, onlyReported().getState());
+    }
+
+    @Test
+    void withTheDualExportAValidatedMergedDatasetIsStoredInTheNewFolder() {
+        dsjExport = true;
+
+        consumer().handle(status(STATUS_VALIDATION_OK, VALIDATION_STAGE_EXPORT_MERGED_POSTVALIDATION, "rb_tst"));
+
+        assertNotNull(blob(PUBLIC, "outbound/netex-dsj-new/rb_tst-aggregated-netex.zip"));
+        assertNull(blob(PUBLIC, "outbound/netex/rb_tst-aggregated-netex.zip"),
+                "the default folder is filled in by the publication");
+        assertEquals(1, publisher.publishedTo(MardukQueues.PUBLISH_MERGED_NETEX_QUEUE).size());
     }
 
     @Test

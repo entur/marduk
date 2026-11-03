@@ -24,17 +24,21 @@
     </scm>
     <properties>
         <!-- unmanaged by any BOM; marduk uses the fabric8 client directly for leader election -->
-        <kubernetes-client.version>7.7.0</kubernetes-client.version>
-        <entur.helpers.version>7.3.0</entur.helpers.version>
+        <kubernetes-client.version>7.8.0</kubernetes-client.version>
+        <entur.helpers.version>7.4.0</entur.helpers.version>
+        <forkCount>2</forkCount>
+        <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
         <spring-cloud-gcp-dependencies.version>8.1.1</spring-cloud-gcp-dependencies.version>
         <commons-io.version>2.22.0</commons-io.version>
         <commons-csv.version>1.14.1</commons-csv.version>
-        <zt-zip.version>1.18.2</zt-zip.version>
+        <zt-zip.version>1.18.3</zt-zip.version>
+        <commons-compress.version>1.28.0</commons-compress.version>
         <json-unit.version>6.0.1</json-unit.version>
         <springdoc.version>3.0.2</springdoc.version>
 
         <!-- empty argLine property, the value is set up by Jacoco during unit tests execution -->
         <argLine/>
+        <netex-java-model.version>2.0.16.3</netex-java-model.version>
     </properties>
 
     <dependencyManagement>
@@ -160,6 +164,15 @@
         </dependency>
         <!-- Other-->
 
+        <!-- NeTEx schemas, used by the tests of no.rutebanken.marduk.netex.conversion to validate the converted
+             documents. The conversions themselves are maintained here, not in the library. -->
+        <dependency>
+            <groupId>org.entur</groupId>
+            <artifactId>netex-java-model</artifactId>
+            <version>${netex-java-model.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Boot 4 moved Flyway auto-configuration into its own module; without it migrations never run -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -187,6 +200,16 @@
             <artifactId>zt-zip</artifactId>
             <version>${zt-zip.version}</version>
             <type>jar</type>
+        </dependency>
+
+        <!--
+          Raw (already-deflated) zip entry copy for the aggregated NeTEx export.
+          ZipFile#getRawInputStream / ZipArchiveOutputStream#addRawArchiveEntry have no java.util.zip equivalent.
+        -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>${commons-compress.version}</version>
         </dependency>
 
         <dependency>
@@ -217,7 +240,7 @@
         <dependency>
             <groupId>org.openapitools</groupId>
             <artifactId>jackson-databind-nullable</artifactId>
-            <version>0.2.11</version>
+            <version>0.2.13</version>
         </dependency>
 
         <dependency>
@@ -298,6 +321,7 @@
                 </argLine>
                     <systemPropertyVariables combine.children="override">
                         <spring.output.ansi.enabled>ALWAYS</spring.output.ansi.enabled>
+                        <server.port>2808${surefire.forkNumber}</server.port>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

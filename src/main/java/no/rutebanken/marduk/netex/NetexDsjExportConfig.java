@@ -14,11 +14,10 @@
  *
  */
 
-package no.rutebanken.marduk.routes.netex;
+package no.rutebanken.marduk.netex;
 
 import jakarta.annotation.PostConstruct;
 import no.rutebanken.marduk.Constants;
-import org.apache.camel.Header;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -189,7 +188,7 @@ public class NetexDsjExportConfig {
      * DatedServiceJourneys with replacement information and must therefore be converted between NeTEx 1.15 and
      * NeTEx 1.16 with the XSLT transformation. The datasets of the other codespaces are used as is.
      */
-    public boolean hasDsjReplacements(@Header(Constants.CHOUETTE_REFERENTIAL) String referential) {
+    public boolean hasDsjReplacements(String referential) {
         if (referential == null) {
             return false;
         }
@@ -208,21 +207,21 @@ public class NetexDsjExportConfig {
     /**
      * Path of the dataset in the default folder ({@code outbound/netex/rb_xxx-aggregated-netex.zip}).
      */
-    public String defaultExportPath(@Header(Constants.CHOUETTE_REFERENTIAL) String referential) {
+    public String defaultExportPath(String referential) {
         return DEFAULT_EXPORT_PATH + aggregatedNetexFileName(referential);
     }
 
     /**
      * Path of the new variant of the dataset.
      */
-    public String newExportPath(@Header(Constants.CHOUETTE_REFERENTIAL) String referential) {
+    public String newExportPath(String referential) {
         return newBlobPath + aggregatedNetexFileName(referential);
     }
 
     /**
      * Path of the legacy variant of the dataset.
      */
-    public String legacyExportPath(@Header(Constants.CHOUETTE_REFERENTIAL) String referential) {
+    public String legacyExportPath(String referential) {
         return legacyBlobPath + aggregatedNetexFileName(referential);
     }
 
@@ -230,14 +229,14 @@ public class NetexDsjExportConfig {
      * Path where the import pipeline stores the dataset it has just exported: the {@code netex-dsj-new} folder
      * when the dual export is enabled, otherwise directly the default folder.
      */
-    public String publicationTargetPath(@Header(Constants.CHOUETTE_REFERENTIAL) String referential) {
+    public String publicationTargetPath(String referential) {
         return enabled ? newExportPath(referential) : defaultExportPath(referential);
     }
 
     /**
      * Path of the variant that must be copied into the default folder.
      */
-    public String defaultVariantSourcePath(@Header(Constants.CHOUETTE_REFERENTIAL) String referential) {
+    public String defaultVariantSourcePath(String referential) {
         return variantPath(getDefaultVariant(), aggregatedNetexFileName(referential));
     }
 
@@ -258,14 +257,14 @@ public class NetexDsjExportConfig {
     /**
      * Path in the internal bucket of the NeTEx blocks export as produced by the pipeline (NeTEx 1.16 after the migration).
      */
-    public String blocksExportPath(@Header(Constants.CHOUETTE_REFERENTIAL) String referential) {
+    public String blocksExportPath(String referential) {
         return Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT + aggregatedNetexFileName(referential);
     }
 
     /**
      * Path in the internal bucket of the legacy copy of the NeTEx blocks export.
      */
-    public String legacyBlocksExportPath(@Header(Constants.CHOUETTE_REFERENTIAL) String referential) {
+    public String legacyBlocksExportPath(String referential) {
         return Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_DSJ_LEGACY + aggregatedNetexFileName(referential);
     }
 
@@ -295,7 +294,7 @@ public class NetexDsjExportConfig {
      *
      * @param originalDatasetPath the path of the original dataset in the default folder.
      */
-    public String originalDatasetPublicationPath(@Header(Constants.TARGET_FILE_HANDLE) String originalDatasetPath) {
+    public String originalDatasetPublicationPath(String originalDatasetPath) {
         return enabled ? newOriginalDatasetPath(originalDatasetPath) : originalDatasetPath;
     }
 
@@ -321,7 +320,7 @@ public class NetexDsjExportConfig {
      * The postfix is inserted before the extension of the file name, if it has one. A dot in a folder name is not
      * an extension, hence the comparison with the position of the last separator.
      */
-    public static String originalV115BackupPath(@Header(Constants.FILE_HANDLE) String fileHandle) {
+    public static String originalV115BackupPath(String fileHandle) {
         int lastSeparator = fileHandle.lastIndexOf('/');
         int lastDot = fileHandle.lastIndexOf('.');
         return lastDot > lastSeparator

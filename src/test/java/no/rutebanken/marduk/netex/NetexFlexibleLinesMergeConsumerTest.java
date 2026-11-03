@@ -46,6 +46,7 @@ import static no.rutebanken.marduk.Constants.VALIDATION_STAGE_HEADER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -128,6 +129,11 @@ class NetexFlexibleLinesMergeConsumerTest {
 
     private NetexFlexibleLinesMergeConsumer consumer(
             boolean experimentalImportEnabled, boolean mergeFlexibleLinesEnabled) {
+        return consumerWith(NetexDsjTestConfig.disabled(), experimentalImportEnabled, mergeFlexibleLinesEnabled);
+    }
+
+    private NetexFlexibleLinesMergeConsumer consumerWith(
+            NetexDsjExportConfig dsjConfig, boolean experimentalImportEnabled, boolean mergeFlexibleLinesEnabled) {
         ExperimentalImportHelpers helpers =
                 new ExperimentalImportHelpers(experimentalImportEnabled, providerRepository);
         return new NetexFlexibleLinesMergeConsumer(
@@ -139,6 +145,7 @@ class NetexFlexibleLinesMergeConsumerTest {
                 publication,
                 new JobEventPublisher(publisher),
                 publisher,
+                dsjConfig,
                 workingDirectory.toString(),
                 mergeFlexibleLinesEnabled,
                 ANTU_CONTAINER);
@@ -214,6 +221,21 @@ class NetexFlexibleLinesMergeConsumerTest {
         verify(publication).publishMergedDataset(message);
         assertTrue(publisher.publishedTo(MardukQueues.ANTU_NETEX_VALIDATION_QUEUE).isEmpty(),
                 "antu was asked to validate a dataset nothing was merged into");
+    }
+
+    @Test
+    void withTheDualExportTheChouetteExportIsPublishedToTheNewFolderForThePublicationToDistribute() {
+        store(internalRepository, CHOUETTE_EXPORT, "netex.zip");
+        MardukMessage message = mergeRequest();
+        NetexFlexibleLinesMergeConsumer dsjConsumer = consumerWith(
+                NetexDsjTestConfig.create(workingDirectory.resolve("dsj")), false, true);
+
+        dsjConsumer.handle(message);
+
+        publicRepository.setContainerName(PUBLIC_CONTAINER);
+        assertNotNull(publicRepository.getBlob("outbound/netex-dsj-new/rb_rut-aggregated-netex.zip"));
+        assertNull(publicRepository.getBlob(MERGED_EXPORT), "the default folder is filled in by the publication");
+        assertEquals("outbound/netex-dsj-new/rb_rut-aggregated-netex.zip", message.getHeader(FILE_HANDLE, String.class));
     }
 
     @Test

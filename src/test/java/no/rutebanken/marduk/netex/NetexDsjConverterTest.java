@@ -14,7 +14,7 @@
  *
  */
 
-package no.rutebanken.marduk.routes.netex;
+package no.rutebanken.marduk.netex;
 
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.routes.file.ZipFileUtils;
@@ -37,14 +37,14 @@ import java.util.zip.ZipOutputStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class NetexDsjConverterTest {
+public class NetexDsjConverterTest {
 
-    static final Path NETEX_1_16_FIXTURE = Path.of("src/test/resources/no/rutebanken/marduk/routes/netex/netex-1.16-dated-service-journey.xml");
-    static final Path NETEX_1_15_FIXTURE = Path.of("src/test/resources/no/rutebanken/marduk/routes/netex/netex-1.15-dated-service-journey.xml");
-    static final Path NETEX_ZIP_FIXTURE = Path.of("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip");
-    static final String NETEX_1_16_ENTRY = "VYG_dated-service-journeys.xml";
-    static final String OLD_NETEX_ENTRY = "WF739.xml";
-    static final String README_ENTRY = "README.txt";
+    public static final Path NETEX_1_16_FIXTURE = Path.of("src/test/resources/no/rutebanken/marduk/routes/netex/netex-1.16-dated-service-journey.xml");
+    public static final Path NETEX_1_15_FIXTURE = Path.of("src/test/resources/no/rutebanken/marduk/routes/netex/netex-1.15-dated-service-journey.xml");
+    public static final Path NETEX_ZIP_FIXTURE = Path.of("src/test/resources/no/rutebanken/marduk/routes/file/beans/netex.zip");
+    public static final String NETEX_1_16_ENTRY = "VYG_dated-service-journeys.xml";
+    public static final String OLD_NETEX_ENTRY = "WF739.xml";
+    public static final String README_ENTRY = "README.txt";
 
     private static final long NO_SIZE_LIMIT = Long.MAX_VALUE;
 
@@ -54,7 +54,7 @@ class NetexDsjConverterTest {
     /**
      * A zip archive with a NeTEx 1.16 file, a file in an older NeTEx version and a non-XML file.
      */
-    static Map<String, byte[]> mixedArchiveEntries() throws IOException {
+    public static Map<String, byte[]> mixedArchiveEntries() throws IOException {
         Map<String, byte[]> entries = new LinkedHashMap<>();
         entries.put(NETEX_1_16_ENTRY, Files.readAllBytes(NETEX_1_16_FIXTURE));
         entries.put(OLD_NETEX_ENTRY, ZipFileUtils.extractFileFromZipFile(NETEX_ZIP_FIXTURE.toFile(), OLD_NETEX_ENTRY));
@@ -62,7 +62,7 @@ class NetexDsjConverterTest {
         return entries;
     }
 
-    static byte[] zip(Map<String, byte[]> entries) throws IOException {
+    public static byte[] zip(Map<String, byte[]> entries) throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(bytes)) {
             for (Map.Entry<String, byte[]> entry : entries.entrySet()) {
@@ -74,7 +74,7 @@ class NetexDsjConverterTest {
         return bytes.toByteArray();
     }
 
-    static Map<String, byte[]> unzip(byte[] archive) throws IOException {
+    public static Map<String, byte[]> unzip(byte[] archive) throws IOException {
         Map<String, byte[]> entries = new LinkedHashMap<>();
         try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(archive))) {
             ZipEntry entry;
@@ -261,14 +261,14 @@ class NetexDsjConverterTest {
         return file;
     }
 
-    static void assertUpgraded(String xml) {
+    public static void assertUpgraded(String xml) {
         // the conversion also rewrites the Nordic profile version in the last segment
         assertThat(xml).contains("version=\"1.16:NO-NeTEx-networktimetable:1.6\"");
         assertThat(xml).contains("<replacedJourneys>");
         assertThat(xml).doesNotContain("<DatedServiceJourneyRef");
     }
 
-    static void assertDowngraded(String xml) {
+    public static void assertDowngraded(String xml) {
         // the conversion also rewrites the Nordic profile version in the last segment
         assertThat(xml).contains("version=\"1.15:NO-NeTEx-networktimetable:1.5\"");
         assertThat(xml).doesNotContain("<replacedJourneys");

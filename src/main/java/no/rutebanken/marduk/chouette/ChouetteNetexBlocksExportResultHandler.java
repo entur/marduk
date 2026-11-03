@@ -1,6 +1,7 @@
 package no.rutebanken.marduk.chouette;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.netex.NetexDsjExport;
 import no.rutebanken.marduk.pipeline.MardukMessage;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEventPublisher;
@@ -33,16 +34,19 @@ public class ChouetteNetexBlocksExportResultHandler implements ChouetteJobResult
     private final ChouetteNetexExport export;
     private final AntuValidation antuValidation;
     private final JobEventPublisher jobEvents;
+    private final NetexDsjExport netexDsjExport;
     private final boolean enablePostValidation;
 
     public ChouetteNetexBlocksExportResultHandler(
             ChouetteNetexExport export,
             AntuValidation antuValidation,
             JobEventPublisher jobEvents,
+            NetexDsjExport netexDsjExport,
             @Value("${chouette.enablePostValidation:true}") boolean enablePostValidation) {
         this.export = export;
         this.antuValidation = antuValidation;
         this.jobEvents = jobEvents;
+        this.netexDsjExport = netexDsjExport;
         this.enablePostValidation = enablePostValidation;
     }
 
@@ -63,6 +67,11 @@ public class ChouetteNetexBlocksExportResultHandler implements ChouetteJobResult
                     : BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_BEFORE_VALIDATION;
             export.store(message, prefix + message.getHeader(CHOUETTE_REFERENTIAL, String.class)
                     + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME);
+            if (enablePostValidation) {
+                // Legacy copy of the blocks export for the timetable API (a no-op when the dual
+                // DatedServiceJourney export is disabled).
+                netexDsjExport.distributeBlocksExport(message);
+            }
             antuValidation.requestPostValidation(message, VALIDATION_STAGE_EXPORT_NETEX_BLOCKS_POSTVALIDATION);
             report(message, JobEvent.State.OK);
         } else {

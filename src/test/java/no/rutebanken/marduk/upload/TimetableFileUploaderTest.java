@@ -5,8 +5,10 @@ import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.pubsub.MardukQueues;
 import no.rutebanken.marduk.pubsub.RecordingPubSubPublisher;
+import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
 import no.rutebanken.marduk.repository.InMemoryMardukBlobStoreRepository;
 import no.rutebanken.marduk.repository.ProviderRepository;
+import no.rutebanken.marduk.routes.file.FileUploadedTimestampProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEventPublisher;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
@@ -28,6 +30,7 @@ import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
+import static no.rutebanken.marduk.Constants.FILE_UPLOADED_TIMESTAMP;
 import static no.rutebanken.marduk.Constants.IMPORT_TYPE;
 import static no.rutebanken.marduk.Constants.IMPORT_TYPE_NETEX_FLEX;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
@@ -47,6 +50,7 @@ class TimetableFileUploaderTest {
     private RecordingPubSubPublisher publisher;
     private ProviderRepository providerRepository;
     private DuplicateFileFilter duplicateFileFilter;
+    private FileNameAndDigestIdempotentRepository idempotentRepository;
 
     /** Rejects everything, to drive the duplicate branch without depending on a previous upload. */
     private static final class AlwaysSeen implements no.rutebanken.marduk.repository.IdempotentRepository {
@@ -103,6 +107,7 @@ class TimetableFileUploaderTest {
         internalRepository.setContainerName("marduk-internal");
         publisher = new RecordingPubSubPublisher();
         providerRepository = mock(ProviderRepository.class);
+        idempotentRepository = mock(FileNameAndDigestIdempotentRepository.class);
         when(providerRepository.getProvider(2L)).thenReturn(provider(true));
         duplicateFileFilter = new DuplicateFileFilter(new NeverSeen(), new JobEventPublisher(publisher));
     }
@@ -120,7 +125,8 @@ class TimetableFileUploaderTest {
     private TimetableFileUploader uploader() {
         return new TimetableFileUploader(
                 new MardukInternalBlobStoreService("marduk-internal", internalRepository),
-                providerRepository, duplicateFileFilter, new JobEventPublisher(publisher), publisher);
+                providerRepository, duplicateFileFilter, new JobEventPublisher(publisher), publisher,
+                new FileUploadedTimestampProcessor(idempotentRepository));
     }
 
     private static MultipartFile file(String content) {
@@ -169,6 +175,17 @@ class TimetableFileUploaderTest {
         assertEquals("rut", queued.getFirst().attributes().get(CHOUETTE_REFERENTIAL));
         assertEquals("corr", queued.getFirst().attributes().get(CORRELATION_ID));
         assertEquals("someone", queued.getFirst().attributes().get(USERNAME));
+    }
+
+    @Test
+    void theUploadTimestampIsPassedOnWhenTheRepositoryKnowsIt() {
+        java.time.LocalDateTime createdAt = java.time.LocalDateTime.of(2025, 6, 15, 10, 30, 45);
+        when(idempotentRepository.getCreatedAt("netex.zip")).thenReturn(createdAt);
+
+        uploader().upload(file("zip bytes"), upload(null));
+
+        assertEquals(createdAt.toString(),
+                publisher.onlyPublishedTo(MardukQueues.PROCESS_FILE_QUEUE).attributes().get(FILE_UPLOADED_TIMESTAMP));
     }
 
     @Test

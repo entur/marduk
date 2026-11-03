@@ -31,6 +31,7 @@ import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_REPORT_INDEX_FILE;
 import static no.rutebanken.marduk.Constants.PROVIDER_ID;
+import static no.rutebanken.marduk.Constants.OTP2_CURRENT_GRAPH_OBJ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -124,7 +125,7 @@ class Otp2NetexGraphBuildTest {
         private int exports;
 
         StubMergedNetexExport() {
-            super(null, null, null, "", "", "", "");
+            super(null, null, null, null, null, "", "", "", "", false);
         }
 
         @Override
@@ -193,6 +194,18 @@ class Otp2NetexGraphBuildTest {
                 "the versioned pointer file holds the path of the graph it points at");
         assertEquals(published, contentsOf(graphsRepository, CURRENT_FILE),
                 "the current pointer file holds the path of the graph it points at");
+    }
+
+    @Test
+    void aGraphBuildAlsoCopiesTheGraphToAStableNameBesideTheTimestampedOne() throws IOException {
+        build(true, true).build(batch(request("corr-id", "rb_rut")), false);
+
+        assertTrue(graphsRepository.exist("netex-otp2/EN-0051/" + OTP2_CURRENT_GRAPH_OBJ),
+                "OTP instances load the stable copy directly");
+        assertEquals(contentsOf(graphsRepository, publishedGraphPath()),
+                contentsOf(graphsRepository, "netex-otp2/EN-0051/" + OTP2_CURRENT_GRAPH_OBJ));
+        assertEquals(publishedGraphPath(), contentsOf(graphsRepository, CURRENT_FILE),
+                "the pointer names the timestamped graph, not the stable copy");
     }
 
     @Test

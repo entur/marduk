@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.otp;
 
+import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.OtpGraphsInfo;
 import no.rutebanken.marduk.graph.OtpGraphFilesBuilder;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
@@ -12,6 +13,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ_PREFIX;
+import static no.rutebanken.marduk.Constants.OTP2_CURRENT_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP2_NETEX_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP2_STREET_GRAPH_DIR;
 
@@ -23,6 +25,14 @@ import static no.rutebanken.marduk.Constants.OTP2_STREET_GRAPH_DIR;
  */
 @Component
 public class OtpGraphs {
+
+    /**
+     * Matches the timestamped transit graph files, capturing the serialization id.
+     * The stable copy of the latest graph ({@link Constants#OTP2_CURRENT_GRAPH_OBJ}) is excluded since it duplicates
+     * the timestamped graph file.
+     */
+    static final Pattern OTP2_NETEX_GRAPH_FILE_NAME_PATTERN = Pattern.compile(
+            OTP2_NETEX_GRAPH_DIR + "/" + "(.*)" + "/(?!" + Pattern.quote(OTP2_CURRENT_GRAPH_OBJ) + "$).*\\.obj");
 
     private final OtpGraphsBlobStoreService otpGraphsBlobStore;
     private final MardukInternalBlobStoreService internalBlobStore;
@@ -36,7 +46,7 @@ public class OtpGraphs {
             @Value("${otp.graph.blobstore.subdirectory:graphs}") String blobStoreGraphSubdirectory) {
         this.otpGraphsBlobStore = otpGraphsBlobStore;
         this.internalBlobStore = internalBlobStore;
-        this.netexGraphFileName = Pattern.compile(OTP2_NETEX_GRAPH_DIR + "/" + "(.*)" + "/.*\\.obj");
+        this.netexGraphFileName = OTP2_NETEX_GRAPH_FILE_NAME_PATTERN;
         this.streetGraphFileName = Pattern.compile(blobStoreGraphSubdirectory + "/" + OTP2_STREET_GRAPH_DIR
                 + "/" + OTP2_BASE_GRAPH_OBJ_PREFIX + "-(.*).*\\.obj");
         this.streetGraphFolder = blobStoreGraphSubdirectory + "/" + OTP2_STREET_GRAPH_DIR + "/";

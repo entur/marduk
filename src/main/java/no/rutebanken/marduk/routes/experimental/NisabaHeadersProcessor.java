@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 
+import static no.rutebanken.marduk.Constants.BLOBSTORE_PATH_NISABA_IMPORTED;
 import static no.rutebanken.marduk.Constants.FILTERING_FILE_CREATED_TIMESTAMP;
 
 /**
@@ -42,7 +43,7 @@ public class NisabaHeadersProcessor {
      */
     public UploadTarget targetFor(String referential, String createdTimestamp) {
         String timestamp = resolveTimestamp(createdTimestamp).format(TIMESTAMP).replace(":", "_");
-        String pathToTargetFile = "imported/" + referential + "/" + referential + "_" + timestamp + ".zip";
+        String pathToTargetFile = BLOBSTORE_PATH_NISABA_IMPORTED + referential + "/" + referential + "_" + timestamp + ".zip";
         LOGGER.info("Set Nisaba upload target: container='{}', fileHandle='{}'", containerName, pathToTargetFile);
         return new UploadTarget(pathToTargetFile, containerName);
     }

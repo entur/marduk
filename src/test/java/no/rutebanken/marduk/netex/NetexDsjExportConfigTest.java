@@ -14,12 +14,12 @@
  *
  */
 
-package no.rutebanken.marduk.routes.netex;
+package no.rutebanken.marduk.netex;
 
 import org.junit.jupiter.api.Test;
 
-import static no.rutebanken.marduk.routes.netex.NetexDsjExportConfig.originalV115BackupPath;
-import static no.rutebanken.marduk.routes.netex.NetexDsjExportConfig.parseVariant;
+import static no.rutebanken.marduk.netex.NetexDsjExportConfig.originalV115BackupPath;
+import static no.rutebanken.marduk.netex.NetexDsjExportConfig.parseVariant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

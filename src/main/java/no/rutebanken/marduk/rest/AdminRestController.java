@@ -14,6 +14,8 @@ import no.rutebanken.marduk.pipeline.MardukMessage;
 import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
 import no.rutebanken.marduk.pubsub.MardukQueues;
 import no.rutebanken.marduk.repository.ProviderRepository;
+import no.rutebanken.marduk.netex.NetexDsjBackfill;
+import no.rutebanken.marduk.netex.NetexDsjExportConfig;
 import no.rutebanken.marduk.rest.openapi.model.UploadResult;
 import no.rutebanken.marduk.routes.chouette.json.JobResponse;
 import no.rutebanken.marduk.routes.status.JobEvent;
@@ -115,6 +117,8 @@ public class AdminRestController {
     private final ChouetteValidationTriggers validationTriggers;
     private final OsmMapFetcher osmMapFetcher;
     private final OtpGraphs otpGraphs;
+    private final NetexDsjExportConfig netexDsjExportConfig;
+    private final NetexDsjBackfill netexDsjBackfill;
     private final boolean duplicateFilterWeb;
     private final boolean duplicateFilterRest;
     private final boolean httpImportEnabled;
@@ -133,6 +137,8 @@ public class AdminRestController {
             ChouetteValidationTriggers validationTriggers,
             OsmMapFetcher osmMapFetcher,
             OtpGraphs otpGraphs,
+            NetexDsjExportConfig netexDsjExportConfig,
+            NetexDsjBackfill netexDsjBackfill,
             @Value("${duplicate.filter.web:true}") boolean duplicateFilterWeb,
             @Value("${duplicate.filter.rest:true}") boolean duplicateFilterRest,
             @Value("${netex.import.http.autoStartup:true}") boolean httpImportEnabled,
@@ -151,6 +157,8 @@ public class AdminRestController {
         this.validationTriggers = validationTriggers;
         this.osmMapFetcher = osmMapFetcher;
         this.otpGraphs = otpGraphs;
+        this.netexDsjExportConfig = netexDsjExportConfig;
+        this.netexDsjBackfill = netexDsjBackfill;
         this.duplicateFilterWeb = duplicateFilterWeb;
         this.duplicateFilterRest = duplicateFilterRest;
         this.httpImportEnabled = httpImportEnabled;
@@ -237,6 +245,19 @@ public class AdminRestController {
         return accepted();
     }
 
+    /**
+     * Distributes the current NeTEx export of every provider to the legacy (NeTEx 1.15 structure) and new
+     * (NeTEx 1.16 structure) DatedServiceJourney export folders, then regenerates the Norway aggregated exports.
+     * Fire and forget: the downgrade of a large dataset takes longer than the HTTP request timeout.
+     */
+    @PostMapping("/services/timetable_admin/export/netex/dsj")
+    public ResponseEntity<String> exportNetexDsjForAllProviders() {
+        MardukMessage message = adminRequest();
+        LOGGER.info("Distribute NeTEx exports of all providers to the DatedServiceJourney export folders");
+        netexDsjBackfill.startDistributingAll(message);
+        return accepted();
+    }
+
     @PostMapping("/services/timetable_admin/routing_graph/build_base")
     public ResponseEntity<String> buildBaseGraph() {
         MardukMessage message = adminRequest();
@@ -306,18 +327,29 @@ public class AdminRestController {
     /** @deprecated use {@code GET /services/timetable-management/datasets/{codespace}} */
     @Deprecated(since = "the timetable-management API")
     @GetMapping("/services/timetable_admin/download_netex_blocks/{codespace}")
-    public ResponseEntity<Resource> downloadNetexBlocks(@PathVariable("codespace") String rawCodespace) {
+    public ResponseEntity<Resource> downloadNetexBlocks(
+            @PathVariable("codespace") String rawCodespace,
+            @RequestParam(value = "dsjcompatibility", required = false) String rawDsjcompatibility) {
         newCorrelationId();
         String codespace = singleLine(rawCodespace);
+        String dsjcompatibility = singleLine(rawDsjcompatibility);
         LOGGER.info("Received Blocks download request for provider {} through the HTTP endpoint", codespace);
         Long providerId = providerIdOf(codespace);
         authorizationService.verifyBlockViewerPrivileges(providerId);
 
-        String fileHandle = Constants.BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT
-                + "rb_" + codespace.toLowerCase()
-                + "-" + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+        // An unknown variant is an IllegalArgumentException, which the exception handler answers with a 400.
+        NetexDsjExportConfig.Variant variant = netexDsjExportConfig.resolveApiVariant(dsjcompatibility);
+        String referential = "rb_" + codespace.toLowerCase();
+        String fileHandle = netexDsjExportConfig.blocksExportPath(variant, referential);
         LOGGER.info("Downloading NeTEx dataset with blocks: {}", fileHandle);
-        return blobResponse(fileHandle);
+        ResponseEntity<Resource> response = blobResponse(fileHandle);
+        if (response.getStatusCode().is2xxSuccessful() || variant != NetexDsjExportConfig.Variant.LEGACY) {
+            return response;
+        }
+        // The legacy copy is produced after the blocks export: fall back to the export produced by the pipeline.
+        String fallback = netexDsjExportConfig.blocksExportPath(referential);
+        LOGGER.warn("No legacy copy of the NeTEx dataset with blocks, falling back to {}", fallback);
+        return blobResponse(fallback);
     }
 
     // ------------------------------------------------------------------------------------ per provider
@@ -401,6 +433,17 @@ public class AdminRestController {
         return accepted();
     }
 
+    @PostMapping("/services/timetable_admin/{providerId}/export/netex/dsj")
+    public ResponseEntity<String> exportNetexDsj(@PathVariable Long providerId) {
+        MardukMessage message = adminRequest(providerId)
+                .setHeader(CHOUETTE_REFERENTIAL, providerRepository.getReferential(providerId))
+                .setBody("");
+        LOGGER.info("Distribute NeTEx export to the DatedServiceJourney export folders");
+        // fire and forget: the downgrade of a large dataset takes longer than the HTTP request timeout
+        netexDsjBackfill.startDistributingProvider(message);
+        return accepted();
+    }
+
     @PostMapping("/services/timetable_admin/{providerId}/validate")
     public ResponseEntity<String> validate(@PathVariable Long providerId) {
         MardukMessage message = editorRequest(providerId);
@@ -437,7 +480,7 @@ public class AdminRestController {
     @PostMapping("/services/map_admin/download")
     public ResponseEntity<String> fetchOsmMap() {
         adminRequest();
-        LOGGER.info("OSM update map data");
+        LOGGER.info("Checking for OSM map update");
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(osmMapFetcher.fetchIfChanged());
     }
 

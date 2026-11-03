@@ -79,6 +79,7 @@ public class NetexFlexibleLinesMergeConsumer extends MardukPubSubConsumer {
     private final MergedNetexPublication publication;
     private final JobEventPublisher jobEvents;
     private final MardukPubSubPublisher publisher;
+    private final NetexDsjExportConfig netexDsjExportConfig;
     private final String localWorkingDirectory;
     private final boolean mergeFlexibleLinesEnabled;
     private final String antuExchangeContainer;
@@ -92,6 +93,7 @@ public class NetexFlexibleLinesMergeConsumer extends MardukPubSubConsumer {
             MergedNetexPublication publication,
             JobEventPublisher jobEvents,
             MardukPubSubPublisher publisher,
+            NetexDsjExportConfig netexDsjExportConfig,
             @Value("${netex.export.download.directory:files/netex/merged}") String localWorkingDirectory,
             @Value("${netex.export.merge.flexible.lines.enabled:false}") boolean mergeFlexibleLinesEnabled,
             @Value("${blobstore.gcs.antu.exchange.container.name}") String antuExchangeContainer) {
@@ -103,6 +105,7 @@ public class NetexFlexibleLinesMergeConsumer extends MardukPubSubConsumer {
         this.publication = publication;
         this.jobEvents = jobEvents;
         this.publisher = publisher;
+        this.netexDsjExportConfig = netexDsjExportConfig;
         this.localWorkingDirectory = localWorkingDirectory;
         this.mergeFlexibleLinesEnabled = mergeFlexibleLinesEnabled;
         this.antuExchangeContainer = antuExchangeContainer;
@@ -208,9 +211,9 @@ public class NetexFlexibleLinesMergeConsumer extends MardukPubSubConsumer {
 
     private void uploadMergedFileToOutboundBucket(MardukMessage message) {
         Path merged = zipTheWorkingFolder(message);
-        String fileHandle = BLOBSTORE_PATH_OUTBOUND + "netex/"
-                + message.getHeader(CHOUETTE_REFERENTIAL, String.class) + "-"
-                + Constants.CURRENT_AGGREGATED_NETEX_FILENAME;
+        // When the dual DatedServiceJourney export is enabled, the export is stored in the "new" folder and
+        // distributed to the other folders by MergedNetexPublication.
+        String fileHandle = netexDsjExportConfig.publicationTargetPath(message.getHeader(CHOUETTE_REFERENTIAL, String.class));
         message.setHeader(FILE_HANDLE, fileHandle);
         store(message, merged, fileHandle, publicBlobStore);
     }

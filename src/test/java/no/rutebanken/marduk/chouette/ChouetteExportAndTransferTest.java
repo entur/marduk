@@ -1,5 +1,7 @@
 package no.rutebanken.marduk.chouette;
 
+import no.rutebanken.marduk.netex.NetexDsjExport;
+import no.rutebanken.marduk.netex.NetexDsjTestConfig;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
@@ -22,6 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.any;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_ID;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_LEVEL;
 import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_ROUTING_DESTINATION;
@@ -82,6 +87,7 @@ class ChouetteExportAndTransferTest {
         export = new ChouetteNetexExport(client, internalBlobStore, noRetries());
         antuValidation = new AntuValidation(internalBlobStore, providerRepository,
                 new NetexValidationProfiles(List.of(), List.of("OYM")),
+                NetexDsjTestConfig.disabledUpgrade(),
                 new JobEventPublisher(publisher), publisher, ANTU);
     }
 
@@ -221,6 +227,27 @@ class ChouetteExportAndTransferTest {
     }
 
     @Test
+    void aFinishedBlocksExportGetsALegacyCopyWhenChouetteOwnsThePostValidation() {
+        NetexDsjExport dsj = mock(NetexDsjExport.class);
+
+        new ChouetteNetexBlocksExportResultHandler(export, antuValidation, new JobEventPublisher(publisher), dsj, true)
+                .handle(exportResult("OK"));
+
+        verify(dsj).distributeBlocksExport(any());
+    }
+
+    @Test
+    void aBlocksExportBeforeValidationIsNotDistributedYet() {
+        // The copy is made from the validated export, which only exists once antu has passed it.
+        NetexDsjExport dsj = mock(NetexDsjExport.class);
+
+        new ChouetteNetexBlocksExportResultHandler(export, antuValidation, new JobEventPublisher(publisher), dsj, false)
+                .handle(exportResult("OK"));
+
+        verify(dsj, never()).distributeBlocksExport(any());
+    }
+
+    @Test
     void aBlocksExportDoesNotStartAnotherExport() {
         blocksExportResultHandler().handle(exportResult("OK"));
 
@@ -313,7 +340,7 @@ class ChouetteExportAndTransferTest {
 
     private ChouetteNetexBlocksExportResultHandler blocksExportResultHandler() {
         return new ChouetteNetexBlocksExportResultHandler(export, antuValidation,
-                new JobEventPublisher(publisher), true);
+                new JobEventPublisher(publisher), NetexDsjTestConfig.disabledExport(), true);
     }
 
     private ChouetteTransferConsumer transferConsumer() {

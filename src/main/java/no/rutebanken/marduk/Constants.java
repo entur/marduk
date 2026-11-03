@@ -40,9 +40,20 @@ public final class Constants {
     public static final String CURRENT_PREVALIDATED_NETEX_FILENAME = "netex.zip";
     public static final String PREVALIDATED_NETEX_METADATA_FILENAME = "netex.metadata.json";
 
+    /**
+     * Postfix of the copy of a dataset kept as uploaded, before it was upgraded to NeTEx 1.16
+     * (netex.zip -> netex-original-v115.zip). See NetexDsjUpgrade.
+     */
+    public static final String ORIGINAL_NETEX_V115_FILE_NAME_POSTFIX = "-original-v115";
+
     public static final String OTP2_GRAPH_OBJ_PREFIX = "Graph-otp2";
     public static final String OTP2_BASE_GRAPH_OBJ_PREFIX = "streetGraph-otp2";
     public static final String OTP2_NETEX_GRAPH_DIR = "netex-otp2";
+    /**
+     * Stable name of the latest published graph within a serialization version directory.
+     * OTP instances load this file directly, without resolving the pointer file first.
+     */
+    public static final String OTP2_CURRENT_GRAPH_OBJ = OTP2_GRAPH_OBJ_PREFIX + "-current.obj";
 
     public static final String OTP2_STREET_GRAPH_DIR = "street";
     public static final String OTP2_GRAPH_REPORT_INDEX_FILE = "index_otp2.html";
@@ -50,6 +61,8 @@ public final class Constants {
     public static final String FILE_APPLY_DUPLICATES_FILTER = "RutebankenApplyDuplicateFilter";
     public static final String FILE_APPLY_DUPLICATES_FILTER_ON_NAME_ONLY = "RutebankenApplyDuplicateFilterOnNameOnly";
     public static final String FILE_SKIP_STATUS_UPDATE_FOR_DUPLICATES = "RutebankenSkipStatusUpdateForDuplicateFiles";
+
+    public static final String FILE_UPLOADED_TIMESTAMP = "FileUploadedTimestamp";
 
     public static final String BLOBSTORE_PATH_INBOUND = "inbound/received/";
     public static final String BLOBSTORE_PATH_OUTBOUND = "outbound/";
@@ -63,6 +76,26 @@ public final class Constants {
 
     public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks/";
     public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_BEFORE_VALIDATION = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks-before-validation/";
+    /**
+     * Legacy copy of the NeTEx blocks export, produced during the transition to the NeTEx 1.16 DatedServiceJourney structure.
+     */
+    public static final String BLOBSTORE_PATH_NETEX_BLOCKS_EXPORT_DSJ_LEGACY = BLOBSTORE_PATH_CHOUETTE + "netex-with-blocks-dsj-legacy/";
+    /**
+     * Folder of the Nisaba bucket receiving the original datasets.
+     */
+    public static final String BLOBSTORE_PATH_NISABA_IMPORTED = "imported/";
+    /**
+     * Folder of the Nisaba bucket receiving the legacy copies of the original datasets.
+     */
+    public static final String BLOBSTORE_PATH_NISABA_IMPORTED_DSJ_LEGACY = "imported-dsj-legacy/";
+    /**
+     * Folder of the Nisaba bucket receiving the original datasets as uploaded (NeTEx 1.16 after the upgrade).
+     */
+    public static final String BLOBSTORE_PATH_NISABA_IMPORTED_DSJ_NEW = "imported-dsj-new/";
+    /**
+     * Staging folder in the internal bucket for the legacy copies of the original datasets before they are copied to Nisaba.
+     */
+    public static final String BLOBSTORE_PATH_DSJ_LEGACY_ORIGINAL_DATASET = "dsj-legacy/original/";
 
     public static final String CHOUETTE_JOB_STATUS_URL = "RutebankenChouetteJobStatusURL";
     public static final String CHOUETTE_JOB_ID = "RutebankenChouetteJobId";

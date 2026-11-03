@@ -1,6 +1,8 @@
 package no.rutebanken.marduk.chouette;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.netex.NetexDsjExport;
+import no.rutebanken.marduk.netex.NetexDsjExportConfig;
 import no.rutebanken.marduk.pipeline.MardukMessage;
 import no.rutebanken.marduk.pipeline.RetryPolicy;
 import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
@@ -19,6 +21,8 @@ import static no.rutebanken.marduk.Constants.CHOUETTE_JOB_STATUS_JOB_VALIDATION_
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_VERSION;
+import static no.rutebanken.marduk.Constants.TARGET_CONTAINER;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 
 /**
  * What happens once Chouette has finished importing a dataset.
@@ -45,6 +49,8 @@ public class ChouetteImportResultHandler implements ChouetteJobResultHandler {
     private final JobEventPublisher jobEvents;
     private final MardukPubSubPublisher publisher;
     private final RetryPolicy retryPolicy;
+    private final NetexDsjExport netexDsjExport;
+    private final NetexDsjExportConfig netexDsjExportConfig;
     private final String nisabaExchangeContainer;
 
     public ChouetteImportResultHandler(
@@ -54,6 +60,8 @@ public class ChouetteImportResultHandler implements ChouetteJobResultHandler {
             JobEventPublisher jobEvents,
             MardukPubSubPublisher publisher,
             RetryPolicy retryPolicy,
+            NetexDsjExport netexDsjExport,
+            NetexDsjExportConfig netexDsjExportConfig,
             @Value("${blobstore.gcs.nisaba.exchange.container.name}") String nisabaExchangeContainer) {
         this.chouetteClient = chouetteClient;
         this.chouetteJobs = chouetteJobs;
@@ -61,6 +69,8 @@ public class ChouetteImportResultHandler implements ChouetteJobResultHandler {
         this.jobEvents = jobEvents;
         this.publisher = publisher;
         this.retryPolicy = retryPolicy;
+        this.netexDsjExport = netexDsjExport;
+        this.netexDsjExportConfig = netexDsjExportConfig;
         this.nisabaExchangeContainer = nisabaExchangeContainer;
     }
 
@@ -103,12 +113,22 @@ public class ChouetteImportResultHandler implements ChouetteJobResultHandler {
         String lastUpdate = chouetteClient.getString(
                 "/chouette_iev/referentials/" + referential + "/last_update_date");
         String importKey = referential + "_" + lastUpdate.replace(':', '_');
-        retryPolicy.run("Copying the imported dataset for nisaba", () ->
-                internalBlobStore.copyVersionedBlobToAnotherBucket(
-                        message.getHeader(FILE_HANDLE, String.class),
-                        message.getHeader(FILE_VERSION, Long.class),
-                        nisabaExchangeContainer,
-                        "imported/" + referential + "/" + importKey + ".zip"));
+        String originalDatasetPath = Constants.BLOBSTORE_PATH_NISABA_IMPORTED + referential + "/" + importKey + ".zip";
+        retryPolicy.run("Copying the imported dataset for nisaba", () -> {
+            message.setHeader(TARGET_FILE_HANDLE, originalDatasetPath);
+            message.setHeader(TARGET_CONTAINER, nisabaExchangeContainer);
+            // The legacy copy and the default variant of the original dataset (a no-op when the dual
+            // DatedServiceJourney export is disabled).
+            netexDsjExport.distributeOriginalDatasetToNisaba(message);
+            // The dataset as uploaded goes to the imported-dsj-new folder when the dual export is enabled.
+            String publicationPath = netexDsjExportConfig.originalDatasetPublicationPath(originalDatasetPath);
+            message.setHeader(TARGET_FILE_HANDLE, publicationPath);
+            internalBlobStore.copyVersionedBlobToAnotherBucket(
+                    message.getHeader(FILE_HANDLE, String.class),
+                    message.getHeader(FILE_VERSION, Long.class),
+                    nisabaExchangeContainer,
+                    publicationPath);
+        });
     }
 
     /**

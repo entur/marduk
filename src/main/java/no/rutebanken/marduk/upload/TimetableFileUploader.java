@@ -5,6 +5,7 @@ import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.pipeline.MardukMessage;
 import no.rutebanken.marduk.pubsub.MardukPubSubPublisher;
 import no.rutebanken.marduk.pubsub.MardukQueues;
+import no.rutebanken.marduk.routes.file.FileUploadedTimestampProcessor;
 import no.rutebanken.marduk.repository.ProviderRepository;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import no.rutebanken.marduk.routes.status.JobEventPublisher;
@@ -74,18 +75,21 @@ public class TimetableFileUploader {
     private final DuplicateFileFilter duplicateFileFilter;
     private final JobEventPublisher jobEvents;
     private final MardukPubSubPublisher publisher;
+    private final FileUploadedTimestampProcessor fileUploadedTimestamp;
 
     public TimetableFileUploader(
             MardukInternalBlobStoreService internalBlobStore,
             ProviderRepository providerRepository,
             DuplicateFileFilter duplicateFileFilter,
             JobEventPublisher jobEvents,
-            MardukPubSubPublisher publisher) {
+            MardukPubSubPublisher publisher,
+            FileUploadedTimestampProcessor fileUploadedTimestamp) {
         this.internalBlobStore = internalBlobStore;
         this.providerRepository = providerRepository;
         this.duplicateFileFilter = duplicateFileFilter;
         this.jobEvents = jobEvents;
         this.publisher = publisher;
+        this.fileUploadedTimestamp = fileUploadedTimestamp;
     }
 
     /** @throws MardukException if the file could not be stored, so the caller answers with a failure */
@@ -155,6 +159,7 @@ public class TimetableFileUploader {
         String fileHandle = message.getHeader(FILE_HANDLE, String.class);
         if (providerRepository.getProvider(message.getHeader(PROVIDER_ID, Long.class))
                 .getChouetteInfo().isEnableAutoImport()) {
+            fileUploadedTimestamp.process(message);
             message.setBody("");
             publisher.publish(MardukQueues.PROCESS_FILE_QUEUE, message);
             LOGGER.info("Triggered import pipeline for timetable file: {}", fileHandle);

@@ -1,5 +1,12 @@
 package no.rutebanken.marduk.file;
 
+import java.util.Map;
+import java.nio.file.Path;
+import java.nio.file.Files;
+import org.junit.jupiter.api.io.TempDir;
+import no.rutebanken.marduk.netex.NetexDsjUpgrade;
+import no.rutebanken.marduk.netex.NetexDsjConverterTest;
+import no.rutebanken.marduk.netex.NetexDsjTestConfig;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
 import no.rutebanken.marduk.flexlines.FlexibleLinesImport;
@@ -26,6 +33,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static no.rutebanken.marduk.Constants.CORRELATION_ID;
+import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.FILE_NAME;
 import static no.rutebanken.marduk.Constants.FILE_TYPE;
@@ -71,12 +79,16 @@ class FileClassificationConsumerTest {
     }
 
     private FileClassificationConsumer consumer(boolean chouettePreValidationEnabled) {
+        return consumer(chouettePreValidationEnabled, NetexDsjTestConfig.disabledUpgrade());
+    }
+
+    private FileClassificationConsumer consumer(boolean chouettePreValidationEnabled, NetexDsjUpgrade upgrade) {
         MardukInternalBlobStoreService internalBlobStore =
                 new MardukInternalBlobStoreService("marduk-internal", internalRepository);
         JobEventPublisher jobEvents = new JobEventPublisher(publisher);
         AntuValidation antuValidation = new AntuValidation(
                 internalBlobStore, providerRepository, new NetexValidationProfiles(List.of(), List.of("OYM")),
-                jobEvents, publisher, ANTU_CONTAINER);
+                NetexDsjTestConfig.disabledUpgrade(), jobEvents, publisher, ANTU_CONTAINER);
         FlexibleLinesImport flexibleLinesImport = new FlexibleLinesImport(null, null, null, null, null) {
             @Override
             public void start(MardukMessage message) {
@@ -84,7 +96,7 @@ class FileClassificationConsumerTest {
             }
         };
         return new FileClassificationConsumer(internalBlobStore, providerRepository, jobEvents, publisher,
-                antuValidation, flexibleLinesImport, chouettePreValidationEnabled);
+                antuValidation, flexibleLinesImport, upgrade, chouettePreValidationEnabled);
     }
 
     private static MardukMessage notification() {
@@ -138,6 +150,27 @@ class FileClassificationConsumerTest {
         assertEquals(1, publisher.publishedTo(MardukQueues.ANTU_NETEX_VALIDATION_QUEUE).size());
         assertEquals(1, publisher.publishedTo(MardukQueues.CHOUETTE_IMPORT_QUEUE).size());
         assertTrue(antuRepository.exist(HANDLE) || internalRepository.exist(HANDLE));
+    }
+
+    @Test
+    void aNetexDatasetOfADatedServiceJourneyCodespaceIsUpgradedBeforeItIsValidatedAndImported(@TempDir Path workingDirectory) throws Exception {
+        String handle = "inbound/received/rb_rut/netex.zip";
+        byte[] uploaded = NetexDsjConverterTest.zip(Map.of("VYG_netex-1.15.xml",
+                Files.readAllBytes(NetexDsjConverterTest.NETEX_1_15_FIXTURE)));
+        internalRepository.uploadBlob(handle, new ByteArrayInputStream(uploaded));
+        NetexDsjUpgrade upgrade = new NetexDsjUpgrade(NetexDsjTestConfig.create(workingDirectory),
+                new MardukInternalBlobStoreService("marduk-internal", internalRepository),
+                providerRepository, new JobEventPublisher(publisher));
+
+        consumer(true, upgrade).handle(notification().setHeader(FILE_HANDLE, handle).setHeader(CHOUETTE_REFERENTIAL, "rb_rut"));
+
+        byte[] stored = internalRepository.getBlob(handle).readAllBytes();
+        assertFalse(java.util.Arrays.equals(uploaded, stored), "the stored dataset was not upgraded");
+        NetexDsjConverterTest.assertUpgraded(new String(
+                NetexDsjConverterTest.unzip(stored).get("VYG_netex-1.15.xml"), StandardCharsets.UTF_8));
+        assertTrue(internalRepository.exist("inbound/received/rb_rut/netex-original-v115.zip"));
+        assertEquals(1, publisher.publishedTo(MardukQueues.CHOUETTE_IMPORT_QUEUE).size());
+        assertEquals(1, publisher.publishedTo(MardukQueues.ANTU_NETEX_VALIDATION_QUEUE).size());
     }
 
     @Test

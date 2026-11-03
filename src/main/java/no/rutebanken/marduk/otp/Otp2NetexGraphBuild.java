@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
+import static no.rutebanken.marduk.Constants.OTP2_CURRENT_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ_PREFIX;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_REPORT_INDEX_FILE;
 import static no.rutebanken.marduk.Constants.OTP2_NETEX_GRAPH_DIR;
@@ -180,6 +181,14 @@ public class Otp2NetexGraphBuild {
                 Otp2GraphPublishing.netexGraph(workDir, timestamp, built.getFileNameOnly());
         internalBlobStore.copyBlobToAnotherBucket(paths.builtPath(), otpGraphsBucketName, paths.publishedPath());
         LOGGER.info("Done copying new OTP2 graph: {}", paths.builtPath());
+
+        // A stable name for the latest graph of the current graph compatibility version. OTP instances load this
+        // file directly; it must be in place before the pointer files are updated, since the pointer files
+        // trigger the redeployment of the OTP instances.
+        String stableGraphPath =
+                OTP2_NETEX_GRAPH_DIR + "/" + paths.compatibilityVersion() + "/" + OTP2_CURRENT_GRAPH_OBJ;
+        otpGraphsBlobStore.copyBlobInBucket(paths.publishedPath(), stableGraphPath);
+        LOGGER.info("Done copying new OTP2 graph to its stable name: {}", stableGraphPath);
 
         String versionedCurrentFile =
                 OTP2_NETEX_GRAPH_DIR + "/" + paths.compatibilityVersion() + "/" + otpGraphCurrentFile;

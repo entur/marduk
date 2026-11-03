@@ -1,5 +1,6 @@
 package no.rutebanken.marduk.chouette;
 
+import no.rutebanken.marduk.netex.NetexDsjTestConfig;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.ChouetteInfo;
 import no.rutebanken.marduk.domain.Provider;
@@ -15,6 +16,9 @@ import no.rutebanken.marduk.validation.AntuValidation;
 import no.rutebanken.marduk.validation.NetexValidationProfiles;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -73,6 +77,7 @@ class ChouetteValidationTriggersTest {
                 new MardukInternalBlobStoreService("marduk-internal", internalRepository);
         AntuValidation antuValidation = new AntuValidation(
                 internalBlobStore, providerRepository, new NetexValidationProfiles(List.of(), List.of("OYM")),
+                NetexDsjTestConfig.disabledUpgrade(),
                 new no.rutebanken.marduk.routes.status.JobEventPublisher(publisher), publisher, ANTU_CONTAINER);
         return new ChouetteValidationTriggers(
                 providerRepository, internalBlobStore, antuValidation, publisher);
@@ -192,6 +197,43 @@ class ChouetteValidationTriggersTest {
                         MardukQueues.CHOUETTE_VALIDATION_QUEUE).stream()
                 .map(p -> p.attributes().get(CHOUETTE_REFERENTIAL))
                 .collect(Collectors.toSet()));
+    }
+
+    /**
+     * The stored dataset is upgraded to NeTEx 1.16 before the nightly validation is requested, and a dataset that
+     * cannot be upgraded fails the run of that provider. The other providers are still validated, and the sweep
+     * fails all the same.
+     */
+    @Test
+    void aProviderWhoseStoredDatasetCannotBeUpgradedDoesNotStopTheNightlySweep(@TempDir Path workingDirectory) {
+        Provider broken = provider(1L, "rb_rut", null, true).setChouetteInfo(
+                provider(1L, "rb_rut", 9L, true).getChouetteInfo());
+        Provider healthy = provider(2L, "rb_other", 9L, true);
+        ProviderRepository repository = mock(ProviderRepository.class);
+        when(repository.getProviders()).thenReturn(List.of(broken, healthy));
+        when(repository.getProvider(1L)).thenReturn(broken);
+        when(repository.getProvider(2L)).thenReturn(healthy);
+        when(repository.getReferential(1L)).thenReturn("rb_rut");
+        when(repository.getReferential(2L)).thenReturn("rb_other");
+        internalRepository.uploadBlob(
+                BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + "rb_rut-" + CURRENT_PREVALIDATED_NETEX_FILENAME,
+                new ByteArrayInputStream("not a zip archive".getBytes(StandardCharsets.UTF_8)));
+        storeLastPrevalidatedFileFor("rb_other");
+        MardukInternalBlobStoreService internalBlobStore =
+                new MardukInternalBlobStoreService("marduk-internal", internalRepository);
+        no.rutebanken.marduk.routes.status.JobEventPublisher jobEvents =
+                new no.rutebanken.marduk.routes.status.JobEventPublisher(publisher);
+        AntuValidation antuValidation = new AntuValidation(
+                internalBlobStore, repository, new NetexValidationProfiles(List.of(), List.of("OYM")),
+                new no.rutebanken.marduk.netex.NetexDsjUpgrade(
+                        NetexDsjTestConfig.create(workingDirectory), internalBlobStore, repository, jobEvents),
+                jobEvents, publisher, ANTU_CONTAINER);
+        ChouetteValidationTriggers sweep =
+                new ChouetteValidationTriggers(repository, internalBlobStore, antuValidation, publisher);
+
+        assertThrows(MardukException.class, sweep::triggerAntuValidationForAllProviders);
+
+        assertEquals(Set.of("rb_other"), referentialsOn(MardukQueues.ANTU_NETEX_VALIDATION_QUEUE));
     }
 
     @Test

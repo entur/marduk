@@ -53,6 +53,7 @@ class MergedNetexPublicationTest {
         return new MergedNetexPublication(
                 providerRepository,
                 datedExportUpload,
+                NetexDsjTestConfig.disabledExport(),
                 new JobEventPublisher(publisher),
                 publisher,
                 useChouetteGtfsExport,
@@ -76,6 +77,36 @@ class MergedNetexPublicationTest {
                 publisher.publishedTo(MardukQueues.JOB_EVENT_QUEUE).getFirst().body());
         assertEquals(JobEvent.TimetableAction.OTP2_BUILD_GRAPH.name(), reported.getAction());
         assertEquals(JobEvent.State.PENDING, reported.getState());
+    }
+
+    @Test
+    void theDualExportIsDistributedBeforeAnyDownstreamConsumerIsNotified() {
+        NetexDsjExport dsj = mock(NetexDsjExport.class);
+        when(dsj.isEnabled()).thenReturn(true);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            assertTrue(publisher.published().isEmpty(), "a consumer was notified before the folders were filled");
+            return null;
+        }).when(dsj).distributeExport(org.mockito.ArgumentMatchers.any());
+
+        new MergedNetexPublication(providerRepository, datedExportUpload, dsj, new JobEventPublisher(publisher),
+                publisher, true, false).publishMergedDataset(mergedDataset());
+
+        org.mockito.Mockito.verify(dsj).distributeExport(org.mockito.ArgumentMatchers.any());
+        assertEquals(1, publisher.publishedTo(MardukQueues.OTP2_GRAPH_BUILD_QUEUE).size());
+    }
+
+    @Test
+    void aFailedDistributionStopsThePublicationSoItIsRetried() {
+        NetexDsjExport dsj = mock(NetexDsjExport.class);
+        when(dsj.isEnabled()).thenReturn(true);
+        org.mockito.Mockito.doThrow(new IllegalStateException("cannot downgrade"))
+                .when(dsj).distributeExport(org.mockito.ArgumentMatchers.any());
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+                () -> new MergedNetexPublication(providerRepository, datedExportUpload, dsj,
+                        new JobEventPublisher(publisher), publisher, true, false).publishMergedDataset(mergedDataset()));
+
+        assertTrue(publisher.published().isEmpty(), "downstream consumers were notified of a half-published dataset");
     }
 
     @Test

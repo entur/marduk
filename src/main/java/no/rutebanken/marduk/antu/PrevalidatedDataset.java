@@ -1,6 +1,8 @@
 package no.rutebanken.marduk.antu;
 
 import no.rutebanken.marduk.pipeline.MardukMessage;
+import no.rutebanken.marduk.netex.NetexDsjExport;
+import no.rutebanken.marduk.netex.NetexDsjExportConfig;
 import no.rutebanken.marduk.repository.FileNameAndDigestIdempotentRepository;
 import no.rutebanken.marduk.routes.experimental.FilteringTimestampProcessor;
 import no.rutebanken.marduk.routes.experimental.NisabaHeadersProcessor;
@@ -40,15 +42,21 @@ public class PrevalidatedDataset {
     private final FilteringTimestampProcessor filteringTimestamp;
     private final PrevalidatedFileMetadataProcessor fileMetadata;
     private final NisabaHeadersProcessor nisabaTarget;
+    private final NetexDsjExport netexDsjExport;
+    private final NetexDsjExportConfig netexDsjExportConfig;
 
     public PrevalidatedDataset(
             MardukInternalBlobStoreService internalBlobStore,
             FileNameAndDigestIdempotentRepository idempotentRepository,
+            NetexDsjExport netexDsjExport,
+            NetexDsjExportConfig netexDsjExportConfig,
             @Value("${blobstore.gcs.nisaba.exchange.container.name}") String nisabaExchangeContainer) {
         this.internalBlobStore = internalBlobStore;
         this.filteringTimestamp = new FilteringTimestampProcessor(idempotentRepository);
         this.fileMetadata = new PrevalidatedFileMetadataProcessor(idempotentRepository);
         this.nisabaTarget = new NisabaHeadersProcessor(nisabaExchangeContainer);
+        this.netexDsjExport = netexDsjExport;
+        this.netexDsjExportConfig = netexDsjExportConfig;
     }
 
     /** Records when the file was first received, for the steps downstream that name their output after it. */
@@ -65,8 +73,14 @@ public class PrevalidatedDataset {
                 referential, message.getHeader(FILTERING_FILE_CREATED_TIMESTAMP, String.class));
         message.setHeader(TARGET_FILE_HANDLE, target.fileHandle());
         message.setHeader(TARGET_CONTAINER, target.container());
+        // The legacy copy and the default variant of the original dataset (a no-op when the dual
+        // DatedServiceJourney export is disabled).
+        netexDsjExport.distributeOriginalDatasetToNisaba(message);
+        // The dataset as uploaded goes to the imported-dsj-new folder when the dual export is enabled.
+        String publicationPath = netexDsjExportConfig.originalDatasetPublicationPath(target.fileHandle());
+        message.setHeader(TARGET_FILE_HANDLE, publicationPath);
         internalBlobStore.copyBlobToAnotherBucket(
-                message.getHeader(FILE_HANDLE, String.class), target.container(), target.fileHandle());
+                message.getHeader(FILE_HANDLE, String.class), target.container(), publicationPath);
     }
 
     /**
