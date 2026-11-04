@@ -504,19 +504,29 @@ public class Otp2GraphControlService {
     }
 
     /**
-     * Make a graph the current graph of its serialization version: record it in the database, copy it to the stable
-     * name loaded by the OTP instances, then write the pointer files. The stable copy must be in place before the root
-     * pointer file triggers the redeployment of the OTP instances. The database record is rolled back if a file
-     * operation fails.
+     * Make a graph the current graph of its serialization version: record it in the database, write the versioned
+     * pointer file and the report index, then copy the graph to the stable name loaded by the OTP instances. The
+     * stable copy is the last file operation that can fail the promotion: a failure before it leaves the stable copy
+     * untouched and rolls back the database record, so that the two never disagree. The root pointer file, which
+     * triggers the redeployment of the OTP instances, must be written after the stable copy is in place; its upload
+     * is best effort, since at that point the stable copy and the database record already agree and the next
+     * promotion rewrites it.
      */
     private void makeCurrent(String graphPath, String serializationId, boolean production, boolean candidate, String reportVersion, String username) {
         repository.saveCurrentGraph(new CurrentGraph(serializationId, graphPath, candidate, username, Instant.now()));
-        otpGraphsBlobStoreService.copyBlobInBucket(graphPath, Otp2GraphPaths.stableGraphPath(serializationId));
         // the pointer files are written for the OTP redeployment job only, they are not read back
         uploadPointer(Otp2GraphPaths.versionedPointerPath(serializationId, currentGraphPointerFile), graphPath);
         if (production) {
-            uploadPointer(currentGraphPointerFile, graphPath);
             updateReportIndex(reportVersion);
+        }
+        otpGraphsBlobStoreService.copyBlobInBucket(graphPath, Otp2GraphPaths.stableGraphPath(serializationId));
+        if (production) {
+            try {
+                uploadPointer(currentGraphPointerFile, graphPath);
+            } catch (RuntimeException e) {
+                LOGGER.error("The OTP2 graph {} is the current graph of the serialization version {}, but the root pointer file {} could not be written: OTP is not redeployed automatically",
+                        graphPath, serializationId, currentGraphPointerFile, e);
+            }
         }
         LOGGER.info("The OTP2 graph {} is the current graph of the serialization version {} (production: {})", graphPath, serializationId, production);
     }

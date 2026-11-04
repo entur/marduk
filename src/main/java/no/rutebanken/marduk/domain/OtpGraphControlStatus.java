@@ -27,9 +27,6 @@ import java.util.List;
  * @param builder       the state of the graph builder
  * @param production    the serialization version used in production, null if no graph is published yet
  * @param pins          the pinned graphs
- * @param recentActions the latest control operations, most recent first
- */
-/**
  * @param recentActions the latest control operations and production version changes, most recent first
  * @param skippedBuilds the latest graphs built but not promoted (pinned or paused builder, candidate build of the
  *                      production serialization version, older than the current graph, failed promotion), most recent

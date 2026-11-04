@@ -72,6 +72,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     private static final String PLAIN = "text/plain";
     private static final String OPENAPI_DATA_TYPE_STRING = "string";
     private static final String OPENAPI_DATA_TYPE_INTEGER = "integer";
+    private static final String GRAPH_CONTROL_CONFLICT_MESSAGE = "Another graph control operation or graph publication is in progress";
 
     private final String port;
     private final String host;
@@ -365,7 +366,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Graph rolled out").endResponseMessage()
                 .responseMessage().code(400).message("Invalid graph or missing reason").endResponseMessage()
                 .responseMessage().code(404).message("Graph not found").endResponseMessage()
-                .responseMessage().code(409).message("Another graph control operation or graph publication is in progress").endResponseMessage()
+                .responseMessage().code(409).message(GRAPH_CONTROL_CONFLICT_MESSAGE).endResponseMessage()
                 .to("direct:adminGraphControlRollout")
 
                 .post("routing_graph/pin")
@@ -377,7 +378,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Graph pinned").endResponseMessage()
                 .responseMessage().code(400).message("Missing serialization id or reason").endResponseMessage()
                 .responseMessage().code(404).message("No current graph").endResponseMessage()
-                .responseMessage().code(409).message("Another graph control operation or graph publication is in progress").endResponseMessage()
+                .responseMessage().code(409).message(GRAPH_CONTROL_CONFLICT_MESSAGE).endResponseMessage()
                 .to("direct:adminGraphControlPin")
 
                 .post("routing_graph/unpin")
@@ -389,7 +390,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(200).message("Graph unpinned").endResponseMessage()
                 .responseMessage().code(400).message("Missing serialization id or reason").endResponseMessage()
                 .responseMessage().code(404).message("No pinned graph").endResponseMessage()
-                .responseMessage().code(409).message("Another graph control operation or graph publication is in progress").endResponseMessage()
+                .responseMessage().code(409).message(GRAPH_CONTROL_CONFLICT_MESSAGE).endResponseMessage()
                 .to("direct:adminGraphControlUnpin")
 
                 .post("routing_graph/builder/pause")
@@ -400,7 +401,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(JSON)
                 .responseMessage().code(200).message("Graph builder paused").endResponseMessage()
                 .responseMessage().code(400).message("Missing reason").endResponseMessage()
-                .responseMessage().code(409).message("Another graph control operation or graph publication is in progress").endResponseMessage()
+                .responseMessage().code(409).message(GRAPH_CONTROL_CONFLICT_MESSAGE).endResponseMessage()
                 .to("direct:adminGraphControlPause")
 
                 .post("routing_graph/builder/resume")
@@ -411,7 +412,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .produces(JSON)
                 .responseMessage().code(200).message("Graph builder resumed").endResponseMessage()
                 .responseMessage().code(400).message("Missing reason").endResponseMessage()
-                .responseMessage().code(409).message("Another graph control operation or graph publication is in progress").endResponseMessage()
+                .responseMessage().code(409).message(GRAPH_CONTROL_CONFLICT_MESSAGE).endResponseMessage()
                 .to("direct:adminGraphControlResume")
 
                 .post("/upload/{codespace}")
@@ -1133,7 +1134,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         } catch (GraphControlException gce) {
             throw gce;
         } catch (QueryTimeoutException | PessimisticLockingFailureException lockFailure) {
-            throw new GraphControlException(409, "Another graph control operation or graph publication is in progress, try again later", lockFailure);
+            throw new GraphControlException(409, GRAPH_CONTROL_CONFLICT_MESSAGE + ", try again later", lockFailure);
         } catch (RuntimeException re) {
             throw new GraphControlException(500, "The graph control operation failed: " + re.getMessage(), re);
         }
@@ -1154,7 +1155,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         }
         try {
             return Integer.parseInt(limit.trim());
-        } catch (NumberFormatException nfe) {
+        } catch (NumberFormatException _) {
             throw GraphControlException.badRequest("Invalid limit: " + limit);
         }
     }

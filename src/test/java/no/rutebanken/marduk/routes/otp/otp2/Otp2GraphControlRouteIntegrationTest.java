@@ -18,6 +18,7 @@ package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
+import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.OtpGraphControlStatus;
 import no.rutebanken.marduk.graph.GraphControlRepository;
 import no.rutebanken.marduk.graph.GraphControlRepository.GraphType;
@@ -321,7 +322,7 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
 
     private List<String> publishedGraphs() {
         return graphsInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR).getFiles().stream()
-                .map(f -> f.getName())
+                .map(BlobStoreFiles.File::getName)
                 .filter(name -> name.matches(".*/\\d{17}-Graph-otp2-.*\\.obj"))
                 .toList();
     }

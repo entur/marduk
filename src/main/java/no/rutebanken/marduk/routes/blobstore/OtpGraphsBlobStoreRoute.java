@@ -22,9 +22,6 @@ import no.rutebanken.marduk.services.OtpGraphsBlobStoreService;
 import org.apache.camel.LoggingLevel;
 import org.springframework.stereotype.Component;
 
-import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
-
 @Component
 public class OtpGraphsBlobStoreRoute extends BaseRouteBuilder {
 
@@ -37,19 +34,6 @@ public class OtpGraphsBlobStoreRoute extends BaseRouteBuilder {
     @Override
     public void configure() throws Exception {
         super.configure();
-
-        from("direct:uploadOtpGraphsBlob")
-                .to(logDebugShowAll())
-                .bean(otpGraphsBlobStoreService, "uploadBlob")
-                .to(logDebugShowAll())
-                .routeId("blobstore-otp-graph-upload");
-
-        from("direct:copyOtpGraphsBlobInBucket")
-                .to(logDebugShowAll())
-                .bean(otpGraphsBlobStoreService, "copyBlobInBucket")
-                .to(logDebugShowAll())
-                .log(LoggingLevel.INFO, correlation() + "Copied file ${header." + FILE_HANDLE + "} to file ${header." + TARGET_FILE_HANDLE + "} in the OTP graphs bucket.")
-                .routeId("blobstore-otp-graph-copy-in-bucket");
 
         from("direct:listOtpGraphBlobsInFolders")
                 .to(logDebugShowAll())
