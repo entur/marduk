@@ -261,14 +261,19 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
     }
 
     @Test
-    void candidateGraphOfTheProductionSerializationVersionIsNeverPromoted() {
+    void candidateGraphOfTheProductionSerializationVersionIsNeverPromoted() throws Exception {
+        context.start();
+
         String candidateGraph = graph(PRODUCTION_ID, "20261015080000000");
         upload(candidateGraph, "candidate graph");
         assertEquals(Otp2GraphControlService.Promotion.SKIPPED_CANDIDATE,
                 otp2GraphControlService.promoteBuiltGraph(candidateGraph, PRODUCTION_ID, true, reportVersion(candidateGraph)));
         assertEquals("latest graph", read(STABLE_GRAPH));
         assertEquals(LATEST_GRAPH, read(ROOT_POINTER));
-        assertEquals("BUILD_NOT_PROMOTED", otp2GraphControlService.status().recentActions().getFirst().action());
+        JsonNode status = json(get("routing_graph/control"));
+        assertEquals("BUILD_NOT_PROMOTED", status.get("skippedBuilds").get(0).get("action").asText());
+        assertEquals(candidateGraph, status.get("skippedBuilds").get(0).get("graph").asText());
+        assertEquals("PRODUCTION_VERSION_CHANGED", status.get("recentActions").get(0).get("action").asText());
     }
 
     @Test

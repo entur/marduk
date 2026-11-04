@@ -31,8 +31,10 @@ import no.rutebanken.marduk.graph.GraphControlRepository.CurrentGraph;
 import no.rutebanken.marduk.graph.GraphControlRepository.DeferredBuildRequest;
 import no.rutebanken.marduk.graph.GraphControlRepository.GraphPin;
 import no.rutebanken.marduk.graph.GraphControlRepository.GraphType;
+import no.rutebanken.marduk.graph.GraphControlRepository.LockWait;
 import no.rutebanken.marduk.graph.GraphControlRepository.PauseState;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
+import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.services.OtpGraphsBlobStoreService;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.camel.Exchange;
@@ -50,6 +52,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -63,7 +66,6 @@ import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_REPORT_INDEX_FILE;
 import static no.rutebanken.marduk.Constants.OTP2_NETEX_GRAPH_DIR;
-import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
 
 /**
  * Emergency controls of the OTP2 transit graph publication:
@@ -87,7 +89,7 @@ import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
 public class Otp2GraphControlService {
 
     public enum Promotion {
-        PROMOTED, SKIPPED_PINNED, SKIPPED_PAUSED, SKIPPED_OLDER, SKIPPED_CANDIDATE
+        PROMOTED, SKIPPED_PINNED, SKIPPED_PAUSED, SKIPPED_OLDER, SKIPPED_CANDIDATE, FAILED
     }
 
     /**
@@ -110,7 +112,12 @@ public class Otp2GraphControlService {
 
     private static final int MAX_REASON_LENGTH = 1000;
     private static final int RECENT_ACTIONS = 20;
-    private static final String SYNCHRONIZATION_HOLDER = "SYNCHRONIZATION_HOLDER";
+    private static final int RECENT_SKIPPED_BUILDS = 10;
+    /**
+     * Builds that are not promoted are audited at every provider publication while a pin is set: they are kept for
+     * a limited time, unlike the control operations.
+     */
+    private static final Duration SKIPPED_BUILD_RETENTION = Duration.ofDays(30);
     private static final TypeReference<Map<String, String>> ATTRIBUTES_TYPE = new TypeReference<>() {
     };
 
@@ -149,14 +156,19 @@ public class Otp2GraphControlService {
 
     /**
      * Store the build requests if the graph builder is paused, so that they are replayed when it is resumed.
+     * Candidate builds are not affected by the pause.
      *
      * @param graphType the type of graph requested
+     * @param candidate whether the graph is built by a candidate version of OTP
      * @param messages  the aggregated build requests
      * @return true if the graph builder is paused and the build must not start
      */
-    public boolean deferIfPaused(GraphType graphType, List<Message> messages) {
+    public boolean deferIfPaused(GraphType graphType, boolean candidate, List<Message> messages) {
+        if (candidate) {
+            return false;
+        }
         return Boolean.TRUE.equals(transactionTemplate.execute(status -> {
-            if (!repository.lockControlRow().paused()) {
+            if (!repository.lockControlRow(LockWait.BUILD).paused()) {
                 return false;
             }
             Instant now = Instant.now();
@@ -177,6 +189,39 @@ public class Otp2GraphControlService {
     }
 
     /**
+     * Do not publish a street graph whose build was already running when the graph builder was paused: the street
+     * graph is used by every later transit graph build, and there is no rollout for it. The street graph is rebuilt
+     * when the graph builder is resumed.
+     *
+     * @param graphPath the path of the built street graph
+     * @return true if the graph builder is paused and the street graph must not be published
+     */
+    public boolean deferBuiltStreetGraphIfPaused(String graphPath) {
+        return Boolean.TRUE.equals(transactionTemplate.execute(status -> {
+            if (!repository.lockControlRow(LockWait.BUILD).paused()) {
+                return false;
+            }
+            repository.insertDeferredBuildRequest(GraphType.BASE, null, "{}", Instant.now());
+            audit(ACTION_BUILD_NOT_PROMOTED, null, graphPath, SYSTEM_USER, "The graph builder is paused");
+            LOGGER.info("The graph builder is paused: the street graph {} is not published and is rebuilt on resume", graphPath);
+            return true;
+        }));
+    }
+
+    /**
+     * Record that the promotion of a built graph failed: the graph is published, and available for rollout, but is
+     * not current. Best effort, since the failure may come from the database itself.
+     */
+    public void recordPromotionFailure(String graphPath, String serializationId, Exception failure) {
+        try {
+            transactionTemplate.executeWithoutResult(status ->
+                    audit(ACTION_BUILD_NOT_PROMOTED, serializationId, graphPath, SYSTEM_USER, "The promotion failed: " + failure.getMessage()));
+        } catch (RuntimeException e) {
+            LOGGER.warn("Failed to record the promotion failure of the OTP2 graph {}", graphPath, e);
+        }
+    }
+
+    /**
      * Promote a graph published by the graph builder, that is make it the current graph of its serialization version,
      * unless the serialization version is pinned, the graph builder is paused or a more recent graph is already current.
      * <p>
@@ -193,7 +238,7 @@ public class Otp2GraphControlService {
      */
     public Promotion promoteBuiltGraph(String graphPath, String serializationId, boolean candidate, String reportVersion) {
         return transactionTemplate.execute(status -> {
-            ControlState control = repository.lockControlRow();
+            ControlState control = repository.lockControlRow(LockWait.BUILD);
             String productionSerializationId = control.productionSerializationId();
             if (!candidate && !serializationId.equals(productionSerializationId)) {
                 // the production graph builder runs the OTP version deployed in production
@@ -262,7 +307,7 @@ public class Otp2GraphControlService {
         String serializationId = versionedGraph.serializationId();
 
         return transactionTemplate.execute(status -> {
-            ControlState control = repository.lockControlRow();
+            ControlState control = repository.lockControlRow(LockWait.OPERATION);
             boolean production = serializationId.equals(control.productionSerializationId());
 
             makeCurrent(graph, serializationId, production, false, versionedGraph.reportVersion(), username);
@@ -294,7 +339,7 @@ public class Otp2GraphControlService {
         }
         String validReason = validReason(reason);
         transactionTemplate.executeWithoutResult(status -> {
-            repository.lockControlRow();
+            repository.lockControlRow(LockWait.OPERATION);
             String currentGraph = repository.findCurrentGraph(serializationId)
                     .orElseThrow(() -> GraphControlException.notFound("No current graph for the serialization version " + serializationId))
                     .graphFile();
@@ -314,7 +359,7 @@ public class Otp2GraphControlService {
         }
         String validReason = validReason(reason);
         transactionTemplate.executeWithoutResult(status -> {
-            repository.lockControlRow();
+            repository.lockControlRow(LockWait.OPERATION);
             GraphPin pin = repository.findPin(serializationId)
                     .orElseThrow(() -> GraphControlException.notFound("No pinned graph for the serialization version " + serializationId));
             repository.deletePin(serializationId);
@@ -330,7 +375,7 @@ public class Otp2GraphControlService {
     public OtpGraphControlStatus pause(String reason, String username) {
         String validReason = validReason(reason);
         transactionTemplate.executeWithoutResult(status -> {
-            if (repository.lockControlRow().paused()) {
+            if (repository.lockControlRow(LockWait.OPERATION).paused()) {
                 LOGGER.info("User {} requested to pause the graph builder, which is already paused", username);
                 return;
             }
@@ -349,7 +394,7 @@ public class Otp2GraphControlService {
     public OtpGraphControlStatus resume(String reason, String username) {
         String validReason = validReason(reason);
         transactionTemplate.executeWithoutResult(status -> {
-            if (!repository.lockControlRow().paused()) {
+            if (!repository.lockControlRow(LockWait.OPERATION).paused()) {
                 LOGGER.info("User {} requested to resume the graph builder, which is not paused", username);
                 return;
             }
@@ -394,11 +439,10 @@ public class Otp2GraphControlService {
                     .map(p -> new OtpGraphControlStatus.Pin(p.serializationId(), p.graphFile(), p.pinnedBy(), p.pinnedAt(), p.reason(), currentGraphs.get(p.serializationId())))
                     .toList();
 
-            List<OtpGraphControlStatus.Action> recentActions = repository.findLatestAuditEntries(RECENT_ACTIONS).stream()
-                    .map(a -> new OtpGraphControlStatus.Action(a.action(), a.serializationId(), a.graphFile(), a.performedBy(), a.performedAt(), a.reason()))
-                    .toList();
+            List<OtpGraphControlStatus.Action> recentActions = actions(repository.findLatestAuditEntriesExcluding(ACTION_BUILD_NOT_PROMOTED, RECENT_ACTIONS));
+            List<OtpGraphControlStatus.Action> skippedBuilds = actions(repository.findLatestAuditEntries(ACTION_BUILD_NOT_PROMOTED, RECENT_SKIPPED_BUILDS));
 
-            return new OtpGraphControlStatus(builder, production, pinStatus, recentActions);
+            return new OtpGraphControlStatus(builder, production, pinStatus, recentActions, skippedBuilds);
         });
     }
 
@@ -510,28 +554,28 @@ public class Otp2GraphControlService {
 
     /**
      * The headers of a build request that are published as PubSub attributes, following the rules of the outbound
-     * PubSub interceptor of the route builders.
+     * PubSub interceptor of the route builders. The acknowledgement holder of the aggregated message is an exchange,
+     * not an attribute.
      */
     private static Map<String, String> republishedAttributes(Message message) {
-        Map<String, String> attributes = new TreeMap<>();
-        message.getHeaders().forEach((name, value) -> {
-            if (name.startsWith("Camel") || name.equals(Exchange.BREADCRUMB_ID) || name.equalsIgnoreCase(AUTHORIZATION)
-                    || name.equals(SYNCHRONIZATION_HOLDER)) {
-                return;
-            }
-            if (value instanceof String || value instanceof Number || value instanceof Boolean) {
-                String stringValue = value.toString();
-                if (stringValue.length() <= 1024) {
-                    attributes.put(name, stringValue);
-                }
-            }
-        });
-        return attributes;
+        Map<String, Object> headers = new TreeMap<>(message.getHeaders());
+        headers.remove(BaseRouteBuilder.SYNCHRONIZATION_HOLDER);
+        return new TreeMap<>(BaseRouteBuilder.pubSubAttributes(headers));
+    }
+
+    private static List<OtpGraphControlStatus.Action> actions(List<AuditEntry> entries) {
+        return entries.stream()
+                .map(a -> new OtpGraphControlStatus.Action(a.action(), a.serializationId(), a.graphFile(), a.performedBy(), a.performedAt(), a.reason()))
+                .toList();
     }
 
     private void audit(String action, String serializationId, String graphFile, String username, String reason) {
+        Instant now = Instant.now();
+        if (ACTION_BUILD_NOT_PROMOTED.equals(action)) {
+            repository.deleteAuditEntriesBefore(ACTION_BUILD_NOT_PROMOTED, now.minus(SKIPPED_BUILD_RETENTION));
+        }
         repository.insertAuditEntry(new AuditEntry(action, serializationId, graphFile,
-                username == null ? SYSTEM_USER : username, Instant.now(), reason));
+                username == null ? SYSTEM_USER : username, now, reason));
     }
 
     private static String validReason(String reason) {

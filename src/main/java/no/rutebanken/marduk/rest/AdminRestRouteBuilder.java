@@ -341,7 +341,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:adminListGraphs")
 
                 .get("routing_graph/control")
-                .description("Status of the emergency controls of the OTP2 graph publication: pinned graphs, paused graph builder and latest control operations")
+                .description("Status of the emergency controls of the OTP2 graph publication: production graph, pinned graphs, paused graph builder, latest control operations and latest builds not promoted")
                 .outType(OtpGraphControlStatus.class)
                 .produces(JSON)
                 .responseMessage().code(200).endResponseMessage()

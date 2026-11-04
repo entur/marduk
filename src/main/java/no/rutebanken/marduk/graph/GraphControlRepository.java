@@ -27,7 +27,9 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -40,6 +42,15 @@ public class GraphControlRepository {
 
     public enum GraphType {
         TRANSIT, BASE
+    }
+
+    /**
+     * How long a caller waits for the control row lock: the graph builder hooks wait for a control operation to
+     * complete, while a control operation requested over HTTP gives up quickly, so that the request is answered
+     * (with 409) before the gateway times out.
+     */
+    public enum LockWait {
+        BUILD, OPERATION
     }
 
     public record PauseState(boolean paused, String pausedBy, Instant pausedAt, String reason) {
@@ -113,16 +124,23 @@ public class GraphControlRepository {
     private final JdbcTemplate jdbcTemplate;
 
     /**
-     * Template used for locking the control row, with a query timeout so that a caller does not wait forever for a
-     * lock held by a long operation. It shares the data source, and thus the transaction, of the main template.
+     * Templates used for locking the control row, with a query timeout so that a caller does not wait forever for a
+     * lock held by a long operation. They share the data source, and thus the transaction, of the main template.
      */
-    private final JdbcTemplate lockingJdbcTemplate;
+    private final Map<LockWait, JdbcTemplate> lockingJdbcTemplates = new EnumMap<>(LockWait.class);
 
     public GraphControlRepository(DataSource dataSource,
-                                  @Value("${otp2.graph.control.lock.timeout.seconds:120}") int lockTimeoutSeconds) {
+                                  @Value("${otp2.graph.control.lock.timeout.seconds:120}") int buildLockTimeoutSeconds,
+                                  @Value("${otp2.graph.control.operation.lock.timeout.seconds:10}") int operationLockTimeoutSeconds) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
-        this.lockingJdbcTemplate = new JdbcTemplate(dataSource);
-        this.lockingJdbcTemplate.setQueryTimeout(lockTimeoutSeconds);
+        lockingJdbcTemplates.put(LockWait.BUILD, lockingJdbcTemplate(dataSource, buildLockTimeoutSeconds));
+        lockingJdbcTemplates.put(LockWait.OPERATION, lockingJdbcTemplate(dataSource, operationLockTimeoutSeconds));
+    }
+
+    private static JdbcTemplate lockingJdbcTemplate(DataSource dataSource, int lockTimeoutSeconds) {
+        JdbcTemplate template = new JdbcTemplate(dataSource);
+        template.setQueryTimeout(lockTimeoutSeconds);
+        return template;
     }
 
     /**
@@ -130,9 +148,10 @@ public class GraphControlRepository {
      * operations are applied one at a time across the cluster.
      *
      * @return the control state
+     * @throws org.springframework.dao.QueryTimeoutException if the lock is not obtained within the wait of the caller
      */
-    public ControlState lockControlRow() {
-        return lockingJdbcTemplate.queryForObject(
+    public ControlState lockControlRow(LockWait lockWait) {
+        return lockingJdbcTemplates.get(lockWait).queryForObject(
                 "SELECT paused, paused_by, paused_at, pause_reason, production_serialization_id FROM otp_graph_control WHERE id = 1 FOR UPDATE",
                 CONTROL_STATE_MAPPER);
     }
@@ -222,9 +241,18 @@ public class GraphControlRepository {
                 entry.action(), entry.serializationId(), entry.graphFile(), entry.performedBy(), toOffsetDateTime(entry.performedAt()), entry.reason());
     }
 
-    public List<AuditEntry> findLatestAuditEntries(int limit) {
-        return jdbcTemplate.query("SELECT action, serialization_id, graph_file, performed_by, performed_at, reason FROM otp_graph_control_audit ORDER BY performed_at DESC, id DESC FETCH FIRST ? ROWS ONLY",
-                AUDIT_ENTRY_MAPPER, limit);
+    public List<AuditEntry> findLatestAuditEntries(String action, int limit) {
+        return jdbcTemplate.query("SELECT action, serialization_id, graph_file, performed_by, performed_at, reason FROM otp_graph_control_audit WHERE action = ? ORDER BY performed_at DESC, id DESC FETCH FIRST ? ROWS ONLY",
+                AUDIT_ENTRY_MAPPER, action, limit);
+    }
+
+    public List<AuditEntry> findLatestAuditEntriesExcluding(String excludedAction, int limit) {
+        return jdbcTemplate.query("SELECT action, serialization_id, graph_file, performed_by, performed_at, reason FROM otp_graph_control_audit WHERE action <> ? ORDER BY performed_at DESC, id DESC FETCH FIRST ? ROWS ONLY",
+                AUDIT_ENTRY_MAPPER, excludedAction, limit);
+    }
+
+    public int deleteAuditEntriesBefore(String action, Instant before) {
+        return jdbcTemplate.update("DELETE FROM otp_graph_control_audit WHERE action = ? AND performed_at < ?", action, toOffsetDateTime(before));
     }
 
     private static Instant toInstant(ResultSet rs, String column) throws SQLException {

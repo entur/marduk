@@ -38,6 +38,7 @@ import java.util.UUID;
 import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ_PREFIX;
 import static no.rutebanken.marduk.Constants.OTP_BUILD_CANDIDATE;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
+import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 
 /**
@@ -116,6 +117,16 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:findInternalBlob")
                 .log(LoggingLevel.INFO, correlation() + "Found OTP2 base graph named ${body.fileNameOnly} matching file prefix ${header." + Constants.FILE_PREFIX + "}")
                 .process(new Otp2BaseGraphPublishingProcessor(blobStoreSubdirectory))
+                // the street graph is used by every later transit graph build and has no rollout: a street graph
+                // whose build was already running when the graph builder was paused is not published, and is rebuilt
+                // when the graph builder is resumed
+                .filter(this::deferBuiltStreetGraphIfPaused)
+                    .log(LoggingLevel.INFO, getClass().getName(), correlation() + "The graph builder is paused, the OTP2 base graph ${header." + TARGET_FILE_HANDLE + "} is not published.")
+                    .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_BASE).state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
+                    .to("direct:updateStatus")
+                    .to("direct:remoteOtp2CleanUp")
+                    .stop()
+                .end()
                 .to("direct:copyInternalBlobInBucket")
                 .to(logDebugShowAll())
                 .choice()
@@ -147,9 +158,17 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
 
     @SuppressWarnings("unchecked")
     private boolean deferProductionBuildIfPaused(Exchange e) {
-        if (Boolean.TRUE.equals(e.getProperty(OTP_BUILD_CANDIDATE, Boolean.class))) {
+        return otp2GraphControlService.deferIfPaused(GraphType.BASE, isCandidateBuild(e), e.getIn().getBody(List.class));
+    }
+
+    private boolean deferBuiltStreetGraphIfPaused(Exchange e) {
+        if (isCandidateBuild(e)) {
             return false;
         }
-        return otp2GraphControlService.deferIfPaused(GraphType.BASE, e.getIn().getBody(List.class));
+        return otp2GraphControlService.deferBuiltStreetGraphIfPaused(e.getIn().getHeader(TARGET_FILE_HANDLE, String.class));
+    }
+
+    private static boolean isCandidateBuild(Exchange e) {
+        return Boolean.TRUE.equals(e.getProperty(OTP_BUILD_CANDIDATE, Boolean.class));
     }
 }

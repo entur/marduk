@@ -29,7 +29,13 @@ import java.util.List;
  * @param pins          the pinned graphs
  * @param recentActions the latest control operations, most recent first
  */
-public record OtpGraphControlStatus(Builder builder, Production production, List<Pin> pins, List<Action> recentActions) {
+/**
+ * @param recentActions the latest control operations and production version changes, most recent first
+ * @param skippedBuilds the latest graphs built but not promoted (pinned or paused builder, candidate build of the
+ *                      production serialization version, older than the current graph, failed promotion), most recent
+ *                      first
+ */
+public record OtpGraphControlStatus(Builder builder, Production production, List<Pin> pins, List<Action> recentActions, List<Action> skippedBuilds) {
 
     /**
      * @param paused               whether the graph builder is paused
