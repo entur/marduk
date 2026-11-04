@@ -22,7 +22,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class Otp2GraphPathsTest {
@@ -56,15 +55,6 @@ class Otp2GraphPathsTest {
     void derivedPaths() {
         assertEquals("netex-otp2/EN-0239/Graph-otp2-current.obj", Otp2GraphPaths.stableGraphPath("EN-0239"));
         assertEquals("netex-otp2/EN-0239/current-otp2", Otp2GraphPaths.versionedPointerPath("EN-0239", "current-otp2"));
-    }
-
-    @Test
-    void serializationIdOfAPointerContent() {
-        assertEquals("EN-0239", Otp2GraphPaths.serializationIdOf(GRAPH));
-        assertEquals("EN-0239", Otp2GraphPaths.serializationIdOf(GRAPH + "\n"));
-        assertEquals("unknown-version", Otp2GraphPaths.serializationIdOf("netex-otp2/unknown-version/20261014081200123-Graph-otp2.obj"));
-        assertNull(Otp2GraphPaths.serializationIdOf(null));
-        assertNull(Otp2GraphPaths.serializationIdOf("current-otp2"));
     }
 
     @Test

@@ -170,9 +170,10 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .log(LoggingLevel.INFO, correlation() + "Done uploading OTP2 graph build reports.")
                 .end()
 
-                // make the new graph the current graph: copy it to the stable name loaded by the OTP instances and
-                // update the pointer files (and the report index for a production build), unless the graph builder is
-                // paused or the serialization version is pinned
+                // make the new graph the current graph: record it in the database, copy it to the stable name loaded
+                // by the OTP instances and update the pointer files (and the report index for a production build),
+                // unless the graph builder is paused, the serialization version is pinned or this is a candidate build
+                // of the production serialization version
                 .process(this::promoteGraph)
                 .log(LoggingLevel.INFO, correlation() + "OTP2 graph ${exchangeProperty." + PUBLISHED_GRAPH_PATH_PROPERTY + "} promotion: ${exchangeProperty." + PROP_GRAPH_PROMOTION + "}")
 

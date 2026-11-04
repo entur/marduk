@@ -45,6 +45,26 @@ public class GraphControlRepository {
     public record PauseState(boolean paused, String pausedBy, Instant pausedAt, String reason) {
     }
 
+    /**
+     * @param productionSerializationId the serialization version used in production, that is the serialization version
+     *                                  of the latest graph built by the production graph builder, null until the first
+     *                                  production build
+     */
+    public record ControlState(boolean paused, String pausedBy, Instant pausedAt, String pauseReason, String productionSerializationId) {
+
+        public PauseState pauseState() {
+            return new PauseState(paused, pausedBy, pausedAt, pauseReason);
+        }
+    }
+
+    /**
+     * The current graph of a serialization version.
+     *
+     * @param candidate whether the graph was promoted by a candidate build
+     */
+    public record CurrentGraph(String serializationId, String graphFile, boolean candidate, String updatedBy, Instant updatedAt) {
+    }
+
     public record GraphPin(String serializationId, String graphFile, String pinnedBy, Instant pinnedAt, String reason) {
     }
 
@@ -54,11 +74,19 @@ public class GraphControlRepository {
     public record AuditEntry(String action, String serializationId, String graphFile, String performedBy, Instant performedAt, String reason) {
     }
 
-    private static final RowMapper<PauseState> PAUSE_STATE_MAPPER = (rs, rowNum) -> new PauseState(
+    private static final RowMapper<ControlState> CONTROL_STATE_MAPPER = (rs, rowNum) -> new ControlState(
             rs.getBoolean("paused"),
             rs.getString("paused_by"),
             toInstant(rs, "paused_at"),
-            rs.getString("pause_reason"));
+            rs.getString("pause_reason"),
+            rs.getString("production_serialization_id"));
+
+    private static final RowMapper<CurrentGraph> CURRENT_GRAPH_MAPPER = (rs, rowNum) -> new CurrentGraph(
+            rs.getString("serialization_id"),
+            rs.getString("graph_file"),
+            rs.getBoolean("candidate"),
+            rs.getString("updated_by"),
+            toInstant(rs, "updated_at"));
 
     private static final RowMapper<GraphPin> PIN_MAPPER = (rs, rowNum) -> new GraphPin(
             rs.getString("serialization_id"),
@@ -101,18 +129,38 @@ public class GraphControlRepository {
      * Lock the control row until the end of the current transaction, so that the graph promotions and the control
      * operations are applied one at a time across the cluster.
      *
-     * @return the pause state of the graph builder
+     * @return the control state
      */
-    public PauseState lockControlRow() {
+    public ControlState lockControlRow() {
         return lockingJdbcTemplate.queryForObject(
-                "SELECT paused, paused_by, paused_at, pause_reason FROM otp_graph_control WHERE id = 1 FOR UPDATE",
-                PAUSE_STATE_MAPPER);
+                "SELECT paused, paused_by, paused_at, pause_reason, production_serialization_id FROM otp_graph_control WHERE id = 1 FOR UPDATE",
+                CONTROL_STATE_MAPPER);
     }
 
-    public PauseState getPauseState() {
+    public ControlState getControlState() {
         return jdbcTemplate.queryForObject(
-                "SELECT paused, paused_by, paused_at, pause_reason FROM otp_graph_control WHERE id = 1",
-                PAUSE_STATE_MAPPER);
+                "SELECT paused, paused_by, paused_at, pause_reason, production_serialization_id FROM otp_graph_control WHERE id = 1",
+                CONTROL_STATE_MAPPER);
+    }
+
+    public void updateProductionSerializationId(String serializationId) {
+        jdbcTemplate.update("UPDATE otp_graph_control SET production_serialization_id = ? WHERE id = 1", serializationId);
+    }
+
+    public Optional<CurrentGraph> findCurrentGraph(String serializationId) {
+        return jdbcTemplate.query("SELECT serialization_id, graph_file, candidate, updated_by, updated_at FROM otp_graph_current WHERE serialization_id = ?",
+                CURRENT_GRAPH_MAPPER, serializationId).stream().findFirst();
+    }
+
+    public List<CurrentGraph> findCurrentGraphs() {
+        return jdbcTemplate.query("SELECT serialization_id, graph_file, candidate, updated_by, updated_at FROM otp_graph_current ORDER BY serialization_id",
+                CURRENT_GRAPH_MAPPER);
+    }
+
+    public void saveCurrentGraph(CurrentGraph currentGraph) {
+        jdbcTemplate.update("DELETE FROM otp_graph_current WHERE serialization_id = ?", currentGraph.serializationId());
+        jdbcTemplate.update("INSERT INTO otp_graph_current (serialization_id, graph_file, candidate, updated_by, updated_at) VALUES (?, ?, ?, ?, ?)",
+                currentGraph.serializationId(), currentGraph.graphFile(), currentGraph.candidate(), currentGraph.updatedBy(), toOffsetDateTime(currentGraph.updatedAt()));
     }
 
     public void updatePauseState(PauseState pauseState) {

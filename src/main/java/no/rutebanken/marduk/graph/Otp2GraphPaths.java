@@ -32,8 +32,9 @@ import static no.rutebanken.marduk.Constants.OTP2_NETEX_GRAPH_DIR;
  *     <li>{@code netex-otp2/<serialization id>/Graph-otp2-current.obj}: the stable copy of the current graph, loaded
  *     by the OTP instances;</li>
  *     <li>{@code netex-otp2/<serialization id>/<pointer file>} and {@code <pointer file>}: the pointer files, whose
- *     content is the path of the current graph of the serialization version and of production. The redeployment of
- *     OTP is triggered by a change of the root pointer file.</li>
+ *     content is the path of the current graph of the serialization version and of production. They are written for
+ *     the OTP redeployment job, which is triggered by a change of the root pointer file, and never read back: the
+ *     current graphs are recorded in the database (see {@link GraphControlRepository}).</li>
  * </ul>
  */
 public final class Otp2GraphPaths {
@@ -103,24 +104,6 @@ public final class Otp2GraphPaths {
      */
     public static String reportVersion(String timestamp) {
         return OTP2_NETEX_GRAPH_DIR + "/" + timestamp + "-report";
-    }
-
-    /**
-     * The serialization id of a graph path ({@code netex-otp2/<serialization id>/...}), read from its directory.
-     * Unlike {@link #parseVersionedGraph(String)}, any graph published by the graph builder is accepted, for example a
-     * graph of unknown version.
-     *
-     * @return the serialization id, or null if the path is not in a serialization version directory
-     */
-    public static String serializationIdOf(String graphPath) {
-        if (graphPath == null) {
-            return null;
-        }
-        String[] elements = graphPath.trim().split("/");
-        if (elements.length != 3 || !OTP2_NETEX_GRAPH_DIR.equals(elements[0])) {
-            return null;
-        }
-        return elements[1];
     }
 
     /**

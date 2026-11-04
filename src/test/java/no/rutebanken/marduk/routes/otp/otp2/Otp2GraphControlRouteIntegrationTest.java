@@ -83,8 +83,11 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
 
     @Test
     void graphIsNotPromotedWhenTheSerializationVersionIsPinned() throws Exception {
+        // the pinned graph was promoted by a production build
         graphsInMemoryBlobStoreRepository.uploadBlob(PINNED_GRAPH, content("pinned graph"));
-        otp2GraphControlService.rollout(PINNED_GRAPH, true, "bad data in the latest build", "test-user");
+        assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
+                otp2GraphControlService.promoteBuiltGraph(PINNED_GRAPH, SERIALIZATION_ID, false, "netex-otp2/20260101000000000-report"));
+        otp2GraphControlService.pin(SERIALIZATION_ID, "bad data in the latest build", "test-user");
 
         adviceGraphBuild(null);
         // GRAPH STARTED, provider STARTED, provider OK, GRAPH OK
@@ -105,6 +108,7 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
         assertEquals(1, otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR).getFiles().size());
 
         OtpGraphControlStatus status = otp2GraphControlService.status();
+        assertEquals(SERIALIZATION_ID, status.production().serializationId());
         assertTrue(status.production().pinned());
         assertEquals(PINNED_GRAPH, status.production().currentGraph());
         assertEquals("BUILD_NOT_PROMOTED", status.recentActions().getFirst().action());
@@ -142,6 +146,11 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
         assertEquals(0, deferredBuildRequests(GraphType.TRANSIT));
         waitUntil(() -> read(CURRENT_POINTER) != null);
         assertFalse(otp2GraphControlService.status().builder().paused());
+        // the production build defined the production serialization version
+        OtpGraphControlStatus.Production production = otp2GraphControlService.status().production();
+        assertEquals(SERIALIZATION_ID, production.serializationId());
+        assertEquals(read(CURRENT_POINTER), production.currentGraph());
+        assertEquals("new graph", read(STABLE_GRAPH));
     }
 
     @Test
@@ -164,6 +173,9 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
         assertNull(read(STABLE_GRAPH));
         assertNull(read(VERSIONED_POINTER));
         assertNull(read(CURRENT_POINTER));
+        OtpGraphControlStatus.Production production = otp2GraphControlService.status().production();
+        assertEquals(SERIALIZATION_ID, production.serializationId());
+        assertNull(production.currentGraph());
         // a new build is requested when the graph builder is resumed
         assertEquals(1, deferredBuildRequests(GraphType.TRANSIT));
 

@@ -48,8 +48,10 @@ public record OtpGraphControlStatus(Builder builder, Production production, List
     }
 
     /**
-     * @param serializationId the serialization version of the graph referenced by the root pointer file
-     * @param currentGraph    the current graph of this serialization version, loaded by the OTP instances
+     * @param serializationId the serialization version used in production: the serialization version of the latest
+     *                        graph built by the production graph builder
+     * @param currentGraph    the current graph of this serialization version, loaded by the OTP instances, null if
+     *                        no graph was promoted or rolled out since the controls were introduced
      * @param pinned          whether the current graph is pinned
      */
     public record Production(String serializationId, String currentGraph, boolean pinned) {

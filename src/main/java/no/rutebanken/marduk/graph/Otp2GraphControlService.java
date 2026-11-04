@@ -26,6 +26,8 @@ import no.rutebanken.marduk.domain.OtpGraphVersions;
 import no.rutebanken.marduk.exceptions.GraphControlException;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.graph.GraphControlRepository.AuditEntry;
+import no.rutebanken.marduk.graph.GraphControlRepository.ControlState;
+import no.rutebanken.marduk.graph.GraphControlRepository.CurrentGraph;
 import no.rutebanken.marduk.graph.GraphControlRepository.DeferredBuildRequest;
 import no.rutebanken.marduk.graph.GraphControlRepository.GraphPin;
 import no.rutebanken.marduk.graph.GraphControlRepository.GraphType;
@@ -47,8 +49,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -56,11 +56,9 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_REPORT_INDEX_FILE;
@@ -71,11 +69,17 @@ import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
  * Emergency controls of the OTP2 transit graph publication:
  * <ul>
  *     <li>roll out a published graph, that is make it the current graph of its serialization version (the stable copy
- *     loaded by the OTP instances and the pointer files), and optionally pin it so that new builds do not replace
- *     it;</li>
+ *     loaded by the OTP instances), and optionally pin it so that new builds do not replace it;</li>
  *     <li>pause the graph builder: the build requests are stored and replayed when the graph builder is resumed, and a
  *     graph whose build was already running is published but not promoted.</li>
  * </ul>
+ * The state of the publication is kept in the database: the current graph of each serialization version, and the
+ * serialization version used in production, which is the serialization version of the latest graph built by the
+ * production (non-candidate) graph builder, since the graph builder runs the OTP version deployed in production.
+ * The pointer files of the graph bucket are only written, for the OTP redeployment job which restarts the OTP
+ * instances when the root pointer file changes; nothing reads them back, so they can be dropped together with that
+ * job.
+ * <p>
  * The promotion of a new graph by the graph builder and the control operations lock the same database row, so that
  * they are applied one at a time across the cluster.
  */
@@ -83,7 +87,7 @@ import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
 public class Otp2GraphControlService {
 
     public enum Promotion {
-        PROMOTED, SKIPPED_PINNED, SKIPPED_PAUSED, SKIPPED_OLDER
+        PROMOTED, SKIPPED_PINNED, SKIPPED_PAUSED, SKIPPED_OLDER, SKIPPED_CANDIDATE
     }
 
     /**
@@ -100,6 +104,7 @@ public class Otp2GraphControlService {
     static final String ACTION_PAUSE = "PAUSE";
     static final String ACTION_RESUME = "RESUME";
     static final String ACTION_BUILD_NOT_PROMOTED = "BUILD_NOT_PROMOTED";
+    static final String ACTION_PRODUCTION_VERSION_CHANGED = "PRODUCTION_VERSION_CHANGED";
 
     static final String SYSTEM_USER = "marduk";
 
@@ -174,8 +179,12 @@ public class Otp2GraphControlService {
     /**
      * Promote a graph published by the graph builder, that is make it the current graph of its serialization version,
      * unless the serialization version is pinned, the graph builder is paused or a more recent graph is already current.
-     * The root pointer file, which triggers the redeployment of the OTP instances, and the report index are updated
-     * for production builds only.
+     * <p>
+     * A production build defines the serialization version used in production. For such a build, the root pointer
+     * file, which triggers the redeployment of the OTP instances, and the report index are updated. A candidate build
+     * of the production serialization version is never promoted, so that the stable copy loaded by the production OTP
+     * instances only ever contains production builds. A candidate build of another serialization version is promoted
+     * even while the graph builder is paused, since production is not affected.
      *
      * @param graphPath       the path of the published graph
      * @param serializationId the serialization version of the graph
@@ -184,7 +193,24 @@ public class Otp2GraphControlService {
      */
     public Promotion promoteBuiltGraph(String graphPath, String serializationId, boolean candidate, String reportVersion) {
         return transactionTemplate.execute(status -> {
-            PauseState pauseState = repository.lockControlRow();
+            ControlState control = repository.lockControlRow();
+            String productionSerializationId = control.productionSerializationId();
+            if (!candidate && !serializationId.equals(productionSerializationId)) {
+                // the production graph builder runs the OTP version deployed in production
+                repository.updateProductionSerializationId(serializationId);
+                String change = productionSerializationId == null
+                        ? "The production serialization version is " + serializationId
+                        : "The production serialization version changed from " + productionSerializationId + " to " + serializationId;
+                audit(ACTION_PRODUCTION_VERSION_CHANGED, serializationId, graphPath, SYSTEM_USER, change);
+                LOGGER.info(change);
+                productionSerializationId = serializationId;
+            }
+            boolean production = serializationId.equals(productionSerializationId);
+
+            if (candidate && production) {
+                audit(ACTION_BUILD_NOT_PROMOTED, serializationId, graphPath, SYSTEM_USER, "Candidate build of the production serialization version");
+                return Promotion.SKIPPED_CANDIDATE;
+            }
 
             Optional<GraphPin> pin = repository.findPin(serializationId);
             if (pin.isPresent()) {
@@ -192,24 +218,22 @@ public class Otp2GraphControlService {
                 return Promotion.SKIPPED_PINNED;
             }
 
-            String productionSerializationId = Otp2GraphPaths.serializationIdOf(readPointer(currentGraphPointerFile));
-            boolean productionSerializationVersion = productionSerializationId == null || productionSerializationId.equals(serializationId);
-            if (pauseState.paused() && (!candidate || productionSerializationVersion)) {
-                if (!candidate) {
-                    // the build ran for requests that are not served yet: rebuild when the graph builder is resumed
-                    repository.insertDeferredBuildRequest(GraphType.TRANSIT, null, "{}", Instant.now());
-                }
+            if (control.paused() && !candidate) {
+                // the build ran for requests that are not served yet: rebuild when the graph builder is resumed
+                repository.insertDeferredBuildRequest(GraphType.TRANSIT, null, "{}", Instant.now());
                 audit(ACTION_BUILD_NOT_PROMOTED, serializationId, graphPath, SYSTEM_USER, "The graph builder is paused");
                 return Promotion.SKIPPED_PAUSED;
             }
 
-            String currentGraph = readPointer(Otp2GraphPaths.versionedPointerPath(serializationId, currentGraphPointerFile));
-            if (Otp2GraphPaths.isBuiltBefore(graphPath, currentGraph)) {
-                audit(ACTION_BUILD_NOT_PROMOTED, serializationId, graphPath, SYSTEM_USER, "A more recent graph is current: " + currentGraph);
+            Optional<CurrentGraph> currentGraph = repository.findCurrentGraph(serializationId);
+            // a production build is not held back by an overlapping candidate build of the same serialization version
+            if (currentGraph.isPresent() && (candidate || !currentGraph.get().candidate())
+                    && Otp2GraphPaths.isBuiltBefore(graphPath, currentGraph.get().graphFile())) {
+                audit(ACTION_BUILD_NOT_PROMOTED, serializationId, graphPath, SYSTEM_USER, "A more recent graph is current: " + currentGraph.get().graphFile());
                 return Promotion.SKIPPED_OLDER;
             }
 
-            makeCurrent(graphPath, serializationId, !candidate, reportVersion);
+            makeCurrent(graphPath, serializationId, production, candidate, reportVersion, SYSTEM_USER);
             return Promotion.PROMOTED;
         });
     }
@@ -220,10 +244,10 @@ public class Otp2GraphControlService {
 
     /**
      * Make a published graph the current graph of its serialization version.
-     * If the graph belongs to the serialization version used in production, the root pointer file is updated, which
-     * triggers the redeployment of the OTP instances. When the root pointer file already references the graph (for
-     * example after a manual rollback of the stable copy), the state file of the redeployment job is deleted to force
-     * the redeployment.
+     * If the graph belongs to the serialization version used in production, the root pointer file is updated and the
+     * state file of the redeployment job is deleted, so that the OTP instances are redeployed even if the root pointer
+     * file already referenced the graph (for example after a manual rollback of the stable copy). Another
+     * serialization version is rolled out without touching production.
      *
      * @param pin whether to pin the graph. Otherwise a pin on the serialization version is removed.
      */
@@ -238,16 +262,15 @@ public class Otp2GraphControlService {
         String serializationId = versionedGraph.serializationId();
 
         return transactionTemplate.execute(status -> {
-            repository.lockControlRow();
-            String rootPointerBefore = readPointer(currentGraphPointerFile);
-            String productionSerializationId = Otp2GraphPaths.serializationIdOf(rootPointerBefore);
-            boolean production = productionSerializationId == null || productionSerializationId.equals(serializationId);
+            ControlState control = repository.lockControlRow();
+            boolean production = serializationId.equals(control.productionSerializationId());
 
-            makeCurrent(graph, serializationId, production, versionedGraph.reportVersion());
-            if (production && graph.equals(rootPointerBefore)) {
-                // the redeployment job compares the root pointer file with its last known content
+            makeCurrent(graph, serializationId, production, false, versionedGraph.reportVersion(), username);
+            if (production) {
+                // the redeployment job restarts OTP when the root pointer file differs from its last known content, or
+                // when the last known content is missing
                 otpGraphsBlobStoreService.deleteBlob(redeployLastFile);
-                LOGGER.info("The root pointer file already referenced {}, deleted {} to force the redeployment of OTP", graph, redeployLastFile);
+                LOGGER.info("Deleted {} to force the redeployment of OTP", redeployLastFile);
             }
 
             if (pin) {
@@ -272,10 +295,9 @@ public class Otp2GraphControlService {
         String validReason = validReason(reason);
         transactionTemplate.executeWithoutResult(status -> {
             repository.lockControlRow();
-            String currentGraph = readPointer(Otp2GraphPaths.versionedPointerPath(serializationId, currentGraphPointerFile));
-            if (currentGraph == null) {
-                throw GraphControlException.notFound("No current graph for the serialization version " + serializationId);
-            }
+            String currentGraph = repository.findCurrentGraph(serializationId)
+                    .orElseThrow(() -> GraphControlException.notFound("No current graph for the serialization version " + serializationId))
+                    .graphFile();
             repository.savePin(new GraphPin(serializationId, currentGraph, username, Instant.now(), validReason));
             audit(ACTION_PIN, serializationId, currentGraph, username, validReason);
             LOGGER.info("User {} pinned the current OTP2 graph {}: {}", username, currentGraph, validReason);
@@ -349,31 +371,27 @@ public class Otp2GraphControlService {
 
     public OtpGraphControlStatus status() {
         return transactionTemplate.execute(status -> {
-            PauseState pauseState = repository.getPauseState();
+            ControlState control = repository.getControlState();
             OtpGraphControlStatus.Builder builder = new OtpGraphControlStatus.Builder(
-                    pauseState.paused(),
-                    pauseState.pausedBy(),
-                    pauseState.pausedAt(),
-                    pauseState.reason(),
+                    control.paused(),
+                    control.pausedBy(),
+                    control.pausedAt(),
+                    control.pauseReason(),
                     repository.countDeferredBuildRequests(GraphType.TRANSIT),
                     repository.countDeferredBuildRequests(GraphType.BASE));
 
             List<GraphPin> pins = repository.findPins();
-            Map<String, String> currentGraphs = new LinkedHashMap<>();
-            Function<String, String> currentGraph = serializationId -> currentGraphs.computeIfAbsent(serializationId,
-                    id -> readPointer(Otp2GraphPaths.versionedPointerPath(id, currentGraphPointerFile)));
+            Map<String, String> currentGraphs = currentGraphs();
 
-            String rootPointer = readPointer(currentGraphPointerFile);
-            String productionSerializationId = Otp2GraphPaths.serializationIdOf(rootPointer);
+            String productionSerializationId = control.productionSerializationId();
             OtpGraphControlStatus.Production production = null;
             if (productionSerializationId != null) {
-                String productionCurrentGraph = Objects.requireNonNullElse(currentGraph.apply(productionSerializationId), rootPointer);
                 boolean pinned = pins.stream().anyMatch(p -> p.serializationId().equals(productionSerializationId));
-                production = new OtpGraphControlStatus.Production(productionSerializationId, productionCurrentGraph, pinned);
+                production = new OtpGraphControlStatus.Production(productionSerializationId, currentGraphs.get(productionSerializationId), pinned);
             }
 
             List<OtpGraphControlStatus.Pin> pinStatus = pins.stream()
-                    .map(p -> new OtpGraphControlStatus.Pin(p.serializationId(), p.graphFile(), p.pinnedBy(), p.pinnedAt(), p.reason(), currentGraph.apply(p.serializationId())))
+                    .map(p -> new OtpGraphControlStatus.Pin(p.serializationId(), p.graphFile(), p.pinnedBy(), p.pinnedAt(), p.reason(), currentGraphs.get(p.serializationId())))
                     .toList();
 
             List<OtpGraphControlStatus.Action> recentActions = repository.findLatestAuditEntries(RECENT_ACTIONS).stream()
@@ -404,14 +422,18 @@ public class Otp2GraphControlService {
             });
         }
 
-        Map<String, String> pinnedGraphs = transactionTemplate.execute(status -> repository.findPins().stream()
-                .collect(Collectors.toMap(GraphPin::serializationId, GraphPin::graphFile)));
-        String productionSerializationId = Otp2GraphPaths.serializationIdOf(readPointer(currentGraphPointerFile));
+        record PublicationState(String productionSerializationId, Map<String, String> currentGraphs, Map<String, String> pinnedGraphs) {
+        }
+        PublicationState state = transactionTemplate.execute(status -> new PublicationState(
+                repository.getControlState().productionSerializationId(),
+                currentGraphs(),
+                repository.findPins().stream().collect(Collectors.toMap(GraphPin::serializationId, GraphPin::graphFile))));
+        String productionSerializationId = state.productionSerializationId();
 
         List<OtpGraphVersions.SerializationVersion> serializationVersions = new ArrayList<>();
         filesBySerializationId.forEach((serializationId, serializationIdFiles) -> {
-            String currentGraph = readPointer(Otp2GraphPaths.versionedPointerPath(serializationId, currentGraphPointerFile));
-            String pinnedGraph = pinnedGraphs.get(serializationId);
+            String currentGraph = state.currentGraphs().get(serializationId);
+            String pinnedGraph = state.pinnedGraphs().get(serializationId);
             List<OtpGraphVersions.Graph> latestGraphs = serializationIdFiles.stream()
                     .sorted(Comparator.comparing((BlobStoreFiles.File f) -> graphs.get(f.getName()).timestamp()).reversed())
                     .limit(limit)
@@ -431,18 +453,28 @@ public class Otp2GraphControlService {
     // ------------------------------------------------------------------------------------------------------------
 
     /**
-     * Copy the graph to the stable name loaded by the OTP instances, then update the pointer files: the stable copy
-     * must be in place before the root pointer file triggers the redeployment of the OTP instances.
+     * The current graph of each serialization version, by serialization version. Must be called within a transaction.
      */
-    private void makeCurrent(String graphPath, String serializationId, boolean production, String reportVersion) {
+    private Map<String, String> currentGraphs() {
+        return repository.findCurrentGraphs().stream().collect(Collectors.toMap(CurrentGraph::serializationId, CurrentGraph::graphFile));
+    }
+
+    /**
+     * Make a graph the current graph of its serialization version: record it in the database, copy it to the stable
+     * name loaded by the OTP instances, then write the pointer files. The stable copy must be in place before the root
+     * pointer file triggers the redeployment of the OTP instances. The database record is rolled back if a file
+     * operation fails.
+     */
+    private void makeCurrent(String graphPath, String serializationId, boolean production, boolean candidate, String reportVersion, String username) {
+        repository.saveCurrentGraph(new CurrentGraph(serializationId, graphPath, candidate, username, Instant.now()));
         otpGraphsBlobStoreService.copyBlobInBucket(graphPath, Otp2GraphPaths.stableGraphPath(serializationId));
+        // the pointer files are written for the OTP redeployment job only, they are not read back
         uploadPointer(Otp2GraphPaths.versionedPointerPath(serializationId, currentGraphPointerFile), graphPath);
         if (production) {
             uploadPointer(currentGraphPointerFile, graphPath);
-            otpReportBlobStoreService.uploadHtmlBlob(OTP2_GRAPH_REPORT_INDEX_FILE,
-                    IOUtils.toInputStream(Otp2GraphPaths.reportRedirectPage(otpReportContainerName, reportVersion), StandardCharsets.UTF_8));
+            updateReportIndex(reportVersion);
         }
-        LOGGER.info("The OTP2 graph {} is the current graph of the serialization version {} (root pointer updated: {})", graphPath, serializationId, production);
+        LOGGER.info("The OTP2 graph {} is the current graph of the serialization version {} (production: {})", graphPath, serializationId, production);
     }
 
     private void uploadPointer(String pointerPath, String graphPath) {
@@ -450,18 +482,16 @@ public class Otp2GraphControlService {
     }
 
     /**
-     * @return the graph referenced by a pointer file, or null if the pointer file does not exist
+     * Point the report index at the build report of the current production graph, if the report exists: candidate
+     * builds do not publish a report.
      */
-    private String readPointer(String pointerPath) {
-        try (InputStream content = otpGraphsBlobStoreService.getBlob(pointerPath)) {
-            if (content == null) {
-                return null;
-            }
-            String graph = IOUtils.toString(content, StandardCharsets.UTF_8).trim();
-            return graph.isEmpty() ? null : graph;
-        } catch (IOException e) {
-            throw new MardukException("Failed to read the pointer file " + pointerPath, e);
+    private void updateReportIndex(String reportVersion) {
+        if (otpReportBlobStoreService.listBlobsInFolder(reportVersion).getFiles().isEmpty()) {
+            LOGGER.warn("No build report found in {}, the report index is not updated", reportVersion);
+            return;
         }
+        otpReportBlobStoreService.uploadHtmlBlob(OTP2_GRAPH_REPORT_INDEX_FILE,
+                IOUtils.toInputStream(Otp2GraphPaths.reportRedirectPage(otpReportContainerName, reportVersion), StandardCharsets.UTF_8));
     }
 
     private void republish(DeferredBuildRequest request) {

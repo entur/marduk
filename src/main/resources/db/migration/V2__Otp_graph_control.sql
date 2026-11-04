@@ -1,7 +1,8 @@
 -- Emergency controls of the OTP graph publication (see Otp2GraphControlService).
 -- Plain SQL shared by PostgreSQL and the H2 database used in tests: timestamps are bound from Java.
 
--- Single row holding the pause state of the graph builder.
+-- Single row holding the pause state of the graph builder and the serialization version used in production, that is
+-- the serialization version of the latest graph built by the production (non-candidate) graph builder.
 -- The row is also locked (SELECT ... FOR UPDATE) to serialize the graph promotions and the control operations.
 CREATE TABLE IF NOT EXISTS otp_graph_control (
     id integer NOT NULL,
@@ -9,10 +10,22 @@ CREATE TABLE IF NOT EXISTS otp_graph_control (
     paused_by character varying(255),
     paused_at timestamp with time zone,
     pause_reason character varying(1000),
+    production_serialization_id character varying(100),
     CONSTRAINT otp_graph_control_pk PRIMARY KEY (id),
     CONSTRAINT otp_graph_control_singleton CHECK (id = 1)
 );
 INSERT INTO otp_graph_control (id, paused) VALUES (1, false);
+
+-- Current graph of each serialization version: the graph copied to the stable name loaded by the OTP instances.
+-- Written by the promotion of a built graph and by a rollout.
+CREATE TABLE IF NOT EXISTS otp_graph_current (
+    serialization_id character varying(100) NOT NULL,
+    graph_file character varying(500) NOT NULL,
+    candidate boolean NOT NULL,
+    updated_by character varying(255) NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    CONSTRAINT otp_graph_current_pk PRIMARY KEY (serialization_id)
+);
 
 -- Graph pinned as the current graph of a serialization version: new builds are not promoted.
 CREATE TABLE IF NOT EXISTS otp_graph_pin (
