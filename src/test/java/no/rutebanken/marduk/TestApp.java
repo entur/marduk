@@ -19,10 +19,7 @@ package no.rutebanken.marduk;
 import no.rutebanken.marduk.security.oauth2.MardukWebSecurityConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
-import org.springframework.boot.web.server.autoconfigure.ServerProperties;
-import org.springframework.boot.webmvc.autoconfigure.WebMvcProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 
@@ -31,8 +28,6 @@ import org.springframework.context.annotation.FilterType;
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = MardukWebSecurityConfiguration.class),
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = App.class),
 })
-// Camel 4.22 platform-http injects these without registering them, and WebEnvironment.NONE does not either
-@EnableConfigurationProperties({ServerProperties.class, WebMvcProperties.class})
 public class TestApp extends App {
 
 
@@ -40,6 +35,7 @@ public class TestApp extends App {
         SpringApplication.run(TestApp.class, args);
     }
 
+    /** The tests mock the provider repository, so there is nothing to wait for. */
     @Override
     protected void waitForProviderRepository() {
 

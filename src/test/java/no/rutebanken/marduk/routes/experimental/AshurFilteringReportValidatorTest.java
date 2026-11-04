@@ -1,104 +1,101 @@
 package no.rutebanken.marduk.routes.experimental;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.support.DefaultExchange;
+import no.rutebanken.marduk.exceptions.MardukException;
 import org.junit.jupiter.api.Test;
 
-import static no.rutebanken.marduk.routes.experimental.AshurFilteringReportValidator.FILTERING_REPORT_ERROR_HEADER;
-import static no.rutebanken.marduk.routes.experimental.AshurFilteringReportValidator.FILTERING_REPORT_VALID_HEADER;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AshurFilteringReportValidatorTest {
+
+    private static final String CORRELATION_ID = "abc-123";
 
     private final AshurFilteringReportValidator validator = new AshurFilteringReportValidator();
 
     @Test
-    void validStandardImportReport() throws Exception {
-        Exchange exchange = exchangeWithBody(reportJson("StandardImportFilter", """
-            "ServiceJourney": 142, "Line": 3, "Block": 0"""));
+    void validStandardImportReport() {
+        AshurFilteringReportValidator.Verdict verdict = validator.validateStandardImportReport(
+                reportJson("StandardImportFilter", """
+                        "ServiceJourney": 142, "Line": 3, "Block": 0"""), CORRELATION_ID);
 
-        validator.validateStandardImportReport(exchange);
-
-        assertTrue(exchange.getIn().getHeader(FILTERING_REPORT_VALID_HEADER, Boolean.class));
+        assertTrue(verdict.valid());
+        assertNull(verdict.reason());
     }
 
     @Test
-    void standardImportReportWithNoBlockKey() throws Exception {
-        Exchange exchange = exchangeWithBody(reportJson("StandardImportFilter", """
-            "ServiceJourney": 142, "Line": 3"""));
-
-        validator.validateStandardImportReport(exchange);
-
-        assertTrue(exchange.getIn().getHeader(FILTERING_REPORT_VALID_HEADER, Boolean.class));
+    void standardImportReportWithNoBlockKey() {
+        assertTrue(validator.validateStandardImportReport(
+                reportJson("StandardImportFilter", """
+                        "ServiceJourney": 142, "Line": 3"""), CORRELATION_ID).valid());
     }
 
     @Test
-    void standardImportReportWithNullEntityTypeCounts() throws Exception {
-        Exchange exchange = exchangeWithBody("""
-            {
-              "created": "2026-03-27T12:00:00.000000",
-              "correlationId": "abc-123",
-              "codespace": "TST",
-              "filterProfile": "StandardImportFilter",
-              "status": "FAILED",
-              "reason": "Something went wrong",
-              "entityTypeCounts": null
-            }
-            """);
-
-        validator.validateStandardImportReport(exchange);
-
-        assertTrue(exchange.getIn().getHeader(FILTERING_REPORT_VALID_HEADER, Boolean.class));
+    void standardImportReportWithNullEntityTypeCounts() {
+        assertTrue(validator.validateStandardImportReport("""
+                {
+                  "created": "2026-03-27T12:00:00.000000",
+                  "correlationId": "abc-123",
+                  "codespace": "TST",
+                  "filterProfile": "StandardImportFilter",
+                  "status": "FAILED",
+                  "reason": "Something went wrong",
+                  "entityTypeCounts": null
+                }
+                """, CORRELATION_ID).valid());
     }
 
     @Test
-    void standardImportFailsWithWrongProfile() throws Exception {
-        Exchange exchange = exchangeWithBody(reportJson("IncludeBlocksAndRestrictedJourneysFilter", """
-            "ServiceJourney": 142"""));
+    void standardImportFailsWithWrongProfile() {
+        AshurFilteringReportValidator.Verdict verdict = validator.validateStandardImportReport(
+                reportJson("IncludeBlocksAndRestrictedJourneysFilter", """
+                        "ServiceJourney": 142"""), CORRELATION_ID);
 
-        validator.validateStandardImportReport(exchange);
-
-        assertFalse(exchange.getIn().getHeader(FILTERING_REPORT_VALID_HEADER, Boolean.class));
-        String error = exchange.getIn().getHeader(FILTERING_REPORT_ERROR_HEADER, String.class);
-        assertTrue(error.contains("StandardImportFilter"));
-        assertTrue(error.contains("IncludeBlocksAndRestrictedJourneysFilter"));
+        assertFalse(verdict.valid());
+        assertTrue(verdict.reason().contains("StandardImportFilter"));
+        assertTrue(verdict.reason().contains("IncludeBlocksAndRestrictedJourneysFilter"));
     }
 
     @Test
-    void standardImportFailsWithBlocks() throws Exception {
-        Exchange exchange = exchangeWithBody(reportJson("StandardImportFilter", """
-            "ServiceJourney": 142, "Block": 50"""));
+    void standardImportFailsWithBlocks() {
+        // The security control: the standard import profile must not return blocks.
+        AshurFilteringReportValidator.Verdict verdict = validator.validateStandardImportReport(
+                reportJson("StandardImportFilter", """
+                        "ServiceJourney": 142, "Block": 50"""), CORRELATION_ID);
 
-        validator.validateStandardImportReport(exchange);
-
-        assertFalse(exchange.getIn().getHeader(FILTERING_REPORT_VALID_HEADER, Boolean.class));
-        String error = exchange.getIn().getHeader(FILTERING_REPORT_ERROR_HEADER, String.class);
-        assertTrue(error.contains("Block"));
-        assertTrue(error.contains("50"));
+        assertFalse(verdict.valid());
+        assertTrue(verdict.reason().contains("Block"));
+        assertTrue(verdict.reason().contains("50"));
     }
 
     @Test
-    void validBlocksExportReport() throws Exception {
-        Exchange exchange = exchangeWithBody(reportJson("IncludeBlocksAndRestrictedJourneysFilter", """
-            "ServiceJourney": 142, "Block": 50"""));
-
-        validator.validateBlocksExportReport(exchange);
-
-        assertTrue(exchange.getIn().getHeader(FILTERING_REPORT_VALID_HEADER, Boolean.class));
+    void validBlocksExportReport() {
+        assertTrue(validator.validateBlocksExportReport(
+                reportJson("IncludeBlocksAndRestrictedJourneysFilter", """
+                        "ServiceJourney": 142, "Block": 50"""), CORRELATION_ID).valid());
     }
 
     @Test
-    void blocksExportFailsWithWrongProfile() throws Exception {
-        Exchange exchange = exchangeWithBody(reportJson("StandardImportFilter", """
-            "ServiceJourney": 142, "Block": 50"""));
+    void blocksExportFailsWithWrongProfile() {
+        AshurFilteringReportValidator.Verdict verdict = validator.validateBlocksExportReport(
+                reportJson("StandardImportFilter", """
+                        "ServiceJourney": 142, "Block": 50"""), CORRELATION_ID);
 
-        validator.validateBlocksExportReport(exchange);
+        assertFalse(verdict.valid());
+        assertTrue(verdict.reason().contains("IncludeBlocksAndRestrictedJourneysFilter"));
+        assertTrue(verdict.reason().contains("StandardImportFilter"));
+    }
 
-        assertFalse(exchange.getIn().getHeader(FILTERING_REPORT_VALID_HEADER, Boolean.class));
-        String error = exchange.getIn().getHeader(FILTERING_REPORT_ERROR_HEADER, String.class);
-        assertTrue(error.contains("IncludeBlocksAndRestrictedJourneysFilter"));
-        assertTrue(error.contains("StandardImportFilter"));
+    @Test
+    void anUnreadableReportFailsRatherThanPassing() {
+        // A malformed report must not be treated as valid: it is the only thing standing between a
+        // wrongly-filtered dataset and post-validation.
+        MardukException thrown = assertThrows(MardukException.class,
+                () -> validator.validateStandardImportReport("not json", CORRELATION_ID));
+
+        assertEquals("Could not read the Ashur filtering report", thrown.getMessage());
     }
 
     private static String reportJson(String filterProfile, String entityTypeCounts) {
@@ -113,11 +110,5 @@ class AshurFilteringReportValidatorTest {
               "entityTypeCounts": {%s}
             }
             """.formatted(filterProfile, entityTypeCounts);
-    }
-
-    private static Exchange exchangeWithBody(String body) {
-        Exchange exchange = new DefaultExchange(new DefaultCamelContext());
-        exchange.getIn().setBody(body);
-        return exchange;
     }
 }

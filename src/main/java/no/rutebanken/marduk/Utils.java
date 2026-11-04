@@ -16,6 +16,8 @@
 
 package no.rutebanken.marduk;
 
+import java.util.List;
+
 public class Utils {
 
     private  Utils() {
@@ -26,5 +28,22 @@ public class Utils {
             throw new IllegalArgumentException("Url is null");
         }
         return Long.valueOf(url.substring(url.lastIndexOf('/') + 1));
+    }
+
+    /**
+     * The value with every carriage return and line feed removed.
+     *
+     * <p>Applied where a caller-supplied string enters rather than where it is logged, because a value that
+     * could forge a line in the log goes on to become a blob path, a message header and a Chouette query
+     * parameter, and has no business in any of those either. Nothing this is used on - a codespace, a file
+     * name, a Chouette job id, a job status - can legitimately span two lines.
+     */
+    public static String singleLine(String value) {
+        return value == null ? null : value.replace("\r", "").replace("\n", "");
+    }
+
+    /** Every element of the list, as {@link #singleLine(String)} leaves it. */
+    public static List<String> singleLine(List<String> values) {
+        return values == null ? null : values.stream().map(Utils::singleLine).toList();
     }
 }

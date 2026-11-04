@@ -20,8 +20,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import no.rutebanken.marduk.domain.PrevalidatedFileMetadata;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import no.rutebanken.marduk.services.MardukInternalBlobStoreService;
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
+import no.rutebanken.marduk.pipeline.MardukMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +50,7 @@ import static no.rutebanken.marduk.Constants.PREVALIDATED_NETEX_METADATA_FILENAM
  * falls back to using the legacy preprocessed file at last-prevalidated-files/{codespace}-netex.zip
  * with the current timestamp.
  */
-public class NightlyValidationFileProcessor implements Processor {
+public class NightlyValidationFileProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NightlyValidationFileProcessor.class);
     private static final ObjectReader OBJECT_READER = ObjectMapperFactory.getSharedObjectMapper().readerFor(PrevalidatedFileMetadata.class);
@@ -62,18 +61,18 @@ public class NightlyValidationFileProcessor implements Processor {
         this.mardukInternalBlobStoreService = mardukInternalBlobStoreService;
     }
 
-    @Override
-    public void process(Exchange exchange) throws Exception {
-        String referential = exchange.getIn().getHeader(DATASET_REFERENTIAL, String.class);
+    /** Points {@code message} at the file to revalidate, or leaves it without one if there is none. */
+    public void locate(MardukMessage message) {
+        String referential = message.getHeader(DATASET_REFERENTIAL, String.class);
 
-        if (tryUseOriginalFileFromMetadata(exchange, referential)) {
+        if (tryUseOriginalFileFromMetadata(message, referential)) {
             return;
         }
 
-        useLegacyPrevalidatedFile(exchange, referential);
+        useLegacyPrevalidatedFile(message, referential);
     }
 
-    private boolean tryUseOriginalFileFromMetadata(Exchange exchange, String referential) {
+    private boolean tryUseOriginalFileFromMetadata(MardukMessage message, String referential) {
         PrevalidatedFileMetadata metadata = readMetadata(referential);
         if (metadata == null) {
             return false;
@@ -91,7 +90,7 @@ public class NightlyValidationFileProcessor implements Processor {
             return false;
         }
 
-        setOriginalFileHeaders(exchange, originalFilePath, metadata.getCreatedAt());
+        setOriginalFileHeaders(message, originalFilePath, metadata.getCreatedAt());
         LOGGER.info("Set FILE_HANDLE to original file path: {}", originalFilePath);
         return true;
     }
@@ -116,14 +115,14 @@ public class NightlyValidationFileProcessor implements Processor {
         }
     }
 
-    private void setOriginalFileHeaders(Exchange exchange, String filePath, LocalDateTime createdAt) {
-        exchange.getIn().setHeader(FILE_HANDLE, filePath);
+    private void setOriginalFileHeaders(MardukMessage message, String filePath, LocalDateTime createdAt) {
+        message.setHeader(FILE_HANDLE, filePath);
         if (createdAt != null) {
-            exchange.getIn().setHeader(FILTERING_FILE_CREATED_TIMESTAMP, createdAt.toString());
+            message.setHeader(FILTERING_FILE_CREATED_TIMESTAMP, createdAt.toString());
         }
     }
 
-    private void useLegacyPrevalidatedFile(Exchange exchange, String referential) {
+    private void useLegacyPrevalidatedFile(MardukMessage message, String referential) {
         String legacyFilePath = BLOBSTORE_PATH_LAST_SUCCESSFULLY_PREVALIDATED_FILES + referential + "-" + CURRENT_PREVALIDATED_NETEX_FILENAME;
 
         if (!mardukInternalBlobStoreService.blobExists(legacyFilePath)) {
@@ -131,8 +130,8 @@ public class NightlyValidationFileProcessor implements Processor {
             return;
         }
 
-        exchange.getIn().setHeader(FILE_HANDLE, legacyFilePath);
-        exchange.getIn().setHeader(FILTERING_FILE_CREATED_TIMESTAMP, LocalDateTime.now().toString());
+        message.setHeader(FILE_HANDLE, legacyFilePath);
+        message.setHeader(FILTERING_FILE_CREATED_TIMESTAMP, LocalDateTime.now().toString());
         LOGGER.info("Using legacy prevalidated file: {}", legacyFilePath);
     }
 }

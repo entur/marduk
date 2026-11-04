@@ -126,12 +126,16 @@ public class BlobStoreFiles {
 
         @JsonProperty()
         // Clients (Ninkasi, Bel) expect the instant to be formatted as epoch milliseconds
-        @JsonFormat(without = JsonFormat.Feature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
+        // shape NUMBER, not just "no nanoseconds": Camel's REST binding wrote dates as timestamps by
+        // default, Spring's ObjectMapper writes ISO strings, and Ninkasi reads epoch millis.
+        @JsonFormat(shape = JsonFormat.Shape.NUMBER, without = JsonFormat.Feature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
         private Instant created;
 
         @JsonProperty()
         // Clients (Ninkasi, Bel) expect the instant to be formatted as epoch milliseconds
-        @JsonFormat(without = JsonFormat.Feature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
+        // shape NUMBER, not just "no nanoseconds": Camel's REST binding wrote dates as timestamps by
+        // default, Spring's ObjectMapper writes ISO strings, and Ninkasi reads epoch millis.
+        @JsonFormat(shape = JsonFormat.Shape.NUMBER, without = JsonFormat.Feature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS)
         private Instant updated;
 
         @JsonProperty()

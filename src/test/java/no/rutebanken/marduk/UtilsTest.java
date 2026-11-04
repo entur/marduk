@@ -19,6 +19,8 @@ package no.rutebanken.marduk;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 class UtilsTest {
 
     @Test
@@ -30,5 +32,26 @@ class UtilsTest {
     @Test
     void testGetJobIdWithNull(){
         assertThrows(IllegalArgumentException.class, () -> Utils.getLastPathElementOfUrl(null));
+    }
+
+    @Test
+    void singleLineLeavesAnOrdinaryValueAlone() {
+        assertEquals("netex.zip", Utils.singleLine("netex.zip"));
+        assertNull(Utils.singleLine((String) null));
+    }
+
+    @Test
+    void singleLineRemovesTheLineBreaksAForgedLogLineNeeds() {
+        assertEquals("netex.zipINFO  Deleted everything",
+                Utils.singleLine("netex.zip\r\nINFO  Deleted everything"));
+        assertEquals("a b", Utils.singleLine("a\n b"));
+        assertEquals("ab", Utils.singleLine("a\rb"));
+    }
+
+    @Test
+    void singleLineAppliesToEveryElementOfAList() {
+        assertEquals(List.of("STARTED", "TERMINATED"),
+                Utils.singleLine(List.of("STARTED", "TERM\nINATED")));
+        assertNull(Utils.singleLine((List<String>) null));
     }
 }
