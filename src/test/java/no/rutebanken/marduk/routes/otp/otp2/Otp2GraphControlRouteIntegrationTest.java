@@ -20,10 +20,9 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.OtpGraphControlStatus;
-import no.rutebanken.marduk.graph.GraphControlRepository;
-import no.rutebanken.marduk.graph.GraphControlRepository.GraphType;
 import no.rutebanken.marduk.graph.Otp2GraphControlService;
-import no.rutebanken.marduk.routes.status.JobEvent;
+import no.rutebanken.marduk.graph.Otp2GraphStateStore;
+import no.rutebanken.marduk.graph.Otp2GraphStateStore.GraphPointer;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -32,64 +31,42 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BooleanSupplier;
 
-import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ_PREFIX;
-import static no.rutebanken.marduk.Constants.OTP2_STREET_GRAPH_DIR;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Pin and pause of the OTP2 transit graph publication, through the graph build routes.
+ * The emergency controls applied by the OTP2 graph build route.
  */
 class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     private static final String SERIALIZATION_ID = "EN-TEST";
     private static final String PINNED_GRAPH = "netex-otp2/" + SERIALIZATION_ID + "/20260101000000000-Graph-otp2-" + SERIALIZATION_ID + ".obj";
-    private static final String CURRENT_POINTER = "current-otp2";
-    private static final String VERSIONED_POINTER = "netex-otp2/" + SERIALIZATION_ID + "/current-otp2";
     private static final String STABLE_GRAPH = "netex-otp2/" + SERIALIZATION_ID + "/" + Constants.OTP2_CURRENT_GRAPH_OBJ;
 
     @EndpointInject("mock:updateStatus")
     protected MockEndpoint updateStatus;
 
-    @EndpointInject("mock:baseGraphBuildStarted")
-    protected MockEndpoint baseGraphBuildStarted;
-
     @EndpointInject("mock:exportMergedNetex")
     protected MockEndpoint exportMergedNetex;
 
-    @EndpointInject("mock:otpGraphBuildQueue")
-    protected MockEndpoint otpGraphBuildQueue;
-
     @Produce("google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue")
     protected ProducerTemplate graphBuildQueue;
-
-    @Produce("google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue")
-    protected ProducerTemplate baseGraphBuildQueue;
 
     @Autowired
     private Otp2GraphControlService otp2GraphControlService;
 
     @Autowired
-    private GraphControlRepository graphControlRepository;
-
-    @Autowired
-    private PlatformTransactionManager transactionManager;
+    private Otp2GraphStateStore stateStore;
 
     @Test
     void graphIsNotPromotedWhenTheSerializationVersionIsPinned() throws Exception {
@@ -99,21 +76,23 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
                 otp2GraphControlService.promoteBuiltGraph(PINNED_GRAPH, SERIALIZATION_ID, false, "netex-otp2/20260101000000000-report"));
         otp2GraphControlService.pin(SERIALIZATION_ID, "bad data in the latest build", "test-user");
 
-        adviceGraphBuild(null);
+        adviceGraphBuild();
         // GRAPH STARTED, provider STARTED, provider OK, GRAPH OK
         updateStatus.expectedMessageCount(4);
         updateStatus.setResultWaitTime(20000);
+        exportMergedNetex.expectedMessageCount(1);
         context.start();
 
         sendBodyAndHeadersToPubSub(graphBuildQueue, "", createProviderJobHeaders(1L, "ref1", "corr-id-1"));
         updateStatus.assertIsSatisfied();
+        exportMergedNetex.assertIsSatisfied();
 
         // the new graph is published, but the pinned graph stays current
         List<String> publishedGraphs = publishedGraphs();
         assertEquals(2, publishedGraphs.size());
         assertEquals("pinned graph", read(STABLE_GRAPH));
-        assertEquals(PINNED_GRAPH, read(VERSIONED_POINTER));
-        assertEquals(PINNED_GRAPH, read(CURRENT_POINTER));
+        assertEquals(PINNED_GRAPH, stateStore.readPointer(SERIALIZATION_ID).map(GraphPointer::graph).orElseThrow());
+        assertEquals(PINNED_GRAPH, stateStore.readRootPointer().map(GraphPointer::graph).orElseThrow());
         // the build report of the new graph is available
         assertEquals(1, otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR).getFiles().size());
 
@@ -129,87 +108,12 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
     }
 
     @Test
-    void buildRequestsAreDeferredWhileTheGraphBuilderIsPausedAndReplayedOnResume() throws Exception {
-        otp2GraphControlService.pause("investigating", "test-user");
-
-        adviceGraphBuild(null);
-        context.start();
-
-        for (long refId = 1; refId <= 2; refId++) {
-            sendBodyAndHeadersToPubSub(graphBuildQueue, "", createProviderJobHeaders(refId, "ref" + refId, "corr-id-" + refId));
-        }
-        waitUntil(() -> deferredBuildRequests(GraphType.TRANSIT) == 2);
-        // the messages are acknowledged: they are not redelivered
-        Thread.sleep(3000);
-        assertEquals(2, deferredBuildRequests(GraphType.TRANSIT));
-        assertEquals(0, updateStatus.getReceivedCounter());
-        assertTrue(publishedGraphs().isEmpty());
-        // the aggregated NeTEx export is refreshed even though the build is deferred
-        assertTrue(exportMergedNetex.getReceivedCounter() >= 1);
-
-        // GRAPH STARTED, 2 x provider STARTED, 2 x provider OK, GRAPH OK
-        updateStatus.expectedMinimumMessageCount(6);
-        updateStatus.setResultWaitTime(30000);
-        otp2GraphControlService.resume("fixed", "test-user");
-        updateStatus.assertIsSatisfied();
-
-        List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
-        for (long providerId = 1; providerId <= 2; providerId++) {
-            long id = providerId;
-            assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState())
-                    && id == je.getProviderId() && ("corr-id-" + id).equals(je.getCorrelationId())));
-        }
-        assertEquals(0, deferredBuildRequests(GraphType.TRANSIT));
-        waitUntil(() -> read(CURRENT_POINTER) != null);
-        assertFalse(otp2GraphControlService.status().builder().paused());
-        // the production build defined the production serialization version
-        OtpGraphControlStatus.Production production = otp2GraphControlService.status().production();
-        assertEquals(SERIALIZATION_ID, production.serializationId());
-        assertEquals(read(CURRENT_POINTER), production.currentGraph());
-        assertEquals("new graph", read(STABLE_GRAPH));
-    }
-
-    @Test
-    void graphBuiltWhileTheGraphBuilderIsPausedIsNotPromoted() throws Exception {
-        // the graph builder is paused while the first graph is being built
-        AtomicBoolean firstBuild = new AtomicBoolean(true);
-        adviceGraphBuild(() -> {
-            if (firstBuild.getAndSet(false)) {
-                otp2GraphControlService.pause("investigating", "test-user");
-            }
-        });
-        updateStatus.expectedMessageCount(4);
-        updateStatus.setResultWaitTime(20000);
-        context.start();
-
-        sendBodyAndHeadersToPubSub(graphBuildQueue, "", createProviderJobHeaders(1L, "ref1", "corr-id-1"));
-        updateStatus.assertIsSatisfied();
-
-        assertEquals(1, publishedGraphs().size());
-        assertNull(read(STABLE_GRAPH));
-        assertNull(read(VERSIONED_POINTER));
-        assertNull(read(CURRENT_POINTER));
-        OtpGraphControlStatus.Production production = otp2GraphControlService.status().production();
-        assertEquals(SERIALIZATION_ID, production.serializationId());
-        assertNull(production.currentGraph());
-        // a new build is requested when the graph builder is resumed
-        assertEquals(1, deferredBuildRequests(GraphType.TRANSIT));
-
-        otp2GraphControlService.resume("fixed", "test-user");
-        assertEquals(0, deferredBuildRequests(GraphType.TRANSIT));
-        waitUntil(() -> read(CURRENT_POINTER) != null);
-        assertEquals(2, publishedGraphs().size());
-        assertEquals(read(CURRENT_POINTER), read(VERSIONED_POINTER));
-        assertEquals("new graph", read(STABLE_GRAPH));
-    }
-
-    @Test
     void promotionFailureLeavesTheGraphPublishedButNotCurrent() throws Exception {
         AtomicInteger promotionAttempts = new AtomicInteger();
-        adviceGraphBuild(null);
+        adviceGraphBuild();
         AdviceWith.adviceWith(context, "otp2-graph-promotion", a -> a.weaveById(Otp2NetexGraphRouteBuilder.PROMOTE_GRAPH_PROCESSOR_ID).replace().process(e -> {
             promotionAttempts.incrementAndGet();
-            throw new IllegalStateException("database unavailable");
+            throw new IllegalStateException("bucket unavailable");
         }));
         // GRAPH STARTED, provider STARTED, provider OK, GRAPH OK: the publication succeeds
         updateStatus.expectedMessageCount(4);
@@ -224,85 +128,17 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
         List<String> publishedGraphs = publishedGraphs();
         assertEquals(1, publishedGraphs.size());
         assertNull(read(STABLE_GRAPH));
-        assertNull(read(CURRENT_POINTER));
+        assertTrue(stateStore.readRootPointer().isEmpty());
         OtpGraphControlStatus.Action skippedBuild = otp2GraphControlService.status().skippedBuilds().getFirst();
         assertEquals("BUILD_NOT_PROMOTED", skippedBuild.action());
         assertEquals(publishedGraphs.getFirst(), skippedBuild.graph());
-        assertEquals("The promotion failed: database unavailable", skippedBuild.reason());
-    }
-
-    @Test
-    void streetGraphBuiltWhileTheGraphBuilderIsPausedIsNotPublishedAndRebuiltOnResume() throws Exception {
-        String streetGraphFileName = OTP2_BASE_GRAPH_OBJ_PREFIX + "-XXX.obj";
-        String publishedStreetGraph = "graphs/" + OTP2_STREET_GRAPH_DIR + "/" + streetGraphFileName;
-        // the graph builder is paused while the first street graph is being built
-        AtomicBoolean firstBuild = new AtomicBoolean(true);
-        AdviceWith.adviceWith(context, "otp2-base-graph-build-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-and-send-status", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-        AdviceWith.adviceWith(context, "otp2-remote-base-graph-build-copy", a -> {
-            a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-            a.weaveByToUri("google-pubsub:(.*):Otp2GraphBuildQueue").replace().to("mock:otpGraphBuildQueue");
-            a.weaveByToUri("direct:remoteBuildOtp2BaseGraph").replace().process(exchange -> {
-                if (firstBuild.getAndSet(false)) {
-                    otp2GraphControlService.pause("investigating", "test-user");
-                }
-                internalInMemoryBlobStoreRepository.uploadBlob(exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + streetGraphFileName, content("street graph"));
-            });
-        });
-        // BASE STARTED, BASE OK
-        updateStatus.expectedMessageCount(2);
-        updateStatus.setResultWaitTime(20000);
-        context.start();
-
-        sendBodyAndHeadersToPubSub(baseGraphBuildQueue, "", Map.of(Constants.CORRELATION_ID, "corr-id-osm"));
-        updateStatus.assertIsSatisfied();
-
-        // the street graph is not published, no transit graph build is triggered, a rebuild is requested on resume
-        assertTrue(internalInMemoryBlobStoreRepository.listBlobs(publishedStreetGraph).getFiles().isEmpty());
-        assertEquals(0, otpGraphBuildQueue.getReceivedCounter());
-        assertEquals(1, deferredBuildRequests(GraphType.BASE));
-        OtpGraphControlStatus.Action skippedBuild = otp2GraphControlService.status().skippedBuilds().getFirst();
-        assertEquals("BUILD_NOT_PROMOTED", skippedBuild.action());
-        assertTrue(skippedBuild.graph().endsWith("/" + streetGraphFileName));
-
-        // the rebuilt street graph is published and triggers the transit graph build
-        updateStatus.expectedMessageCount(4);
-        otpGraphBuildQueue.expectedMessageCount(1);
-        otpGraphBuildQueue.setResultWaitTime(20000);
-        otp2GraphControlService.resume("fixed", "test-user");
-        updateStatus.assertIsSatisfied();
-        otpGraphBuildQueue.assertIsSatisfied();
-        assertEquals(1, internalInMemoryBlobStoreRepository.listBlobs(publishedStreetGraph).getFiles().size());
-        assertEquals(0, deferredBuildRequests(GraphType.BASE));
-    }
-
-    @Test
-    void baseGraphBuildRequestsAreDeferredWhileTheGraphBuilderIsPaused() throws Exception {
-        otp2GraphControlService.pause("investigating", "test-user");
-
-        AdviceWith.adviceWith(context, "otp2-base-graph-build", a -> {
-            a.weaveByToUri("direct:sendOtp2BaseGraphStartedEventsInNewTransaction").replace().to("mock:baseGraphBuildStarted");
-            a.weaveByToUri("direct:remoteBuildOtp2BaseGraphAndSendStatus").replace().to("mock:sink");
-        });
-        context.start();
-
-        sendBodyAndHeadersToPubSub(baseGraphBuildQueue, "", Map.of(Constants.CORRELATION_ID, "corr-id-osm"));
-        waitUntil(() -> deferredBuildRequests(GraphType.BASE) == 1);
-        assertEquals(0, baseGraphBuildStarted.getReceivedCounter());
-
-        baseGraphBuildStarted.expectedMessageCount(1);
-        baseGraphBuildStarted.setResultWaitTime(20000);
-        otp2GraphControlService.resume("fixed", "test-user");
-        baseGraphBuildStarted.assertIsSatisfied();
-        assertEquals(0, deferredBuildRequests(GraphType.BASE));
+        assertEquals("The promotion failed: bucket unavailable", skippedBuild.reason());
     }
 
     /**
      * Replace the graph builder with the creation of a dummy graph for the serialization version {@link #SERIALIZATION_ID}.
-     *
-     * @param duringBuild an action run while the graph is being built
      */
-    private void adviceGraphBuild(Runnable duringBuild) throws Exception {
+    private void adviceGraphBuild() throws Exception {
         AdviceWith.adviceWith(context, "otp2-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
         AdviceWith.adviceWith(context, "otp2-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
         AdviceWith.adviceWith(context, "otp2-remote-netex-graph-publish", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
@@ -310,9 +146,6 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
         AdviceWith.adviceWith(context, "otp2-remote-netex-graph-build-and-send-status", a -> {
             a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
             a.weaveByToUri("direct:remoteBuildOtp2NetexGraph").replace().process(exchange -> {
-                if (duringBuild != null) {
-                    duringBuild.run();
-                }
                 String workDir = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class);
                 internalInMemoryBlobStoreRepository.uploadBlob(workDir + "/Graph-otp2-" + SERIALIZATION_ID + ".obj", content("new graph"));
                 internalInMemoryBlobStoreRepository.uploadBlob(workDir + "/report/report.html", content("report"));
@@ -327,10 +160,6 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
                 .toList();
     }
 
-    private int deferredBuildRequests(GraphType graphType) {
-        return new TransactionTemplate(transactionManager).execute(status -> graphControlRepository.countDeferredBuildRequests(graphType));
-    }
-
     private String read(String name) {
         try (InputStream content = graphsInMemoryBlobStoreRepository.getBlob(name)) {
             return content == null ? null : IOUtils.toString(content, StandardCharsets.UTF_8);
@@ -341,15 +170,5 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
 
     private static InputStream content(String content) {
         return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
-    }
-
-    private static void waitUntil(BooleanSupplier condition) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + 20000;
-        while (!condition.getAsBoolean()) {
-            if (System.currentTimeMillis() > deadline) {
-                throw new AssertionError("Condition not met within 20 seconds");
-            }
-            Thread.sleep(200);
-        }
     }
 }

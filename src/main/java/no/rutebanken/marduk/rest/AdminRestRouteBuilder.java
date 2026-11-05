@@ -19,7 +19,6 @@ package no.rutebanken.marduk.rest;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
-import no.rutebanken.marduk.domain.OtpGraphControlRequest;
 import no.rutebanken.marduk.domain.OtpGraphControlStatus;
 import no.rutebanken.marduk.domain.OtpGraphRolloutRequest;
 import no.rutebanken.marduk.domain.OtpGraphRolloutResult;
@@ -342,7 +341,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:adminListGraphs")
 
                 .get("routing_graph/control")
-                .description("Status of the emergency controls of the OTP2 graph publication: production graph, pinned graphs, paused graph builder, latest control operations and latest builds not promoted")
+                .description("Status of the emergency controls of the OTP2 graph publication: production graph, pinned graphs, latest control operations and latest builds not promoted")
                 .outType(OtpGraphControlStatus.class)
                 .produces(JSON)
                 .responseMessage().code(200).endResponseMessage()
@@ -358,7 +357,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .to("direct:adminGraphControlVersions")
 
                 .post("routing_graph/rollout")
-                .description("Roll out a published OTP2 graph: make it the current graph of its serialization version and, for the serialization version used in production, trigger the redeployment of OTP. Optionally pin the graph so that new builds do not replace it")
+                .description("Roll out a published OTP2 graph: make it the current graph of its serialization version and, for the serialization version used in production, redeploy OTP. Optionally pin the graph so that new builds do not replace it")
                 .type(OtpGraphRolloutRequest.class)
                 .outType(OtpGraphRolloutResult.class)
                 .consumes(JSON)
@@ -392,28 +391,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .responseMessage().code(404).message("No pinned graph").endResponseMessage()
                 .responseMessage().code(409).message(GRAPH_CONTROL_CONFLICT_MESSAGE).endResponseMessage()
                 .to("direct:adminGraphControlUnpin")
-
-                .post("routing_graph/builder/pause")
-                .description("Pause the OTP2 graph builder: build requests are deferred until the graph builder is resumed, and a graph whose build is running is not promoted")
-                .type(OtpGraphControlRequest.class)
-                .outType(OtpGraphControlStatus.class)
-                .consumes(JSON)
-                .produces(JSON)
-                .responseMessage().code(200).message("Graph builder paused").endResponseMessage()
-                .responseMessage().code(400).message("Missing reason").endResponseMessage()
-                .responseMessage().code(409).message(GRAPH_CONTROL_CONFLICT_MESSAGE).endResponseMessage()
-                .to("direct:adminGraphControlPause")
-
-                .post("routing_graph/builder/resume")
-                .description("Resume the OTP2 graph builder and replay the build requests deferred while it was paused")
-                .type(OtpGraphControlRequest.class)
-                .outType(OtpGraphControlStatus.class)
-                .consumes(JSON)
-                .produces(JSON)
-                .responseMessage().code(200).message("Graph builder resumed").endResponseMessage()
-                .responseMessage().code(400).message("Missing reason").endResponseMessage()
-                .responseMessage().code(409).message(GRAPH_CONTROL_CONFLICT_MESSAGE).endResponseMessage()
-                .to("direct:adminGraphControlResume")
 
                 .post("/upload/{codespace}")
                 .description("Upload NeTEx file")
@@ -811,24 +788,6 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                     return otp2GraphControlService.unpin(request.serializationId(), request.reason(), ex.getIn().getHeader(USERNAME, String.class));
                 }))
                 .routeId("admin-graph-control-unpin");
-
-        from("direct:adminGraphControlPause")
-                .process(this::setNewCorrelationId)
-                .to("direct:authorizeAdminRequest")
-                .process(this::removeHttpHeaders)
-                .log(LoggingLevel.INFO, correlation() + "Pause of the OTP2 graph builder requested by ${header." + USERNAME + "}")
-                .process(e -> runGraphControlOperation(e, ex ->
-                        otp2GraphControlService.pause(requestBody(ex, OtpGraphControlRequest.class).reason(), ex.getIn().getHeader(USERNAME, String.class))))
-                .routeId("admin-graph-control-pause");
-
-        from("direct:adminGraphControlResume")
-                .process(this::setNewCorrelationId)
-                .to("direct:authorizeAdminRequest")
-                .process(this::removeHttpHeaders)
-                .log(LoggingLevel.INFO, correlation() + "Resumption of the OTP2 graph builder requested by ${header." + USERNAME + "}")
-                .process(e -> runGraphControlOperation(e, ex ->
-                        otp2GraphControlService.resume(requestBody(ex, OtpGraphControlRequest.class).reason(), ex.getIn().getHeader(USERNAME, String.class))))
-                .routeId("admin-graph-control-resume");
 
         from("direct:adminDatasetImport")
                 .setHeader(PROVIDER_ID, header("providerId"))

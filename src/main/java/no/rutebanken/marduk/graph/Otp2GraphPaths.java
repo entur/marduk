@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import static no.rutebanken.marduk.Constants.OTP2_CURRENT_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ_PREFIX;
 import static no.rutebanken.marduk.Constants.OTP2_NETEX_GRAPH_DIR;
+import static no.rutebanken.marduk.Constants.OTP2_PINNED_GRAPH_FILE;
 
 /**
  * Paths of the published OTP2 transit graphs in the graph bucket:
@@ -31,10 +32,12 @@ import static no.rutebanken.marduk.Constants.OTP2_NETEX_GRAPH_DIR;
  *     one per build;</li>
  *     <li>{@code netex-otp2/<serialization id>/Graph-otp2-current.obj}: the stable copy of the current graph, loaded
  *     by the OTP instances;</li>
- *     <li>{@code netex-otp2/<serialization id>/<pointer file>} and {@code <pointer file>}: the pointer files, whose
- *     content is the path of the current graph of the serialization version and of production. They are written for
- *     the OTP redeployment job, which is triggered by a change of the root pointer file, and never read back: the
- *     current graphs are recorded in the database (see {@link GraphControlRepository}).</li>
+ *     <li>{@code netex-otp2/<serialization id>/<pointer file>}: the pointer file recording the current graph of the
+ *     serialization version (see {@link Otp2GraphStateStore}), written after the stable copy;</li>
+ *     <li>{@code netex-otp2/<serialization id>/pinned-otp2}: the marker pinning the current graph of the
+ *     serialization version, so that new builds do not replace it;</li>
+ *     <li>{@code <pointer file>}: the root pointer file, recording the current graph of the serialization version
+ *     used in production. The OTP redeployment job restarts the OTP instances when its content changes.</li>
  * </ul>
  */
 public final class Otp2GraphPaths {
@@ -86,6 +89,16 @@ public final class Otp2GraphPaths {
     }
 
     /**
+     * The path of a published graph.
+     *
+     * @param timestamp the build timestamp (yyyyMMddHHmmssSSS)
+     * @param fileName  the file name of the built graph, {@code Graph-otp2-<serialization id>.obj}
+     */
+    public static String versionedGraphPath(String serializationId, String timestamp, String fileName) {
+        return OTP2_NETEX_GRAPH_DIR + "/" + serializationId + "/" + timestamp + "-" + fileName;
+    }
+
+    /**
      * The stable copy of the current graph of a serialization version.
      */
     public static String stableGraphPath(String serializationId) {
@@ -97,6 +110,13 @@ public final class Otp2GraphPaths {
      */
     public static String versionedPointerPath(String serializationId, String pointerFileName) {
         return OTP2_NETEX_GRAPH_DIR + "/" + serializationId + "/" + pointerFileName;
+    }
+
+    /**
+     * The marker file pinning the current graph of a serialization version.
+     */
+    public static String pinPath(String serializationId) {
+        return OTP2_NETEX_GRAPH_DIR + "/" + serializationId + "/" + OTP2_PINNED_GRAPH_FILE;
     }
 
     /**

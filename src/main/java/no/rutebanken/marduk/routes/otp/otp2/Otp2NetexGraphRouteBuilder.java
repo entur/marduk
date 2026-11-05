@@ -17,14 +17,12 @@
 package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.graph.GraphControlRepository.GraphType;
 import no.rutebanken.marduk.graph.Otp2GraphControlService;
 import no.rutebanken.marduk.kubernetes.KubernetesJobTimeoutException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.Exchange;
-import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
@@ -32,7 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
@@ -119,23 +116,16 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
         from("direct:remoteBuildOtp2Graph")
                 .setProperty(PROP_MESSAGES, simple("${body}"))
+                .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
+                .to("direct:sendOtp2NetexGraphBuildStartedEventsInNewTransaction")
+                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID() + "/${exchangeProperty." + TIMESTAMP + "}"))
+                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 graph building in remote directory ${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}.")
 
-                // the aggregated NeTEx export is published for other consumers than the graph builder: it is
-                // refreshed even while the graph builder is paused
                 .choice()
                 .when(PredicateBuilder.not(exchangeProperty(OTP_BUILD_CANDIDATE)))
                 .to("direct:otp2ExportMergedNetex")
                 .end()
 
-                // while the graph builder is paused, the build requests are stored and replayed when it is resumed
-                .filter(this::deferProductionBuildIfPaused)
-                    .log(LoggingLevel.INFO, getClass().getName(), correlation() + "The graph builder is paused, the OTP2 graph build is deferred.")
-                    .stop()
-                .end()
-                .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
-                .to("direct:sendOtp2NetexGraphBuildStartedEventsInNewTransaction")
-                .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID() + "/${exchangeProperty." + TIMESTAMP + "}"))
-                .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Starting OTP2 graph building in remote directory ${exchangeProperty." + OTP_REMOTE_WORK_DIR + "}.")
                 .to("direct:remoteBuildOtp2NetexGraphAndSendStatus")
                 .to("direct:remoteOtp2GraphPublishing")
                 .log(LoggingLevel.INFO, getClass().getName(), correlation() + "Done with OTP2 graph building route.")
@@ -191,10 +181,10 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:remoteOtp2CleanUp")
                 .routeId("otp2-remote-netex-graph-publish");
 
-        // make the new graph the current graph: record it in the database, copy it to the stable name loaded by the
-        // OTP instances and update the pointer files (and the report index for a production build), unless the graph
-        // builder is paused, the serialization version is pinned or this is a candidate build of the production
-        // serialization version.
+        // make the new graph the current graph: copy it to the stable name loaded by the OTP instances and record it
+        // in the pointer file (and the report index and root pointer file for a production build), unless the
+        // serialization version is pinned, a more recent graph is current, or this is a candidate build of a
+        // serialization version whose current graph is a production build.
         // The promotion is cheap compared to the build: it is retried on its own, and a persistent failure leaves the
         // graph published but not current (available for rollout) instead of failing the publication, which would
         // rebuild the graph from scratch.
@@ -221,17 +211,6 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:copyAllInternalBlobs")
                 .log(LoggingLevel.INFO, correlation() + "Done copying OTP2 graph build reports.")
                 .routeId("otp2-remote-graph-build-report-versioned-upload");
-
-        // replay a graph build request deferred while the graph builder was paused (see Otp2GraphControlService)
-        from(Otp2GraphControlService.REPUBLISH_BUILD_REQUEST_ENDPOINT)
-                .log(LoggingLevel.INFO, correlation() + "Replaying deferred ${exchangeProperty." + Otp2GraphControlService.PROP_GRAPH_TYPE + "} graph build request.")
-                .choice()
-                .when(exchangeProperty(Otp2GraphControlService.PROP_GRAPH_TYPE).isEqualTo(GraphType.BASE))
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2BaseGraphBuildQueue")
-                .otherwise()
-                .to(ExchangePattern.InOnly, "google-pubsub:{{marduk.pubsub.project.id}}:Otp2GraphBuildQueue")
-                .end()
-                .routeId("otp2-republish-deferred-graph-build-request");
 
         from("direct:remoteOtp2CleanUp")
                 .choice()
@@ -261,11 +240,6 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:updateStatus")
                 .routeId("otp2-netex-graph-send-status-for-timetable-jobs");
 
-    }
-
-    @SuppressWarnings("unchecked")
-    private boolean deferProductionBuildIfPaused(Exchange e) {
-        return otp2GraphControlService.deferIfPaused(GraphType.TRANSIT, isCandidateBuild(e), e.getProperty(PROP_MESSAGES, List.class));
     }
 
     private void promoteGraph(Exchange e) {

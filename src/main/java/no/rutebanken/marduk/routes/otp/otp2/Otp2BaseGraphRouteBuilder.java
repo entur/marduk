@@ -17,13 +17,10 @@
 package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
-import no.rutebanken.marduk.graph.GraphControlRepository.GraphType;
-import no.rutebanken.marduk.graph.Otp2GraphControlService;
 import no.rutebanken.marduk.kubernetes.KubernetesJobTimeoutException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
@@ -32,13 +29,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.OTP2_BASE_GRAPH_OBJ_PREFIX;
 import static no.rutebanken.marduk.Constants.OTP_BUILD_CANDIDATE;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
-import static no.rutebanken.marduk.Constants.TARGET_FILE_HANDLE;
 import static no.rutebanken.marduk.Constants.TIMESTAMP;
 
 /**
@@ -52,9 +47,6 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
 
     @Autowired
     private Otp2BaseGraphBuilder otp2BaseGraphBuilder;
-
-    @Autowired
-    private Otp2GraphControlService otp2GraphControlService;
 
     @Override
     public void configure() throws Exception {
@@ -85,11 +77,6 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .routeId("pubsub-otp2-base-graph-candidate-build");
 
         from("direct:buildOtp2BaseGraph")
-                // while the graph builder is paused, the build requests are stored and replayed when it is resumed
-                .filter(this::deferProductionBuildIfPaused)
-                    .log(LoggingLevel.INFO, getClass().getName(), correlation() + "The graph builder is paused, the OTP2 base graph build is deferred.")
-                    .stop()
-                .end()
                 .setProperty(TIMESTAMP, simple("${date:now:yyyyMMddHHmmssSSS}"))
                 .to("direct:sendOtp2BaseGraphStartedEventsInNewTransaction")
                 .setProperty(OTP_REMOTE_WORK_DIR, simple(blobStoreSubdirectory + "/work/" + UUID.randomUUID() + "/${exchangeProperty." + TIMESTAMP + "}"))
@@ -117,16 +104,6 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:findInternalBlob")
                 .log(LoggingLevel.INFO, correlation() + "Found OTP2 base graph named ${body.fileNameOnly} matching file prefix ${header." + Constants.FILE_PREFIX + "}")
                 .process(new Otp2BaseGraphPublishingProcessor(blobStoreSubdirectory))
-                // the street graph is used by every later transit graph build and has no rollout: a street graph
-                // whose build was already running when the graph builder was paused is not published, and is rebuilt
-                // when the graph builder is resumed
-                .filter(this::deferBuiltStreetGraphIfPaused)
-                    .log(LoggingLevel.INFO, getClass().getName(), correlation() + "The graph builder is paused, the OTP2 base graph ${header." + TARGET_FILE_HANDLE + "} is not published.")
-                    .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_BASE).state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
-                    .to("direct:updateStatus")
-                    .to("direct:remoteOtp2CleanUp")
-                    .stop()
-                .end()
                 .to("direct:copyInternalBlobInBucket")
                 .to(logDebugShowAll())
                 .choice()
@@ -154,21 +131,5 @@ public class Otp2BaseGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:updateStatus")
                 .routeId("otp2-base-graph-build-send-started-events");
 
-    }
-
-    @SuppressWarnings("unchecked")
-    private boolean deferProductionBuildIfPaused(Exchange e) {
-        return otp2GraphControlService.deferIfPaused(GraphType.BASE, isCandidateBuild(e), e.getIn().getBody(List.class));
-    }
-
-    private boolean deferBuiltStreetGraphIfPaused(Exchange e) {
-        if (isCandidateBuild(e)) {
-            return false;
-        }
-        return otp2GraphControlService.deferBuiltStreetGraphIfPaused(e.getIn().getHeader(TARGET_FILE_HANDLE, String.class));
-    }
-
-    private static boolean isCandidateBuild(Exchange e) {
-        return Boolean.TRUE.equals(e.getProperty(OTP_BUILD_CANDIDATE, Boolean.class));
     }
 }

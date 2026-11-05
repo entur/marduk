@@ -22,6 +22,9 @@ import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
 import no.rutebanken.marduk.graph.Otp2GraphControlService;
 import no.rutebanken.marduk.graph.Otp2GraphPaths;
+import no.rutebanken.marduk.graph.Otp2GraphStateStore;
+import no.rutebanken.marduk.graph.Otp2GraphStateStore.GraphPin;
+import no.rutebanken.marduk.graph.Otp2GraphStateStore.GraphPointer;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +45,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -53,13 +56,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTestBase {
 
     private static final String PRODUCTION_ID = "EN-0239";
+    private static final String NEXT_ID = "EN-0240";
     private static final String OLD_GRAPH = graph(PRODUCTION_ID, "20261013080000000");
     private static final String LATEST_GRAPH = graph(PRODUCTION_ID, "20261014080000000");
-    private static final String NEXT_VERSION_GRAPH = graph("EN-0240", "20261014090000000");
+    private static final String NEXT_VERSION_GRAPH = graph(NEXT_ID, "20261014090000000");
     private static final String ROOT_POINTER = "current-otp2";
-    private static final String VERSIONED_POINTER = Constants.OTP2_NETEX_GRAPH_DIR + "/" + PRODUCTION_ID + "/current-otp2";
-    private static final String STABLE_GRAPH = Constants.OTP2_NETEX_GRAPH_DIR + "/" + PRODUCTION_ID + "/" + Constants.OTP2_CURRENT_GRAPH_OBJ;
-    private static final String LAST_FILE = "last-otp2";
+    private static final String STABLE_GRAPH = Otp2GraphPaths.stableGraphPath(PRODUCTION_ID);
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -68,6 +70,9 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
 
     @Autowired
     private Otp2GraphControlService otp2GraphControlService;
+
+    @Autowired
+    private Otp2GraphStateStore stateStore;
 
     /**
      * Publish three graphs, the latest of the production serialization version being the current graph promoted by a
@@ -83,9 +88,7 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
                 otp2GraphControlService.promoteBuiltGraph(LATEST_GRAPH, PRODUCTION_ID, false, reportVersion(LATEST_GRAPH)));
         assertEquals("latest graph", read(STABLE_GRAPH));
-        assertEquals(LATEST_GRAPH, read(ROOT_POINTER));
-        // the redeployment job recorded the root pointer file
-        upload(LAST_FILE, LATEST_GRAPH);
+        assertEquals(LATEST_GRAPH, rootPointer().graph());
         otpReportInMemoryBlobStoreRepository.delete(Constants.OTP2_GRAPH_REPORT_INDEX_FILE);
     }
 
@@ -98,14 +101,19 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         JsonNode result = json(response);
         assertEquals(PRODUCTION_ID, result.get("serializationId").asText());
         assertTrue(result.get("production").asBoolean());
-        assertTrue(result.get("restartTriggered").asBoolean());
         assertTrue(result.get("pinned").asBoolean());
 
         assertEquals("old graph", read(STABLE_GRAPH));
-        assertEquals(OLD_GRAPH, read(VERSIONED_POINTER));
-        assertEquals(OLD_GRAPH, read(ROOT_POINTER));
-        // the redeployment job is forced to restart OTP
-        assertNull(read(LAST_FILE));
+        GraphPointer pointer = pointer(PRODUCTION_ID);
+        assertEquals(OLD_GRAPH, pointer.graph());
+        assertFalse(pointer.candidate());
+        assertEquals("test-user", pointer.updatedBy());
+        assertEquals("bad data", pointer.reason());
+        // the root pointer file triggers the redeployment of OTP
+        assertEquals(pointer, rootPointer());
+        GraphPin pin = stateStore.readPin(PRODUCTION_ID).orElseThrow();
+        assertEquals(OLD_GRAPH, pin.graph());
+        assertEquals("test-user", pin.pinnedBy());
         assertEquals(1, otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_GRAPH_REPORT_INDEX_FILE).getFiles().size());
 
         JsonNode status = json(get("routing_graph/control"));
@@ -118,12 +126,22 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertEquals("ROLLOUT_AND_PIN", status.get("recentActions").get(0).get("action").asText());
         assertEquals("bad data", status.get("recentActions").get(0).get("reason").asText());
 
+        // the pinned graph is not replaced by a new build
+        String newGraph = graph(PRODUCTION_ID, "20261015080000000");
+        upload(newGraph, "new graph");
+        assertEquals(Otp2GraphControlService.Promotion.SKIPPED_PINNED,
+                otp2GraphControlService.promoteBuiltGraph(newGraph, PRODUCTION_ID, false, reportVersion(newGraph)));
+        assertEquals("old graph", read(STABLE_GRAPH));
+
         HttpResponse<String> unpinResponse = post("routing_graph/unpin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"fixed\"}");
         assertEquals(200, unpinResponse.statusCode(), unpinResponse.body());
         assertTrue(json(unpinResponse).get("pins").isEmpty());
-        // the current graph is unchanged
+        // the current graph is unchanged until the next build
         assertEquals(OLD_GRAPH, json(unpinResponse).get("production").get("currentGraph").asText());
         assertEquals("old graph", read(STABLE_GRAPH));
+        assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
+                otp2GraphControlService.promoteBuiltGraph(newGraph, PRODUCTION_ID, false, reportVersion(newGraph)));
+        assertEquals("new graph", read(STABLE_GRAPH));
 
         assertEquals(404, post("routing_graph/unpin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"fixed\"}").statusCode());
     }
@@ -131,6 +149,7 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
     @Test
     void pinTheCurrentGraph() throws Exception {
         context.start();
+        String rootPointerContent = read(ROOT_POINTER);
 
         HttpResponse<String> response = post("routing_graph/pin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"freeze during the incident\"}");
         assertEquals(200, response.statusCode(), response.body());
@@ -138,104 +157,96 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertTrue(status.get("production").get("pinned").asBoolean());
         assertEquals(LATEST_GRAPH, status.get("pins").get(0).get("graph").asText());
         assertEquals("PIN", status.get("recentActions").get(0).get("action").asText());
-        // the graph files are unchanged: OTP is not redeployed
+        // the graph files are unchanged, OTP is not redeployed
         assertEquals("latest graph", read(STABLE_GRAPH));
-        assertEquals(LATEST_GRAPH, read(ROOT_POINTER));
-        assertEquals(LATEST_GRAPH, read(LAST_FILE));
+        assertEquals(rootPointerContent, read(ROOT_POINTER));
 
-        // a serialization version without a current graph cannot be pinned
-        assertEquals(404, post("routing_graph/pin", "{\"serializationId\":\"EN-0240\",\"reason\":\"freeze during the incident\"}").statusCode());
+        // no current graph for the next serialization version
+        assertEquals(404, post("routing_graph/pin", "{\"serializationId\":\"" + NEXT_ID + "\",\"reason\":\"freeze during the incident\"}").statusCode());
+        assertEquals(400, post("routing_graph/pin", "{\"serializationId\":\"" + PRODUCTION_ID + "\"}").statusCode());
     }
 
     @Test
-    void rolloutOfTheCurrentGraphForcesTheRedeployment() throws Exception {
-        // the stable copy was rolled back by hand: the current graph is unchanged, OTP must be restarted anyway
-        upload(STABLE_GRAPH, "old graph");
+    void rolloutOfTheCurrentGraphRedeploysOtp() throws Exception {
         context.start();
+        // the stable copy was restored by hand, OTP must be restarted
+        String rootPointerContent = read(ROOT_POINTER);
 
-        HttpResponse<String> response = post("routing_graph/rollout", "{\"graph\":\"" + LATEST_GRAPH + "\",\"pin\":false,\"reason\":\"restore the stable copy\"}");
+        HttpResponse<String> response = post("routing_graph/rollout", "{\"graph\":\"" + LATEST_GRAPH + "\",\"pin\":false,\"reason\":\"restart OTP\"}");
         assertEquals(200, response.statusCode(), response.body());
-        assertTrue(json(response).get("restartTriggered").asBoolean());
+        assertTrue(json(response).get("production").asBoolean());
+        assertFalse(json(response).get("pinned").asBoolean());
         assertEquals("latest graph", read(STABLE_GRAPH));
-        assertEquals(LATEST_GRAPH, read(ROOT_POINTER));
-        assertNull(read(LAST_FILE));
+        // the root pointer file names the same graph, but its content changes, which triggers the redeployment
+        assertEquals(LATEST_GRAPH, rootPointer().graph());
+        assertEquals("test-user", rootPointer().updatedBy());
+        assertNotEquals(rootPointerContent, read(ROOT_POINTER));
+        assertTrue(stateStore.readPin(PRODUCTION_ID).isEmpty());
     }
 
     @Test
     void rolloutOfAGraphWithoutBuildReportLeavesTheReportIndexUnchanged() throws Exception {
-        otpReportInMemoryBlobStoreRepository.deleteAllFilesInFolder(reportVersion(OLD_GRAPH));
         context.start();
+        otpReportInMemoryBlobStoreRepository.deleteAllFilesInFolder(reportVersion(OLD_GRAPH));
 
         HttpResponse<String> response = post("routing_graph/rollout", "{\"graph\":\"" + OLD_GRAPH + "\",\"pin\":false,\"reason\":\"bad data\"}");
         assertEquals(200, response.statusCode(), response.body());
         assertEquals("old graph", read(STABLE_GRAPH));
+        assertEquals(OLD_GRAPH, rootPointer().graph());
         assertEquals(0, otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_GRAPH_REPORT_INDEX_FILE).getFiles().size());
     }
 
     @Test
     void rolloutOfAnotherSerializationVersionDoesNotTouchProduction() throws Exception {
         context.start();
+        String rootPointerContent = read(ROOT_POINTER);
 
         HttpResponse<String> response = post("routing_graph/rollout", "{\"graph\":\"" + NEXT_VERSION_GRAPH + "\",\"pin\":false,\"reason\":\"prepare the next OTP version\"}");
         assertEquals(200, response.statusCode(), response.body());
         JsonNode result = json(response);
+        assertEquals(NEXT_ID, result.get("serializationId").asText());
         assertFalse(result.get("production").asBoolean());
-        assertFalse(result.get("restartTriggered").asBoolean());
 
-        assertEquals("next version graph", read(Constants.OTP2_NETEX_GRAPH_DIR + "/EN-0240/" + Constants.OTP2_CURRENT_GRAPH_OBJ));
-        assertEquals(NEXT_VERSION_GRAPH, read(Constants.OTP2_NETEX_GRAPH_DIR + "/EN-0240/current-otp2"));
+        assertEquals("next version graph", read(Otp2GraphPaths.stableGraphPath(NEXT_ID)));
+        assertEquals(NEXT_VERSION_GRAPH, pointer(NEXT_ID).graph());
         assertEquals("latest graph", read(STABLE_GRAPH));
-        assertEquals(LATEST_GRAPH, read(ROOT_POINTER));
-        assertEquals(LATEST_GRAPH, read(LAST_FILE));
+        assertEquals(rootPointerContent, read(ROOT_POINTER));
         assertEquals(0, otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_GRAPH_REPORT_INDEX_FILE).getFiles().size());
 
         JsonNode status = json(get("routing_graph/control"));
         assertEquals(PRODUCTION_ID, status.get("production").get("serializationId").asText());
         assertEquals(LATEST_GRAPH, status.get("production").get("currentGraph").asText());
-        // the next version can now be pinned
-        assertEquals(200, post("routing_graph/pin", "{\"serializationId\":\"EN-0240\",\"reason\":\"freeze\"}").statusCode());
+        assertEquals("ROLLOUT", status.get("recentActions").get(0).get("action").asText());
+
+        // the next serialization version has a current graph to pin now
+        assertEquals(200, post("routing_graph/pin", "{\"serializationId\":\"" + NEXT_ID + "\",\"reason\":\"freeze\"}").statusCode());
+        assertEquals(NEXT_VERSION_GRAPH, stateStore.readPin(NEXT_ID).orElseThrow().graph());
+        assertFalse(json(get("routing_graph/control")).get("production").get("pinned").asBoolean());
     }
 
     @Test
     void invalidRolloutRequests() throws Exception {
         context.start();
+        String rootPointerContent = read(ROOT_POINTER);
 
         assertEquals(400, post("routing_graph/rollout", "{\"graph\":\"current-otp2\",\"pin\":true,\"reason\":\"bad data\"}").statusCode());
+        assertEquals(400, post("routing_graph/rollout", "{\"graph\":\"" + STABLE_GRAPH + "\",\"pin\":true,\"reason\":\"bad data\"}").statusCode());
         assertEquals(400, post("routing_graph/rollout", "{\"graph\":\"" + OLD_GRAPH + "\",\"pin\":true}").statusCode());
         assertEquals(400, post("routing_graph/rollout", "{\"graph\":\"" + OLD_GRAPH + "\",\"pin\":true,\"reason\":\"  \"}").statusCode());
         assertEquals(404, post("routing_graph/rollout", "{\"graph\":\"" + graph(PRODUCTION_ID, "20250101000000000") + "\",\"pin\":true,\"reason\":\"bad data\"}").statusCode());
-        // nothing changed
+
         assertEquals("latest graph", read(STABLE_GRAPH));
-        assertEquals(LATEST_GRAPH, read(LAST_FILE));
+        assertEquals(rootPointerContent, read(ROOT_POINTER));
+        assertTrue(stateStore.readPin(PRODUCTION_ID).isEmpty());
         assertEquals(LATEST_GRAPH, json(get("routing_graph/control")).get("production").get("currentGraph").asText());
-    }
-
-    @Test
-    void pauseAndResumeTheGraphBuilder() throws Exception {
-        context.start();
-
-        HttpResponse<String> pauseResponse = post("routing_graph/builder/pause", "{\"reason\":\"investigating\"}");
-        assertEquals(200, pauseResponse.statusCode(), pauseResponse.body());
-        JsonNode builder = json(pauseResponse).get("builder");
-        assertTrue(builder.get("paused").asBoolean());
-        assertEquals("test-user", builder.get("pausedBy").asText());
-        assertEquals("investigating", builder.get("reason").asText());
-        assertTrue(json(get("routing_graph/control")).get("builder").get("paused").asBoolean());
-
-        assertEquals(400, post("routing_graph/builder/resume", "{}").statusCode());
-
-        HttpResponse<String> resumeResponse = post("routing_graph/builder/resume", "{\"reason\":\"fixed\"}");
-        assertEquals(200, resumeResponse.statusCode(), resumeResponse.body());
-        assertFalse(json(resumeResponse).get("builder").get("paused").asBoolean());
-        assertEquals("RESUME", json(resumeResponse).get("recentActions").get(0).get("action").asText());
     }
 
     @Test
     void listGraphVersions() throws Exception {
         context.start();
-        otp2GraphControlService.rollout(OLD_GRAPH, true, "bad data", "test-user");
+        assertEquals(200, post("routing_graph/rollout", "{\"graph\":\"" + OLD_GRAPH + "\",\"pin\":true,\"reason\":\"bad data\"}").statusCode());
 
-        HttpResponse<String> response = get("routing_graph/versions?limit=10");
+        HttpResponse<String> response = get("routing_graph/versions");
         assertEquals(200, response.statusCode(), response.body());
         JsonNode versions = json(response).get("serializationVersions");
         assertEquals(2, versions.size());
@@ -246,50 +257,35 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertEquals(OLD_GRAPH, production.get("currentGraph").asText());
         assertEquals(OLD_GRAPH, production.get("pinnedGraph").asText());
         assertEquals(2, production.get("totalGraphs").asInt());
-        // most recent first, the stable copy and the pointer files are not listed
+        // most recent first
         assertEquals(LATEST_GRAPH, production.get("graphs").get(0).get("graph").asText());
         assertFalse(production.get("graphs").get(0).get("current").asBoolean());
         assertEquals(OLD_GRAPH, production.get("graphs").get(1).get("graph").asText());
         assertTrue(production.get("graphs").get(1).get("current").asBoolean());
         assertTrue(production.get("graphs").get(1).get("pinned").asBoolean());
 
-        assertEquals("EN-0240", versions.get(1).get("serializationId").asText());
-        assertFalse(versions.get(1).get("production").asBoolean());
+        JsonNode next = versions.get(1);
+        assertEquals(NEXT_ID, next.get("serializationId").asText());
+        assertFalse(next.get("production").asBoolean());
+        assertTrue(next.get("currentGraph").isNull());
+        assertTrue(next.get("pinnedGraph").isNull());
 
         assertEquals(1, json(get("routing_graph/versions?limit=1")).get("serializationVersions").get(0).get("graphs").size());
         assertEquals(400, get("routing_graph/versions?limit=0").statusCode());
     }
 
     @Test
-    void candidateGraphOfTheProductionSerializationVersionIsNeverPromoted() throws Exception {
-        context.start();
-
+    void candidateGraphOfTheProductionSerializationVersionIsNeverPromoted() {
         String candidateGraph = graph(PRODUCTION_ID, "20261015080000000");
         upload(candidateGraph, "candidate graph");
         assertEquals(Otp2GraphControlService.Promotion.SKIPPED_CANDIDATE,
                 otp2GraphControlService.promoteBuiltGraph(candidateGraph, PRODUCTION_ID, true, reportVersion(candidateGraph)));
         assertEquals("latest graph", read(STABLE_GRAPH));
-        assertEquals(LATEST_GRAPH, read(ROOT_POINTER));
-        JsonNode status = json(get("routing_graph/control"));
+        assertEquals(LATEST_GRAPH, rootPointer().graph());
+        JsonNode status = ObjectMapperFactory.getSharedObjectMapper().valueToTree(otp2GraphControlService.status());
         assertEquals("BUILD_NOT_PROMOTED", status.get("skippedBuilds").get(0).get("action").asText());
         assertEquals(candidateGraph, status.get("skippedBuilds").get(0).get("graph").asText());
-        assertEquals("PRODUCTION_VERSION_CHANGED", status.get("recentActions").get(0).get("action").asText());
-    }
-
-    @Test
-    void candidateGraphOfAnotherSerializationVersionIsPromotedEvenWhileTheGraphBuilderIsPaused() {
-        otp2GraphControlService.pause("investigating", "test-user");
-
-        String nextVersionCandidateGraph = graph("EN-0240", "20261015080000000");
-        upload(nextVersionCandidateGraph, "next version candidate graph");
-        assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
-                otp2GraphControlService.promoteBuiltGraph(nextVersionCandidateGraph, "EN-0240", true, reportVersion(nextVersionCandidateGraph)));
-        assertEquals("next version candidate graph", read(Constants.OTP2_NETEX_GRAPH_DIR + "/EN-0240/" + Constants.OTP2_CURRENT_GRAPH_OBJ));
-        assertEquals(nextVersionCandidateGraph, read(Constants.OTP2_NETEX_GRAPH_DIR + "/EN-0240/current-otp2"));
-        // production is untouched
-        assertEquals("latest graph", read(STABLE_GRAPH));
-        assertEquals(LATEST_GRAPH, read(ROOT_POINTER));
-        assertEquals(PRODUCTION_ID, otp2GraphControlService.status().production().serializationId());
+        assertEquals(PRODUCTION_ID, status.get("production").get("serializationId").asText());
     }
 
     @Test
@@ -297,39 +293,64 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertEquals(Otp2GraphControlService.Promotion.SKIPPED_OLDER,
                 otp2GraphControlService.promoteBuiltGraph(OLD_GRAPH, PRODUCTION_ID, false, reportVersion(OLD_GRAPH)));
         assertEquals("latest graph", read(STABLE_GRAPH));
-        assertEquals(LATEST_GRAPH, read(ROOT_POINTER));
+        assertEquals(LATEST_GRAPH, rootPointer().graph());
     }
 
     @Test
     void productionBuildIsNotHeldBackByAnOverlappingCandidateBuild() {
         // a candidate build of the next serialization version finished first
-        String candidateGraph = graph("EN-0240", "20261015090000000");
+        String candidateGraph = graph(NEXT_ID, "20261015090000000");
         upload(candidateGraph, "next version candidate graph");
         assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
-                otp2GraphControlService.promoteBuiltGraph(candidateGraph, "EN-0240", true, reportVersion(candidateGraph)));
+                otp2GraphControlService.promoteBuiltGraph(candidateGraph, NEXT_ID, true, reportVersion(candidateGraph)));
+        assertTrue(pointer(NEXT_ID).candidate());
+        // a candidate build does not touch production
+        assertEquals(LATEST_GRAPH, rootPointer().graph());
 
         // OTP is upgraded in production: the first production build of the next serialization version, started before
         // the candidate build, moves production to the next serialization version
-        String productionGraph = graph("EN-0240", "20261015080000000");
+        String productionGraph = graph(NEXT_ID, "20261015080000000");
         upload(productionGraph, "next version production graph");
         uploadReport(productionGraph);
         assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
-                otp2GraphControlService.promoteBuiltGraph(productionGraph, "EN-0240", false, reportVersion(productionGraph)));
-        assertEquals("next version production graph", read(Constants.OTP2_NETEX_GRAPH_DIR + "/EN-0240/" + Constants.OTP2_CURRENT_GRAPH_OBJ));
-        assertEquals(productionGraph, read(ROOT_POINTER));
+                otp2GraphControlService.promoteBuiltGraph(productionGraph, NEXT_ID, false, reportVersion(productionGraph)));
+        assertEquals("next version production graph", read(Otp2GraphPaths.stableGraphPath(NEXT_ID)));
+        assertEquals(productionGraph, rootPointer().graph());
+        assertFalse(pointer(NEXT_ID).candidate());
         assertEquals(1, otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_GRAPH_REPORT_INDEX_FILE).getFiles().size());
 
         JsonNode status = ObjectMapperFactory.getSharedObjectMapper().valueToTree(otp2GraphControlService.status());
-        assertEquals("EN-0240", status.get("production").get("serializationId").asText());
+        assertEquals(NEXT_ID, status.get("production").get("serializationId").asText());
         assertEquals(productionGraph, status.get("production").get("currentGraph").asText());
-        assertEquals("PRODUCTION_VERSION_CHANGED", status.get("recentActions").get(0).get("action").asText());
 
         // a later candidate build of the production serialization version is not promoted
-        String laterCandidateGraph = graph("EN-0240", "20261015100000000");
+        String laterCandidateGraph = graph(NEXT_ID, "20261015100000000");
         upload(laterCandidateGraph, "later candidate graph");
         assertEquals(Otp2GraphControlService.Promotion.SKIPPED_CANDIDATE,
-                otp2GraphControlService.promoteBuiltGraph(laterCandidateGraph, "EN-0240", true, reportVersion(laterCandidateGraph)));
-        assertEquals("next version production graph", read(Constants.OTP2_NETEX_GRAPH_DIR + "/EN-0240/" + Constants.OTP2_CURRENT_GRAPH_OBJ));
+                otp2GraphControlService.promoteBuiltGraph(laterCandidateGraph, NEXT_ID, true, reportVersion(laterCandidateGraph)));
+        assertEquals("next version production graph", read(Otp2GraphPaths.stableGraphPath(NEXT_ID)));
+    }
+
+    @Test
+    void pointerFilesWrittenBeforeTheControlsAreUnderstood() throws Exception {
+        // the pointer files only contain the path of the graph
+        upload(ROOT_POINTER, LATEST_GRAPH + "\n");
+        upload(stateStore.versionedPointerPath(PRODUCTION_ID), LATEST_GRAPH + "\n");
+        context.start();
+
+        JsonNode status = json(get("routing_graph/control"));
+        assertEquals(PRODUCTION_ID, status.get("production").get("serializationId").asText());
+        assertEquals(LATEST_GRAPH, status.get("production").get("currentGraph").asText());
+
+        assertEquals(Otp2GraphControlService.Promotion.SKIPPED_OLDER,
+                otp2GraphControlService.promoteBuiltGraph(OLD_GRAPH, PRODUCTION_ID, false, reportVersion(OLD_GRAPH)));
+        String newGraph = graph(PRODUCTION_ID, "20261015080000000");
+        upload(newGraph, "new graph");
+        assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
+                otp2GraphControlService.promoteBuiltGraph(newGraph, PRODUCTION_ID, false, reportVersion(newGraph)));
+        assertEquals("new graph", read(STABLE_GRAPH));
+        assertEquals(newGraph, rootPointer().graph());
+        assertEquals("marduk", rootPointer().updatedBy());
     }
 
     private HttpResponse<String> get(String path) throws IOException, InterruptedException {
@@ -352,11 +373,19 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
     }
 
     private static String graph(String serializationId, String timestamp) {
-        return Constants.OTP2_NETEX_GRAPH_DIR + "/" + serializationId + "/" + timestamp + "-Graph-otp2-" + serializationId + ".obj";
+        return Otp2GraphPaths.versionedGraphPath(serializationId, timestamp, "Graph-otp2-" + serializationId + ".obj");
     }
 
     private static String reportVersion(String graph) {
         return Otp2GraphPaths.parseVersionedGraph(graph).orElseThrow().reportVersion();
+    }
+
+    private GraphPointer rootPointer() {
+        return stateStore.readRootPointer().orElseThrow();
+    }
+
+    private GraphPointer pointer(String serializationId) {
+        return stateStore.readPointer(serializationId).orElseThrow();
     }
 
     private void upload(String name, String content) {

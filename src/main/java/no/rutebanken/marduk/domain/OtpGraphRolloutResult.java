@@ -21,9 +21,9 @@ package no.rutebanken.marduk.domain;
  *
  * @param graph            the rolled out graph
  * @param serializationId  the serialization version of the graph
- * @param production       whether the graph belongs to the serialization version used in production
- * @param restartTriggered whether the redeployment of the OTP instances was triggered
+ * @param production       whether the graph belongs to the serialization version used in production, in which case
+ *                         the OTP instances are redeployed
  * @param pinned           whether the graph is pinned
  */
-public record OtpGraphRolloutResult(String graph, String serializationId, boolean production, boolean restartTriggered, boolean pinned) {
+public record OtpGraphRolloutResult(String graph, String serializationId, boolean production, boolean pinned) {
 }

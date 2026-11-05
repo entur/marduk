@@ -55,6 +55,10 @@ class Otp2GraphPathsTest {
     void derivedPaths() {
         assertEquals("netex-otp2/EN-0239/Graph-otp2-current.obj", Otp2GraphPaths.stableGraphPath("EN-0239"));
         assertEquals("netex-otp2/EN-0239/current-otp2", Otp2GraphPaths.versionedPointerPath("EN-0239", "current-otp2"));
+        assertEquals("netex-otp2/EN-0239/pinned-otp2", Otp2GraphPaths.pinPath("EN-0239"));
+        assertEquals(GRAPH, Otp2GraphPaths.versionedGraphPath("EN-0239", "20261014081200123", "Graph-otp2-EN-0239.obj"));
+        // the path built by the publication is the path parsed by the controls
+        assertTrue(Otp2GraphPaths.parseVersionedGraph(Otp2GraphPaths.versionedGraphPath("EN-0239", "20261014081200123", "Graph-otp2-EN-0239.obj")).isPresent());
     }
 
     @Test

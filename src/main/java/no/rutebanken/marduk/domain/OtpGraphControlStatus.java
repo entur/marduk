@@ -24,37 +24,19 @@ import java.util.List;
 /**
  * State of the emergency controls of the OTP graph publication.
  *
- * @param builder       the state of the graph builder
- * @param production    the serialization version used in production, null if no graph is published yet
+ * @param production    the serialization version used in production, null if no production graph is published yet
  * @param pins          the pinned graphs
- * @param recentActions the latest control operations and production version changes, most recent first
- * @param skippedBuilds the latest graphs built but not promoted (pinned or paused builder, candidate build of the
- *                      production serialization version, older than the current graph, failed promotion), most recent
- *                      first
+ * @param recentActions the latest control operations, most recent first
+ * @param skippedBuilds the latest graphs built but not promoted (pinned serialization version, candidate build
+ *                      where the current graph is a production build, older than the current graph, failed
+ *                      promotion), most recent first
  */
-public record OtpGraphControlStatus(Builder builder, Production production, List<Pin> pins, List<Action> recentActions, List<Action> skippedBuilds) {
+public record OtpGraphControlStatus(Production production, List<Pin> pins, List<Action> recentActions, List<Action> skippedBuilds) {
 
     /**
-     * @param paused               whether the graph builder is paused
-     * @param pausedBy             the user who paused the graph builder
-     * @param pausedAt             when the graph builder was paused
-     * @param reason               why the graph builder was paused
-     * @param deferredTransitBuilds the number of transit graph build requests waiting for the graph builder to resume
-     * @param deferredStreetBuilds  the number of street graph build requests waiting for the graph builder to resume
-     */
-    public record Builder(boolean paused,
-                          String pausedBy,
-                          @JsonFormat(without = JsonFormat.Feature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS) Instant pausedAt,
-                          String reason,
-                          int deferredTransitBuilds,
-                          int deferredStreetBuilds) {
-    }
-
-    /**
-     * @param serializationId the serialization version used in production: the serialization version of the latest
-     *                        graph built by the production graph builder
-     * @param currentGraph    the current graph of this serialization version, loaded by the OTP instances, null if
-     *                        no graph was promoted or rolled out since the controls were introduced
+     * @param serializationId the serialization version used in production: the serialization version of the graph
+     *                        the root pointer file points at, written by every production build
+     * @param currentGraph    the current graph of this serialization version, loaded by the OTP instances
      * @param pinned          whether the current graph is pinned
      */
     public record Production(String serializationId, String currentGraph, boolean pinned) {

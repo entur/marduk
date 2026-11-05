@@ -64,6 +64,10 @@ public final class Constants {
      * OTP instances load this file directly, without resolving the pointer file first.
      */
     public static final String OTP2_CURRENT_GRAPH_OBJ = OTP2_GRAPH_OBJ_PREFIX + "-current.obj";
+    /**
+     * Marker file pinning the current graph of a serialization version (see Otp2GraphControlService).
+     */
+    public static final String OTP2_PINNED_GRAPH_FILE = "pinned-otp2";
 
     public static final String OTP2_STREET_GRAPH_DIR = "street";
     public static final String OTP2_GRAPH_REPORT_INDEX_FILE = "index_otp2.html";

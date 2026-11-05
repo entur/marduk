@@ -57,12 +57,7 @@ import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
  */
 public abstract class BaseRouteBuilder extends RouteBuilder {
 
-    /**
-     * Header of an aggregated PubSub message holding the exchange that carries its acknowledgement.
-     *
-     * @see #removeSynchronizationForAggregatedExchange(Exchange)
-     */
-    public static final String SYNCHRONIZATION_HOLDER = "SYNCHRONIZATION_HOLDER";
+    private static final String SYNCHRONIZATION_HOLDER = "SYNCHRONIZATION_HOLDER";
 
     @Autowired
     private ProviderRepository providerRepository;
@@ -126,27 +121,21 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     /** Copy Camel headers into outbound PubSub message attributes. */
     protected void configureOutboundPubSubInterceptor() {
         interceptSendToEndpoint("google-pubsub:*").process(
-                exchange -> exchange.getIn().setHeader(GooglePubsubConstants.ATTRIBUTES, pubSubAttributes(exchange.getIn().getHeaders())));
-    }
-
-    /**
-     * The Camel headers published as PubSub message attributes. Shared with the storage of deferred graph build
-     * requests, which are republished with these attributes.
-     * <p>
-     * SECURITY: this curated map is published verbatim by the PubSub producer and does NOT pass through
-     * OutboundFilteringHeaderFilterStrategy (that strategy only gates the producer's separate "inherit remaining
-     * headers" pass). These breadcrumbId/Authorization exclusions are therefore the sole guard keeping those values
-     * out of published attributes - do not remove them.
-     */
-    public static Map<String, String> pubSubAttributes(Map<String, Object> headers) {
-        Map<String, String> pubSubAttributes = new HashMap<>();
-        headers.entrySet().stream()
-                .filter(entry -> !entry.getKey().startsWith("Camel"))
-                .filter(entry -> !entry.getKey().equals(Exchange.BREADCRUMB_ID))
-                .filter(entry -> !entry.getKey().equalsIgnoreCase(AUTHORIZATION))
-                .filter(entry -> Objects.toString(entry.getValue()).length() <= 1024)
-                .forEach(entry -> pubSubAttributes.put(entry.getKey(), Objects.toString(entry.getValue(), "")));
-        return pubSubAttributes;
+                exchange -> {
+                    Map<String, String> pubSubAttributes = new HashMap<>();
+                    // SECURITY: this curated map is published verbatim by the PubSub producer and does
+                    // NOT pass through OutboundFilteringHeaderFilterStrategy (that strategy only gates the
+                    // producer's separate "inherit remaining headers" pass). These breadcrumbId/Authorization
+                    // exclusions are therefore the sole guard keeping those values out of published
+                    // attributes - do not remove them.
+                    exchange.getIn().getHeaders().entrySet().stream()
+                            .filter(entry -> !entry.getKey().startsWith("Camel"))
+                            .filter(entry -> !entry.getKey().equals(Exchange.BREADCRUMB_ID))
+                            .filter(entry -> !entry.getKey().equalsIgnoreCase(AUTHORIZATION))
+                            .filter(entry -> Objects.toString(entry.getValue()).length() <= 1024)
+                            .forEach(entry -> pubSubAttributes.put(entry.getKey(), Objects.toString(entry.getValue(), "")));
+                    exchange.getIn().setHeader(GooglePubsubConstants.ATTRIBUTES, pubSubAttributes);
+                });
     }
 
     /**
