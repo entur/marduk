@@ -23,6 +23,7 @@ import no.rutebanken.marduk.domain.OtpGraphControlStatus;
 import no.rutebanken.marduk.graph.Otp2GraphControlService;
 import no.rutebanken.marduk.graph.Otp2GraphStateStore;
 import no.rutebanken.marduk.graph.Otp2GraphStateStore.GraphPointer;
+import no.rutebanken.marduk.routes.status.JobEvent;
 import org.apache.camel.EndpointInject;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -86,6 +87,8 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
         sendBodyAndHeadersToPubSub(graphBuildQueue, "", createProviderJobHeaders(1L, "ref1", "corr-id-1"));
         updateStatus.assertIsSatisfied();
         exportMergedNetex.assertIsSatisfied();
+        // a graph that is deliberately not promoted is a successful build
+        assertEquals(JobEvent.State.OK, graphBuildState());
 
         // the new graph is published, but the pinned graph stays current
         List<String> publishedGraphs = publishedGraphs();
@@ -115,13 +118,15 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
             promotionAttempts.incrementAndGet();
             throw new IllegalStateException("bucket unavailable");
         }));
-        // GRAPH STARTED, provider STARTED, provider OK, GRAPH OK: the publication succeeds
+        // GRAPH STARTED, provider STARTED, provider OK, GRAPH FAILED: the publication completes, but the build is
+        // reported as failed since the graph is not used
         updateStatus.expectedMessageCount(4);
         updateStatus.setResultWaitTime(20000);
         context.start();
 
         sendBodyAndHeadersToPubSub(graphBuildQueue, "", createProviderJobHeaders(1L, "ref1", "corr-id-1"));
         updateStatus.assertIsSatisfied();
+        assertEquals(JobEvent.State.FAILED, graphBuildState());
 
         // the promotion was retried on its own, without rebuilding the graph
         assertEquals(3, promotionAttempts.get());
@@ -151,6 +156,17 @@ class Otp2GraphControlRouteIntegrationTest extends MardukRouteBuilderIntegration
                 internalInMemoryBlobStoreRepository.uploadBlob(workDir + "/report/report.html", content("report"));
             });
         });
+    }
+
+    /**
+     * The state of the last GRAPH job event, sent at the end of the publication.
+     */
+    private JobEvent.State graphBuildState() {
+        List<JobEvent> graphEvents = updateStatus.getExchanges().stream()
+                .map(e -> JobEvent.fromString(e.getIn().getBody().toString()))
+                .filter(event -> JobEvent.JobDomain.GRAPH.equals(event.getDomain()))
+                .toList();
+        return graphEvents.getLast().getState();
     }
 
     private List<String> publishedGraphs() {

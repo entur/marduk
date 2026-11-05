@@ -176,7 +176,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:promoteOtp2Graph")
                 .log(LoggingLevel.INFO, correlation() + "OTP2 graph ${exchangeProperty." + PUBLISHED_GRAPH_PATH_PROPERTY + "} promotion: ${exchangeProperty." + PROP_GRAPH_PROMOTION + "}")
 
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(graphBuildState(e)).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
                 .to("direct:updateStatus")
                 .to("direct:remoteOtp2CleanUp")
                 .routeId("otp2-remote-netex-graph-publish");
@@ -187,7 +187,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
         // serialization version whose current graph is a production build.
         // The promotion is cheap compared to the build: it is retried on its own, and a persistent failure leaves the
         // graph published but not current (available for rollout) instead of failing the publication, which would
-        // rebuild the graph from scratch.
+        // rebuild the graph from scratch. The graph build is then reported as failed.
         from("direct:promoteOtp2Graph")
                 .onException(Exception.class)
                     .maximumRedeliveries(promotionMaxRedeliveries)
@@ -257,6 +257,15 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 e.getProperty(PUBLISHED_GRAPH_PATH_PROPERTY, String.class),
                 e.getIn().getHeader(Constants.GRAPH_COMPATIBILITY_VERSION, String.class),
                 e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class));
+    }
+
+    /**
+     * A graph whose promotion failed is published, but neither production nor the OTP instances of its serialization
+     * version use it: the graph build is reported as failed. A graph that is deliberately not promoted (pinned
+     * serialization version, more recent current graph, candidate build) is a successful build.
+     */
+    private static JobEvent.State graphBuildState(Exchange e) {
+        return e.getProperty(PROP_GRAPH_PROMOTION) == Otp2GraphControlService.Promotion.FAILED ? JobEvent.State.FAILED : JobEvent.State.OK;
     }
 
     private static boolean isCandidateBuild(Exchange e) {
