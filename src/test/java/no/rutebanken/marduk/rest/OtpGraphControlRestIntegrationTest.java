@@ -20,12 +20,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
+import no.rutebanken.marduk.graph.GraphControlRepository;
 import no.rutebanken.marduk.graph.Otp2GraphControlService;
 import no.rutebanken.marduk.graph.Otp2GraphPaths;
 import no.rutebanken.marduk.graph.Otp2GraphStateStore;
 import no.rutebanken.marduk.graph.Otp2GraphStateStore.GraphPin;
 import no.rutebanken.marduk.graph.Otp2GraphStateStore.GraphPointer;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
+import no.rutebanken.marduk.services.OtpGraphsBlobStoreService;
+import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -73,6 +77,18 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
 
     @Autowired
     private Otp2GraphStateStore stateStore;
+
+    @Autowired
+    private GraphControlRepository graphControlRepository;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private OtpGraphsBlobStoreService otpGraphsBlobStoreService;
+
+    @Value("${blobstore.gcs.otpreport.container.name}")
+    private String otpReportContainerName;
 
     /**
      * Publish three graphs, the latest of the production serialization version being the current graph promoted by a
@@ -286,6 +302,28 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertEquals("BUILD_NOT_PROMOTED", status.get("skippedBuilds").get(0).get("action").asText());
         assertEquals(candidateGraph, status.get("skippedBuilds").get(0).get("graph").asText());
         assertEquals(PRODUCTION_ID, status.get("production").get("serializationId").asText());
+    }
+
+    @Test
+    void reportIndexFailureDoesNotPreventThePromotion() {
+        String newGraph = graph(PRODUCTION_ID, "20261015080000000");
+        upload(newGraph, "new graph");
+        uploadReport(newGraph);
+        OtpReportBlobStoreService unavailableReports = new OtpReportBlobStoreService(otpReportContainerName, otpReportInMemoryBlobStoreRepository) {
+            @Override
+            public void uploadHtmlBlob(String name, InputStream inputStream) {
+                throw new IllegalStateException("report bucket unavailable");
+            }
+        };
+        Otp2GraphControlService service = new Otp2GraphControlService(graphControlRepository, transactionManager, stateStore,
+                otpGraphsBlobStoreService, unavailableReports, otpReportContainerName);
+
+        assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
+                service.promoteBuiltGraph(newGraph, PRODUCTION_ID, false, reportVersion(newGraph)));
+        assertEquals("new graph", read(STABLE_GRAPH));
+        assertEquals(newGraph, pointer(PRODUCTION_ID).graph());
+        assertEquals(newGraph, rootPointer().graph());
+        assertEquals(0, otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_GRAPH_REPORT_INDEX_FILE).getFiles().size());
     }
 
     @Test

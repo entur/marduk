@@ -371,33 +371,36 @@ public class Otp2GraphControlService {
      * Make a graph the current graph of its serialization version: copy it to the stable name loaded by the OTP
      * instances, then record it in the pointer file. The stable copy is the only step that can take time, and is
      * atomic: a failure before the pointer is written leaves the previous pointer in place, and running the same
-     * operation again completes it. For the serialization version used in production, the report index is updated
-     * and the root pointer file, which triggers the redeployment of the OTP instances, is written last.
+     * operation again completes it. For the serialization version used in production, the root pointer file, which
+     * triggers the redeployment of the OTP instances, is written after the pointer file. The report index is updated
+     * once the graph is current, and a failure to update it does not fail the operation: the report is not critical.
      */
     private void makeCurrent(String graphPath, String serializationId, boolean candidate, String reportVersion, String username, String reason, boolean production) {
         otpGraphsBlobStoreService.copyBlobInBucket(graphPath, Otp2GraphPaths.stableGraphPath(serializationId));
-        if (production) {
-            updateReportIndex(reportVersion);
-        }
         GraphPointer pointer = new GraphPointer(graphPath, candidate, Instant.now(), username, reason);
         stateStore.writePointer(serializationId, pointer);
         if (production) {
             stateStore.writeRootPointer(pointer);
+            updateReportIndex(reportVersion);
         }
         LOGGER.info("The OTP2 graph {} is the current graph of the serialization version {} (production: {})", graphPath, serializationId, production);
     }
 
     /**
      * Point the report index at the build report of the current production graph, if the report exists: candidate
-     * builds do not publish a report.
+     * builds do not publish a report. A failure leaves the index pointing at a previous report.
      */
     private void updateReportIndex(String reportVersion) {
-        if (otpReportBlobStoreService.listBlobsInFolder(reportVersion).getFiles().isEmpty()) {
-            LOGGER.warn("No build report found in {}, the report index is not updated", reportVersion);
-            return;
+        try {
+            if (otpReportBlobStoreService.listBlobsInFolder(reportVersion).getFiles().isEmpty()) {
+                LOGGER.warn("No build report found in {}, the report index is not updated", reportVersion);
+                return;
+            }
+            otpReportBlobStoreService.uploadHtmlBlob(OTP2_GRAPH_REPORT_INDEX_FILE,
+                    IOUtils.toInputStream(Otp2GraphPaths.reportRedirectPage(otpReportContainerName, reportVersion), StandardCharsets.UTF_8));
+        } catch (RuntimeException e) {
+            LOGGER.warn("Failed to update the OTP2 graph report index to the build report {}, the index points at a previous report", reportVersion, e);
         }
-        otpReportBlobStoreService.uploadHtmlBlob(OTP2_GRAPH_REPORT_INDEX_FILE,
-                IOUtils.toInputStream(Otp2GraphPaths.reportRedirectPage(otpReportContainerName, reportVersion), StandardCharsets.UTF_8));
     }
 
     private static List<OtpGraphControlStatus.Action> actions(List<AuditEntry> entries) {
