@@ -139,8 +139,11 @@ public class Otp2GraphStateStore {
     }
 
     /**
-     * A pointer file written before the controls were introduced only contains the path of the current graph, and
-     * was written by a production build.
+     * A pointer file written before the controls were introduced only contains the path of the current graph. Such a
+     * file was rewritten by candidate builds as well as by production builds, so whether the graph is a candidate
+     * build is unknown: it is read as a production build. In a serialization version that only has candidate builds,
+     * for example the next one, later candidate builds are then not promoted until a production build of that
+     * serialization version replaces the pointer file.
      */
     static GraphPointer parsePointer(String content, String path) {
         String trimmed = content.trim();
