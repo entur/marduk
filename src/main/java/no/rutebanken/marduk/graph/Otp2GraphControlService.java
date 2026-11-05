@@ -196,16 +196,18 @@ public class Otp2GraphControlService {
             repository.lockControlRow(LockWait.OPERATION);
             boolean production = productionSerializationId(stateStore.readRootPointer()).filter(serializationId::equals).isPresent();
 
-            // the pin is written first: a failure after it leaves the builds blocked, never a stale graph unpinned
+            // a pin is written before the rollout and removed after it: a failure in between leaves the builds
+            // blocked, never a stale graph unpinned
             if (pin) {
                 stateStore.writePin(serializationId, new GraphPin(graph, Instant.now(), username, validReason));
-            } else {
-                stateStore.deletePin(serializationId);
             }
             // a rollout does not change the nature of the serialization version: a candidate build keeps being
             // promoted in a version that only had candidate builds
             boolean candidate = stateStore.readPointer(serializationId).map(GraphPointer::candidate).orElse(false);
             makeCurrent(graph, serializationId, candidate, versionedGraph.reportVersion(), username, validReason, production);
+            if (!pin) {
+                stateStore.deletePin(serializationId);
+            }
 
             audit(pin ? ACTION_ROLLOUT_AND_PIN : ACTION_ROLLOUT, serializationId, graph, username, validReason);
             LOGGER.info("User {} rolled out the OTP2 graph {} (pinned: {}, production: {}): {}", username, graph, pin, production, validReason);
