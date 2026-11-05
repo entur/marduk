@@ -181,7 +181,26 @@ public class Otp2GraphStateStore {
         try {
             return OBJECT_MAPPER.readValue(content, type);
         } catch (JsonProcessingException e) {
-            throw new MardukException("Failed to parse " + path + ": " + e.getMessage(), e);
+            throw new UnreadableStateFileException(path, e);
+        }
+    }
+
+    /**
+     * A pointer or pin file whose content cannot be parsed, for example after a truncated manual copy.
+     */
+    public static class UnreadableStateFileException extends MardukException {
+
+        private static final long serialVersionUID = 1L;
+
+        private final String path;
+
+        UnreadableStateFileException(String path, JsonProcessingException cause) {
+            super("Failed to parse " + path + ": " + cause.getMessage(), cause);
+            this.path = path;
+        }
+
+        public String getPath() {
+            return path;
         }
     }
 }

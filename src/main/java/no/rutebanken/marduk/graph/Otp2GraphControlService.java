@@ -25,6 +25,7 @@ import no.rutebanken.marduk.graph.GraphControlRepository.AuditEntry;
 import no.rutebanken.marduk.graph.GraphControlRepository.LockWait;
 import no.rutebanken.marduk.graph.Otp2GraphStateStore.GraphPin;
 import no.rutebanken.marduk.graph.Otp2GraphStateStore.GraphPointer;
+import no.rutebanken.marduk.graph.Otp2GraphStateStore.UnreadableStateFileException;
 import no.rutebanken.marduk.services.OtpGraphsBlobStoreService;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.commons.io.IOUtils;
@@ -47,6 +48,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_REPORT_INDEX_FILE;
 import static no.rutebanken.marduk.Constants.OTP2_NETEX_GRAPH_DIR;
@@ -270,7 +272,7 @@ public class Otp2GraphControlService {
         List<OtpGraphControlStatus.Action> recentActions = actions(repository.findLatestAuditEntriesExcluding(ACTION_BUILD_NOT_PROMOTED, RECENT_ACTIONS));
         List<OtpGraphControlStatus.Action> skippedBuilds = actions(repository.findLatestAuditEntries(ACTION_BUILD_NOT_PROMOTED, RECENT_SKIPPED_BUILDS));
 
-        return new OtpGraphControlStatus(production, pins, recentActions, skippedBuilds);
+        return new OtpGraphControlStatus(production, pins, recentActions, skippedBuilds, state.unreadableFiles());
     }
 
     /**
@@ -311,7 +313,7 @@ public class Otp2GraphControlService {
                     serializationId.equals(productionSerializationId), currentGraph, pinnedGraph, serializationIdFiles.size(), latestGraphs));
         });
         serializationVersions.sort(Comparator.comparing((OtpGraphVersions.SerializationVersion v) -> !v.production()));
-        return new OtpGraphVersions(serializationVersions);
+        return new OtpGraphVersions(serializationVersions, state.unreadableFiles());
     }
 
     // ------------------------------------------------------------------------------------------------------------
@@ -323,11 +325,13 @@ public class Otp2GraphControlService {
      * @param pointers                  the pointer of each serialization version that has one
      * @param pins                      the pin of each serialization version that has one
      * @param productionSerializationId the serialization version the root pointer points at
+     * @param unreadableFiles           the pointer and pin files that cannot be parsed, left out of the snapshot
      */
     private record BucketState(BlobStoreFiles files,
                                Map<String, GraphPointer> pointers,
                                Map<String, GraphPin> pins,
-                               Optional<String> productionSerializationId) {
+                               Optional<String> productionSerializationId,
+                               List<String> unreadableFiles) {
 
         String currentGraph(String serializationId) {
             GraphPointer pointer = pointers.get(serializationId);
@@ -348,15 +352,34 @@ public class Otp2GraphControlService {
         }
         Map<String, GraphPointer> pointers = new HashMap<>();
         Map<String, GraphPin> pins = new TreeMap<>();
+        List<String> unreadableFiles = new ArrayList<>();
         for (String serializationId : serializationIds) {
             if (names.contains(stateStore.versionedPointerPath(serializationId))) {
-                stateStore.readPointer(serializationId).ifPresent(pointer -> pointers.put(serializationId, pointer));
+                readOrReport(() -> stateStore.readPointer(serializationId), unreadableFiles)
+                        .ifPresent(pointer -> pointers.put(serializationId, pointer));
             }
             if (names.contains(Otp2GraphPaths.pinPath(serializationId))) {
-                stateStore.readPin(serializationId).ifPresent(pin -> pins.put(serializationId, pin));
+                readOrReport(() -> stateStore.readPin(serializationId), unreadableFiles)
+                        .ifPresent(pin -> pins.put(serializationId, pin));
             }
         }
-        return new BucketState(files, pointers, pins, productionSerializationId(stateStore.readRootPointer()));
+        Optional<GraphPointer> rootPointer = readOrReport(stateStore::readRootPointer, unreadableFiles);
+        return new BucketState(files, pointers, pins, productionSerializationId(rootPointer), List.copyOf(unreadableFiles));
+    }
+
+    /**
+     * Read a pointer or pin file for the snapshot. A file that cannot be parsed is reported instead of failing the
+     * whole snapshot, so that the status stays available while the file is repaired. A failure of the bucket itself
+     * still fails the snapshot.
+     */
+    private static <T> Optional<T> readOrReport(Supplier<Optional<T>> reader, List<String> unreadableFiles) {
+        try {
+            return reader.get();
+        } catch (UnreadableStateFileException e) {
+            LOGGER.warn("The OTP2 graph state file {} cannot be parsed and is left out of the status: {}", e.getPath(), e.getMessage());
+            unreadableFiles.add(e.getPath());
+            return Optional.empty();
+        }
     }
 
     /**

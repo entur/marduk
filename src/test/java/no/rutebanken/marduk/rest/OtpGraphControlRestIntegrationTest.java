@@ -46,6 +46,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -327,6 +329,46 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
     }
 
     @Test
+    void unreadableStateFilesAreReportedWithoutFailingTheControls() throws Exception {
+        context.start();
+        String brokenPointer = stateStore.versionedPointerPath("EN-0200");
+        String brokenPin = Otp2GraphPaths.pinPath(NEXT_ID);
+        upload(brokenPointer, "{");
+        upload(brokenPin, "{\"graph\":");
+
+        HttpResponse<String> statusResponse = get("routing_graph/control");
+        assertEquals(200, statusResponse.statusCode(), statusResponse.body());
+        JsonNode status = json(statusResponse);
+        assertEquals(Set.of(brokenPointer, brokenPin), textValues(status.get("unreadableFiles")));
+        assertEquals(LATEST_GRAPH, status.get("production").get("currentGraph").asText());
+        assertTrue(status.get("pins").isEmpty());
+
+        HttpResponse<String> versionsResponse = get("routing_graph/versions");
+        assertEquals(200, versionsResponse.statusCode(), versionsResponse.body());
+        assertEquals(Set.of(brokenPointer, brokenPin), textValues(json(versionsResponse).get("unreadableFiles")));
+
+        // the controls of the other serialization versions keep working
+        HttpResponse<String> pinResponse = post("routing_graph/pin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"freeze\"}");
+        assertEquals(200, pinResponse.statusCode(), pinResponse.body());
+        assertTrue(json(pinResponse).get("production").get("pinned").asBoolean());
+        assertEquals(Set.of(brokenPointer, brokenPin), textValues(json(pinResponse).get("unreadableFiles")));
+    }
+
+    @Test
+    void unreadableRootPointerLeavesProductionUnknown() throws Exception {
+        context.start();
+        upload(ROOT_POINTER, "{");
+
+        HttpResponse<String> response = get("routing_graph/control");
+        assertEquals(200, response.statusCode(), response.body());
+        JsonNode status = json(response);
+        // production is unknown: depending on the serialization settings, null or left out
+        JsonNode production = status.get("production");
+        assertTrue(production == null || production.isNull(), status.toString());
+        assertEquals(Set.of(ROOT_POINTER), textValues(status.get("unreadableFiles")));
+    }
+
+    @Test
     void olderGraphIsNotPromoted() {
         assertEquals(Otp2GraphControlService.Promotion.SKIPPED_OLDER,
                 otp2GraphControlService.promoteBuiltGraph(OLD_GRAPH, PRODUCTION_ID, false, reportVersion(OLD_GRAPH)));
@@ -404,6 +446,12 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
                 .header("Authorization", "Bearer test-token")
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json");
+    }
+
+    private static Set<String> textValues(JsonNode array) {
+        Set<String> values = new HashSet<>();
+        array.forEach(node -> values.add(node.asText()));
+        return values;
     }
 
     private static JsonNode json(HttpResponse<String> response) throws IOException {
