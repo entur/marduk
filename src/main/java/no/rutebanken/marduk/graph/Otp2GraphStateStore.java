@@ -42,8 +42,9 @@ import java.util.Optional;
  *     in place;</li>
  *     <li>the pin marker of a serialization version records that its current graph must not be replaced by new
  *     builds;</li>
- *     <li>the root pointer file records the current graph of the serialization version used in production. The OTP
- *     redeployment job restarts the OTP instances when its content changes.</li>
+ *     <li>the root pointer file records the latest graph made current by a production build or by a rollout of the
+ *     serialization version used in production. The OTP redeployment job restarts the OTP instances when its content
+ *     changes.</li>
  * </ul>
  * The files are small JSON documents. A pointer file written before the controls were introduced only contains the
  * path of the graph: it is read as a pointer to a production build.

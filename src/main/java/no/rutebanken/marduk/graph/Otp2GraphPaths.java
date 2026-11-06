@@ -36,8 +36,9 @@ import static no.rutebanken.marduk.Constants.OTP2_PINNED_GRAPH_FILE;
  *     serialization version (see {@link Otp2GraphStateStore}), written after the stable copy;</li>
  *     <li>{@code netex-otp2/<serialization id>/pinned-otp2}: the marker pinning the current graph of the
  *     serialization version, so that new builds do not replace it;</li>
- *     <li>{@code <pointer file>}: the root pointer file, recording the current graph of the serialization version
- *     used in production. The OTP redeployment job restarts the OTP instances when its content changes.</li>
+ *     <li>{@code <pointer file>}: the root pointer file, recording the latest graph made current by a production
+ *     build or by a rollout of the serialization version used in production. The OTP redeployment job restarts the
+ *     OTP instances when its content changes.</li>
  * </ul>
  */
 public final class Otp2GraphPaths {

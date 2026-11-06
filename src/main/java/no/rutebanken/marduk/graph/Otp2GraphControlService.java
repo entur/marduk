@@ -18,6 +18,7 @@ package no.rutebanken.marduk.graph;
 
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.OtpGraphControlStatus;
+import no.rutebanken.marduk.domain.OtpGraphControlStatus.ProductionSource;
 import no.rutebanken.marduk.domain.OtpGraphPinResult;
 import no.rutebanken.marduk.domain.OtpGraphRolloutResult;
 import no.rutebanken.marduk.domain.OtpGraphVersions;
@@ -62,8 +63,13 @@ import static no.rutebanken.marduk.Constants.OTP2_NETEX_GRAPH_DIR;
  * The state of the publication lives in the graph bucket, next to the graph files (see {@link Otp2GraphStateStore}):
  * the pointer file of a serialization version is written after its stable copy, so that it never names a graph that
  * is not in place, and a pin is a marker file. Nothing is recorded before it is true: every operation is idempotent,
- * and the remedy for a failure is to run the same operation again. The serialization version used in production is
- * the one the root pointer file points at, which is written by every production build: no state is kept about it.
+ * and the remedy for a failure is to run the same operation again.
+ * <p>
+ * The serialization version used in production is the one the production OTP instances report (see
+ * {@link Otp2ProductionVersionClient}): they load the current graph of their own serialization version. If they cannot
+ * be asked, it is the serialization version of the graph the root pointer file points at, which is written by every
+ * production build, and lags behind the OTP instances after a release or a downgrade of OTP that changes the
+ * serialization version. No state is kept about it.
  * <p>
  * The promotion of a new graph by the graph builder and the control operations lock the same database row, so that
  * they are applied one at a time across the cluster. The database also keeps the audit trail.
@@ -99,6 +105,7 @@ public class Otp2GraphControlService {
     private final Otp2GraphStateStore stateStore;
     private final OtpGraphsBlobStoreService otpGraphsBlobStoreService;
     private final OtpReportBlobStoreService otpReportBlobStoreService;
+    private final Otp2ProductionVersionClient productionVersionClient;
     private final String otpReportContainerName;
 
     public Otp2GraphControlService(GraphControlRepository repository,
@@ -106,12 +113,14 @@ public class Otp2GraphControlService {
                                    Otp2GraphStateStore stateStore,
                                    OtpGraphsBlobStoreService otpGraphsBlobStoreService,
                                    OtpReportBlobStoreService otpReportBlobStoreService,
+                                   Otp2ProductionVersionClient productionVersionClient,
                                    @Value("${blobstore.gcs.otpreport.container.name}") String otpReportContainerName) {
         this.repository = repository;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.stateStore = stateStore;
         this.otpGraphsBlobStoreService = otpGraphsBlobStoreService;
         this.otpReportBlobStoreService = otpReportBlobStoreService;
+        this.productionVersionClient = productionVersionClient;
         this.otpReportContainerName = otpReportContainerName;
     }
 
@@ -194,10 +203,14 @@ public class Otp2GraphControlService {
             throw GraphControlException.notFound("Graph not found: " + graph);
         }
         String serializationId = versionedGraph.serializationId();
+        // asked before the lock is taken: the OTP instances change their serialization version only when they are
+        // redeployed with another OTP version
+        Optional<String> otpSerializationId = productionVersionClient.serializationId();
 
         return transactionTemplate.execute(status -> {
             repository.lockControlRow(LockWait.OPERATION);
-            boolean production = productionSerializationId(stateStore.readRootPointer()).filter(serializationId::equals).isPresent();
+            Optional<ProductionVersion> productionVersion = productionVersion(otpSerializationId, stateStore::readRootPointer);
+            boolean production = productionVersion.map(ProductionVersion::serializationId).filter(serializationId::equals).isPresent();
 
             // a pin is written before the rollout and removed after it: a failure in between leaves the builds
             // blocked, never a stale graph unpinned
@@ -213,7 +226,8 @@ public class Otp2GraphControlService {
             }
 
             audit(pin ? ACTION_ROLLOUT_AND_PIN : ACTION_ROLLOUT, serializationId, graph, username, validReason);
-            LOGGER.info("User {} rolled out the OTP2 graph {} (pinned: {}, production: {}): {}", username, graph, pin, production, validReason);
+            LOGGER.info("User {} rolled out the OTP2 graph {} (pinned: {}, production: {}, {}): {}",
+                    username, graph, pin, production, productionVersion.orElse(null), validReason);
             return new OtpGraphRolloutResult(graph, serializationId, production, pin);
         });
     }
@@ -261,8 +275,9 @@ public class Otp2GraphControlService {
     public OtpGraphControlStatus status() {
         BucketState state = readBucketState();
 
-        OtpGraphControlStatus.Production production = state.productionSerializationId()
-                .map(id -> new OtpGraphControlStatus.Production(id, state.currentGraph(id), state.pins().containsKey(id)))
+        OtpGraphControlStatus.Production production = state.production()
+                .map(version -> new OtpGraphControlStatus.Production(version.serializationId(), state.currentGraph(version.serializationId()),
+                        state.pins().containsKey(version.serializationId()), version.source()))
                 .orElse(null);
 
         List<OtpGraphControlStatus.Pin> pins = state.pins().entrySet().stream()
@@ -295,7 +310,7 @@ public class Otp2GraphControlService {
                 filesBySerializationId.computeIfAbsent(graph.serializationId(), id -> new ArrayList<>()).add(file);
             });
         }
-        String productionSerializationId = state.productionSerializationId().orElse(null);
+        String productionSerializationId = state.production().map(ProductionVersion::serializationId).orElse(null);
 
         List<OtpGraphVersions.SerializationVersion> serializationVersions = new ArrayList<>();
         filesBySerializationId.forEach((serializationId, serializationIdFiles) -> {
@@ -320,18 +335,26 @@ public class Otp2GraphControlService {
     // ------------------------------------------------------------------------------------------------------------
 
     /**
+     * The serialization version used in production.
+     *
+     * @param source where it comes from
+     */
+    private record ProductionVersion(String serializationId, ProductionSource source) {
+    }
+
+    /**
      * The state of the publication read from the bucket, without the lock: a snapshot for the status.
      *
-     * @param files                     the listing of the graph folder
-     * @param pointers                  the pointer of each serialization version that has one
-     * @param pins                      the pin of each serialization version that has one
-     * @param productionSerializationId the serialization version the root pointer points at
-     * @param unreadableFiles           the pointer and pin files that cannot be parsed, left out of the snapshot
+     * @param files           the listing of the graph folder
+     * @param pointers        the pointer of each serialization version that has one
+     * @param pins            the pin of each serialization version that has one
+     * @param production      the serialization version used in production
+     * @param unreadableFiles the pointer and pin files that cannot be parsed, left out of the snapshot
      */
     private record BucketState(BlobStoreFiles files,
                                Map<String, GraphPointer> pointers,
                                Map<String, GraphPin> pins,
-                               Optional<String> productionSerializationId,
+                               Optional<ProductionVersion> production,
                                List<String> unreadableFiles) {
 
         String currentGraph(String serializationId) {
@@ -364,8 +387,10 @@ public class Otp2GraphControlService {
                         .ifPresent(pin -> pins.put(serializationId, pin));
             }
         }
+        // read even if the production OTP instances answer, to report it if it cannot be parsed
         Optional<GraphPointer> rootPointer = readOrReport(stateStore::readRootPointer, unreadableFiles);
-        return new BucketState(files, pointers, pins, productionSerializationId(rootPointer), List.copyOf(unreadableFiles));
+        Optional<ProductionVersion> production = productionVersion(productionVersionClient.serializationId(), () -> rootPointer);
+        return new BucketState(files, pointers, pins, production, List.copyOf(unreadableFiles));
     }
 
     /**
@@ -384,11 +409,19 @@ public class Otp2GraphControlService {
     }
 
     /**
-     * The serialization version used in production is the one the root pointer file points at.
+     * The serialization version used in production: the one the production OTP instances report or, if they cannot be
+     * asked, the serialization version of the graph the root pointer file points at.
+     *
+     * @param otpSerializationId the serialization version reported by the production OTP instances, empty if they
+     *                           cannot be asked
+     * @param rootPointer        reads the root pointer file, only called if the OTP instances cannot be asked
      */
-    private static Optional<String> productionSerializationId(Optional<GraphPointer> rootPointer) {
-        return rootPointer.flatMap(pointer -> Otp2GraphPaths.parseVersionedGraph(pointer.graph()))
-                .map(Otp2GraphPaths.VersionedGraph::serializationId);
+    private static Optional<ProductionVersion> productionVersion(Optional<String> otpSerializationId,
+                                                                 Supplier<Optional<GraphPointer>> rootPointer) {
+        return otpSerializationId.map(id -> new ProductionVersion(id, ProductionSource.OTP))
+                .or(() -> rootPointer.get()
+                        .flatMap(pointer -> Otp2GraphPaths.parseVersionedGraph(pointer.graph()))
+                        .map(graph -> new ProductionVersion(graph.serializationId(), ProductionSource.ROOT_POINTER)));
     }
 
     /**

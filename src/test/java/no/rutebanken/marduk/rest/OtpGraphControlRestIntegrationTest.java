@@ -26,6 +26,7 @@ import no.rutebanken.marduk.graph.Otp2GraphPaths;
 import no.rutebanken.marduk.graph.Otp2GraphStateStore;
 import no.rutebanken.marduk.graph.Otp2GraphStateStore.GraphPin;
 import no.rutebanken.marduk.graph.Otp2GraphStateStore.GraphPointer;
+import no.rutebanken.marduk.graph.Otp2ProductionVersionClient;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import no.rutebanken.marduk.services.OtpGraphsBlobStoreService;
 import no.rutebanken.marduk.services.OtpReportBlobStoreService;
@@ -36,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.io.ByteArrayInputStream;
@@ -47,12 +49,14 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
 /**
  * Admin API of the emergency controls of the OTP2 graph publication.
@@ -88,6 +92,13 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
 
     @Autowired
     private OtpGraphsBlobStoreService otpGraphsBlobStoreService;
+
+    /**
+     * Does not answer unless a test says so: the serialization version used in production is then read from the root
+     * pointer file.
+     */
+    @MockitoBean
+    private Otp2ProductionVersionClient productionVersionClient;
 
     @Value("${blobstore.gcs.otpreport.container.name}")
     private String otpReportContainerName;
@@ -243,6 +254,7 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         JsonNode status = json(get("routing_graph/control"));
         assertEquals(PRODUCTION_ID, status.get("production").get("serializationId").asText());
         assertEquals(LATEST_GRAPH, status.get("production").get("currentGraph").asText());
+        assertEquals("ROOT_POINTER", status.get("production").get("source").asText());
         assertEquals("ROLLOUT", status.get("recentActions").get(0).get("action").asText());
 
         // the next serialization version has a current graph to pin now
@@ -351,7 +363,7 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
             }
         };
         Otp2GraphControlService service = new Otp2GraphControlService(graphControlRepository, transactionManager, stateStore,
-                otpGraphsBlobStoreService, unavailableReports, otpReportContainerName);
+                otpGraphsBlobStoreService, unavailableReports, productionVersionClient, otpReportContainerName);
 
         assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
                 service.promoteBuiltGraph(newGraph, PRODUCTION_ID, false, reportVersion(newGraph)));
@@ -402,6 +414,85 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         JsonNode production = status.get("production");
         assertTrue(production == null || production.isNull(), status.toString());
         assertEquals(Set.of(ROOT_POINTER), textValues(status.get("unreadableFiles")));
+    }
+
+    /**
+     * An OTP release changed the serialization version: production OTP runs the next serialization version and loads
+     * its candidate graph, while the root pointer file names a graph of the previous serialization version until the
+     * first production build of the next one.
+     */
+    @Test
+    void productionIsTheSerializationVersionReportedByOtp() throws Exception {
+        assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
+                otp2GraphControlService.promoteBuiltGraph(NEXT_VERSION_GRAPH, NEXT_ID, true, reportVersion(NEXT_VERSION_GRAPH)));
+        when(productionVersionClient.serializationId()).thenReturn(Optional.of(NEXT_ID));
+        context.start();
+        String rootPointerContent = read(ROOT_POINTER);
+
+        JsonNode production = json(get("routing_graph/control")).get("production");
+        assertEquals(NEXT_ID, production.get("serializationId").asText());
+        assertEquals(NEXT_VERSION_GRAPH, production.get("currentGraph").asText());
+        assertEquals("OTP", production.get("source").asText());
+        JsonNode versions = json(get("routing_graph/versions")).get("serializationVersions");
+        assertEquals(NEXT_ID, versions.get(0).get("serializationId").asText());
+        assertTrue(versions.get(0).get("production").asBoolean());
+        assertFalse(versions.get(1).get("production").asBoolean());
+
+        // OTP does not load the previous serialization version: it is not redeployed
+        HttpResponse<String> previousVersionRollout = post("routing_graph/rollout", "{\"graph\":\"" + OLD_GRAPH + "\",\"pin\":false,\"reason\":\"bad data\"}");
+        assertEquals(200, previousVersionRollout.statusCode(), previousVersionRollout.body());
+        assertFalse(json(previousVersionRollout).get("production").asBoolean());
+        assertEquals("old graph", read(STABLE_GRAPH));
+        assertEquals(rootPointerContent, read(ROOT_POINTER));
+
+        // a rollout of the serialization version OTP runs rewrites the root pointer file, which redeploys OTP
+        HttpResponse<String> rollout = post("routing_graph/rollout", "{\"graph\":\"" + NEXT_VERSION_GRAPH + "\",\"pin\":false,\"reason\":\"restart OTP\"}");
+        assertEquals(200, rollout.statusCode(), rollout.body());
+        assertTrue(json(rollout).get("production").asBoolean());
+        assertEquals(NEXT_VERSION_GRAPH, rootPointer().graph());
+        assertEquals("test-user", rootPointer().updatedBy());
+    }
+
+    /**
+     * OTP was downgraded to the previous serialization version, after a production build of the next one.
+     */
+    @Test
+    void rolloutAfterAnOtpDowngradeRedeploysOtp() throws Exception {
+        String nextVersionProductionGraph = graph(NEXT_ID, "20261015080000000");
+        upload(nextVersionProductionGraph, "next version production graph");
+        assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
+                otp2GraphControlService.promoteBuiltGraph(nextVersionProductionGraph, NEXT_ID, false, reportVersion(nextVersionProductionGraph)));
+        assertEquals(nextVersionProductionGraph, rootPointer().graph());
+        when(productionVersionClient.serializationId()).thenReturn(Optional.of(PRODUCTION_ID));
+        context.start();
+
+        JsonNode production = json(get("routing_graph/control")).get("production");
+        assertEquals(PRODUCTION_ID, production.get("serializationId").asText());
+        assertEquals(LATEST_GRAPH, production.get("currentGraph").asText());
+
+        HttpResponse<String> response = post("routing_graph/rollout", "{\"graph\":\"" + OLD_GRAPH + "\",\"pin\":false,\"reason\":\"bad data\"}");
+        assertEquals(200, response.statusCode(), response.body());
+        assertTrue(json(response).get("production").asBoolean());
+        assertEquals("old graph", read(STABLE_GRAPH));
+        assertEquals(OLD_GRAPH, rootPointer().graph());
+    }
+
+    @Test
+    void rolloutOfTheSerializationVersionReportedByOtpRepairsAnUnreadableRootPointer() throws Exception {
+        upload(ROOT_POINTER, "{");
+        when(productionVersionClient.serializationId()).thenReturn(Optional.of(PRODUCTION_ID));
+        context.start();
+
+        JsonNode status = json(get("routing_graph/control"));
+        assertEquals(PRODUCTION_ID, status.get("production").get("serializationId").asText());
+        assertEquals("OTP", status.get("production").get("source").asText());
+        assertEquals(Set.of(ROOT_POINTER), textValues(status.get("unreadableFiles")));
+
+        HttpResponse<String> response = post("routing_graph/rollout", "{\"graph\":\"" + LATEST_GRAPH + "\",\"pin\":false,\"reason\":\"repair the root pointer\"}");
+        assertEquals(200, response.statusCode(), response.body());
+        assertTrue(json(response).get("production").asBoolean());
+        assertEquals(LATEST_GRAPH, rootPointer().graph());
+        assertTrue(json(get("routing_graph/control")).get("unreadableFiles").isEmpty());
     }
 
     @Test

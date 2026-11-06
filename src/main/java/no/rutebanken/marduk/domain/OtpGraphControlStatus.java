@@ -24,7 +24,8 @@ import java.util.List;
 /**
  * State of the emergency controls of the OTP graph publication.
  *
- * @param production    the serialization version used in production, null if no production graph is published yet
+ * @param production    the serialization version used in production, null if the production OTP instances cannot be
+ *                      asked and no production graph is published yet
  * @param pins          the pinned graphs
  * @param recentActions the latest control operations, most recent first
  * @param skippedBuilds the latest graphs built but not promoted (pinned serialization version, candidate build
@@ -33,7 +34,8 @@ import java.util.List;
  * @param unreadableFiles the pointer and pin files of the graph bucket that cannot be parsed. They are left out of
  *                        this status: a serialization version whose pointer file is unreadable has no current graph,
  *                        one whose pin file is unreadable is not listed as pinned, and production is null if the
- *                        root pointer file is unreadable. They must be repaired or deleted in the bucket.
+ *                        root pointer file is unreadable and the production OTP instances cannot be asked. They must
+ *                        be repaired or deleted in the bucket.
  */
 public record OtpGraphControlStatus(Production production,
                                     List<Pin> pins,
@@ -42,12 +44,28 @@ public record OtpGraphControlStatus(Production production,
                                     List<String> unreadableFiles) {
 
     /**
-     * @param serializationId the serialization version used in production: the serialization version of the graph
-     *                        the root pointer file points at, written by every production build
+     * @param serializationId the serialization version used in production
      * @param currentGraph    the current graph of this serialization version, loaded by the OTP instances
      * @param pinned          whether the current graph is pinned
+     * @param source          where the serialization version comes from
      */
-    public record Production(String serializationId, String currentGraph, boolean pinned) {
+    public record Production(String serializationId, String currentGraph, boolean pinned, ProductionSource source) {
+    }
+
+    /**
+     * Where the serialization version used in production comes from.
+     */
+    public enum ProductionSource {
+        /**
+         * Reported by the production OTP instances, which load the current graph of their own serialization version.
+         */
+        OTP,
+        /**
+         * The production OTP instances could not be asked: the serialization version of the graph the root pointer
+         * file points at, written by every production build. After an OTP release that changes the serialization
+         * version, it lags behind the OTP instances until the first production build of the new serialization version.
+         */
+        ROOT_POINTER
     }
 
     /**
