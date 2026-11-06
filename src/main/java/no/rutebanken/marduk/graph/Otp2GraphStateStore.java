@@ -144,13 +144,19 @@ public class Otp2GraphStateStore {
      * build is unknown: it is read as a production build. In a serialization version that only has candidate builds,
      * for example the next one, later candidate builds are then not promoted until a production build of that
      * serialization version replaces the pointer file.
+     * <p>
+     * A pointer that does not name a published graph, for example an empty file, is unreadable: read as is, it would
+     * hold back the candidate builds and hide the production serialization version without being reported.
      */
     static GraphPointer parsePointer(String content, String path) {
         String trimmed = content.trim();
-        if (trimmed.startsWith("{")) {
-            return parse(trimmed, GraphPointer.class, path);
+        GraphPointer pointer = trimmed.startsWith("{")
+                ? parse(trimmed, GraphPointer.class, path)
+                : new GraphPointer(trimmed, false, null, null, null);
+        if (Otp2GraphPaths.parseVersionedGraph(pointer.graph()).isEmpty()) {
+            throw new UnreadableStateFileException(path, "not a published graph: '" + pointer.graph() + "'");
         }
-        return new GraphPointer(trimmed, false, null, null, null);
+        return pointer;
     }
 
     private Optional<String> read(String path) {
@@ -186,7 +192,8 @@ public class Otp2GraphStateStore {
     }
 
     /**
-     * A pointer or pin file whose content cannot be parsed, for example after a truncated manual copy.
+     * A pointer or pin file whose content cannot be parsed, for example after a truncated manual copy, or a pointer
+     * file that does not name a published graph.
      */
     public static class UnreadableStateFileException extends MardukException {
 
@@ -196,6 +203,11 @@ public class Otp2GraphStateStore {
 
         UnreadableStateFileException(String path, JsonProcessingException cause) {
             super("Failed to parse " + path + ": " + cause.getMessage(), cause);
+            this.path = path;
+        }
+
+        UnreadableStateFileException(String path, String reason) {
+            super("Failed to parse " + path + ": " + reason);
             this.path = path;
         }
 

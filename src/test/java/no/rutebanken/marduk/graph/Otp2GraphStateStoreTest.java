@@ -18,10 +18,13 @@ package no.rutebanken.marduk.graph;
 
 import no.rutebanken.marduk.graph.Otp2GraphStateStore.GraphPin;
 import no.rutebanken.marduk.graph.Otp2GraphStateStore.GraphPointer;
+import no.rutebanken.marduk.graph.Otp2GraphStateStore.UnreadableStateFileException;
 import no.rutebanken.marduk.repository.InMemoryMardukBlobStoreRepository;
 import no.rutebanken.marduk.services.OtpGraphsBlobStoreService;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -34,6 +37,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class Otp2GraphStateStoreTest {
@@ -70,6 +74,14 @@ class Otp2GraphStateStoreTest {
         assertFalse(pointer.candidate());
         assertNull(pointer.updatedAt());
         assertNull(pointer.updatedBy());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "  \n", "garbage", "netex-otp2/EN-0239/Graph-otp2-current.obj", "{}", "{\"graph\":\"\"}"})
+    void pointerThatDoesNotNameAPublishedGraphIsUnreadable(String content) {
+        repository.uploadBlob("netex-otp2/EN-0239/current-otp2", new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
+        UnreadableStateFileException e = assertThrows(UnreadableStateFileException.class, () -> store.readPointer(SERIALIZATION_ID));
+        assertEquals("netex-otp2/EN-0239/current-otp2", e.getPath());
     }
 
     @Test

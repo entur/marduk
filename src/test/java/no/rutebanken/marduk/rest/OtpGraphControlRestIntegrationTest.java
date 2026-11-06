@@ -368,25 +368,27 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         context.start();
         String brokenPointer = stateStore.versionedPointerPath("EN-0200");
         String brokenPin = Otp2GraphPaths.pinPath(NEXT_ID);
+        String emptyPointer = stateStore.versionedPointerPath("EN-0201");
         upload(brokenPointer, "{");
         upload(brokenPin, "{\"graph\":");
+        upload(emptyPointer, "");
 
         HttpResponse<String> statusResponse = get("routing_graph/control");
         assertEquals(200, statusResponse.statusCode(), statusResponse.body());
         JsonNode status = json(statusResponse);
-        assertEquals(Set.of(brokenPointer, brokenPin), textValues(status.get("unreadableFiles")));
+        assertEquals(Set.of(brokenPointer, brokenPin, emptyPointer), textValues(status.get("unreadableFiles")));
         assertEquals(LATEST_GRAPH, status.get("production").get("currentGraph").asText());
         assertTrue(status.get("pins").isEmpty());
 
         HttpResponse<String> versionsResponse = get("routing_graph/versions");
         assertEquals(200, versionsResponse.statusCode(), versionsResponse.body());
-        assertEquals(Set.of(brokenPointer, brokenPin), textValues(json(versionsResponse).get("unreadableFiles")));
+        assertEquals(Set.of(brokenPointer, brokenPin, emptyPointer), textValues(json(versionsResponse).get("unreadableFiles")));
 
         // the controls of the other serialization versions keep working
         HttpResponse<String> pinResponse = post("routing_graph/pin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"freeze\"}");
         assertEquals(200, pinResponse.statusCode(), pinResponse.body());
         assertTrue(json(pinResponse).get("production").get("pinned").asBoolean());
-        assertEquals(Set.of(brokenPointer, brokenPin), textValues(json(pinResponse).get("unreadableFiles")));
+        assertEquals(Set.of(brokenPointer, brokenPin, emptyPointer), textValues(json(pinResponse).get("unreadableFiles")));
     }
 
     @Test
