@@ -211,15 +211,16 @@ public class Otp2GraphControlService {
             repository.lockControlRow(LockWait.OPERATION);
             Optional<ProductionVersion> productionVersion = productionVersion(otpSerializationId, stateStore::readRootPointer);
             boolean production = productionVersion.map(ProductionVersion::serializationId).filter(serializationId::equals).isPresent();
+            // read before anything is written, so that a failure to read leaves the bucket unchanged.
+            // A rollout does not change the nature of the serialization version: a candidate build keeps being
+            // promoted in a version that only had candidate builds
+            boolean candidate = replacedPointer(serializationId).map(GraphPointer::candidate).orElse(false);
 
             // a pin is written before the rollout and removed after it: a failure in between leaves the builds
             // blocked, never a stale graph unpinned
             if (pin) {
                 stateStore.writePin(serializationId, new GraphPin(graph, Instant.now(), username, validReason));
             }
-            // a rollout does not change the nature of the serialization version: a candidate build keeps being
-            // promoted in a version that only had candidate builds
-            boolean candidate = stateStore.readPointer(serializationId).map(GraphPointer::candidate).orElse(false);
             makeCurrent(graph, serializationId, candidate, versionedGraph.reportVersion(), username, validReason, production);
             if (!pin) {
                 stateStore.deletePin(serializationId);
@@ -404,6 +405,21 @@ public class Otp2GraphControlService {
         } catch (UnreadableStateFileException e) {
             LOGGER.warn("The OTP2 graph state file {} cannot be parsed and is left out of the status: {}", e.getPath(), e.getMessage());
             unreadableFiles.add(e.getPath());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * The pointer of a serialization version, read by an operation that replaces it. A pointer that cannot be parsed
+     * is replaced instead of failing the operation: a rollout is the way to repair it without editing the bucket by
+     * hand. Its graph is then read as a production build, like a pointer file written before the controls were
+     * introduced (see {@link Otp2GraphStateStore#parsePointer(String, String)}).
+     */
+    private Optional<GraphPointer> replacedPointer(String serializationId) {
+        try {
+            return stateStore.readPointer(serializationId);
+        } catch (UnreadableStateFileException e) {
+            LOGGER.warn("The OTP2 graph pointer file {} cannot be parsed and is replaced: {}", e.getPath(), e.getMessage());
             return Optional.empty();
         }
     }

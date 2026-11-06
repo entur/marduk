@@ -48,6 +48,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -400,6 +401,49 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         JsonNode statusAfterPin = json(get("routing_graph/control"));
         assertTrue(statusAfterPin.get("production").get("pinned").asBoolean());
         assertEquals(Set.of(brokenPointer, brokenPin, emptyPointer), textValues(statusAfterPin.get("unreadableFiles")));
+    }
+
+    @Test
+    void rolloutAndPinRepairsAnUnreadablePointer() throws Exception {
+        context.start();
+        String brokenPointer = stateStore.versionedPointerPath(PRODUCTION_ID);
+        upload(brokenPointer, "{");
+        assertEquals(Set.of(brokenPointer), textValues(json(get("routing_graph/control")).get("unreadableFiles")));
+
+        HttpResponse<String> response = post("routing_graph/rollout", "{\"graph\":\"" + OLD_GRAPH + "\",\"pin\":true,\"reason\":\"repair the pointer\"}");
+        assertEquals(200, response.statusCode(), response.body());
+        assertTrue(json(response).get("production").asBoolean());
+
+        assertEquals("old graph", read(STABLE_GRAPH));
+        GraphPointer pointer = pointer(PRODUCTION_ID);
+        assertEquals(OLD_GRAPH, pointer.graph());
+        // the nature of the serialization version is unknown: read as a production build
+        assertFalse(pointer.candidate());
+        assertEquals(pointer, rootPointer());
+        assertEquals(OLD_GRAPH, stateStore.readPin(PRODUCTION_ID).orElseThrow().graph());
+        assertTrue(json(get("routing_graph/control")).get("unreadableFiles").isEmpty());
+    }
+
+    @Test
+    void rolloutRepairsAnEmptyPointerAndRemovesThePin() throws Exception {
+        context.start();
+        String rootPointerContent = read(ROOT_POINTER);
+        String emptyPointer = stateStore.versionedPointerPath(NEXT_ID);
+        upload(emptyPointer, "");
+        stateStore.writePin(NEXT_ID, new GraphPin(NEXT_VERSION_GRAPH, Instant.now(), "test-user", "freeze"));
+
+        HttpResponse<String> response = post("routing_graph/rollout", "{\"graph\":\"" + NEXT_VERSION_GRAPH + "\",\"pin\":false,\"reason\":\"repair the pointer\"}");
+        assertEquals(200, response.statusCode(), response.body());
+        assertFalse(json(response).get("production").asBoolean());
+
+        assertEquals("next version graph", read(Otp2GraphPaths.stableGraphPath(NEXT_ID)));
+        GraphPointer pointer = pointer(NEXT_ID);
+        assertEquals(NEXT_VERSION_GRAPH, pointer.graph());
+        assertFalse(pointer.candidate());
+        assertTrue(stateStore.readPin(NEXT_ID).isEmpty());
+        // another serialization version than production: OTP is not redeployed
+        assertEquals(rootPointerContent, read(ROOT_POINTER));
+        assertTrue(json(get("routing_graph/control")).get("unreadableFiles").isEmpty());
     }
 
     @Test
