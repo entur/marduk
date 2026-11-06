@@ -56,6 +56,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -336,6 +337,34 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
 
         assertEquals(1, json(get("routing_graph/versions?limit=1")).get("serializationVersions").get(0).get("graphs").size());
         assertEquals(400, get("routing_graph/versions?limit=0").statusCode());
+    }
+
+    /**
+     * The graph builder wrote a graph file whose name does not carry the serialization version: the graph is published
+     * under an unknown-version folder, with a path that a pointer file cannot record.
+     */
+    @Test
+    void graphNotPublishedUnderAGraphPathIsNotPromoted() {
+        String unknownVersion = "unknown-version";
+        String misnamedGraph = Otp2GraphPaths.versionedGraphPath(unknownVersion, "20261015080000000", "Graph-otp2.obj");
+        upload(misnamedGraph, "misnamed graph");
+
+        assertEquals(Otp2GraphControlService.Promotion.FAILED,
+                otp2GraphControlService.promoteBuiltGraph(misnamedGraph, unknownVersion, false, Otp2GraphPaths.reportVersion("20261015080000000")));
+        assertNull(read(Otp2GraphPaths.stableGraphPath(unknownVersion)));
+        assertNull(read(stateStore.versionedPointerPath(unknownVersion)));
+        assertEquals(LATEST_GRAPH, rootPointer().graph());
+        JsonNode status = ObjectMapperFactory.getSharedObjectMapper().valueToTree(otp2GraphControlService.status());
+        assertEquals("BUILD_NOT_PROMOTED", status.get("skippedBuilds").get(0).get("action").asText());
+        assertEquals(misnamedGraph, status.get("skippedBuilds").get(0).get("graph").asText());
+        assertTrue(status.get("unreadableFiles").isEmpty());
+
+        // a graph of another serialization version than its folder is not promoted either
+        assertEquals(Otp2GraphControlService.Promotion.FAILED,
+                otp2GraphControlService.promoteBuiltGraph(NEXT_VERSION_GRAPH, PRODUCTION_ID, false, reportVersion(NEXT_VERSION_GRAPH)));
+        assertEquals("latest graph", read(STABLE_GRAPH));
+        assertEquals(LATEST_GRAPH, pointer(PRODUCTION_ID).graph());
+        assertEquals(LATEST_GRAPH, rootPointer().graph());
     }
 
     @Test

@@ -140,9 +140,22 @@ public class Otp2GraphControlService {
      * @param serializationId the serialization version of the graph
      * @param candidate       whether the graph was built by a candidate version of OTP
      * @param reportVersion   the folder of the build report in the report bucket
+     * @return the outcome. {@link Promotion#FAILED} if the graph is not published under the path of a graph of its
+     * serialization version: recorded in a pointer file, such a path would make the pointer unreadable. Retrying
+     * cannot change the outcome.
      */
     public Promotion promoteBuiltGraph(String graphPath, String serializationId, boolean candidate, String reportVersion) {
         return transactionTemplate.execute(status -> {
+            boolean publishedGraph = Otp2GraphPaths.parseVersionedGraph(graphPath)
+                    .filter(graph -> graph.serializationId().equals(serializationId))
+                    .isPresent();
+            if (!publishedGraph) {
+                LOGGER.error("The OTP2 graph {} of the serialization version {} is not promoted: not the path of a published graph of that serialization version", graphPath, serializationId);
+                audit(ACTION_BUILD_NOT_PROMOTED, serializationId, graphPath, SYSTEM_USER, "Not the path of a published graph of the serialization version " + serializationId
+                        + ": expected " + OTP2_NETEX_GRAPH_DIR + "/<serialization id>/<timestamp>-Graph-otp2-<serialization id>.obj");
+                return Promotion.FAILED;
+            }
+
             repository.lockControlRow(LockWait.BUILD);
 
             Optional<GraphPin> pin = stateStore.readPin(serializationId);
