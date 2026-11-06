@@ -686,6 +686,49 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
     }
 
     @Test
+    void unreadablePinHoldsBackTheBuildsUntilUnpinned() throws Exception {
+        context.start();
+        String brokenPin = Otp2GraphPaths.pinPath(PRODUCTION_ID);
+        upload(brokenPin, "{\"graph\":");
+        String newGraph = graph(PRODUCTION_ID, "20261015080000000");
+        upload(newGraph, "new graph");
+
+        // the pin file is there: the serialization version is pinned, to an unknown graph
+        assertEquals(Otp2GraphControlService.Promotion.SKIPPED_PINNED,
+                otp2GraphControlService.promoteBuiltGraph(newGraph, PRODUCTION_ID, false, reportVersion(newGraph)));
+        assertEquals("latest graph", read(STABLE_GRAPH));
+        assertEquals(LATEST_GRAPH, rootPointer().graph());
+        JsonNode status = json(get("routing_graph/control"));
+        assertTrue(status.get("production").get("pinned").asBoolean());
+        assertEquals(Set.of(brokenPin), textValues(status.get("unreadableFiles")));
+        JsonNode skippedBuild = status.get("skippedBuilds").get(0);
+        assertEquals(newGraph, skippedBuild.get("graph").asText());
+        assertTrue(skippedBuild.get("reason").asText().contains(brokenPin), skippedBuild.get("reason").asText());
+
+        // unpinning removes the file without a rollout: OTP is not redeployed
+        String rootPointerContent = read(ROOT_POINTER);
+        HttpResponse<String> unpinResponse = post("routing_graph/unpin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"remove the broken pin\"}");
+        assertEquals(200, unpinResponse.statusCode(), unpinResponse.body());
+        JsonNode unpinResult = json(unpinResponse);
+        assertFalse(unpinResult.get("pinned").asBoolean());
+        assertTrue(unpinResult.get("graph") == null || unpinResult.get("graph").isNull(), unpinResult.toString());
+        assertNull(read(brokenPin));
+        assertEquals(rootPointerContent, read(ROOT_POINTER));
+
+        JsonNode statusAfterUnpin = json(get("routing_graph/control"));
+        assertFalse(statusAfterUnpin.get("production").get("pinned").asBoolean());
+        assertTrue(statusAfterUnpin.get("unreadableFiles").isEmpty());
+        JsonNode unpin = statusAfterUnpin.get("recentActions").get(0);
+        assertEquals("UNPIN", unpin.get("action").asText());
+        assertTrue(unpin.get("reason").asText().startsWith("remove the broken pin (the pin file could not be parsed"), unpin.get("reason").asText());
+
+        // the next build is promoted
+        assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
+                otp2GraphControlService.promoteBuiltGraph(newGraph, PRODUCTION_ID, false, reportVersion(newGraph)));
+        assertEquals("new graph", read(STABLE_GRAPH));
+    }
+
+    @Test
     void pointerFilesWrittenBeforeTheControlsAreUnderstood() throws Exception {
         // the pointer files only contain the path of the graph
         upload(ROOT_POINTER, LATEST_GRAPH + "\n");

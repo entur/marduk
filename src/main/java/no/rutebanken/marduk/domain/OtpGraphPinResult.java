@@ -21,7 +21,8 @@ package no.rutebanken.marduk.domain;
  * read separately: a failure to read it must not make an applied operation look failed.
  *
  * @param serializationId the serialization version
- * @param graph           the graph pinned, or the graph that was pinned
+ * @param graph           the graph pinned, or the graph that was pinned. Null when an unpin removed a pin file that
+ *                        could not be parsed
  * @param pinned          whether the serialization version is now pinned
  */
 public record OtpGraphPinResult(String serializationId, String graph, boolean pinned) {

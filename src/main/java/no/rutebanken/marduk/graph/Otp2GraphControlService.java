@@ -139,7 +139,7 @@ public class Otp2GraphControlService {
      * build and the current graph is a production build: the stable copy loaded by the production OTP instances only
      * ever contains production builds, even when a candidate build shares their serialization version.
      * A pointer file that cannot be parsed leaves the current graph unknown: a production build replaces it, a
-     * candidate build is not promoted.
+     * candidate build is not promoted. A pin file that cannot be parsed pins the serialization version.
      * A production build also writes the root pointer file, which triggers the redeployment of the OTP instances,
      * and the report index.
      *
@@ -165,7 +165,17 @@ public class Otp2GraphControlService {
 
             repository.lockControlRow(LockWait.BUILD);
 
-            Optional<GraphPin> pin = stateStore.readPin(serializationId);
+            Optional<GraphPin> pin;
+            try {
+                pin = stateStore.readPin(serializationId);
+            } catch (UnreadableStateFileException e) {
+                // the pin file is there: the serialization version is pinned, to a graph that is unknown. Promoting
+                // the build would lift an emergency pin without anyone asking. An unpin or a rollout removes the file
+                LOGGER.warn("The OTP2 graph pin file {} cannot be parsed, the build {} is not promoted: {}", e.getPath(), graphPath, e.getMessage());
+                audit(ACTION_BUILD_NOT_PROMOTED, serializationId, graphPath, SYSTEM_USER, "The serialization version is pinned, but the pin file cannot be parsed: "
+                        + e.getMessage() + ". Unpin the serialization version or roll out a graph to remove it");
+                return Promotion.SKIPPED_PINNED;
+            }
             if (pin.isPresent()) {
                 audit(ACTION_BUILD_NOT_PROMOTED, serializationId, graphPath, SYSTEM_USER, "The serialization version is pinned to " + pin.get().graph());
                 return Promotion.SKIPPED_PINNED;
@@ -303,18 +313,29 @@ public class Otp2GraphControlService {
 
     /**
      * Remove the pin of a serialization version. The current graph is unchanged: the next graph build replaces it.
+     * A pin file that cannot be parsed is removed as well: it holds back the builds like any pin, and unpinning is the
+     * way to remove it without editing the bucket by hand or rolling out a graph.
      */
     public OtpGraphPinResult unpin(String serializationId, String reason, String username) {
         validSerializationId(serializationId);
         String validReason = validReason(reason);
         return transactionTemplate.execute(status -> {
             repository.lockControlRow(LockWait.OPERATION);
-            GraphPin pin = stateStore.readPin(serializationId)
-                    .orElseThrow(() -> GraphControlException.notFound("No pinned graph for the serialization version " + serializationId));
+            String pinnedGraph;
+            String auditReason = validReason;
+            try {
+                pinnedGraph = stateStore.readPin(serializationId)
+                        .orElseThrow(() -> GraphControlException.notFound("No pinned graph for the serialization version " + serializationId))
+                        .graph();
+            } catch (UnreadableStateFileException e) {
+                LOGGER.warn("The OTP2 graph pin file {} cannot be parsed and is removed: {}", e.getPath(), e.getMessage());
+                pinnedGraph = null;
+                auditReason = validReason + " (the pin file could not be parsed: " + e.getMessage() + ")";
+            }
             stateStore.deletePin(serializationId);
-            audit(ACTION_UNPIN, serializationId, pin.graph(), username, validReason);
-            LOGGER.info("User {} unpinned the OTP2 graph {}: {}", username, pin.graph(), validReason);
-            return new OtpGraphPinResult(serializationId, pin.graph(), false);
+            audit(ACTION_UNPIN, serializationId, pinnedGraph, username, auditReason);
+            LOGGER.info("User {} unpinned the OTP2 graph {} of the serialization version {}: {}", username, pinnedGraph, serializationId, validReason);
+            return new OtpGraphPinResult(serializationId, pinnedGraph, false);
         });
     }
 
@@ -327,7 +348,7 @@ public class Otp2GraphControlService {
 
         OtpGraphControlStatus.Production production = state.production()
                 .map(version -> new OtpGraphControlStatus.Production(version.serializationId(), state.currentGraph(version.serializationId()),
-                        state.pins().containsKey(version.serializationId()), version.source()))
+                        state.isPinned(version.serializationId()), version.source()))
                 .orElse(null);
 
         List<OtpGraphControlStatus.Pin> pins = state.pins().entrySet().stream()
@@ -410,6 +431,13 @@ public class Otp2GraphControlService {
         String currentGraph(String serializationId) {
             GraphPointer pointer = pointers.get(serializationId);
             return pointer == null ? null : pointer.graph();
+        }
+
+        /**
+         * A pin file that cannot be parsed holds back the builds like any pin: the serialization version is pinned.
+         */
+        boolean isPinned(String serializationId) {
+            return pins.containsKey(serializationId) || unreadableFiles.contains(Otp2GraphPaths.pinPath(serializationId));
         }
     }
 
