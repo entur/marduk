@@ -166,11 +166,11 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
                 .setProperty(PUBLISHED_GRAPH_PATH_PROPERTY, header(TARGET_FILE_HANDLE))
 
-                // copy the graph build report of a production build, so that it is available even if the graph is not promoted
+                // copy the graph build report of a production build, so that it is available even if the graph is not
+                // promoted. A failure to copy it does not block the promotion: the report is not critical
                 .choice()
                 .when(PredicateBuilder.not(exchangeProperty(OTP_BUILD_CANDIDATE)))
                 .to("direct:remoteCopyVersionedOtp2GraphBuildReport")
-                .log(LoggingLevel.INFO, correlation() + "Done uploading OTP2 graph build reports.")
                 .end()
 
                 .to("direct:promoteOtp2Graph")
@@ -201,6 +201,9 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .process(this::promoteGraph).id(PROMOTE_GRAPH_PROCESSOR_ID)
                 .routeId("otp2-graph-promotion");
 
+        // the copy is retried by the error handler of the blob store route: a persistent failure leaves the build
+        // without a report and the publication continues. A doTry is needed: the blob store route exhausts the
+        // redeliveries, and an exhausted exception is not handled again by an onException of this route
         from("direct:remoteCopyVersionedOtp2GraphBuildReport")
                 .process(e -> {
                     e.getIn().setHeader(Exchange.FILE_PARENT, e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/report");
@@ -208,8 +211,12 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(TARGET_FILE_PARENT, e.getProperty(OTP_GRAPH_VERSION, String.class));
                 })
                 .log(LoggingLevel.INFO, correlation() + "Copying OTP2 graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
-                .to("direct:copyAllInternalBlobs")
-                .log(LoggingLevel.INFO, correlation() + "Done copying OTP2 graph build reports.")
+                .doTry()
+                    .to("direct:copyAllInternalBlobs")
+                    .log(LoggingLevel.INFO, correlation() + "Done copying OTP2 graph build reports.")
+                .doCatch(Exception.class)
+                    .log(LoggingLevel.WARN, correlation() + "Failed to copy the OTP2 graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}, the graph is published without a report: ${exception.message} stacktrace: ${exception.stacktrace}")
+                .end()
                 .routeId("otp2-remote-graph-build-report-versioned-upload");
 
         from("direct:remoteOtp2CleanUp")
