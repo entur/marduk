@@ -17,27 +17,23 @@
 package no.rutebanken.marduk.routes.otp.otp2;
 
 import no.rutebanken.marduk.Constants;
+import no.rutebanken.marduk.graph.Otp2GraphControlService;
 import no.rutebanken.marduk.kubernetes.KubernetesJobTimeoutException;
 import no.rutebanken.marduk.routes.BaseRouteBuilder;
 import no.rutebanken.marduk.routes.otp.OtpGraphBuilderProcessor;
 import no.rutebanken.marduk.routes.status.JobEvent;
-import no.rutebanken.marduk.services.OtpReportBlobStoreService;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.PredicateBuilder;
 import org.apache.camel.processor.aggregate.GroupedMessageAggregationStrategy;
-import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static no.rutebanken.marduk.Constants.CHOUETTE_REFERENTIAL;
 import static no.rutebanken.marduk.Constants.FILE_HANDLE;
-import static no.rutebanken.marduk.Constants.OTP2_CURRENT_GRAPH_OBJ;
 import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ_PREFIX;
 import static no.rutebanken.marduk.Constants.OTP_BUILD_CANDIDATE;
 import static no.rutebanken.marduk.Constants.OTP_GRAPH_VERSION;
@@ -57,18 +53,26 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
     private static final String PROP_STATUS = "RutebankenGraphBuildStatus";
 
-    private static final String GRAPH_PATH_PROPERTY = "RutebankenGraphPath";
-
     private static final String PUBLISHED_GRAPH_PATH_PROPERTY = "RutebankenPublishedGraphPath";
+
+    private static final String PROP_GRAPH_PROMOTION = "RutebankenGraphPromotion";
+
+    /**
+     * Id of the processor promoting the built graph, for tests.
+     */
+    static final String PROMOTE_GRAPH_PROCESSOR_ID = "otp2-graph-promote";
 
     @Value("${otp.graph.blobstore.subdirectory:graphs}")
     private String blobStoreSubdirectory;
 
-    @Value("${otp2.graph.current.file:current-otp2}")
-    private String otpGraphCurrentFile;
-
     @Value("${blobstore.gcs.graphs.container.name:otp-graphs}")
     private String otpGraphsBucketName;
+
+    @Value("${otp2.graph.promotion.max.redeliveries:2}")
+    private int promotionMaxRedeliveries;
+
+    @Value("${otp2.graph.promotion.redelivery.delay:10000}")
+    private long promotionRedeliveryDelay;
 
     @Value("${otp.graph.build.remote.work.dir.cleanup:true}")
     private boolean deleteOtpRemoteWorkDir;
@@ -80,7 +84,7 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
     private Otp2NetexGraphBuilder otp2NetexGraphBuilder;
 
     @Autowired
-    private OtpReportBlobStoreService otpReportBlobStoreService;
+    private Otp2GraphControlService otp2GraphControlService;
 
     @Override
     public void configure() throws Exception {
@@ -160,43 +164,46 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                 .to("direct:copyInternalBlobToAnotherBucket")
                 .log(LoggingLevel.INFO, correlation() + "Done copying new OTP2 graph: ${header." + FILE_HANDLE + "}")
 
-                .setProperty(GRAPH_PATH_PROPERTY, header(FILE_HANDLE))
                 .setProperty(PUBLISHED_GRAPH_PATH_PROPERTY, header(TARGET_FILE_HANDLE))
 
-                // copy the new graph to a stable name for the current graph compatibility version.
-                // OTP instances load this file directly; it must be in place before the pointer files are updated
-                // since the pointer files trigger the redeployment of the OTP instances.
-                .setHeader(FILE_HANDLE, exchangeProperty(PUBLISHED_GRAPH_PATH_PROPERTY))
-                .setHeader(TARGET_FILE_HANDLE, simple(Constants.OTP2_NETEX_GRAPH_DIR + "/${header." + Constants.GRAPH_COMPATIBILITY_VERSION + "}/" + OTP2_CURRENT_GRAPH_OBJ))
-                .to("direct:copyOtpGraphsBlobInBucket")
-                .log(LoggingLevel.INFO, correlation() + "Done copying new OTP2 graph to its stable name: ${header." + TARGET_FILE_HANDLE + "}")
-
-                // update file containing the reference to the latest graph for the current graph compatibility version
-                .setBody(exchangeProperty(PUBLISHED_GRAPH_PATH_PROPERTY))
-                .setHeader(FILE_HANDLE, simple(Constants.OTP2_NETEX_GRAPH_DIR + "/${header." + Constants.GRAPH_COMPATIBILITY_VERSION + "}/"  + otpGraphCurrentFile))
-                .to("direct:uploadOtpGraphsBlob")
-                .log(LoggingLevel.INFO, correlation() + "Done uploading reference to versioned current OTP2graph: ${header." + FILE_HANDLE + "}")
-
-                // update file containing the reference to the latest production graph if this is not a candidate build
+                // copy the graph build report of a production build, so that it is available even if the graph is not
+                // promoted. A failure to copy it does not block the promotion: the report is not critical
                 .choice()
                 .when(PredicateBuilder.not(exchangeProperty(OTP_BUILD_CANDIDATE)))
-                .setHeader(FILE_HANDLE, constant(otpGraphCurrentFile))
-                .log(LoggingLevel.INFO, correlation() + "Uploading reference to current OTP2 graph: ${header." + FILE_HANDLE + "}")
-                .to("direct:uploadOtpGraphsBlob")
-                .log(LoggingLevel.INFO, correlation() + "Done uploading reference to current OTP2 graph: ${header." + FILE_HANDLE + "}")
-
-                // copy the graph build report and update the reference to the current report
-                .setHeader(FILE_HANDLE, exchangeProperty(GRAPH_PATH_PROPERTY))
                 .to("direct:remoteCopyVersionedOtp2GraphBuildReport")
-                .to("direct:remoteUpdateCurrentOtp2GraphReportVersion")
-                .log(LoggingLevel.INFO, correlation() + "Done uploading OTP2 graph build reports.")
                 .end()
 
-                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(JobEvent.State.OK).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
+                .to("direct:promoteOtp2Graph")
+                .log(LoggingLevel.INFO, correlation() + "OTP2 graph ${exchangeProperty." + PUBLISHED_GRAPH_PATH_PROPERTY + "} promotion: ${exchangeProperty." + PROP_GRAPH_PROMOTION + "}")
+
+                .process(e -> JobEvent.systemJobBuilder(e).jobDomain(JobEvent.JobDomain.GRAPH).action(JobEvent.TimetableAction.OTP2_BUILD_GRAPH).state(graphBuildState(e)).correlationId(e.getProperty(TIMESTAMP, String.class)).build())
                 .to("direct:updateStatus")
                 .to("direct:remoteOtp2CleanUp")
                 .routeId("otp2-remote-netex-graph-publish");
 
+        // make the new graph the current graph: copy it to the stable name loaded by the OTP instances and record it
+        // in the pointer file (and the report index and root pointer file for a production build), unless the
+        // serialization version is pinned, a more recent graph is current, or this is a candidate build of a
+        // serialization version whose current graph is a production build.
+        // The promotion is cheap compared to the build: it is retried on its own, and a persistent failure leaves the
+        // graph published but not current (available for rollout) instead of failing the publication, which would
+        // rebuild the graph from scratch. The graph build is then reported as failed.
+        from("direct:promoteOtp2Graph")
+                .onException(Exception.class)
+                    .maximumRedeliveries(promotionMaxRedeliveries)
+                    .redeliveryDelay(promotionRedeliveryDelay)
+                    .useExponentialBackOff()
+                    // the publication continues after the failed promotion
+                    .continued(true)
+                    .log(LoggingLevel.ERROR, correlation() + "The promotion of the OTP2 graph ${exchangeProperty." + PUBLISHED_GRAPH_PATH_PROPERTY + "} failed, the graph is published but not current: ${exception.message} stacktrace: ${exception.stacktrace}")
+                    .process(this::recordPromotionFailure)
+                .end()
+                .process(this::promoteGraph).id(PROMOTE_GRAPH_PROCESSOR_ID)
+                .routeId("otp2-graph-promotion");
+
+        // the copy is retried by the error handler of the blob store route: a persistent failure leaves the build
+        // without a report and the publication continues. A doTry is needed: the blob store route exhausts the
+        // redeliveries, and an exhausted exception is not handled again by an onException of this route
         from("direct:remoteCopyVersionedOtp2GraphBuildReport")
                 .process(e -> {
                     e.getIn().setHeader(Exchange.FILE_PARENT, e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/report");
@@ -204,15 +211,13 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
                     e.getIn().setHeader(TARGET_FILE_PARENT, e.getProperty(OTP_GRAPH_VERSION, String.class));
                 })
                 .log(LoggingLevel.INFO, correlation() + "Copying OTP2 graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}")
-                .to("direct:copyAllInternalBlobs")
-                .log(LoggingLevel.INFO, correlation() + "Done copying OTP2 graph build reports.")
+                .doTry()
+                    .to("direct:copyAllInternalBlobs")
+                    .log(LoggingLevel.INFO, correlation() + "Done copying OTP2 graph build reports.")
+                .doCatch(Exception.class)
+                    .log(LoggingLevel.WARN, correlation() + "Failed to copy the OTP2 graph build reports to gs://${header." + TARGET_CONTAINER + "}/${header." + TARGET_FILE_PARENT + "}, the graph is published without a report: ${exception.message} stacktrace: ${exception.stacktrace}")
+                .end()
                 .routeId("otp2-remote-graph-build-report-versioned-upload");
-
-        from("direct:remoteUpdateCurrentOtp2GraphReportVersion")
-                .log(LoggingLevel.INFO, correlation() + "Uploading OTP graph build reports current version.")
-                .process(e ->
-                        otpReportBlobStoreService.uploadHtmlBlob(Constants.OTP2_GRAPH_REPORT_INDEX_FILE, createRedirectPage(e.getProperty(OTP_GRAPH_VERSION, String.class))))
-                .routeId("otp2-remote-graph-report-update-current");
 
         from("direct:remoteOtp2CleanUp")
                 .choice()
@@ -244,15 +249,34 @@ public class Otp2NetexGraphRouteBuilder extends BaseRouteBuilder {
 
     }
 
-    private InputStream createRedirectPage(String version) {
-        String url = "http://" + otpReportContainerName + "/" + version + "/index.html";
-        String html = "<html>\n" +
-                "<head>\n" +
-                "    <meta http-equiv=\"refresh\" content=\"0; url=" + url + "\" />\n" +
-                "</head>\n" +
-                "</html>";
+    private void promoteGraph(Exchange e) {
+        Otp2GraphControlService.Promotion promotion = otp2GraphControlService.promoteBuiltGraph(
+                e.getProperty(PUBLISHED_GRAPH_PATH_PROPERTY, String.class),
+                e.getIn().getHeader(Constants.GRAPH_COMPATIBILITY_VERSION, String.class),
+                isCandidateBuild(e),
+                e.getProperty(OTP_GRAPH_VERSION, String.class));
+        e.setProperty(PROP_GRAPH_PROMOTION, promotion);
+    }
 
-        return IOUtils.toInputStream(html, StandardCharsets.UTF_8);
+    private void recordPromotionFailure(Exchange e) {
+        e.setProperty(PROP_GRAPH_PROMOTION, Otp2GraphControlService.Promotion.FAILED);
+        otp2GraphControlService.recordPromotionFailure(
+                e.getProperty(PUBLISHED_GRAPH_PATH_PROPERTY, String.class),
+                e.getIn().getHeader(Constants.GRAPH_COMPATIBILITY_VERSION, String.class),
+                e.getProperty(Exchange.EXCEPTION_CAUGHT, Exception.class));
+    }
+
+    /**
+     * A graph whose promotion failed is published, but neither production nor the OTP instances of its serialization
+     * version use it: the graph build is reported as failed. A graph that is deliberately not promoted (pinned
+     * serialization version, more recent current graph, candidate build) is a successful build.
+     */
+    private static JobEvent.State graphBuildState(Exchange e) {
+        return e.getProperty(PROP_GRAPH_PROMOTION) == Otp2GraphControlService.Promotion.FAILED ? JobEvent.State.FAILED : JobEvent.State.OK;
+    }
+
+    private static boolean isCandidateBuild(Exchange e) {
+        return Boolean.TRUE.equals(e.getProperty(OTP_BUILD_CANDIDATE, Boolean.class));
     }
 
 

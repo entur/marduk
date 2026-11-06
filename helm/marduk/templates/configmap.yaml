@@ -181,6 +181,9 @@ data:
     otp.graph.build.remote.kubernetes.poll.interval=60
     rutebanken.kubernetes.namespace={{ .Release.Namespace }}
     otp2.graph.build.autoStartup={{ .Values.otp.graph.build.autoStartup }}
+    # Transmodel GraphQL API of the production OTP instances: the graph emergency controls ask it which serialization
+    # version OTP runs. If empty, or if OTP does not answer, they use the version of the graph named by the root pointer file.
+    otp2.production.graphql.url={{ .Values.otp.production.graphqlUrl }}
     line.statistics.calculation.enabled={{ .Values.line.statistics.calculation.enabled }}
 kind: ConfigMap
 metadata:

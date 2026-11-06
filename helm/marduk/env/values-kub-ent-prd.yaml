@@ -76,6 +76,9 @@ otp:
   graph:
     build:
       autoStartup: true
+  # the OTP instances that load the graphs of this environment: the graph controls ask them their serialization version
+  production:
+    graphqlUrl: https://api.entur.io/journey-planner/v3/graphql
 auth0:
   partner:
     url: https://partner.entur.org
