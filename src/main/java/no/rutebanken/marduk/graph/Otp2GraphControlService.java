@@ -86,6 +86,11 @@ public class Otp2GraphControlService {
     static final String ACTION_PIN = "PIN";
     static final String ACTION_UNPIN = "UNPIN";
     static final String ACTION_BUILD_NOT_PROMOTED = "BUILD_NOT_PROMOTED";
+    /**
+     * A production build replaced a pointer file that could not be parsed. Kept with the control operations: it is
+     * rare, and the replaced content is lost.
+     */
+    static final String ACTION_POINTER_REPLACED = "POINTER_REPLACED";
 
     static final String SYSTEM_USER = "marduk";
 
@@ -133,6 +138,8 @@ public class Otp2GraphControlService {
      * unless the serialization version is pinned, a more recent graph is already current, or the graph is a candidate
      * build and the current graph is a production build: the stable copy loaded by the production OTP instances only
      * ever contains production builds, even when a candidate build shares their serialization version.
+     * A pointer file that cannot be parsed leaves the current graph unknown: a production build replaces it, a
+     * candidate build is not promoted.
      * A production build also writes the root pointer file, which triggers the redeployment of the OTP instances,
      * and the report index.
      *
@@ -164,7 +171,22 @@ public class Otp2GraphControlService {
                 return Promotion.SKIPPED_PINNED;
             }
 
-            Optional<GraphPointer> current = stateStore.readPointer(serializationId);
+            Optional<GraphPointer> current;
+            try {
+                current = stateStore.readPointer(serializationId);
+            } catch (UnreadableStateFileException e) {
+                // the current graph is unknown. A candidate build cannot replace it: it may be a production build.
+                // A production build replaces it, as before the controls were introduced: otherwise every build
+                // would fail until a rollout repairs the pointer
+                if (candidate) {
+                    LOGGER.warn("The OTP2 graph pointer file {} cannot be parsed, the candidate build {} is not promoted: {}", e.getPath(), graphPath, e.getMessage());
+                    audit(ACTION_BUILD_NOT_PROMOTED, serializationId, graphPath, SYSTEM_USER, "Candidate build: the current graph is unknown, it may be a production build. " + e.getMessage());
+                    return Promotion.SKIPPED_CANDIDATE;
+                }
+                LOGGER.warn("The OTP2 graph pointer file {} cannot be parsed and is replaced by the production build {}: {}", e.getPath(), graphPath, e.getMessage());
+                audit(ACTION_POINTER_REPLACED, serializationId, graphPath, SYSTEM_USER, "The pointer file is replaced by a production build. " + e.getMessage());
+                current = Optional.empty();
+            }
             if (candidate && current.isPresent() && !current.get().candidate()) {
                 audit(ACTION_BUILD_NOT_PROMOTED, serializationId, graphPath, SYSTEM_USER, "Candidate build: the current graph " + current.get().graph() + " is a production build");
                 return Promotion.SKIPPED_CANDIDATE;
@@ -222,8 +244,22 @@ public class Otp2GraphControlService {
 
         return transactionTemplate.execute(status -> {
             repository.lockControlRow(LockWait.OPERATION);
-            Optional<ProductionVersion> productionVersion = productionVersion(otpSerializationId, stateStore::readRootPointer);
-            boolean production = productionVersion.map(ProductionVersion::serializationId).filter(serializationId::equals).isPresent();
+            Optional<ProductionVersion> productionVersion;
+            boolean production;
+            try {
+                productionVersion = productionVersion(otpSerializationId, stateStore::readRootPointer);
+                production = productionVersion.map(ProductionVersion::serializationId).filter(serializationId::equals).isPresent();
+            } catch (UnreadableStateFileException e) {
+                // the OTP instances cannot be asked and the root pointer file cannot be parsed: the production
+                // serialization version is unknown. The rollout is read as a rollout of production, so that it
+                // repairs the root pointer file and redeploys OTP, as an emergency rollout is expected to. If the
+                // graph is of another serialization version, OTP is redeployed with its unchanged graph, and the next
+                // production build corrects the root pointer file
+                LOGGER.warn("The OTP2 graph root pointer file {} cannot be parsed and the production OTP instances cannot be asked: the rollout of {} replaces the root pointer file: {}",
+                        e.getPath(), graph, e.getMessage());
+                productionVersion = Optional.empty();
+                production = true;
+            }
             // read before anything is written, so that a failure to read leaves the bucket unchanged.
             // A rollout does not change the nature of the serialization version: a candidate build keeps being
             // promoted in a version that only had candidate builds

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.MardukRouteBuilderIntegrationTestBase;
 import no.rutebanken.marduk.TestApp;
+import no.rutebanken.marduk.domain.OtpGraphControlStatus;
 import no.rutebanken.marduk.graph.GraphControlRepository;
 import no.rutebanken.marduk.graph.Otp2GraphControlService;
 import no.rutebanken.marduk.graph.Otp2GraphPaths;
@@ -50,6 +51,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -569,6 +571,32 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
     }
 
     @Test
+    void rolloutRepairsAnUnreadableRootPointerWhenOtpCannotBeAsked() throws Exception {
+        upload(ROOT_POINTER, "{");
+        when(productionVersionClient.serializationId()).thenReturn(Optional.empty());
+        context.start();
+
+        // production is unknown
+        JsonNode status = json(get("routing_graph/control"));
+        JsonNode productionBefore = status.get("production");
+        assertTrue(productionBefore == null || productionBefore.isNull(), status.toString());
+        assertEquals(Set.of(ROOT_POINTER), textValues(status.get("unreadableFiles")));
+
+        // the rollout is read as a rollout of production: it repairs the root pointer file, which redeploys OTP
+        HttpResponse<String> response = post("routing_graph/rollout", "{\"graph\":\"" + OLD_GRAPH + "\",\"pin\":false,\"reason\":\"bad data\"}");
+        assertEquals(200, response.statusCode(), response.body());
+        assertTrue(json(response).get("production").asBoolean());
+        assertEquals("old graph", read(STABLE_GRAPH));
+        assertEquals(OLD_GRAPH, rootPointer().graph());
+        assertEquals(pointer(PRODUCTION_ID), rootPointer());
+
+        JsonNode statusAfter = json(get("routing_graph/control"));
+        assertTrue(statusAfter.get("unreadableFiles").isEmpty());
+        assertEquals(PRODUCTION_ID, statusAfter.get("production").get("serializationId").asText());
+        assertEquals(OLD_GRAPH, statusAfter.get("production").get("currentGraph").asText());
+    }
+
+    @Test
     void olderGraphIsNotPromoted() {
         assertEquals(Otp2GraphControlService.Promotion.SKIPPED_OLDER,
                 otp2GraphControlService.promoteBuiltGraph(OLD_GRAPH, PRODUCTION_ID, false, reportVersion(OLD_GRAPH)));
@@ -609,6 +637,52 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertEquals(Otp2GraphControlService.Promotion.SKIPPED_CANDIDATE,
                 otp2GraphControlService.promoteBuiltGraph(laterCandidateGraph, NEXT_ID, true, reportVersion(laterCandidateGraph)));
         assertEquals("next version production graph", read(Otp2GraphPaths.stableGraphPath(NEXT_ID)));
+    }
+
+    @Test
+    void productionBuildReplacesAnUnreadablePointer() {
+        String brokenPointer = stateStore.versionedPointerPath(PRODUCTION_ID);
+        upload(brokenPointer, "{");
+
+        // the current graph is unknown: the build is promoted even if it is older than the graph the pointer named
+        assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
+                otp2GraphControlService.promoteBuiltGraph(OLD_GRAPH, PRODUCTION_ID, false, reportVersion(OLD_GRAPH)));
+        assertEquals("old graph", read(STABLE_GRAPH));
+        GraphPointer pointer = pointer(PRODUCTION_ID);
+        assertEquals(OLD_GRAPH, pointer.graph());
+        assertFalse(pointer.candidate());
+        assertEquals(pointer, rootPointer());
+
+        // the replacement is audited with the control operations, the replaced content is lost
+        OtpGraphControlStatus status = otp2GraphControlService.status();
+        assertTrue(status.unreadableFiles().isEmpty());
+        OtpGraphControlStatus.Action replacement = status.recentActions().getFirst();
+        assertEquals("POINTER_REPLACED", replacement.action());
+        assertEquals(OLD_GRAPH, replacement.graph());
+        assertEquals("marduk", replacement.performedBy());
+        assertTrue(replacement.reason().contains(brokenPointer), replacement.reason());
+    }
+
+    @Test
+    void candidateBuildDoesNotReplaceAnUnreadablePointer() {
+        String brokenPointer = stateStore.versionedPointerPath(PRODUCTION_ID);
+        upload(brokenPointer, "{");
+        String candidateGraph = graph(PRODUCTION_ID, "20261015080000000");
+        upload(candidateGraph, "candidate graph");
+
+        // the unknown current graph may be a production build, loaded by the production OTP instances
+        assertEquals(Otp2GraphControlService.Promotion.SKIPPED_CANDIDATE,
+                otp2GraphControlService.promoteBuiltGraph(candidateGraph, PRODUCTION_ID, true, reportVersion(candidateGraph)));
+        assertEquals("latest graph", read(STABLE_GRAPH));
+        assertEquals("{", read(brokenPointer));
+        assertEquals(LATEST_GRAPH, rootPointer().graph());
+
+        OtpGraphControlStatus status = otp2GraphControlService.status();
+        assertEquals(List.of(brokenPointer), status.unreadableFiles());
+        OtpGraphControlStatus.Action skippedBuild = status.skippedBuilds().getFirst();
+        assertEquals("BUILD_NOT_PROMOTED", skippedBuild.action());
+        assertEquals(candidateGraph, skippedBuild.graph());
+        assertTrue(skippedBuild.reason().startsWith("Candidate build: the current graph is unknown"), skippedBuild.reason());
     }
 
     @Test
