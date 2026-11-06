@@ -448,12 +448,13 @@ public class Otp2GraphControlService {
     }
 
     private static String validReason(String reason) {
-        if (reason == null || reason.isBlank()) {
+        String trimmed = reason == null ? "" : reason.trim();
+        if (trimmed.isEmpty()) {
             throw GraphControlException.badRequest("A reason is required");
         }
-        if (reason.length() > MAX_REASON_LENGTH) {
+        if (trimmed.length() > MAX_REASON_LENGTH) {
             throw GraphControlException.badRequest("The reason must not exceed " + MAX_REASON_LENGTH + " characters");
         }
-        return reason.trim();
+        return trimmed;
     }
 }
