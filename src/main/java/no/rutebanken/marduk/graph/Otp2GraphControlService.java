@@ -18,6 +18,7 @@ package no.rutebanken.marduk.graph;
 
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.OtpGraphControlStatus;
+import no.rutebanken.marduk.domain.OtpGraphPinResult;
 import no.rutebanken.marduk.domain.OtpGraphRolloutResult;
 import no.rutebanken.marduk.domain.OtpGraphVersions;
 import no.rutebanken.marduk.exceptions.GraphControlException;
@@ -221,10 +222,10 @@ public class Otp2GraphControlService {
      * Pin the current graph of a serialization version, so that new builds do not replace it.
      * Unlike {@link #rollout(String, boolean, String, String)}, the graph files are unchanged and OTP is not redeployed.
      */
-    public OtpGraphControlStatus pin(String serializationId, String reason, String username) {
+    public OtpGraphPinResult pin(String serializationId, String reason, String username) {
         validSerializationId(serializationId);
         String validReason = validReason(reason);
-        transactionTemplate.executeWithoutResult(status -> {
+        return transactionTemplate.execute(status -> {
             repository.lockControlRow(LockWait.OPERATION);
             String currentGraph = stateStore.readPointer(serializationId)
                     .orElseThrow(() -> GraphControlException.notFound("No current graph for the serialization version " + serializationId))
@@ -232,25 +233,25 @@ public class Otp2GraphControlService {
             stateStore.writePin(serializationId, new GraphPin(currentGraph, Instant.now(), username, validReason));
             audit(ACTION_PIN, serializationId, currentGraph, username, validReason);
             LOGGER.info("User {} pinned the current OTP2 graph {}: {}", username, currentGraph, validReason);
+            return new OtpGraphPinResult(serializationId, currentGraph, true);
         });
-        return status();
     }
 
     /**
      * Remove the pin of a serialization version. The current graph is unchanged: the next graph build replaces it.
      */
-    public OtpGraphControlStatus unpin(String serializationId, String reason, String username) {
+    public OtpGraphPinResult unpin(String serializationId, String reason, String username) {
         validSerializationId(serializationId);
         String validReason = validReason(reason);
-        transactionTemplate.executeWithoutResult(status -> {
+        return transactionTemplate.execute(status -> {
             repository.lockControlRow(LockWait.OPERATION);
             GraphPin pin = stateStore.readPin(serializationId)
                     .orElseThrow(() -> GraphControlException.notFound("No pinned graph for the serialization version " + serializationId));
             stateStore.deletePin(serializationId);
             audit(ACTION_UNPIN, serializationId, pin.graph(), username, validReason);
             LOGGER.info("User {} unpinned the OTP2 graph {}: {}", username, pin.graph(), validReason);
+            return new OtpGraphPinResult(serializationId, pin.graph(), false);
         });
-        return status();
     }
 
     // ------------------------------------------------------------------------------------------------------------
@@ -455,7 +456,6 @@ public class Otp2GraphControlService {
         }
         return reason.substring(0, end) + "…";
     }
-
 
     private static void validSerializationId(String serializationId) {
         if (serializationId == null || serializationId.isBlank()) {

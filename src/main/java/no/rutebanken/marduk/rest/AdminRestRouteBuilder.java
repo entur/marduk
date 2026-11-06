@@ -20,6 +20,7 @@ import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.BlobStoreFiles.File;
 import no.rutebanken.marduk.domain.OtpGraphControlStatus;
+import no.rutebanken.marduk.domain.OtpGraphPinResult;
 import no.rutebanken.marduk.domain.OtpGraphRolloutRequest;
 import no.rutebanken.marduk.domain.OtpGraphRolloutResult;
 import no.rutebanken.marduk.domain.OtpGraphPinRequest;
@@ -371,7 +372,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .post("routing_graph/pin")
                 .description("Pin the current graph of a serialization version, so that new builds do not replace it. The graph files are unchanged and OTP is not redeployed")
                 .type(OtpGraphPinRequest.class)
-                .outType(OtpGraphControlStatus.class)
+                .outType(OtpGraphPinResult.class)
                 .consumes(JSON)
                 .produces(JSON)
                 .responseMessage().code(200).message("Graph pinned").endResponseMessage()
@@ -383,7 +384,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .post("routing_graph/unpin")
                 .description("Unpin the graph of a serialization version: the next graph build replaces it")
                 .type(OtpGraphPinRequest.class)
-                .outType(OtpGraphControlStatus.class)
+                .outType(OtpGraphPinResult.class)
                 .consumes(JSON)
                 .produces(JSON)
                 .responseMessage().code(200).message("Graph unpinned").endResponseMessage()

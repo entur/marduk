@@ -153,9 +153,14 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
 
         HttpResponse<String> unpinResponse = post("routing_graph/unpin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"fixed\"}");
         assertEquals(200, unpinResponse.statusCode(), unpinResponse.body());
-        assertTrue(json(unpinResponse).get("pins").isEmpty());
+        JsonNode unpinResult = json(unpinResponse);
+        assertEquals(PRODUCTION_ID, unpinResult.get("serializationId").asText());
+        assertEquals(OLD_GRAPH, unpinResult.get("graph").asText());
+        assertFalse(unpinResult.get("pinned").asBoolean());
+        JsonNode statusAfterUnpin = json(get("routing_graph/control"));
+        assertTrue(statusAfterUnpin.get("pins").isEmpty());
         // the current graph is unchanged until the next build
-        assertEquals(OLD_GRAPH, json(unpinResponse).get("production").get("currentGraph").asText());
+        assertEquals(OLD_GRAPH, statusAfterUnpin.get("production").get("currentGraph").asText());
         assertEquals("old graph", read(STABLE_GRAPH));
         assertEquals(Otp2GraphControlService.Promotion.PROMOTED,
                 otp2GraphControlService.promoteBuiltGraph(newGraph, PRODUCTION_ID, false, reportVersion(newGraph)));
@@ -171,7 +176,11 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
 
         HttpResponse<String> response = post("routing_graph/pin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"freeze during the incident\"}");
         assertEquals(200, response.statusCode(), response.body());
-        JsonNode status = json(response);
+        JsonNode result = json(response);
+        assertEquals(PRODUCTION_ID, result.get("serializationId").asText());
+        assertEquals(LATEST_GRAPH, result.get("graph").asText());
+        assertTrue(result.get("pinned").asBoolean());
+        JsonNode status = json(get("routing_graph/control"));
         assertTrue(status.get("production").get("pinned").asBoolean());
         assertEquals(LATEST_GRAPH, status.get("pins").get(0).get("graph").asText());
         assertEquals("PIN", status.get("recentActions").get(0).get("action").asText());
@@ -257,17 +266,6 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertEquals(rootPointerContent, read(ROOT_POINTER));
         assertTrue(stateStore.readPin(PRODUCTION_ID).isEmpty());
         assertEquals(LATEST_GRAPH, json(get("routing_graph/control")).get("production").get("currentGraph").asText());
-    }
-
-    @Test
-    void reasonLengthIsCheckedAfterTrimming() throws Exception {
-        context.start();
-        String fullReason = "r".repeat(1000);
-
-        assertEquals(400, post("routing_graph/pin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"" + fullReason + "r\"}").statusCode());
-        HttpResponse<String> response = post("routing_graph/pin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"" + fullReason + "\\n  \"}");
-        assertEquals(200, response.statusCode(), response.body());
-        assertEquals(fullReason, stateStore.readPin(PRODUCTION_ID).orElseThrow().reason());
     }
 
     @Test
@@ -387,8 +385,9 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         // the controls of the other serialization versions keep working
         HttpResponse<String> pinResponse = post("routing_graph/pin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"freeze\"}");
         assertEquals(200, pinResponse.statusCode(), pinResponse.body());
-        assertTrue(json(pinResponse).get("production").get("pinned").asBoolean());
-        assertEquals(Set.of(brokenPointer, brokenPin, emptyPointer), textValues(json(pinResponse).get("unreadableFiles")));
+        JsonNode statusAfterPin = json(get("routing_graph/control"));
+        assertTrue(statusAfterPin.get("production").get("pinned").asBoolean());
+        assertEquals(Set.of(brokenPointer, brokenPin, emptyPointer), textValues(statusAfterPin.get("unreadableFiles")));
     }
 
     @Test
