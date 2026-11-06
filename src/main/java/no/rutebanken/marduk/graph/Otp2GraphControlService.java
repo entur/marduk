@@ -438,8 +438,24 @@ public class Otp2GraphControlService {
             repository.deleteAuditEntriesBefore(ACTION_BUILD_NOT_PROMOTED, now.minus(SKIPPED_BUILD_RETENTION));
         }
         repository.insertAuditEntry(new AuditEntry(action, serializationId, graphFile,
-                username == null ? SYSTEM_USER : username, now, reason));
+                username == null ? SYSTEM_USER : username, now, truncatedReason(reason)));
     }
+
+    /**
+     * The reason fitted to the audit column. A user reason is validated, but a promotion failure carries the
+     * message of an exception, of any length: an audit entry that does not fit would be lost.
+     */
+    static String truncatedReason(String reason) {
+        if (reason == null || reason.length() <= MAX_REASON_LENGTH) {
+            return reason;
+        }
+        int end = MAX_REASON_LENGTH - 1;
+        if (Character.isHighSurrogate(reason.charAt(end - 1))) {
+            end--;
+        }
+        return reason.substring(0, end) + "…";
+    }
+
 
     private static void validSerializationId(String serializationId) {
         if (serializationId == null || serializationId.isBlank()) {

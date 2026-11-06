@@ -271,6 +271,30 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
     }
 
     @Test
+    void reasonLengthIsCheckedAfterTrimming() throws Exception {
+        context.start();
+        String fullReason = "r".repeat(1000);
+
+        assertEquals(400, post("routing_graph/pin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"" + fullReason + "r\"}").statusCode());
+        HttpResponse<String> response = post("routing_graph/pin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"" + fullReason + "\\n  \"}");
+        assertEquals(200, response.statusCode(), response.body());
+        assertEquals(fullReason, stateStore.readPin(PRODUCTION_ID).orElseThrow().reason());
+    }
+
+    @Test
+    void promotionFailureWithALongMessageIsAudited() {
+        String newGraph = graph(PRODUCTION_ID, "20261015080000000");
+        otp2GraphControlService.recordPromotionFailure(newGraph, PRODUCTION_ID, new IllegalStateException("x".repeat(5000)));
+
+        JsonNode skippedBuild = ObjectMapperFactory.getSharedObjectMapper().valueToTree(otp2GraphControlService.status().skippedBuilds().getFirst());
+        assertEquals(newGraph, skippedBuild.get("graph").asText());
+        String reason = skippedBuild.get("reason").asText();
+        assertEquals(1000, reason.length());
+        assertTrue(reason.startsWith("The promotion failed: xxx"), reason);
+        assertTrue(reason.endsWith("…"), reason);
+    }
+
+    @Test
     void listGraphVersions() throws Exception {
         context.start();
         assertEquals(200, post("routing_graph/rollout", "{\"graph\":\"" + OLD_GRAPH + "\",\"pin\":true,\"reason\":\"bad data\"}").statusCode());
