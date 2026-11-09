@@ -1,7 +1,7 @@
 package no.rutebanken.marduk.routes.otp.otp2;
 
-import no.rutebanken.marduk.Constants;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
+import no.rutebanken.marduk.graph.Otp2GraphPaths;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 
@@ -30,12 +30,9 @@ public class Otp2NetexGraphPublishingProcessor implements Processor {
         String graphFileName = file.getFileNameOnly();
         String graphCompatibilityVersion = getGraphCompatibilityVersion(graphFileName);
         String builtOtpGraphPath = e.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/" + graphFileName;
-        String publishedGraphPath = Constants.OTP2_NETEX_GRAPH_DIR
-                + "/" + graphCompatibilityVersion
-                + "/" + e.getProperty(TIMESTAMP, String.class)
-                + '-' + graphFileName;
-
-        String publishedGraphVersion = Constants.OTP2_NETEX_GRAPH_DIR + "/" + e.getProperty(TIMESTAMP, String.class) + "-report";
+        String timestamp = e.getProperty(TIMESTAMP, String.class);
+        String publishedGraphPath = Otp2GraphPaths.versionedGraphPath(graphCompatibilityVersion, timestamp, graphFileName);
+        String publishedGraphVersion = Otp2GraphPaths.reportVersion(timestamp);
 
         e.getIn().setHeader(GRAPH_COMPATIBILITY_VERSION, graphCompatibilityVersion);
         e.getIn().setHeader(FILE_HANDLE, builtOtpGraphPath);

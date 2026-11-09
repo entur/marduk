@@ -25,12 +25,13 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.AdviceWith;
 import org.apache.camel.component.mock.MockEndpoint;
+import org.apache.camel.model.BeanDefinition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ;
+import static no.rutebanken.marduk.Constants.OTP2_GRAPH_OBJ_PREFIX;
 import static no.rutebanken.marduk.Constants.OTP_REMOTE_WORK_DIR;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -46,27 +47,7 @@ class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
     @Test
     void testGraphBuilding() throws Exception {
 
-
-        AdviceWith.adviceWith(context, "otp2-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-        AdviceWith.adviceWith(context, "otp2-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-        AdviceWith.adviceWith(context, "otp2-remote-netex-graph-publish", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
-
-        AdviceWith.adviceWith(context, "otp2-remote-netex-graph-build", a -> a.weaveByToUri("direct:otp2ExportMergedNetex").replace().to("mock:sink"));
-
-        AdviceWith.adviceWith(context, "otp2-remote-netex-graph-build-and-send-status", a -> {
-            a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
-            a.weaveByToUri("direct:remoteBuildOtp2NetexGraph").replace().process(exchange -> {
-                // create dummy graph file in the blob store
-                String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_GRAPH_OBJ;
-                internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData());
-                // create dummy OTP report in the blob store
-                String reportFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/report/report.html";
-                internalInMemoryBlobStoreRepository.uploadBlob(reportFileName, dummyData());
-
-            });
-        });
+        adviceGraphBuild();
 
         updateStatus.expectedMessageCount(6);
         updateStatus.setResultWaitTime(20000);
@@ -88,6 +69,46 @@ class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain()) && JobEvent.State.STARTED.equals(je.getState()) && 2 == je.getProviderId()));
         assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.TIMETABLE.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState()) && 2 == je.getProviderId()));
 
+        assertGraphIsCurrent();
+
+        // the OTP graph report file and the HTML index are present in the report blobstore
+        BlobStoreFiles indexHtmlInOtpReportBucket = otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_GRAPH_REPORT_INDEX_FILE);
+        Assertions.assertEquals(1, indexHtmlInOtpReportBucket.getFiles().size());
+        BlobStoreFiles reportFileInOtpReportBucket = otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
+        Assertions.assertEquals(1, reportFileInOtpReportBucket.getFiles().size());
+    }
+
+    @Test
+    void testGraphBuildingWhenTheReportCannotBeCopied() throws Exception {
+
+        adviceGraphBuild();
+        AdviceWith.adviceWith(context, "blobstore-internal-copy-all",
+                a -> a.weaveByType(BeanDefinition.class).replace().throwException(new IllegalStateException("Simulated report copy failure")));
+
+        updateStatus.expectedMessageCount(6);
+        updateStatus.setResultWaitTime(20000);
+
+        context.start();
+
+        for(long refId = 1; refId <= 2; refId++) {
+            sendBodyAndHeadersToPubSub(producerTemplate, "", createProviderJobHeaders(refId, "ref" + refId, "corr-id-" + refId));
+        }
+
+        updateStatus.assertIsSatisfied();
+
+        // the failure to copy the report does not fail the build
+        List<JobEvent> events = updateStatus.getExchanges().stream().map(e -> JobEvent.fromString(e.getIn().getBody().toString())).toList();
+        assertTrue(events.stream().anyMatch(je -> JobEvent.JobDomain.GRAPH.equals(je.getDomain()) && JobEvent.State.OK.equals(je.getState())));
+        assertTrue(events.stream().noneMatch(je -> JobEvent.State.FAILED.equals(je.getState())));
+
+        assertGraphIsCurrent();
+
+        // no report is copied, and the report index is not updated since there is no report to point at
+        Assertions.assertTrue(otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR).getFiles().isEmpty());
+        Assertions.assertTrue(otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_GRAPH_REPORT_INDEX_FILE).getFiles().isEmpty());
+    }
+
+    private void assertGraphIsCurrent() {
         // the current file is created
         BlobStoreFiles currentFileBlobStoreFiles = graphsInMemoryBlobStoreRepository.listBlobs("current-otp2");
         Assertions.assertFalse(currentFileBlobStoreFiles.getFiles().isEmpty());
@@ -96,11 +117,28 @@ class Otp2NetexGraphRouteIntegrationTest extends MardukRouteBuilderIntegrationTe
         BlobStoreFiles blobsInVersionedSubDirectory = graphsInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
         Assertions.assertEquals(3, blobsInVersionedSubDirectory.getFiles().size());
         Assertions.assertTrue(blobsInVersionedSubDirectory.getFiles().stream().anyMatch(f -> f.getName().endsWith("/" + Constants.OTP2_CURRENT_GRAPH_OBJ)));
+    }
 
-        // the OTP graph report file and the HTML index are present in the report blobstore
-        BlobStoreFiles indexHtmlInOtpReportBucket = otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_GRAPH_REPORT_INDEX_FILE);
-        Assertions.assertEquals(1, indexHtmlInOtpReportBucket.getFiles().size());
-        BlobStoreFiles reportFileInOtpReportBucket = otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_NETEX_GRAPH_DIR);
-        Assertions.assertEquals(1, reportFileInOtpReportBucket.getFiles().size());
+    private void adviceGraphBuild() throws Exception {
+        AdviceWith.adviceWith(context, "otp2-netex-graph-send-started-events", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+
+        AdviceWith.adviceWith(context, "otp2-netex-graph-send-status-for-timetable-jobs", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+
+        AdviceWith.adviceWith(context, "otp2-remote-netex-graph-publish", a -> a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus"));
+
+        AdviceWith.adviceWith(context, "otp2-remote-netex-graph-build", a -> a.weaveByToUri("direct:otp2ExportMergedNetex").replace().to("mock:sink"));
+
+        AdviceWith.adviceWith(context, "otp2-remote-netex-graph-build-and-send-status", a -> {
+            a.weaveByToUri("direct:updateStatus").replace().to("mock:updateStatus");
+            a.weaveByToUri("direct:remoteBuildOtp2NetexGraph").replace().process(exchange -> {
+                // create dummy graph file in the blob store
+                String graphFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + '/' + OTP2_GRAPH_OBJ_PREFIX + "-EN-0239.obj";
+                internalInMemoryBlobStoreRepository.uploadBlob(graphFileName, dummyData());
+                // create dummy OTP report in the blob store
+                String reportFileName = exchange.getProperty(OTP_REMOTE_WORK_DIR, String.class) + "/report/report.html";
+                internalInMemoryBlobStoreRepository.uploadBlob(reportFileName, dummyData());
+
+            });
+        });
     }
 }
