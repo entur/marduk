@@ -42,12 +42,17 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Supplier;
@@ -344,7 +349,8 @@ public class Otp2GraphControlService {
     // ------------------------------------------------------------------------------------------------------------
 
     public OtpGraphControlStatus status() {
-        BucketState state = readBucketState();
+        BucketState bucketState = readBucketState();
+        BucketState state = readPointers(bucketState, statusPointers(bucketState));
 
         OtpGraphControlStatus.Production production = state.production()
                 .map(version -> new OtpGraphControlStatus.Production(version.serializationId(), state.currentGraph(version.serializationId()),
@@ -363,28 +369,56 @@ public class Otp2GraphControlService {
     }
 
     /**
+     * The serialization versions whose pointer file the status reads: the one used in production, the pinned ones,
+     * and the more recent ones, whose candidate builds are held back by an unreadable pointer file. The older ones are
+     * left out: one is added at every OTP release that changes the serialization version, and reading all their
+     * pointer files made the status slower over time. If the serialization version used in production is unknown, all
+     * of them.
+     */
+    private static Set<String> statusPointers(BucketState state) {
+        Optional<String> productionId = state.production().map(ProductionVersion::serializationId);
+        if (productionId.isEmpty()) {
+            return state.serializationIds();
+        }
+        Set<String> serializationIds = new TreeSet<>(state.serializationIds().tailSet(productionId.get(), false));
+        serializationIds.add(productionId.get());
+        serializationIds.addAll(state.pins().keySet());
+        return serializationIds;
+    }
+
+    /**
      * The published graphs, grouped by serialization version: the production serialization version first, then the
      * most recent serialization versions.
      *
-     * @param limit the maximum number of graphs listed per serialization version
+     * @param limit                     the maximum number of graphs listed per serialization version
+     * @param serializationVersionLimit the maximum number of serialization versions listed
      */
-    public OtpGraphVersions versions(int limit) {
+    public OtpGraphVersions versions(int limit, int serializationVersionLimit) {
         if (limit < 1) {
             throw GraphControlException.badRequest("The limit must be positive");
         }
-        BucketState state = readBucketState();
+        if (serializationVersionLimit < 1) {
+            throw GraphControlException.badRequest("The serialization version limit must be positive");
+        }
+        BucketState bucketState = readBucketState();
         Map<String, List<BlobStoreFiles.File>> filesBySerializationId = new TreeMap<>(Comparator.reverseOrder());
         Map<String, Otp2GraphPaths.VersionedGraph> graphs = new LinkedHashMap<>();
-        for (BlobStoreFiles.File file : state.files().getFiles()) {
+        for (BlobStoreFiles.File file : bucketState.files().getFiles()) {
             Otp2GraphPaths.parseVersionedGraph(file.getName()).ifPresent(graph -> {
                 graphs.put(file.getName(), graph);
                 filesBySerializationId.computeIfAbsent(graph.serializationId(), id -> new ArrayList<>()).add(file);
             });
         }
-        String productionSerializationId = state.production().map(ProductionVersion::serializationId).orElse(null);
+        String productionSerializationId = bucketState.production().map(ProductionVersion::serializationId).orElse(null);
+        List<String> listedSerializationIds = filesBySerializationId.keySet().stream()
+                .sorted(Comparator.comparing((String id) -> !id.equals(productionSerializationId)))
+                .limit(serializationVersionLimit)
+                .toList();
+        BucketState state = readPointers(bucketState, listedSerializationIds);
 
         List<OtpGraphVersions.SerializationVersion> serializationVersions = new ArrayList<>();
-        filesBySerializationId.forEach((serializationId, serializationIdFiles) -> {
+        listedSerializationIds.forEach(serializationId -> {
+            List<BlobStoreFiles.File> serializationIdFiles = filesBySerializationId.get(serializationId);
             String currentGraph = state.currentGraph(serializationId);
             String pinnedGraph = Optional.ofNullable(state.pins().get(serializationId)).map(GraphPin::graph).orElse(null);
             List<OtpGraphVersions.Graph> latestGraphs = serializationIdFiles.stream()
@@ -399,8 +433,7 @@ public class Otp2GraphControlService {
             serializationVersions.add(new OtpGraphVersions.SerializationVersion(serializationId,
                     serializationId.equals(productionSerializationId), currentGraph, pinnedGraph, serializationIdFiles.size(), latestGraphs));
         });
-        serializationVersions.sort(Comparator.comparing((OtpGraphVersions.SerializationVersion v) -> !v.production()));
-        return new OtpGraphVersions(serializationVersions, state.unreadableFiles());
+        return new OtpGraphVersions(serializationVersions, filesBySerializationId.size(), state.unreadableFiles());
     }
 
     // ------------------------------------------------------------------------------------------------------------
@@ -416,13 +449,18 @@ public class Otp2GraphControlService {
     /**
      * The state of the publication read from the bucket, without the lock: a snapshot for the status.
      *
-     * @param files           the listing of the graph folder
-     * @param pointers        the pointer of each serialization version that has one
-     * @param pins            the pin of each serialization version that has one
-     * @param production      the serialization version used in production
-     * @param unreadableFiles the pointer and pin files that cannot be parsed, left out of the snapshot
+     * @param files            the listing of the graph folder
+     * @param names            the names of the files of the listing
+     * @param serializationIds the serialization versions that have a folder in the graph folder
+     * @param pointers         the pointer of each serialization version that has one, among the ones read (see
+     *                         {@link #readPointers(BucketState, Collection)})
+     * @param pins             the pin of each serialization version that has one
+     * @param production       the serialization version used in production
+     * @param unreadableFiles  the pointer and pin files read that cannot be parsed, left out of the snapshot
      */
     private record BucketState(BlobStoreFiles files,
+                               Set<String> names,
+                               NavigableSet<String> serializationIds,
                                Map<String, GraphPointer> pointers,
                                Map<String, GraphPin> pins,
                                Optional<ProductionVersion> production,
@@ -441,10 +479,15 @@ public class Otp2GraphControlService {
         }
     }
 
+    /**
+     * The listing of the graph folder, the pins and the serialization version used in production. The pointer files
+     * are read afterwards, only for the serialization versions that are needed (see
+     * {@link #readPointers(BucketState, Collection)}): there is one per serialization version ever published.
+     */
     private BucketState readBucketState() {
         BlobStoreFiles files = otpGraphsBlobStoreService.listBlobsInFolder(OTP2_NETEX_GRAPH_DIR);
-        TreeSet<String> names = new TreeSet<>();
-        TreeSet<String> serializationIds = new TreeSet<>();
+        Set<String> names = new HashSet<>();
+        NavigableSet<String> serializationIds = new TreeSet<>();
         for (BlobStoreFiles.File file : files.getFiles()) {
             names.add(file.getName());
             String[] segments = file.getName().split("/");
@@ -452,14 +495,9 @@ public class Otp2GraphControlService {
                 serializationIds.add(segments[1]);
             }
         }
-        Map<String, GraphPointer> pointers = new HashMap<>();
         Map<String, GraphPin> pins = new TreeMap<>();
         List<String> unreadableFiles = new ArrayList<>();
         for (String serializationId : serializationIds) {
-            if (names.contains(stateStore.versionedPointerPath(serializationId))) {
-                readOrReport(() -> stateStore.readPointer(serializationId), unreadableFiles)
-                        .ifPresent(pointer -> pointers.put(serializationId, pointer));
-            }
             if (names.contains(Otp2GraphPaths.pinPath(serializationId))) {
                 readOrReport(() -> stateStore.readPin(serializationId), unreadableFiles)
                         .ifPresent(pin -> pins.put(serializationId, pin));
@@ -468,7 +506,28 @@ public class Otp2GraphControlService {
         // read even if the production OTP instances answer, to report it if it cannot be parsed
         Optional<GraphPointer> rootPointer = readOrReport(stateStore::readRootPointer, unreadableFiles);
         Optional<ProductionVersion> production = productionVersion(productionVersionClient.serializationId(), () -> rootPointer);
-        return new BucketState(files, pointers, pins, production, List.copyOf(unreadableFiles));
+        return new BucketState(files, names, Collections.unmodifiableNavigableSet(serializationIds), Map.of(), pins, production,
+                List.copyOf(unreadableFiles));
+    }
+
+    /**
+     * Read the pointer files of some serialization versions.
+     *
+     * @param state            the snapshot without pointers
+     * @param serializationIds the serialization versions whose pointer file is read
+     * @return the snapshot with these pointers, and the ones that cannot be parsed reported
+     */
+    private BucketState readPointers(BucketState state, Collection<String> serializationIds) {
+        Map<String, GraphPointer> pointers = new HashMap<>();
+        List<String> unreadableFiles = new ArrayList<>(state.unreadableFiles());
+        for (String serializationId : serializationIds) {
+            if (state.names().contains(stateStore.versionedPointerPath(serializationId))) {
+                readOrReport(() -> stateStore.readPointer(serializationId), unreadableFiles)
+                        .ifPresent(pointer -> pointers.put(serializationId, pointer));
+            }
+        }
+        return new BucketState(state.files(), state.names(), state.serializationIds(), pointers, state.pins(), state.production(),
+                List.copyOf(unreadableFiles));
     }
 
     /**

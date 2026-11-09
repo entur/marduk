@@ -23,13 +23,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import no.rutebanken.marduk.exceptions.MardukException;
 import no.rutebanken.marduk.json.ObjectMapperFactory;
 import no.rutebanken.marduk.services.OtpGraphsBlobStoreService;
-import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Optional;
@@ -160,19 +157,12 @@ public class Otp2GraphStateStore {
         return pointer;
     }
 
+    /**
+     * A single request to the bucket: the status reads one file per serialization version.
+     */
     private Optional<String> read(String path) {
-        if (!Boolean.TRUE.equals(otpGraphsBlobStoreService.blobExists(path))) {
-            return Optional.empty();
-        }
-        InputStream inputStream = otpGraphsBlobStoreService.getBlob(path);
-        if (inputStream == null) {
-            return Optional.empty();
-        }
-        try (inputStream) {
-            return Optional.of(IOUtils.toString(inputStream, StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            throw new MardukException("Failed to read " + path, e);
-        }
+        return Optional.ofNullable(otpGraphsBlobStoreService.getBlobContent(path))
+                .map(content -> new String(content, StandardCharsets.UTF_8));
     }
 
     private void write(String path, Object document) {

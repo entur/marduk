@@ -82,6 +82,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
     private final Otp2GraphControlService otp2GraphControlService;
 
     private static final int DEFAULT_GRAPH_VERSIONS_LIMIT = 20;
+    private static final int DEFAULT_SERIALIZATION_VERSIONS_LIMIT = 5;
 
     private static final String PROP_BLOCKS_EXPORT_FALLBACK = "RutebankenBlocksExportFallback";
     private static final String PROP_BAD_REQUEST = "RutebankenBadRequest";
@@ -351,6 +352,7 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .get("routing_graph/versions")
                 .description("List the published OTP2 transit graphs per serialization version, production first")
                 .param().name("limit").type(RestParamType.query).description("Maximum number of graphs listed per serialization version (default " + DEFAULT_GRAPH_VERSIONS_LIMIT + ")").dataType(OPENAPI_DATA_TYPE_INTEGER).required(false).endParam()
+                .param().name("serializationVersions").type(RestParamType.query).description("Maximum number of serialization versions listed: the production one, then the most recent ones (default " + DEFAULT_SERIALIZATION_VERSIONS_LIMIT + ")").dataType(OPENAPI_DATA_TYPE_INTEGER).required(false).endParam()
                 .outType(OtpGraphVersions.class)
                 .produces(JSON)
                 .responseMessage().code(200).endResponseMessage()
@@ -754,7 +756,9 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
                 .process(this::setNewCorrelationId)
                 .to("direct:authorizeAdminRequest")
                 .process(this::removeHttpHeaders)
-                .process(e -> runGraphControlOperation(e, ex -> otp2GraphControlService.versions(graphVersionsLimit(ex))))
+                .process(e -> runGraphControlOperation(e, ex -> otp2GraphControlService.versions(
+                        intQueryParam(ex, "limit", DEFAULT_GRAPH_VERSIONS_LIMIT),
+                        intQueryParam(ex, "serializationVersions", DEFAULT_SERIALIZATION_VERSIONS_LIMIT))))
                 .routeId("admin-graph-control-versions");
 
         from("direct:adminGraphControlRollout")
@@ -1108,15 +1112,15 @@ public class AdminRestRouteBuilder extends BaseRouteBuilder {
         return body;
     }
 
-    private static int graphVersionsLimit(Exchange e) {
-        String limit = e.getIn().getHeader("limit", String.class);
-        if (limit == null || limit.isBlank()) {
-            return DEFAULT_GRAPH_VERSIONS_LIMIT;
+    private static int intQueryParam(Exchange e, String name, int defaultValue) {
+        String value = e.getIn().getHeader(name, String.class);
+        if (value == null || value.isBlank()) {
+            return defaultValue;
         }
         try {
-            return Integer.parseInt(limit.trim());
+            return Integer.parseInt(value.trim());
         } catch (NumberFormatException _) {
-            throw GraphControlException.badRequest("Invalid limit: " + limit);
+            throw GraphControlException.badRequest("Invalid " + name + ": " + value);
         }
     }
 }
