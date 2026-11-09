@@ -65,6 +65,13 @@ public abstract class AbstractBlobStoreService {
         return repository.getBlob(name);
     }
 
+    /**
+     * @return the content of a small blob, or null if it does not exist
+     */
+    public byte[] getBlobContent(String name) {
+        return repository.getBlobContent(name);
+    }
+
     public Boolean blobExists(@Header(value = FILE_HANDLE) String name) {
         return repository.exist(name);
     }

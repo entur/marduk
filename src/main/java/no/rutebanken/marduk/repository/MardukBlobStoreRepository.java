@@ -19,6 +19,9 @@ package no.rutebanken.marduk.repository;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import org.rutebanken.helper.storage.repository.BlobStoreRepository;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 
 /**
@@ -45,6 +48,23 @@ public interface MardukBlobStoreRepository  extends BlobStoreRepository {
      * @return The files in the blob store under the given prefix. The prefix is removed from the file names.
      */
     BlobStoreFiles listBlobsFlat(String prefix);
+
+    /**
+     * Retrieve the content of a small blob.
+     * @param name the name of the blob.
+     * @return the content of the blob, or null if it does not exist.
+     */
+    default byte[] getBlobContent(String name) {
+        InputStream inputStream = getBlob(name);
+        if (inputStream == null) {
+            return null;
+        }
+        try (inputStream) {
+            return inputStream.readAllBytes();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read the blob " + name, e);
+        }
+    }
 
 
 }

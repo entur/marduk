@@ -24,10 +24,15 @@ import java.util.List;
 /**
  * The published OTP2 transit graphs, grouped by serialization version, production first.
  *
- * @param unreadableFiles the pointer and pin files of the graph bucket that cannot be parsed, see
- *                        {@link OtpGraphControlStatus#unreadableFiles()}
+ * @param serializationVersions      the production serialization version, then the most recent ones
+ * @param totalSerializationVersions the number of serialization versions that have published graphs
+ * @param unreadableFiles            the pin files, the root pointer file and the pointer files of the listed
+ *                                   serialization versions that cannot be parsed, see
+ *                                   {@link OtpGraphControlStatus#unreadableFiles()}
  */
-public record OtpGraphVersions(List<SerializationVersion> serializationVersions, List<String> unreadableFiles) {
+public record OtpGraphVersions(List<SerializationVersion> serializationVersions,
+                               int totalSerializationVersions,
+                               List<String> unreadableFiles) {
 
     /**
      * @param serializationId the serialization version

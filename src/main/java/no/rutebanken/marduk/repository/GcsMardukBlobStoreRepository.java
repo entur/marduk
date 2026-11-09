@@ -17,12 +17,15 @@
 package no.rutebanken.marduk.repository;
 
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.StorageException;
 import no.rutebanken.marduk.domain.BlobStoreFiles;
 import no.rutebanken.marduk.domain.Provider;
 import org.apache.commons.lang3.StringUtils;
 import org.rutebanken.helper.gcp.BlobStoreHelper;
 import org.rutebanken.helper.gcp.repository.GcsBlobStoreRepository;
 
+import java.net.HttpURLConnection;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -79,6 +82,21 @@ public class GcsMardukBlobStoreRepository extends GcsBlobStoreRepository impleme
     }
 
 
+
+    /**
+     * Download the blob in a single request, instead of fetching its metadata first.
+     */
+    @Override
+    public byte[] getBlobContent(String name) {
+        try {
+            return storage().readAllBytes(BlobId.of(containerName(), name));
+        } catch (StorageException e) {
+            if (e.getCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+                return null;
+            }
+            throw e;
+        }
+    }
 
     private BlobStoreFiles.File toBlobStoreFile(Blob blob, String fileName) {
         BlobStoreFiles.File file = new BlobStoreFiles.File(fileName, blob.getCreateTimeOffsetDateTime().toInstant(), blob.getUpdateTimeOffsetDateTime().toInstant(), blob.getSize());

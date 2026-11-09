@@ -317,6 +317,7 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertEquals(200, response.statusCode(), response.body());
         JsonNode versions = json(response).get("serializationVersions");
         assertEquals(2, versions.size());
+        assertEquals(2, json(response).get("totalSerializationVersions").asInt());
 
         JsonNode production = versions.get(0);
         assertEquals(PRODUCTION_ID, production.get("serializationId").asText());
@@ -339,6 +340,13 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
 
         assertEquals(1, json(get("routing_graph/versions?limit=1")).get("serializationVersions").get(0).get("graphs").size());
         assertEquals(400, get("routing_graph/versions?limit=0").statusCode());
+
+        // production first, even though the next serialization version is more recent
+        JsonNode limited = json(get("routing_graph/versions?serializationVersions=1"));
+        assertEquals(1, limited.get("serializationVersions").size());
+        assertEquals(PRODUCTION_ID, limited.get("serializationVersions").get(0).get("serializationId").asText());
+        assertEquals(2, limited.get("totalSerializationVersions").asInt());
+        assertEquals(400, get("routing_graph/versions?serializationVersions=0").statusCode());
     }
 
     /**
@@ -405,15 +413,19 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertEquals(0, otpReportInMemoryBlobStoreRepository.listBlobs(Constants.OTP2_GRAPH_REPORT_INDEX_FILE).getFiles().size());
     }
 
+    /**
+     * The pointer files of the serialization versions older than production are not read: they are no longer used.
+     */
     @Test
     void unreadableStateFilesAreReportedWithoutFailingTheControls() throws Exception {
         context.start();
-        String brokenPointer = stateStore.versionedPointerPath("EN-0200");
+        String brokenPointer = stateStore.versionedPointerPath(NEXT_ID);
         String brokenPin = Otp2GraphPaths.pinPath(NEXT_ID);
-        String emptyPointer = stateStore.versionedPointerPath("EN-0201");
+        String emptyPointer = stateStore.versionedPointerPath("EN-0241");
         upload(brokenPointer, "{");
         upload(brokenPin, "{\"graph\":");
         upload(emptyPointer, "");
+        upload(stateStore.versionedPointerPath("EN-0200"), "{");
 
         HttpResponse<String> statusResponse = get("routing_graph/control");
         assertEquals(200, statusResponse.statusCode(), statusResponse.body());
@@ -422,9 +434,10 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertEquals(LATEST_GRAPH, status.get("production").get("currentGraph").asText());
         assertTrue(status.get("pins").isEmpty());
 
+        // only the pointer files of the listed serialization versions, the ones that have published graphs
         HttpResponse<String> versionsResponse = get("routing_graph/versions");
         assertEquals(200, versionsResponse.statusCode(), versionsResponse.body());
-        assertEquals(Set.of(brokenPointer, brokenPin, emptyPointer), textValues(json(versionsResponse).get("unreadableFiles")));
+        assertEquals(Set.of(brokenPointer, brokenPin), textValues(json(versionsResponse).get("unreadableFiles")));
 
         // the controls of the other serialization versions keep working
         HttpResponse<String> pinResponse = post("routing_graph/pin", "{\"serializationId\":\"" + PRODUCTION_ID + "\",\"reason\":\"freeze\"}");
@@ -477,10 +490,15 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         assertTrue(json(get("routing_graph/control")).get("unreadableFiles").isEmpty());
     }
 
+    /**
+     * The production serialization version is unknown: the pointer files of all serialization versions are read.
+     */
     @Test
     void unreadableRootPointerLeavesProductionUnknown() throws Exception {
         context.start();
         upload(ROOT_POINTER, "{");
+        String oldBrokenPointer = stateStore.versionedPointerPath("EN-0200");
+        upload(oldBrokenPointer, "{");
 
         HttpResponse<String> response = get("routing_graph/control");
         assertEquals(200, response.statusCode(), response.body());
@@ -488,7 +506,7 @@ class OtpGraphControlRestIntegrationTest extends MardukRouteBuilderIntegrationTe
         // production is unknown: depending on the serialization settings, null or left out
         JsonNode production = status.get("production");
         assertTrue(production == null || production.isNull(), status.toString());
-        assertEquals(Set.of(ROOT_POINTER), textValues(status.get("unreadableFiles")));
+        assertEquals(Set.of(ROOT_POINTER, oldBrokenPointer), textValues(status.get("unreadableFiles")));
     }
 
     /**
