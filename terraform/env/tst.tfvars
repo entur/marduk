@@ -5,3 +5,4 @@ ashur_service_account                    = "serviceAccount:application@ent-ashur
 marduk_exchange_storage_bucket           = "marduk-exchange-test"
 servicelinker_service_account            = "serviceAccount:application@ent-servicelnk-tst.iam.gserviceaccount.com"
 servicelinker_terraform_service_account  = "serviceAccount:gh-servicelinker-de-231b-tst@ent-github-shr.iam.gserviceaccount.com"
+nisaba_service_account                   = "serviceAccount:application@ent-nisaba-tst.iam.gserviceaccount.com"
