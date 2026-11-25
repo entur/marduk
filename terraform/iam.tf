@@ -40,3 +40,10 @@ resource "google_pubsub_topic_iam_member" "ServicelinkerStatusQueueSubscriberRol
   role    = "roles/pubsub.subscriber"
   member  = var.servicelinker_terraform_service_account
 }
+
+resource "google_pubsub_subscription_iam_member" "NetexExportNotificationQueueSubscriberRole" {
+  project      = var.gcp_resources_project
+  subscription = google_pubsub_subscription.NetexExportNotificationQueue.name
+  role         = "roles/pubsub.subscriber"
+  member       = var.nisaba_service_account
+}

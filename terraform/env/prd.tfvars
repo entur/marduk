@@ -6,6 +6,7 @@ ashur_service_account                    = "serviceAccount:application@ent-ashur
 marduk_exchange_storage_bucket           = "marduk-exchange-production"
 servicelinker_service_account            = "serviceAccount:application@ent-servicelnk-prd.iam.gserviceaccount.com"
 servicelinker_terraform_service_account  = "serviceAccount:gh-servicelinker-de-231b-prd@ent-github-shr.iam.gserviceaccount.com"
+nisaba_service_account                   = "serviceAccount:application@ent-nisaba-prd.iam.gserviceaccount.com"
 
 labels = {
   manager     = "terraform"
