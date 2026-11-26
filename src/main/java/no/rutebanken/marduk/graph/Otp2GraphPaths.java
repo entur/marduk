@@ -16,6 +16,7 @@
 
 package no.rutebanken.marduk.graph;
 
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,6 +53,22 @@ public final class Otp2GraphPaths {
 
     private static final Pattern GRAPH_TIMESTAMP = Pattern.compile("^(\\d{17})-");
 
+    /**
+     * A serialization id released by the Entur OTP fork: {@code EN-} followed by a number, e.g. {@code EN-0256}.
+     */
+    private static final Pattern ENTUR_SERIALIZATION_ID = Pattern.compile("^EN-(\\d{1,9})$");
+
+    /**
+     * Orders serialization ids from the most recent to the oldest: the released ids ({@code EN-NNNN}) by decreasing
+     * number, then any other id in reverse alphabetical order. Other ids come from graphs built from a branch with a
+     * custom serialization id (e.g. {@code transfers1a}) and must not be reported as the latest version: a plain string
+     * comparison would rank them above every released id, since lowercase letters sort after uppercase ones.
+     */
+    public static final Comparator<String> NEWEST_SERIALIZATION_ID_FIRST =
+            Comparator.comparing((String id) -> !ENTUR_SERIALIZATION_ID.matcher(id).matches())
+                    .thenComparing(Otp2GraphPaths::enturSerializationNumber, Comparator.reverseOrder())
+                    .thenComparing(Comparator.reverseOrder());
+
     private Otp2GraphPaths() {
     }
 
@@ -71,6 +88,14 @@ public final class Otp2GraphPaths {
         public String reportVersion() {
             return Otp2GraphPaths.reportVersion(timestamp);
         }
+    }
+
+    /**
+     * The number of a released serialization id, or -1 for any other id (those are already ranked last).
+     */
+    private static long enturSerializationNumber(String serializationId) {
+        Matcher matcher = ENTUR_SERIALIZATION_ID.matcher(serializationId);
+        return matcher.matches() ? Long.parseLong(matcher.group(1)) : -1;
     }
 
     /**

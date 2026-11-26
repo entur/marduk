@@ -29,6 +29,20 @@ class OtpGraphsInfoBuilderTest {
 
     }
 
+    @Test
+    void customSerializationIdIsNotListedAsTheLatest() {
+        // the tst bucket holds a graph built from a branch with the serialization id transfers1a
+        BlobStoreFiles.File custom = createFile("netex-otp2/transfers1a/Graph-otp2-287.obj", Instant.EPOCH.plusSeconds(3), 10);
+        BlobStoreFiles.File previous = createFile("netex-otp2/EN-0252/20261125051611611-Graph-otp2-EN-0252.obj", Instant.EPOCH.plusSeconds(1), 11);
+        BlobStoreFiles.File latest = createFile("netex-otp2/EN-0256/20261126051611611-Graph-otp2-EN-0256.obj", Instant.EPOCH.plusSeconds(2), 12);
+        List<OtpGraphsInfo.OtpGraphFile> otpGraphFiles = new OtpGraphFilesBuilder()
+                .withFileNameRegex("netex-otp2/(.*)/.*\\.obj")
+                .withFiles(List.of(custom, previous, latest))
+                .build();
+
+        assertEquals(List.of("EN-0256", "EN-0252"), otpGraphFiles.stream().map(OtpGraphsInfo.OtpGraphFile::serializationId).toList());
+    }
+
     private static BlobStoreFiles.File createFile(String fileName, Instant creationTime, long fileSize) {
         BlobStoreFiles.File graph1 = new BlobStoreFiles.File();
         graph1.setName(fileName);

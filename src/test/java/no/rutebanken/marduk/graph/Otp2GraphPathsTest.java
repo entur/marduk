@@ -18,7 +18,9 @@ package no.rutebanken.marduk.graph;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -69,5 +71,13 @@ class Otp2GraphPathsTest {
         assertFalse(Otp2GraphPaths.isBuiltBefore(GRAPH, GRAPH));
         assertFalse(Otp2GraphPaths.isBuiltBefore(GRAPH, null));
         assertFalse(Otp2GraphPaths.isBuiltBefore("netex-otp2/EN-0239/Graph-otp2-current.obj", GRAPH));
+    }
+
+    @Test
+    void newestSerializationIdFirst() {
+        List<String> ids = Stream.of("transfers1a", "EN-0252", "EN-10000", "EN-0256", "EN-0099", "abc")
+                .sorted(Otp2GraphPaths.NEWEST_SERIALIZATION_ID_FIRST)
+                .toList();
+        assertEquals(List.of("EN-10000", "EN-0256", "EN-0252", "EN-0099", "transfers1a", "abc"), ids);
     }
 }
