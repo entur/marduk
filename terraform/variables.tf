@@ -98,6 +98,14 @@ variable "nisaba_service_account" {
   description = "The service account of the nisaba application"
 }
 
+variable "damu_service_account" {
+  description = "The service account of the damu application"
+}
+
+variable "marduk_storage_bucket" {
+  description = "The main marduk bucket, holding the NeTEx and GTFS datasets. Not managed by this Terraform"
+}
+
 variable "marduk_exchange_storage_bucket" {
   description = "The bucket used to exchange files with Marduk"
 }
