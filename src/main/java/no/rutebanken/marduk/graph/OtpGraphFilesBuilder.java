@@ -44,7 +44,7 @@ public class OtpGraphFilesBuilder {
                     BlobStoreFiles.File file = entry.getValue().get();
                     return new OtpGraphsInfo.OtpGraphFile(file.getFileNameOnly(), entry.getKey(),  file.getCreated(), file.getFileSize());
                 })
-                .sorted(Comparator.comparing(OtpGraphsInfo.OtpGraphFile::serializationId).reversed())
+                .sorted(Comparator.comparing(OtpGraphsInfo.OtpGraphFile::serializationId, Otp2GraphPaths.NEWEST_SERIALIZATION_ID_FIRST))
                 .limit(2)
                 .toList();
     }

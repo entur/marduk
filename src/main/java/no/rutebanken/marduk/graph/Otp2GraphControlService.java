@@ -401,7 +401,7 @@ public class Otp2GraphControlService {
             throw GraphControlException.badRequest("The serialization version limit must be positive");
         }
         BucketState bucketState = readBucketState();
-        Map<String, List<BlobStoreFiles.File>> filesBySerializationId = new TreeMap<>(Comparator.reverseOrder());
+        Map<String, List<BlobStoreFiles.File>> filesBySerializationId = new TreeMap<>(Otp2GraphPaths.NEWEST_SERIALIZATION_ID_FIRST);
         Map<String, Otp2GraphPaths.VersionedGraph> graphs = new LinkedHashMap<>();
         for (BlobStoreFiles.File file : bucketState.files().getFiles()) {
             Otp2GraphPaths.parseVersionedGraph(file.getName()).ifPresent(graph -> {
